@@ -1,0 +1,2 @@
+# rust-intelligence
+Rust Intelligence
