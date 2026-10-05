@@ -261,3 +261,31 @@ fn test_variant_aware_workspace_and_reload() {
     let def2 = ws.find_definition_by_path("crate_a::func_var2").expect("should find func_var2 in var2");
     assert_eq!(def2.signature, Some("fn() -> i32"));
 }
+
+#[test]
+fn test_missing_active_variant_returns_not_found() {
+    let base_dir = PathBuf::from("target/test_missing_variant_ws");
+    let _ = fs::remove_dir_all(&base_dir);
+    fs::create_dir_all(&base_dir).unwrap();
+
+    // Write a manifest pointing to a nonexistent variant dir
+    let manifest = serde_json::json!({
+        "version": "2.0",
+        "active_variant_id": "nonexistent_var",
+        "variant_dir": "variants/nonexistent_var",
+        "workspace_root": base_dir.display().to_string(),
+        "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+    });
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
+
+    // Put a legacy .ridx file in base_dir to ensure it is NOT loaded as a fallback
+    let mut writer = IndexWriter::new("legacy_crate", "0.0.1");
+    let f = File::create(base_dir.join("legacy.ridx")).unwrap();
+    writer.write_to(&mut BufWriter::new(f)).unwrap();
+
+    // WorkspaceIndex::open must return NotFound, not succeed by falling back to legacy.ridx
+    let res = WorkspaceIndex::open(&base_dir);
+    assert!(res.is_err(), "should fail to open when active variant directory does not exist");
+    assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::NotFound);
+}

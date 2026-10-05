@@ -229,25 +229,45 @@ fn compute_variant_id(
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     profile.hash(&mut hasher);
-    target.unwrap_or("host").hash(&mut hasher);
+
+    // 1. Effective target: explicit CLI flag, or CARGO_BUILD_TARGET, or "host"
+    let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
+    let effective_target = target.or(env_target.as_deref()).unwrap_or("host");
+    effective_target.hash(&mut hasher);
+
+    // 2. Package filter and feature flags
     package.unwrap_or("workspace").hash(&mut hasher);
     features.unwrap_or("").hash(&mut hasher);
     no_default_features.hash(&mut hasher);
     all_features.hash(&mut hasher);
-    manifest_path.display().to_string().hash(&mut hasher);
 
-    if let Ok(rustflags) = std::env::var("RUSTFLAGS") {
-        rustflags.hash(&mut hasher);
+    // 3. Manifest path and file contents
+    manifest_path.display().to_string().hash(&mut hasher);
+    if let Ok(manifest_bytes) = fs::read(manifest_path) {
+        manifest_bytes.hash(&mut hasher);
     }
-    if let Ok(toolchain) = std::env::var("RUSTUP_TOOLCHAIN") {
+
+    // 4. Cargo.lock full file contents (captures resolved dependency graph, versions, sources, active features)
+    let lock_file = manifest_path.parent().unwrap_or_else(|| Path::new(".")).join("Cargo.lock");
+    if let Ok(lock_bytes) = fs::read(&lock_file) {
+        lock_bytes.hash(&mut hasher);
+    }
+
+    // 5. Toolchain version and host details via rustc -Vv
+    if let Ok(out) = Command::new("rustc").arg("-Vv").output() {
+        if out.status.success() {
+            out.stdout.hash(&mut hasher);
+        }
+    } else if let Ok(toolchain) = std::env::var("RUSTUP_TOOLCHAIN") {
         toolchain.hash(&mut hasher);
     }
 
-    let lock_file = manifest_path.parent().unwrap_or_else(|| Path::new(".")).join("Cargo.lock");
-    if let Ok(metadata) = fs::metadata(&lock_file) {
-        if let Ok(mtime) = metadata.modified() {
-            format!("{:?}", mtime).hash(&mut hasher);
-        }
+    // 6. Flags affecting rustc compilation
+    if let Ok(rustflags) = std::env::var("RUSTFLAGS") {
+        rustflags.hash(&mut hasher);
+    }
+    if let Ok(encoded_flags) = std::env::var("CARGO_ENCODED_RUSTFLAGS") {
+        encoded_flags.hash(&mut hasher);
     }
 
     let hash = hasher.finish();
@@ -440,57 +460,85 @@ fn run_indexing(opts: IndexOptions) {
         std::process::exit(1);
     }
 
-    println!("\n{} Indexed workspace in {:.2} s", "Success:".green().bold(), elapsed.as_secs_f64());
-
-    if let Ok(ws) = WorkspaceIndex::open(&variant_out_dir) {
-        let stats = ws.stats();
-        println!(
-            "Indexed {} crate(s), {} total definitions, {} references, {} types ({:.2} KB total index size)",
-            stats.total_crates.to_string().bold(),
-            stats.total_defs.to_string().green(),
-            stats.total_refs.to_string().green(),
-            stats.total_types.to_string().green(),
-            stats.total_bytes as f64 / 1024.0
-        );
-
-        // Record build variant fingerprint manifest atomically in base_out_dir
-        let manifest_file = base_out_dir.join("ridx_manifest.json");
-        let manifest_data = serde_json::json!({
-            "version": "2.0",
-            "active_variant_id": variant_id,
-            "variant_dir": variant_rel_dir,
-            "workspace_root": work_dir.display().to_string(),
-            "manifest_path": manifest_path.display().to_string(),
-            "profile": profile_name,
-            "target": target,
-            "features": features,
-            "no_default_features": no_default_features,
-            "all_features": all_features,
-            "package_filter": package,
-            "timestamp_epoch_secs": std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_secs())
-                .unwrap_or(0),
-            "total_crates": stats.total_crates,
-            "total_defs": stats.total_defs,
-            "total_refs": stats.total_refs,
-            "total_types": stats.total_types,
-            "crates": stats.crate_summaries.iter().map(|c| serde_json::json!({
-                "name": c.name,
-                "version": c.version,
-                "file": c.path.file_name().and_then(|s| s.to_str()).unwrap_or(""),
-                "file_size": c.file_size,
-            })).collect::<Vec<_>>()
-        });
-
-        // Write to temp file then rename for atomic manifest swap
-        let tmp_manifest = base_out_dir.join(format!("ridx_manifest.json.tmp.{}", std::process::id()));
-        if let Ok(serialized) = serde_json::to_string_pretty(&manifest_data) {
-            if fs::write(&tmp_manifest, serialized).is_ok() {
-                let _ = fs::rename(&tmp_manifest, &manifest_file);
-            }
+    let ws = match WorkspaceIndex::open(&variant_out_dir) {
+        Ok(w) => w,
+        Err(e) => {
+            eprintln!("{}: failed to open generated variant index {:?}: {e}", "Error".red().bold(), variant_out_dir);
+            std::process::exit(1);
         }
+    };
+
+    let stats = ws.stats();
+
+    // Record build variant fingerprint manifest atomically in base_out_dir
+    let manifest_file = base_out_dir.join("ridx_manifest.json");
+    let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
+    let effective_target = target.or(env_target);
+
+    let manifest_data = serde_json::json!({
+        "version": "2.0",
+        "active_variant_id": variant_id,
+        "variant_dir": variant_rel_dir,
+        "workspace_root": work_dir.display().to_string(),
+        "manifest_path": manifest_path.display().to_string(),
+        "profile": profile_name,
+        "target": effective_target,
+        "features": features,
+        "no_default_features": no_default_features,
+        "all_features": all_features,
+        "package_filter": package,
+        "timestamp_epoch_secs": std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
+        "total_crates": stats.total_crates,
+        "total_defs": stats.total_defs,
+        "total_refs": stats.total_refs,
+        "total_types": stats.total_types,
+        "crates": stats.crate_summaries.iter().map(|c| serde_json::json!({
+            "name": c.name,
+            "version": c.version,
+            "file": c.path.file_name().and_then(|s| s.to_str()).unwrap_or(""),
+            "file_size": c.file_size,
+        })).collect::<Vec<_>>()
+    });
+
+    let serialized = match serde_json::to_string_pretty(&manifest_data) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("{}: failed to serialize variant manifest: {e}", "Error".red().bold());
+            std::process::exit(1);
+        }
+    };
+
+    // Write to temp file then rename for atomic manifest swap
+    let tmp_manifest = base_out_dir.join(format!("ridx_manifest.json.tmp.{}", std::process::id()));
+    if let Err(e) = fs::write(&tmp_manifest, serialized) {
+        eprintln!("{}: failed to write temporary variant manifest {:?}: {e}", "Error".red().bold(), tmp_manifest);
+        std::process::exit(1);
     }
+
+    if let Err(e) = fs::rename(&tmp_manifest, &manifest_file) {
+        let _ = fs::remove_file(&tmp_manifest);
+        eprintln!("{}: failed to publish active variant manifest {:?}: {e}", "Error".red().bold(), manifest_file);
+        std::process::exit(1);
+    }
+
+    println!(
+        "\n{} Indexed workspace in {:.2} s (active variant: {})",
+        "Success:".green().bold(),
+        elapsed.as_secs_f64(),
+        variant_id.cyan().bold()
+    );
+
+    println!(
+        "Indexed {} crate(s), {} total definitions, {} references, {} types ({:.2} KB total index size)",
+        stats.total_crates.to_string().bold(),
+        stats.total_defs.to_string().green(),
+        stats.total_refs.to_string().green(),
+        stats.total_types.to_string().green(),
+        stats.total_bytes as f64 / 1024.0
+    );
 }
 
 fn main() {

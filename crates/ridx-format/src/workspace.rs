@@ -161,19 +161,28 @@ impl WorkspaceIndex {
         // Check if an active build variant manifest exists
         let manifest_file = search_dir.join("ridx_manifest.json");
         let (scan_dir, manifest_info) = if manifest_file.is_file() {
-            if let Ok(content) = fs::read(&manifest_file) {
-                if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
-                    let vdir = search_dir.join(&manifest.variant_dir);
-                    let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
-                    if vdir.is_dir() {
-                        (vdir, Some((manifest_file, mtime, manifest.active_variant_id)))
-                    } else {
-                        (search_dir.clone(), Some((manifest_file, mtime, manifest.active_variant_id)))
-                    }
-                } else {
-                    (search_dir.clone(), None)
+            let content = fs::read(&manifest_file)?;
+            let manifest = serde_json::from_slice::<VariantManifest>(&content).map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Failed to parse variant manifest {:?}: {e}", manifest_file),
+                )
+            })?;
+            let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
+            if !manifest.active_variant_id.is_empty() {
+                let vdir = search_dir.join(&manifest.variant_dir);
+                if !vdir.is_dir() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::NotFound,
+                        format!(
+                            "Active variant directory {:?} specified in {:?} does not exist. Run 'ridx index' to build this variant.",
+                            vdir, manifest_file
+                        ),
+                    ));
                 }
+                (vdir, Some((manifest_file, mtime, manifest.active_variant_id)))
             } else {
+                // Legacy manifest without active_variant_id: scan search_dir directly
                 (search_dir.clone(), None)
             }
         } else {
