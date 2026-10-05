@@ -1,13 +1,3 @@
-/*
- * rust-intelligence — Compiler-driven zero-memory Rust code intelligence
- * Copyright (c) 2026 Alexander Panasenko
- *
- * Contact: alex@prod.codes
- * Author: https://prod.codes/about/
- * Project: https://github.com/alex09x/rust-intelligence
- * SPDX-License-Identifier: MIT OR Apache-2.0
- */
-
 //! Source provenance, hash resolution, and shard metadata loading.
 
 use super::manifest::DependencyShardInfo;
@@ -82,14 +72,10 @@ fn file_entry_matches(
     if entry_str.is_empty() {
         return false;
     }
-    // 1. Literal string match
-    if entry_str == req_path.to_str().unwrap_or("") {
-        return true;
-    }
 
     let entry_p = Path::new(entry_str);
 
-    // 2. Resolve original uncollapsed entry path under reader's origin
+    // 1. Resolve original uncollapsed entry path under reader's origin
     let entry_orig = if entry_p.is_absolute() {
         entry_p.to_path_buf()
     } else if let Some(orig) = reader_origin {
@@ -98,7 +84,7 @@ fn file_entry_matches(
         entry_p.to_path_buf()
     };
 
-    // 3. Resolve canonical identities on the filesystem before any lexical collapse
+    // 2. Resolve canonical identities on the filesystem before any lexical collapse
     let entry_canon = entry_orig.canonicalize().ok();
     let effective_req_canon = req_canon.map(|p| p.to_path_buf()).or_else(|| {
         if req_path.is_absolute() {
@@ -108,7 +94,7 @@ fn file_entry_matches(
         }
     });
 
-    // 4. Authoritative filesystem identity comparison
+    // 3. Authoritative filesystem identity comparison
     if let (Some(ref c_entry), Some(ref c_req)) = (&entry_canon, &effective_req_canon) {
         if c_entry == c_req {
             return true;
@@ -116,6 +102,11 @@ fn file_entry_matches(
         // When both filesystem identities are known and unequal,
         // lexical collapse MUST NOT override known unequal canonical paths.
         return false;
+    }
+
+    // 4. Literal string match (only when canonical comparison did not rule it out)
+    if entry_str == req_path.to_str().unwrap_or("") {
+        return true;
     }
 
     // 5. Lexical fallback: only allowed where it cannot reinterpret a symlink traversal
@@ -164,16 +155,18 @@ impl WorkspaceIndex {
     /// Returns the file modification timestamp of the index shard containing the given source file.
     pub fn shard_mtime_for_file(&self, file_path: &str) -> Option<std::time::SystemTime> {
         let p = Path::new(file_path);
-        let ws_abs = if p.is_relative() {
-            self.workspace_root
-                .as_ref()
-                .map(|ws_root| ws_root.join(p))
-                .or_else(|| self.root_dir.as_ref().map(|rdir| rdir.join(p)))
+        let explicit_origin = self.workspace_root.as_deref().or(self.root_dir.as_deref());
+
+        let (ws_abs, req_canon) = if p.is_absolute() {
+            (None, p.canonicalize().ok())
+        } else if let Some(origin) = explicit_origin {
+            let abs = origin.join(p);
+            let canon = abs.canonicalize().ok();
+            (Some(abs), canon)
         } else {
-            None
+            (None, p.canonicalize().ok())
         };
-        let ws_canon = ws_abs.as_ref().and_then(|a| a.canonicalize().ok());
-        let req_canon = p.canonicalize().ok().or_else(|| ws_canon.clone());
+        let ws_canon = req_canon.clone();
 
         let mut candidate_indices: Vec<usize> = Vec::with_capacity(self.readers.len());
         if let Some(ref c_p) = req_canon {
@@ -187,7 +180,17 @@ impl WorkspaceIndex {
                 }
             }
         }
-        if p.is_absolute() {
+        if let Some(ref abs) = ws_abs {
+            let norm_abs = normalize_path(abs);
+            for (i, _) in self.readers.iter().enumerate() {
+                if let Some(Some(ref root)) = self.source_roots.get(i) {
+                    let norm_root = normalize_path(root);
+                    if norm_abs.starts_with(&norm_root) && !candidate_indices.contains(&i) {
+                        candidate_indices.push(i);
+                    }
+                }
+            }
+        } else if p.is_absolute() {
             let norm_p = normalize_path(p);
             for (i, _) in self.readers.iter().enumerate() {
                 if let Some(Some(ref root)) = self.source_roots.get(i) {
@@ -266,16 +269,18 @@ impl WorkspaceIndex {
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
     pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
         let p = Path::new(file_path);
-        let ws_abs = if p.is_relative() {
-            self.workspace_root
-                .as_ref()
-                .map(|ws_root| ws_root.join(p))
-                .or_else(|| self.root_dir.as_ref().map(|rdir| rdir.join(p)))
+        let explicit_origin = self.workspace_root.as_deref().or(self.root_dir.as_deref());
+
+        let (ws_abs, req_canon) = if p.is_absolute() {
+            (None, p.canonicalize().ok())
+        } else if let Some(origin) = explicit_origin {
+            let abs = origin.join(p);
+            let canon = abs.canonicalize().ok();
+            (Some(abs), canon)
         } else {
-            None
+            (None, p.canonicalize().ok())
         };
-        let ws_canon = ws_abs.as_ref().and_then(|a| a.canonicalize().ok());
-        let req_canon = p.canonicalize().ok().or_else(|| ws_canon.clone());
+        let ws_canon = req_canon.clone();
 
         // Order candidate readers:
         // 1. Dependency readers whose source_root contains p
@@ -293,7 +298,17 @@ impl WorkspaceIndex {
                 }
             }
         }
-        if p.is_absolute() {
+        if let Some(ref abs) = ws_abs {
+            let norm_abs = normalize_path(abs);
+            for (i, _) in self.readers.iter().enumerate() {
+                if let Some(Some(ref root)) = self.source_roots.get(i) {
+                    let norm_root = normalize_path(root);
+                    if norm_abs.starts_with(&norm_root) && !candidate_indices.contains(&i) {
+                        candidate_indices.push(i);
+                    }
+                }
+            }
+        } else if p.is_absolute() {
             let norm_p = normalize_path(p);
             for (i, _) in self.readers.iter().enumerate() {
                 if let Some(Some(ref root)) = self.source_roots.get(i) {
