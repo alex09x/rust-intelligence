@@ -76,6 +76,17 @@ impl OverlayManager {
         self.overlays.remove(file_path);
     }
 
+    pub fn rename(&mut self, old_file_path: &str, new_uri: &str, new_file_path: &str) -> bool {
+        if let Some(mut overlay) = self.overlays.remove(old_file_path) {
+            overlay.uri = new_uri.to_string();
+            overlay.file_path = new_file_path.to_string();
+            self.overlays.insert(new_file_path.to_string(), overlay);
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn get(&self, file_path: &str) -> Option<&DocumentOverlay> {
         self.overlays.get(file_path)
     }

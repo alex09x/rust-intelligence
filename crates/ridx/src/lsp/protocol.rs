@@ -168,3 +168,48 @@ pub fn send_response<W: Write>(writer: &mut W, response: &Value) -> io::Result<(
     writer.flush()?;
     Ok(())
 }
+
+#[allow(dead_code)]
+pub fn send_log_message<W: Write>(writer: &mut W, msg_type: i32, message: &str) -> io::Result<()> {
+    let notif = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "window/logMessage",
+        "params": {
+            "type": msg_type,
+            "message": message
+        }
+    });
+    send_response(writer, &notif)
+}
+
+#[allow(dead_code)]
+pub fn send_work_done_progress<W: Write>(
+    writer: &mut W,
+    token: &Value,
+    kind: &str,
+    title: Option<&str>,
+    message: Option<&str>,
+    percentage: Option<u32>,
+) -> io::Result<()> {
+    let mut value = serde_json::json!({
+        "kind": kind
+    });
+    if let Some(t) = title {
+        value["title"] = serde_json::Value::String(t.to_string());
+    }
+    if let Some(m) = message {
+        value["message"] = serde_json::Value::String(m.to_string());
+    }
+    if let Some(p) = percentage {
+        value["percentage"] = serde_json::Value::Number(p.into());
+    }
+    let notif = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "$/progress",
+        "params": {
+            "token": token,
+            "value": value
+        }
+    });
+    send_response(writer, &notif)
+}

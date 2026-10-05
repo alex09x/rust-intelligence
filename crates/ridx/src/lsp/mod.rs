@@ -183,6 +183,17 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
                                 "workspaceFolders": {
                                     "supported": true,
                                     "changeNotifications": true
+                                },
+                                "fileOperations": {
+                                    "didCreate": {
+                                        "filters": [{ "pattern": { "glob": "**/*.rs" } }]
+                                    },
+                                    "didRename": {
+                                        "filters": [{ "pattern": { "glob": "**/*.rs" } }]
+                                    },
+                                    "didDelete": {
+                                        "filters": [{ "pattern": { "glob": "**/*.rs" } }]
+                                    }
                                 }
                             },
                             "definitionProvider": true,
@@ -232,6 +243,57 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
             "workspace/didChangeWatchedFiles" => {
                 if let Some(ref mut ws) = workspace {
                     sync_reloaded_index(ws, &mut overlay_mgr);
+                }
+            }
+
+            "workspace/didRenameFiles" => {
+                if let Some(files) = msg["params"]["files"].as_array() {
+                    for op in files {
+                        let old_uri = op["oldUri"].as_str().unwrap_or("");
+                        let new_uri = op["newUri"].as_str().unwrap_or("");
+                        let old_path = uri_to_path(old_uri);
+                        let new_path = uri_to_path(new_uri);
+                        overlay_mgr.rename(&old_path, new_uri, &new_path);
+                    }
+                }
+                if let Some(ref mut ws) = workspace {
+                    sync_reloaded_index(ws, &mut overlay_mgr);
+                }
+            }
+
+            "workspace/didDeleteFiles" => {
+                if let Some(files) = msg["params"]["files"].as_array() {
+                    for op in files {
+                        let uri = op["uri"].as_str().unwrap_or("");
+                        let path = uri_to_path(uri);
+                        overlay_mgr.close(&path);
+                    }
+                }
+                if let Some(ref mut ws) = workspace {
+                    sync_reloaded_index(ws, &mut overlay_mgr);
+                }
+            }
+
+            "workspace/didCreateFiles" => {
+                if let Some(ref mut ws) = workspace {
+                    sync_reloaded_index(ws, &mut overlay_mgr);
+                }
+            }
+
+            "workspace/didChangeConfiguration" => {
+                if let Some(ref mut ws) = workspace {
+                    sync_reloaded_index(ws, &mut overlay_mgr);
+                }
+            }
+
+            "window/workDoneProgress/create" => {
+                if let Some(id) = id {
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": Value::Null
+                    });
+                    send_response(&mut writer, &resp)?;
                 }
             }
 
@@ -892,5 +954,136 @@ mod tests {
             res.unwrap_err().to_string(),
             "exit notification received before shutdown"
         );
+    }
+
+    #[test]
+    fn test_lsp_server_stream_file_operations_rename_and_delete() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        let old_uri = "file:///tmp/old_file.rs";
+        let new_uri = "file:///tmp/new_file.rs";
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": old_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": "fn old_func() {}\n"
+                }
+            }
+        })));
+        // Rename old_file to new_file
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "workspace/didRenameFiles",
+            "params": {
+                "files": [
+                    { "oldUri": old_uri, "newUri": new_uri }
+                ]
+            }
+        })));
+        // Query symbols on new_file
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/documentSymbol",
+            "params": {
+                "textDocument": { "uri": new_uri }
+            }
+        })));
+        // Delete new_file
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "workspace/didDeleteFiles",
+            "params": {
+                "files": [
+                    { "uri": new_uri }
+                ]
+            }
+        })));
+        // Query symbols on new_file again
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "textDocument/documentSymbol",
+            "params": {
+                "textDocument": { "uri": new_uri }
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 4);
+
+        // Response 2 (after rename) should contain old_func
+        let sym_resp = &responses[1];
+        assert_eq!(sym_resp["id"], 2);
+        let symbols = sym_resp["result"].as_array().expect("array of symbols");
+        assert_eq!(symbols.len(), 1);
+        assert_eq!(symbols[0]["name"], "old_func");
+
+        // Response 3 (after delete) should be empty
+        let sym_resp_del = &responses[2];
+        assert_eq!(sym_resp_del["id"], 3);
+        let symbols_del = sym_resp_del["result"].as_array().expect("empty array");
+        assert!(symbols_del.is_empty());
+    }
+
+    #[test]
+    fn test_lsp_server_stream_work_done_progress_create() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 20,
+            "method": "window/workDoneProgress/create",
+            "params": { "token": "token-xyz" }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 21,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 3);
+
+        let prog_resp = &responses[1];
+        assert_eq!(prog_resp["id"], 20);
+        assert_eq!(prog_resp["result"], Value::Null);
     }
 }
