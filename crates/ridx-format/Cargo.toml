@@ -1,0 +1,14 @@
+[package]
+name = "ridx-format"
+version = "0.1.0"
+edition = "2021"
+description = "Fast, compact, zero-copy binary index format for Rust Intelligence"
+authors = ["Alexander Panasenko <alex@prod.codes>"]
+
+[dependencies]
+memmap2 = "0.9"
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]

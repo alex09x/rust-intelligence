@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "crates/ridx-format",
+    "crates/ridx-driver",
+    "crates/ridx",
+]
+resolver = "2"
