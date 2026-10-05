@@ -245,6 +245,18 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
                                     ]
                                 },
                                 "full": true
+                            },
+                            "renameProvider": {
+                                "prepareProvider": true
+                            },
+                            "codeActionProvider": {
+                                "codeActionKinds": [
+                                    "quickfix",
+                                    "refactor",
+                                    "refactor.extract",
+                                    "source.organizeImports"
+                                ],
+                                "resolveProvider": true
                             }
                         },
                         "serverInfo": {
@@ -637,6 +649,55 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
             "textDocument/semanticTokens/full" => {
                 if let Some(id) = id {
                     let result = handle_semantic_tokens_full(&msg, &overlay_mgr);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/prepareRename" => {
+                if let Some(id) = id {
+                    let result =
+                        handle_prepare_rename(&msg, workspace.as_ref(), &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/rename" => {
+                if let Some(id) = id {
+                    let result = handle_rename(&msg, workspace.as_ref(), &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/codeAction" => {
+                if let Some(id) = id {
+                    let result = handle_code_action(&msg, &overlay_mgr);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "codeAction/resolve" => {
+                if let Some(id) = id {
+                    let result = handle_code_action_resolve(&msg);
                     let resp = json!({
                         "jsonrpc": "2.0",
                         "id": id,
@@ -1581,5 +1642,121 @@ mod tests {
         assert_eq!(sem_resp["id"], 52);
         let sem_data = sem_resp["result"]["data"].as_array().expect("data array");
         assert!(!sem_data.is_empty());
+    }
+
+    #[test]
+    fn test_lsp_server_stream_stage5_safe_code_changes() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        let doc_uri = "file:///tmp/stage5_test.rs";
+        let code = "fn main() {\n    let mut counter = 0;\n    counter += 1;\n}\n";
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": doc_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": code
+                }
+            }
+        })));
+        // 1. prepareRename
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 60,
+            "method": "textDocument/prepareRename",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "position": { "line": 1, "character": 12 }
+            }
+        })));
+        // 2. rename
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 61,
+            "method": "textDocument/rename",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "position": { "line": 1, "character": 12 },
+                "newName": "total_count"
+            }
+        })));
+        // 3. codeAction
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 62,
+            "method": "textDocument/codeAction",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "range": {
+                    "start": { "line": 1, "character": 4 },
+                    "end": { "line": 1, "character": 20 }
+                },
+                "context": {
+                    "diagnostics": [],
+                    "only": ["source.organizeImports", "refactor.extract"]
+                }
+            }
+        })));
+        // 4. codeAction/resolve
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 63,
+            "method": "codeAction/resolve",
+            "params": {
+                "title": "Organize imports",
+                "kind": "source.organizeImports"
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 64,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 6);
+
+        // Verify prepareRename
+        let prep_resp = &responses[1];
+        assert_eq!(prep_resp["id"], 60);
+        assert_eq!(prep_resp["result"]["placeholder"], "counter");
+
+        // Verify rename
+        let rename_resp = &responses[2];
+        assert_eq!(rename_resp["id"], 61);
+        let changes = rename_resp["result"]["changes"]
+            .as_object()
+            .expect("changes map");
+        let edits = changes[doc_uri].as_array().expect("edits list");
+        assert!(!edits.is_empty());
+        assert_eq!(edits[0]["newText"], "total_count");
+
+        // Verify codeAction
+        let action_resp = &responses[3];
+        assert_eq!(action_resp["id"], 62);
+        let actions = action_resp["result"].as_array().expect("actions list");
+        assert!(!actions.is_empty());
+
+        // Verify codeAction/resolve
+        let resolve_resp = &responses[4];
+        assert_eq!(resolve_resp["id"], 63);
+        assert_eq!(resolve_resp["result"]["title"], "Organize imports");
     }
 }

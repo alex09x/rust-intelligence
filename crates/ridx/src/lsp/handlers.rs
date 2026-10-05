@@ -1048,3 +1048,339 @@ pub fn handle_semantic_tokens_full(msg: &Value, overlay_mgr: &OverlayManager) ->
 
     json!({ "data": data })
 }
+
+fn is_rust_keyword(name: &str) -> bool {
+    matches!(
+        name,
+        "as" | "break"
+            | "const"
+            | "continue"
+            | "crate"
+            | "else"
+            | "enum"
+            | "extern"
+            | "false"
+            | "fn"
+            | "for"
+            | "if"
+            | "impl"
+            | "in"
+            | "let"
+            | "loop"
+            | "match"
+            | "mod"
+            | "move"
+            | "mut"
+            | "pub"
+            | "ref"
+            | "return"
+            | "self"
+            | "Self"
+            | "static"
+            | "struct"
+            | "super"
+            | "trait"
+            | "true"
+            | "type"
+            | "unsafe"
+            | "use"
+            | "where"
+            | "while"
+            | "async"
+            | "await"
+            | "dyn"
+            | "abstract"
+            | "become"
+            | "box"
+            | "do"
+            | "final"
+            | "macro"
+            | "override"
+            | "priv"
+            | "typeof"
+            | "unsized"
+            | "virtual"
+            | "yield"
+            | "try"
+    )
+}
+
+fn is_valid_rust_ident(name: &str) -> bool {
+    if name.is_empty() || is_rust_keyword(name) {
+        return false;
+    }
+    let mut chars = name.chars();
+    match chars.next() {
+        Some(c) if c == '_' || c.is_alphabetic() => (),
+        _ => return false,
+    }
+    chars.all(|c| c == '_' || c.is_alphanumeric())
+}
+
+pub fn handle_prepare_rename(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+    let line_1based = line_0based + 1;
+
+    let overlay_opt = overlay_mgr.get(&file);
+    let col_1based = if let Some(overlay) = overlay_opt {
+        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+    } else {
+        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+    };
+
+    // 1. Overlay definition
+    if let Some(def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+        if is_valid_rust_ident(&def.name) {
+            let (sl, sc) = (def.start_line, def.start_col);
+            let (el, ec) = (def.end_line, def.end_col);
+            let start_char = if let Some(ov) = overlay_opt {
+                ov.char_col_to_utf16_col(sl, sc)
+            } else {
+                conv.char_col_to_utf16_col(&file, sl, sc)
+            };
+            let end_char = if let Some(ov) = overlay_opt {
+                ov.char_col_to_utf16_col(el, ec)
+            } else {
+                conv.char_col_to_utf16_col(&file, el, ec)
+            };
+            return json!({
+                "range": {
+                    "start": { "line": sl.saturating_sub(1), "character": start_char },
+                    "end": { "line": el.saturating_sub(1), "character": end_char }
+                },
+                "placeholder": def.name
+            });
+        }
+    }
+
+    // 2. Workspace definition
+    if let Some(ws) = workspace {
+        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+        if !is_dirty {
+            if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based) {
+                if is_valid_rust_ident(def.name) {
+                    let sl = def.start_line.saturating_sub(1);
+                    let el = def.end_line.saturating_sub(1);
+                    let sc = conv.char_col_to_utf16_col(&file, def.start_line, def.start_col);
+                    let ec = conv.char_col_to_utf16_col(&file, def.end_line, def.end_col);
+                    return json!({
+                        "range": {
+                            "start": { "line": sl, "character": sc },
+                            "end": { "line": el, "character": ec }
+                        },
+                        "placeholder": def.name
+                    });
+                }
+            }
+        }
+    }
+
+    Value::Null
+}
+
+pub fn handle_rename(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let new_name = msg["params"]["newName"].as_str().unwrap_or("");
+    if !is_valid_rust_ident(new_name) {
+        return json!({ "changes": {} });
+    }
+
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+    let line_1based = line_0based + 1;
+
+    let overlay_opt = overlay_mgr.get(&file);
+    let col_1based = if let Some(overlay) = overlay_opt {
+        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+    } else {
+        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+    };
+
+    let mut changes_map: std::collections::HashMap<String, Vec<Value>> =
+        std::collections::HashMap::new();
+
+    // 1. Overlay definition
+    if let Some(def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+        let def_uri = path_to_uri(&def.file);
+        let start_char = if let Some(ov) = overlay_opt {
+            ov.char_col_to_utf16_col(def.start_line, def.start_col)
+        } else {
+            conv.char_col_to_utf16_col(&def.file, def.start_line, def.start_col)
+        };
+        let end_char = if let Some(ov) = overlay_opt {
+            ov.char_col_to_utf16_col(def.end_line, def.end_col)
+        } else {
+            conv.char_col_to_utf16_col(&def.file, def.end_line, def.end_col)
+        };
+        changes_map.entry(def_uri).or_default().push(json!({
+            "range": {
+                "start": { "line": def.start_line.saturating_sub(1), "character": start_char },
+                "end": { "line": def.end_line.saturating_sub(1), "character": end_char }
+            },
+            "newText": new_name
+        }));
+    }
+
+    // 2. References from workspace index
+    if let Some(ws) = workspace {
+        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+        if !is_dirty {
+            if let Some(loc_refs) = ws.find_references_at(&file, line_1based, col_1based) {
+                // Include target definition if not already added
+                if !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
+                    let decl_path = loc_refs.target_resolved_path();
+                    let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);
+                    let decl_uri = path_to_uri(decl_str);
+                    let sc = conv.char_col_to_utf16_col(
+                        decl_str,
+                        loc_refs.target_line,
+                        loc_refs.target_col,
+                    );
+                    let ec = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
+                        conv.char_col_to_utf16_col(
+                            decl_str,
+                            loc_refs.target_end_line,
+                            loc_refs.target_end_col,
+                        )
+                    } else {
+                        sc + (loc_refs.target_symbol.encode_utf16().count() as u32)
+                    };
+                    let sl = loc_refs.target_line.saturating_sub(1);
+                    let el = if loc_refs.target_end_line > 0 {
+                        loc_refs.target_end_line.saturating_sub(1)
+                    } else {
+                        sl
+                    };
+                    let edits = changes_map.entry(decl_uri).or_default();
+                    if !edits.iter().any(|e| {
+                        e["range"]["start"]["line"] == sl && e["range"]["start"]["character"] == sc
+                    }) {
+                        edits.push(json!({
+                            "range": {
+                                "start": { "line": sl, "character": sc },
+                                "end": { "line": el, "character": ec }
+                            },
+                            "newText": new_name
+                        }));
+                    }
+                }
+
+                for r in loc_refs.references {
+                    let r_path = r.resolved_path();
+                    let r_str = r_path.to_str().unwrap_or(r.file);
+                    let r_uri = path_to_uri(r_str);
+                    let span = r.span;
+                    let sc = conv.char_col_to_utf16_col(r_str, span.start_line(), span.start_col());
+                    let ec = conv.char_col_to_utf16_col(r_str, span.end_line(), span.end_col());
+                    let sl = span.start_line().saturating_sub(1);
+                    let el = span.end_line().saturating_sub(1);
+                    let edits = changes_map.entry(r_uri).or_default();
+                    if !edits.iter().any(|e| {
+                        e["range"]["start"]["line"] == sl && e["range"]["start"]["character"] == sc
+                    }) {
+                        edits.push(json!({
+                            "range": {
+                                "start": { "line": sl, "character": sc },
+                                "end": { "line": el, "character": ec }
+                            },
+                            "newText": new_name
+                        }));
+                    }
+                }
+            }
+        }
+    }
+
+    json!({ "changes": changes_map })
+}
+
+pub fn handle_code_action(msg: &Value, _overlay_mgr: &OverlayManager) -> Value {
+    let mut actions = Vec::new();
+
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let only = msg["params"]["context"]["only"].as_array();
+
+    let wants_kind = |kind: &str| -> bool {
+        if let Some(list) = only {
+            list.iter().any(|k| {
+                if let Some(s) = k.as_str() {
+                    kind.starts_with(s) || s.starts_with(kind)
+                } else {
+                    false
+                }
+            })
+        } else {
+            true
+        }
+    };
+
+    // 1. Organize imports code action
+    if wants_kind("source.organizeImports") {
+        actions.push(json!({
+            "title": "Organize imports",
+            "kind": "source.organizeImports",
+            "command": {
+                "title": "Organize Imports",
+                "command": "ridx.organizeImports",
+                "arguments": [uri]
+            }
+        }));
+    }
+
+    // 2. Refactor extract function/variable
+    if wants_kind("refactor.extract") {
+        actions.push(json!({
+            "title": "Extract variable",
+            "kind": "refactor.extract.variable",
+            "command": {
+                "title": "Extract Variable",
+                "command": "ridx.extractVariable",
+                "arguments": [uri, msg["params"]["range"]]
+            }
+        }));
+        actions.push(json!({
+            "title": "Extract function",
+            "kind": "refactor.extract.function",
+            "command": {
+                "title": "Extract Function",
+                "command": "ridx.extractFunction",
+                "arguments": [uri, msg["params"]["range"]]
+            }
+        }));
+    }
+
+    // 3. QuickFix for diagnostics in context
+    if wants_kind("quickfix") {
+        if let Some(diags) = msg["params"]["context"]["diagnostics"].as_array() {
+            for diag in diags {
+                let msg_text = diag["message"].as_str().unwrap_or("issue");
+                actions.push(json!({
+                    "title": format!("Fix: {msg_text}"),
+                    "kind": "quickfix",
+                    "diagnostics": [diag],
+                    "isPreferred": true
+                }));
+            }
+        }
+    }
+
+    json!(actions)
+}
+
+pub fn handle_code_action_resolve(msg: &Value) -> Value {
+    msg.get("params").cloned().unwrap_or(Value::Null)
+}
