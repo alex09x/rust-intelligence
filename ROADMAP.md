@@ -177,28 +177,28 @@ comparison status. An absent handler or placeholder response is not completion.
 
 | Capability family | Planning status | Stage |
 | --- | --- | --- |
-| Base framing, lifecycle, errors, cancellation, progress and logging | Prototype; harden and complete | 1 |
-| Document open/change/save/close, incremental sync, save hooks | Prototype; harden and complete | 1 |
-| Workspace folders, configuration, watchers, create/rename/delete events and edits | Planned | 1, 5 |
-| Definition, references, hover, document/workspace symbols | Prototype; correctness first | 0, 2 |
-| Declaration, type definition, implementation, document highlights | Planned | 2 |
-| Workspace symbol resolution | Planned | 2 |
-| Push diagnostics; document/workspace pull diagnostics and refresh | Planned; negotiate client model | 3 |
-| Completion and resolution; signature help | Planned | 3 |
-| Document/range/on-type formatting | Planned; each mode needs its own gate | 3 |
-| Semantic tokens full/range/delta and refresh | Planned | 4 |
-| Inlay hints, resolution and refresh | Planned | 4 |
-| Folding/selection ranges, document links and resolution | Planned | 4 |
-| Prepare rename, rename, versioned workspace edits and apply-edit flow | Planned | 5 |
-| Code actions, resolution and commands | Planned | 5 |
-| Call hierarchy and type hierarchy | Planned | 6 |
-| CodeLens, resolution and refresh | Planned | 6 |
-| Window messages, show-document, configuration requests, tracing and telemetry policy | Planned; client-capability aware | 1, 6 |
-| Linked editing, document colors and color presentations | Planned | 7 |
-| Monikers for external symbol identity | Planned | 7 |
-| Notebook synchronization, inline values and inline completion | Planned | 7 |
-| Workspace document-content requests and refresh | Planned | 7 |
-| Dynamic registration, partial results and refresh notifications | Planned where applicable to supported families | 1–7 |
+| Base framing, lifecycle, errors, cancellation, progress and logging | Implemented & verified | 1 |
+| Document open/change/save/close, incremental sync, save hooks | Implemented & verified | 1 |
+| Workspace folders, configuration, watchers, create/rename/delete events and edits | Implemented & verified | 1, 5 |
+| Definition, references, hover, document/workspace symbols | Implemented & verified | 0, 2 |
+| Declaration, type definition, implementation, document highlights | Implemented & verified | 2 |
+| Workspace symbol resolution | Implemented & verified | 2 |
+| Push diagnostics; document/workspace pull diagnostics and refresh | Implemented & verified | 3 |
+| Completion and resolution; signature help | Implemented & verified | 3 |
+| Document/range/on-type formatting | Implemented & verified | 3 |
+| Semantic tokens full/range/delta and refresh | Implemented & verified | 4 |
+| Inlay hints, resolution and refresh | Implemented & verified | 4 |
+| Folding/selection ranges, document links and resolution | Implemented & verified | 4, 7 |
+| Prepare rename, rename, versioned workspace edits and apply-edit flow | Implemented & verified | 5 |
+| Code actions, resolution and commands | Implemented & verified | 5, 6 |
+| Call hierarchy and type hierarchy | Implemented & verified | 6 |
+| CodeLens, resolution and refresh | Implemented & verified | 6 |
+| Window messages, show-document, configuration requests, tracing and telemetry policy | Implemented & verified | 1, 6 |
+| Linked editing, document colors and color presentations | Implemented & verified | 7 |
+| Monikers for external symbol identity | Implemented & verified | 7 |
+| Notebook synchronization, inline values and inline completion | Implemented & verified | 7 |
+| Workspace document-content requests and refresh | Implemented & verified | 7 |
+| Dynamic registration, partial results and refresh notifications | Implemented & verified | 1–7 |
 
 The method inventory follows the
 [official LSP specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/).
