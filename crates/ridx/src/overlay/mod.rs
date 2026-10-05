@@ -136,17 +136,75 @@ impl DocumentOverlay {
         self.compiled_text = Some(text);
     }
 
-    /// Re-indexes line boundaries, lexical scopes, and declarations.
-    fn reparse(&mut self) {
+    /// Rebuilds line boundary byte offsets.
+    pub(crate) fn rebuild_line_starts(&mut self) {
         self.line_starts.clear();
-
-        // 1. Build line index
         self.line_starts.push(0);
         for (i, &b) in self.text.as_bytes().iter().enumerate() {
             if b == b'\n' {
                 self.line_starts.push(i + 1);
             }
         }
+    }
+
+    /// Applies incremental or full LSP content changes in sequence and reparses the overlay.
+    pub fn apply_content_changes(&mut self, version: i32, changes: &[serde_json::Value]) {
+        self.version = version;
+        for change in changes {
+            if let Some(range) = change.get("range") {
+                let Some(text_to_insert) = change.get("text").and_then(|t| t.as_str()) else {
+                    continue;
+                };
+                let start_line = range
+                    .get("start")
+                    .and_then(|p| p.get("line"))
+                    .and_then(|l| l.as_u64())
+                    .unwrap_or(0) as u32;
+                let start_char = range
+                    .get("start")
+                    .and_then(|p| p.get("character"))
+                    .and_then(|c| c.as_u64())
+                    .unwrap_or(0) as u32;
+                let end_line = range
+                    .get("end")
+                    .and_then(|p| p.get("line"))
+                    .and_then(|l| l.as_u64())
+                    .unwrap_or(0) as u32;
+                let end_char = range
+                    .get("end")
+                    .and_then(|p| p.get("character"))
+                    .and_then(|c| c.as_u64())
+                    .unwrap_or(0) as u32;
+
+                let start_byte = self
+                    .position_to_byte_offset(start_line, start_char)
+                    .min(self.text.len());
+                let end_byte = self
+                    .position_to_byte_offset(end_line, end_char)
+                    .min(self.text.len())
+                    .max(start_byte);
+
+                let mut new_text = String::with_capacity(
+                    start_byte + text_to_insert.len() + (self.text.len() - end_byte),
+                );
+                new_text.push_str(&self.text[..start_byte]);
+                new_text.push_str(text_to_insert);
+                new_text.push_str(&self.text[end_byte..]);
+                self.text = new_text;
+                self.rebuild_line_starts();
+            } else if let Some(full_text) = change.get("text").and_then(|t| t.as_str()) {
+                self.text = full_text.to_string();
+                self.rebuild_line_starts();
+            }
+        }
+        self.content_hash = normalized_source_hash(self.text.as_bytes());
+        self.reparse();
+    }
+
+    /// Re-indexes line boundaries, lexical scopes, and declarations.
+    fn reparse(&mut self) {
+        // 1. Build line index
+        self.rebuild_line_starts();
 
         // 2. Parse lexical scopes and symbols using error-tolerant token scanner
         let mut parser = OverlayParser::new(&self.text, &self.line_starts);
@@ -449,5 +507,85 @@ mod tests {
         assert_eq!(overlay_let.symbols.len(), 2);
         assert_eq!(overlay_let.symbols[0].name, "f");
         assert_eq!(overlay_let.symbols[1].name, "x");
+    }
+
+    #[test]
+    fn test_incremental_change_single_line() {
+        let initial =
+            "fn main() {\n    let old_name = 100;\n    let y = old_name;\n}\n".to_string();
+        let mut overlay = DocumentOverlay::new("file:///test/inc.rs", "src/inc.rs", 1, initial);
+
+        // Verify initial resolution
+        let def = overlay.find_definition_at(3, 15).expect("resolve old_name");
+        assert_eq!(def.name, "old_name");
+
+        // Incremental change 1: replace "old_name" with "new_var" on line 2 (0-based line 1, chars 8..16)
+        let change1 = serde_json::json!({
+            "range": {
+                "start": { "line": 1, "character": 8 },
+                "end": { "line": 1, "character": 16 }
+            },
+            "text": "new_var"
+        });
+
+        // Incremental change 2: replace "old_name" with "new_var" on line 3 (0-based line 2, chars 12..20)
+        let change2 = serde_json::json!({
+            "range": {
+                "start": { "line": 2, "character": 12 },
+                "end": { "line": 2, "character": 20 }
+            },
+            "text": "new_var"
+        });
+
+        overlay.apply_content_changes(2, &[change1, change2]);
+        assert_eq!(overlay.version, 2);
+        assert_eq!(
+            overlay.text,
+            "fn main() {\n    let new_var = 100;\n    let y = new_var;\n}\n"
+        );
+
+        // Verify resolution of new_var at line 3, col 15
+        let def = overlay.find_definition_at(3, 15).expect("resolve new_var");
+        assert_eq!(def.name, "new_var");
+        assert_eq!(def.start_line, 2);
+    }
+
+    #[test]
+    fn test_incremental_change_multiline_and_utf16() {
+        // Line 0: fn test() {
+        // Line 1:     let привет = "🚀";
+        // Line 2: }
+        let initial = "fn test() {\n    let привет = \"🚀\";\n}\n".to_string();
+        let mut overlay = DocumentOverlay::new("file:///test/utf16.rs", "src/utf16.rs", 1, initial);
+
+        // Replace "привет" (6 UTF-16 code units, starting at char 8) with "mir"
+        let change = serde_json::json!({
+            "range": {
+                "start": { "line": 1, "character": 8 },
+                "end": { "line": 1, "character": 14 }
+            },
+            "text": "mir"
+        });
+
+        overlay.apply_content_changes(2, &[change]);
+        assert_eq!(overlay.text, "fn test() {\n    let mir = \"🚀\";\n}\n");
+
+        let def = overlay.find_definition_at(2, 10).expect("resolve mir");
+        assert_eq!(def.name, "mir");
+    }
+
+    #[test]
+    fn test_incremental_change_full_fallback() {
+        let initial = "fn a() {}\n".to_string();
+        let mut overlay = DocumentOverlay::new("file:///test/full.rs", "src/full.rs", 1, initial);
+
+        let change = serde_json::json!({
+            "text": "fn b() {}\n"
+        });
+
+        overlay.apply_content_changes(2, &[change]);
+        assert_eq!(overlay.text, "fn b() {}\n");
+        assert_eq!(overlay.symbols.len(), 1);
+        assert_eq!(overlay.symbols[0].name, "b");
     }
 }

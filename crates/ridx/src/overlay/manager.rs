@@ -16,9 +16,24 @@ impl OverlayManager {
         }
     }
 
+    #[allow(dead_code)]
     pub fn update(&mut self, file_path: &str, version: i32, text: String) -> bool {
         if let Some(existing) = self.overlays.get_mut(file_path) {
             existing.update(version, text);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn apply_content_changes(
+        &mut self,
+        file_path: &str,
+        version: i32,
+        changes: &[serde_json::Value],
+    ) -> bool {
+        if let Some(existing) = self.overlays.get_mut(file_path) {
+            existing.apply_content_changes(version, changes);
             true
         } else {
             false

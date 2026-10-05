@@ -341,4 +341,30 @@ impl DocumentOverlay {
         }
         byte_offset
     }
+
+    /// Converts a 0-based LSP line and 0-based UTF-16 character column to a byte offset.
+    pub fn position_to_byte_offset(&self, line_0based: u32, utf16_col_0based: u32) -> usize {
+        let line_idx = line_0based as usize;
+        if line_idx >= self.line_starts.len() {
+            return self.text.len();
+        }
+        let start = self.line_starts[line_idx];
+        let end = if line_idx + 1 < self.line_starts.len() {
+            self.line_starts[line_idx + 1]
+        } else {
+            self.text.len()
+        };
+        let line_str = &self.text[start..end];
+
+        let mut cur_utf16 = 0;
+        let mut byte_offset = start;
+        for c in line_str.chars() {
+            if cur_utf16 >= utf16_col_0based {
+                break;
+            }
+            cur_utf16 += c.len_utf16() as u32;
+            byte_offset += c.len_utf8();
+        }
+        byte_offset
+    }
 }

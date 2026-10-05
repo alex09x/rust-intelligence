@@ -11,7 +11,7 @@ pub use protocol::*;
 use handlers::*;
 use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
-use std::io::{self, BufRead, Read};
+use std::io::{self, BufRead};
 use std::path::PathBuf;
 
 fn sync_reloaded_index(ws: &mut WorkspaceIndex, overlay_mgr: &mut crate::overlay::OverlayManager) {
@@ -37,13 +37,23 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
     let mut reader = stdin.lock();
     let stdout = io::stdout();
     let mut writer = stdout.lock();
+    run_lsp_server_stream(&mut reader, &mut writer, index_path)
+}
 
+/// Runs the LSP server over arbitrary reader and writer streams.
+pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
+    mut reader: R,
+    mut writer: W,
+    index_path: Option<PathBuf>,
+) -> io::Result<()> {
     let mut workspace: Option<WorkspaceIndex> = match index_path {
         Some(p) => WorkspaceIndex::open(&p).ok(),
         None => WorkspaceIndex::auto_discover().ok(),
     };
 
     let mut overlay_mgr = crate::overlay::OverlayManager::new();
+    let mut cancelled_requests: std::collections::HashSet<Value> = std::collections::HashSet::new();
+    let mut is_shutdown = false;
 
     loop {
         // Read headers
@@ -82,6 +92,41 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
         let method = msg.get("method").and_then(|m| m.as_str()).unwrap_or("");
         let id = msg.get("id").cloned();
 
+        // Enforce LSP lifecycle: reject requests after shutdown
+        if is_shutdown {
+            if method == "exit" {
+                return Ok(());
+            }
+            if let Some(ref req_id) = id {
+                let resp = json!({
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {
+                        "code": -32600,
+                        "message": "Server is shutting down"
+                    }
+                });
+                send_response(&mut writer, &resp)?;
+            }
+            continue;
+        }
+
+        // Handle request cancellation before dispatch
+        if let Some(ref req_id) = id {
+            if cancelled_requests.remove(req_id) {
+                let resp = json!({
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {
+                        "code": -32800,
+                        "message": "Request cancelled"
+                    }
+                });
+                send_response(&mut writer, &resp)?;
+                continue;
+            }
+        }
+
         // Automatically reload indices if files changed on disk and sync open overlay baselines
         if let Some(ref mut ws) = workspace {
             sync_reloaded_index(ws, &mut overlay_mgr);
@@ -95,13 +140,28 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
         match method {
             "initialize" => {
                 if workspace.is_none() {
-                    // Try to initialize from rootUri or rootPath
-                    if let Some(root_uri) = msg["params"]["rootUri"].as_str() {
-                        let path = uri_to_path(root_uri);
-                        workspace = WorkspaceIndex::open(&path).ok();
-                    } else if let Some(root_path) = msg["params"]["rootPath"].as_str() {
-                        workspace = WorkspaceIndex::open(root_path).ok();
+                    // 1. Try to initialize from workspaceFolders
+                    if let Some(folders) = msg["params"]["workspaceFolders"].as_array() {
+                        for folder in folders {
+                            if let Some(uri) = folder["uri"].as_str() {
+                                let path = uri_to_path(uri);
+                                if let Ok(ws) = WorkspaceIndex::open(&path) {
+                                    workspace = Some(ws);
+                                    break;
+                                }
+                            }
+                        }
                     }
+                    // 2. Try to initialize from rootUri or rootPath
+                    if workspace.is_none() {
+                        if let Some(root_uri) = msg["params"]["rootUri"].as_str() {
+                            let path = uri_to_path(root_uri);
+                            workspace = WorkspaceIndex::open(&path).ok();
+                        } else if let Some(root_path) = msg["params"]["rootPath"].as_str() {
+                            workspace = WorkspaceIndex::open(root_path).ok();
+                        }
+                    }
+                    // 3. Fallback to auto-discovery
                     if workspace.is_none() {
                         workspace = WorkspaceIndex::auto_discover().ok();
                     }
@@ -114,9 +174,15 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         "capabilities": {
                             "textDocumentSync": {
                                 "openClose": true,
-                                "change": 1, // Full document sync (TextDocumentSyncKind.Full)
+                                "change": 2, // Incremental document sync (TextDocumentSyncKind.Incremental)
                                 "save": {
                                     "includeText": true
+                                }
+                            },
+                            "workspace": {
+                                "workspaceFolders": {
+                                    "supported": true,
+                                    "changeNotifications": true
                                 }
                             },
                             "definitionProvider": true,
@@ -136,6 +202,37 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 
             "initialized" => {
                 // No-op notification from client
+            }
+
+            "$/cancelRequest" => {
+                if let Some(cancel_id) = msg["params"].get("id") {
+                    cancelled_requests.insert(cancel_id.clone());
+                    if cancelled_requests.len() > 1000 {
+                        cancelled_requests.clear();
+                    }
+                }
+            }
+
+            "workspace/didChangeWorkspaceFolders" => {
+                if let Some(added) = msg["params"]["event"]["added"].as_array() {
+                    if workspace.is_none() {
+                        for folder in added {
+                            if let Some(uri) = folder["uri"].as_str() {
+                                let path = uri_to_path(uri);
+                                if let Ok(ws) = WorkspaceIndex::open(&path) {
+                                    workspace = Some(ws);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            "workspace/didChangeWatchedFiles" => {
+                if let Some(ref mut ws) = workspace {
+                    sync_reloaded_index(ws, &mut overlay_mgr);
+                }
             }
 
             "textDocument/didOpen" => {
@@ -177,18 +274,10 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                     .as_i64()
                     .unwrap_or(1) as i32;
                 if let Some(changes) = msg["params"]["contentChanges"].as_array() {
-                    if let Some(last) = changes.last() {
-                        if let Some(text) = last["text"].as_str() {
-                            if !overlay_mgr.update(&file, version, text.to_string()) {
-                                overlay_mgr.open_with_provenance(
-                                    uri,
-                                    &file,
-                                    version,
-                                    text.to_string(),
-                                    false,
-                                );
-                            }
-                        }
+                    if !overlay_mgr.apply_content_changes(&file, version, changes) {
+                        let initial_text = std::fs::read_to_string(&file).unwrap_or_default();
+                        overlay_mgr.open_with_provenance(uri, &file, version, initial_text, false);
+                        overlay_mgr.apply_content_changes(&file, version, changes);
                     }
                 }
             }
@@ -274,6 +363,7 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
             }
 
             "shutdown" => {
+                is_shutdown = true;
                 if let Some(id) = id {
                     let resp = json!({
                         "jsonrpc": "2.0",
@@ -285,7 +375,13 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
             }
 
             "exit" => {
-                return Ok(());
+                if is_shutdown {
+                    return Ok(());
+                } else {
+                    return Err(io::Error::other(
+                        "exit notification received before shutdown",
+                    ));
+                }
             }
 
             _ => {
@@ -517,5 +613,284 @@ mod tests {
         );
 
         let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    fn make_lsp_msg(val: &Value) -> Vec<u8> {
+        let s = val.to_string();
+        format!("Content-Length: {}\r\n\r\n{}", s.len(), s).into_bytes()
+    }
+
+    fn parse_lsp_responses(bytes: &[u8]) -> Vec<Value> {
+        let mut results = Vec::new();
+        let mut cur = 0;
+        while cur < bytes.len() {
+            let slice = &bytes[cur..];
+            let Some(header_end) = slice.windows(4).position(|w| w == b"\r\n\r\n") else {
+                break;
+            };
+            let header_str = String::from_utf8_lossy(&slice[..header_end]);
+            let mut content_len = 0;
+            for line in header_str.lines() {
+                if let Some(rest) = line.strip_prefix("Content-Length:") {
+                    content_len = rest.trim().parse::<usize>().unwrap_or(0);
+                }
+            }
+            let body_start = cur + header_end + 4;
+            let body_end = body_start + content_len;
+            if body_end > bytes.len() {
+                break;
+            }
+            if let Ok(val) = serde_json::from_slice::<Value>(&bytes[body_start..body_end]) {
+                results.push(val);
+            }
+            cur = body_end;
+        }
+        results
+    }
+
+    #[test]
+    fn test_lsp_server_stream_initialize_and_capabilities() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "workspaceFolders": [
+                    { "uri": "file:///tmp/workspace", "name": "workspace" }
+                ],
+                "capabilities": {}
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "initialized",
+            "params": {}
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 2);
+
+        // Verify initialize response capabilities
+        let init_resp = &responses[0];
+        assert_eq!(init_resp["id"], 1);
+        let caps = &init_resp["result"]["capabilities"];
+        assert_eq!(caps["textDocumentSync"]["change"], 2); // Incremental sync
+        assert_eq!(caps["workspace"]["workspaceFolders"]["supported"], true);
+        assert_eq!(
+            caps["workspace"]["workspaceFolders"]["changeNotifications"],
+            true
+        );
+
+        // Verify shutdown response
+        let shut_resp = &responses[1];
+        assert_eq!(shut_resp["id"], 2);
+        assert_eq!(shut_resp["result"], Value::Null);
+    }
+
+    #[test]
+    fn test_lsp_server_stream_request_cancellation() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "$/cancelRequest",
+            "params": { "id": 100 }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 100,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": { "uri": "file:///tmp/dummy.rs" },
+                "position": { "line": 0, "character": 0 }
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 3);
+
+        // Response for request 100 should be error -32800 (Request cancelled)
+        let cancel_resp = &responses[1];
+        assert_eq!(cancel_resp["id"], 100);
+        assert_eq!(cancel_resp["error"]["code"], -32800);
+        assert_eq!(cancel_resp["error"]["message"], "Request cancelled");
+    }
+
+    #[test]
+    fn test_lsp_server_stream_incremental_sync_and_symbols() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        let doc_uri = "file:///tmp/test_doc.rs";
+        let initial_text = "fn main() {\n    let old_symbol = 1;\n}\n";
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": doc_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": initial_text
+                }
+            }
+        })));
+        // Incremental change: replace "old_symbol" (line 1, chars 8..18) with "new_symbol"
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didChange",
+            "params": {
+                "textDocument": {
+                    "uri": doc_uri,
+                    "version": 2
+                },
+                "contentChanges": [
+                    {
+                        "range": {
+                            "start": { "line": 1, "character": 8 },
+                            "end": { "line": 1, "character": 18 }
+                        },
+                        "text": "new_symbol"
+                    }
+                ]
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "textDocument/documentSymbol",
+            "params": {
+                "textDocument": { "uri": doc_uri }
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 11,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 3);
+
+        let sym_resp = &responses[1];
+        assert_eq!(sym_resp["id"], 10);
+        let symbols = sym_resp["result"].as_array().expect("array of symbols");
+        let found = symbols.iter().any(|s| s["name"] == "new_symbol");
+        assert!(
+            found,
+            "documentSymbol must reflect incrementally updated variable name"
+        );
+    }
+
+    #[test]
+    fn test_lsp_server_stream_shutdown_rejects_further_requests() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "textDocument/documentSymbol",
+            "params": {
+                "textDocument": { "uri": "file:///tmp/dummy.rs" }
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 3);
+
+        // Response for request 3 must be error -32600 (Server is shutting down)
+        let reject_resp = &responses[2];
+        assert_eq!(reject_resp["id"], 3);
+        assert_eq!(reject_resp["error"]["code"], -32600);
+        assert_eq!(reject_resp["error"]["message"], "Server is shutting down");
+    }
+
+    #[test]
+    fn test_lsp_server_stream_exit_before_shutdown_returns_err() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "exit notification received before shutdown"
+        );
     }
 }
