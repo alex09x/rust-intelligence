@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Compiler-driven zero-memory Rust code intelligence
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! Source provenance, hash resolution, and shard metadata loading.
 
 use super::manifest::DependencyShardInfo;
@@ -29,9 +39,40 @@ fn normalize_path(path: &Path) -> PathBuf {
     components.into_iter().collect()
 }
 
-/// Matches an entry path from an index shard or sidecar map against a requested file path,
-/// resolving the entry under the reader's explicit path origin and checking exact normalized
-/// and canonical path identity rather than ambiguous suffix matches.
+/// Checks whether a path contains a `ParentDir` (`..`) following a symlink component,
+/// meaning lexical normalization would pop across a symlink boundary and diverge from
+/// the true filesystem target.
+fn path_traverses_symlink_parent(path: &Path) -> bool {
+    let mut current = PathBuf::new();
+    let mut saw_symlink = false;
+    for c in path.components() {
+        match c {
+            std::path::Component::Normal(seg) => {
+                current.push(seg);
+                if let Ok(meta) = fs::symlink_metadata(&current) {
+                    if meta.file_type().is_symlink() {
+                        saw_symlink = true;
+                    }
+                }
+            }
+            std::path::Component::ParentDir => {
+                if saw_symlink {
+                    return true;
+                }
+                current.pop();
+            }
+            std::path::Component::RootDir | std::path::Component::Prefix(_) => {
+                current.push(c);
+            }
+            std::path::Component::CurDir => {}
+        }
+    }
+    false
+}
+
+/// Matches an entry path from an index shard or sidecar map against a requested file path.
+/// Resolves real filesystem identity for both entry and request before any lexical collapse,
+/// guaranteeing that lexical collapse never overrides known unequal canonical paths.
 fn file_entry_matches(
     entry_str: &str,
     reader_origin: Option<&Path>,
@@ -48,28 +89,49 @@ fn file_entry_matches(
 
     let entry_p = Path::new(entry_str);
 
-    // 2. Compute normalized entry path under reader's explicit path origin
-    let norm_entry = if entry_p.is_absolute() {
-        normalize_path(entry_p)
+    // 2. Resolve original uncollapsed entry path under reader's origin
+    let entry_orig = if entry_p.is_absolute() {
+        entry_p.to_path_buf()
     } else if let Some(orig) = reader_origin {
-        normalize_path(&orig.join(entry_p))
+        orig.join(entry_p)
     } else {
-        normalize_path(entry_p)
+        entry_p.to_path_buf()
     };
+
+    // 3. Resolve canonical identities on the filesystem before any lexical collapse
+    let entry_canon = entry_orig.canonicalize().ok();
+    let effective_req_canon = req_canon.map(|p| p.to_path_buf()).or_else(|| {
+        if req_path.is_absolute() {
+            req_path.canonicalize().ok()
+        } else {
+            None
+        }
+    });
+
+    // 4. Authoritative filesystem identity comparison
+    if let (Some(ref c_entry), Some(ref c_req)) = (&entry_canon, &effective_req_canon) {
+        if c_entry == c_req {
+            return true;
+        }
+        // When both filesystem identities are known and unequal,
+        // lexical collapse MUST NOT override known unequal canonical paths.
+        return false;
+    }
+
+    // 5. Lexical fallback: only allowed where it cannot reinterpret a symlink traversal
+    if path_traverses_symlink_parent(&entry_orig)
+        || path_traverses_symlink_parent(req_path)
+        || reader_origin.is_some_and(|orig| path_traverses_symlink_parent(&orig.join(req_path)))
+    {
+        return false;
+    }
+
+    let norm_entry = normalize_path(&entry_orig);
 
     if req_path.is_absolute() {
         let norm_req = normalize_path(req_path);
         if norm_entry == norm_req {
             return true;
-        }
-
-        // Canonical comparison when absolute paths exist on disk
-        if let Some(c_req) = req_canon {
-            if let Ok(c_entry) = norm_entry.canonicalize() {
-                if c_entry == *c_req {
-                    return true;
-                }
-            }
         }
     } else {
         // Requested path is relative (e.g. "src/lib.rs")
@@ -85,7 +147,7 @@ fn file_entry_matches(
                     return true;
                 }
             }
-            if let (Ok(c_entry), Ok(c_orig)) = (norm_entry.canonicalize(), orig.canonicalize()) {
+            if let (Some(ref c_entry), Ok(c_orig)) = (&entry_canon, orig.canonicalize()) {
                 if let Ok(rel) = c_entry.strip_prefix(&c_orig) {
                     if rel == norm_req || normalize_path(rel) == norm_req {
                         return true;
@@ -102,28 +164,35 @@ impl WorkspaceIndex {
     /// Returns the file modification timestamp of the index shard containing the given source file.
     pub fn shard_mtime_for_file(&self, file_path: &str) -> Option<std::time::SystemTime> {
         let p = Path::new(file_path);
-        let req_canon = p.canonicalize().ok();
         let ws_abs = if p.is_relative() {
             self.workspace_root
                 .as_ref()
-                .map(|ws_root| normalize_path(&ws_root.join(p)))
-                .or_else(|| {
-                    self.root_dir
-                        .as_ref()
-                        .map(|rdir| normalize_path(&rdir.join(p)))
-                })
+                .map(|ws_root| ws_root.join(p))
+                .or_else(|| self.root_dir.as_ref().map(|rdir| rdir.join(p)))
         } else {
             None
         };
         let ws_canon = ws_abs.as_ref().and_then(|a| a.canonicalize().ok());
+        let req_canon = p.canonicalize().ok().or_else(|| ws_canon.clone());
 
         let mut candidate_indices: Vec<usize> = Vec::with_capacity(self.readers.len());
+        if let Some(ref c_p) = req_canon {
+            for (i, _) in self.readers.iter().enumerate() {
+                if let Some(Some(ref root)) = self.source_roots.get(i) {
+                    if let Ok(c_root) = root.canonicalize() {
+                        if c_p.starts_with(&c_root) && !candidate_indices.contains(&i) {
+                            candidate_indices.push(i);
+                        }
+                    }
+                }
+            }
+        }
         if p.is_absolute() {
             let norm_p = normalize_path(p);
             for (i, _) in self.readers.iter().enumerate() {
                 if let Some(Some(ref root)) = self.source_roots.get(i) {
                     let norm_root = normalize_path(root);
-                    if norm_p.starts_with(&norm_root) {
+                    if norm_p.starts_with(&norm_root) && !candidate_indices.contains(&i) {
                         candidate_indices.push(i);
                     }
                 }
@@ -197,32 +266,39 @@ impl WorkspaceIndex {
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
     pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
         let p = Path::new(file_path);
-        let req_canon = p.canonicalize().ok();
         let ws_abs = if p.is_relative() {
             self.workspace_root
                 .as_ref()
-                .map(|ws_root| normalize_path(&ws_root.join(p)))
-                .or_else(|| {
-                    self.root_dir
-                        .as_ref()
-                        .map(|rdir| normalize_path(&rdir.join(p)))
-                })
+                .map(|ws_root| ws_root.join(p))
+                .or_else(|| self.root_dir.as_ref().map(|rdir| rdir.join(p)))
         } else {
             None
         };
         let ws_canon = ws_abs.as_ref().and_then(|a| a.canonicalize().ok());
+        let req_canon = p.canonicalize().ok().or_else(|| ws_canon.clone());
 
         // Order candidate readers:
         // 1. Dependency readers whose source_root contains p
         // 2. Workspace member readers (non-dependency)
         // 3. Other dependency readers
         let mut candidate_indices: Vec<usize> = Vec::with_capacity(self.readers.len());
+        if let Some(ref c_p) = req_canon {
+            for (i, _) in self.readers.iter().enumerate() {
+                if let Some(Some(ref root)) = self.source_roots.get(i) {
+                    if let Ok(c_root) = root.canonicalize() {
+                        if c_p.starts_with(&c_root) && !candidate_indices.contains(&i) {
+                            candidate_indices.push(i);
+                        }
+                    }
+                }
+            }
+        }
         if p.is_absolute() {
             let norm_p = normalize_path(p);
             for (i, _) in self.readers.iter().enumerate() {
                 if let Some(Some(ref root)) = self.source_roots.get(i) {
                     let norm_root = normalize_path(root);
-                    if norm_p.starts_with(&norm_root) {
+                    if norm_p.starts_with(&norm_root) && !candidate_indices.contains(&i) {
                         candidate_indices.push(i);
                     }
                 }
