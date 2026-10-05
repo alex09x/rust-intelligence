@@ -627,6 +627,16 @@ fn test_consumer_with_aliased_dependencies() {
     assert_eq!(def_new.start_line, 20);
     assert_eq!(def_new.signature, Some("fn() -> String"));
 
+    // References for unitA1 must find the aliased reference at line 3
+    let refs_a1 = ws.find_references_for_unit("dep::foo", Some("unitA1"));
+    assert_eq!(refs_a1.len(), 1);
+    assert_eq!(refs_a1[0].span.start_line(), 3);
+
+    // References for unitA2 must find the aliased reference at line 7
+    let refs_a2 = ws.find_references_for_unit("dep::foo", Some("unitA2"));
+    assert_eq!(refs_a2.len(), 1);
+    assert_eq!(refs_a2[0].span.start_line(), 7);
+
     let _ = fs::remove_dir_all(&test_dir);
 }
 

@@ -43,13 +43,21 @@ fn test_version_mismatch_rejected() {
 
 #[test]
 fn test_normalized_source_hash_crlf_and_bom() {
-    let bom_crlf = b"\xEF\xBB\xBFfn foo() {\r\n    println!(\"hi\");\r\n}\r\n";
-    let plain_lf = b"fn foo() {\n    println!(\"hi\");\n}\n";
-    let hash_bom = ridx_format::normalized_source_hash(bom_crlf);
-    let hash_plain = ridx_format::normalized_source_hash(plain_lf);
+    let lf_bytes = b"pub fn hello() {\n    println!(\"hello\");\n}\n";
+    let crlf_bytes = b"pub fn hello() {\r\n    println!(\"hello\");\r\n}\r\n";
+    let bom_crlf_bytes = b"\xEF\xBB\xBFpub fn hello() {\r\n    println!(\"hello\");\r\n}\r\n";
+
+    let hash_lf = ridx_format::normalized_source_hash(lf_bytes);
+    let hash_crlf = ridx_format::normalized_source_hash(crlf_bytes);
+    let hash_bom_crlf = ridx_format::normalized_source_hash(bom_crlf_bytes);
+
     assert_eq!(
-        hash_bom, hash_plain,
-        "hash with BOM and CRLF must match normalized LF hash"
+        hash_lf, hash_crlf,
+        "CRLF and LF must produce identical normalized hash"
+    );
+    assert_eq!(
+        hash_lf, hash_bom_crlf,
+        "BOM+CRLF and LF must produce identical normalized hash"
     );
 }
 

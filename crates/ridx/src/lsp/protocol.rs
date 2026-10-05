@@ -87,7 +87,7 @@ pub fn path_to_uri(file: &str) -> String {
 /// and drops all buffers when the request completes to maintain near-zero resident memory.
 #[derive(Default)]
 pub struct PositionConverter {
-    cache: HashMap<String, Vec<String>>,
+    pub(crate) cache: HashMap<String, Vec<String>>,
 }
 
 impl PositionConverter {

@@ -329,6 +329,7 @@ mod tests {
         // UTF-16 count of first 13 chars is 13.
         let utf16_col = conv.char_col_to_utf16_col(path_str, 2, 14);
         assert_eq!(utf16_col, 13);
+        assert!(conv.cache.contains_key(path_str));
 
         // Line 3: `    let rocket = "` has 18 chars. `🚀` is at char 19 (1-based).
         // `!` is at char 20 (1-based).
