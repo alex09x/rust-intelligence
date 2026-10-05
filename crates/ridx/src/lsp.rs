@@ -291,7 +291,11 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                     overlay_mgr.reconcile_with_disk(&file, hash);
                 }
                 if let Some(ref mut ws) = workspace {
-                    let _ = ws.reload_if_modified();
+                    if let Ok(true) = ws.reload_if_modified() {
+                        if let Ok(content) = std::fs::read_to_string(&file) {
+                            overlay_mgr.advance_compiled_baseline(&file, content);
+                        }
+                    }
                 }
             }
 
@@ -342,7 +346,7 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         });
                     } else if let Some(ref ws) = workspace {
                         // 2. Fall back to compiled zero-copy workspace index
-                        // For open buffers with unsaved/unindexed edits: translate line via edit map and verify token
+                        // For open buffers with unsaved/unindexed edits: translate line via edit map
                         let (can_query_compiled, compiled_line) = if let Some(overlay) = overlay_opt {
                             if let Some(mapped_line) = overlay.map_line_to_compiled(line_1based) {
                                 (true, mapped_line)
@@ -356,28 +360,41 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 
                         if can_query_compiled {
                             if let Some(def) = ws.find_definition_at(&file, compiled_line, col_1based) {
-                                // Verify that the identifier at the cursor matches the compiled definition name
-                                let token_matches = if let Some(overlay) = overlay_opt {
-                                    overlay.get_ident_at(line_1based, col_1based).as_deref() == Some(def.name)
+                                let resolved_file_path = def.resolved_path();
+                                let resolved_file_str = resolved_file_path.to_str().unwrap_or(def.file);
+                                let def_uri = path_to_uri(resolved_file_str);
+
+                                let (start_line, end_line, start_char, end_char) = if let Some(target_overlay) = overlay_mgr.get(resolved_file_str) {
+                                    let live_start_line = target_overlay.map_compiled_line_to_live(def.start_line);
+                                    let live_end_line = target_overlay.map_compiled_line_to_live(def.end_line);
+                                    match (live_start_line, live_end_line) {
+                                        (Some(sl), Some(el)) => (
+                                            sl.saturating_sub(1),
+                                            el.saturating_sub(1),
+                                            target_overlay.char_col_to_utf16_col(sl, def.start_col),
+                                            target_overlay.char_col_to_utf16_col(el, def.end_col),
+                                        ),
+                                        _ => (u32::MAX, u32::MAX, 0, 0),
+                                    }
                                 } else {
-                                    true
+                                    (
+                                        def.start_line.saturating_sub(1),
+                                        def.end_line.saturating_sub(1),
+                                        conv.char_col_to_utf16_col(resolved_file_str, def.start_line, def.start_col),
+                                        conv.char_col_to_utf16_col(resolved_file_str, def.end_line, def.end_col),
+                                    )
                                 };
 
-                                if token_matches {
-                                    let resolved_file_path = def.resolved_path();
-                                    let resolved_file_str = resolved_file_path.to_str().unwrap_or(def.file);
-                                    let def_uri = path_to_uri(resolved_file_str);
-                                    let start_char = conv.char_col_to_utf16_col(resolved_file_str, def.start_line, def.start_col);
-                                    let end_char = conv.char_col_to_utf16_col(resolved_file_str, def.end_line, def.end_col);
+                                if start_line != u32::MAX {
                                     result = json!({
                                         "uri": def_uri,
                                         "range": {
                                             "start": {
-                                                "line": def.start_line.saturating_sub(1),
+                                                "line": start_line,
                                                 "character": start_char
                                             },
                                             "end": {
-                                                "line": def.end_line.saturating_sub(1),
+                                                "line": end_line,
                                                 "character": end_char
                                             }
                                         }
@@ -427,38 +444,45 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 
                         if can_query {
                             if let Some(loc_refs) = ws.find_references_at(&file, query_line, col_1based) {
-                                let token_matches = if let Some(overlay) = overlay_opt {
-                                    overlay.get_ident_at(line_1based, col_1based).as_deref() == Some(loc_refs.target_symbol)
-                                } else {
-                                    true
-                                };
+                                let mut locs = Vec::new();
+                                if include_decl && !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
+                                    let decl_file_path = loc_refs.target_resolved_path();
+                                    let decl_file_str = decl_file_path.to_str().unwrap_or(loc_refs.target_file);
+                                    let decl_uri = path_to_uri(decl_file_str);
 
-                                if token_matches {
-                                    let mut locs = Vec::new();
-                                    if include_decl && !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
-                                        let decl_file_path = loc_refs.target_resolved_path();
-                                        let decl_file_str = decl_file_path.to_str().unwrap_or(loc_refs.target_file);
-                                        let decl_uri = path_to_uri(decl_file_str);
-                                        let decl_start_line = loc_refs.target_line.saturating_sub(1);
-                                        let decl_start_col = conv.char_col_to_utf16_col(
-                                            decl_file_str,
-                                            loc_refs.target_line,
-                                            loc_refs.target_col,
-                                        );
-                                        let decl_end_line = if loc_refs.target_end_line > 0 {
+                                    let (decl_start_line, decl_end_line, decl_start_col, decl_end_col) = if let Some(target_overlay) = overlay_mgr.get(decl_file_str) {
+                                        let live_start = target_overlay.map_compiled_line_to_live(loc_refs.target_line);
+                                        let end_line_to_map = if loc_refs.target_end_line > 0 { loc_refs.target_end_line } else { loc_refs.target_line };
+                                        let live_end = target_overlay.map_compiled_line_to_live(end_line_to_map);
+                                        match (live_start, live_end) {
+                                            (Some(sl), Some(el)) => {
+                                                let sc = target_overlay.char_col_to_utf16_col(sl, loc_refs.target_col);
+                                                let ec = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
+                                                    target_overlay.char_col_to_utf16_col(el, loc_refs.target_end_col)
+                                                } else {
+                                                    sc + (loc_refs.target_symbol.encode_utf16().count() as u32)
+                                                };
+                                                (sl.saturating_sub(1), el.saturating_sub(1), sc, ec)
+                                            }
+                                            _ => (u32::MAX, u32::MAX, 0, 0),
+                                        }
+                                    } else {
+                                        let sl = loc_refs.target_line.saturating_sub(1);
+                                        let sc = conv.char_col_to_utf16_col(decl_file_str, loc_refs.target_line, loc_refs.target_col);
+                                        let el = if loc_refs.target_end_line > 0 {
                                             loc_refs.target_end_line.saturating_sub(1)
                                         } else {
-                                            decl_start_line
+                                            sl
                                         };
-                                        let decl_end_col = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
-                                            conv.char_col_to_utf16_col(
-                                                decl_file_str,
-                                                loc_refs.target_end_line,
-                                                loc_refs.target_end_col,
-                                            )
+                                        let ec = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
+                                            conv.char_col_to_utf16_col(decl_file_str, loc_refs.target_end_line, loc_refs.target_end_col)
                                         } else {
-                                            decl_start_col + (loc_refs.target_symbol.encode_utf16().count() as u32)
+                                            sc + (loc_refs.target_symbol.encode_utf16().count() as u32)
                                         };
+                                        (sl, el, sc, ec)
+                                    };
+
+                                    if decl_start_line != u32::MAX {
                                         locs.push(json!({
                                             "uri": decl_uri,
                                             "range": {
@@ -473,30 +497,52 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                                             }
                                         }));
                                     }
+                                }
 
-                                    for r in loc_refs.references {
-                                        let span = r.span;
-                                        let r_file_path = r.resolved_path();
-                                        let r_file_str = r_file_path.to_str().unwrap_or(r.file);
-                                        let r_uri = path_to_uri(r_file_str);
-                                        let start_char = conv.char_col_to_utf16_col(r_file_str, span.start_line(), span.start_col());
-                                        let end_char = conv.char_col_to_utf16_col(r_file_str, span.end_line(), span.end_col());
+                                for r in loc_refs.references {
+                                    let span = r.span;
+                                    let r_file_path = r.resolved_path();
+                                    let r_file_str = r_file_path.to_str().unwrap_or(r.file);
+                                    let r_uri = path_to_uri(r_file_str);
+
+                                    let (start_line, end_line, start_char, end_char) = if let Some(target_overlay) = overlay_mgr.get(r_file_str) {
+                                        let live_start = target_overlay.map_compiled_line_to_live(span.start_line());
+                                        let live_end = target_overlay.map_compiled_line_to_live(span.end_line());
+                                        match (live_start, live_end) {
+                                            (Some(sl), Some(el)) => (
+                                                sl.saturating_sub(1),
+                                                el.saturating_sub(1),
+                                                target_overlay.char_col_to_utf16_col(sl, span.start_col()),
+                                                target_overlay.char_col_to_utf16_col(el, span.end_col()),
+                                            ),
+                                            _ => (u32::MAX, u32::MAX, 0, 0),
+                                        }
+                                    } else {
+                                        (
+                                            span.start_line().saturating_sub(1),
+                                            span.end_line().saturating_sub(1),
+                                            conv.char_col_to_utf16_col(r_file_str, span.start_line(), span.start_col()),
+                                            conv.char_col_to_utf16_col(r_file_str, span.end_line(), span.end_col()),
+                                        )
+                                    };
+
+                                    if start_line != u32::MAX {
                                         locs.push(json!({
                                             "uri": r_uri,
                                             "range": {
                                                 "start": {
-                                                    "line": span.start_line().saturating_sub(1),
+                                                    "line": start_line,
                                                     "character": start_char
                                                 },
                                                 "end": {
-                                                    "line": span.end_line().saturating_sub(1),
+                                                    "line": end_line,
                                                     "character": end_char
                                                 }
                                             }
                                         }));
                                     }
-                                    result = json!(locs);
                                 }
+                                result = json!(locs);
                             }
                         }
                     }
@@ -542,26 +588,19 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                             if let Some(hover) = ws.hover_at(&file, query_line, col_1based) {
                                 let mut md = String::new();
                                 if let Some(ref def) = hover.definition {
-                                    let token_matches = if let Some(overlay) = overlay_opt {
-                                        overlay.get_ident_at(line_1based, col_1based).as_deref() == Some(def.name)
+                                    md.push_str("```rust\n");
+                                    if let Some(sig) = def.signature {
+                                        md.push_str(sig);
                                     } else {
-                                        true
-                                    };
-                                    if token_matches {
-                                        md.push_str("```rust\n");
-                                        if let Some(sig) = def.signature {
-                                            md.push_str(sig);
-                                        } else {
-                                            md.push_str(&format!("{:?} {}", def.kind, def.name));
-                                        }
-                                        md.push_str("\n```\n\n");
-                                        md.push_str(&format!(
-                                            "*Defined in `{}` at {}:{}*\n\n",
-                                            def.resolved_path().display(), def.start_line, def.start_col
-                                        ));
-                                        if let Some(ty) = hover.inferred_type {
-                                            md.push_str(&format!("**Type:** `{ty}`\n"));
-                                        }
+                                        md.push_str(&format!("{:?} {}", def.kind, def.name));
+                                    }
+                                    md.push_str("\n```\n\n");
+                                    md.push_str(&format!(
+                                        "*Defined in `{}` at {}:{}*\n\n",
+                                        def.resolved_path().display(), def.start_line, def.start_col
+                                    ));
+                                    if let Some(ty) = hover.inferred_type {
+                                        md.push_str(&format!("**Type:** `{ty}`\n"));
                                     }
                                 } else if let Some(ty) = hover.inferred_type {
                                     md.push_str(&format!("**Type:** `{ty}`\n"));

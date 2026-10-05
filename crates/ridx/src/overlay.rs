@@ -19,7 +19,9 @@ pub struct OverlaySymbol {
     pub end_line: u32,
     pub end_col: u32,
     pub scope_id: usize,
-    pub bind_byte: usize,
+    pub decl_start_byte: usize,
+    pub decl_end_byte: usize,
+    pub scope_start_byte: usize,
 }
 
 /// Representation of a resolved definition within the live buffer overlay.
@@ -51,11 +53,11 @@ pub struct DocumentOverlay {
     pub version: i32,
     pub content_hash: u64,
     pub text: String,
+    pub compiled_text: Option<String>,
     pub disk_text: Option<String>,
     line_starts: Vec<usize>,
     symbols: Vec<OverlaySymbol>,
     scopes: Vec<Scope>,
-    pub is_synced_with_disk: bool,
 }
 
 impl DocumentOverlay {
@@ -65,18 +67,18 @@ impl DocumentOverlay {
         let file_path = file_path.into();
         let content_hash = fnv1a_64(text.as_bytes());
         let disk_text = std::fs::read_to_string(&file_path).ok();
-        let is_synced_with_disk = disk_text.as_deref() == Some(&text);
+        let compiled_text = disk_text.clone().or_else(|| Some(text.clone()));
         let mut overlay = Self {
             uri,
             file_path,
             version,
             content_hash,
             text,
+            compiled_text,
             disk_text,
             line_starts: Vec::new(),
             symbols: Vec::new(),
             scopes: Vec::new(),
-            is_synced_with_disk,
         };
         overlay.reparse();
         overlay
@@ -86,15 +88,25 @@ impl DocumentOverlay {
     pub fn update(&mut self, version: i32, text: String) {
         self.version = version;
         self.content_hash = fnv1a_64(text.as_bytes());
-        self.is_synced_with_disk = self.disk_text.as_deref() == Some(&text);
         self.text = text;
         self.reparse();
     }
 
-    /// Whether this buffer has unsaved or unindexed edits relative to disk.
+    /// Whether this buffer has unsaved or unindexed edits relative to compiled index.
     #[allow(dead_code)]
     pub fn is_dirty(&self) -> bool {
-        !self.is_synced_with_disk
+        self.compiled_text.as_deref() != Some(&self.text)
+    }
+
+    /// Whether this buffer matches the content currently saved on disk.
+    #[allow(dead_code)]
+    pub fn is_synced_with_disk(&self) -> bool {
+        self.disk_text.as_deref() == Some(&self.text)
+    }
+
+    /// Advances the compiled index baseline when a newly built index is published.
+    pub fn advance_compiled_baseline(&mut self, text: String) {
+        self.compiled_text = Some(text);
     }
 
     /// Maps a 1-based line number from the live overlay buffer to the corresponding
@@ -103,13 +115,13 @@ impl DocumentOverlay {
     /// Returns `Some(compiled_line)` if the line is in a proven unchanged region,
     /// or `None` if the line falls in an edited, inserted, or modified region.
     pub fn map_line_to_compiled(&self, line: u32) -> Option<u32> {
-        if self.is_synced_with_disk {
+        if self.compiled_text.as_deref() == Some(&self.text) {
             return Some(line);
         }
-        let disk_text = self.disk_text.as_ref()?;
+        let compiled_text = self.compiled_text.as_ref()?;
 
         let curr_lines: Vec<&str> = self.text.lines().collect();
-        let disk_lines: Vec<&str> = disk_text.lines().collect();
+        let compiled_lines: Vec<&str> = compiled_text.lines().collect();
 
         let l_idx = (line.saturating_sub(1)) as usize;
         if l_idx >= curr_lines.len() {
@@ -119,8 +131,8 @@ impl DocumentOverlay {
         // Count common prefix lines
         let mut prefix_common = 0;
         while prefix_common < curr_lines.len()
-            && prefix_common < disk_lines.len()
-            && curr_lines[prefix_common] == disk_lines[prefix_common]
+            && prefix_common < compiled_lines.len()
+            && curr_lines[prefix_common] == compiled_lines[prefix_common]
         {
             prefix_common += 1;
         }
@@ -133,9 +145,9 @@ impl DocumentOverlay {
         // Count common suffix lines
         let mut suffix_common = 0;
         while suffix_common < curr_lines.len()
-            && suffix_common < disk_lines.len()
+            && suffix_common < compiled_lines.len()
             && curr_lines[curr_lines.len() - 1 - suffix_common]
-                == disk_lines[disk_lines.len() - 1 - suffix_common]
+                == compiled_lines[compiled_lines.len() - 1 - suffix_common]
         {
             suffix_common += 1;
         }
@@ -143,13 +155,66 @@ impl DocumentOverlay {
         // If line is in proven unchanged suffix
         if l_idx >= curr_lines.len().saturating_sub(suffix_common) {
             let offset_from_end = curr_lines.len() - 1 - l_idx;
-            if offset_from_end < disk_lines.len() {
-                let disk_line_idx = disk_lines.len() - 1 - offset_from_end;
-                return Some((disk_line_idx + 1) as u32);
+            if offset_from_end < compiled_lines.len() {
+                let compiled_line_idx = compiled_lines.len() - 1 - offset_from_end;
+                return Some((compiled_line_idx + 1) as u32);
             }
         }
 
         // The line is in the modified/inserted region
+        None
+    }
+
+    /// Maps a 1-based line number from the compiled index snapshot to the corresponding
+    /// 1-based line number in the current live overlay buffer.
+    ///
+    /// Returns `Some(live_line)` if the line is in a proven unchanged region,
+    /// or `None` if the line was deleted, replaced, or modified by unsaved edits.
+    pub fn map_compiled_line_to_live(&self, compiled_line: u32) -> Option<u32> {
+        if self.compiled_text.as_deref() == Some(&self.text) {
+            return Some(compiled_line);
+        }
+        let compiled_text = self.compiled_text.as_ref()?;
+
+        let curr_lines: Vec<&str> = self.text.lines().collect();
+        let compiled_lines: Vec<&str> = compiled_text.lines().collect();
+
+        let c_idx = (compiled_line.saturating_sub(1)) as usize;
+        if c_idx >= compiled_lines.len() {
+            return None;
+        }
+
+        // Count common prefix lines
+        let mut prefix_common = 0;
+        while prefix_common < curr_lines.len()
+            && prefix_common < compiled_lines.len()
+            && curr_lines[prefix_common] == compiled_lines[prefix_common]
+        {
+            prefix_common += 1;
+        }
+
+        if c_idx < prefix_common {
+            return Some(compiled_line);
+        }
+
+        // Count common suffix lines
+        let mut suffix_common = 0;
+        while suffix_common < curr_lines.len()
+            && suffix_common < compiled_lines.len()
+            && curr_lines[curr_lines.len() - 1 - suffix_common]
+                == compiled_lines[compiled_lines.len() - 1 - suffix_common]
+        {
+            suffix_common += 1;
+        }
+
+        if c_idx >= compiled_lines.len().saturating_sub(suffix_common) {
+            let offset_from_end = compiled_lines.len() - 1 - c_idx;
+            if offset_from_end < curr_lines.len() {
+                let live_line_idx = curr_lines.len() - 1 - offset_from_end;
+                return Some((live_line_idx + 1) as u32);
+            }
+        }
+
         None
     }
 
@@ -282,8 +347,32 @@ impl DocumentOverlay {
         }
 
         // 2. Identifier at cursor location -> resolve to visible binding in lexical scope
-        let ident = self.get_ident_at(line, col)?;
+        let (ident, start_b, end_b) = self.get_ident_and_span_at(line, col)?;
         let byte_pos = self.line_char_col_to_byte(line, col);
+
+        let line_idx = line.saturating_sub(1) as usize;
+        if line_idx >= self.line_starts.len() {
+            return None;
+        }
+        let line_start = self.line_starts[line_idx];
+        let line_end = if line_idx + 1 < self.line_starts.len() {
+            self.line_starts[line_idx + 1]
+        } else {
+            self.text.len()
+        };
+        let line_text = &self.text[line_start..line_end];
+
+        // If the token is part of a qualified path (e.g. `foo::bar` or `foo.bar` or `bar::baz`),
+        // the single-file lexical overlay lacks path/type semantics: abstain (return None)
+        // so the compiled index can resolve it accurately.
+        let prefix = line_text[..start_b].trim_end();
+        if prefix.ends_with("::") || prefix.ends_with('.') {
+            return None;
+        }
+        let suffix = line_text[end_b..].trim_start();
+        if suffix.starts_with("::") {
+            return None;
+        }
 
         // Find innermost enclosing scope
         let mut best_scope = 0;
@@ -312,11 +401,11 @@ impl DocumentOverlay {
                         | DefKind::TyAlias
                         | DefKind::Const
                         | DefKind::Mod => true,
-                        _ => sym.bind_byte <= byte_pos,
+                        _ => sym.scope_start_byte <= byte_pos,
                     };
                     if is_visible {
                         if let Some(prev) = best_match {
-                            if sym.bind_byte > prev.bind_byte {
+                            if sym.scope_start_byte > prev.scope_start_byte {
                                 best_match = Some(sym);
                             }
                         } else {
@@ -344,7 +433,13 @@ impl DocumentOverlay {
     }
 
     /// Returns the identifier at a given 1-based (line, char_col) in the buffer.
+    #[allow(dead_code)]
     pub fn get_ident_at(&self, line: u32, col: u32) -> Option<String> {
+        self.get_ident_and_span_at(line, col).map(|(s, _, _)| s)
+    }
+
+    /// Returns the identifier and its byte start and end offset within the line.
+    pub fn get_ident_and_span_at(&self, line: u32, col: u32) -> Option<(String, usize, usize)> {
         let byte_pos = self.line_char_col_to_byte(line, col);
         let line_idx = line.saturating_sub(1) as usize;
         if line_idx >= self.line_starts.len() {
@@ -394,7 +489,7 @@ impl DocumentOverlay {
                     } else {
                         line_text.len()
                     };
-                    return Some(line_text[start_b..end_b].to_string());
+                    return Some((line_text[start_b..end_b].to_string(), start_b, end_b));
                 }
             }
             return None;
@@ -416,7 +511,7 @@ impl DocumentOverlay {
             } else {
                 line_text.len()
             };
-            Some(line_text[start_b..end_b].to_string())
+            Some((line_text[start_b..end_b].to_string(), start_b, end_b))
         } else {
             None
         }
@@ -470,12 +565,22 @@ impl OverlayManager {
     pub fn reconcile_with_disk(&mut self, file_path: &str, disk_content_hash: u64) {
         if let Some(overlay) = self.overlays.get_mut(file_path) {
             if overlay.content_hash == disk_content_hash {
-                overlay.is_synced_with_disk = true;
                 overlay.disk_text = Some(overlay.text.clone());
             } else if let Ok(disk) = std::fs::read_to_string(file_path) {
                 overlay.disk_text = Some(disk);
-                overlay.is_synced_with_disk = false;
             }
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn map_compiled_line_to_live(&self, file_path: &str, compiled_line: u32) -> Option<u32> {
+        self.overlays.get(file_path)?.map_compiled_line_to_live(compiled_line)
+    }
+
+    #[allow(dead_code)]
+    pub fn advance_compiled_baseline(&mut self, file_path: &str, text: String) {
+        if let Some(overlay) = self.overlays.get_mut(file_path) {
+            overlay.advance_compiled_baseline(text);
         }
     }
 
@@ -657,6 +762,8 @@ impl<'a> OverlayParser<'a> {
                     }
                     continue;
                 }
+                pos += first_char.len_utf8();
+                continue;
             }
 
             pos += 1;
@@ -675,6 +782,12 @@ impl<'a> OverlayParser<'a> {
                 while *pos < len && bytes[*pos] != b'\n' {
                     *pos += 1;
                 }
+            } else if b == b'/' && *pos + 1 < len && bytes[*pos + 1] == b'*' {
+                *pos += 2;
+                while *pos + 1 < len && !(bytes[*pos] == b'*' && bytes[*pos + 1] == b'/') {
+                    *pos += 1;
+                }
+                *pos = (*pos + 2).min(len);
             } else {
                 break;
             }
@@ -739,7 +852,9 @@ impl<'a> OverlayParser<'a> {
             end_line: e_line,
             end_col: e_col,
             scope_id: current_scope,
-            bind_byte: start,
+            decl_start_byte: start,
+            decl_end_byte: end,
+            scope_start_byte: 0,
         });
 
         // Allocate a dedicated scope for this function's parameters and body
@@ -795,7 +910,9 @@ impl<'a> OverlayParser<'a> {
                             end_line: e_line,
                             end_col: e_col,
                             scope_id,
-                            bind_byte: abs_offset,
+                            decl_start_byte: abs_offset,
+                            decl_end_byte: abs_offset + p_name.len(),
+                            scope_start_byte: base_byte,
                         });
                     }
                 }
@@ -819,12 +936,14 @@ impl<'a> OverlayParser<'a> {
             end_line: e_line,
             end_col: e_col,
             scope_id: current_scope,
-            bind_byte: start,
+            decl_start_byte: start,
+            decl_end_byte: end,
+            scope_start_byte: 0,
         });
     }
 
     fn parse_let_binding(&mut self, pos: &mut usize, current_scope: usize) {
-        let bind_start = *pos;
+        let decl_start = *pos;
         self.skip_whitespace_and_comments(pos);
         // Optional `mut` keyword (byte-safe UTF-8 check)
         let remainder = &self.text[*pos..];
@@ -841,6 +960,35 @@ impl<'a> OverlayParser<'a> {
         let (s_line, s_col) = self.byte_to_char_line_col(start);
         let (e_line, e_col) = self.byte_to_char_line_col(end);
 
+        // Scan ahead to find the end of statement (';') or block end ('}')
+        // In Rust, a let binding's scope starts AFTER its initializer statement.
+        let bytes = self.text.as_bytes();
+        let len = bytes.len();
+        let mut cur = *pos;
+        while cur < len && bytes[cur] != b';' && bytes[cur] != b'}' {
+            if bytes[cur] == b'"' || bytes[cur] == b'\'' {
+                let quote = bytes[cur];
+                cur += 1;
+                while cur < len && bytes[cur] != quote {
+                    if bytes[cur] == b'\\' && cur + 1 < len {
+                        cur += 2;
+                    } else {
+                        cur += 1;
+                    }
+                }
+                if cur < len {
+                    cur += 1;
+                }
+            } else {
+                cur += 1;
+            }
+        }
+        let scope_start = if cur < len && bytes[cur] == b';' {
+            cur + 1
+        } else {
+            cur
+        };
+
         self.symbols.push(OverlaySymbol {
             name: name.to_string(),
             kind: DefKind::Static, // Local variable
@@ -850,7 +998,9 @@ impl<'a> OverlayParser<'a> {
             end_line: e_line,
             end_col: e_col,
             scope_id: current_scope,
-            bind_byte: bind_start,
+            decl_start_byte: decl_start,
+            decl_end_byte: end,
+            scope_start_byte: scope_start,
         });
     }
 }
@@ -876,6 +1026,57 @@ pub fn is_ident(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_multibyte_non_identifier_is_safe() {
+        let code = "fn f() { 🚀 }\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/emoji.rs", "src/emoji.rs", 1, code);
+        assert!(!overlay.symbols.is_empty());
+        let def = overlay.find_definition_at(1, 4).expect("should resolve f");
+        assert_eq!(def.name, "f");
+    }
+
+    #[test]
+    fn test_shadow_initializer_sees_previous_binding() {
+        let code = "fn test() {\n    let x = 1;\n    let x = x + 1;\n    x;\n}\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/shadow_init.rs", "src/shadow_init.rs", 1, code);
+        // Cursor on `x` in `x + 1` at line 3, col 13
+        let def = overlay.find_definition_at(3, 13).expect("should resolve to outer x");
+        assert_eq!(def.name, "x");
+        assert_eq!(def.start_line, 2);
+
+        // Cursor on `x;` on line 4, col 5 -> resolves to second `let x = x + 1` on line 3
+        let def2 = overlay.find_definition_at(4, 5).expect("should resolve to inner x");
+        assert_eq!(def2.name, "x");
+        assert_eq!(def2.start_line, 3);
+    }
+
+    #[test]
+    fn test_qualified_name_does_not_resolve_lexically() {
+        let code = "fn f() {}\nfn use_it() { external::f(); }\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/qual.rs", "src/qual.rs", 1, code);
+        // Querying external::f on line 2, col 25 (the `f` in `external::f`) should abstain (None)
+        let def = overlay.find_definition_at(2, 25);
+        assert!(def.is_none(), "overlay must abstain for qualified path segment external::f");
+    }
+
+    #[test]
+    fn test_save_does_not_advance_compiled_baseline() {
+        let initial_code = "fn a() {}\nfn b() {}\n".to_string();
+        let mut overlay = DocumentOverlay::new("file:///test/save.rs", "src/save.rs", 1, initial_code);
+        // User inserts a new line at top
+        let edited_code = "// new line\nfn a() {}\nfn b() {}\n".to_string();
+        overlay.update(2, edited_code.clone());
+        // In edited buffer, line 3 (fn b) maps to compiled line 2
+        assert_eq!(overlay.map_line_to_compiled(3), Some(2));
+
+        // Now simulate didSave with the edited text hash
+        let _hash = fnv1a_64(edited_code.as_bytes());
+        overlay.disk_text = Some(edited_code.clone());
+        // Since no compilation occurred, compiled baseline is still initial_code!
+        assert_eq!(overlay.map_line_to_compiled(3), Some(2));
+        assert!(overlay.is_dirty());
+    }
 
     #[test]
     fn test_overlay_local_variables_and_params() {
@@ -944,7 +1145,6 @@ mod tests {
         let saved_text = "fn foo() {\n    call_a();\n    call_b();\n}\n".to_string();
         let mut overlay = DocumentOverlay::new("file:///test/edit.rs", "src/edit.rs", 1, saved_text.clone());
         overlay.disk_text = Some(saved_text);
-        overlay.is_synced_with_disk = true;
 
         assert_eq!(overlay.map_line_to_compiled(2), Some(2));
 
@@ -1002,12 +1202,12 @@ mod tests {
 
         let hash1 = fnv1a_64(text1.as_bytes());
         mgr.reconcile_with_disk(file, hash1);
-        assert!(mgr.get(file).unwrap().is_synced_with_disk);
+        assert!(mgr.get(file).unwrap().is_synced_with_disk());
 
         // User keeps typing while cargo check runs
         let text2 = "fn foo() { let x = 42; }\n".to_string();
         mgr.open_or_update(uri, file, 2, text2);
-        assert!(!mgr.get(file).unwrap().is_synced_with_disk);
+        assert!(!mgr.get(file).unwrap().is_synced_with_disk());
 
         mgr.close(file);
         assert_eq!(mgr.open_count(), 0);

@@ -627,6 +627,11 @@ impl WorkspaceIndex {
             if let Some(mut res) = reader.find_definition_at(target_file, line, col) {
                 res.source_root = self.source_roots.get(i).and_then(|r| r.as_deref());
                 res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+                let crate_prefix = format!("{}::", reader.crate_name());
+                let is_local = res.path.starts_with(&crate_prefix) || res.path == reader.crate_name();
+                if is_local && res.file != "external" {
+                    return Some(res);
+                }
                 // If it resolves to a cross-crate target, attempt resolution in
                 // workspace peer crates / dependencies to retrieve the true indexed definition and signature
                 if let Some(cross_def) = self.find_definition_by_path(res.path) {
@@ -639,15 +644,29 @@ impl WorkspaceIndex {
         None
     }
 
-    /// Finds all references to a symbol across every crate in the workspace.
-    pub fn find_references<'a>(&'a self, target_path: &str) -> Vec<WorkspaceReference<'a>> {
+    /// Finds all references to a symbol, optionally scoped to a target dependency unit.
+    pub fn find_references_for_unit<'a>(
+        &'a self,
+        target_path: &str,
+        target_unit_key: Option<&str>,
+    ) -> Vec<WorkspaceReference<'a>> {
         let mut all_refs = Vec::new();
 
         for (i, reader) in self.readers.iter().enumerate() {
+            let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+            // If target belongs to an immutable dependency unit, do not leak references from
+            // a different dependency unit/version with a different unit_key.
+            if let Some(target_unit) = target_unit_key {
+                if let Some(reader_unit) = unit_key {
+                    if reader_unit != target_unit {
+                        continue;
+                    }
+                }
+            }
+
             let refs = reader.find_references(target_path);
             let crate_name = reader.crate_name();
             let source_root = self.source_roots.get(i).and_then(|r| r.as_deref());
-            let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
 
             for r in refs {
                 let span = r.span();
@@ -666,6 +685,11 @@ impl WorkspaceIndex {
         }
 
         all_refs
+    }
+
+    /// Finds all references to a symbol across every crate in the workspace.
+    pub fn find_references<'a>(&'a self, target_path: &str) -> Vec<WorkspaceReference<'a>> {
+        self.find_references_for_unit(target_path, None)
     }
 
     /// Inferred expression type at cursor location.
@@ -753,10 +777,10 @@ impl WorkspaceIndex {
         col: u32,
     ) -> Option<LocationReferences<'a>> {
         let def = self.find_definition_at(file, line, col)?;
-        let mut refs = self.find_references(def.path);
+        let mut refs = self.find_references_for_unit(def.path, def.unit_key);
         // For local bindings whose references are stored by local name, try by short name if needed
         if refs.is_empty() && def.kind == DefKind::Local && def.name != def.path {
-            refs = self.find_references(def.name);
+            refs = self.find_references_for_unit(def.name, def.unit_key);
         }
         Some(LocationReferences {
             target_symbol: def.name,

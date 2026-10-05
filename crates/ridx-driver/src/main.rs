@@ -24,6 +24,7 @@ use rustc_span::Span;
 struct IndexCallbacks {
     out_dir: PathBuf,
     disambiguator: Option<String>,
+    compiler_args: Vec<String>,
 }
 
 impl Callbacks for IndexCallbacks {
@@ -32,7 +33,7 @@ impl Callbacks for IndexCallbacks {
         _compiler: &rustc_interface::interface::Compiler,
         tcx: TyCtxt<'tcx>,
     ) -> Compilation {
-        build_crate_index(tcx, &self.out_dir, self.disambiguator.as_deref());
+        build_crate_index(tcx, &self.out_dir, self.disambiguator.as_deref(), &self.compiler_args);
         Compilation::Continue
     }
 }
@@ -305,11 +306,41 @@ fn extract_target_disambiguator(args: &[String]) -> Option<String> {
     None
 }
 
+fn hash_directory_contents(dir: &Path) -> Option<u64> {
+    if !dir.is_dir() {
+        return None;
+    }
+    let mut entries = Vec::new();
+    fn visit(d: &Path, base: &Path, list: &mut Vec<(String, u64)>) {
+        if let Ok(rd) = fs::read_dir(d) {
+            for entry in rd.flatten() {
+                let p = entry.path();
+                if p.is_file() {
+                    let rel = p.strip_prefix(base).unwrap_or(&p).to_string_lossy().to_string();
+                    let hash = fs::read(&p).map(|b| ridx_format::fnv1a_64(&b)).unwrap_or(0);
+                    list.push((rel, hash));
+                } else if p.is_dir() {
+                    visit(&p, base, list);
+                }
+            }
+        }
+    }
+    visit(dir, dir, &mut entries);
+    entries.sort_by(|a, b| a.0.cmp(&b.0));
+    let mut hasher_input = Vec::new();
+    for (rel, h) in entries {
+        hasher_input.extend_from_slice(rel.as_bytes());
+        hasher_input.extend_from_slice(&h.to_le_bytes());
+    }
+    Some(ridx_format::fnv1a_64(&hasher_input))
+}
+
 fn compute_dependency_unit_key(
     crate_name: &str,
     crate_version: &str,
     disambiguator: Option<&str>,
     manifest_dir: Option<&Path>,
+    compiler_args: &[String],
 ) -> String {
     let mut key_str = format!(
         "{}:{}:{}:v{}:ext{}",
@@ -323,10 +354,60 @@ fn compute_dependency_unit_key(
         key_str.push(':');
         key_str.push_str(&m.display().to_string());
     }
-    if let Ok(target) = std::env::var("TARGET") {
-        key_str.push(':');
-        key_str.push_str(&target);
+    // Effective target: from args or env
+    let mut target = std::env::var("TARGET").ok();
+    for i in 0..compiler_args.len() {
+        if compiler_args[i] == "--target" && i + 1 < compiler_args.len() {
+            target = Some(compiler_args[i + 1].clone());
+            break;
+        } else if let Some(rest) = compiler_args[i].strip_prefix("--target=") {
+            target = Some(rest.to_string());
+            break;
+        }
     }
+    if let Some(ref t) = target {
+        key_str.push(':');
+        key_str.push_str(t);
+    }
+
+    // Extract and sort all `--cfg` flags
+    let mut cfgs = Vec::new();
+    for i in 0..compiler_args.len() {
+        if compiler_args[i] == "--cfg" && i + 1 < compiler_args.len() {
+            cfgs.push(compiler_args[i + 1].clone());
+        } else if let Some(rest) = compiler_args[i].strip_prefix("--cfg=") {
+            cfgs.push(rest.to_string());
+        }
+    }
+    cfgs.sort();
+    for cfg in cfgs {
+        key_str.push_str(":cfg=");
+        key_str.push_str(&cfg);
+    }
+
+    // Extract and sort all `--extern` flags
+    let mut externs = Vec::new();
+    for i in 0..compiler_args.len() {
+        if compiler_args[i] == "--extern" && i + 1 < compiler_args.len() {
+            externs.push(compiler_args[i + 1].clone());
+        } else if let Some(rest) = compiler_args[i].strip_prefix("--extern=") {
+            externs.push(rest.to_string());
+        }
+    }
+    externs.sort();
+    for ext in externs {
+        key_str.push_str(":ext=");
+        key_str.push_str(&ext);
+    }
+
+    // Hash OUT_DIR contents if present
+    if let Ok(out_dir_str) = std::env::var("OUT_DIR") {
+        let out_dir_path = Path::new(&out_dir_str);
+        if let Some(out_hash) = hash_directory_contents(out_dir_path) {
+            key_str.push_str(&format!(":outdir={:016x}", out_hash));
+        }
+    }
+
     format!("{:016x}", ridx_format::fnv1a_64(key_str.as_bytes()))
 }
 
@@ -388,7 +469,12 @@ fn is_immutable_package(manifest_dir: &Path) -> bool {
         || s.contains("\\.cargo\\git\\")
 }
 
-fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str>) {
+fn build_crate_index(
+    tcx: TyCtxt<'_>,
+    out_dir: &Path,
+    disambiguator: Option<&str>,
+    compiler_args: &[String],
+) {
     let start = Instant::now();
     let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
     let crate_version =
@@ -412,6 +498,7 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str
             &crate_version,
             disambiguator,
             manifest_dir.as_deref(),
+            compiler_args,
         );
         let cache_dir = ridx_format::resolve_cache_dir();
         let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
@@ -601,5 +688,9 @@ fn main() {
         .unwrap_or_else(|_| PathBuf::from("target/ridx"));
     let disambiguator = extract_target_disambiguator(&args);
 
-    rustc_driver::run_compiler(&args, &mut IndexCallbacks { out_dir, disambiguator });
+    rustc_driver::run_compiler(&args, &mut IndexCallbacks {
+        out_dir,
+        disambiguator,
+        compiler_args: args.clone(),
+    });
 }
