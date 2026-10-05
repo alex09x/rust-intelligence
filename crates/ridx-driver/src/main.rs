@@ -760,12 +760,28 @@ fn build_crate_index(
         let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
 
         if obj_path.is_file() {
-            let file_hashes =
-                collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref(), &[]);
+            let (generation, file_hashes) = if let Ok(reader) =
+                ridx_format::IndexReader::open(&obj_path)
+            {
+                let gen = reader.generation().to_string();
+                let mut hashes = reader.embedded_file_hashes();
+                for (k, v) in
+                    collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref(), &[])
+                {
+                    hashes.entry(k).or_insert(v);
+                }
+                (gen, hashes)
+            } else {
+                let fh =
+                    collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref(), &[]);
+                let digest = ridx_format::compute_source_snapshot_digest(&fh);
+                (format!("{:016x}", digest), fh)
+            };
             let dep_info = serde_json::json!({
                 "name": crate_name,
                 "version": crate_version,
                 "unit_key": unit_key,
+                "generation": generation,
                 "object_path": obj_path.display().to_string(),
                 "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
                 "is_dependency": true,

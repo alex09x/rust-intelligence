@@ -2182,3 +2182,180 @@ fn test_binary_cache_inputs_raw_hashing() {
     let h2 = ridx_format::fnv1a_64(lf);
     assert_ne!(h1, h2, "raw binary hashing must not equate CRLF and LF");
 }
+
+#[test]
+fn test_v2_file_table_requires_full_16_byte_entry() {
+    let test_dir =
+        std::env::temp_dir().join(format!("ridx_test_file_table_16_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    let mut writer = IndexWriter::new("test_mod", "0.1.0");
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "test_fn".to_string(),
+        path: "test_mod::test_fn".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
+    });
+
+    let valid_path = test_dir.join("valid.ridx");
+    writer
+        .write_to(&mut BufWriter::new(File::create(&valid_path).unwrap()))
+        .unwrap();
+
+    let buf = fs::read(&valid_path).unwrap();
+    let file_len = buf.len();
+
+    // 1. Truncated file entry: files_count = 1, but files_offset leaves only 8 bytes (< 16 required bytes)
+    let mut truncated_buf = buf.clone();
+    let files_offset = (file_len - 8) as u64;
+    // Header files_offset is at offset 32..40, files_count is at 40..44
+    truncated_buf[32..40].copy_from_slice(&files_offset.to_le_bytes());
+    truncated_buf[40..44].copy_from_slice(&1u32.to_le_bytes());
+    let trunc_path = test_dir.join("trunc.ridx");
+    fs::write(&trunc_path, &truncated_buf).unwrap();
+
+    let res = ridx_format::IndexReader::open(&trunc_path);
+    assert!(
+        res.is_err(),
+        "IndexReader::open must reject truncated file table where 16-byte FileEntry extends beyond EOF"
+    );
+
+    // 2. Unaligned files table: files_offset not aligned to 8 bytes
+    let mut unaligned_buf = buf.clone();
+    let unaligned_offset = 36u64; // multiple of 4, but not 8
+    unaligned_buf[32..40].copy_from_slice(&unaligned_offset.to_le_bytes());
+    unaligned_buf[40..44].copy_from_slice(&1u32.to_le_bytes());
+    let unaligned_path = test_dir.join("unaligned.ridx");
+    fs::write(&unaligned_path, &unaligned_buf).unwrap();
+
+    let res_unaligned = ridx_format::IndexReader::open(&unaligned_path);
+    assert!(
+        res_unaligned.is_err(),
+        "IndexReader::open must reject files table whose offset is not 8-byte aligned"
+    );
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_dependency_manifest_cannot_override_embedded_generation() {
+    let test_dir =
+        std::env::temp_dir().join(format!("ridx_test_dep_manifest_gen_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&test_dir);
+
+    let var_dir = test_dir.join("variants/var1");
+    fs::create_dir_all(&var_dir).unwrap();
+
+    // 1. Write workspace crate
+    let mut writer_app = IndexWriter::new("app", "0.1.0");
+    writer_app.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "main".to_string(),
+        path: "app::main".to_string(),
+        signature: None,
+        file: "src/main.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
+    });
+    writer_app
+        .write_to(&mut BufWriter::new(
+            File::create(var_dir.join("app.ridx")).unwrap(),
+        ))
+        .unwrap();
+
+    // 2. Write dependency crate A1 with generation "new-generation" and embedded hash 111
+    let dep_dir = test_dir.join("registry/a1");
+    fs::create_dir_all(&dep_dir).unwrap();
+    let mut writer_a1 = IndexWriter::new("a1", "0.1.0");
+    writer_a1.set_unit_key("unitA1");
+    writer_a1.set_generation("new-generation");
+    let mut file_hashes = std::collections::HashMap::new();
+    file_hashes.insert("src/lib.rs".to_string(), 111u64);
+    writer_a1.set_file_hashes(file_hashes);
+    writer_a1.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "dep_fn".to_string(),
+        path: "a1::dep_fn".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
+    });
+    let a1_ridx = dep_dir.join("a1.ridx");
+    writer_a1
+        .write_to(&mut BufWriter::new(File::create(&a1_ridx).unwrap()))
+        .unwrap();
+
+    // Verify reader reads 111
+    let reader = ridx_format::IndexReader::open(&a1_ridx).unwrap();
+    assert_eq!(reader.generation(), "new-generation");
+    assert_eq!(reader.file_source_hash(0), 111);
+
+    // 3. Write ridx_manifest.json with stale dependency shard (generation: "old-generation", hash: 222)
+    let manifest_json = serde_json::json!({
+        "version": "2.0",
+        "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+        "extractor_version": ridx_format::EXTRACTOR_VERSION,
+        "active_variant_id": "var1",
+        "variant_dir": "variants/var1",
+        "workspace_root": test_dir.display().to_string(),
+        "manifest_path": test_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+        "timestamp_epoch_secs": 1000,
+        "total_crates": 1,
+        "total_defs": 1,
+        "total_refs": 0,
+        "total_types": 0,
+        "dependency_shards": [{
+            "name": "a1",
+            "version": "0.1.0",
+            "unit_key": "unitA1",
+            "generation": "old-generation",
+            "object_path": a1_ridx.display().to_string(),
+            "source_root": dep_dir.display().to_string(),
+            "is_dependency": true,
+            "dependencies": [],
+            "extern_units": {},
+            "file_hashes": {
+                "src/lib.rs": 222
+            }
+        }]
+    });
+    fs::write(
+        test_dir.join("ridx_manifest.json"),
+        serde_json::to_string_pretty(&manifest_json).unwrap(),
+    )
+    .unwrap();
+
+    let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace");
+
+    // The embedded hash 111 must be preserved and authoritative! The stale manifest hash 222 must NOT override it!
+    let a1_file = dep_dir.join("src/lib.rs");
+    let res = ws.source_hash_for_file(&a1_file.to_string_lossy());
+    assert_eq!(
+        res,
+        Some(111),
+        "embedded hash 111 must be authoritative over stale manifest hash 222"
+    );
+
+    let _ = fs::remove_dir_all(&test_dir);
+}

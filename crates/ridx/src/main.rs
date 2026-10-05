@@ -962,10 +962,23 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
                 let path = entry.path();
                 if path.extension().and_then(|s| s.to_str()) == Some("json") {
                     if let Ok(content) = fs::read(&path) {
-                        if let Ok(info) =
+                        if let Ok(mut info) =
                             serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content)
                         {
                             if info.is_dependency {
+                                let obj_p = Path::new(&info.object_path);
+                                if obj_p.is_file() {
+                                    if let Ok(r) = ridx_format::IndexReader::open(obj_p) {
+                                        let bin_gen = r.generation();
+                                        if !bin_gen.is_empty() {
+                                            info.generation = Some(bin_gen.to_string());
+                                        }
+                                        let embedded = r.embedded_file_hashes();
+                                        for (k, v) in embedded {
+                                            info.file_hashes.insert(k, v);
+                                        }
+                                    }
+                                }
                                 dep_shards.push(info);
                             }
                         }

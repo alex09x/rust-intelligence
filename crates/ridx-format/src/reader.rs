@@ -171,7 +171,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let offset_in_file_table = (self.header.files_offset as usize)
             + (file_id as usize) * std::mem::size_of::<crate::format::FileEntry>();
         let bytes = self.bytes();
-        if offset_in_file_table + 4 > bytes.len() {
+        if offset_in_file_table + std::mem::size_of::<crate::format::FileEntry>() > bytes.len() {
             return "";
         }
         let str_offset = u32::from_le_bytes(
@@ -531,8 +531,8 @@ fn validate_sections(buf_len: usize, header: &Header) -> io::Result<()> {
         buf_len,
         header.files_offset,
         header.files_count,
-        std::mem::size_of::<u32>(),
-        4,
+        std::mem::size_of::<FileEntry>(),
+        std::mem::align_of::<FileEntry>(),
         "Files table",
     )?;
 

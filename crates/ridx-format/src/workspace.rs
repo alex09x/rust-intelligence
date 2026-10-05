@@ -117,6 +117,7 @@ pub struct WorkspaceStats {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DependencyShardInfo {
     pub name: String,
+    #[serde(default)]
     pub version: String,
     pub unit_key: String,
     #[serde(default)]
@@ -571,10 +572,29 @@ impl WorkspaceIndex {
                             continue;
                         }
                         let embedded = reader.embedded_file_hashes();
-                        let gen = if !reader.generation().is_empty() {
-                            Some(reader.generation().to_string())
-                        } else {
+                        let reader_gen = reader.generation();
+                        let mut gen_valid = true;
+                        if !reader_gen.is_empty() {
+                            let dep_gen = dep.generation.as_deref().unwrap_or("");
+                            if !dep_gen.is_empty() {
+                                if dep_gen != reader_gen {
+                                    gen_valid = false;
+                                }
+                            } else if !dep.file_hashes.is_empty() {
+                                let computed_digest =
+                                    crate::format::compute_source_snapshot_digest(&dep.file_hashes);
+                                let computed_gen = format!("{:016x}", computed_digest);
+                                if computed_gen != reader_gen {
+                                    gen_valid = false;
+                                }
+                            }
+                        }
+                        let gen = if !reader_gen.is_empty() {
+                            Some(reader_gen.to_string())
+                        } else if gen_valid {
                             dep.generation.clone()
+                        } else {
+                            None
                         };
                         let mtime = fs::metadata(&dep_file).and_then(|m| m.modified()).ok();
                         readers.push(reader);
@@ -583,11 +603,23 @@ impl WorkspaceIndex {
                         source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
                         unit_keys.push(Some(dep.unit_key.clone()));
                         reader_generations.push(gen);
-                        reader_dependencies.push(dep.dependencies.clone());
-                        reader_extern_units.push(dep.extern_units.clone());
+                        let deps = if gen_valid {
+                            dep.dependencies.clone()
+                        } else {
+                            Vec::new()
+                        };
+                        let ext_units = if gen_valid {
+                            dep.extern_units.clone()
+                        } else {
+                            HashMap::new()
+                        };
+                        reader_dependencies.push(deps);
+                        reader_extern_units.push(ext_units);
                         let mut combined_hashes = embedded;
-                        for (k, v) in &dep.file_hashes {
-                            combined_hashes.insert(k.clone(), *v);
+                        if gen_valid {
+                            for (k, v) in &dep.file_hashes {
+                                combined_hashes.entry(k.clone()).or_insert(*v);
+                            }
                         }
                         reader_file_hashes.push(combined_hashes);
                         reader_is_dependency.push(true);
@@ -1628,10 +1660,32 @@ impl WorkspaceIndex {
                                                     .and_then(|m| m.modified())
                                                     .ok();
                                                 let embedded = r.embedded_file_hashes();
-                                                let gen = if !r.generation().is_empty() {
-                                                    Some(r.generation().to_string())
-                                                } else {
+                                                let reader_gen = r.generation();
+                                                let mut gen_valid = true;
+                                                if !reader_gen.is_empty() {
+                                                    let dep_gen =
+                                                        dep.generation.as_deref().unwrap_or("");
+                                                    if !dep_gen.is_empty() {
+                                                        if dep_gen != reader_gen {
+                                                            gen_valid = false;
+                                                        }
+                                                    } else if !dep.file_hashes.is_empty() {
+                                                        let computed_digest = crate::format::compute_source_snapshot_digest(
+                                                            &dep.file_hashes,
+                                                        );
+                                                        let computed_gen =
+                                                            format!("{:016x}", computed_digest);
+                                                        if computed_gen != reader_gen {
+                                                            gen_valid = false;
+                                                        }
+                                                    }
+                                                }
+                                                let gen = if !reader_gen.is_empty() {
+                                                    Some(reader_gen.to_string())
+                                                } else if gen_valid {
                                                     dep.generation.clone()
+                                                } else {
+                                                    None
                                                 };
                                                 new_readers.push(r);
                                                 new_paths.push(dep_file);
@@ -1641,13 +1695,25 @@ impl WorkspaceIndex {
                                                 );
                                                 new_unit_keys.push(Some(dep.unit_key.clone()));
                                                 new_reader_generations.push(gen);
-                                                new_reader_dependencies
-                                                    .push(dep.dependencies.clone());
-                                                new_reader_extern_units
-                                                    .push(dep.extern_units.clone());
+                                                let deps = if gen_valid {
+                                                    dep.dependencies.clone()
+                                                } else {
+                                                    Vec::new()
+                                                };
+                                                let ext_units = if gen_valid {
+                                                    dep.extern_units.clone()
+                                                } else {
+                                                    HashMap::new()
+                                                };
+                                                new_reader_dependencies.push(deps);
+                                                new_reader_extern_units.push(ext_units);
                                                 let mut combined_hashes = embedded;
-                                                for (k, v) in &dep.file_hashes {
-                                                    combined_hashes.insert(k.clone(), *v);
+                                                if gen_valid {
+                                                    for (k, v) in &dep.file_hashes {
+                                                        combined_hashes
+                                                            .entry(k.clone())
+                                                            .or_insert(*v);
+                                                    }
                                                 }
                                                 new_reader_file_hashes.push(combined_hashes);
                                                 new_reader_is_dependency.push(true);
@@ -2103,7 +2169,7 @@ impl WorkspaceIndex {
                         let mtime = fs::metadata(c).and_then(|m| m.modified()).ok();
                         let mut combined_hashes = embedded_hashes.clone();
                         for (k, v) in info.file_hashes {
-                            combined_hashes.insert(k, v);
+                            combined_hashes.entry(k).or_insert(v);
                         }
                         let gen = if !expected_generation.is_empty() {
                             Some(expected_generation.to_string())
