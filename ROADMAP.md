@@ -12,30 +12,26 @@ milestones, not a claim of complete or verified LSP support. Their correctness,
 especially across compilation units and unsaved edits, is the first release gate.
 
 Use [LSP 3.18](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/)
-as the capability inventory. Compatibility is negotiated per capability. Advertise
-only implemented behavior, and record optional or inapplicable features explicitly.
-Protocol coverage and Rust semantic correctness must be tracked separately.
+as the capability inventory. The agreed scope is **all LSP functionality**, including
+optional capability families. Compatibility is negotiated per capability, and only
+implemented behavior is advertised. Protocol coverage and Rust semantic correctness
+must be tracked separately. **rust-analyzer is the comparison baseline.**
 
-## Which protocol does what?
+## Agreed scope
 
-| Name | Purpose | Decision for RIDX |
-| --- | --- | --- |
-| **LSP — Language Server Protocol** | Live requests and notifications between an editor and a language server. | Main editor-facing interface. |
-| **Base Protocol 0.9** | An experimental extraction of shared editor/server infrastructure from LSP: JSON-RPC framing, capabilities, initialization/shutdown, cancellation, progress, and window messages. Servers for other tools can reuse these conventions without providing language features. | Share infrastructure internally, but implement the contract required by our LSP clients. This draft is broader than LSP's framing section and is subject to breaking changes; separate Base 0.9 support is not a prerequisite for RIDX. [Specification](https://microsoft.github.io/language-server-protocol/specifications/base/0.9/specification/). |
-| **LSIF — Language Server Index Format** | A persisted graph of documents, ranges, and navigation results for a source snapshot. Consumers can answer navigation queries without running the original language analyzer. | Optional export for external code browsing. It does not supply live completion or inference for edited code. Keep the mmap-oriented RIDX storage format. The 0.6.0 page labels that version under construction. [Specification](https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/), [overview](https://microsoft.github.io/language-server-protocol/overviews/lsif/overview/). |
-| **SCIP — SCIP Code Intelligence Protocol** | A source-index interchange format with a Protobuf schema, covering definitions, references, and implementations. | Evaluate alongside LSIF when an actual consumer is selected; choose the required exporter instead of committing to both. [Project and schema](https://github.com/scip-code/scip). |
-| **BSP — Build Server Protocol** | Communication with a build server; complements the editor-to-language-server role of LSP. | Optional future build adapter. Begin with the existing Cargo integration; do not make BSP a prerequisite for Rust editing. [BSP/LSP relationship](https://build-server-protocol.github.io/docs/overview/faq). |
-| **DAP — Debug Adapter Protocol** | Communication between an editor's debugging UI and a debugger adapter. | Integrate an existing adapter if debugging is added. Breakpoints and stepping belong outside RIDX's LSP implementation. [Overview](https://microsoft.github.io/debug-adapter-protocol/overview.html). |
+- Implement the full LSP surface in stages, including lifecycle, synchronization,
+  language features, workspace operations, and client/server capability negotiation.
+- Keep RIDX storage, compiler extraction, Cargo integration, and live analysis as
+  internal components supporting that LSP surface.
+- Exclude LSIF/SCIP export, BSP, DAP, separate Base Protocol 0.9 support, and custom
+  editor protocol extensions from this roadmap. The framing and lifecycle required
+  by LSP itself remain in scope.
+- Compare RIDX directly with rust-analyzer through the same LSP harness. Tokio and
+  the rust-analyzer source workspace are test corpora; rust-analyzer is also the
+  server against which behavior and performance are compared.
 
-The requested specifications are **LSIF 0.6.0** and **Base Protocol 0.9**. BSP is a
-different protocol, included above only to explain the surrounding ecosystem.
-None of these standards requires a single global index file.
-
-For example, an editor's “go to definition here” operation is an LSP request. The
-shared message/lifecycle infrastructure handles its delivery. RIDX computes the
-answer from its selected index and live state. An LSIF export can preserve the
-navigation facts for a code browser working with that exact source snapshot.
-Export does not make those facts valid for subsequent unsaved edits.
+The first daily-use milestone is an intermediate release. It does not reduce the
+final full-LSP scope or turn the remaining capabilities into optional future work.
 
 ## Architecture constraints
 
@@ -145,36 +141,39 @@ non-ASCII identifiers, macro calls, and multiline strings.
 silently apply to a newer buffer. Compile relevant fixtures when the edit promises
 to preserve valid code.
 
-### 6. Relationships and Rust integrations
+### 6. Relationships and commands
 
 - Call/type hierarchies with explicit limitations for dynamic dispatch; CodeLens
   and commands for references, tests, and runnable targets.
-- Cargo task scheduling, progress and cancellation; macro expansion views and other
-  Rust-specific editor extensions documented separately from standard LSP.
-- Evaluate BSP only for a concrete build-tool interoperability need. Debug launch
-  integration may use DAP; RIDX does not need to implement a debugger.
+- Cargo task scheduling, progress and cancellation behind LSP commands and CodeLens.
+  Keep command behavior and build configuration explicit.
 
 **Gate:** each relation and command has a defined semantic meaning, selected build
 variant, and verified editor behavior.
 
-### 7. Interoperability and scale
+### 7. Remaining LSP capabilities and scale
 
 - Maintain the capability matrix below with implementation status, negotiation
   flags, fixture links, known limits, and client evidence as work lands.
+- Complete linked editing, colors, monikers, notebooks, inline values, inline
+  completion, and document-content requests. Each needs useful Rust behavior and
+  tests of its full lifecycle, including capability negotiation and updates.
 - Exercise VS Code and Neovim against pinned Tokio and rust-analyzer revisions,
   covering feature configurations and multiple dependency versions.
-- Add LSIF or SCIP export only after choosing the consuming tool. Preserve package,
-  source snapshot, and symbol identity; validate against that consumer.
+- Run the same LSP scenarios against RIDX and a pinned rust-analyzer server. Record
+  correctness differences and performance for equivalent operations.
 
-**Gate:** reproducible correctness and lifecycle measurements accompany releases.
-Optional integrations are separate milestones, not blockers for the daily-use release.
+**Gate:** every LSP method has a recorded implementation and conformance result;
+reproducible correctness and lifecycle measurements accompany releases. A capability
+missing from rust-analyzer is still in scope and requires independent validation.
 
 ## Capability inventory
 
 “Prototype” means a handler exists and still needs the gates above. “Planned” is work
-to implement and validate. “Conditional” requires an explicit product use case and
-must remain unadvertised until supported. The table groups methods; implementation
-work must also track each method's capability flags and result variants.
+to implement and validate. Every family below is in scope. The table groups methods;
+stage 1 must expand it into a method-level checklist from a pinned specification,
+tracking direction, capability flags, result variants, tests, and rust-analyzer
+comparison status. An absent handler or placeholder response is not completion.
 
 | Capability family | Planning status | Stage |
 | --- | --- | --- |
@@ -195,24 +194,26 @@ work must also track each method's capability flags and result variants.
 | Call hierarchy and type hierarchy | Planned | 6 |
 | CodeLens, resolution and refresh | Planned | 6 |
 | Window messages, show-document, configuration requests, tracing and telemetry policy | Planned; client-capability aware | 1, 6 |
-| Linked editing, document colors and color presentations | Conditional: Rust-specific use cases | 7 |
-| Monikers for external symbol identity | Conditional: index interoperability | 7 |
-| Notebook synchronization, inline values and inline completion | Conditional: separate editor/product scope | 7 |
-| Workspace document-content requests and refresh | Conditional: virtual/source-provider integration | 7 |
+| Linked editing, document colors and color presentations | Planned | 7 |
+| Monikers for external symbol identity | Planned | 7 |
+| Notebook synchronization, inline values and inline completion | Planned | 7 |
+| Workspace document-content requests and refresh | Planned | 7 |
 | Dynamic registration, partial results and refresh notifications | Planned where applicable to supported families | 1–7 |
 
 The method inventory follows the
 [official LSP specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/).
-Supporting every optional method is not the definition of a correct LSP server.
-Full Rust coverage means useful behavior for all agreed Rust editing workflows,
-with unsupported capabilities clearly recorded.
+The final milestone includes optional protocol features as a product requirement.
+Unsupported behavior remains an explicit gap until implemented; narrowing this scope
+requires a new user decision. Legitimate empty results must reflect the input, not
+stand in for an unimplemented feature.
 
 ## Validation and performance evidence
 
 Use small semantic fixtures for correctness, then pinned **Tokio** and
 **rust-analyzer** workspaces for scale. Record revision, toolchain, hardware, build
-profile, target, feature selection, command lines, and cache state. Keep these six
-measurements separate:
+profile, target, feature selection, command lines, and cache state. Pin the
+**rust-analyzer server version** separately from the rust-analyzer source corpus.
+Keep these six measurements separate:
 
 | Measurement | Required evidence |
 | --- | --- |
@@ -224,8 +225,21 @@ measurements separate:
 | Storage and memory | Local/shared cache sizes, duplicate objects, idle/active/peak RSS, mapped pages, live buffers, semantic caches, and eviction behavior. |
 
 Also measure switching feature variants, cross-project cache reuse, failed builds,
-high-fanout references, and unsaved edits. Compare equivalent answers and separate
-direct rust-analyzer measurements from any wrapper or network overhead.
+high-fanout references, and unsaved edits. The comparison harness must:
+
+- Replay identical LSP requests and edit sequences against RIDX and rust-analyzer,
+  with matching source snapshots, Cargo features, target, toolchain, and capabilities.
+- Compare result correctness and feature coverage before latency. Use curated
+  expected answers to investigate disagreements; rust-analyzer is a baseline, not
+  an infallible oracle. Mark methods it does not support explicitly.
+- Measure both servers through the same local transport and client, with equivalent
+  warm/cold conditions. Exclude prod-code or network wrapper timings from the main
+  comparison; raw RIDX lookup timings are supplementary measurements only.
+- Measure startup to usable results, edit/save to fresh answers, end-to-end request
+  latency, and actual memory for both servers. Report RIDX indexing cost separately
+  against plain Cargo check and compare overall readiness with rust-analyzer.
+- Record repetitions and latency distributions, timeouts, cancellations, errors,
+  and cache misses. Do not calculate a speedup for unequal or incorrect results.
 
 Use SIMD-capable byte/string search primitives for suitable hot paths, including
 bounded NUL scans and repeated substring searches. Preserve portable fallback and
@@ -241,7 +255,8 @@ Do not use zero-RSS, zero-startup, or universal speedup claims as acceptance cri
 2. Establish parser-backed document state and protocol lifecycle coverage.
 3. Complete navigation and connect versioned compiler diagnostics.
 4. Validate the live semantic approach with completion and signature-help fixtures.
-5. Deliver the daily-use milestone, then add presentation and safe refactorings.
+5. Deliver the daily-use milestone, then complete presentation, safe refactorings,
+   relationships, and every remaining LSP capability with rust-analyzer comparisons.
 
 This document records scope and acceptance criteria. It does not mark planned
 features as implemented or prescribe dates before the semantic-backend evaluation.

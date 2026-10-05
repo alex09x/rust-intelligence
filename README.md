@@ -209,9 +209,9 @@ Measured directly against `BTCR` (trading bot workspace: 16 member crates, 188 R
 
 ## 7. Engineering Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for the forward-looking LSP capability plan, acceptance
-gates, and the roles of Base Protocol 0.9, LSIF, SCIP, BSP, and DAP. The completed
-phases below record prototype milestones, not full LSP conformance.
+See [ROADMAP.md](ROADMAP.md) for the full LSP implementation plan, acceptance gates,
+and direct comparisons with rust-analyzer. The completed phases below record
+prototype milestones, not full LSP conformance.
 
 ### Phase 1: Core Zero-Copy Binary Format & Reader/Writer ✅
 - [x] Header specification with 8-byte alignment.
