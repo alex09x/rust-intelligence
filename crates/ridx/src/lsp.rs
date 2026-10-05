@@ -78,6 +78,12 @@ fn path_to_uri(file: &str) -> String {
     format!("file://{}", percent_encode_path(&abs_path))
 }
 
+/// Request-scoped line and position converter.
+///
+/// Converts between 1-based character/column coordinates and LSP 0-based UTF-16 code units.
+/// Caches read lines per file on-demand during the lifetime of a single request to avoid
+/// repeated full-file disk reads when formatting high-fanout reference/symbol responses,
+/// and drops all buffers when the request completes to maintain near-zero resident memory.
 #[derive(Default)]
 struct PositionConverter {
     cache: std::collections::HashMap<String, Vec<String>>,
@@ -88,10 +94,6 @@ impl PositionConverter {
         Self {
             cache: std::collections::HashMap::new(),
         }
-    }
-
-    fn clear(&mut self) {
-        self.cache.clear();
     }
 
     fn get_line(&mut self, file_path: &str, line_1based: u32) -> Option<&str> {
@@ -161,7 +163,6 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
         Some(p) => WorkspaceIndex::open(&p).ok(),
         None => WorkspaceIndex::auto_discover().ok(),
     };
-    let mut conv = PositionConverter::new();
 
     loop {
         // Read headers
@@ -202,10 +203,13 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 
         // Automatically reload indices if files changed on disk
         if let Some(ref mut ws) = workspace {
-            if let Ok(true) = ws.reload_if_modified() {
-                conv.clear();
-            }
+            let _ = ws.reload_if_modified();
         }
+
+        // Request-scoped line cache: reuses read file lines across all coordinate
+        // conversions within this request (e.g. high-fanout references or symbols),
+        // and automatically drops all allocated buffers when the request completes.
+        let mut conv = PositionConverter::new();
 
         match method {
             "initialize" => {
@@ -257,7 +261,6 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                 if let Some(ref mut ws) = workspace {
                     let _ = ws.reload_if_modified();
                 }
-                conv.clear();
             }
 
             "textDocument/definition" => {
@@ -557,9 +560,8 @@ mod tests {
         let char_col = conv.utf16_col_to_char_col(path_str, 3, 20);
         assert_eq!(char_col, 20);
 
-        // Clear cache
-        conv.clear();
-        assert!(conv.cache.is_empty());
+        // Verify request-scoped converter drops cleanly
+        drop(conv);
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
