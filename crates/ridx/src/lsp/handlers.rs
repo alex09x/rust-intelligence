@@ -908,3 +908,143 @@ pub fn handle_diagnostic(_msg: &Value, _overlay_mgr: &OverlayManager) -> Value {
         "items": []
     })
 }
+
+pub fn handle_folding_range(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let Some(overlay) = overlay_mgr.get(&file) else {
+        return json!([]);
+    };
+    let mut ranges = Vec::new();
+    for scope in &overlay.scopes {
+        if scope.id == 0 {
+            continue;
+        }
+        let (start_line, _) = overlay.byte_to_char_line_col(scope.start_byte);
+        let (end_line, _) = overlay.byte_to_char_line_col(scope.end_byte);
+        if end_line > start_line {
+            ranges.push(json!({
+                "startLine": start_line.saturating_sub(1),
+                "endLine": end_line.saturating_sub(1),
+                "kind": "region"
+            }));
+        }
+    }
+    json!(ranges)
+}
+
+pub fn handle_selection_range(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let positions = msg["params"]["positions"].as_array();
+    let Some(overlay) = overlay_mgr.get(&file) else {
+        return json!([]);
+    };
+    let mut results = Vec::new();
+    if let Some(pos_list) = positions {
+        for pos in pos_list {
+            let line_0based = pos["line"].as_u64().unwrap_or(0) as u32;
+            let utf16_col_0based = pos["character"].as_u64().unwrap_or(0) as u32;
+            let byte_pos = overlay.position_to_byte_offset(line_0based, utf16_col_0based);
+
+            let mut node: Option<Value> = None;
+            for scope in overlay.scopes.iter().rev() {
+                if byte_pos >= scope.start_byte && byte_pos <= scope.end_byte {
+                    let (sl, sc) = overlay.byte_to_char_line_col(scope.start_byte);
+                    let (el, ec) = overlay.byte_to_char_line_col(scope.end_byte);
+                    let start_char = overlay.char_col_to_utf16_col(sl, sc);
+                    let end_char = overlay.char_col_to_utf16_col(el, ec);
+                    let range = json!({
+                        "start": { "line": sl.saturating_sub(1), "character": start_char },
+                        "end": { "line": el.saturating_sub(1), "character": end_char }
+                    });
+                    node = Some(json!({
+                        "range": range,
+                        "parent": node
+                    }));
+                }
+            }
+            if let Some(n) = node {
+                results.push(n);
+            }
+        }
+    }
+    json!(results)
+}
+
+pub fn handle_inlay_hint(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let Some(ws) = workspace else {
+        return json!([]);
+    };
+    let Some(overlay) = overlay_mgr.get(&file) else {
+        return json!([]);
+    };
+    let mut hints = Vec::new();
+    for sym in &overlay.symbols {
+        if sym.kind == DefKind::Local {
+            if let Some(ty) = ws.type_at(&file, sym.start_line, sym.start_col) {
+                let end_char = overlay.char_col_to_utf16_col(sym.end_line, sym.end_col);
+                hints.push(json!({
+                    "position": {
+                        "line": sym.end_line.saturating_sub(1),
+                        "character": end_char
+                    },
+                    "label": format!(": {ty}"),
+                    "kind": 1,
+                    "paddingLeft": true
+                }));
+            }
+        }
+    }
+    json!(hints)
+}
+
+pub fn handle_semantic_tokens_full(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let Some(overlay) = overlay_mgr.get(&file) else {
+        return json!({ "data": [] });
+    };
+    let mut data = Vec::new();
+    let mut prev_line = 0u32;
+    let mut prev_char = 0u32;
+
+    let mut sorted_symbols = overlay.symbols.clone();
+    sorted_symbols.sort_by_key(|s| (s.start_line, s.start_col));
+
+    for sym in sorted_symbols {
+        let line_0based = sym.start_line.saturating_sub(1);
+        let char_0based = overlay.char_col_to_utf16_col(sym.start_line, sym.start_col);
+        let end_char = overlay.char_col_to_utf16_col(sym.end_line, sym.end_col);
+        let length = end_char.saturating_sub(char_0based);
+
+        let delta_line = line_0based.saturating_sub(prev_line);
+        let delta_start = if delta_line == 0 {
+            char_0based.saturating_sub(prev_char)
+        } else {
+            char_0based
+        };
+
+        let token_type = match sym.kind {
+            DefKind::Fn | DefKind::AssocFn => 1,
+            DefKind::Struct => 3,
+            DefKind::Enum => 4,
+            DefKind::Variant => 5,
+            DefKind::Trait => 6,
+            DefKind::TyAlias => 7,
+            _ => 0,
+        };
+
+        data.extend_from_slice(&[delta_line, delta_start, length, token_type, 1]);
+        prev_line = line_0based;
+        prev_char = char_0based;
+    }
+
+    json!({ "data": data })
+}

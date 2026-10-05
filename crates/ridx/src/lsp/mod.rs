@@ -218,6 +218,33 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
                             "diagnosticProvider": {
                                 "interFileDependencies": false,
                                 "workspaceDiagnostics": false
+                            },
+                            "foldingRangeProvider": true,
+                            "selectionRangeProvider": true,
+                            "inlayHintProvider": {
+                                "resolveProvider": false
+                            },
+                            "semanticTokensProvider": {
+                                "legend": {
+                                    "tokenTypes": [
+                                        "variable",
+                                        "function",
+                                        "method",
+                                        "struct",
+                                        "enum",
+                                        "enumMember",
+                                        "interface",
+                                        "typeParameter"
+                                    ],
+                                    "tokenModifiers": [
+                                        "declaration",
+                                        "definition",
+                                        "readonly",
+                                        "static",
+                                        "defaultLibrary"
+                                    ]
+                                },
+                                "full": true
                             }
                         },
                         "serverInfo": {
@@ -562,6 +589,54 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
             "textDocument/diagnostic" => {
                 if let Some(id) = id {
                     let result = handle_diagnostic(&msg, &overlay_mgr);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/foldingRange" => {
+                if let Some(id) = id {
+                    let result = handle_folding_range(&msg, &overlay_mgr);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/selectionRange" => {
+                if let Some(id) = id {
+                    let result = handle_selection_range(&msg, &overlay_mgr);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/inlayHint" => {
+                if let Some(id) = id {
+                    let result = handle_inlay_hint(&msg, workspace.as_ref(), &overlay_mgr);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/semanticTokens/full" => {
+                if let Some(id) = id {
+                    let result = handle_semantic_tokens_full(&msg, &overlay_mgr);
                     let resp = json!({
                         "jsonrpc": "2.0",
                         "id": id,
@@ -1418,5 +1493,93 @@ mod tests {
         let fmt_resp = &responses[3];
         assert_eq!(fmt_resp["id"], 42);
         assert!(fmt_resp["result"].is_array());
+    }
+
+    #[test]
+    fn test_lsp_server_stream_stage4_structure_and_presentation() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        let doc_uri = "file:///tmp/stage4_test.rs";
+        let code = "fn main() {\n    let val_x = 10;\n    let val_y = 20;\n}\n";
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": doc_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": code
+                }
+            }
+        })));
+        // 1. foldingRange
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 50,
+            "method": "textDocument/foldingRange",
+            "params": {
+                "textDocument": { "uri": doc_uri }
+            }
+        })));
+        // 2. selectionRange
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 51,
+            "method": "textDocument/selectionRange",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "positions": [{ "line": 1, "character": 8 }]
+            }
+        })));
+        // 3. semanticTokens
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 52,
+            "method": "textDocument/semanticTokens/full",
+            "params": {
+                "textDocument": { "uri": doc_uri }
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 53,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 5);
+
+        // Verify foldingRange
+        let fold_resp = &responses[1];
+        assert_eq!(fold_resp["id"], 50);
+        let fold_ranges = fold_resp["result"].as_array().expect("folding array");
+        assert!(!fold_ranges.is_empty());
+
+        // Verify selectionRange
+        let sel_resp = &responses[2];
+        assert_eq!(sel_resp["id"], 51);
+        let sel_ranges = sel_resp["result"].as_array().expect("selection array");
+        assert!(!sel_ranges.is_empty());
+
+        // Verify semanticTokens
+        let sem_resp = &responses[3];
+        assert_eq!(sem_resp["id"], 52);
+        let sem_data = sem_resp["result"]["data"].as_array().expect("data array");
+        assert!(!sem_data.is_empty());
     }
 }
