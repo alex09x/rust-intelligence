@@ -6,6 +6,22 @@
 pub const MAGIC: [u8; 4] = *b"RIDX";
 pub const CURRENT_VERSION: u32 = 1;
 
+/// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
+const _: () = {
+    assert!(std::mem::size_of::<Header>() == 128);
+    assert!(std::mem::align_of::<Header>() == 8);
+    assert!(std::mem::size_of::<Span>() == 20);
+    assert!(std::mem::align_of::<Span>() == 4);
+    assert!(std::mem::size_of::<DefEntry>() == 40);
+    assert!(std::mem::align_of::<DefEntry>() == 4);
+    assert!(std::mem::size_of::<RefEntry>() == 44);
+    assert!(std::mem::align_of::<RefEntry>() == 4);
+    assert!(std::mem::size_of::<TypeEntry>() == 28);
+    assert!(std::mem::align_of::<TypeEntry>() == 4);
+    assert!(std::mem::size_of::<HashIndexEntry>() == 16);
+    assert!(std::mem::align_of::<HashIndexEntry>() == 8);
+};
+
 /// Fixed-size header at offset 0 of any .ridx file.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -134,4 +134,28 @@ mod tests {
         assert_eq!(off1, off2);
         assert_eq!(off2, off3);
     }
+
+    #[test]
+    fn test_structural_validation_guards() {
+        // 1. Buffer too small
+        let small_buf = vec![0u8; 64];
+        assert!(IndexReader::from_buffer(&small_buf).is_err());
+
+        // 2. Invalid magic
+        let mut bad_magic = vec![0u8; 256];
+        bad_magic[0..4].copy_from_slice(b"NOPE");
+        assert!(IndexReader::from_buffer(&bad_magic).is_err());
+
+        // 3. Out-of-bounds table offset in valid header
+        let mut writer = IndexWriter::new("test", "0.1.0");
+        let mut buf = std::io::Cursor::new(Vec::new());
+        writer.write_to(&mut buf).unwrap();
+        let mut bytes = buf.into_inner();
+
+        // Corrupt defs_offset to point way beyond buffer
+        let bad_offset = (bytes.len() as u64) + 10000;
+        // defs_offset is at byte 32 of Header
+        bytes[32..40].copy_from_slice(&bad_offset.to_le_bytes());
+        assert!(IndexReader::from_buffer(&bytes).is_err());
+    }
 }

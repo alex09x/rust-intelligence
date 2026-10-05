@@ -1,4 +1,5 @@
 //! Fast zero-copy memory-mapped reader for .ridx files.
+#![allow(clippy::manual_is_multiple_of)]
 
 use std::fs::File;
 use std::io;
@@ -24,6 +25,7 @@ pub struct ResolvedDefinition<'a> {
 /// Zero-copy reader over a memory-mapped or buffered `.ridx` index.
 pub struct IndexReader<B> {
     buffer: B,
+    header: Header,
 }
 
 impl IndexReader<Mmap> {
@@ -31,34 +33,32 @@ impl IndexReader<Mmap> {
     pub fn open(path: impl AsRef<Path>) -> io::Result<IndexReader<Mmap>> {
         let file = File::open(path)?;
         let mmap = unsafe { Mmap::map(&file)? };
-        let reader = IndexReader { buffer: mmap };
-        reader.validate()?;
-        Ok(reader)
+        Self::from_buffer(mmap)
     }
 }
 
 impl<B: AsRef<[u8]>> IndexReader<B> {
     /// Wraps any byte buffer as an IndexReader.
     pub fn from_buffer(buffer: B) -> io::Result<Self> {
-        let reader = Self { buffer };
-        reader.validate()?;
-        Ok(reader)
-    }
-
-    #[inline]
-    fn bytes(&self) -> &[u8] {
-        self.buffer.as_ref()
-    }
-
-    fn validate(&self) -> io::Result<()> {
-        let bytes = self.bytes();
+        let bytes = buffer.as_ref();
+        if (bytes.as_ptr() as usize) % 8 != 0 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Buffer base pointer must be 8-byte aligned for zero-copy RIDX reading",
+            ));
+        }
         if bytes.len() < std::mem::size_of::<Header>() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "File too small for RIDX header",
             ));
         }
-        let header = self.header();
+
+        // Safely decode header into aligned memory without unaligned pointer casting
+        let mut header_buf = [0u8; std::mem::size_of::<Header>()];
+        header_buf.copy_from_slice(&bytes[..std::mem::size_of::<Header>()]);
+        let header: Header = unsafe { std::mem::transmute(header_buf) };
+
         if header.magic != MAGIC {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -71,55 +71,63 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 format!("Unsupported RIDX version: {}", header.version),
             ));
         }
-        Ok(())
+
+        validate_sections(bytes.len(), &header)?;
+
+        Ok(Self { buffer, header })
+    }
+
+    #[inline]
+    fn bytes(&self) -> &[u8] {
+        self.buffer.as_ref()
     }
 
     #[inline]
     pub fn header(&self) -> &Header {
-        unsafe { &*(self.bytes().as_ptr() as *const Header) }
+        &self.header
     }
 
     /// Crate name stored in the index.
     pub fn crate_name(&self) -> &str {
-        self.get_str(self.header().crate_name_offset)
+        self.get_str(self.header.crate_name_offset)
     }
 
     /// Crate version stored in the index.
     pub fn crate_version(&self) -> &str {
-        self.get_str(self.header().crate_version_offset)
+        self.get_str(self.header.crate_version_offset)
     }
 
     /// Retrieves an interned null-terminated string at the specified offset.
     #[inline]
     pub fn get_str(&self, offset: u32) -> &str {
-        let header = self.header();
-        let pool_start = header.string_pool_offset as usize;
-        let start = pool_start + (offset as usize);
-        let bytes = self.bytes();
-
-        if start >= bytes.len() {
+        let pool_start = self.header.string_pool_offset as usize;
+        let pool_len = self.header.string_pool_len as usize;
+        let off = offset as usize;
+        if off >= pool_len {
             return "";
         }
-        let pool_end = (header.string_pool_offset + header.string_pool_len) as usize;
-        let limit = pool_end.min(bytes.len());
-
-        let end = bytes[start..limit]
+        let bytes = self.bytes();
+        let start = pool_start + off;
+        let max_end = (pool_start + pool_len).min(bytes.len());
+        if start >= max_end {
+            return "";
+        }
+        let end = bytes[start..max_end]
             .iter()
             .position(|&b| b == 0)
             .map(|p| start + p)
-            .unwrap_or(limit);
+            .unwrap_or(max_end);
 
         std::str::from_utf8(&bytes[start..end]).unwrap_or("")
     }
 
     /// Returns the file path for a given file_id.
     pub fn get_file(&self, file_id: u32) -> &str {
-        let header = self.header();
-        if file_id >= header.files_count {
+        if file_id >= self.header.files_count {
             return "";
         }
         let offset_in_file_table =
-            (header.files_offset as usize) + (file_id as usize) * std::mem::size_of::<u32>();
+            (self.header.files_offset as usize) + (file_id as usize) * std::mem::size_of::<u32>();
         let bytes = self.bytes();
         if offset_in_file_table + 4 > bytes.len() {
             return "";
@@ -134,8 +142,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
     /// Look up the file_id for a given path substring or exact match.
     pub fn find_file_id(&self, file_path: &str) -> Option<u32> {
-        let header = self.header();
-        for id in 0..header.files_count {
+        for id in 0..self.header.files_count {
             let f = self.get_file(id);
             if f == file_path || f.ends_with(file_path) || file_path.ends_with(f) {
                 return Some(id);
@@ -383,4 +390,132 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         }
         matches
     }
+}
+
+fn validate_sections(buf_len: usize, header: &Header) -> io::Result<()> {
+    // 1. String pool alignment and bounds
+    if (header.string_pool_offset as usize) % 8 != 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "String pool offset is not 8-byte aligned",
+        ));
+    }
+    let pool_start = header.string_pool_offset as usize;
+    let pool_len = header.string_pool_len as usize;
+    let pool_end = pool_start.checked_add(pool_len).ok_or_else(|| {
+        io::Error::new(io::ErrorKind::InvalidData, "String pool length overflow")
+    })?;
+    if pool_end > buf_len {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "String pool extends beyond file bounds",
+        ));
+    }
+
+    if (header.crate_name_offset as usize) >= pool_len
+        || (header.crate_version_offset as usize) >= pool_len
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Crate metadata string offsets exceed string pool bounds",
+        ));
+    }
+
+    // 2. Files table
+    check_section(
+        buf_len,
+        header.files_offset,
+        header.files_count,
+        std::mem::size_of::<u32>(),
+        4,
+        "Files table",
+    )?;
+
+    // 3. Definitions table
+    check_section(
+        buf_len,
+        header.defs_offset,
+        header.defs_count,
+        std::mem::size_of::<DefEntry>(),
+        4,
+        "Definitions table",
+    )?;
+
+    // 4. Definitions hash index
+    check_section(
+        buf_len,
+        header.defs_by_hash_offset,
+        header.defs_by_hash_count,
+        std::mem::size_of::<HashIndexEntry>(),
+        8,
+        "Definitions hash index",
+    )?;
+
+    // 5. References table
+    check_section(
+        buf_len,
+        header.refs_offset,
+        header.refs_count,
+        std::mem::size_of::<RefEntry>(),
+        4,
+        "References table",
+    )?;
+
+    // 6. References target hash index
+    check_section(
+        buf_len,
+        header.refs_by_target_offset,
+        header.refs_by_target_count,
+        std::mem::size_of::<HashIndexEntry>(),
+        8,
+        "References target hash index",
+    )?;
+
+    // 7. Types table
+    check_section(
+        buf_len,
+        header.types_offset,
+        header.types_count,
+        std::mem::size_of::<TypeEntry>(),
+        4,
+        "Types table",
+    )?;
+
+    Ok(())
+}
+
+fn check_section(
+    buf_len: usize,
+    offset: u64,
+    count: u32,
+    elem_size: usize,
+    required_align: usize,
+    section_name: &str,
+) -> io::Result<()> {
+    let off = offset as usize;
+    if off % required_align != 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("{section_name} offset {offset} is not aligned to {required_align} bytes"),
+        ));
+    }
+    let total_bytes = (count as usize).checked_mul(elem_size).ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("{section_name} size calculation overflow"),
+        )
+    })?;
+    let end = off.checked_add(total_bytes).ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("{section_name} end offset overflow"),
+        )
+    })?;
+    if end > buf_len {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("{section_name} extends beyond file bounds ({end} > {buf_len})"),
+        ));
+    }
+    Ok(())
 }

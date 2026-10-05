@@ -45,31 +45,32 @@ All integers are stored in little-endian format with 8-byte boundary alignment.
 ├────────────────────────────────────────────────────────┤
 │ File Path Table (u32 String Pool Offsets)              │
 ├────────────────────────────────────────────────────────┤
-│ Definitions Table (Array of DefEntry, 36 bytes each)   │
+│ Definitions Table (Array of DefEntry, 40 bytes each)   │
 ├────────────────────────────────────────────────────────┤
-│ Definitions Hash Index (FNV-1a 64-bit Path Hashes)    │
+│ Definitions Hash Index (FNV-1a 64-bit Path Hashes, 16B)│
 ├────────────────────────────────────────────────────────┤
-│ References Table (Sorted by Span, 40 bytes each)      │
+│ References Table (Sorted by Span, 44 bytes each)      │
 ├────────────────────────────────────────────────────────┤
-│ References Target Hash Index (Target Symbol Hashes)    │
+│ References Target Hash Index (Target Hashes, 16B)      │
 ├────────────────────────────────────────────────────────┤
-│ Types Table (Array of TypeEntry, Sorted by Span)       │
+│ Types Table (Array of TypeEntry, 28 bytes each)        │
 └────────────────────────────────────────────────────────┘
 ```
 
 ### Table Layout & Records
 
-1. **`DefEntry` (36 bytes)**:
-   - `def_id`: `u32`
+1. **`DefEntry` (40 bytes, 4-byte aligned)**:
+   - `def_id`: `u32` (4 bytes)
    - `kind`: `u8` (`DefKind`: Fn, Struct, Enum, Trait, AssocFn, etc.)
    - `visibility`: `u8` (Public, Crate, Restricted, Private)
+   - `_pad`: `[u8; 2]` (2 bytes)
    - `name_offset`: `u32` (String pool offset for identifier)
    - `path_offset`: `u32` (String pool offset for canonical path)
    - `sig_offset`: `u32` (String pool offset for function signature)
-   - `span`: `Span` (file_id, start_line, start_col, end_line, end_col)
+   - `span`: `Span` (file_id, start_line, start_col, end_line, end_col; 20 bytes)
 
-2. **`RefEntry` (40 bytes)**:
-   - `span`: `Span` (Source location of reference usage)
+2. **`RefEntry` (44 bytes, 4-byte aligned)**:
+   - `span`: `Span` (Source location of reference usage; 20 bytes)
    - `target_def_id`: `u32` (Local definition ID or `u32::MAX`)
    - `target_path_offset`: `u32` (Target canonical symbol path)
    - `target_file_offset`: `u32` (Target definition file path)
@@ -77,12 +78,22 @@ All integers are stored in little-endian format with 8-byte boundary alignment.
    - `target_col`: `u32` (Target definition column)
    - `kind`: `u8`
    - `is_write`: `u8` (Read vs write access)
+   - `_pad`: `[u8; 2]` (2 bytes)
 
-3. **`TypeEntry` (24 bytes)**:
-   - `span`: `Span` (Expression source span)
+3. **`TypeEntry` (28 bytes, 4-byte aligned)**:
+   - `span`: `Span` (Expression source span; 20 bytes)
    - `type_offset`: `u32` (String pool offset for inferred type name)
+   - `_pad`: `[u8; 4]` (4 bytes)
 
-4. **String Intern Pool**:
+4. **`HashIndexEntry` (16 bytes, 8-byte aligned)**:
+   - `hash`: `u64` (8 bytes, FNV-1a 64-bit hash)
+   - `index`: `u32` (4 bytes, record index)
+   - `_pad`: `[u8; 4]` (4 bytes)
+
+5. **`Header` (128 bytes, 8-byte aligned)**:
+   - Magic `b"RIDX"` (4B), version `1` (4B), offsets and counts for all tables with explicit 8-byte boundary alignment.
+
+6. **String Intern Pool**:
    - Stores paths, signatures, and types once with complete deduplication.
    - Reduces index text size from tens of megabytes to a few hundred kilobytes.
 
