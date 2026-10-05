@@ -64,6 +64,7 @@ mod tests {
             end_col: 27,
             target_def_id: Some(100),
             target_path: "test_crate::math::calculate".to_string(),
+            target_unit: None,
             target_file: Some("src/math.rs".to_string()),
             target_line: 10,
             target_col: 1,

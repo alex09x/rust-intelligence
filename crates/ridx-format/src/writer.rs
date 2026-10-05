@@ -33,6 +33,7 @@ pub struct RawReference {
     pub target_def_id: Option<u32>,
     pub target_path: String,
     pub target_file: Option<String>,
+    pub target_unit: Option<String>,
     pub target_line: u32,
     pub target_col: u32,
     pub kind: DefKind,
@@ -68,6 +69,7 @@ pub struct IndexWriter {
     definitions: Vec<RawDefinition>,
     references: Vec<RawReference>,
     types: Vec<RawType>,
+    unit_key: Option<String>,
 }
 
 impl IndexWriter {
@@ -82,11 +84,22 @@ impl IndexWriter {
             definitions: Vec::new(),
             references: Vec::new(),
             types: Vec::new(),
+            unit_key: None,
         };
         // Offset 0 is reserved for empty string
         writer.string_pool.push(0);
         writer.string_map.insert(String::new(), 0);
         writer
+    }
+
+    /// Sets the compilation unit key for this index shard.
+    pub fn set_unit_key(&mut self, unit_key: impl Into<String>) {
+        self.unit_key = Some(unit_key.into());
+    }
+
+    /// Returns the compilation unit key if set.
+    pub fn unit_key(&self) -> Option<&str> {
+        self.unit_key.as_deref()
     }
 
     /// Intern a string into the pool, returning its byte offset.
@@ -166,6 +179,11 @@ impl IndexWriter {
         let crate_version = self.crate_version.clone();
         let crate_name_offset = self.intern_string(&crate_name);
         let crate_version_offset = self.intern_string(&crate_version);
+        let unit_key = self.unit_key.clone();
+        let unit_key_offset = match &unit_key {
+            Some(k) => self.intern_string(k),
+            None => 0,
+        };
 
         let definitions = std::mem::take(&mut self.definitions);
         let references = std::mem::take(&mut self.references);
@@ -228,12 +246,17 @@ impl IndexWriter {
                 Some(f) => self.intern_string(f),
                 None => 0,
             };
+            let target_unit_offset = match &r.target_unit {
+                Some(u) => self.intern_string(u),
+                None => 0,
+            };
 
             let entry = RefEntry {
                 span: Span::new(file_id, r.start_line, r.start_col, r.end_line, r.end_col),
                 target_def_id: r.target_def_id.unwrap_or(u32::MAX),
                 target_path_offset,
                 target_file_offset,
+                target_unit_offset,
                 target_line: r.target_line,
                 target_col: r.target_col,
                 kind: r.kind as u8,
@@ -338,7 +361,7 @@ impl IndexWriter {
             string_pool_len,
             files_offset,
             files_count: self.file_offsets.len() as u32,
-            _pad0: 0,
+            unit_key_offset,
             defs_offset,
             defs_count: def_entries.len() as u32,
             _pad1: 0,

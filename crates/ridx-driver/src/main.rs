@@ -6,6 +6,7 @@ extern crate rustc_driver;
 extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_middle;
+extern crate rustc_session;
 extern crate rustc_span;
 
 use std::fs::{self, File};
@@ -117,7 +118,16 @@ fn resolve_span_coords(
             full_file
         }
     } else {
-        full_file
+        let p = Path::new(&full_file);
+        if p.is_relative() {
+            if let Ok(cur) = std::env::current_dir() {
+                cur.join(p).to_string_lossy().into_owned()
+            } else {
+                full_file
+            }
+        } else {
+            full_file
+        }
     };
     Some((
         file,
@@ -134,6 +144,7 @@ struct HirVisitor<'tcx> {
     typeck: Option<&'tcx TypeckResults<'tcx>>,
     package_root: Option<PathBuf>,
     writer: IndexWriter,
+    krate_to_unit: std::collections::HashMap<rustc_span::def_id::CrateNum, String>,
 }
 
 impl<'tcx> HirVisitor<'tcx> {
@@ -163,6 +174,8 @@ impl<'tcx> HirVisitor<'tcx> {
                     None
                 };
 
+                let target_unit = self.krate_to_unit.get(&def_id.krate).cloned();
+
                 self.writer.add_reference(RawReference {
                     file,
                     start_line: s_line,
@@ -171,6 +184,7 @@ impl<'tcx> HirVisitor<'tcx> {
                     end_col: e_col,
                     target_def_id,
                     target_path,
+                    target_unit,
                     target_file,
                     target_line,
                     target_col,
@@ -191,6 +205,11 @@ impl<'tcx> HirVisitor<'tcx> {
                     None => (None, 0, 0),
                 };
 
+                let target_unit = self
+                    .krate_to_unit
+                    .get(&rustc_span::def_id::LOCAL_CRATE)
+                    .cloned();
+
                 self.writer.add_reference(RawReference {
                     file,
                     start_line: s_line,
@@ -199,6 +218,7 @@ impl<'tcx> HirVisitor<'tcx> {
                     end_col: e_col,
                     target_def_id: None,
                     target_path: name,
+                    target_unit,
                     target_file,
                     target_line,
                     target_col,
@@ -334,7 +354,9 @@ fn hash_directory_contents(dir: &Path) -> Option<u64> {
                         .unwrap_or(&p)
                         .to_string_lossy()
                         .to_string();
-                    let hash = fs::read(&p).map(|b| ridx_format::fnv1a_64(&b)).unwrap_or(0);
+                    let hash = fs::read(&p)
+                        .map(|b| ridx_format::normalized_source_hash(&b))
+                        .unwrap_or(0);
                     list.push((rel, hash));
                 } else if p.is_dir() {
                     visit(&p, base, list);
@@ -354,7 +376,7 @@ fn hash_directory_contents(dir: &Path) -> Option<u64> {
 
 fn hash_file_contents(path: &Path) -> Option<u64> {
     let bytes = fs::read(path).ok()?;
-    Some(ridx_format::fnv1a_64(&bytes))
+    Some(ridx_format::normalized_source_hash(&bytes))
 }
 
 fn compute_dependency_unit_key(
@@ -517,7 +539,7 @@ fn collect_file_hashes<'tcx>(
         }
 
         let hash_opt = if let Some(ref src) = file.src {
-            Some(ridx_format::fnv1a_64(src.as_bytes()))
+            Some(ridx_format::normalized_source_hash(src.as_bytes()))
         } else {
             let p = Path::new(&name_str);
             if p.is_file() {
@@ -692,6 +714,49 @@ fn build_crate_index(
         }
     }
 
+    let mut krate_to_unit: std::collections::HashMap<rustc_span::def_id::CrateNum, String> =
+        std::collections::HashMap::new();
+    krate_to_unit.insert(rustc_span::def_id::LOCAL_CRATE, unit_key.clone());
+
+    for &cnum in tcx.crates(()) {
+        let csource = tcx.used_crate_source(cnum);
+        let cand_path = csource
+            .rmeta
+            .as_deref()
+            .or_else(|| csource.rlib.as_deref())
+            .or_else(|| csource.dylib.as_deref());
+        let mut found_unit = None;
+        if let Some(p) = cand_path {
+            let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+            let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
+            let cand_files = [
+                deps_dir.join(format!("{stem_without_lib}.json")),
+                deps_dir.join(format!("{stem}.json")),
+            ];
+            for c in &cand_files {
+                if c.is_file() {
+                    if let Ok(content) = fs::read(c) {
+                        if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
+                            if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
+                                found_unit = Some(uk.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if found_unit.is_none() {
+            let cname = tcx.crate_name(cnum).to_string();
+            if let Some(uk) = extern_units.get(&cname) {
+                found_unit = Some(uk.clone());
+            }
+        }
+        if let Some(uk) = found_unit {
+            krate_to_unit.insert(cnum, uk);
+        }
+    }
+
     if is_immutable {
         let cache_dir = ridx_format::resolve_cache_dir();
         let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
@@ -734,7 +799,9 @@ fn build_crate_index(
             typeck: None,
             package_root: manifest_dir.clone(),
             writer: IndexWriter::new(&crate_name, &crate_version),
+            krate_to_unit: krate_to_unit.clone(),
         };
+        visitor.writer.set_unit_key(&unit_key);
 
         extract_crate_items(tcx, &mut visitor, manifest_dir.as_deref());
 
@@ -744,24 +811,6 @@ fn build_crate_index(
             manifest_dir.as_deref(),
             manifest_dir.as_deref(),
             &indexed_files,
-        );
-
-        // Record dependency shard info for active workspace variant
-        let dep_info = serde_json::json!({
-            "name": crate_name,
-            "version": crate_version,
-            "unit_key": unit_key,
-            "object_path": obj_path.display().to_string(),
-            "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
-            "is_dependency": true,
-            "dependencies": dep_keys_or_names,
-            "extern_units": extern_units,
-            "file_hashes": file_hashes,
-        });
-        let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
-        let _ = fs::write(
-            &dep_file,
-            serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
         );
 
         if let Some(parent) = obj_path.parent() {
@@ -788,6 +837,24 @@ fn build_crate_index(
                         );
                         let _ = fs::remove_file(&tmp_file_path);
                     } else {
+                        // Publish sidecar metadata only after .ridx file is published
+                        let dep_info = serde_json::json!({
+                            "name": crate_name,
+                            "version": crate_version,
+                            "unit_key": unit_key,
+                            "object_path": obj_path.display().to_string(),
+                            "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+                            "is_dependency": true,
+                            "dependencies": dep_keys_or_names,
+                            "extern_units": extern_units,
+                            "file_hashes": file_hashes,
+                        });
+                        let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
+                        let _ = fs::write(
+                            &dep_file,
+                            serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
+                        );
+
                         let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
                         eprintln!(
                             "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {})",
@@ -826,29 +893,14 @@ fn build_crate_index(
         typeck: None,
         package_root: None,
         writer: IndexWriter::new(&crate_name, &crate_version),
+        krate_to_unit,
     };
+    visitor.writer.set_unit_key(&unit_key);
 
     extract_crate_items(tcx, &mut visitor, None);
 
     let indexed_files = visitor.writer.indexed_files();
     let file_hashes = collect_file_hashes(tcx, None, manifest_dir.as_deref(), &indexed_files);
-
-    let dep_info = serde_json::json!({
-        "name": crate_name,
-        "version": crate_version,
-        "unit_key": unit_key,
-        "object_path": out_file_path.display().to_string(),
-        "source_root": serde_json::Value::Null,
-        "is_dependency": false,
-        "dependencies": dep_keys_or_names,
-        "extern_units": extern_units,
-        "file_hashes": file_hashes,
-    });
-    let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
-    let _ = fs::write(
-        &dep_file,
-        serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
-    );
 
     let tmp_file_path = out_dir.join(format!(
         "{crate_name}{suffix}.ridx.tmp.{}",
@@ -874,6 +926,24 @@ fn build_crate_index(
                     );
                     let _ = fs::remove_file(&tmp_file_path);
                 } else {
+                    // Publish sidecar metadata only after .ridx file is published
+                    let dep_info = serde_json::json!({
+                        "name": crate_name,
+                        "version": crate_version,
+                        "unit_key": unit_key,
+                        "object_path": out_file_path.display().to_string(),
+                        "source_root": serde_json::Value::Null,
+                        "is_dependency": false,
+                        "dependencies": dep_keys_or_names,
+                        "extern_units": extern_units,
+                        "file_hashes": file_hashes,
+                    });
+                    let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
+                    let _ = fs::write(
+                        &dep_file,
+                        serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
+                    );
+
                     let file_size = fs::metadata(&out_file_path).map(|m| m.len()).unwrap_or(0);
                     eprintln!(
                         "ridx: indexed {} ({} defs, {} refs, {} types, {} KB in {:.1} ms)",

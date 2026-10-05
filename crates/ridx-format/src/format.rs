@@ -82,6 +82,27 @@ pub fn join_resolving_overlap(root: &std::path::Path, rel: &std::path::Path) -> 
     direct
 }
 
+/// Computes a 64-bit FNV-1a hash over source bytes after stripping UTF-8 BOM and normalizing CRLF to LF,
+/// exactly matching rustc's internal SourceFile.src normalization.
+pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
+    let b = if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        &bytes[3..]
+    } else {
+        bytes
+    };
+    let mut normalized = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'\r' && i + 1 < b.len() && b[i + 1] == b'\n' {
+            i += 1;
+            continue;
+        }
+        normalized.push(b[i]);
+        i += 1;
+    }
+    fnv1a_64(&normalized)
+}
+
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
     assert!(std::mem::size_of::<Header>() == 128);
@@ -90,7 +111,7 @@ const _: () = {
     assert!(std::mem::align_of::<Span>() == 4);
     assert!(std::mem::size_of::<DefEntry>() == 40);
     assert!(std::mem::align_of::<DefEntry>() == 4);
-    assert!(std::mem::size_of::<RefEntry>() == 44);
+    assert!(std::mem::size_of::<RefEntry>() == 48);
     assert!(std::mem::align_of::<RefEntry>() == 4);
     assert!(std::mem::size_of::<TypeEntry>() == 28);
     assert!(std::mem::align_of::<TypeEntry>() == 4);
@@ -119,7 +140,8 @@ pub struct Header {
     /// Offset of the file path table (array of u32 string pool offsets)
     pub files_offset: u64,
     pub files_count: u32,
-    pub _pad0: u32,
+    /// Offset in string pool for compilation unit key (or 0)
+    pub unit_key_offset: u32,
 
     /// Offset of the definitions table (array of DefEntry)
     pub defs_offset: u64,
@@ -159,7 +181,7 @@ impl Header {
             string_pool_len: self.string_pool_len.to_le(),
             files_offset: self.files_offset.to_le(),
             files_count: self.files_count.to_le(),
-            _pad0: 0,
+            unit_key_offset: self.unit_key_offset.to_le(),
             defs_offset: self.defs_offset.to_le(),
             defs_count: self.defs_count.to_le(),
             _pad1: 0,
@@ -189,7 +211,7 @@ impl Header {
             string_pool_len: u64::from_le(self.string_pool_len),
             files_offset: u64::from_le(self.files_offset),
             files_count: u32::from_le(self.files_count),
-            _pad0: 0,
+            unit_key_offset: u32::from_le(self.unit_key_offset),
             defs_offset: u64::from_le(self.defs_offset),
             defs_count: u32::from_le(self.defs_count),
             _pad1: 0,
@@ -206,6 +228,11 @@ impl Header {
             types_count: u32::from_le(self.types_count),
             _pad5: 0,
         }
+    }
+
+    #[inline]
+    pub fn unit_key_offset(&self) -> u32 {
+        u32::from_le(self.unit_key_offset)
     }
 }
 
@@ -482,6 +509,8 @@ pub struct RefEntry {
     pub target_path_offset: u32,
     /// Target source file path offset in string pool, or 0 if external/unknown
     pub target_file_offset: u32,
+    /// Target compilation unit key offset in string pool, or 0 if unknown
+    pub target_unit_offset: u32,
     /// Target definition line (1-based), or 0
     pub target_line: u32,
     /// Target definition col (1-based), or 0
@@ -503,6 +532,7 @@ impl RefEntry {
             target_def_id: self.target_def_id.to_le(),
             target_path_offset: self.target_path_offset.to_le(),
             target_file_offset: self.target_file_offset.to_le(),
+            target_unit_offset: self.target_unit_offset.to_le(),
             target_line: self.target_line.to_le(),
             target_col: self.target_col.to_le(),
             kind: self.kind,
@@ -519,6 +549,7 @@ impl RefEntry {
             target_def_id: u32::from_le(self.target_def_id),
             target_path_offset: u32::from_le(self.target_path_offset),
             target_file_offset: u32::from_le(self.target_file_offset),
+            target_unit_offset: u32::from_le(self.target_unit_offset),
             target_line: u32::from_le(self.target_line),
             target_col: u32::from_le(self.target_col),
             kind: self.kind,
@@ -543,6 +574,10 @@ impl RefEntry {
     #[inline]
     pub fn target_file_offset(&self) -> u32 {
         u32::from_le(self.target_file_offset)
+    }
+    #[inline]
+    pub fn target_unit_offset(&self) -> u32 {
+        u32::from_le(self.target_unit_offset)
     }
     #[inline]
     pub fn target_line(&self) -> u32 {

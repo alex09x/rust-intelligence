@@ -5,7 +5,7 @@
 //! declared items within milliseconds, even when the buffer contains incomplete syntax
 //! or compilation errors.
 
-use ridx_format::{fnv1a_64, DefKind};
+use ridx_format::{normalized_source_hash, DefKind};
 use std::collections::HashMap;
 
 /// Representation of a symbol in the live document overlay.
@@ -71,7 +71,7 @@ impl DocumentOverlay {
     ) -> Self {
         let uri = uri.into();
         let file_path = file_path.into();
-        let content_hash = fnv1a_64(text.as_bytes());
+        let content_hash = normalized_source_hash(text.as_bytes());
         let disk_text = std::fs::read_to_string(&file_path).ok();
         let compiled_text = if is_compiled {
             Some(text.clone())
@@ -108,7 +108,7 @@ impl DocumentOverlay {
     /// Updates buffer text, version, and reparses symbols.
     pub fn update(&mut self, version: i32, text: String) {
         self.version = version;
-        self.content_hash = fnv1a_64(text.as_bytes());
+        self.content_hash = normalized_source_hash(text.as_bytes());
         self.text = text;
         self.reparse();
     }
@@ -1452,7 +1452,7 @@ mod tests {
         assert_eq!(overlay.map_line_to_compiled(3), Some(2));
 
         // Now simulate didSave with the edited text hash
-        let _hash = fnv1a_64(edited_code.as_bytes());
+        let _hash = normalized_source_hash(edited_code.as_bytes());
         overlay.disk_text = Some(edited_code.clone());
         // Since no compilation occurred, compiled baseline is still initial_code!
         assert_eq!(overlay.map_line_to_compiled(3), Some(2));
@@ -1606,7 +1606,7 @@ mod tests {
         mgr.open_or_update(uri, file, 1, text1.clone());
         assert_eq!(mgr.open_count(), 1);
 
-        let hash1 = fnv1a_64(text1.as_bytes());
+        let hash1 = normalized_source_hash(text1.as_bytes());
         mgr.reconcile_with_disk(file, hash1);
         assert!(mgr.get(file).unwrap().is_synced_with_disk());
 

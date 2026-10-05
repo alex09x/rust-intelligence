@@ -163,7 +163,7 @@ fn sync_reloaded_index(ws: &mut WorkspaceIndex, overlay_mgr: &mut crate::overlay
         for file in overlay_mgr.open_file_paths() {
             if ws.is_file_reloaded(&file) {
                 if let Ok(content) = std::fs::read_to_string(&file) {
-                    let disk_hash = ridx_format::fnv1a_64(content.as_bytes());
+                    let disk_hash = ridx_format::normalized_source_hash(content.as_bytes());
                     if let Some(compiled_hash) = ws.source_hash_for_file(&file) {
                         if disk_hash == compiled_hash {
                             overlay_mgr.advance_compiled_baseline(&file, content);
@@ -293,7 +293,7 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                 let is_compiled = if let Some(ref ws) = workspace {
                     if let Ok(disk_text) = std::fs::read_to_string(&file) {
                         if disk_text == text {
-                            let text_hash = ridx_format::fnv1a_64(text.as_bytes());
+                            let text_hash = ridx_format::normalized_source_hash(text.as_bytes());
                             if let Some(compiled_hash) = ws.source_hash_for_file(&file) {
                                 text_hash == compiled_hash
                             } else {
@@ -344,7 +344,7 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                 let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
                 let file = uri_to_path(uri);
                 if let Ok(content) = std::fs::read(&file) {
-                    let hash = ridx_format::fnv1a_64(&content);
+                    let hash = ridx_format::normalized_source_hash(&content);
                     overlay_mgr.reconcile_with_disk(&file, hash);
                 }
                 if let Some(ref mut ws) = workspace {

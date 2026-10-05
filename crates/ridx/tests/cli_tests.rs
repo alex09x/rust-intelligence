@@ -52,6 +52,7 @@ fn test_cli_fixture_generation_and_query() {
         end_col: 21,
         target_def_id: Some(1),
         target_path: "sample_crate::processor::process_data".to_string(),
+        target_unit: None,
         target_file: Some("src/processor.rs".to_string()),
         target_line: 25,
         target_col: 1,

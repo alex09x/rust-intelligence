@@ -114,6 +114,16 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         self.get_str(self.header.crate_version_offset)
     }
 
+    /// Compilation unit key stored in the index (or empty string if none).
+    pub fn unit_key(&self) -> &str {
+        self.get_str(self.header.unit_key_offset())
+    }
+
+    /// Target compilation unit key for a reference (or empty string if none).
+    pub fn target_unit(&self, r: &RefEntry) -> &str {
+        self.get_str(r.target_unit_offset())
+    }
+
     /// Retrieves an interned null-terminated string at the specified offset.
     #[inline]
     pub fn get_str(&self, offset: u32) -> &str {
@@ -316,6 +326,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             // Otherwise return target path and location
             let target_path = self.get_str(r.target_path_offset());
             let target_file = self.get_str(r.target_file_offset());
+            let target_unit = self.get_str(r.target_unit_offset());
             let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
 
             return Some(ResolvedDefinition {
@@ -334,7 +345,11 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 end_col: r.target_col() + (target_name.len() as u32),
                 is_macro_expansion: r.is_macro_expansion(),
                 source_root: None,
-                unit_key: None,
+                unit_key: if !target_unit.is_empty() {
+                    Some(target_unit)
+                } else {
+                    None
+                },
             });
         }
 

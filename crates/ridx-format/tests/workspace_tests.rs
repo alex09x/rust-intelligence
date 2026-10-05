@@ -68,6 +68,7 @@ fn test_multi_crate_workspace_index() {
         end_col: 16,
         target_def_id: None, // Cross-crate reference, no local def_id
         target_path: "crate_a::types::TypeA".to_string(),
+        target_unit: None,
         target_file: Some("crates/crate_a/src/types.rs".to_string()),
         target_line: 10,
         target_col: 1,
@@ -753,6 +754,7 @@ fn test_exact_unit_cross_definition_and_references() {
         end_col: 13,
         target_def_id: None,
         target_path: "dep::foo".to_string(),
+        target_unit: None,
         target_file: Some("src/lib.rs".to_string()),
         target_line: 10,
         target_col: 1,
@@ -806,6 +808,7 @@ fn test_exact_unit_cross_definition_and_references() {
         end_col: 13,
         target_def_id: None,
         target_path: "dep::foo".to_string(),
+        target_unit: None,
         target_file: Some("src/lib.rs".to_string()),
         target_line: 20,
         target_col: 1,
@@ -963,6 +966,7 @@ fn test_consumer_with_aliased_dependencies() {
         end_col: 14,
         target_def_id: None,
         target_path: "dep1::foo".to_string(),
+        target_unit: None,
         target_file: Some("src/lib.rs".to_string()),
         target_line: 10,
         target_col: 1,
@@ -978,6 +982,7 @@ fn test_consumer_with_aliased_dependencies() {
         end_col: 14,
         target_def_id: None,
         target_path: "dep2::foo".to_string(),
+        target_unit: None,
         target_file: Some("src/lib.rs".to_string()),
         target_line: 20,
         target_col: 1,
@@ -1136,6 +1141,7 @@ fn test_consumer_with_dual_version_canonical_references() {
         end_col: 13,
         target_def_id: None,
         target_path: "a::Thing".to_string(),
+        target_unit: None,
         target_file: Some("src/lib.rs".to_string()),
         target_line: 10,
         target_col: 1,
@@ -1151,6 +1157,7 @@ fn test_consumer_with_dual_version_canonical_references() {
         end_col: 13,
         target_def_id: None,
         target_path: "a::Thing".to_string(),
+        target_unit: None,
         target_file: Some("src/lib.rs".to_string()),
         target_line: 20,
         target_col: 1,
@@ -1385,6 +1392,505 @@ fn test_local_metadata_not_loaded_as_second_shard() {
         "expected 1 total crate, got {}",
         ws.stats().total_crates
     );
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_references_scoped_to_exact_dependency_version_with_same_coordinates() {
+    let test_dir =
+        std::env::temp_dir().join(format!("ridx_dep_coords_test_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&test_dir);
+    let var_dir = test_dir.join("variants/var1");
+    let deps_dir = var_dir.join(".deps");
+    fs::create_dir_all(&deps_dir).unwrap();
+
+    let cache_dir = test_dir.join("cache");
+    let dep_a1_path = cache_dir.join("a1.ridx");
+    let dep_a2_path = cache_dir.join("a2.ridx");
+    fs::create_dir_all(&cache_dir).unwrap();
+
+    // 1. Dependency shard A1: crate "a" v1.0.0, unitA1, defines a::Thing at line 10
+    let mut writer_a1 = IndexWriter::new("a", "1.0.0");
+    writer_a1.set_unit_key("unitA1");
+    writer_a1.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "Thing".to_string(),
+        path: "a::Thing".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 10,
+        start_col: 1,
+        end_line: 12,
+        end_col: 2,
+    });
+    writer_a1
+        .write_to(&mut BufWriter::new(File::create(&dep_a1_path).unwrap()))
+        .unwrap();
+
+    // 2. Dependency shard A2: crate "a" v2.0.0, unitA2, ALSO defines a::Thing at line 10 in src/lib.rs!
+    let mut writer_a2 = IndexWriter::new("a", "2.0.0");
+    writer_a2.set_unit_key("unitA2");
+    writer_a2.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "Thing".to_string(),
+        path: "a::Thing".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 10,
+        start_col: 1,
+        end_line: 12,
+        end_col: 2,
+    });
+    writer_a2
+        .write_to(&mut BufWriter::new(File::create(&dep_a2_path).unwrap()))
+        .unwrap();
+
+    // 3. Consumer crate C: references a::Thing at line 4 (target_unit = unitA1)
+    // and a::Thing at line 8 (target_unit = unitA2)
+    let mut writer_c = IndexWriter::new("c", "0.1.0");
+    writer_c.set_unit_key("unitC");
+    writer_c.add_reference(RawReference {
+        file: "src/main.rs".to_string(),
+        start_line: 4,
+        start_col: 5,
+        end_line: 4,
+        end_col: 13,
+        target_def_id: None,
+        target_path: "a::Thing".to_string(),
+        target_unit: Some("unitA1".to_string()),
+        target_file: Some("src/lib.rs".to_string()),
+        target_line: 10,
+        target_col: 1,
+        kind: DefKind::Struct,
+        is_write: false,
+        is_macro_expansion: false,
+    });
+    writer_c.add_reference(RawReference {
+        file: "src/main.rs".to_string(),
+        start_line: 8,
+        start_col: 5,
+        end_line: 8,
+        end_col: 13,
+        target_def_id: None,
+        target_path: "a::Thing".to_string(),
+        target_unit: Some("unitA2".to_string()),
+        target_file: Some("src/lib.rs".to_string()),
+        target_line: 10,
+        target_col: 1,
+        kind: DefKind::Struct,
+        is_write: false,
+        is_macro_expansion: false,
+    });
+    let c_ridx = var_dir.join("c.ridx");
+    writer_c
+        .write_to(&mut BufWriter::new(File::create(&c_ridx).unwrap()))
+        .unwrap();
+
+    let c_meta = serde_json::json!({
+        "name": "c",
+        "version": "0.1.0",
+        "unit_key": "unitC",
+        "object_path": c_ridx.display().to_string(),
+        "dependencies": ["unitA1", "unitA2"],
+        "extern_units": {
+            "a1": "unitA1",
+            "a2": "unitA2"
+        }
+    });
+    fs::write(
+        deps_dir.join("c.json"),
+        serde_json::to_string_pretty(&c_meta).unwrap(),
+    )
+    .unwrap();
+
+    let manifest = serde_json::json!({
+        "version": "2.0",
+        "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+        "extractor_version": ridx_format::EXTRACTOR_VERSION,
+        "active_variant_id": "var1",
+        "variant_dir": "variants/var1",
+        "workspace_root": test_dir.display().to_string(),
+        "manifest_path": test_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+        "dependency_shards": [
+            {
+                "name": "a",
+                "version": "1.0.0",
+                "unit_key": "unitA1",
+                "object_path": dep_a1_path.display().to_string(),
+                "source_root": "/registry/a-1.0.0",
+                "is_dependency": true
+            },
+            {
+                "name": "a",
+                "version": "2.0.0",
+                "unit_key": "unitA2",
+                "object_path": dep_a2_path.display().to_string(),
+                "source_root": "/registry/a-2.0.0",
+                "is_dependency": true
+            }
+        ]
+    });
+    fs::write(
+        test_dir.join("ridx_manifest.json"),
+        serde_json::to_string_pretty(&manifest).unwrap(),
+    )
+    .unwrap();
+
+    let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace");
+
+    // Querying references for unitA1 must ONLY return line 4 (not line 8)
+    let refs_a1 = ws.find_references_for_unit("a::Thing", Some("unitA1"));
+    assert_eq!(refs_a1.len(), 1, "expected only line 4 for unitA1");
+    assert_eq!(refs_a1[0].span.start_line(), 4);
+
+    // Querying references for unitA2 must ONLY return line 8 (not line 4)
+    let refs_a2 = ws.find_references_for_unit("a::Thing", Some("unitA2"));
+    assert_eq!(refs_a2.len(), 1, "expected only line 8 for unitA2");
+    assert_eq!(refs_a2[0].span.start_line(), 8);
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_source_hash_for_file_does_not_match_unrelated_basename() {
+    let test_dir = std::env::temp_dir().join(format!("ridx_basename_test_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&test_dir);
+    let var_dir = test_dir.join("variants/var1");
+    let deps_dir = var_dir.join(".deps");
+    fs::create_dir_all(&deps_dir).unwrap();
+
+    let root_foo = test_dir.join("crates/foo");
+    let root_bar = test_dir.join("crates/bar");
+    fs::create_dir_all(root_foo.join("src")).unwrap();
+    fs::create_dir_all(root_bar.join("src")).unwrap();
+
+    let file_foo = root_foo.join("src/lib.rs");
+    let file_bar = root_bar.join("src/lib.rs");
+    fs::write(&file_foo, "pub fn foo() {}\n").unwrap();
+    fs::write(&file_bar, "pub fn bar() {}\n").unwrap();
+
+    let hash_foo = 111111u64;
+    let hash_bar = 222222u64;
+
+    let mut writer_foo = IndexWriter::new("foo", "0.1.0");
+    writer_foo.set_unit_key("unitFoo");
+    writer_foo.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "foo::foo".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 15,
+    });
+    let foo_ridx = var_dir.join("foo.ridx");
+    writer_foo
+        .write_to(&mut BufWriter::new(File::create(&foo_ridx).unwrap()))
+        .unwrap();
+
+    let meta_foo = serde_json::json!({
+        "name": "foo",
+        "version": "0.1.0",
+        "unit_key": "unitFoo",
+        "object_path": foo_ridx.display().to_string(),
+        "source_root": root_foo.display().to_string(),
+        "file_hashes": {
+            "src/lib.rs": hash_foo
+        }
+    });
+    fs::write(
+        deps_dir.join("foo.json"),
+        serde_json::to_string_pretty(&meta_foo).unwrap(),
+    )
+    .unwrap();
+
+    let mut writer_bar = IndexWriter::new("bar", "0.1.0");
+    writer_bar.set_unit_key("unitBar");
+    writer_bar.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "bar".to_string(),
+        path: "bar::bar".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 15,
+    });
+    let bar_ridx = var_dir.join("bar.ridx");
+    writer_bar
+        .write_to(&mut BufWriter::new(File::create(&bar_ridx).unwrap()))
+        .unwrap();
+
+    let meta_bar = serde_json::json!({
+        "name": "bar",
+        "version": "0.1.0",
+        "unit_key": "unitBar",
+        "object_path": bar_ridx.display().to_string(),
+        "source_root": root_bar.display().to_string(),
+        "file_hashes": {
+            "src/lib.rs": hash_bar
+        }
+    });
+    fs::write(
+        deps_dir.join("bar.json"),
+        serde_json::to_string_pretty(&meta_bar).unwrap(),
+    )
+    .unwrap();
+
+    let ws = WorkspaceIndex::open(&var_dir).expect("failed to open workspace");
+
+    // foo's lib.rs must match hash_foo
+    let res_foo = ws.source_hash_for_file(&file_foo.to_string_lossy());
+    assert_eq!(res_foo, Some(hash_foo));
+
+    // bar's lib.rs must match hash_bar
+    let res_bar = ws.source_hash_for_file(&file_bar.to_string_lossy());
+    assert_eq!(res_bar, Some(hash_bar));
+
+    // An unrelated crate's lib.rs must NOT match either crate!
+    let unrelated = test_dir.join("crates/unrelated/src/lib.rs");
+    let res_unrelated = ws.source_hash_for_file(&unrelated.to_string_lossy());
+    assert_eq!(
+        res_unrelated, None,
+        "unrelated path must not match via basename"
+    );
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_stale_sidecar_unit_key_mismatch_rejected() {
+    let test_dir =
+        std::env::temp_dir().join(format!("ridx_stale_sidecar_test_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&test_dir);
+    let deps_dir = test_dir.join(".deps");
+    fs::create_dir_all(&deps_dir).unwrap();
+
+    let mut writer = IndexWriter::new("app", "0.1.0");
+    writer.set_unit_key("unitNew");
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "app::foo".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 15,
+    });
+    let ridx_file = test_dir.join("app.ridx");
+    writer
+        .write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap()))
+        .unwrap();
+
+    // Sidecar has old unit_key ("unitOld")
+    let meta = serde_json::json!({
+        "name": "app",
+        "version": "0.1.0",
+        "unit_key": "unitOld",
+        "object_path": ridx_file.display().to_string(),
+        "file_hashes": {
+            "src/lib.rs": 999999u64
+        }
+    });
+    fs::write(
+        deps_dir.join("app.json"),
+        serde_json::to_string_pretty(&meta).unwrap(),
+    )
+    .unwrap();
+
+    let ws = WorkspaceIndex::open(&ridx_file).expect("failed to open single shard");
+    // Since sidecar unit_key ("unitOld") mismatches index unit_key ("unitNew"), sidecar metadata is discarded
+    assert_eq!(ws.source_hash_for_file("src/lib.rs"), None);
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_normalized_source_hash_crlf_and_bom() {
+    let lf_bytes = b"pub fn hello() {\n    println!(\"hello\");\n}\n";
+    let crlf_bytes = b"pub fn hello() {\r\n    println!(\"hello\");\r\n}\r\n";
+    let bom_crlf_bytes = b"\xEF\xBB\xBFpub fn hello() {\r\n    println!(\"hello\");\r\n}\r\n";
+
+    let hash_lf = ridx_format::normalized_source_hash(lf_bytes);
+    let hash_crlf = ridx_format::normalized_source_hash(crlf_bytes);
+    let hash_bom_crlf = ridx_format::normalized_source_hash(bom_crlf_bytes);
+
+    assert_eq!(
+        hash_lf, hash_crlf,
+        "CRLF and LF must produce identical normalized hash"
+    );
+    assert_eq!(
+        hash_lf, hash_bom_crlf,
+        "BOM+CRLF and LF must produce identical normalized hash"
+    );
+}
+
+#[test]
+fn test_single_shard_reload_refreshes_metadata_and_hashes() {
+    let test_dir =
+        std::env::temp_dir().join(format!("ridx_single_reload_test_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&test_dir);
+    let deps_dir = test_dir.join(".deps");
+    fs::create_dir_all(&deps_dir).unwrap();
+
+    let mut writer = IndexWriter::new("app", "0.1.0");
+    writer.set_unit_key("unitApp");
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "app::foo".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 15,
+    });
+    let ridx_file = test_dir.join("app.ridx");
+    writer
+        .write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap()))
+        .unwrap();
+
+    let meta = serde_json::json!({
+        "name": "app",
+        "version": "0.1.0",
+        "unit_key": "unitApp",
+        "object_path": ridx_file.display().to_string(),
+        "file_hashes": {
+            "src/lib.rs": 100u64
+        }
+    });
+    fs::write(
+        deps_dir.join("app.json"),
+        serde_json::to_string_pretty(&meta).unwrap(),
+    )
+    .unwrap();
+
+    let mut ws = WorkspaceIndex::open(&ridx_file).expect("failed to open single shard");
+    assert_eq!(ws.source_hash_for_file("src/lib.rs"), Some(100));
+
+    // Update metadata and touch .ridx
+    std::thread::sleep(std::time::Duration::from_millis(50));
+    let meta_updated = serde_json::json!({
+        "name": "app",
+        "version": "0.1.0",
+        "unit_key": "unitApp",
+        "object_path": ridx_file.display().to_string(),
+        "file_hashes": {
+            "src/lib.rs": 200u64
+        }
+    });
+    fs::write(
+        deps_dir.join("app.json"),
+        serde_json::to_string_pretty(&meta_updated).unwrap(),
+    )
+    .unwrap();
+    // Re-write ridx_file with later mtime
+    let mut writer2 = IndexWriter::new("app", "0.1.0");
+    writer2.set_unit_key("unitApp");
+    writer2.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "app::foo".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 15,
+    });
+    writer2
+        .write_to(&mut BufWriter::new(File::create(&ridx_file).unwrap()))
+        .unwrap();
+
+    let reloaded = ws.reload_if_modified().expect("reload failed");
+    assert!(reloaded, "expected reload_if_modified to return true");
+    assert_eq!(ws.source_hash_for_file("src/lib.rs"), Some(200));
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_null_local_source_root_resolves_via_workspace_root() {
+    let test_dir =
+        std::env::temp_dir().join(format!("ridx_ws_root_res_test_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&test_dir);
+    let var_dir = test_dir.join("variants/var1");
+    let deps_dir = var_dir.join(".deps");
+    fs::create_dir_all(&deps_dir).unwrap();
+
+    let mut writer = IndexWriter::new("app", "0.1.0");
+    writer.set_unit_key("unitApp");
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "app::foo".to_string(),
+        signature: None,
+        file: "crates/app/src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 15,
+    });
+    let app_ridx = var_dir.join("app.ridx");
+    writer
+        .write_to(&mut BufWriter::new(File::create(&app_ridx).unwrap()))
+        .unwrap();
+
+    let manifest = serde_json::json!({
+        "version": "2.0",
+        "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+        "extractor_version": ridx_format::EXTRACTOR_VERSION,
+        "active_variant_id": "var1",
+        "variant_dir": "variants/var1",
+        "workspace_root": test_dir.display().to_string(),
+        "manifest_path": test_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev"
+    });
+    fs::write(
+        test_dir.join("ridx_manifest.json"),
+        serde_json::to_string_pretty(&manifest).unwrap(),
+    )
+    .unwrap();
+
+    let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace");
+    let def = ws
+        .find_definition_by_path("app::foo")
+        .expect("should find definition");
+
+    let resolved = def.resolved_path();
+    assert_eq!(resolved, test_dir.join("crates/app/src/lib.rs"));
 
     let _ = fs::remove_dir_all(&test_dir);
 }
