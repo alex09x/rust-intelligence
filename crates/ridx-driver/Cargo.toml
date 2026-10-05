@@ -6,3 +6,4 @@ authors = ["Alexander Panasenko <alex@prod.codes>"]
 
 [dependencies]
 ridx-format = { path = "../ridx-format" }
+serde_json = "1.0"

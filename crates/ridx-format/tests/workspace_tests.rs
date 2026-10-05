@@ -361,3 +361,133 @@ fn test_active_manifest_with_empty_or_escaping_variant_dir_rejected() {
     assert!(res.is_err(), "should reject mismatched variant_id and variant_dir");
     assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::InvalidData);
 }
+
+#[test]
+fn test_version_mismatch_rejected() {
+    let test_dir = std::env::temp_dir().join(format!("ridx_ver_test_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    let manifest_future = serde_json::json!({
+        "version": "2.0",
+        "format_version": 999, // Future format version
+        "active_variant_id": "var_future",
+        "variant_dir": "variants/var_future",
+        "workspace_root": test_dir.display().to_string(),
+        "manifest_path": test_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+    });
+
+    let var_dir = test_dir.join("variants/var_future");
+    fs::create_dir_all(&var_dir).unwrap();
+
+    let mut writer = IndexWriter::new("test_crate", "0.1.0");
+    let f = File::create(var_dir.join("test_crate.ridx")).unwrap();
+    writer.write_to(&mut BufWriter::new(f)).unwrap();
+
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_future).unwrap()).unwrap();
+
+    let res = WorkspaceIndex::open(&test_dir);
+    assert!(res.is_err(), "should reject future format_version");
+    let err = res.err().unwrap();
+    assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+    assert!(ridx_format::is_version_mismatch(&err));
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_dependency_shard_loading() {
+    let test_dir = std::env::temp_dir().join(format!("ridx_dep_test_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&test_dir);
+    let var_dir = test_dir.join("variants/var1");
+    fs::create_dir_all(&var_dir).unwrap();
+
+    // 1. Local crate in workspace
+    let mut writer_local = IndexWriter::new("local_app", "0.1.0");
+    writer_local.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "main".to_string(),
+        path: "local_app::main".to_string(),
+        signature: Some("fn()".to_string()),
+        file: "src/main.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 5,
+        end_col: 2,
+    });
+    let f_local = File::create(var_dir.join("local_app.ridx")).unwrap();
+    writer_local.write_to(&mut BufWriter::new(f_local)).unwrap();
+
+    // 2. Dependency crate in separate cache location
+    let cache_dir = test_dir.join("cache/objects/ab");
+    fs::create_dir_all(&cache_dir).unwrap();
+    let dep_obj_path = cache_dir.join("ab1234567890.ridx");
+
+    let mut writer_dep = IndexWriter::new("dep_lib", "1.2.0");
+    writer_dep.add_definition(RawDefinition {
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "DepConfig".to_string(),
+        path: "dep_lib::DepConfig".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 10,
+        start_col: 1,
+        end_line: 20,
+        end_col: 2,
+    });
+    let f_dep = File::create(&dep_obj_path).unwrap();
+    writer_dep.write_to(&mut BufWriter::new(f_dep)).unwrap();
+
+    // 3. Manifest linking dependency shard
+    let manifest = serde_json::json!({
+        "version": "2.0",
+        "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+        "active_variant_id": "var1",
+        "variant_dir": "variants/var1",
+        "workspace_root": test_dir.display().to_string(),
+        "manifest_path": test_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+        "dependency_shards": [
+            {
+                "name": "dep_lib",
+                "version": "1.2.0",
+                "unit_key": "ab1234567890",
+                "object_path": dep_obj_path.display().to_string(),
+                "source_root": "/cargo/registry/dep_lib-1.2.0"
+            }
+        ]
+    });
+    fs::write(test_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
+
+    // 4. Open workspace and verify both local and dependency crates are accessible
+    let ws = WorkspaceIndex::open(&test_dir).expect("failed to open workspace with dependency shards");
+    assert_eq!(ws.crate_count(), 2);
+
+    let stats = ws.stats();
+    assert_eq!(stats.total_crates, 2);
+    let dep_summary = stats.crate_summaries.iter().find(|c| c.name == "dep_lib").unwrap();
+    assert!(dep_summary.is_dependency);
+
+    // Cross-crate query reaches dependency definition
+    let def = ws.find_definition_by_path("dep_lib::DepConfig").expect("should find dep definition");
+    assert_eq!(def.name, "DepConfig");
+
+    // Path resolution for dependency crate
+    let resolved = ws.resolve_path_for_crate("dep_lib", def.file);
+    assert_eq!(resolved, PathBuf::from("/cargo/registry/dep_lib-1.2.0/src/lib.rs"));
+
+    // Find definition at cursor inside dependency file (given absolute path)
+    let def_at = ws.find_definition_at("/cargo/registry/dep_lib-1.2.0/src/lib.rs", 12, 5);
+    assert!(def_at.is_some());
+    assert_eq!(def_at.unwrap().name, "DepConfig");
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+

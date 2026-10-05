@@ -74,7 +74,11 @@ fn map_def_kind(kind: hir::def::DefKind) -> RDefKind {
     }
 }
 
-fn resolve_span_coords(tcx: TyCtxt<'_>, span: Span) -> Option<(String, u32, u32, u32, u32, bool)> {
+fn resolve_span_coords(
+    tcx: TyCtxt<'_>,
+    span: Span,
+    package_root: Option<&Path>,
+) -> Option<(String, u32, u32, u32, u32, bool)> {
     if span.is_dummy() {
         return None;
     }
@@ -93,7 +97,17 @@ fn resolve_span_coords(tcx: TyCtxt<'_>, span: Span) -> Option<(String, u32, u32,
         source_map.lookup_char_pos(actual_span.lo()),
         source_map.lookup_char_pos(actual_span.hi()),
     );
-    let file = source_map.filename_for_diagnostics(&lo.file.name).to_string();
+    let full_file = source_map.filename_for_diagnostics(&lo.file.name).to_string();
+    let file = if let Some(root) = package_root {
+        let p = Path::new(&full_file);
+        if let Ok(rel) = p.strip_prefix(root) {
+            rel.to_string_lossy().into_owned()
+        } else {
+            full_file
+        }
+    } else {
+        full_file
+    };
     Some((
         file,
         lo.line as u32,
@@ -107,19 +121,26 @@ fn resolve_span_coords(tcx: TyCtxt<'_>, span: Span) -> Option<(String, u32, u32,
 struct HirVisitor<'tcx> {
     tcx: TyCtxt<'tcx>,
     typeck: Option<&'tcx TypeckResults<'tcx>>,
+    package_root: Option<PathBuf>,
     writer: IndexWriter,
 }
 
 impl<'tcx> HirVisitor<'tcx> {
     fn add_ref_from_res(&mut self, span: Span, res: Res) {
-        let Some((file, s_line, s_col, e_line, e_col, is_macro)) = resolve_span_coords(self.tcx, span) else {
+        let Some((file, s_line, s_col, e_line, e_col, is_macro)) =
+            resolve_span_coords(self.tcx, span, self.package_root.as_deref())
+        else {
             return;
         };
 
         match res {
             Res::Def(kind, def_id) => {
                 let target_path = self.tcx.def_path_str(def_id);
-                let target_coords = resolve_span_coords(self.tcx, self.tcx.def_span(def_id));
+                let target_coords = resolve_span_coords(
+                    self.tcx,
+                    self.tcx.def_span(def_id),
+                    self.package_root.as_deref(),
+                );
                 let (target_file, target_line, target_col) = match target_coords {
                     Some((f, l, c, _, _, _)) => (Some(f), l, c),
                     None => (None, 0, 0),
@@ -149,7 +170,11 @@ impl<'tcx> HirVisitor<'tcx> {
             }
             Res::Local(hir_id) => {
                 let name = self.tcx.hir_name(hir_id).to_string();
-                let target_coords = resolve_span_coords(self.tcx, self.tcx.hir_span(hir_id));
+                let target_coords = resolve_span_coords(
+                    self.tcx,
+                    self.tcx.hir_span(hir_id),
+                    self.package_root.as_deref(),
+                );
                 let (target_file, target_line, target_col) = match target_coords {
                     Some((f, l, c, _, _, _)) => (Some(f), l, c),
                     None => (None, 0, 0),
@@ -232,7 +257,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
 
             // Inferred expression type
             if let Some((file, s_line, s_col, e_line, e_col, _)) =
-                resolve_span_coords(self.tcx, expr.span)
+                resolve_span_coords(self.tcx, expr.span, self.package_root.as_deref())
             {
                 if let Some(ty) = typeck.expr_ty_opt(expr) {
                     self.writer.add_type(RawType {
@@ -280,21 +305,40 @@ fn extract_target_disambiguator(args: &[String]) -> Option<String> {
     None
 }
 
-fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str>) {
-    let start = Instant::now();
-    let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
-    let crate_version =
-        std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
-    let mut visitor = HirVisitor {
-        tcx,
-        typeck: None,
-        writer: IndexWriter::new(&crate_name, &crate_version),
-    };
+fn compute_dependency_unit_key(
+    crate_name: &str,
+    crate_version: &str,
+    disambiguator: Option<&str>,
+    manifest_dir: Option<&Path>,
+) -> String {
+    let mut key_str = format!(
+        "{}:{}:{}:v{}:ext{}",
+        crate_name,
+        crate_version,
+        disambiguator.unwrap_or(""),
+        ridx_format::CURRENT_FORMAT_VERSION,
+        ridx_format::EXTRACTOR_VERSION,
+    );
+    if let Some(m) = manifest_dir {
+        key_str.push(':');
+        key_str.push_str(&m.display().to_string());
+    }
+    if let Ok(target) = std::env::var("TARGET") {
+        key_str.push(':');
+        key_str.push_str(&target);
+    }
+    format!("{:016x}", ridx_format::fnv1a_64(key_str.as_bytes()))
+}
 
+fn extract_crate_items<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    visitor: &mut HirVisitor<'tcx>,
+    package_root: Option<&Path>,
+) {
     // Extract all crate item definitions
     for def_id in tcx.hir_crate_items(()).definitions() {
         let Some((file, s_line, s_col, e_line, e_col, is_macro)) =
-            resolve_span_coords(tcx, tcx.def_span(def_id))
+            resolve_span_coords(tcx, tcx.def_span(def_id), package_root)
         else {
             continue;
         };
@@ -327,18 +371,136 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str
     }
 
     // Traverse all item bodies for references and types
-    tcx.hir_visit_all_item_likes_in_crate(&mut visitor);
+    tcx.hir_visit_all_item_likes_in_crate(visitor);
+}
 
-    if let Err(e) = fs::create_dir_all(out_dir) {
-        eprintln!("ridx-driver: failed to create out_dir {:?}: {e}", out_dir);
-        return;
-    }
+fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str>) {
+    let start = Instant::now();
+    let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
+    let crate_version =
+        std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
+
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from);
+    let ws_root = std::env::var("RIDX_WORKSPACE_ROOT").ok().map(PathBuf::from);
+
+    let is_workspace_crate = match (&manifest_dir, &ws_root) {
+        (Some(m), Some(w)) => m.starts_with(w),
+        _ => true,
+    };
 
     let suffix = match disambiguator {
         Some(d) if d.starts_with('-') || d.starts_with('_') => d.to_string(),
         Some(d) if !d.is_empty() => format!("_{d}"),
         _ => String::new(),
     };
+
+    if !is_workspace_crate {
+        let unit_key = compute_dependency_unit_key(
+            &crate_name,
+            &crate_version,
+            disambiguator,
+            manifest_dir.as_deref(),
+        );
+        let cache_dir = ridx_format::resolve_cache_dir();
+        let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
+
+        // Record dependency shard info for active workspace variant
+        let dep_info = serde_json::json!({
+            "name": crate_name,
+            "version": crate_version,
+            "unit_key": unit_key,
+            "object_path": obj_path.display().to_string(),
+            "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+        });
+        let deps_dir = out_dir.join(".deps");
+        let _ = fs::create_dir_all(&deps_dir);
+        let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
+        let _ = fs::write(&dep_file, serde_json::to_string_pretty(&dep_info).unwrap_or_default());
+
+        if obj_path.is_file() {
+            let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
+            eprintln!(
+                "ridx: cache hit for {} v{} ({} KB, unit: {}) in {:.1} ms",
+                crate_name,
+                crate_version,
+                file_size / 1024,
+                &unit_key[..unit_key.len().min(8)],
+                start.elapsed().as_secs_f64() * 1000.0
+            );
+            return;
+        }
+
+        // Cache miss: extract index with package_root set for relative source paths
+        let mut visitor = HirVisitor {
+            tcx,
+            typeck: None,
+            package_root: manifest_dir.clone(),
+            writer: IndexWriter::new(&crate_name, &crate_version),
+        };
+
+        extract_crate_items(tcx, &mut visitor, manifest_dir.as_deref());
+
+        if let Some(parent) = obj_path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+
+        let tmp_file_path = obj_path.with_extension(format!("tmp.{}", std::process::id()));
+        match File::create(&tmp_file_path) {
+            Ok(f) => {
+                let mut writer = BufWriter::new(f);
+                let def_count = visitor.writer.definition_count();
+                let ref_count = visitor.writer.reference_count();
+                let type_count = visitor.writer.type_count();
+
+                if let Err(e) = visitor.writer.write_to(&mut writer) {
+                    eprintln!("ridx-driver: write failed for dependency {crate_name}: {e}");
+                    let _ = fs::remove_file(&tmp_file_path);
+                } else {
+                    drop(writer);
+                    if let Err(e) = fs::rename(&tmp_file_path, &obj_path) {
+                        eprintln!(
+                            "ridx-driver: failed to atomically rename {:?} to {:?}: {e}",
+                            tmp_file_path, obj_path
+                        );
+                        let _ = fs::remove_file(&tmp_file_path);
+                    } else {
+                        let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
+                        eprintln!(
+                            "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {})",
+                            crate_name,
+                            crate_version,
+                            def_count,
+                            ref_count,
+                            type_count,
+                            file_size / 1024,
+                            start.elapsed().as_secs_f64() * 1000.0,
+                            &unit_key[..unit_key.len().min(8)]
+                        );
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("ridx-driver: failed to create temporary index {:?}: {e}", tmp_file_path);
+            }
+        }
+        return;
+    }
+
+    // Workspace crate: write to out_dir
+    if let Err(e) = fs::create_dir_all(out_dir) {
+        eprintln!("ridx-driver: failed to create out_dir {:?}: {e}", out_dir);
+        return;
+    }
+
+    let mut visitor = HirVisitor {
+        tcx,
+        typeck: None,
+        package_root: None,
+        writer: IndexWriter::new(&crate_name, &crate_version),
+    };
+
+    extract_crate_items(tcx, &mut visitor, None);
+
     let out_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx"));
     let tmp_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx.tmp.{}", std::process::id()));
 
@@ -402,6 +564,13 @@ fn main() {
     });
 
     if is_query {
+        rustc_driver::run_compiler(&args, &mut NoopCallbacks);
+        return;
+    }
+
+    // Skip build scripts
+    let crate_name_arg = args.windows(2).find(|w| w[0] == "--crate-name").map(|w| w[1].as_str());
+    if crate_name_arg == Some("build_script_build") || crate_name_arg == Some("build_script_main") {
         rustc_driver::run_compiler(&args, &mut NoopCallbacks);
         return;
     }

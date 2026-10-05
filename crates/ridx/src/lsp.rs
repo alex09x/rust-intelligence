@@ -164,6 +164,8 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
         None => WorkspaceIndex::auto_discover().ok(),
     };
 
+    let mut overlay_mgr = crate::overlay::OverlayManager::new();
+
     loop {
         // Read headers
         let mut content_length: Option<usize> = None;
@@ -232,12 +234,13 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         "id": id,
                         "result": {
                             "capabilities": {
-                                "textDocumentSync": 0,
+                                "textDocumentSync": 1,
                                 "positionEncoding": "utf-16",
                                 "definitionProvider": true,
                                 "referencesProvider": true,
                                 "hoverProvider": true,
-                                "workspaceSymbolProvider": true
+                                "workspaceSymbolProvider": true,
+                                "documentSymbolProvider": true
                             },
                             "serverInfo": {
                                 "name": "ridx-lsp",
@@ -253,11 +256,40 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                 // Client confirmed initialization; no response needed
             }
 
-            "textDocument/didOpen" | "textDocument/didChange" | "textDocument/didClose" => {
-                // Documents not held in server memory; queried on-demand from disk index
+            "textDocument/didOpen" => {
+                let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+                let file = uri_to_path(uri);
+                let version = msg["params"]["textDocument"]["version"].as_i64().unwrap_or(1) as i32;
+                let text = msg["params"]["textDocument"]["text"].as_str().unwrap_or("").to_string();
+                overlay_mgr.open_or_update(uri, &file, version, text);
+            }
+
+            "textDocument/didChange" => {
+                let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+                let file = uri_to_path(uri);
+                let version = msg["params"]["textDocument"]["version"].as_i64().unwrap_or(1) as i32;
+                if let Some(changes) = msg["params"]["contentChanges"].as_array() {
+                    if let Some(last) = changes.last() {
+                        if let Some(text) = last["text"].as_str() {
+                            overlay_mgr.open_or_update(uri, &file, version, text.to_string());
+                        }
+                    }
+                }
+            }
+
+            "textDocument/didClose" => {
+                let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+                let file = uri_to_path(uri);
+                overlay_mgr.close(&file);
             }
 
             "textDocument/didSave" => {
+                let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+                let file = uri_to_path(uri);
+                if let Ok(content) = std::fs::read(&file) {
+                    let hash = ridx_format::fnv1a_64(&content);
+                    overlay_mgr.reconcile_with_disk(&file, hash);
+                }
                 if let Some(ref mut ws) = workspace {
                     let _ = ws.reload_if_modified();
                 }
@@ -267,20 +299,41 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                 if let Some(id) = id {
                     let mut result = Value::Null;
 
-                    if let Some(ref ws) = workspace {
-                        let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-                        let file = uri_to_path(uri);
-                        let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-                        let utf16_col_0based =
-                            msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
-                        let line_1based = line_0based + 1;
-                        let col_1based = conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based);
+                    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+                    let file = uri_to_path(uri);
+                    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+                    let utf16_col_0based =
+                        msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+                    let line_1based = line_0based + 1;
+                    let col_1based = conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based);
 
-                        // 1-based indexing in ridx
+                    // 1. Check live buffer overlay first (resolves local variables, params, unsaved items)
+                    if let Some(overlay_def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+                        let def_uri = path_to_uri(&overlay_def.file);
+                        let start_char = conv.char_col_to_utf16_col(&overlay_def.file, overlay_def.start_line, overlay_def.start_col);
+                        let end_char = conv.char_col_to_utf16_col(&overlay_def.file, overlay_def.end_line, overlay_def.end_col);
+                        result = json!({
+                            "uri": def_uri,
+                            "range": {
+                                "start": {
+                                    "line": overlay_def.start_line.saturating_sub(1),
+                                    "character": start_char
+                                },
+                                "end": {
+                                    "line": overlay_def.end_line.saturating_sub(1),
+                                    "character": end_char
+                                }
+                            }
+                        });
+                    } else if let Some(ref ws) = workspace {
+                        // 2. Fall back to compiled zero-copy workspace index
                         if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based) {
-                            let def_uri = path_to_uri(def.file);
-                            let start_char = conv.char_col_to_utf16_col(def.file, def.start_line, def.start_col);
-                            let end_char = conv.char_col_to_utf16_col(def.file, def.end_line, def.end_col);
+                            let crate_name = def.path.split("::").next().unwrap_or("");
+                            let resolved_file_path = ws.resolve_path_for_crate(crate_name, def.file);
+                            let resolved_file_str = resolved_file_path.to_str().unwrap_or(def.file);
+                            let def_uri = path_to_uri(resolved_file_str);
+                            let start_char = conv.char_col_to_utf16_col(resolved_file_str, def.start_line, def.start_col);
+                            let end_char = conv.char_col_to_utf16_col(resolved_file_str, def.end_line, def.end_col);
                             result = json!({
                                 "uri": def_uri,
                                 "range": {
@@ -325,10 +378,13 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         {
                             let mut locs = Vec::new();
                             if include_decl && !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
-                                let decl_uri = path_to_uri(loc_refs.target_file);
+                                let decl_crate = loc_refs.target_path.split("::").next().unwrap_or("");
+                                let decl_file_path = ws.resolve_path_for_crate(decl_crate, loc_refs.target_file);
+                                let decl_file_str = decl_file_path.to_str().unwrap_or(loc_refs.target_file);
+                                let decl_uri = path_to_uri(decl_file_str);
                                 let decl_start_line = loc_refs.target_line.saturating_sub(1);
                                 let decl_start_col = conv.char_col_to_utf16_col(
-                                    loc_refs.target_file,
+                                    decl_file_str,
                                     loc_refs.target_line,
                                     loc_refs.target_col,
                                 );
@@ -339,7 +395,7 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                                 };
                                 let decl_end_col = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
                                     conv.char_col_to_utf16_col(
-                                        loc_refs.target_file,
+                                        decl_file_str,
                                         loc_refs.target_end_line,
                                         loc_refs.target_end_col,
                                     )
@@ -363,9 +419,11 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 
                             for r in loc_refs.references {
                                 let span = r.span;
-                                let r_uri = path_to_uri(r.file);
-                                let start_char = conv.char_col_to_utf16_col(r.file, span.start_line(), span.start_col());
-                                let end_char = conv.char_col_to_utf16_col(r.file, span.end_line(), span.end_col());
+                                let r_file_path = ws.resolve_path_for_crate(r.crate_name, r.file);
+                                let r_file_str = r_file_path.to_str().unwrap_or(r.file);
+                                let r_uri = path_to_uri(r_file_str);
+                                let start_char = conv.char_col_to_utf16_col(r_file_str, span.start_line(), span.start_col());
+                                let end_char = conv.char_col_to_utf16_col(r_file_str, span.end_line(), span.end_col());
                                 locs.push(json!({
                                     "uri": r_uri,
                                     "range": {
@@ -474,6 +532,55 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                                             "line": span.end_line().saturating_sub(1),
                                             "character": end_char
                                         }
+                                    }
+                                }
+                            }));
+                        }
+                        result = json!(list);
+                    }
+
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/documentSymbol" => {
+                if let Some(id) = id {
+                    let mut result = json!([]);
+                    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+                    let file = uri_to_path(uri);
+
+                    if let Some(symbols) = overlay_mgr.document_symbols(&file) {
+                        let mut list = Vec::new();
+                        for sym in symbols {
+                            let start_char = conv.char_col_to_utf16_col(&file, sym.start_line, sym.start_col);
+                            let end_char = conv.char_col_to_utf16_col(&file, sym.end_line, sym.end_col);
+                            list.push(json!({
+                                "name": sym.name,
+                                "kind": lsp_symbol_kind(sym.kind),
+                                "detail": sym.signature,
+                                "range": {
+                                    "start": {
+                                        "line": sym.start_line.saturating_sub(1),
+                                        "character": start_char
+                                    },
+                                    "end": {
+                                        "line": sym.end_line.saturating_sub(1),
+                                        "character": end_char
+                                    }
+                                },
+                                "selectionRange": {
+                                    "start": {
+                                        "line": sym.start_line.saturating_sub(1),
+                                        "character": start_char
+                                    },
+                                    "end": {
+                                        "line": sym.end_line.saturating_sub(1),
+                                        "character": end_char
                                     }
                                 }
                             }));

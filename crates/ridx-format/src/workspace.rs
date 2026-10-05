@@ -67,11 +67,40 @@ pub struct WorkspaceStats {
     pub active_variant: Option<String>,
 }
 
+/// Metadata describing an immutable external dependency shard in the global cache.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct DependencyShardInfo {
+    pub name: String,
+    pub version: String,
+    pub unit_key: String,
+    pub object_path: String,
+    #[serde(default)]
+    pub source_root: Option<String>,
+}
+
+fn default_format_version() -> u32 {
+    crate::format::CURRENT_FORMAT_VERSION
+}
+
+/// Helper to identify if an I/O error was caused by a RIDX index format version mismatch.
+pub fn is_version_mismatch(err: &io::Error) -> bool {
+    if err.kind() == io::ErrorKind::InvalidData {
+        let msg = err.to_string();
+        msg.contains("Unsupported RIDX version") || msg.contains("Format version mismatch")
+    } else {
+        false
+    }
+}
+
 /// Active variant metadata stored in `target/ridx/ridx_manifest.json`.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct VariantManifest {
     #[serde(default = "default_manifest_version")]
     pub version: String,
+    #[serde(default = "default_format_version")]
+    pub format_version: u32,
+    #[serde(default)]
+    pub extractor_version: Option<String>,
     #[serde(default)]
     pub active_variant_id: String,
     #[serde(default)]
@@ -102,6 +131,8 @@ pub struct VariantManifest {
     pub total_refs: usize,
     #[serde(default)]
     pub total_types: usize,
+    #[serde(default)]
+    pub dependency_shards: Vec<DependencyShardInfo>,
 }
 
 fn default_manifest_version() -> String {
@@ -119,6 +150,7 @@ pub struct CrateSummary {
     pub refs_count: u32,
     pub types_count: u32,
     pub files_count: u32,
+    pub is_dependency: bool,
 }
 
 /// Unified multi-crate index for a cargo workspace or multi-index directory.
@@ -126,6 +158,7 @@ pub struct WorkspaceIndex {
     readers: Vec<IndexReader<Mmap>>,
     paths: Vec<PathBuf>,
     mtimes: Vec<Option<std::time::SystemTime>>,
+    source_roots: Vec<Option<PathBuf>>,
     root_dir: Option<PathBuf>,
     manifest_path: Option<PathBuf>,
     manifest_mtime: Option<std::time::SystemTime>,
@@ -144,6 +177,7 @@ impl WorkspaceIndex {
                 readers: vec![reader],
                 paths: vec![p.to_path_buf()],
                 mtimes: vec![mtime],
+                source_roots: vec![None],
                 root_dir: None,
                 manifest_path: None,
                 manifest_mtime: None,
@@ -168,6 +202,17 @@ impl WorkspaceIndex {
                     format!("Failed to parse variant manifest {:?}: {e}", manifest_file),
                 )
             })?;
+
+            if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!(
+                        "Format version mismatch in manifest {:?}: format_version {} != current {}",
+                        manifest_file, manifest.format_version, crate::format::CURRENT_FORMAT_VERSION
+                    ),
+                ));
+            }
+
             let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
             if !manifest.active_variant_id.is_empty() {
                 let expected_variant_dir = format!("variants/{}", manifest.active_variant_id);
@@ -198,7 +243,7 @@ impl WorkspaceIndex {
                         ),
                     ));
                 }
-                (vdir, Some((manifest_file, mtime, manifest.active_variant_id)))
+                (vdir, Some((manifest_file, mtime, manifest.active_variant_id, manifest.dependency_shards)))
             } else {
                 // Legacy manifest without active_variant_id: scan search_dir directly
                 (search_dir.clone(), None)
@@ -225,6 +270,7 @@ impl WorkspaceIndex {
         let mut readers = Vec::with_capacity(ridx_files.len());
         let mut paths = Vec::with_capacity(ridx_files.len());
         let mut mtimes = Vec::with_capacity(ridx_files.len());
+        let mut source_roots = Vec::with_capacity(ridx_files.len());
 
         for file_path in ridx_files {
             match IndexReader::open(&file_path) {
@@ -233,9 +279,38 @@ impl WorkspaceIndex {
                     readers.push(reader);
                     paths.push(file_path);
                     mtimes.push(mtime);
+                    source_roots.push(None);
                 }
                 Err(e) => {
                     eprintln!("Warning: skipping invalid index {:?}: {e}", file_path);
+                }
+            }
+        }
+
+        // Load external dependency shards from global cache if specified in manifest
+        if let Some((_, _, _, ref dep_shards)) = manifest_info {
+            let cache_dir = crate::format::resolve_cache_dir();
+            for dep in dep_shards {
+                let obj_path = PathBuf::from(&dep.object_path);
+                let cand = if obj_path.is_file() {
+                    Some(obj_path)
+                } else {
+                    let fallback = crate::format::cache_object_path(&cache_dir, &dep.unit_key);
+                    if fallback.is_file() {
+                        Some(fallback)
+                    } else {
+                        None
+                    }
+                };
+
+                if let Some(dep_file) = cand {
+                    if let Ok(reader) = IndexReader::open(&dep_file) {
+                        let mtime = fs::metadata(&dep_file).and_then(|m| m.modified()).ok();
+                        readers.push(reader);
+                        paths.push(dep_file);
+                        mtimes.push(mtime);
+                        source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
+                    }
                 }
             }
         }
@@ -248,7 +323,7 @@ impl WorkspaceIndex {
         }
 
         let (manifest_path, manifest_mtime, active_variant_id) = match manifest_info {
-            Some((mp, mm, avid)) => (Some(mp), mm, Some(avid)),
+            Some((mp, mm, avid, _)) => (Some(mp), mm, Some(avid)),
             None => (None, None, None),
         };
 
@@ -256,6 +331,7 @@ impl WorkspaceIndex {
             readers,
             paths,
             mtimes,
+            source_roots,
             root_dir: Some(scan_dir),
             manifest_path,
             manifest_mtime,
@@ -335,6 +411,7 @@ impl WorkspaceIndex {
                 refs_count: h.refs_count,
                 types_count: h.types_count,
                 files_count: h.files_count,
+                is_dependency: self.source_roots.get(i).and_then(|r| r.as_ref()).is_some(),
             });
         }
 
@@ -400,6 +477,32 @@ impl WorkspaceIndex {
         None
     }
 
+    /// Returns the source root path for a loaded crate, if it is an external dependency.
+    pub fn crate_source_root(&self, crate_name: &str) -> Option<&Path> {
+        for (i, reader) in self.readers.iter().enumerate() {
+            if reader.crate_name() == crate_name {
+                if let Some(Some(root)) = self.source_roots.get(i) {
+                    return Some(root.as_path());
+                }
+            }
+        }
+        None
+    }
+
+    /// Resolves a file path for a given crate.
+    /// If the path is relative and the crate is an external dependency with a source root,
+    /// joins the source root with the relative path.
+    pub fn resolve_path_for_crate(&self, crate_name: &str, file: &str) -> PathBuf {
+        let p = Path::new(file);
+        if p.is_absolute() {
+            return p.to_path_buf();
+        }
+        if let Some(root) = self.crate_source_root(crate_name) {
+            return root.join(file);
+        }
+        p.to_path_buf()
+    }
+
     /// Finds a definition at a cursor location, seamlessly resolving cross-crate references.
     pub fn find_definition_at<'a>(
         &'a self,
@@ -407,8 +510,18 @@ impl WorkspaceIndex {
         line: u32,
         col: u32,
     ) -> Option<ResolvedDefinition<'a>> {
-        for reader in &self.readers {
-            if let Some(res) = reader.find_definition_at(file, line, col) {
+        for (i, reader) in self.readers.iter().enumerate() {
+            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
+                let p = Path::new(file);
+                if let Ok(rel) = p.strip_prefix(root) {
+                    rel.to_str().unwrap_or(file)
+                } else {
+                    file
+                }
+            } else {
+                file
+            };
+            if let Some(res) = reader.find_definition_at(target_file, line, col) {
                 // If it resolves to a cross-crate target, attempt resolution in
                 // workspace peer crates to retrieve the true indexed definition and signature
                 if let Some(cross_def) = self.find_definition_by_path(res.path) {
@@ -448,8 +561,18 @@ impl WorkspaceIndex {
 
     /// Inferred expression type at cursor location.
     pub fn type_at(&self, file: &str, line: u32, col: u32) -> Option<&str> {
-        for reader in &self.readers {
-            if let Some(ty) = reader.type_at(file, line, col) {
+        for (i, reader) in self.readers.iter().enumerate() {
+            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
+                let p = Path::new(file);
+                if let Ok(rel) = p.strip_prefix(root) {
+                    rel.to_str().unwrap_or(file)
+                } else {
+                    file
+                }
+            } else {
+                file
+            };
+            if let Some(ty) = reader.type_at(target_file, line, col) {
                 return Some(ty);
             }
         }
@@ -568,6 +691,7 @@ impl WorkspaceIndex {
                                 let mut new_readers = Vec::with_capacity(new_files.len());
                                 let mut new_paths = Vec::with_capacity(new_files.len());
                                 let mut new_mtimes = Vec::with_capacity(new_files.len());
+                                let mut new_source_roots = Vec::with_capacity(new_files.len());
 
                                 for fp in new_files {
                                     if let Ok(r) = IndexReader::open(&fp) {
@@ -575,6 +699,32 @@ impl WorkspaceIndex {
                                         new_readers.push(r);
                                         new_paths.push(fp);
                                         new_mtimes.push(mt);
+                                        new_source_roots.push(None);
+                                    }
+                                }
+
+                                // Load dependency shards for new variant if any
+                                let cache_dir = crate::format::resolve_cache_dir();
+                                for dep in &manifest.dependency_shards {
+                                    let obj_path = PathBuf::from(&dep.object_path);
+                                    let cand = if obj_path.is_file() {
+                                        Some(obj_path)
+                                    } else {
+                                        let fallback = crate::format::cache_object_path(&cache_dir, &dep.unit_key);
+                                        if fallback.is_file() {
+                                            Some(fallback)
+                                        } else {
+                                            None
+                                        }
+                                    };
+                                    if let Some(dep_file) = cand {
+                                        if let Ok(r) = IndexReader::open(&dep_file) {
+                                            let mt = fs::metadata(&dep_file).and_then(|m| m.modified()).ok();
+                                            new_readers.push(r);
+                                            new_paths.push(dep_file);
+                                            new_mtimes.push(mt);
+                                            new_source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
+                                        }
                                     }
                                 }
 
@@ -582,6 +732,7 @@ impl WorkspaceIndex {
                                     self.readers = new_readers;
                                     self.paths = new_paths;
                                     self.mtimes = new_mtimes;
+                                    self.source_roots = new_source_roots;
                                     self.root_dir = Some(new_vdir);
                                     self.active_variant_id = Some(manifest.active_variant_id);
                                     return Ok(true);
@@ -602,6 +753,9 @@ impl WorkspaceIndex {
                 self.paths.remove(i);
                 self.readers.remove(i);
                 self.mtimes.remove(i);
+                if i < self.source_roots.len() {
+                    self.source_roots.remove(i);
+                }
                 changed = true;
                 continue;
             }
@@ -636,6 +790,7 @@ impl WorkspaceIndex {
                         self.readers.push(reader);
                         self.paths.push(file_path);
                         self.mtimes.push(mtime);
+                        self.source_roots.push(None);
                         changed = true;
                     }
                 }

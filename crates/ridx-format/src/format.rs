@@ -5,6 +5,52 @@
 
 pub const MAGIC: [u8; 4] = *b"RIDX";
 pub const CURRENT_VERSION: u32 = 1;
+pub const CURRENT_FORMAT_VERSION: u32 = 1;
+pub const EXTRACTOR_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Resolves the global RIDX shared cache directory for external crate dependencies.
+/// Uses `$RIDX_CACHE_DIR` if set, or platform default:
+/// - Unix: `$XDG_CACHE_HOME/ridx/v{CURRENT_VERSION}` or `$HOME/.cache/ridx/v{CURRENT_VERSION}`
+/// - Windows: `%LOCALAPPDATA%/ridx/v{CURRENT_VERSION}` or `$USERPROFILE/.cache/ridx/v{CURRENT_VERSION}`
+pub fn resolve_cache_dir() -> std::path::PathBuf {
+    if let Ok(dir) = std::env::var("RIDX_CACHE_DIR") {
+        let p = std::path::PathBuf::from(dir.trim());
+        if !p.as_os_str().is_empty() {
+            return p;
+        }
+    }
+    if let Ok(xdg) = std::env::var("XDG_CACHE_HOME") {
+        let p = std::path::PathBuf::from(xdg.trim());
+        if !p.as_os_str().is_empty() {
+            return p.join("ridx").join(format!("v{}", CURRENT_VERSION));
+        }
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        let p = std::path::PathBuf::from(home.trim());
+        if !p.as_os_str().is_empty() {
+            return p.join(".cache").join("ridx").join(format!("v{}", CURRENT_VERSION));
+        }
+    }
+    #[cfg(windows)]
+    if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
+        let p = std::path::PathBuf::from(local_app_data.trim());
+        if !p.as_os_str().is_empty() {
+            return p.join("ridx").join(format!("v{}", CURRENT_VERSION));
+        }
+    }
+    std::path::PathBuf::from(".ridx_cache").join(format!("v{}", CURRENT_VERSION))
+}
+
+/// Returns the path to an object shard inside the global cache for a given unit key.
+pub fn cache_object_path(cache_dir: &std::path::Path, unit_key: &str) -> std::path::PathBuf {
+    let prefix = if unit_key.len() >= 2 {
+        &unit_key[..2]
+    } else {
+        "00"
+    };
+    cache_dir.join("objects").join(prefix).join(format!("{}.ridx", unit_key))
+}
+
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {

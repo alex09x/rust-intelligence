@@ -8,6 +8,7 @@ use std::time::Instant;
 
 mod compare;
 mod lsp;
+mod overlay;
 
 #[derive(Parser)]
 #[command(name = "ridx")]
@@ -164,6 +165,30 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
         Some(p) => match WorkspaceIndex::open(&p) {
             Ok(ws) => ws,
             Err(e) => {
+                if ridx_format::is_version_mismatch(&e) || e.kind() == std::io::ErrorKind::NotFound {
+                    eprintln!(
+                        "{} Index at {:?} is missing or incompatible with format v{}. Automatically reindexing...",
+                        "Notice:".yellow().bold(), p, ridx_format::CURRENT_FORMAT_VERSION
+                    );
+                    let work_dir = if p.is_dir() { p.clone() } else { p.parent().unwrap_or(&p).to_path_buf() };
+                    run_indexing(IndexOptions {
+                        path: work_dir.clone(),
+                        out_dir_opt: None,
+                        package: None,
+                        release: false,
+                        features: None,
+                        no_default_features: false,
+                        all_features: false,
+                        target: None,
+                    });
+                    match WorkspaceIndex::open(&p) {
+                        Ok(ws) => return ws,
+                        Err(e2) => {
+                            eprintln!("{}: Failed to open reindexed workspace {:?}: {e2}", "Error".red().bold(), p);
+                            std::process::exit(1);
+                        }
+                    }
+                }
                 eprintln!("{}: Failed to open index {:?}: {e}", "Error".red().bold(), p);
                 std::process::exit(1);
             }
@@ -171,6 +196,30 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
         None => match WorkspaceIndex::auto_discover() {
             Ok(ws) => ws,
             Err(e) => {
+                let cur = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+                if cur.join("Cargo.toml").is_file() {
+                    eprintln!(
+                        "{} No valid RIDX index found for current workspace (expected format v{}). Automatically indexing...",
+                        "Notice:".yellow().bold(), ridx_format::CURRENT_FORMAT_VERSION
+                    );
+                    run_indexing(IndexOptions {
+                        path: cur.clone(),
+                        out_dir_opt: None,
+                        package: None,
+                        release: false,
+                        features: None,
+                        no_default_features: false,
+                        all_features: false,
+                        target: None,
+                    });
+                    match WorkspaceIndex::auto_discover() {
+                        Ok(ws) => return ws,
+                        Err(e2) => {
+                            eprintln!("{}: Failed to auto-discover reindexed workspace: {e2}", "Error".red().bold());
+                            std::process::exit(1);
+                        }
+                    }
+                }
                 eprintln!("{}: {e}", "Error".red().bold());
                 eprintln!("Specify the path to a .ridx file or directory, or run from a workspace with target/ridx/.");
                 std::process::exit(1);
@@ -385,6 +434,10 @@ fn compute_variant_id(
         encoded_flags.hash(&mut hasher);
     }
 
+    // 8. RIDX binary format and extractor version
+    ridx_format::CURRENT_FORMAT_VERSION.hash(&mut hasher);
+    ridx_format::EXTRACTOR_VERSION.hash(&mut hasher);
+
     let hash = hasher.finish();
     format!("{profile}-{:016x}", hash)
 }
@@ -540,11 +593,20 @@ fn run_indexing(opts: IndexOptions) {
         cmd.arg("--target").arg(tgt);
     }
 
+    let cache_dir = ridx_format::resolve_cache_dir();
+    let _ = fs::create_dir_all(cache_dir.join("objects"));
+
     cmd.env("RUSTC_WORKSPACE_WRAPPER", &driver_bin);
     cmd.env("RIDX_OUT_DIR", &variant_out_dir);
+    cmd.env("RIDX_CACHE_DIR", &cache_dir);
+    cmd.env("RIDX_WORKSPACE_ROOT", &work_dir);
     cmd.env("CARGO_TARGET_DIR", &cargo_target_dir);
     cmd.env("RUSTC_BOOTSTRAP", "1");
-    cmd.env("RUSTC_WRAPPER", "");
+    if std::env::var("RIDX_NO_DEPS").is_err() {
+        cmd.env("RUSTC_WRAPPER", &driver_bin);
+    } else {
+        cmd.env("RUSTC_WRAPPER", "");
+    }
 
     // Ensure librustc_driver shared library can be located by dynamic linker
     if let Ok(out) = Command::new("rustc").args(["--print", "sysroot"]).output() {
@@ -587,6 +649,47 @@ fn run_indexing(opts: IndexOptions) {
 
     // Record build variant fingerprint manifest atomically in base_out_dir
     let manifest_file = base_out_dir.join("ridx_manifest.json");
+
+    // Collect external dependency shards recorded by compiler driver
+    let mut dep_shards: Vec<ridx_format::DependencyShardInfo> = Vec::new();
+    let deps_dir = variant_out_dir.join(".deps");
+    if deps_dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(&deps_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|s| s.to_str()) == Some("json") {
+                    if let Ok(content) = fs::read(&path) {
+                        if let Ok(info) = serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content) {
+                            dep_shards.push(info);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Also preserve existing dependencies from previous manifest if still present in cache
+    let existing_deps = if manifest_file.is_file() {
+        if let Ok(content) = fs::read(&manifest_file) {
+            serde_json::from_slice::<ridx_format::VariantManifest>(&content)
+                .ok()
+                .map(|m| m.dependency_shards)
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        }
+    } else {
+        Vec::new()
+    };
+    for existing in existing_deps {
+        if !dep_shards.iter().any(|d| d.name == existing.name) {
+            let p = Path::new(&existing.object_path);
+            if p.is_file() {
+                dep_shards.push(existing);
+            }
+        }
+    }
+    dep_shards.sort_by(|a, b| a.name.cmp(&b.name));
+
     let config_files = find_cargo_configs(&work_dir);
     let mut config_target = None;
     for cfg in &config_files {
@@ -602,6 +705,8 @@ fn run_indexing(opts: IndexOptions) {
 
     let manifest_data = serde_json::json!({
         "version": "2.0",
+        "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+        "extractor_version": ridx_format::EXTRACTOR_VERSION,
         "active_variant_id": variant_id,
         "variant_dir": variant_rel_dir,
         "workspace_root": work_dir.display().to_string(),
@@ -620,11 +725,13 @@ fn run_indexing(opts: IndexOptions) {
         "total_defs": stats.total_defs,
         "total_refs": stats.total_refs,
         "total_types": stats.total_types,
+        "dependency_shards": dep_shards,
         "crates": stats.crate_summaries.iter().map(|c| serde_json::json!({
             "name": c.name,
             "version": c.version,
             "file": c.path.file_name().and_then(|s| s.to_str()).unwrap_or(""),
             "file_size": c.file_size,
+            "is_dependency": c.is_dependency,
         })).collect::<Vec<_>>()
     });
 
@@ -664,6 +771,13 @@ fn run_indexing(opts: IndexOptions) {
         stats.total_types.to_string().green(),
         stats.total_bytes as f64 / 1024.0
     );
+
+    if !dep_shards.is_empty() {
+        println!(
+            "Linked {} external dependency shard(s) from global cache",
+            dep_shards.len().to_string().cyan().bold()
+        );
+    }
 }
 
 fn main() {
