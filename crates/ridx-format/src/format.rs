@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! Binary format specifications for the RIDX (.ridx) index file.
 //!
 //! All integer values are stored in little-endian format.
@@ -472,6 +482,46 @@ pub enum DefKind {
     Other = 255,
 }
 
+impl DefKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            DefKind::Mod => "mod",
+            DefKind::Struct => "struct",
+            DefKind::Union => "union",
+            DefKind::Enum => "enum",
+            DefKind::Variant => "variant",
+            DefKind::Trait => "trait",
+            DefKind::TyAlias => "type",
+            DefKind::ForeignTy => "type",
+            DefKind::TraitAlias => "trait",
+            DefKind::AssocTy => "type",
+            DefKind::TyParam => "type",
+            DefKind::Fn => "fn",
+            DefKind::Const => "const",
+            DefKind::ConstParam => "const",
+            DefKind::Static => "static",
+            DefKind::StructCtor => "struct",
+            DefKind::VariantCtor => "variant",
+            DefKind::AssocFn => "fn",
+            DefKind::AssocConst => "const",
+            DefKind::Macro => "macro",
+            DefKind::ExternCrate => "extern crate",
+            DefKind::Use => "use",
+            DefKind::ForeignMod => "mod",
+            DefKind::AnonConst => "const",
+            DefKind::InlineConst => "const",
+            DefKind::OpaqueTy => "type",
+            DefKind::Field => "field",
+            DefKind::LifetimeParam => "lifetime",
+            DefKind::GlobalAsm => "asm",
+            DefKind::Impl => "impl",
+            DefKind::Closure => "closure",
+            DefKind::Local => "let",
+            DefKind::Other => "other",
+        }
+    }
+}
+
 impl From<u8> for DefKind {
     fn from(val: u8) -> Self {
         match val {
@@ -780,4 +830,221 @@ pub fn fnv1a_64(bytes: &[u8]) -> u64 {
         hash = hash.wrapping_mul(0x100000001b3);
     }
     hash
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn test_cache_helpers() {
+        std::env::set_var("RIDX_CACHE_DIR", "/custom/cache");
+        let dir = resolve_cache_dir();
+        assert_eq!(dir, PathBuf::from("/custom/cache"));
+        std::env::remove_var("RIDX_CACHE_DIR");
+
+        let cache_base = Path::new("/var/cache/ridx");
+        let p1 = cache_object_path(cache_base, "abcdef");
+        assert_eq!(p1, cache_base.join("objects/ab/abcdef.ridx"));
+
+        let p2 = cache_object_path(cache_base, "x");
+        assert_eq!(p2, cache_base.join("objects/00/x.ridx"));
+    }
+
+    #[test]
+    fn test_format_struct_accessors() {
+        let fe = FileEntry {
+            path_offset: 12,
+            _pad: 0,
+            source_hash: 12345,
+        };
+        assert_eq!(fe.path_offset(), 12);
+        assert_eq!(fe.source_hash(), 12345);
+
+        let hdr = Header {
+            magic: MAGIC,
+            version: CURRENT_VERSION,
+            crate_name_offset: 0,
+            crate_version_offset: 0,
+            string_pool_offset: 0,
+            string_pool_len: 0,
+            files_offset: 0,
+            files_count: 0,
+            unit_key_offset: 42,
+            defs_offset: 0,
+            defs_count: 0,
+            generation_offset: 84,
+            defs_by_hash_offset: 0,
+            defs_by_hash_count: 0,
+            _pad2: 0,
+            refs_offset: 0,
+            refs_count: 0,
+            _pad3: 0,
+            refs_by_target_offset: 0,
+            refs_by_target_count: 0,
+            _pad4: 0,
+            types_offset: 0,
+            types_count: 0,
+            _pad5: 0,
+        };
+        let hdr_le = hdr.to_le();
+        let hdr_from = hdr_le.from_le();
+        assert_eq!(hdr_from.unit_key_offset(), 42);
+        assert_eq!(hdr_from.generation_offset(), 84);
+
+        let def = DefEntry {
+            def_id: 1,
+            name_offset: 10,
+            path_offset: 20,
+            sig_offset: 30,
+            span: Span::new(0, 1, 1, 2, 2),
+            kind: 1,
+            visibility: 0,
+            flags: 1,
+            _pad: 0,
+        };
+        let def_le = def.to_le();
+        let def_from = def_le.from_le();
+        assert_eq!(def.def_id, def_from.def_id);
+
+        let r = RefEntry {
+            span: Span::new(0, 1, 1, 2, 2),
+            target_def_id: 1,
+            target_path_offset: 10,
+            target_file_offset: 100,
+            target_unit_offset: 200,
+            target_line: 15,
+            target_col: 4,
+            kind: 1,
+            is_write: 1,
+            flags: FLAG_MACRO_EXPANSION,
+            _pad: 0,
+        };
+        let r_le = r.to_le();
+        let r_from = r_le.from_le();
+        assert_eq!(r_from.target_file_offset(), 100);
+        assert_eq!(r_from.target_unit_offset(), 200);
+        assert_eq!(r_from.target_line(), 15);
+        assert_eq!(r_from.target_col(), 4);
+        assert!(r_from.is_macro_expansion());
+
+        let ty = TypeEntry {
+            span: Span::new(0, 1, 1, 2, 2),
+            type_offset: 50,
+            _pad: [0; 4],
+        };
+        let ty_le = ty.to_le();
+        let ty_from = ty_le.from_le();
+        assert_eq!(ty.type_offset, ty_from.type_offset);
+
+        let h_entry = HashIndexEntry {
+            hash: 9999,
+            index: 7,
+            _pad: [0; 4],
+        };
+        let h_le = h_entry.to_le();
+        let h_from = h_le.from_le();
+        assert_eq!(h_from.hash(), 9999);
+        assert_eq!(h_from.index(), 7);
+    }
+
+    #[test]
+    fn test_merge_embedded_hashes_and_digest() {
+        let mut map = HashMap::new();
+        map.insert("src/lib.rs".to_string(), 12345u64);
+        let digest = compute_source_snapshot_digest(&map);
+        assert_ne!(digest, 0);
+
+        let mut existing = HashMap::new();
+        existing.insert("src/lib.rs".to_string(), 99999u64); // conflict
+        existing.insert("src/other.rs".to_string(), 88888u64);
+
+        let mut embedded = HashMap::new();
+        embedded.insert("src/lib.rs".to_string(), 12345u64);
+
+        merge_embedded_hashes_authoritative(&mut existing, &embedded, None);
+        assert_eq!(existing.get("src/lib.rs"), Some(&12345u64));
+        assert_eq!(existing.get("src/other.rs"), Some(&88888u64));
+    }
+
+    #[test]
+    fn test_def_kind_all_variants_and_as_str() {
+        for val in 0..=33 {
+            let kind = DefKind::from(val);
+            let s = kind.as_str();
+            assert!(!s.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_resolve_cache_dir_and_object_path() {
+        let _lock = crate::workspace::ENV_LOCK.lock().unwrap();
+        std::env::set_var("RIDX_CACHE_DIR", "/custom/ridx_cache");
+
+        assert_eq!(
+            resolve_cache_dir(),
+            std::path::PathBuf::from("/custom/ridx_cache")
+        );
+        std::env::remove_var("RIDX_CACHE_DIR");
+
+        std::env::set_var("XDG_CACHE_HOME", "/custom/xdg");
+        let xdg_res = resolve_cache_dir();
+        assert!(xdg_res.starts_with("/custom/xdg/ridx"));
+        std::env::remove_var("XDG_CACHE_HOME");
+
+        // Empty string variants and fallback (lines 30, 36, 45-46, 54)
+        std::env::set_var("RIDX_CACHE_DIR", "   ");
+        std::env::set_var("XDG_CACHE_HOME", "   ");
+        std::env::set_var("HOME", "/custom/home");
+        let home_res = resolve_cache_dir();
+        assert!(home_res.starts_with("/custom/home/.cache/ridx"));
+
+        std::env::set_var("HOME", "   ");
+        let fallback_res = resolve_cache_dir();
+        assert!(fallback_res.starts_with(".ridx_cache"));
+        std::env::remove_var("RIDX_CACHE_DIR");
+        std::env::remove_var("XDG_CACHE_HOME");
+        std::env::remove_var("HOME");
+
+        let obj1 = cache_object_path(Path::new("/cache"), "a");
+        assert_eq!(obj1, std::path::PathBuf::from("/cache/objects/00/a.ridx"));
+
+        let obj2 = cache_object_path(Path::new("/cache"), "12345");
+        assert_eq!(
+            obj2,
+            std::path::PathBuf::from("/cache/objects/12/12345.ridx")
+        );
+    }
+
+    #[test]
+    fn test_join_resolving_overlap_variants() {
+        let abs_rel = Path::new("/var/foo/bar.rs");
+        assert_eq!(join_resolving_overlap(Path::new("/root"), abs_rel), abs_rel);
+
+        let root = Path::new("/workspace/crates/app");
+        let rel = Path::new("crates/app/src/lib.rs");
+        let joined = join_resolving_overlap(root, rel);
+        assert_eq!(joined, Path::new("/workspace/crates/app/src/lib.rs"));
+
+        let rel_non = Path::new("other/file.rs");
+        let joined_non = join_resolving_overlap(root, rel_non);
+        assert_eq!(joined_non, Path::new("/workspace/crates/app/other/file.rs"));
+
+        // Direct exists branch (line 81)
+        let temp = std::env::temp_dir().join(format!("test_overlap_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(temp.join("src"));
+        let test_file = temp.join("src/main.rs");
+        let _ = std::fs::write(&test_file, b"fn main() {}");
+        assert_eq!(
+            join_resolving_overlap(&temp, Path::new("src/main.rs")),
+            test_file
+        );
+        let _ = std::fs::remove_dir_all(&temp);
+
+        // Span contains with mismatched file_id (line 418)
+        let span = Span::new(1, 10, 1, 10, 5);
+        assert!(!span.contains(999, 10, 2));
+    }
 }

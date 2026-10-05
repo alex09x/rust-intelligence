@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! Line mapping, byte-to-column conversions, and whitespace/comment stripping for document overlays.
 
 use super::DocumentOverlay;
@@ -140,6 +150,17 @@ pub fn strip_leading_whitespace_and_comments(s: &str) -> &str {
     &s[cur..]
 }
 
+/// Computes 0-based byte offsets for each line start in the given text.
+pub fn compute_line_starts(text: &str) -> Vec<usize> {
+    let mut starts = vec![0];
+    for (i, &b) in text.as_bytes().iter().enumerate() {
+        if b == b'\n' {
+            starts.push(i + 1);
+        }
+    }
+    starts
+}
+
 impl DocumentOverlay {
     /// Maps a 1-based line number from the live overlay buffer to the corresponding
     /// 1-based line number in the compiled disk snapshot.
@@ -188,10 +209,8 @@ impl DocumentOverlay {
         // If line is in proven unchanged suffix
         if l_idx >= curr_lines.len().saturating_sub(suffix_common) {
             let offset_from_end = curr_lines.len() - 1 - l_idx;
-            if offset_from_end < compiled_lines.len() {
-                let compiled_line_idx = compiled_lines.len() - 1 - offset_from_end;
-                return Some((compiled_line_idx + 1) as u32);
-            }
+            let compiled_line_idx = compiled_lines.len() - 1 - offset_from_end;
+            return Some((compiled_line_idx + 1) as u32);
         }
 
         // The line is in the modified/inserted region
@@ -242,13 +261,27 @@ impl DocumentOverlay {
 
         if c_idx >= compiled_lines.len().saturating_sub(suffix_common) {
             let offset_from_end = compiled_lines.len() - 1 - c_idx;
-            if offset_from_end < curr_lines.len() {
-                let live_line_idx = curr_lines.len() - 1 - offset_from_end;
-                return Some((live_line_idx + 1) as u32);
-            }
+            let live_line_idx = curr_lines.len() - 1 - offset_from_end;
+            return Some((live_line_idx + 1) as u32);
         }
 
         None
+    }
+
+    /// Maps a 1-based (line, col) position from the live overlay buffer to compiled position.
+    pub fn map_live_to_compiled(&self, line: u32, col: u32) -> Option<(u32, u32)> {
+        let cl = self.map_line_to_compiled(line)?;
+        Some((cl, col))
+    }
+
+    /// Maps a 1-based (line, col) position from the compiled snapshot to live buffer position.
+    pub fn map_compiled_to_live(
+        &self,
+        compiled_line: u32,
+        compiled_col: u32,
+    ) -> Option<(u32, u32)> {
+        let ll = self.map_compiled_line_to_live(compiled_line)?;
+        Some((ll, compiled_col))
     }
 
     /// Converts a 0-based UTF-16 character column on a 1-based line to a 1-based Unicode character column.
@@ -366,5 +399,128 @@ impl DocumentOverlay {
             byte_offset += c.len_utf8();
         }
         byte_offset
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_strip_whitespace_and_comments() {
+        assert_eq!(
+            strip_trailing_whitespace_and_comments("code; // comment\n  "),
+            "code;"
+        );
+        assert_eq!(
+            strip_trailing_whitespace_and_comments("code; /* block */   "),
+            "code;"
+        );
+        assert_eq!(
+            strip_trailing_whitespace_and_comments("code; /* nested /* b */ */"),
+            "code;"
+        );
+        assert_eq!(
+            strip_trailing_whitespace_and_comments("code; \"// in quote\""),
+            "code; \"// in quote\""
+        );
+
+        assert_eq!(
+            strip_leading_whitespace_and_comments("  // comment\ncode;"),
+            "code;"
+        );
+        assert_eq!(
+            strip_leading_whitespace_and_comments("  /* block */ code;"),
+            "code;"
+        );
+        assert_eq!(
+            strip_leading_whitespace_and_comments("  /* nested /* b */ */ code;"),
+            "code;"
+        );
+    }
+
+    #[test]
+    fn test_byte_and_char_conversions() {
+        let code = "fn test() {\n    let привет = \"🚀\";\n}\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/conv.rs", "src/conv.rs", 1, code);
+
+        let (line, col) = overlay.byte_to_char_line_col(0);
+        assert_eq!(line, 1);
+        assert_eq!(col, 1);
+
+        let byte_off = overlay.line_char_col_to_byte(1, 1);
+        assert_eq!(byte_off, 0);
+
+        let byte_pos = overlay.position_to_byte_offset(0, 0);
+        assert_eq!(byte_pos, 0);
+
+        // Out of bounds checks
+        assert_eq!(overlay.line_char_col_to_byte(999, 1), overlay.text.len());
+        assert_eq!(overlay.position_to_byte_offset(999, 1), overlay.text.len());
+    }
+
+    #[test]
+    fn test_line_mapping_compiled_and_live() {
+        let saved = "line1\nline2\nline3\nline4\n".to_string();
+        let mut overlay = DocumentOverlay::new("file:///test/m.rs", "src/m.rs", 1, saved.clone());
+        overlay.compiled_text = Some(saved);
+
+        // No edits -> 1:1 mapping
+        assert_eq!(overlay.map_compiled_line_to_live(2), Some(2));
+        assert_eq!(overlay.map_line_to_compiled(2), Some(2));
+
+        // Edit: insert a line at line 2
+        let edited = "line1\ninserted\nline2\nline3\nline4\n".to_string();
+        overlay.update(2, edited);
+
+        assert_eq!(overlay.map_compiled_line_to_live(1), Some(1));
+        assert_eq!(overlay.map_compiled_line_to_live(2), Some(3));
+        assert_eq!(overlay.map_line_to_compiled(2), None);
+        assert_eq!(overlay.map_line_to_compiled(3), Some(2));
+
+        // Position mapping helpers
+        assert_eq!(overlay.map_compiled_to_live(2, 5), Some((3, 5)));
+        assert_eq!(overlay.map_live_to_compiled(3, 5), Some((2, 5)));
+        assert_eq!(overlay.map_live_to_compiled(2, 5), None);
+
+        // Out of bounds compiled line
+        assert_eq!(overlay.map_compiled_line_to_live(999), None);
+        assert_eq!(overlay.map_compiled_to_live(999, 5), None);
+
+        // Modified line returns None in map_compiled_line_to_live
+        let replaced = "line1\nreplaced_line2\nline3\nline4\n".to_string();
+        overlay.update(3, replaced);
+        assert_eq!(overlay.map_compiled_line_to_live(2), None);
+    }
+
+    #[test]
+    fn test_whitespace_and_comment_edge_cases() {
+        // Unclosed block comment in strip_leading_whitespace_and_comments
+        assert_eq!(
+            strip_leading_whitespace_and_comments("/* unclosed comment"),
+            ""
+        );
+        // Unclosed block comment in strip_trailing_whitespace_and_comments
+        assert_eq!(
+            strip_trailing_whitespace_and_comments("code /* unclosed"),
+            "code /* unclosed"
+        );
+        // Escaped quotes in comment line
+        let line_with_escaped = "let x = \"escaped \\\" quote\"; // real comment\n";
+        assert_eq!(
+            strip_trailing_whitespace_and_comments(line_with_escaped),
+            "let x = \"escaped \\\" quote\";"
+        );
+
+        // Last line byte offset in position_to_byte_offset
+        let code = "first\nsecond".to_string();
+        let overlay = DocumentOverlay::new("file:///test/last.rs", "src/last.rs", 1, code);
+        assert_eq!(overlay.position_to_byte_offset(1, 2), 8);
+
+        // Multiline block comment check in strip_trailing_whitespace_and_comments (line 48)
+        assert_eq!(
+            strip_trailing_whitespace_and_comments("code /* line1\nline2 */"),
+            "code"
+        );
     }
 }

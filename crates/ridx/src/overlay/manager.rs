@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! Document overlay session management across open editor buffers.
 
 use super::{DocumentOverlay, OverlayDefinition, OverlaySymbol};
@@ -50,6 +60,38 @@ impl OverlayManager {
         }
     }
 
+    #[allow(dead_code)]
+    pub fn open_document(&mut self, uri: &str, file_path: &str, version: i32, text: String) {
+        self.open_with_provenance(uri, file_path, version, text, true);
+    }
+
+    #[allow(dead_code)]
+    pub fn update_document(&mut self, file_path: &str, version: i32, text: String) -> bool {
+        self.update(file_path, version, text)
+    }
+
+    #[allow(dead_code)]
+    pub fn apply_incremental_change(
+        &mut self,
+        file_path: &str,
+        version: i32,
+        changes: &[serde_json::Value],
+    ) -> bool {
+        self.apply_content_changes(file_path, version, changes)
+    }
+
+    #[allow(dead_code)]
+    pub fn save_document(&mut self, file_path: &str) {
+        if let Some(overlay) = self.overlays.get_mut(file_path) {
+            overlay.disk_text = Some(overlay.text.clone());
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn close_document(&mut self, file_path: &str) {
+        self.close(file_path);
+    }
+
     pub fn open_with_provenance(
         &mut self,
         uri: &str,
@@ -76,6 +118,7 @@ impl OverlayManager {
         self.overlays.remove(file_path);
     }
 
+    #[allow(dead_code)]
     pub fn rename(&mut self, old_file_path: &str, new_uri: &str, new_file_path: &str) -> bool {
         if let Some(mut overlay) = self.overlays.remove(old_file_path) {
             overlay.uri = new_uri.to_string();
@@ -89,6 +132,11 @@ impl OverlayManager {
 
     pub fn get(&self, file_path: &str) -> Option<&DocumentOverlay> {
         self.overlays.get(file_path)
+    }
+
+    #[allow(dead_code)]
+    pub fn get_mut(&mut self, file_path: &str) -> Option<&mut DocumentOverlay> {
+        self.overlays.get_mut(file_path)
     }
 
     pub fn find_definition_at(
@@ -136,5 +184,93 @@ impl OverlayManager {
 
     pub fn open_file_paths(&self) -> Vec<String> {
         self.overlays.keys().cloned().collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_overlay_manager_lifecycle_and_methods() {
+        let mut mgr = OverlayManager::new();
+        assert_eq!(mgr.open_count(), 0);
+        assert!(mgr.open_file_paths().is_empty());
+
+        let file = "/tmp/test.rs";
+        let uri = "file:///tmp/test.rs";
+        let text = "fn main() { let x = 1; }\n".to_string();
+
+        mgr.open_document(uri, file, 1, text.clone());
+        assert_eq!(mgr.open_count(), 1);
+        assert!(mgr.get(file).is_some());
+        assert!(mgr.open_file_paths().contains(&file.to_string()));
+
+        // update_document
+        assert!(mgr.update_document(file, 2, "fn main() { let x = 2; }\n".to_string()));
+        assert!(!mgr.update_document("/nonexistent", 1, "test".to_string()));
+
+        // open_or_update
+        mgr.open_or_update(uri, file, 3, "fn main() { let x = 3; }\n".to_string());
+        mgr.open_or_update(
+            "file:///tmp/other.rs",
+            "/tmp/other.rs",
+            1,
+            "fn other() {}\n".to_string(),
+        );
+        assert_eq!(mgr.open_count(), 2);
+
+        // rename
+        let new_file = "/tmp/renamed.rs";
+        let new_uri = "file:///tmp/renamed.rs";
+        assert!(mgr.rename(file, new_uri, new_file));
+        assert!(mgr.get(new_file).is_some());
+        assert!(mgr.get(file).is_none());
+        assert!(!mgr.rename("/nonexistent", "file:///tmp/x", "/tmp/x"));
+
+        // save_document & close_document
+        mgr.save_document(new_file);
+        mgr.close_document(new_file);
+        assert!(mgr.get(new_file).is_none());
+
+        // map_compiled_line_to_live & advance_compiled_baseline
+        mgr.open_with_provenance(uri, file, 1, "line 1\nline 2\n".to_string(), true);
+        assert_eq!(mgr.map_compiled_line_to_live(file, 1), Some(1));
+        assert_eq!(mgr.map_compiled_line_to_live("/nonexistent", 1), None);
+        mgr.advance_compiled_baseline(file, "line 1\nnew line\nline 2\n".to_string());
+
+        // apply_incremental_change
+        let change = serde_json::json!({
+            "range": {
+                "start": { "line": 0, "character": 0 },
+                "end": { "line": 0, "character": 0 }
+            },
+            "text": "// comment\n"
+        });
+        assert!(mgr.apply_incremental_change(file, 2, std::slice::from_ref(&change)));
+        assert!(!mgr.apply_incremental_change("/nonexistent", 2, &[change]));
+
+        // reconcile_with_disk
+        let hash = mgr.get(file).unwrap().content_hash;
+        mgr.reconcile_with_disk(file, hash);
+        mgr.reconcile_with_disk(file, 9999);
+
+        let real_tmp =
+            std::env::temp_dir().join(format!("ridx_mgr_disk_test_{}.rs", std::process::id()));
+        std::fs::write(&real_tmp, b"pub fn disk_fn() {}").unwrap();
+        let real_tmp_str = real_tmp.to_string_lossy().to_string();
+        mgr.open_with_provenance("uri_disk", &real_tmp_str, 1, "overlay".to_string(), false);
+        mgr.reconcile_with_disk(&real_tmp_str, 9999);
+        let _ = std::fs::remove_file(&real_tmp);
+
+        // open_with_provenance update with is_compiled false (lines 108-109)
+        mgr.open_with_provenance("uri_prov", file, 3, "prov1".to_string(), true);
+        mgr.open_with_provenance("uri_prov", file, 4, "prov2".to_string(), false);
+
+        // find_definition_at and document_symbols
+        assert!(mgr.document_symbols(file).is_some());
+        assert!(mgr.document_symbols("/nonexistent").is_none());
+        let _ = mgr.find_definition_at(file, 1, 1);
+        assert!(mgr.find_definition_at("/nonexistent", 1, 1).is_none());
     }
 }

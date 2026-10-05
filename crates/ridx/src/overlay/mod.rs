@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! Fast in-memory document overlay for live buffer indexing (Variant B / As-You-Type).
 //!
 //! Maintains an error-tolerant, pure-Rust AST and lexical scope index for open,
@@ -138,13 +148,7 @@ impl DocumentOverlay {
 
     /// Rebuilds line boundary byte offsets.
     pub(crate) fn rebuild_line_starts(&mut self) {
-        self.line_starts.clear();
-        self.line_starts.push(0);
-        for (i, &b) in self.text.as_bytes().iter().enumerate() {
-            if b == b'\n' {
-                self.line_starts.push(i + 1);
-            }
-        }
+        self.line_starts = mapping::compute_line_starts(&self.text);
     }
 
     /// Applies incremental or full LSP content changes in sequence and reparses the overlay.

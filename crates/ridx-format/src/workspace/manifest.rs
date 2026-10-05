@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! Manifest, symbols, statistics and configuration types for multi-crate workspace index.
 
 use crate::format::{join_resolving_overlap, DefKind, Span, CURRENT_FORMAT_VERSION};
@@ -210,4 +220,135 @@ pub struct CrateSummary {
     pub types_count: u32,
     pub files_count: u32,
     pub is_dependency: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::format::{DefKind, Span};
+
+    #[test]
+    fn test_manifest_resolved_paths() {
+        let abs_file = "/path/to/abs/file.rs";
+        let rel_file = "src/lib.rs";
+        let root = Path::new("/workspace/root");
+
+        let sym_abs = WorkspaceSymbol {
+            crate_name: "foo",
+            name: "bar",
+            path: "foo::bar",
+            kind: DefKind::Fn,
+            file: abs_file,
+            span: Span::new(0, 1, 1, 2, 1),
+            signature: None,
+            is_macro_expansion: false,
+            source_root: Some(root),
+            unit_key: None,
+        };
+        assert_eq!(sym_abs.resolved_path(), PathBuf::from(abs_file));
+
+        let sym_rel = WorkspaceSymbol {
+            crate_name: "foo",
+            name: "bar",
+            path: "foo::bar",
+            kind: DefKind::Fn,
+            file: rel_file,
+            span: Span::new(0, 1, 1, 2, 1),
+            signature: None,
+            is_macro_expansion: false,
+            source_root: Some(root),
+            unit_key: None,
+        };
+        assert_eq!(sym_rel.resolved_path(), root.join(rel_file));
+
+        let sym_no_root = WorkspaceSymbol {
+            source_root: None,
+            ..sym_rel
+        };
+        assert_eq!(sym_no_root.resolved_path(), PathBuf::from(rel_file));
+
+        let r_abs = WorkspaceReference {
+            crate_name: "foo",
+            file: abs_file,
+            span: Span::new(0, 1, 1, 2, 1),
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+            source_root: Some(root),
+            unit_key: None,
+        };
+        assert_eq!(r_abs.resolved_path(), PathBuf::from(abs_file));
+
+        let r_rel = WorkspaceReference {
+            file: rel_file,
+            source_root: Some(root),
+            ..r_abs
+        };
+        assert_eq!(r_rel.resolved_path(), root.join(rel_file));
+
+        let r_no_root = WorkspaceReference {
+            source_root: None,
+            ..r_rel
+        };
+        assert_eq!(r_no_root.resolved_path(), PathBuf::from(rel_file));
+
+        let loc_refs = LocationReferences {
+            target_symbol: "bar",
+            target_kind: DefKind::Fn,
+            target_path: "foo::bar",
+            target_file: rel_file,
+            target_line: 1,
+            target_col: 1,
+            target_end_line: 2,
+            target_end_col: 1,
+            target_source_root: Some(root),
+            target_unit_key: None,
+            references: vec![r_abs],
+        };
+        assert_eq!(loc_refs.target_resolved_path(), root.join(rel_file));
+
+        let loc_refs_abs = LocationReferences {
+            target_file: abs_file,
+            target_source_root: None,
+            ..loc_refs
+        };
+        assert_eq!(loc_refs_abs.target_resolved_path(), PathBuf::from(abs_file));
+    }
+
+    #[test]
+    fn test_version_helpers_and_mismatch() {
+        assert_eq!(default_format_version(), CURRENT_FORMAT_VERSION);
+        assert_eq!(default_manifest_version(), "2.0");
+
+        let err_unsupported =
+            io::Error::new(io::ErrorKind::InvalidData, "Unsupported RIDX version 99");
+        assert!(is_version_mismatch(&err_unsupported));
+
+        let err_format =
+            io::Error::new(io::ErrorKind::InvalidData, "Format version mismatch: got 1");
+        assert!(is_version_mismatch(&err_format));
+
+        let err_extractor =
+            io::Error::new(io::ErrorKind::InvalidData, "Extractor version mismatch");
+        assert!(is_version_mismatch(&err_extractor));
+
+        let err_missing = io::Error::new(io::ErrorKind::InvalidData, "Extractor version missing");
+        assert!(is_version_mismatch(&err_missing));
+
+        let err_other_data = io::Error::new(io::ErrorKind::InvalidData, "Corrupted index");
+        assert!(!is_version_mismatch(&err_other_data));
+
+        let err_not_found = io::Error::new(io::ErrorKind::NotFound, "File not found");
+        assert!(!is_version_mismatch(&err_not_found));
+    }
+
+    #[test]
+    fn test_variant_manifest_serialization() {
+        let json = r#"{"active_variant_id": "test_var", "workspace_root": "/test"}"#;
+        let manifest: VariantManifest = serde_json::from_str(json).unwrap();
+        assert_eq!(manifest.version, "2.0");
+        assert_eq!(manifest.format_version, CURRENT_FORMAT_VERSION);
+        assert_eq!(manifest.active_variant_id, "test_var");
+        assert_eq!(manifest.workspace_root, "/test");
+    }
 }

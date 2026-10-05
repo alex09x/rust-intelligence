@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! LSP wire protocol helpers, URI conversion, symbol mappings, and position caching.
 
 use ridx_format::DefKind;
@@ -229,4 +239,98 @@ pub fn send_work_done_progress<W: Write>(
         }
     });
     send_response(writer, &notif)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lsp_kinds() {
+        for kind in [
+            DefKind::Fn,
+            DefKind::AssocFn,
+            DefKind::Struct,
+            DefKind::Enum,
+            DefKind::Variant,
+            DefKind::Trait,
+            DefKind::Mod,
+            DefKind::Const,
+            DefKind::AssocConst,
+            DefKind::Static,
+            DefKind::Local,
+            DefKind::Field,
+            DefKind::TyAlias,
+            DefKind::Macro,
+        ] {
+            assert!(lsp_symbol_kind(kind) > 0);
+            assert!(lsp_completion_kind(kind) > 0);
+        }
+    }
+
+    #[test]
+    fn test_uri_conversion_and_encoding() {
+        assert_eq!(percent_decode("hello%20world%2Ftest"), "hello world/test");
+        assert_eq!(percent_decode("incomplete%2"), "incomplete%2");
+        assert_eq!(percent_decode("plain"), "plain");
+
+        let encoded = percent_encode_path("/path with spaces/file.rs");
+        assert!(encoded.contains("%20"));
+
+        assert_eq!(uri_to_path("file:///foo/bar.rs"), "/foo/bar.rs");
+        assert_eq!(uri_to_path("file://localhost/foo/bar.rs"), "/foo/bar.rs");
+        assert_eq!(uri_to_path("/foo/bar.rs"), "/foo/bar.rs");
+
+        let uri = path_to_uri("/foo/bar baz.rs");
+        assert_eq!(uri, "file:///foo/bar%20baz.rs");
+    }
+
+    #[test]
+    fn test_position_converter() {
+        let mut conv = PositionConverter::new();
+
+        // Missing file fallback
+        assert_eq!(conv.char_col_to_utf16_col("missing.rs", 1, 5), 4);
+        assert_eq!(conv.char_col_to_utf16_col("missing.rs", 1, 1), 0);
+        assert_eq!(conv.utf16_col_to_char_col("missing.rs", 1, 4), 5);
+        assert_eq!(conv.utf16_col_to_char_col("missing.rs", 1, 0), 1);
+
+        // Real file with unicode
+        let tmp = std::env::temp_dir().join(format!("conv_{}.rs", std::process::id()));
+        std::fs::write(&tmp, "let привет = 42;\nlet rocket = \"🚀\";\n").unwrap();
+        let path = tmp.to_str().unwrap();
+
+        // 'let ' = 4 chars, 'привет' = 6 chars
+        assert_eq!(conv.char_col_to_utf16_col(path, 1, 5), 4);
+        assert_eq!(conv.utf16_col_to_char_col(path, 1, 4), 5);
+
+        // Line 2: rocket is 2 UTF-16 code units
+        let _ = conv.char_col_to_utf16_col(path, 2, 16);
+        let _ = conv.utf16_col_to_char_col(path, 2, 16);
+
+        let _ = std::fs::remove_file(&tmp);
+    }
+
+    #[test]
+    fn test_send_helpers() {
+        let mut buf = Vec::new();
+        send_response(&mut buf, &serde_json::json!({"id": 1})).unwrap();
+        assert!(buf.starts_with(b"Content-Length: "));
+
+        let mut buf2 = Vec::new();
+        send_log_message(&mut buf2, 1, "test log message").unwrap();
+        assert!(buf2.starts_with(b"Content-Length: "));
+
+        let mut buf3 = Vec::new();
+        send_work_done_progress(
+            &mut buf3,
+            &serde_json::json!("token-1"),
+            "report",
+            Some("Indexing"),
+            Some("Working..."),
+            Some(50),
+        )
+        .unwrap();
+        assert!(buf3.starts_with(b"Content-Length: "));
+    }
 }

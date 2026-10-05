@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! Fast zero-copy memory-mapped reader for .ridx files.
 #![allow(clippy::manual_is_multiple_of)]
 
@@ -39,6 +49,7 @@ impl<'a> ResolvedDefinition<'a> {
 }
 
 /// Zero-copy reader over a memory-mapped or buffered `.ridx` index.
+#[derive(Debug)]
 pub struct IndexReader<B> {
     buffer: B,
     header: Header,
@@ -610,6 +621,16 @@ fn check_section(
             format!("{section_name} offset {offset} is not aligned to {required_align} bytes"),
         ));
     }
+    if count == 0 {
+        let max_empty_offset = buf_len.div_ceil(8) * 8;
+        if off > max_empty_offset {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("{section_name} offset {offset} extends beyond file bounds ({max_empty_offset})"),
+            ));
+        }
+        return Ok(());
+    }
     let total_bytes = (count as usize).checked_mul(elem_size).ok_or_else(|| {
         io::Error::new(
             io::ErrorKind::InvalidData,
@@ -629,4 +650,559 @@ fn check_section(
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_resolved_definition() {
+        let def = ResolvedDefinition {
+            name: "test_fn",
+            path: "crate::test_fn",
+            kind: DefKind::Fn,
+            signature: Some("pub fn test_fn()"),
+            file: "src/lib.rs",
+            start_line: 1,
+            start_col: 1,
+            end_line: 3,
+            end_col: 2,
+            is_macro_expansion: false,
+            source_root: Some(Path::new("/workspace")),
+            unit_key: Some("unit1"),
+        };
+
+        assert_eq!(def.resolved_path(), Path::new("/workspace/src/lib.rs"));
+
+        let abs_def = ResolvedDefinition {
+            file: "/absolute/path/src/lib.rs",
+            source_root: Some(Path::new("/other")),
+            ..def
+        };
+        assert_eq!(
+            abs_def.resolved_path(),
+            Path::new("/absolute/path/src/lib.rs")
+        );
+
+        let no_root_def = ResolvedDefinition {
+            source_root: None,
+            ..def
+        };
+        assert_eq!(no_root_def.resolved_path(), Path::new("src/lib.rs"));
+    }
+
+    #[test]
+    fn test_reader_validation_errors() {
+        // 1. Buffer too small
+        let small_buf = vec![0u8; 10];
+        let err = IndexReader::from_buffer(small_buf).unwrap_err();
+        assert!(err.to_string().contains("File too small"));
+
+        // 2. Unaligned buffer
+        #[repr(align(8))]
+        struct AlignedBuf([u8; 1024]);
+        let aligned = AlignedBuf([0u8; 1024]);
+        let unaligned_slice = &aligned.0[1..512];
+        let err = IndexReader::from_buffer(unaligned_slice).unwrap_err();
+        assert!(err.to_string().contains("8-byte aligned"));
+
+        // 3. Invalid magic
+        let mut bad_magic = vec![0u8; std::mem::size_of::<Header>() + 100];
+        bad_magic[0..4].copy_from_slice(b"BAD!");
+        let err = IndexReader::from_buffer(bad_magic).unwrap_err();
+        assert!(err.to_string().contains("Invalid RIDX magic"));
+
+        // 4. Unsupported version
+        let mut bad_version = vec![0u8; std::mem::size_of::<Header>() + 100];
+        bad_version[0..4].copy_from_slice(&MAGIC);
+        bad_version[4..8].copy_from_slice(&999u32.to_le_bytes());
+        let err = IndexReader::from_buffer(bad_version).unwrap_err();
+        assert!(err.to_string().contains("Unsupported RIDX version"));
+    }
+
+    #[test]
+    fn test_check_section_errors() {
+        // Unaligned offset
+        let err = check_section(1000, 3, 10, 4, 8, "TestSec").unwrap_err();
+        assert!(err.to_string().contains("is not aligned to 8 bytes"));
+
+        // Size calculation overflow
+        let err = check_section(1000, 8, u32::MAX, usize::MAX / 2, 8, "TestSec").unwrap_err();
+        assert!(err.to_string().contains("overflow"));
+
+        // Extends beyond file bounds
+        let err = check_section(50, 16, 10, 8, 8, "TestSec").unwrap_err();
+        assert!(err.to_string().contains("extends beyond file bounds"));
+
+        // Empty section offset beyond file bounds
+        let err = check_section(100, 200, 0, 8, 8, "TestSec").unwrap_err();
+        assert!(err.to_string().contains("extends beyond file bounds"));
+
+        // End offset overflow
+        let err =
+            check_section(1000, ((usize::MAX - 15) & !7) as u64, 2, 20, 8, "TestSec").unwrap_err();
+        assert!(err.to_string().contains("overflow"));
+    }
+
+    #[test]
+    fn test_reader_accessors_out_of_bounds() {
+        let temp_dir = std::env::temp_dir().join(format!("ridx_rdr_bounds_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&temp_dir);
+        let idx_path = temp_dir.join("test.ridx");
+
+        let mut writer = crate::writer::IndexWriter::new("rdr_crate", "0.1.0");
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 1,
+            kind: crate::format::DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "fn1".to_string(),
+            path: "rdr_crate::fn1".to_string(),
+            signature: None,
+            file: "src/lib.rs".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 10,
+        });
+        let mut f = std::fs::File::create(&idx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+
+        let reader = IndexReader::open(&idx_path).unwrap();
+
+        // 1. get_str with invalid offset
+        assert_eq!(reader.get_str(u32::MAX), "");
+        assert_eq!(
+            reader.get_str((reader.header.string_pool_len as u32).saturating_add(10)),
+            ""
+        );
+
+        // 2. get_file with invalid file_id
+        assert_eq!(reader.get_file(u32::MAX), "");
+
+        // 3. file_source_hash with invalid file_id
+        assert_eq!(reader.file_source_hash(u32::MAX), 0);
+
+        // 4. find_definition_by_path nonexistent
+        assert!(reader.find_definition_by_path("nonexistent").is_none());
+
+        // 5. find_definition_at outside of file
+        assert!(reader.find_definition_at("nonexistent.rs", 1, 1).is_none());
+
+        // Truncated buffer bounds checks (lines 165, 185, 204)
+        let dummy_hdr = Header {
+            string_pool_offset: 1000,
+            string_pool_len: 100,
+            files_offset: 2000,
+            files_count: 5,
+            ..reader.header
+        };
+        let dummy_reader = IndexReader {
+            buffer: vec![0u8; 100],
+            header: dummy_hdr,
+        };
+        assert_eq!(dummy_reader.get_str(5), "");
+        assert_eq!(dummy_reader.get_file(0), "");
+        assert_eq!(dummy_reader.file_source_hash(0), 0);
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_reader_overlapping_spans_and_hash_collisions() {
+        let temp_dir =
+            std::env::temp_dir().join(format!("ridx_rdr_overlap_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&temp_dir);
+        let idx_path = temp_dir.join("overlap.ridx");
+
+        let mut writer = crate::writer::IndexWriter::new("overlap_crate", "0.1.0");
+        // Outer definition
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 1,
+            kind: crate::format::DefKind::Mod,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "outer_mod".to_string(),
+            path: "overlap_crate::outer_mod".to_string(),
+            signature: None,
+            file: "src/lib.rs".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 50,
+            end_col: 1,
+        });
+        // Inner definition (smaller span)
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 2,
+            kind: crate::format::DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "inner_fn".to_string(),
+            path: "overlap_crate::outer_mod::inner_fn".to_string(),
+            signature: Some("fn() -> i32".to_string()),
+            file: "src/lib.rs".to_string(),
+            start_line: 10,
+            start_col: 5,
+            end_line: 15,
+            end_col: 6,
+        });
+
+        // Overlapping references: outer ref and inner ref
+        writer.add_reference(crate::writer::RawReference {
+            file: "src/lib.rs".to_string(),
+            start_line: 20,
+            start_col: 1,
+            end_line: 20,
+            end_col: 30,
+            target_def_id: Some(1),
+            target_path: "overlap_crate::outer_mod".to_string(),
+            target_unit: None,
+            target_file: Some("src/lib.rs".to_string()),
+            target_line: 1,
+            target_col: 1,
+            kind: crate::format::DefKind::Mod,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        writer.add_reference(crate::writer::RawReference {
+            file: "src/lib.rs".to_string(),
+            start_line: 20,
+            start_col: 10,
+            end_line: 20,
+            end_col: 20,
+            target_def_id: Some(2),
+            target_path: "overlap_crate::outer_mod::inner_fn".to_string(),
+            target_unit: None,
+            target_file: Some("src/lib.rs".to_string()),
+            target_line: 10,
+            target_col: 5,
+            kind: crate::format::DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // External reference (target_def_id == u32::MAX)
+        writer.add_reference(crate::writer::RawReference {
+            file: "src/lib.rs".to_string(),
+            start_line: 30,
+            start_col: 5,
+            end_line: 30,
+            end_col: 15,
+            target_def_id: None,
+            target_path: "ext_crate::ext_fn".to_string(),
+            target_unit: Some("ext_crate:1.0.0".to_string()),
+            target_file: Some("ext.rs".to_string()),
+            target_line: 5,
+            target_col: 1,
+            kind: crate::format::DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // Overlapping types
+        writer.add_type(crate::writer::RawType {
+            file: "src/lib.rs".to_string(),
+            start_line: 25,
+            start_col: 1,
+            end_line: 25,
+            end_col: 30,
+            type_name: "OuterType".to_string(),
+        });
+        writer.add_type(crate::writer::RawType {
+            file: "src/lib.rs".to_string(),
+            start_line: 25,
+            start_col: 5,
+            end_line: 25,
+            end_col: 15,
+            type_name: "InnerType".to_string(),
+        });
+
+        // Missing def_id target in reference (line 386)
+        writer.add_reference(crate::writer::RawReference {
+            file: "src/lib.rs".to_string(),
+            start_line: 40,
+            start_col: 1,
+            end_line: 40,
+            end_col: 10,
+            target_def_id: Some(9999), // does not exist in defs!
+            target_path: "unresolved::missing".to_string(),
+            target_unit: None,
+            target_file: Some("src/missing.rs".to_string()),
+            target_line: 1,
+            target_col: 1,
+            kind: crate::format::DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // Add inner items FIRST then outer items SECOND on src/other.rs to hit `_ => {}` (lines 357, 427, 493)
+        // 1. Definition: inner first, outer second
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 3,
+            kind: crate::format::DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "inner_def".to_string(),
+            path: "overlap_crate::inner_def".to_string(),
+            signature: None,
+            file: "src/other.rs".to_string(),
+            start_line: 5,
+            start_col: 5,
+            end_line: 5,
+            end_col: 10,
+        });
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 4,
+            kind: crate::format::DefKind::Mod,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "outer_mod2".to_string(),
+            path: "overlap_crate::outer_mod2".to_string(),
+            signature: None,
+            file: "src/other.rs".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 10,
+            end_col: 1,
+        });
+
+        // 2. Reference: inner first, outer second
+        writer.add_reference(crate::writer::RawReference {
+            file: "src/other.rs".to_string(),
+            start_line: 15,
+            start_col: 5,
+            end_line: 15,
+            end_col: 10,
+            target_def_id: Some(3),
+            target_path: "overlap_crate::inner_def".to_string(),
+            target_unit: None,
+            target_file: Some("src/other.rs".to_string()),
+            target_line: 5,
+            target_col: 5,
+            kind: crate::format::DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        writer.add_reference(crate::writer::RawReference {
+            file: "src/other.rs".to_string(),
+            start_line: 15,
+            start_col: 1,
+            end_line: 15,
+            end_col: 20,
+            target_def_id: Some(4),
+            target_path: "overlap_crate::outer_mod2".to_string(),
+            target_unit: None,
+            target_file: Some("src/other.rs".to_string()),
+            target_line: 1,
+            target_col: 1,
+            kind: crate::format::DefKind::Mod,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // 3. Type: inner first, outer second
+        writer.add_type(crate::writer::RawType {
+            file: "src/other.rs".to_string(),
+            start_line: 20,
+            start_col: 5,
+            end_line: 20,
+            end_col: 10,
+            type_name: "InnerOther".to_string(),
+        });
+        writer.add_type(crate::writer::RawType {
+            file: "src/other.rs".to_string(),
+            start_line: 20,
+            start_col: 1,
+            end_line: 20,
+            end_col: 20,
+            type_name: "OuterOther".to_string(),
+        });
+
+        let mut f = std::fs::File::create(&idx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+
+        let reader = IndexReader::open(&idx_path).unwrap();
+
+        // 1. Definition cursor picking innermost def
+        let def = reader.find_definition_at("src/lib.rs", 12, 6).unwrap();
+        assert_eq!(def.name, "inner_fn");
+        assert_eq!(def.signature, Some("fn() -> i32"));
+
+        let def_outer = reader.find_definition_at("src/lib.rs", 2, 1).unwrap();
+        assert_eq!(def_outer.name, "outer_mod");
+        assert_eq!(def_outer.signature, None);
+
+        // 2. Reference cursor picking innermost ref with local def_id
+        let ref_inner = reader.find_definition_at("src/lib.rs", 20, 15).unwrap();
+        assert_eq!(ref_inner.name, "inner_fn");
+
+        // Reference cursor with external def
+        let ref_ext = reader.find_definition_at("src/lib.rs", 30, 8).unwrap();
+        assert_eq!(ref_ext.path, "ext_crate::ext_fn");
+        assert_eq!(ref_ext.file, "ext.rs");
+
+        // Reference cursor with nonexistent target_def_id (line 386)
+        let ref_unresolved = reader.find_definition_at("src/lib.rs", 40, 5).unwrap();
+        assert_eq!(ref_unresolved.path, "unresolved::missing");
+
+        // 3. Type at cursor picking innermost type
+        assert_eq!(reader.type_at("src/lib.rs", 25, 10), Some("InnerType"));
+        assert_eq!(reader.type_at("src/lib.rs", 25, 2), Some("OuterType"));
+        assert_eq!(reader.type_at("src/lib.rs", 99, 99), None);
+        assert_eq!(reader.type_at("missing.rs", 1, 1), None);
+
+        // 4. Reverse ordering tests (lines 357, 427, 493)
+        assert_eq!(
+            reader
+                .find_definition_at("src/other.rs", 5, 6)
+                .unwrap()
+                .name,
+            "inner_def"
+        );
+        assert_eq!(
+            reader
+                .find_definition_at("src/other.rs", 15, 6)
+                .unwrap()
+                .name,
+            "inner_def"
+        );
+        assert_eq!(reader.type_at("src/other.rs", 20, 6), Some("InnerOther"));
+
+        // 5. find_references
+        let refs = reader.find_references("overlap_crate::outer_mod::inner_fn");
+        assert_eq!(refs.len(), 1);
+        let missing_refs = reader.find_references("missing::path");
+        assert!(missing_refs.is_empty());
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_validate_sections_comprehensive() {
+        // String pool offset not aligned
+        let mut hdr = Header {
+            magic: crate::format::MAGIC,
+            version: crate::format::CURRENT_FORMAT_VERSION,
+            crate_name_offset: 0,
+            crate_version_offset: 0,
+            string_pool_offset: 7, // not aligned to 8
+            string_pool_len: 16,
+            files_offset: 16,
+            files_count: 0,
+            defs_offset: 16,
+            defs_count: 0,
+            defs_by_hash_offset: 16,
+            defs_by_hash_count: 0,
+            refs_offset: 16,
+            refs_count: 0,
+            refs_by_target_offset: 16,
+            refs_by_target_count: 0,
+            types_offset: 16,
+            types_count: 0,
+            unit_key_offset: 0,
+            generation_offset: 0,
+            _pad2: 0,
+            _pad3: 0,
+            _pad4: 0,
+            _pad5: 0,
+        };
+        assert!(validate_sections(1000, &hdr).is_err());
+
+        // String pool length overflow
+        hdr.string_pool_offset = 16;
+        hdr.string_pool_len = u64::MAX;
+        assert!(validate_sections(1000, &hdr).is_err());
+
+        // String pool beyond file bounds
+        hdr.string_pool_len = 2000;
+        assert!(validate_sections(1000, &hdr).is_err());
+
+        // Crate name offset beyond pool
+        hdr.string_pool_len = 100;
+        hdr.crate_name_offset = 200;
+        assert!(validate_sections(1000, &hdr).is_err());
+
+        hdr.crate_name_offset = 0;
+        hdr.crate_version_offset = 200;
+        assert!(validate_sections(1000, &hdr).is_err());
+
+        // Test section error paths (lines 563, 573, 583, 593, 603)
+        hdr.crate_version_offset = 0;
+        hdr.defs_offset = 3; // unaligned
+        assert!(validate_sections(1000, &hdr).is_err());
+        hdr.defs_offset = 16;
+        hdr.defs_by_hash_offset = 3;
+        assert!(validate_sections(1000, &hdr).is_err());
+        hdr.defs_by_hash_offset = 16;
+        hdr.refs_offset = 3;
+        assert!(validate_sections(1000, &hdr).is_err());
+        hdr.refs_offset = 16;
+        hdr.refs_by_target_offset = 3;
+        assert!(validate_sections(1000, &hdr).is_err());
+        hdr.refs_by_target_offset = 16;
+        hdr.types_offset = 3;
+        assert!(validate_sections(1000, &hdr).is_err());
+
+        // Open non-existent file
+        assert!(IndexReader::open("/nonexistent/ridx/file.ridx").is_err());
+    }
+
+    #[test]
+    fn test_reader_corrupted_offsets_and_bounds() {
+        let temp_dir =
+            std::env::temp_dir().join(format!("ridx_rdr_corrupt_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&temp_dir);
+        let idx_path = temp_dir.join("test.ridx");
+
+        let mut writer = crate::writer::IndexWriter::new("corrupt_crate", "0.1.0");
+        let mut f = std::fs::File::create(&idx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+
+        let mut reader = IndexReader::open(&idx_path).unwrap();
+        // Modify header offsets to exceed file bounds:
+        reader.header.defs_offset = 1_000_000;
+        reader.header.defs_count = 10;
+        assert_eq!(reader.definitions().len(), 0);
+
+        reader.header.defs_by_hash_offset = 1_000_000;
+        reader.header.defs_by_hash_count = 10;
+        assert_eq!(reader.defs_by_hash().len(), 0);
+
+        reader.header.refs_offset = 1_000_000;
+        reader.header.refs_count = 10;
+        assert_eq!(reader.references().len(), 0);
+
+        reader.header.refs_by_target_offset = 1_000_000;
+        reader.header.refs_by_target_count = 10;
+        assert_eq!(reader.refs_by_target().len(), 0);
+
+        reader.header.types_offset = 1_000_000;
+        reader.header.types_count = 10;
+        assert_eq!(reader.types().len(), 0);
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+
+        // ResolvedDefinition resolved_path with None source_root (lines 45-47)
+        let resolved = ResolvedDefinition {
+            name: "test",
+            path: "test::fn",
+            kind: DefKind::Fn,
+            signature: None,
+            file: "src/lib.rs",
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 10,
+            is_macro_expansion: false,
+            source_root: None,
+            unit_key: None,
+        };
+        assert_eq!(
+            resolved.resolved_path(),
+            std::path::PathBuf::from("src/lib.rs")
+        );
+    }
 }

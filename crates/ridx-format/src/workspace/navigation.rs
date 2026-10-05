@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! Cross-crate code navigation, symbol search, hover, and reference tracking.
 
 use super::manifest::{LocationReferences, WorkspaceHover, WorkspaceReference, WorkspaceSymbol};
@@ -49,11 +59,8 @@ impl WorkspaceIndex {
                     name: reader.get_str(def.name_offset()),
                     path: reader.get_str(def.path_offset()),
                     kind: DefKind::from(def.kind),
-                    signature: if def.sig_offset() != 0 {
-                        Some(reader.get_str(def.sig_offset()))
-                    } else {
-                        None
-                    },
+                    signature: (def.sig_offset() != 0).then(|| reader.get_str(def.sig_offset())),
+
                     file: reader.get_file(span.file_id()),
                     start_line: span.start_line(),
                     start_col: span.start_col(),
@@ -246,11 +253,8 @@ impl WorkspaceIndex {
                         name: r.get_str(def.name_offset()),
                         path: r.get_str(def.path_offset()),
                         kind: DefKind::from(def.kind),
-                        signature: if def.sig_offset() != 0 {
-                            Some(r.get_str(def.sig_offset()))
-                        } else {
-                            None
-                        },
+                        signature: (def.sig_offset() != 0).then(|| r.get_str(def.sig_offset())),
+
                         file,
                         start_line: def_span.start_line(),
                         start_col: def_span.start_col(),
@@ -303,11 +307,8 @@ impl WorkspaceIndex {
                         name: r.get_str(def.name_offset()),
                         path: r.get_str(def.path_offset()),
                         kind: DefKind::from(def.kind),
-                        signature: if def.sig_offset() != 0 {
-                            Some(r.get_str(def.sig_offset()))
-                        } else {
-                            None
-                        },
+                        signature: (def.sig_offset() != 0).then(|| r.get_str(def.sig_offset())),
+
                         file: r.get_file(def_span.file_id()),
                         start_line: def_span.start_line(),
                         start_col: def_span.start_col(),
@@ -388,22 +389,23 @@ impl WorkspaceIndex {
                         coords = Some((file.to_string(), full_file, span.start_line()));
                         break;
                     }
-                    if let Some(rest) = target_path.strip_prefix(&format!("{}::", r.crate_name())) {
+                    if let Some(rest) = target_path.strip_prefix(&format!("{target_crate}::")) {
                         let mapped = format!("{}::{}", r.crate_name(), rest);
                         if let Some(def) = r.find_definition_by_path(&mapped) {
                             let span = def.span();
                             let file = r.get_file(span.file_id());
-                            let full_file = if let Some(Some(root)) = self.source_roots.get(j) {
-                                crate::format::join_resolving_overlap(root, Path::new(file))
-                                    .to_string_lossy()
-                                    .to_string()
-                            } else if let Some(ref ws_root) = self.workspace_root {
-                                crate::format::join_resolving_overlap(ws_root, Path::new(file))
-                                    .to_string_lossy()
-                                    .to_string()
-                            } else {
-                                file.to_string()
-                            };
+                            let full_file = self
+                                .source_roots
+                                .get(j)
+                                .and_then(|r| r.as_ref())
+                                .or(self.workspace_root.as_ref())
+                                .map(|root| {
+                                    crate::format::join_resolving_overlap(root, Path::new(file))
+                                        .to_string_lossy()
+                                        .to_string()
+                                })
+                                .unwrap_or_else(|| file.to_string());
+
                             coords = Some((file.to_string(), full_file, span.start_line()));
                             break;
                         }
@@ -725,5 +727,1108 @@ impl WorkspaceIndex {
             definition: def,
             inferred_type: ty,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::format::DefKind;
+    use crate::writer::{IndexWriter, RawDefinition, RawReference, RawType};
+    use std::collections::HashMap;
+    use std::fs::{self, File};
+
+    struct TestDir(PathBuf);
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn new_test_dir(prefix: &str) -> TestDir {
+        static CNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        let id = CNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let path = std::env::temp_dir().join(format!("{}_{}_{}", prefix, std::process::id(), id));
+        let _ = fs::remove_dir_all(&path);
+        fs::create_dir_all(&path).unwrap();
+        TestDir(path)
+    }
+
+    #[test]
+    fn test_navigation_comprehensive() {
+        let test_dir = new_test_dir("ridx_nav_test");
+        let index_path = test_dir.0.join("sample.ridx");
+
+        let mut writer = IndexWriter::new("sample", "0.1.0");
+        writer.set_unit_key("unit1");
+
+        writer.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "sample_fn".to_string(),
+            path: "sample::sample_fn".to_string(),
+            signature: Some("fn()".to_string()),
+            file: "src/lib.rs".to_string(),
+            start_line: 10,
+            start_col: 1,
+            end_line: 12,
+            end_col: 2,
+        });
+
+        writer.add_definition(RawDefinition {
+            def_id: 2,
+            kind: DefKind::Local,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "local_var".to_string(),
+            path: "sample::sample_fn::local_var".to_string(),
+            signature: None,
+            file: "src/lib.rs".to_string(),
+            start_line: 11,
+            start_col: 5,
+            end_line: 11,
+            end_col: 14,
+        });
+
+        writer.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 20,
+            start_col: 5,
+            end_line: 20,
+            end_col: 14,
+            target_def_id: Some(1),
+            target_path: "sample::sample_fn".to_string(),
+            target_unit: Some("unit1".to_string()),
+            target_file: Some("src/lib.rs".to_string()),
+            target_line: 10,
+            target_col: 1,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        writer.add_reference(RawReference {
+            file: "src/lib.rs".to_string(),
+            start_line: 11,
+            start_col: 20,
+            end_line: 11,
+            end_col: 29,
+            target_def_id: Some(2),
+            target_path: "local_var".to_string(),
+            target_unit: None,
+            target_file: Some("src/lib.rs".to_string()),
+            target_line: 11,
+            target_col: 5,
+            kind: DefKind::Local,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        writer.add_type(RawType {
+            file: "src/lib.rs".to_string(),
+            start_line: 10,
+            start_col: 1,
+            end_line: 10,
+            end_col: 9,
+            type_name: "fn()".to_string(),
+        });
+
+        let mut file = File::create(&index_path).unwrap();
+        writer.write_to(&mut file).unwrap();
+
+        let ws = WorkspaceIndex::open(&test_dir.0).unwrap();
+
+        // 1. find_definition_by_path
+        let def_prefixed = ws.find_definition_by_path("sample::sample_fn");
+        assert!(def_prefixed.is_some());
+        assert_eq!(def_prefixed.unwrap().name, "sample_fn");
+
+        let def_unprefixed = ws.find_definition_by_path("sample_fn");
+        assert!(def_unprefixed.is_none());
+
+        // 2. crate_source_root
+        assert!(ws.crate_source_root("sample").is_none());
+        assert!(ws.crate_source_root("non_existent").is_none());
+
+        // 3. resolve_path_for_crate
+        let abs = ws.resolve_path_for_crate("sample", "/abs/path.rs");
+        assert_eq!(abs, PathBuf::from("/abs/path.rs"));
+
+        let rel = ws.resolve_path_for_crate("sample", "src/lib.rs");
+        assert!(rel.ends_with("src/lib.rs"));
+
+        // 4. find_definition_at
+        let def_at_def = ws.find_definition_at("src/lib.rs", 10, 2);
+        assert!(def_at_def.is_some());
+        assert_eq!(def_at_def.unwrap().name, "sample_fn");
+
+        let def_at_ref = ws.find_definition_at("src/main.rs", 20, 6);
+        assert!(def_at_ref.is_some());
+        assert_eq!(def_at_ref.unwrap().name, "sample_fn");
+
+        let def_none = ws.find_definition_at("src/lib.rs", 99, 99);
+        assert!(def_none.is_none());
+
+        // 5. find_references and find_references_for_unit
+        let refs = ws.find_references("sample::sample_fn");
+        assert_eq!(refs.len(), 1);
+        assert_eq!(refs[0].file, "src/main.rs");
+
+        // 6. type_at
+        assert_eq!(ws.type_at("src/lib.rs", 10, 2), Some("fn()"));
+        assert_eq!(ws.type_at("src/lib.rs", 99, 99), None);
+
+        // 7. search_symbols
+        let syms = ws.search_symbols("sample_fn");
+        assert_eq!(syms.len(), 2);
+        assert_eq!(syms[0].name, "sample_fn");
+
+        // 8. find_references_at
+        let ref_at = ws.find_references_at("src/lib.rs", 10, 2);
+        assert!(ref_at.is_some());
+        assert_eq!(ref_at.unwrap().references.len(), 1);
+
+        let local_ref_at = ws.find_references_at("src/lib.rs", 11, 6);
+        assert!(local_ref_at.is_some());
+        assert_eq!(local_ref_at.unwrap().references.len(), 1);
+
+        assert!(ws.find_references_at("src/lib.rs", 99, 99).is_none());
+
+        // 9. hover_at
+        let hover = ws.hover_at("src/lib.rs", 10, 2);
+        assert!(hover.is_some());
+        let h = hover.unwrap();
+        assert!(h.definition.is_some());
+        assert_eq!(h.inferred_type, Some("fn()"));
+
+        assert!(ws.hover_at("src/lib.rs", 99, 99).is_none());
+
+        // 10. find_references_for_unit
+        let refs_scoped = ws.find_references_for_unit("sample::sample_fn", Some("unit1"));
+        assert_eq!(refs_scoped.len(), 1);
+
+        let refs_scoped_none = ws.find_references_for_unit("sample::sample_fn", Some("other_unit"));
+        assert_eq!(refs_scoped_none.len(), 0);
+
+        // 11. find_definition_by_path
+        assert!(ws.find_definition_by_path("sample::sample_fn").is_some());
+        assert!(ws.find_definition_by_path("non_existent").is_none());
+    }
+
+    #[test]
+    fn test_cross_crate_navigation() {
+        let test_dir = new_test_dir("ridx_cross_nav");
+
+        // Crate 1: dep_crate
+        let mut dep_writer = IndexWriter::new("dep_crate", "0.1.0");
+        dep_writer.set_unit_key("dep_unit");
+        dep_writer.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 1,
+            is_macro_expansion: false,
+            name: "dep_func".to_string(),
+            path: "dep_crate::dep_func".to_string(),
+            signature: Some("pub fn dep_func()".to_string()),
+            file: "src/dep.rs".to_string(),
+            start_line: 5,
+            start_col: 1,
+            end_line: 7,
+            end_col: 2,
+        });
+        let mut f1 = File::create(test_dir.0.join("dep_crate.ridx")).unwrap();
+        dep_writer.write_to(&mut f1).unwrap();
+
+        // Crate 2: app_crate
+        let mut app_writer = IndexWriter::new("app_crate", "0.1.0");
+        app_writer.set_unit_key("app_unit");
+        app_writer.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 15,
+            start_col: 5,
+            end_line: 15,
+            end_col: 13,
+            target_def_id: None,
+            target_path: "dep_crate::dep_func".to_string(),
+            target_unit: Some("dep_unit".to_string()),
+            target_file: None,
+            target_line: 0,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        let mut f2 = File::create(test_dir.0.join("app_crate.ridx")).unwrap();
+        app_writer.write_to(&mut f2).unwrap();
+
+        let ws = WorkspaceIndex::open(&test_dir.0).unwrap();
+        let def = ws.find_definition_at("src/main.rs", 15, 6);
+        assert!(def.is_some());
+        let d = def.unwrap();
+        assert_eq!(d.name, "dep_func");
+        assert_eq!(d.file, "src/dep.rs");
+    }
+
+    #[test]
+    fn test_cross_crate_navigation_candidate_disambiguation() {
+        let test_dir = new_test_dir("ridx_cross_disambig");
+
+        let mut dep1 = IndexWriter::new("multi_crate", "0.1.0");
+        dep1.set_unit_key("multi_unit_1");
+        dep1.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "target_func".to_string(),
+            path: "multi_crate::target_func".to_string(),
+            signature: None,
+            file: "src/lib.rs".to_string(),
+            start_line: 10,
+            start_col: 1,
+            end_line: 10,
+            end_col: 20,
+        });
+        let mut f1 = File::create(test_dir.0.join("multi_crate_1.ridx")).unwrap();
+        dep1.write_to(&mut f1).unwrap();
+
+        let mut dep2 = IndexWriter::new("multi_crate", "0.2.0");
+        dep2.set_unit_key("multi_unit_2");
+        dep2.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "target_func".to_string(),
+            path: "multi_crate::target_func".to_string(),
+            signature: None,
+            file: "src/lib.rs".to_string(),
+            start_line: 50,
+            start_col: 1,
+            end_line: 50,
+            end_col: 20,
+        });
+        let mut f2 = File::create(test_dir.0.join("multi_crate_2.ridx")).unwrap();
+        dep2.write_to(&mut f2).unwrap();
+
+        let mut caller = IndexWriter::new("caller_crate", "0.1.0");
+        caller.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 5,
+            start_col: 5,
+            end_line: 5,
+            end_col: 16,
+            target_def_id: None,
+            target_path: "multi_crate::target_func".to_string(),
+            target_unit: None,
+            target_file: Some("src/lib.rs".to_string()),
+            target_line: 50,
+            target_col: 1,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        let mut f3 = File::create(test_dir.0.join("caller_crate.ridx")).unwrap();
+        caller.write_to(&mut f3).unwrap();
+
+        let ws = WorkspaceIndex::open(&test_dir.0).unwrap();
+        let def = ws.find_definition_at("src/main.rs", 5, 6);
+        assert!(def.is_some());
+        let d = def.unwrap();
+        assert_eq!(d.start_line, 50);
+    }
+
+    #[test]
+    fn test_navigation_edge_cases() {
+        let test_dir = new_test_dir("ridx_nav_edges");
+
+        let mut w = IndexWriter::new("edge_crate", "0.1.0");
+        w.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "bare_fn".to_string(),
+            path: "bare_fn".to_string(),
+            signature: Some("fn bare_fn()".to_string()),
+            file: "src/lib.rs".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 15,
+        });
+        let mut f = File::create(test_dir.0.join("edge.ridx")).unwrap();
+        w.write_to(&mut f).unwrap();
+
+        let ws = WorkspaceIndex::open(&test_dir.0).unwrap();
+
+        // 1. find_definition_by_path with bare path
+        let def = ws.find_definition_by_path("bare_fn");
+        assert!(def.is_some());
+        assert_eq!(def.unwrap().name, "bare_fn");
+
+        // 2. resolve_path_for_crate
+        let abs = Path::new("/abs/path/to/file.rs");
+        assert_eq!(
+            ws.resolve_path_for_crate("edge_crate", abs.to_str().unwrap()),
+            abs
+        );
+        let rel_res = ws.resolve_path_for_crate("edge_crate", "src/lib.rs");
+        assert!(rel_res.ends_with("src/lib.rs"));
+
+        // 3. crate_source_root
+        assert!(ws.crate_source_root("nonexistent").is_none());
+
+        // 4. find_references_for_unit
+        let refs = ws.find_references_for_unit("bare_fn", Some("nonexistent_unit"));
+        assert!(refs.is_empty());
+    }
+
+    #[test]
+    fn test_cross_crate_navigation_disambiguation_and_coords() {
+        let test_dir = new_test_dir("ridx_nav_disambig");
+
+        // Crate 1: caller
+        let mut w1 = IndexWriter::new("caller", "0.1.0");
+        w1.set_unit_key("caller:0.1.0");
+        w1.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 10,
+            start_col: 5,
+            end_line: 10,
+            end_col: 15,
+            target_def_id: None,
+            target_path: "dep::target_fn".to_string(),
+            target_unit: Some("dep:0.1.0".to_string()),
+            target_file: Some("src/lib.rs".to_string()),
+            target_line: 20,
+            target_col: 1,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // Crate 2: dep (two versions or candidates)
+        let mut w2 = IndexWriter::new("dep", "0.1.0");
+        w2.set_unit_key("dep:0.1.0");
+        w2.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "target_fn".to_string(),
+            path: "dep::target_fn".to_string(),
+            signature: Some("fn target_fn()".to_string()),
+            file: "src/lib.rs".to_string(),
+            start_line: 20,
+            start_col: 1,
+            end_line: 20,
+            end_col: 15,
+        });
+
+        let mut w3 = IndexWriter::new("dep", "0.2.0");
+        w3.set_unit_key("dep:0.2.0");
+        w3.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "target_fn".to_string(),
+            path: "dep::target_fn".to_string(),
+            signature: Some("fn target_fn_v2()".to_string()),
+            file: "src/lib.rs".to_string(),
+            start_line: 25,
+            start_col: 1,
+            end_line: 25,
+            end_col: 15,
+        });
+
+        let mut f1 = File::create(test_dir.0.join("caller.ridx")).unwrap();
+        w1.write_to(&mut f1).unwrap();
+        drop(f1);
+
+        let mut f2 = File::create(test_dir.0.join("dep1.ridx")).unwrap();
+        w2.write_to(&mut f2).unwrap();
+        drop(f2);
+
+        let mut f3 = File::create(test_dir.0.join("dep2.ridx")).unwrap();
+        w3.write_to(&mut f3).unwrap();
+        drop(f3);
+
+        let ws = WorkspaceIndex::open(&test_dir.0).unwrap();
+
+        // 1. Definition at cursor in caller resolving to exact dep unit
+        let def = ws.find_definition_at("src/main.rs", 10, 8);
+        assert!(def.is_some());
+        let d = def.unwrap();
+        assert_eq!(d.name, "target_fn");
+        assert_eq!(d.signature, Some("fn target_fn()"));
+
+        // 2. find_references for dep::target_fn
+        let refs = ws.find_references("dep::target_fn");
+        assert_eq!(refs.len(), 1);
+
+        // 3. find_references_for_unit with exact matching unit
+        let refs_exact = ws.find_references_for_unit("dep::target_fn", Some("dep:0.1.0"));
+        assert_eq!(refs_exact.len(), 1);
+
+        // 4. find_references_for_unit with non-matching unit
+        let refs_none = ws.find_references_for_unit("dep::target_fn", Some("dep:0.2.0"));
+        assert_eq!(refs_none.len(), 0);
+
+        // 5. type_at
+        let ty = ws.type_at("src/main.rs", 10, 8);
+        assert_eq!(ty, None);
+    }
+
+    #[test]
+    fn test_cross_crate_navigation_candidates_and_type_at() {
+        let test_dir = new_test_dir("ridx_cand_nav");
+        let manifest_file = test_dir.0.join("ridx_manifest.json");
+
+        let dep_root = test_dir.0.join("dep_src");
+        fs::create_dir_all(dep_root.join("src")).unwrap();
+        fs::write(dep_root.join("src/lib.rs"), "pub fn my_fn() {}\n").unwrap();
+
+        let mut w_caller = IndexWriter::new("caller", "0.1.0");
+        w_caller.set_unit_key("caller_key");
+        // Reference to unresolvable cross-crate symbol (hits fallback lines 181-192 in find_definition_at)
+        w_caller.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 15,
+            start_col: 5,
+            end_line: 15,
+            end_col: 15,
+            target_def_id: None,
+            target_path: "missing_dep::missing_fn".to_string(),
+            target_unit: None,
+            target_file: Some("src/lib.rs".to_string()),
+            target_line: 10,
+            target_col: 1,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // Reference to ambiguous candidates (hits lines 293-298)
+        w_caller.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 30,
+            start_col: 5,
+            end_line: 30,
+            end_col: 15,
+            target_def_id: None,
+            target_path: "ambig::func".to_string(),
+            target_unit: None,
+            target_file: Some("other/file.rs".to_string()),
+            target_line: 50,
+            target_col: 1,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // Reference matching line 50 and file src/a.rs (hits lines 289-291)
+        w_caller.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 35,
+            start_col: 5,
+            end_line: 35,
+            end_col: 15,
+            target_def_id: None,
+            target_path: "ambig::func".to_string(),
+            target_unit: None,
+            target_file: Some("src/a.rs".to_string()),
+            target_line: 50,
+            target_col: 1,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // Reference where target_line does not match (hits line 511 continue)
+        w_caller.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 40,
+            start_col: 5,
+            end_line: 40,
+            end_col: 15,
+            target_def_id: None,
+            target_path: "ambig::func".to_string(),
+            target_unit: None,
+            target_file: Some("src/a.rs".to_string()),
+            target_line: 99,
+            target_col: 1,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // Reference with existing target_unit but missing symbol (hits lines 300-302)
+        w_caller.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 45,
+            start_col: 5,
+            end_line: 45,
+            end_col: 15,
+            target_def_id: None,
+            target_path: "ambig::nonexistent_symbol".to_string(),
+            target_unit: Some("ambig_key1".to_string()),
+            target_file: None,
+            target_line: 0,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // Add a type in caller
+        w_caller.add_type(RawType {
+            file: "src/main.rs".to_string(),
+            start_line: 15,
+            start_col: 5,
+            end_line: 15,
+            end_col: 15,
+            type_name: "MyType".to_string(),
+        });
+
+        let var_dir = test_dir.0.join("variants/var_nav");
+        fs::create_dir_all(&var_dir).unwrap();
+
+        let mut f_caller = File::create(var_dir.join("caller.ridx")).unwrap();
+        w_caller.write_to(&mut f_caller).unwrap();
+        drop(f_caller);
+
+        // Ambig shard 1
+        let mut w_a1 = IndexWriter::new("ambig", "1.0.0");
+        w_a1.set_unit_key("ambig_key1");
+        w_a1.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "func".to_string(),
+            path: "ambig::func".to_string(),
+            signature: Some("fn func() -> i32".to_string()),
+            file: "src/a.rs".to_string(),
+            start_line: 50,
+            start_col: 1,
+            end_line: 52,
+            end_col: 2,
+        });
+        let mut f_a1 = File::create(var_dir.join("ambig1.ridx")).unwrap();
+        w_a1.write_to(&mut f_a1).unwrap();
+        drop(f_a1);
+
+        // Ambig shard 2
+        let mut w_a2 = IndexWriter::new("ambig", "2.0.0");
+        w_a2.set_unit_key("ambig_key2");
+        w_a2.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "func".to_string(),
+            path: "ambig::func".to_string(),
+            signature: Some("fn func() -> i64".to_string()),
+            file: "src/b.rs".to_string(),
+            start_line: 50,
+            start_col: 1,
+            end_line: 52,
+            end_col: 2,
+        });
+        w_a2.add_definition(RawDefinition {
+            def_id: 2,
+            kind: DefKind::Struct,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "NoSig".to_string(),
+            path: "ambig::NoSig".to_string(),
+            signature: None,
+            file: "src/b.rs".to_string(),
+            start_line: 60,
+            start_col: 1,
+            end_line: 62,
+            end_col: 2,
+        });
+        let mut f_a2 = File::create(var_dir.join("ambig2.ridx")).unwrap();
+        w_a2.write_to(&mut f_a2).unwrap();
+        drop(f_a2);
+
+        // Dep shard with source_root
+        let mut w_dep = IndexWriter::new("dep_crate", "0.1.0");
+        w_dep.set_unit_key("dep_key");
+        w_dep.add_type(RawType {
+            file: "src/lib.rs".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 10,
+            type_name: "DepType".to_string(),
+        });
+        let dep_file = test_dir.0.join("dep.ridx");
+        let mut f_dep = File::create(&dep_file).unwrap();
+        w_dep.write_to(&mut f_dep).unwrap();
+        drop(f_dep);
+
+        // Write variant manifest linking dep_crate with source_root
+        let manifest_data = serde_json::json!({
+            "version": "2.0",
+            "format_version": crate::CURRENT_FORMAT_VERSION,
+            "extractor_version": crate::EXTRACTOR_VERSION,
+            "active_variant_id": "var_nav",
+            "variant_dir": "variants/var_nav",
+            "workspace_root": test_dir.0.display().to_string(),
+            "shards": [
+                { "name": "caller", "version": "0.1.0", "file": "caller.ridx", "is_dependency": false },
+                { "name": "ambig", "version": "1.0.0", "file": "ambig1.ridx", "is_dependency": false },
+                { "name": "ambig", "version": "2.0.0", "file": "ambig2.ridx", "is_dependency": false }
+            ],
+            "dependency_shards": [
+                {
+                    "name": "dep_crate",
+                    "version": "0.1.0",
+                    "unit_key": "dep_key",
+                    "object_path": dep_file.display().to_string(),
+                    "source_root": dep_root.display().to_string(),
+                    "is_dependency": true,
+                    "dependencies": [],
+                    "extern_units": {},
+                    "file_hashes": {}
+                }
+            ]
+        });
+        fs::write(
+            &manifest_file,
+            serde_json::to_string(&manifest_data).unwrap(),
+        )
+        .unwrap();
+
+        let ws = WorkspaceIndex::open(&test_dir.0).unwrap();
+
+        // 1. Fallback unresolvable cross-crate definition at cursor (lines 181-192)
+        let unres_def = ws.find_definition_at("src/main.rs", 15, 8);
+        assert!(unres_def.is_some());
+        let ud = unres_def.unwrap();
+        assert_eq!(ud.path, "missing_dep::missing_fn");
+        assert_eq!(ud.unit_key, Some("caller_key"));
+
+        // 2. Ambiguous candidate resolution matching line 50 (lines 293-298)
+        let ambig_def = ws.find_definition_at("src/main.rs", 30, 8);
+        assert!(ambig_def.is_some());
+
+        // 2b. Line and file match (lines 289-291)
+        let exact_def = ws.find_definition_at("src/main.rs", 35, 8);
+        assert!(exact_def.is_some());
+        assert_eq!(exact_def.unwrap().file, "src/a.rs");
+
+        // 2c. Ambiguous candidate without line match (line 298)
+        let no_line_match_def = ws.find_definition_at("src/main.rs", 40, 8);
+        assert!(no_line_match_def.is_some());
+
+        // 2d. Target unit mismatch returns None from find_cross_definition, falling back to raw ref (lines 300-302)
+        let unit_mismatch_def = ws.find_definition_at("src/main.rs", 45, 8);
+        assert!(unit_mismatch_def.is_some());
+        assert_eq!(unit_mismatch_def.unwrap().path, "ambig::nonexistent_symbol");
+
+        // 2e. Definition with signature None (line 65)
+        let nosig = ws.find_definition_by_path("ambig::NoSig");
+        assert!(nosig.is_some());
+        assert_eq!(nosig.unwrap().signature, None);
+
+        // 3. type_at with absolute path under dep source root (lines 625-627)
+        let abs_dep_path = dep_root.join("src/lib.rs");
+        let ty_dep = ws.type_at(abs_dep_path.to_str().unwrap(), 1, 5);
+        assert_eq!(ty_dep, Some("DepType"));
+
+        // 4. type_at with absolute path outside dep root (line 629, 638, 644)
+        let abs_other = test_dir.0.join("other/src/lib.rs");
+        let ty_other = ws.type_at(abs_other.to_str().unwrap(), 1, 5);
+        assert_eq!(ty_other, None);
+
+        // 5. type_at with relative path (line 632)
+        let ty_caller = ws.type_at("src/main.rs", 15, 8);
+        assert_eq!(ty_caller, Some("MyType"));
+
+        // 6. find_references_for_unit with coordinate matching (lines 504-528)
+        let refs1 = ws.find_references_for_unit("ambig::func", Some("ambig_key1"));
+        assert_eq!(refs1.len(), 1);
+        assert_eq!(refs1[0].span.start_line(), 35);
+
+        // 7. resolve_path_for_crate with root_dir and None workspace_root (lines 111-115)
+        let mut ws_no_ws_root = ws;
+        ws_no_ws_root.workspace_root = None;
+        ws_no_ws_root.root_dir = Some(test_dir.0.clone());
+        let resolved = ws_no_ws_root.resolve_path_for_crate("unknown", "src/lib.rs");
+        assert_eq!(resolved, test_dir.0.join("src/lib.rs"));
+
+        ws_no_ws_root.root_dir = None;
+        let resolved_plain = ws_no_ws_root.resolve_path_for_crate("unknown", "src/lib.rs");
+        assert_eq!(resolved_plain, PathBuf::from("src/lib.rs"));
+    }
+
+    #[test]
+    fn test_navigation_references_and_candidate_resolution() {
+        let test_dir = new_test_dir("ws_nav_refs_test");
+        let target_file1 = test_dir.0.join("t1.ridx");
+        let target_file2 = test_dir.0.join("t2.ridx");
+        let consumer_file = test_dir.0.join("cons.ridx");
+
+        // Target unit 1
+        let mut w1 = IndexWriter::new("target_krate", "0.1.0");
+        w1.set_unit_key("unit_1");
+        w1.set_generation("gen_1");
+        w1.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "target_fn".to_string(),
+            path: "target_krate::target_fn".to_string(),
+            signature: Some("fn target_fn()".to_string()),
+            file: "src/target.rs".to_string(),
+            start_line: 10,
+            start_col: 1,
+            end_line: 10,
+            end_col: 20,
+        });
+        let mut f1 = File::create(&target_file1).unwrap();
+        w1.write_to(&mut f1).unwrap();
+        drop(f1);
+
+        // Target unit 2 (same crate, different unit)
+        let mut w2 = IndexWriter::new("target_krate", "0.2.0");
+        w2.set_unit_key("unit_2");
+        w2.set_generation("gen_2");
+        w2.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "target_fn".to_string(),
+            path: "target_krate::target_fn".to_string(),
+            signature: Some("fn target_fn()".to_string()),
+            file: "src/target_alt.rs".to_string(),
+            start_line: 10,
+            start_col: 1,
+            end_line: 10,
+            end_col: 20,
+        });
+        // Same crate also has an internal reference to target_fn
+        w2.add_reference(RawReference {
+            file: "src/target_alt.rs".to_string(),
+            start_line: 25,
+            start_col: 5,
+            end_line: 25,
+            end_col: 15,
+            target_def_id: Some(1),
+            target_path: "target_krate::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("src/target_alt.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        let mut f2 = File::create(&target_file2).unwrap();
+        w2.write_to(&mut f2).unwrap();
+        drop(f2);
+
+        // Consumer crate referencing target_krate directly and via alias
+        let mut wc = IndexWriter::new("consumer_krate", "0.1.0");
+        wc.set_unit_key("unit_consumer");
+        wc.set_generation("gen_consumer");
+        // Ref with mismatched file (lines 519-525)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 30,
+            start_col: 1,
+            end_line: 30,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "target_krate::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("mismatched_file.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Ref via alias with mismatched target unit (lines 562-564)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 31,
+            start_col: 1,
+            end_line: 31,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "t_alias::target_fn".to_string(),
+            target_unit: Some("wrong_unit".to_string()),
+            target_file: Some("src/target.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Ref via alias with mismatched line (lines 571-573)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 32,
+            start_col: 1,
+            end_line: 32,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "t_alias::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("src/target.rs".to_string()),
+            target_line: 99,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Ref via alias with mismatched file (lines 581-585)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 33,
+            start_col: 1,
+            end_line: 33,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "t_alias::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("unrelated.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Ref via alias that matches! (lines 587-603)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 34,
+            start_col: 1,
+            end_line: 34,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "t_alias::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("src/target.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+
+        // Ambiguous ref: matching line and file ends_with target_alt.rs (lines 288-291)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 35,
+            start_col: 1,
+            end_line: 35,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "target_krate::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("src/target_alt.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Ambiguous ref: matching line only (lines 293-296)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 36,
+            start_col: 1,
+            end_line: 36,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "target_krate::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("unmatched.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Ambiguous ref: neither line nor file matching, first candidate fallback (line 298)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 37,
+            start_col: 1,
+            end_line: 37,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "target_krate::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("unmatched.rs".to_string()),
+            target_line: 999,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Target unit found but symbol does not exist -> target unit fallback (lines 300-302)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 38,
+            start_col: 1,
+            end_line: 38,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "t_alias::nonexistent_symbol".to_string(),
+            target_unit: Some("unit_1".to_string()),
+            target_file: Some("src/target.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Target def file mismatch in direct references loop (lines 520-527)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 45,
+            start_col: 1,
+            end_line: 45,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "target_krate::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("src/mismatched_file.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Target def file mismatch in alias references loop (lines 580-590)
+        wc.add_reference(RawReference {
+            file: "src/main.rs".to_string(),
+            start_line: 46,
+            start_col: 1,
+            end_line: 46,
+            end_col: 10,
+            target_def_id: None,
+            target_path: "t_alias::target_fn".to_string(),
+            target_unit: None,
+            target_file: Some("src/mismatched_file.rs".to_string()),
+            target_line: 10,
+            target_col: 0,
+            kind: DefKind::Fn,
+            is_write: false,
+            is_macro_expansion: false,
+        });
+        // Definition with signature: None (line 65)
+        wc.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Mod,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "no_sig_mod".to_string(),
+            path: "consumer_krate::no_sig_mod".to_string(),
+            signature: None,
+            file: "src/main.rs".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 5,
+            end_col: 1,
+        });
+
+        let mut fc = File::create(&consumer_file).unwrap();
+        wc.write_to(&mut fc).unwrap();
+        drop(fc);
+
+        let mut ws = WorkspaceIndex::open(&test_dir.0).unwrap();
+        // Setup extern mapping for consumer: t_alias -> unit_1
+        let cons_idx = ws
+            .readers
+            .iter()
+            .position(|r| r.crate_name() == "consumer_krate")
+            .unwrap();
+        let mut ext_map = HashMap::new();
+        ext_map.insert("t_alias".to_string(), "unit_1".to_string());
+        ws.reader_extern_units[cons_idx] = ext_map;
+        ws.reader_dependencies[cons_idx] = vec!["unit_1".to_string(), "unit_2".to_string()]; // hits lines 224-235
+
+        let t2_idx = ws
+            .readers
+            .iter()
+            .position(|r| r.unit_key() == "unit_2")
+            .unwrap();
+        ws.reader_dependencies[t2_idx] = vec!["unit_1".to_string()]; // hits lines 499-503
+
+        // find_definition_by_path with signature None (line 65)
+        let def_no_sig = ws
+            .find_definition_by_path("consumer_krate::no_sig_mod")
+            .unwrap();
+        assert_eq!(def_no_sig.signature, None);
+
+        // Query references to target_krate::target_fn in unit_1
+        // Reader for target unit 2 has reader_crate == target_crate but ru != target_unit (lines 499-503)
+        let refs = ws.find_references_for_unit("target_krate::target_fn", Some("unit_1"));
+        assert_eq!(refs.len(), 1);
+        assert_eq!(refs[0].span.start_line(), 34);
+
+        // Hover with source_root set (lines 407-409)
+        let t1_idx = ws
+            .readers
+            .iter()
+            .position(|r| r.unit_key() == "unit_1")
+            .unwrap();
+        ws.source_roots[t1_idx] = Some(test_dir.0.clone());
+        let hover = ws.hover_at("src/target.rs", 10, 5);
+        assert!(hover.is_some());
+        assert!(hover.unwrap().definition.is_some());
+
+        // Target path starting with target_crate:: and mapping to r.crate_name() (lines 407-419)
+        let mapped_refs = ws.find_references_for_unit("t_alias::target_fn", Some("unit_1"));
+        assert!(!mapped_refs.is_empty());
+
+        // Target def coords with no source root and no workspace root (line 396, 415)
+        ws.source_roots[t1_idx] = None;
+        let orig_ws_root = ws.workspace_root.take();
+        let no_root_refs = ws.find_references_for_unit("target_krate::target_fn", Some("unit_1"));
+        assert_eq!(no_root_refs.len(), 1);
+        ws.workspace_root = orig_ws_root;
+
+        // Query ambiguous references (lines 282-298)
+        let def_alt = ws.find_definition_at("src/main.rs", 35, 5).unwrap();
+        assert_eq!(def_alt.file, "src/target_alt.rs");
+
+        let def_line_match = ws.find_definition_at("src/main.rs", 36, 5).unwrap();
+        assert_eq!(def_line_match.start_line, 10);
+
+        let def_fallback = ws.find_definition_at("src/main.rs", 37, 5).unwrap();
+        assert_eq!(def_fallback.name, "target_fn");
+
+        // Target unit not found fallback (lines 300-302)
+        let def_unresolved = ws.find_definition_at("src/main.rs", 38, 5).unwrap();
+        assert_eq!(def_unresolved.name, "nonexistent_symbol");
+
+        // Definition with signature None (line 65)
+        let d_no_sig = ws
+            .find_definition_by_path("consumer_krate::no_sig_mod")
+            .unwrap();
+        assert_eq!(d_no_sig.signature, None);
+
+        // find_references_for_unit with target_unit_key None to trigger target_def_coords filtering (lines 504-528, 565-590)
+        let coord_refs = ws.find_references_for_unit("target_krate::target_fn", None);
+        assert!(!coord_refs.is_empty());
+
+        // Target unit filtering in extern_map and reader_unit != target_unit (lines 500-502, 555)
+        let refs_wrong_unit =
+            ws.find_references_for_unit("target_krate::target_fn", Some("nonexistent_unit"));
+        assert!(refs_wrong_unit.is_empty());
     }
 }

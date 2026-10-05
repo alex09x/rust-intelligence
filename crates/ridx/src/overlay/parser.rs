@@ -1,3 +1,13 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 //! Lexical scope tree and error-tolerant pure-Rust AST parser for document overlay.
 
 use super::OverlaySymbol;
@@ -170,10 +180,7 @@ impl<'a> OverlayParser<'a> {
                     let start = pos;
                     pos += first_char.len_utf8();
                     while pos < len {
-                        let c = match self.text[pos..].chars().next() {
-                            Some(c) => c,
-                            None => break,
-                        };
+                        let c = self.text[pos..].chars().next().unwrap();
                         if is_rust_ident_continue(c) {
                             pos += c.len_utf8();
                         } else {
@@ -216,10 +223,7 @@ impl<'a> OverlayParser<'a> {
                     continue;
                 }
                 pos += first_char.len_utf8();
-                continue;
             }
-
-            pos += 1;
         }
     }
 
@@ -273,10 +277,7 @@ impl<'a> OverlayParser<'a> {
         let start = *pos;
         let mut cur = *pos + first_char.len_utf8();
         while cur < self.text.len() {
-            let c = match self.text[cur..].chars().next() {
-                Some(c) => c,
-                None => break,
-            };
+            let c = self.text[cur..].chars().next().unwrap();
             if is_rust_ident_continue(c) {
                 cur += c.len_utf8();
             } else {
@@ -294,20 +295,25 @@ impl<'a> OverlayParser<'a> {
         let (s_line, s_col) = self.byte_to_char_line_col(start);
         let (e_line, e_col) = self.byte_to_char_line_col(end);
 
-        // Find signature up to `{` or `;`
+        // Find signature up to `{` or `;` at depth 0
         let sig_start = start;
         let bytes = self.text.as_bytes();
         let len = bytes.len();
-        while *pos < len && bytes[*pos] != b'{' && bytes[*pos] != b';' {
+        let mut depth = 0usize;
+        while *pos < len {
+            let b = bytes[*pos];
+            if b == b'(' || b == b'[' || b == b'<' {
+                depth += 1;
+            } else if (b == b')' || b == b']' || b == b'>') && depth > 0 {
+                depth -= 1;
+            } else if depth == 0 && (b == b'{' || b == b';') {
+                break;
+            }
             *pos += 1;
         }
         let sig_end = (*pos).min(len);
         let raw_sig = self.text[sig_start..sig_end].trim();
-        let signature = if !raw_sig.is_empty() {
-            Some(format!("fn {}", raw_sig))
-        } else {
-            None
-        };
+        let signature = Some(format!("fn {}", raw_sig));
 
         // Add function symbol to enclosing outer scope
         self.symbols.push(OverlaySymbol {
@@ -369,26 +375,25 @@ impl<'a> OverlayParser<'a> {
                     }
                 }
                 if !p_name.is_empty() && is_ident(p_name) {
-                    if let Some(offset) = part.find(p_name) {
-                        let abs_offset = base_byte
-                            + (part.as_ptr() as usize - params_text.as_ptr() as usize)
-                            + offset;
-                        let (s_line, s_col) = self.byte_to_char_line_col(abs_offset);
-                        let (e_line, e_col) = self.byte_to_char_line_col(abs_offset + p_name.len());
-                        self.symbols.push(OverlaySymbol {
-                            name: p_name.to_string(),
-                            kind: DefKind::Local,
-                            signature: Some(trimmed.to_string()),
-                            start_line: s_line,
-                            start_col: s_col,
-                            end_line: e_line,
-                            end_col: e_col,
-                            scope_id,
-                            decl_start_byte: abs_offset,
-                            decl_end_byte: abs_offset + p_name.len(),
-                            scope_start_byte: base_byte,
-                        });
-                    }
+                    let offset = part.find(p_name).unwrap();
+                    let abs_offset = base_byte
+                        + (part.as_ptr() as usize - params_text.as_ptr() as usize)
+                        + offset;
+                    let (s_line, s_col) = self.byte_to_char_line_col(abs_offset);
+                    let (e_line, e_col) = self.byte_to_char_line_col(abs_offset + p_name.len());
+                    self.symbols.push(OverlaySymbol {
+                        name: p_name.to_string(),
+                        kind: DefKind::Local,
+                        signature: Some(trimmed.to_string()),
+                        start_line: s_line,
+                        start_col: s_col,
+                        end_line: e_line,
+                        end_col: e_col,
+                        scope_id,
+                        decl_start_byte: abs_offset,
+                        decl_end_byte: abs_offset + p_name.len(),
+                        scope_start_byte: base_byte,
+                    });
                 }
             }
         }
@@ -553,5 +558,98 @@ impl<'a> OverlayParser<'a> {
             decl_end_byte: end,
             scope_start_byte: scope_start,
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_overlay_parser_rich_syntax() {
+        let code = r#"
+mod my_mod {
+    const MY_CONST: i32 = 42;
+    static MY_STATIC: i32 = 100;
+    type MyType = i32;
+    enum MyEnum { A, B }
+    trait MyTrait {
+        fn trait_fn();
+    }
+    struct MyStruct;
+    fn test_func(mut x: i32, y: String) {
+        /* /* nested block comment */ */
+        // line comment
+        let mut a = (1 + 2);
+        let b = [1, 2, 3];
+        let c = { let inner = 10; inner };
+    }
+}
+"#;
+        let line_starts = crate::overlay::mapping::compute_line_starts(code);
+        let mut parser = OverlayParser::new(code, &line_starts);
+        parser.parse();
+        assert!(!parser.symbols.is_empty());
+        assert!(!parser.scopes.is_empty());
+
+        let names: Vec<&str> = parser.symbols.iter().map(|s| s.name.as_str()).collect();
+        assert!(names.contains(&"my_mod"));
+        assert!(names.contains(&"MY_CONST"));
+        assert!(names.contains(&"MY_STATIC"));
+        assert!(names.contains(&"MyType"));
+        assert!(names.contains(&"MyEnum"));
+        assert!(names.contains(&"MyTrait"));
+        assert!(names.contains(&"trait_fn"));
+        assert!(names.contains(&"MyStruct"));
+        assert!(names.contains(&"test_func"));
+        assert!(names.contains(&"x"));
+        assert!(names.contains(&"y"));
+        assert!(names.contains(&"a"));
+        assert!(names.contains(&"b"));
+        assert!(names.contains(&"c"));
+        assert!(names.contains(&"inner"));
+    }
+
+    #[test]
+    fn test_overlay_parser_edge_cases_and_comments() {
+        let code = "fn /* /* nested */ */ // comment\n func_with_comments(a: i32) {\n let // comment\n /* nested /* block */ */ val = /* /* block */ */ \"string with \\\"escape\\\" and 'char'\" /* unterminated";
+        let line_starts = crate::overlay::mapping::compute_line_starts(code);
+        let mut parser = OverlayParser::new(code, &line_starts);
+        parser.parse();
+
+        let incomplete_code = "fn ; struct ; enum ; trait ; type ; const ; static ; mod ; let ; let x = 10 } let y = /* unterminated";
+        let ls = crate::overlay::mapping::compute_line_starts(incomplete_code);
+        let mut p2 = OverlayParser::new(incomplete_code, &ls);
+        p2.parse();
+
+        // Let binding with multiple line comments and attributes
+        let let_code = "#[inline]\npub fn foo() {\n    let // c1\n    mut // c2\n    z // c3\n    : // c4\n    i32 // c5\n    = // c6\n    42; // c7\n}\n";
+        let ls_let = crate::overlay::mapping::compute_line_starts(let_code);
+        let mut p3 = OverlayParser::new(let_code, &ls_let);
+        p3.parse();
+        assert!(p3.symbols.iter().any(|s| s.name == "z"));
+
+        // Test is_ident edge cases (line 38)
+        assert!(!is_ident(""));
+        assert!(!is_ident("123num"));
+        assert!(!is_ident("+"));
+        assert!(is_ident("valid_name_42"));
+
+        // Test byte_to_char_line_col exact line start hit (line 64)
+        assert_eq!(p3.byte_to_char_line_col(0), (1, 1));
+        assert_eq!(p3.byte_to_char_line_col(ls_let[1]), (2, 1));
+
+        // Test fn without parens (line 362) and fn with tuple pattern param (lines 411-412)
+        let pat_code = "trait T { fn no_parens; fn pat((a, b): (i32, i32)); }\n";
+        let ls_pat = crate::overlay::mapping::compute_line_starts(pat_code);
+        let mut p4 = OverlayParser::new(pat_code, &ls_pat);
+        p4.parse();
+        assert!(p4.symbols.iter().any(|s| s.name == "no_parens"));
+
+        // Test unclosed block comment (line 266)
+        let unclosed = "/* unclosed comment";
+        let ls_unclosed = crate::overlay::mapping::compute_line_starts(unclosed);
+        let mut p5 = OverlayParser::new(unclosed, &ls_unclosed);
+        p5.parse();
     }
 }
