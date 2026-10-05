@@ -516,12 +516,33 @@ pub fn run_indexing(opts: IndexOptions) -> PublishedVariant {
                                     if let Ok(r) = ridx_format::IndexReader::open(obj_p) {
                                         let bin_gen = r.generation();
                                         if !bin_gen.is_empty() {
+                                            let sidecar_gen =
+                                                info.generation.as_deref().unwrap_or("");
+                                            let gen_matches = if !sidecar_gen.is_empty() {
+                                                sidecar_gen == bin_gen
+                                            } else if !info.file_hashes.is_empty() {
+                                                let computed_digest =
+                                                    ridx_format::compute_source_snapshot_digest(
+                                                        &info.file_hashes,
+                                                    );
+                                                format!("{:016x}", computed_digest) == bin_gen
+                                            } else {
+                                                false
+                                            };
+                                            if !gen_matches {
+                                                info.file_hashes.clear();
+                                                info.dependencies.clear();
+                                                info.extern_units.clear();
+                                            }
                                             info.generation = Some(bin_gen.to_string());
                                         }
                                         let embedded = r.embedded_file_hashes();
-                                        for (k, v) in embedded {
-                                            info.file_hashes.insert(k, v);
-                                        }
+                                        let sroot_path = info.source_root.as_deref().map(Path::new);
+                                        ridx_format::merge_embedded_hashes_authoritative(
+                                            &mut info.file_hashes,
+                                            &embedded,
+                                            sroot_path,
+                                        );
                                     }
                                 }
                                 dep_shards.push(info);

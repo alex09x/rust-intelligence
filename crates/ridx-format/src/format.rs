@@ -133,6 +133,45 @@ pub fn compute_source_snapshot_digest(file_hashes: &std::collections::HashMap<St
     fnv1a_64(&buf)
 }
 
+/// Merges embedded file hashes into a file_hashes map, ensuring embedded hashes are authoritative
+/// across both package-relative and absolute/canonical aliases under `source_root`, and dropping
+/// any conflicting aliases.
+pub fn merge_embedded_hashes_authoritative(
+    file_hashes: &mut std::collections::HashMap<String, u64>,
+    embedded: &std::collections::HashMap<String, u64>,
+    source_root: Option<&std::path::Path>,
+) {
+    // 1. Drop any conflicting aliases in file_hashes
+    file_hashes.retain(|k, &mut v| {
+        let p = std::path::Path::new(k);
+        let rel_match = if let Some(root) = source_root {
+            p.strip_prefix(root)
+                .ok()
+                .map(|r| r.to_string_lossy().to_string())
+        } else {
+            None
+        };
+        let target_rel = rel_match.as_deref().unwrap_or(k);
+        if let Some(&emb_h) = embedded.get(target_rel).or_else(|| embedded.get(k)) {
+            v == emb_h
+        } else {
+            true
+        }
+    });
+
+    // 2. Authoritatively insert embedded relative paths and their absolute aliases under source_root
+    for (rel_path, &h) in embedded {
+        file_hashes.insert(rel_path.clone(), h);
+        if let Some(root) = source_root {
+            let abs = root.join(rel_path);
+            file_hashes.insert(abs.to_string_lossy().to_string(), h);
+            if let Ok(canon) = abs.canonicalize() {
+                file_hashes.insert(canon.to_string_lossy().to_string(), h);
+            }
+        }
+    }
+}
+
 /// File table entry: string pool offset for file path, and 64-bit source text provenance hash.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

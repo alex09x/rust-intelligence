@@ -49,74 +49,159 @@ impl WorkspaceIndex {
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
     pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
         let p = Path::new(file_path);
+        let is_abs = p.is_absolute();
 
-        // 1. Exact match across all readers
-        for map in &self.reader_file_hashes {
-            if let Some(&h) = map.get(file_path) {
-                return Some(h);
-            }
-        }
+        // 1. If absolute path, check if any dependency shard owns this file (specific source_root)
+        if is_abs {
+            for (i, reader) in self.readers.iter().enumerate() {
+                if let Some(Some(root)) = self.source_roots.get(i) {
+                    let matched_rel = p
+                        .strip_prefix(root)
+                        .ok()
+                        .map(|r| r.to_string_lossy().to_string())
+                        .or_else(|| {
+                            if let (Ok(canon_p), Ok(canon_root)) =
+                                (p.canonicalize(), root.canonicalize())
+                            {
+                                canon_p
+                                    .strip_prefix(canon_root)
+                                    .ok()
+                                    .map(|r| r.to_string_lossy().to_string())
+                            } else {
+                                None
+                            }
+                        });
 
-        // 2. Canonicalized match across all readers
-        if let Ok(canon) = p.canonicalize() {
-            let canon_str = canon.to_string_lossy();
-            for map in &self.reader_file_hashes {
-                if let Some(&h) = map.get(canon_str.as_ref()) {
-                    return Some(h);
+                    if let Some(rel_str) = matched_rel {
+                        // Check owning reader's embedded FileEntry table (highest priority)
+                        if let Some(fid) = reader.find_file_id(&rel_str) {
+                            let h = reader.file_source_hash(fid);
+                            if h != 0 {
+                                return Some(h);
+                            }
+                        }
+                        if let Some(fid) = reader.find_file_id(file_path) {
+                            let h = reader.file_source_hash(fid);
+                            if h != 0 {
+                                return Some(h);
+                            }
+                        }
+                        if let Some(map) = self.reader_file_hashes.get(i) {
+                            if let Some(&h) = map.get(&rel_str) {
+                                return Some(h);
+                            }
+                            if let Some(&h) = map.get(file_path) {
+                                return Some(h);
+                            }
+                        }
+                        return None;
+                    }
                 }
             }
-        }
 
-        // 3. Owner-resolved match: identify which reader owns this file and match against its relative path
-        for (i, reader) in self.readers.iter().enumerate() {
-            let owner_root = self
-                .source_roots
-                .get(i)
-                .and_then(|r| r.as_ref())
-                .or(self.workspace_root.as_ref());
-            if let Some(root) = owner_root {
-                if let Ok(rel) = p.strip_prefix(root) {
-                    let rel_str = rel.to_string_lossy();
+            // 2. Absolute path in workspace root (not belonging to any dependency)
+            let belongs_to_any_dep = self.source_roots.iter().any(|r| {
+                if let Some(r) = r.as_ref() {
+                    p.starts_with(r)
+                } else {
+                    false
+                }
+            });
+
+            if !belongs_to_any_dep {
+                if let Some(ref ws_root) = self.workspace_root {
+                    let matched_rel = p
+                        .strip_prefix(ws_root)
+                        .ok()
+                        .map(|r| r.to_string_lossy().to_string())
+                        .or_else(|| {
+                            if let (Ok(canon_p), Ok(canon_root)) =
+                                (p.canonicalize(), ws_root.canonicalize())
+                            {
+                                canon_p
+                                    .strip_prefix(canon_root)
+                                    .ok()
+                                    .map(|r| r.to_string_lossy().to_string())
+                            } else {
+                                None
+                            }
+                        });
+
+                    if let Some(rel_str) = matched_rel {
+                        for (i, reader) in self.readers.iter().enumerate() {
+                            if self.source_roots.get(i).and_then(|r| r.as_ref()).is_none() {
+                                if let Some(fid) = reader.find_file_id(&rel_str) {
+                                    let h = reader.file_source_hash(fid);
+                                    if h != 0 {
+                                        return Some(h);
+                                    }
+                                }
+                                if let Some(fid) = reader.find_file_id(file_path) {
+                                    let h = reader.file_source_hash(fid);
+                                    if h != 0 {
+                                        return Some(h);
+                                    }
+                                }
+                                if let Some(map) = self.reader_file_hashes.get(i) {
+                                    if let Some(&h) = map.get(&rel_str) {
+                                        return Some(h);
+                                    }
+                                    if let Some(&h) = map.get(file_path) {
+                                        return Some(h);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Fallback exact or canonical match across reader_file_hashes for workspace crates
+                for map in &self.reader_file_hashes {
+                    if let Some(&h) = map.get(file_path) {
+                        return Some(h);
+                    }
+                }
+                if let Ok(canon) = p.canonicalize() {
+                    let canon_str = canon.to_string_lossy();
+                    for map in &self.reader_file_hashes {
+                        if let Some(&h) = map.get(canon_str.as_ref()) {
+                            return Some(h);
+                        }
+                    }
+                }
+            }
+        } else {
+            // 3. Relative path query
+            // First check workspace crates (non-dependency)
+            for (i, reader) in self.readers.iter().enumerate() {
+                if !self.reader_is_dependency.get(i).copied().unwrap_or(false) {
+                    if let Some(fid) = reader.find_file_id(file_path) {
+                        let h = reader.file_source_hash(fid);
+                        if h != 0 {
+                            return Some(h);
+                        }
+                    }
                     if let Some(map) = self.reader_file_hashes.get(i) {
-                        if let Some(&h) = map.get(rel_str.as_ref()) {
+                        if let Some(&h) = map.get(file_path) {
                             return Some(h);
                         }
                     }
                 }
             }
 
-            // Check if the reader indexed this file directly
-            let is_abs = p.is_absolute();
-            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
-                if is_abs {
-                    if let Ok(rel) = p.strip_prefix(root) {
-                        rel.to_str().unwrap_or(file_path)
-                    } else {
-                        continue;
-                    }
-                } else {
-                    file_path
-                }
-            } else {
-                if is_abs {
-                    let belongs_to_dep = self.source_roots.iter().any(|r| {
-                        if let Some(r) = r.as_ref() {
-                            p.starts_with(r)
-                        } else {
-                            false
+            // Then check dependency crates
+            for (i, reader) in self.readers.iter().enumerate() {
+                if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
+                    if let Some(fid) = reader.find_file_id(file_path) {
+                        let h = reader.file_source_hash(fid);
+                        if h != 0 {
+                            return Some(h);
                         }
-                    });
-                    if belongs_to_dep {
-                        continue;
                     }
-                }
-                file_path
-            };
-
-            if reader.find_file_id(target_file).is_some() {
-                if let Some(map) = self.reader_file_hashes.get(i) {
-                    if let Some(&h) = map.get(target_file) {
-                        return Some(h);
+                    if let Some(map) = self.reader_file_hashes.get(i) {
+                        if let Some(&h) = map.get(file_path) {
+                            return Some(h);
+                        }
                     }
                 }
             }
@@ -175,10 +260,13 @@ impl WorkspaceIndex {
                             }
                         }
                         let mtime = fs::metadata(c).and_then(|m| m.modified()).ok();
-                        let mut combined_hashes = embedded_hashes.clone();
-                        for (k, v) in info.file_hashes {
-                            combined_hashes.entry(k).or_insert(v);
-                        }
+                        let mut combined_hashes = info.file_hashes;
+                        let sroot_path = info.source_root.as_deref().map(Path::new);
+                        crate::format::merge_embedded_hashes_authoritative(
+                            &mut combined_hashes,
+                            embedded_hashes,
+                            sroot_path,
+                        );
                         let gen = if !expected_generation.is_empty() {
                             Some(expected_generation.to_string())
                         } else {

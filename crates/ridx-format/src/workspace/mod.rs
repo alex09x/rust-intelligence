@@ -415,12 +415,17 @@ impl WorkspaceIndex {
                         };
                         reader_dependencies.push(deps);
                         reader_extern_units.push(ext_units);
-                        let mut combined_hashes = embedded;
-                        if gen_valid {
-                            for (k, v) in &dep.file_hashes {
-                                combined_hashes.entry(k.clone()).or_insert(*v);
-                            }
-                        }
+                        let mut combined_hashes = if gen_valid {
+                            dep.file_hashes.clone()
+                        } else {
+                            HashMap::new()
+                        };
+                        let sroot_path = dep.source_root.as_deref().map(Path::new);
+                        crate::format::merge_embedded_hashes_authoritative(
+                            &mut combined_hashes,
+                            &embedded,
+                            sroot_path,
+                        );
                         reader_file_hashes.push(combined_hashes);
                         reader_is_dependency.push(true);
                         meta_paths.push(None);

@@ -764,12 +764,14 @@ fn build_crate_index(
                 ridx_format::IndexReader::open(&obj_path)
             {
                 let gen = reader.generation().to_string();
-                let mut hashes = reader.embedded_file_hashes();
-                for (k, v) in
-                    collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref(), &[])
-                {
-                    hashes.entry(k).or_insert(v);
-                }
+                let embedded = reader.embedded_file_hashes();
+                let mut hashes =
+                    collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref(), &[]);
+                ridx_format::merge_embedded_hashes_authoritative(
+                    &mut hashes,
+                    &embedded,
+                    manifest_dir.as_deref(),
+                );
                 (gen, hashes)
             } else {
                 let fh =
