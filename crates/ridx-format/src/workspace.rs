@@ -31,6 +31,25 @@ pub struct WorkspaceReference<'a> {
     pub is_write: bool,
 }
 
+/// Result of finding references at a cursor location.
+#[derive(Debug, Clone)]
+pub struct LocationReferences<'a> {
+    pub target_symbol: &'a str,
+    pub target_kind: DefKind,
+    pub target_path: &'a str,
+    pub target_file: &'a str,
+    pub target_line: u32,
+    pub target_col: u32,
+    pub references: Vec<WorkspaceReference<'a>>,
+}
+
+/// Detailed hover information for a source location.
+#[derive(Debug, Clone)]
+pub struct WorkspaceHover<'a> {
+    pub definition: Option<ResolvedDefinition<'a>>,
+    pub inferred_type: Option<&'a str>,
+}
+
 /// Workspace-level index statistics.
 #[derive(Debug, Clone, Default)]
 pub struct WorkspaceStats {
@@ -60,6 +79,8 @@ pub struct CrateSummary {
 pub struct WorkspaceIndex {
     readers: Vec<IndexReader<Mmap>>,
     paths: Vec<PathBuf>,
+    mtimes: Vec<Option<std::time::SystemTime>>,
+    root_dir: Option<PathBuf>,
 }
 
 impl WorkspaceIndex {
@@ -68,10 +89,13 @@ impl WorkspaceIndex {
         let p = path.as_ref();
 
         if p.is_file() {
+            let mtime = fs::metadata(p).and_then(|m| m.modified()).ok();
             let reader = IndexReader::open(p)?;
             return Ok(Self {
                 readers: vec![reader],
                 paths: vec![p.to_path_buf()],
+                mtimes: vec![mtime],
+                root_dir: None,
             });
         }
 
@@ -99,12 +123,15 @@ impl WorkspaceIndex {
 
         let mut readers = Vec::with_capacity(ridx_files.len());
         let mut paths = Vec::with_capacity(ridx_files.len());
+        let mut mtimes = Vec::with_capacity(ridx_files.len());
 
         for file_path in ridx_files {
             match IndexReader::open(&file_path) {
                 Ok(reader) => {
+                    let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
                     readers.push(reader);
                     paths.push(file_path);
+                    mtimes.push(mtime);
                 }
                 Err(e) => {
                     eprintln!("Warning: skipping invalid index {:?}: {e}", file_path);
@@ -119,7 +146,12 @@ impl WorkspaceIndex {
             ));
         }
 
-        Ok(Self { readers, paths })
+        Ok(Self {
+            readers,
+            paths,
+            mtimes,
+            root_dir: Some(search_dir),
+        })
     }
 
     /// Auto-discovers .ridx indices starting from current directory up to root or target/ridx.
@@ -339,6 +371,90 @@ impl WorkspaceIndex {
         }
 
         matches
+    }
+
+    /// Finds all references to the symbol at cursor location across the workspace.
+    pub fn find_references_at<'a>(
+        &'a self,
+        file: &str,
+        line: u32,
+        col: u32,
+    ) -> Option<LocationReferences<'a>> {
+        let def = self.find_definition_at(file, line, col)?;
+        let mut refs = self.find_references(def.path);
+        // If no references found by full path, try by short name
+        if refs.is_empty() && def.name != def.path {
+            refs = self.find_references(def.name);
+        }
+        Some(LocationReferences {
+            target_symbol: def.name,
+            target_kind: def.kind,
+            target_path: def.path,
+            target_file: def.file,
+            target_line: def.start_line,
+            target_col: def.start_col,
+            references: refs,
+        })
+    }
+
+    /// Complete hover information (definition + signature + inferred type) at cursor location.
+    pub fn hover_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<WorkspaceHover<'a>> {
+        let def = self.find_definition_at(file, line, col);
+        let ty = self.type_at(file, line, col);
+        if def.is_none() && ty.is_none() {
+            return None;
+        }
+        Some(WorkspaceHover {
+            definition: def,
+            inferred_type: ty,
+        })
+    }
+
+    /// Checks timestamps of indexed files and reloads any that have changed.
+    /// Also scans directory for newly generated .ridx files.
+    /// Returns true if any index was updated or added.
+    pub fn reload_if_modified(&mut self) -> io::Result<bool> {
+        let mut changed = false;
+
+        // 1. Check existing files for modifications
+        for i in 0..self.paths.len() {
+            let p = &self.paths[i];
+            let current_mtime = fs::metadata(p).and_then(|m| m.modified()).ok();
+            if current_mtime != self.mtimes[i] {
+                if let Ok(new_reader) = IndexReader::open(p) {
+                    self.readers[i] = new_reader;
+                    self.mtimes[i] = current_mtime;
+                    changed = true;
+                }
+            }
+        }
+
+        // 2. If loaded from directory, check for new .ridx files
+        if let Some(ref dir) = self.root_dir {
+            let mut existing_set = std::collections::HashSet::new();
+            for p in &self.paths {
+                existing_set.insert(p.clone());
+            }
+
+            let mut all_files = Vec::new();
+            if dir.is_dir() {
+                collect_ridx_files(dir, &mut all_files)?;
+            }
+
+            for file_path in all_files {
+                if !existing_set.contains(&file_path) {
+                    if let Ok(reader) = IndexReader::open(&file_path) {
+                        let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
+                        self.readers.push(reader);
+                        self.paths.push(file_path);
+                        self.mtimes.push(mtime);
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        Ok(changed)
     }
 }
 

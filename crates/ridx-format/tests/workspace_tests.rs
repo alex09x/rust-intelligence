@@ -138,4 +138,20 @@ fn test_multi_crate_workspace_index() {
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].name, "func_a");
     assert_eq!(matches[0].crate_name, "crate_a");
+
+    // 9. Test find_references_at cursor location in crate_b
+    let loc_refs = ws
+        .find_references_at("crates/crate_b/src/lib.rs", 12, 12)
+        .expect("should find references at cursor");
+    assert_eq!(loc_refs.target_symbol, "TypeA");
+    assert_eq!(loc_refs.references.len(), 1);
+    assert_eq!(loc_refs.references[0].crate_name, "crate_b");
+
+    // 10. Test hover_at combining definition and inferred type
+    let hover = ws
+        .hover_at("crates/crate_b/src/lib.rs", 12, 12)
+        .expect("should get hover");
+    assert!(hover.definition.is_some());
+    assert_eq!(hover.definition.unwrap().name, "TypeA");
+    assert_eq!(hover.inferred_type, Some("crate_a::types::TypeA"));
 }

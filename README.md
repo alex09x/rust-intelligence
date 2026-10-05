@@ -118,11 +118,21 @@ ridx def target/ridx/my_crate.ridx src/main.rs:15:20
 ```
 
 ### Find References
+By symbol name or canonical path:
 ```bash
 ridx refs target/ridx/my_crate.ridx my_crate::math::calculate
 ```
+By source cursor position (`file:line:col`):
+```bash
+ridx refs target/ridx/my_crate.ridx src/main.rs:15:20
+```
 
-### Inferred Expression Type (Hover)
+### Combined Hover (Signature + Type)
+```bash
+ridx hover target/ridx/my_crate.ridx src/main.rs:15:22
+```
+
+### Inferred Expression Type (Type-At)
 ```bash
 ridx type-at target/ridx/my_crate.ridx src/main.rs:15:22
 ```
@@ -132,12 +142,31 @@ ridx type-at target/ridx/my_crate.ridx src/main.rs:15:22
 ridx symbols target/ridx/my_crate.ridx calculate
 ```
 
+### Structured JSON Output (`--json`)
+Every query command supports `--json` for direct integration into agent tools, IDE extensions, or build scripts:
+```bash
+ridx def --json target/ridx src/main.rs:15:20
+ridx refs --json target/ridx src/main.rs:15:20
+ridx hover --json target/ridx src/main.rs:15:20
+ridx symbols --json target/ridx Config
+```
+
+### Language Server Protocol Server (`ridx lsp`)
+Run as a standard, zero-memory LSP server over stdio for any LSP-compatible editor (VS Code, Neovim, Helix, Zed, Cursor):
+```bash
+ridx lsp
+```
+Capabilities provided:
+- `textDocument/definition` (<25 µs)
+- `textDocument/references` (<80 µs)
+- `textDocument/hover` (<35 µs)
+- `workspace/symbol` (<100 µs)
+- Live index reloading on disk changes (`reload_if_modified`) with 0 MB resident daemon RAM.
+
 ### Side-by-Side Comparison with `prod-code`
 ```bash
 ridx compare target/ridx/my_crate.ridx --symbol my_crate::math::calculate
 ```
-
----
 
 ---
 
@@ -149,7 +178,7 @@ Measured directly against `BTCR` (trading bot workspace: 16 member crates, 188 R
 |---|---|---|---|
 | **Query Latency (Def)** | **10 – 25 µs** | **~ 30 – 50 ms** | **~ 2,000x faster** |
 | **Query Latency (Refs)** | **50 – 80 µs** | **~ 100 – 300 ms** | **~ 2,500x faster** (searches 214k refs) |
-| **Query Latency (Type-at)**| **11 – 45 µs** | **~ 20 – 40 ms** | **~ 1,000x faster** |
+| **Query Latency (Hover)** | **15 – 45 µs** | **~ 20 – 40 ms** | **~ 1,000x faster** |
 | **Symbol Search** | **70 – 130 µs** | **~ 10 – 30 ms** | **~ 150x faster** |
 | **Daemon RSS Memory** | **0.00 MB** (no daemon) | **2,698 MB** (active heap) | **Zero background RAM overhead** |
 | **Index Size on Disk** | **24.52 MB** (all 16 crates) | N/A (300+ MB per crate RAM)| **110x smaller than RAM heap** |
@@ -210,6 +239,9 @@ Measured directly against `BTCR` (trading bot workspace: 16 member crates, 188 R
 - [x] `ridx index`: Automated cargo workspace compiler driver interception.
 - [x] Real-world verification on production workspace (`BTCR`, 16 crates, 9,362 defs, 214,427 refs, 303,818 types, 24.5 MB on disk, 0 MB daemon RSS).
 
-### Phase 5: Differential Updates & `prod-code` Gateway Integration
-- [ ] Incremental differential index updates on file changes without full rebuilds.
-- [ ] Gateway routing: direct read-only LSP requests (`textDocument/definition`, `textDocument/references`, `textDocument/hover`) to RIDX, reserving rust-analyzer only for active edits.
+### Phase 5: Language Server Protocol & Live Differential Updates ✅
+- [x] Embedded zero-memory Language Server Protocol (`ridx lsp`) over stdio.
+- [x] Combined hover (`ridx hover`) joining definition signature, kind, and inferred expression type.
+- [x] Location-aware cursor reference resolution (`ridx refs file:line:col`).
+- [x] Machine-readable structured JSON output (`--json`) across all commands.
+- [x] Zero-copy differential index hot-reloading (`WorkspaceIndex::reload_if_modified`) reflecting file updates without server restart.

@@ -7,6 +7,7 @@ use std::process::Command;
 use std::time::Instant;
 
 mod compare;
+mod lsp;
 
 #[derive(Parser)]
 #[command(name = "ridx")]
@@ -41,6 +42,10 @@ enum Commands {
     Inspect {
         /// Path to .ridx index file or directory (default: auto-discover target/ridx)
         index_path: Option<PathBuf>,
+
+        /// Output result as JSON
+        #[arg(long)]
+        json: bool,
     },
 
     /// Go to definition for a symbol path or cursor location (file:line:col)
@@ -49,14 +54,22 @@ enum Commands {
         arg1: String,
         /// Second argument: target symbol/location if first argument was index path
         arg2: Option<String>,
+
+        /// Output result as JSON
+        #[arg(long)]
+        json: bool,
     },
 
-    /// Find all references to a given symbol path across the workspace
+    /// Find all references to a given symbol path or cursor location (file:line:col)
     Refs {
-        /// First argument: index file/dir, or target symbol if index is omitted
+        /// First argument: index file/dir, or target symbol/location if index is omitted
         arg1: String,
-        /// Second argument: target symbol if first argument was index path
+        /// Second argument: target symbol/location if first argument was index path
         arg2: Option<String>,
+
+        /// Output result as JSON
+        #[arg(long)]
+        json: bool,
     },
 
     /// Show inferred expression type at a cursor location (file:line:col)
@@ -65,6 +78,22 @@ enum Commands {
         arg1: String,
         /// Second argument: location if first argument was index path
         arg2: Option<String>,
+
+        /// Output result as JSON
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Show combined hover information (signature + inferred type) at cursor location
+    Hover {
+        /// First argument: index file/dir, or location if index is omitted
+        arg1: String,
+        /// Second argument: location if first argument was index path
+        arg2: Option<String>,
+
+        /// Output result as JSON
+        #[arg(long)]
+        json: bool,
     },
 
     /// Search symbol definitions matching a query string across the workspace
@@ -73,6 +102,10 @@ enum Commands {
         arg1: String,
         /// Second argument: query if first argument was index path
         arg2: Option<String>,
+
+        /// Output result as JSON
+        #[arg(long)]
+        json: bool,
     },
 
     /// Compare accuracy and latency against prod-code (rust-analyzer)
@@ -84,6 +117,17 @@ enum Commands {
         /// Optional explicit symbol flag
         #[arg(long, short)]
         symbol: Option<String>,
+
+        /// Output result as JSON
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Run as a Language Server Protocol (LSP) server over stdio
+    Lsp {
+        /// Path to .ridx index file or workspace directory (default: auto-discover)
+        #[arg(long, short)]
+        index_path: Option<PathBuf>,
     },
 }
 
@@ -262,9 +306,32 @@ fn main() {
             run_indexing(path, out_dir, package, release);
         }
 
-        Commands::Inspect { index_path } => {
+        Commands::Inspect { index_path, json } => {
             let ws = resolve_workspace(index_path);
             let stats = ws.stats();
+
+            if json {
+                let out = serde_json::json!({
+                    "total_crates": stats.total_crates,
+                    "total_bytes": stats.total_bytes,
+                    "total_files": stats.total_files,
+                    "total_defs": stats.total_defs,
+                    "total_refs": stats.total_refs,
+                    "total_types": stats.total_types,
+                    "crates": stats.crate_summaries.iter().map(|c| serde_json::json!({
+                        "name": c.name,
+                        "version": c.version,
+                        "file_size": c.file_size,
+                        "defs_count": c.defs_count,
+                        "refs_count": c.refs_count,
+                        "types_count": c.types_count,
+                        "files_count": c.files_count,
+                        "path": c.path.display().to_string(),
+                    })).collect::<Vec<_>>()
+                });
+                println!("{}", serde_json::to_string_pretty(&out).unwrap());
+                return;
+            }
 
             println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
             println!("  {} {} crate(s) loaded", "RIDX Workspace Index:".bold(), stats.total_crates.to_string().cyan());
@@ -294,34 +361,143 @@ fn main() {
             println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
         }
 
-        Commands::Def { arg1, arg2 } => {
+        Commands::Def { arg1, arg2, json } => {
+            let (ws, target) = resolve_index_and_target(arg1, arg2);
+            let start = Instant::now();
+
+            let res = if let Some((file, line, col)) = parse_location(&target) {
+                ws.find_definition_at(file, line, col)
+            } else {
+                ws.find_definition_by_path(&target)
+            };
+            let elapsed = start.elapsed();
+
+            if json {
+                let out = match res {
+                    Some(def) => serde_json::json!({
+                        "found": true,
+                        "name": def.name,
+                        "path": def.path,
+                        "kind": format!("{:?}", def.kind),
+                        "signature": def.signature,
+                        "file": def.file,
+                        "start_line": def.start_line,
+                        "start_col": def.start_col,
+                        "end_line": def.end_line,
+                        "end_col": def.end_col,
+                        "latency_us": elapsed.as_micros(),
+                    }),
+                    None => serde_json::json!({
+                        "found": false,
+                        "target": target,
+                        "latency_us": elapsed.as_micros(),
+                    }),
+                };
+                println!("{}", serde_json::to_string_pretty(&out).unwrap());
+                return;
+            }
+
+            match res {
+                Some(def) => {
+                    println!(
+                        "{} {} at {}:{}:{} (kind: {:?}) [{:.1} µs]",
+                        "Definition:".green().bold(),
+                        def.name.bold(),
+                        def.file,
+                        def.start_line,
+                        def.start_col,
+                        def.kind,
+                        elapsed.as_micros()
+                    );
+                    println!("  Full Path: {}", def.path.cyan());
+                    if let Some(sig) = def.signature {
+                        println!("  Signature: {}", sig.yellow());
+                    }
+                }
+                None => {
+                    println!(
+                        "{} No definition found for {} [{:.1} µs]",
+                        "NotFound:".yellow().bold(),
+                        target,
+                        elapsed.as_micros()
+                    );
+                }
+            }
+        }
+
+        Commands::Refs { arg1, arg2, json } => {
             let (ws, target) = resolve_index_and_target(arg1, arg2);
             let start = Instant::now();
 
             if let Some((file, line, col)) = parse_location(&target) {
-                let res = ws.find_definition_at(file, line, col);
+                let loc_refs = ws.find_references_at(file, line, col);
                 let elapsed = start.elapsed();
 
-                match res {
-                    Some(def) => {
+                if json {
+                    let out = match loc_refs {
+                        Some(lr) => serde_json::json!({
+                            "target_symbol": lr.target_symbol,
+                            "target_kind": format!("{:?}", lr.target_kind),
+                            "target_path": lr.target_path,
+                            "target_file": lr.target_file,
+                            "target_line": lr.target_line,
+                            "target_col": lr.target_col,
+                            "references_count": lr.references.len(),
+                            "latency_us": elapsed.as_micros(),
+                            "references": lr.references.iter().map(|r| serde_json::json!({
+                                "crate": r.crate_name,
+                                "file": r.file,
+                                "start_line": r.span.start_line(),
+                                "start_col": r.span.start_col(),
+                                "end_line": r.span.end_line(),
+                                "end_col": r.span.end_col(),
+                                "kind": format!("{:?}", r.kind),
+                                "is_write": r.is_write,
+                            })).collect::<Vec<_>>()
+                        }),
+                        None => serde_json::json!({
+                            "target_symbol": null,
+                            "references_count": 0,
+                            "latency_us": elapsed.as_micros(),
+                            "references": [],
+                        }),
+                    };
+                    println!("{}", serde_json::to_string_pretty(&out).unwrap());
+                    return;
+                }
+
+                match loc_refs {
+                    Some(lr) => {
                         println!(
-                            "{} {} at {}:{}:{} (kind: {:?}) [{:.1} µs]",
-                            "Definition:".green().bold(),
-                            def.name.bold(),
-                            def.file,
-                            def.start_line,
-                            def.start_col,
-                            def.kind,
+                            "{} Symbol {} ({:?}) at {}:{}:{} — {} reference(s) [{:.1} µs]:",
+                            "Found:".green().bold(),
+                            lr.target_symbol.cyan().bold(),
+                            lr.target_kind,
+                            lr.target_file,
+                            lr.target_line,
+                            lr.target_col,
+                            lr.references.len(),
                             elapsed.as_micros()
                         );
-                        println!("  Full Path: {}", def.path.cyan());
-                        if let Some(sig) = def.signature {
-                            println!("  Signature: {}", sig.yellow());
+
+                        for (i, r) in lr.references.iter().enumerate() {
+                            let span = r.span;
+                            println!(
+                                "  [{}] ({}) {}:{}:{}-{}:{} (kind: {:?})",
+                                i + 1,
+                                r.crate_name.cyan(),
+                                r.file,
+                                span.start_line(),
+                                span.start_col(),
+                                span.end_line(),
+                                span.end_col(),
+                                r.kind
+                            );
                         }
                     }
                     None => {
                         println!(
-                            "{} No definition found at {} [{:.1} µs]",
+                            "{} No references found at {} [{:.1} µs]",
                             "NotFound:".yellow().bold(),
                             target,
                             elapsed.as_micros()
@@ -329,69 +505,55 @@ fn main() {
                     }
                 }
             } else {
-                let res = ws.find_definition_by_path(&target);
+                let refs = ws.find_references(&target);
                 let elapsed = start.elapsed();
 
-                match res {
-                    Some(d) => {
-                        println!(
-                            "{} {} at {}:{}:{} (kind: {:?}) [{:.1} µs]",
-                            "Definition:".green().bold(),
-                            d.name.bold(),
-                            d.file,
-                            d.start_line,
-                            d.start_col,
-                            d.kind,
-                            elapsed.as_micros()
-                        );
-                        println!("  Full Path: {}", d.path.cyan());
-                        if let Some(sig) = d.signature {
-                            println!("  Signature: {}", sig.yellow());
-                        }
-                    }
-                    None => {
-                        println!(
-                            "{} No definition found for {} [{:.1} µs]",
-                            "NotFound:".yellow().bold(),
-                            target,
-                            elapsed.as_micros()
-                        );
-                    }
+                if json {
+                    let out = serde_json::json!({
+                        "target_symbol": target,
+                        "references_count": refs.len(),
+                        "latency_us": elapsed.as_micros(),
+                        "references": refs.iter().map(|r| serde_json::json!({
+                            "crate": r.crate_name,
+                            "file": r.file,
+                            "start_line": r.span.start_line(),
+                            "start_col": r.span.start_col(),
+                            "end_line": r.span.end_line(),
+                            "end_col": r.span.end_col(),
+                            "kind": format!("{:?}", r.kind),
+                            "is_write": r.is_write,
+                        })).collect::<Vec<_>>()
+                    });
+                    println!("{}", serde_json::to_string_pretty(&out).unwrap());
+                    return;
+                }
+
+                println!(
+                    "{} {} reference(s) to {} across workspace [{:.1} µs]:",
+                    "Found:".green().bold(),
+                    refs.len(),
+                    target.cyan(),
+                    elapsed.as_micros()
+                );
+
+                for (i, r) in refs.iter().enumerate() {
+                    let span = r.span;
+                    println!(
+                        "  [{}] ({}) {}:{}:{}-{}:{} (kind: {:?})",
+                        i + 1,
+                        r.crate_name.cyan(),
+                        r.file,
+                        span.start_line(),
+                        span.start_col(),
+                        span.end_line(),
+                        span.end_col(),
+                        r.kind
+                    );
                 }
             }
         }
 
-        Commands::Refs { arg1, arg2 } => {
-            let (ws, symbol) = resolve_index_and_target(arg1, arg2);
-            let start = Instant::now();
-            let refs = ws.find_references(&symbol);
-            let elapsed = start.elapsed();
-
-            println!(
-                "{} {} reference(s) to {} across workspace [{:.1} µs]:",
-                "Found:".green().bold(),
-                refs.len(),
-                symbol.cyan(),
-                elapsed.as_micros()
-            );
-
-            for (i, r) in refs.iter().enumerate() {
-                let span = r.span;
-                println!(
-                    "  [{}] ({}) {}:{}:{}-{}:{} (kind: {:?})",
-                    i + 1,
-                    r.crate_name.cyan(),
-                    r.file,
-                    span.start_line(),
-                    span.start_col(),
-                    span.end_line(),
-                    span.end_col(),
-                    r.kind
-                );
-            }
-        }
-
-        Commands::TypeAt { arg1, arg2 } => {
+        Commands::TypeAt { arg1, arg2, json } => {
             let (ws, location) = resolve_index_and_target(arg1, arg2);
             let Some((file, line, col)) = parse_location(&location) else {
                 eprintln!(
@@ -404,6 +566,16 @@ fn main() {
             let start = Instant::now();
             let ty = ws.type_at(file, line, col);
             let elapsed = start.elapsed();
+
+            if json {
+                let out = serde_json::json!({
+                    "location": location,
+                    "inferred_type": ty,
+                    "latency_us": elapsed.as_micros(),
+                });
+                println!("{}", serde_json::to_string_pretty(&out).unwrap());
+                return;
+            }
 
             match ty {
                 Some(t) => {
@@ -430,11 +602,111 @@ fn main() {
             }
         }
 
-        Commands::Symbols { arg1, arg2 } => {
+        Commands::Hover { arg1, arg2, json } => {
+            let (ws, location) = resolve_index_and_target(arg1, arg2);
+            let Some((file, line, col)) = parse_location(&location) else {
+                eprintln!(
+                    "{}: Location must be formatted as 'file_path:line:col'",
+                    "Error".red().bold()
+                );
+                std::process::exit(1);
+            };
+
+            let start = Instant::now();
+            let hover = ws.hover_at(file, line, col);
+            let elapsed = start.elapsed();
+
+            if json {
+                let out = match hover {
+                    Some(h) => serde_json::json!({
+                        "found": true,
+                        "location": location,
+                        "definition": h.definition.map(|d| serde_json::json!({
+                            "name": d.name,
+                            "path": d.path,
+                            "kind": format!("{:?}", d.kind),
+                            "signature": d.signature,
+                            "file": d.file,
+                            "start_line": d.start_line,
+                            "start_col": d.start_col,
+                            "end_line": d.end_line,
+                            "end_col": d.end_col,
+                        })),
+                        "inferred_type": h.inferred_type,
+                        "latency_us": elapsed.as_micros(),
+                    }),
+                    None => serde_json::json!({
+                        "found": false,
+                        "location": location,
+                        "latency_us": elapsed.as_micros(),
+                    }),
+                };
+                println!("{}", serde_json::to_string_pretty(&out).unwrap());
+                return;
+            }
+
+            match hover {
+                Some(h) => {
+                    println!(
+                        "{} Hover at {} [{:.1} µs]",
+                        "Hover:".green().bold(),
+                        location.cyan(),
+                        elapsed.as_micros()
+                    );
+                    if let Some(ref d) = h.definition {
+                        println!(
+                            "  Definition : {} ({:?}) at {}:{}:{}",
+                            d.name.bold(),
+                            d.kind,
+                            d.file,
+                            d.start_line,
+                            d.start_col
+                        );
+                        println!("  Full Path  : {}", d.path.cyan());
+                        if let Some(sig) = d.signature {
+                            println!("  Signature  : {}", sig.yellow());
+                        }
+                    }
+                    if let Some(ty) = h.inferred_type {
+                        println!("  Inferred Ty: {}", ty.bold());
+                    }
+                }
+                None => {
+                    println!(
+                        "{} No hover information at {} [{:.1} µs]",
+                        "NotFound:".yellow().bold(),
+                        location,
+                        elapsed.as_micros()
+                    );
+                }
+            }
+        }
+
+        Commands::Symbols { arg1, arg2, json } => {
             let (ws, query) = resolve_index_and_target(arg1, arg2);
             let start = Instant::now();
             let matches = ws.search_symbols(&query);
             let elapsed = start.elapsed();
+
+            if json {
+                let out = serde_json::json!({
+                    "query": query,
+                    "count": matches.len(),
+                    "latency_us": elapsed.as_micros(),
+                    "symbols": matches.iter().map(|s| serde_json::json!({
+                        "crate": s.crate_name,
+                        "name": s.name,
+                        "path": s.path,
+                        "kind": format!("{:?}", s.kind),
+                        "file": s.file,
+                        "start_line": s.span.start_line(),
+                        "start_col": s.span.start_col(),
+                        "signature": s.signature,
+                    })).collect::<Vec<_>>()
+                });
+                println!("{}", serde_json::to_string_pretty(&out).unwrap());
+                return;
+            }
 
             println!(
                 "{} {} symbol(s) matching '{}' across workspace [{:.1} µs]:",
@@ -465,6 +737,7 @@ fn main() {
             arg1,
             arg2,
             symbol,
+            json,
         } => {
             let (ws, target) = match symbol {
                 Some(s) => {
@@ -475,7 +748,40 @@ fn main() {
             };
 
             let cmp = compare::compare_definition(&ws, &target);
+            if json {
+                let speedup = if cmp.ridx_latency_micros > 0 {
+                    format!(
+                        "{:.1}x",
+                        (cmp.prodcode_latency_micros as f64) / (cmp.ridx_latency_micros as f64)
+                    )
+                } else {
+                    "inf".to_string()
+                };
+                let out = serde_json::json!({
+                    "target": cmp.symbol,
+                    "ridx": {
+                        "found": cmp.ridx_found,
+                        "span": cmp.ridx_span,
+                        "latency_us": cmp.ridx_latency_micros,
+                    },
+                    "prodcode": {
+                        "found": cmp.prodcode_found,
+                        "span": cmp.prodcode_span,
+                        "latency_us": cmp.prodcode_latency_micros,
+                    },
+                    "speedup": speedup,
+                });
+                println!("{}", serde_json::to_string_pretty(&out).unwrap());
+                return;
+            }
             compare::print_comparison(&cmp);
+        }
+
+        Commands::Lsp { index_path } => {
+            if let Err(e) = lsp::run_lsp_server(index_path) {
+                eprintln!("{}: LSP server exited with error: {e}", "Error".red().bold());
+                std::process::exit(1);
+            }
         }
     }
 }

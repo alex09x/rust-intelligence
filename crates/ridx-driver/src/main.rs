@@ -248,10 +248,12 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
 fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path) {
     let start = Instant::now();
     let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
+    let crate_version =
+        std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
     let mut visitor = HirVisitor {
         tcx,
         typeck: None,
-        writer: IndexWriter::new(&crate_name, "0.1.0"),
+        writer: IndexWriter::new(&crate_name, &crate_version),
     };
 
     // Extract all crate item definitions
