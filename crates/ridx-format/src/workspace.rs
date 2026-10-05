@@ -170,23 +170,25 @@ impl WorkspaceIndex {
             })?;
             let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
             if !manifest.active_variant_id.is_empty() {
+                let expected_variant_dir = format!("variants/{}", manifest.active_variant_id);
                 let vdir_str = manifest.variant_dir.trim();
                 let vpath = Path::new(vdir_str);
                 if vdir_str.is_empty()
                     || vpath.is_absolute()
                     || vpath.components().any(|c| c == std::path::Component::ParentDir)
                     || vpath == Path::new(".")
+                    || vdir_str != expected_variant_dir
                 {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
                         format!(
-                            "Active variant manifest {:?} specifies an invalid, empty, or escaping variant_dir {:?}",
-                            manifest_file, manifest.variant_dir
+                            "Active variant manifest {:?} specifies variant_dir {:?} which does not match active_variant_id {:?} (expected {:?})",
+                            manifest_file, manifest.variant_dir, manifest.active_variant_id, expected_variant_dir
                         ),
                     ));
                 }
 
-                let vdir = search_dir.join(vpath);
+                let vdir = search_dir.join(&expected_variant_dir);
                 if vdir == search_dir || !vdir.is_dir() {
                     return Err(io::Error::new(
                         io::ErrorKind::NotFound,
@@ -553,15 +555,10 @@ impl WorkspaceIndex {
                     if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
                         let base_dir = mf.parent().unwrap_or_else(|| Path::new("."));
                         if Some(&manifest.active_variant_id) != self.active_variant_id.as_ref() {
+                            let expected_variant_dir = format!("variants/{}", manifest.active_variant_id);
                             let vdir_str = manifest.variant_dir.trim();
-                            let vpath = Path::new(vdir_str);
-                            if !manifest.active_variant_id.is_empty()
-                                && !vdir_str.is_empty()
-                                && !vpath.is_absolute()
-                                && !vpath.components().any(|c| c == std::path::Component::ParentDir)
-                                && vpath != Path::new(".")
-                            {
-                                let new_vdir = base_dir.join(vpath);
+                            if !manifest.active_variant_id.is_empty() && vdir_str == expected_variant_dir {
+                                let new_vdir = base_dir.join(&expected_variant_dir);
                                 if new_vdir != base_dir && new_vdir.is_dir() {
                                     // Active variant changed! Atomically switch reader set
                                     let mut new_files = Vec::new();

@@ -217,6 +217,29 @@ fn find_driver_binary() -> Option<PathBuf> {
 }
 
 
+fn resolve_cargo_home() -> Option<PathBuf> {
+    if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
+        let p = PathBuf::from(cargo_home.trim());
+        if !p.as_os_str().is_empty() {
+            return Some(p);
+        }
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        let p = PathBuf::from(home.trim()).join(".cargo");
+        if !home.trim().is_empty() {
+            return Some(p);
+        }
+    }
+    #[cfg(windows)]
+    if let Ok(userprofile) = std::env::var("USERPROFILE") {
+        let p = PathBuf::from(userprofile.trim()).join(".cargo");
+        if !userprofile.trim().is_empty() {
+            return Some(p);
+        }
+    }
+    None
+}
+
 fn find_cargo_configs(work_dir: &Path) -> Vec<PathBuf> {
     let mut configs = Vec::new();
     let mut cur = Some(work_dir);
@@ -229,8 +252,7 @@ fn find_cargo_configs(work_dir: &Path) -> Vec<PathBuf> {
         }
         cur = dir.parent();
     }
-    if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
-        let home_dir = Path::new(&cargo_home);
+    if let Some(home_dir) = resolve_cargo_home() {
         for name in ["config.toml", "config"] {
             let p = home_dir.join(name);
             if p.is_file() && !configs.contains(&p) {

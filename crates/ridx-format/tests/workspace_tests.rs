@@ -345,4 +345,19 @@ fn test_active_manifest_with_empty_or_escaping_variant_dir_rejected() {
     let res = WorkspaceIndex::open(&base_dir);
     assert!(res.is_err(), "should reject escaping variant_dir");
     assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::InvalidData);
+
+    // 4. Mismatched variant_id and variant_dir
+    let manifest_mismatch = serde_json::json!({
+        "version": "2.0",
+        "active_variant_id": "var1",
+        "variant_dir": "variants/var2",
+        "workspace_root": base_dir.display().to_string(),
+        "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+    });
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_mismatch).unwrap()).unwrap();
+
+    let res = WorkspaceIndex::open(&base_dir);
+    assert!(res.is_err(), "should reject mismatched variant_id and variant_dir");
+    assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::InvalidData);
 }
