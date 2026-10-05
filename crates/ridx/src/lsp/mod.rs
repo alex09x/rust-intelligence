@@ -257,6 +257,19 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
                                     "source.organizeImports"
                                 ],
                                 "resolveProvider": true
+                            },
+                            "callHierarchyProvider": true,
+                            "typeHierarchyProvider": true,
+                            "codeLensProvider": {
+                                "resolveProvider": true
+                            },
+                            "executeCommandProvider": {
+                                "commands": [
+                                    "ridx.runTest",
+                                    "ridx.organizeImports",
+                                    "ridx.extractVariable",
+                                    "ridx.extractFunction"
+                                ]
                             }
                         },
                         "serverInfo": {
@@ -698,6 +711,125 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
             "codeAction/resolve" => {
                 if let Some(id) = id {
                     let result = handle_code_action_resolve(&msg);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/prepareCallHierarchy" => {
+                if let Some(id) = id {
+                    let result = handle_prepare_call_hierarchy(
+                        &msg,
+                        workspace.as_ref(),
+                        &overlay_mgr,
+                        &mut conv,
+                    );
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "callHierarchy/incomingCalls" => {
+                if let Some(id) = id {
+                    let result =
+                        handle_call_hierarchy_incoming_calls(&msg, workspace.as_ref(), &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "callHierarchy/outgoingCalls" => {
+                if let Some(id) = id {
+                    let result = handle_call_hierarchy_outgoing_calls(&msg, workspace.as_ref());
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/prepareTypeHierarchy" => {
+                if let Some(id) = id {
+                    let result = handle_prepare_type_hierarchy(
+                        &msg,
+                        workspace.as_ref(),
+                        &overlay_mgr,
+                        &mut conv,
+                    );
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "typeHierarchy/supertypes" => {
+                if let Some(id) = id {
+                    let result = handle_type_hierarchy_supertypes(&msg, workspace.as_ref());
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "typeHierarchy/subtypes" => {
+                if let Some(id) = id {
+                    let result = handle_type_hierarchy_subtypes(&msg, workspace.as_ref());
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/codeLens" => {
+                if let Some(id) = id {
+                    let result = handle_code_lens(&msg, &overlay_mgr);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "codeLens/resolve" => {
+                if let Some(id) = id {
+                    let result = handle_code_lens_resolve(&msg);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "workspace/executeCommand" => {
+                if let Some(id) = id {
+                    let result = handle_execute_command(&msg);
                     let resp = json!({
                         "jsonrpc": "2.0",
                         "id": id,
@@ -1758,5 +1890,111 @@ mod tests {
         let resolve_resp = &responses[4];
         assert_eq!(resolve_resp["id"], 63);
         assert_eq!(resolve_resp["result"]["title"], "Organize imports");
+    }
+
+    #[test]
+    fn test_lsp_server_stream_stage6_relationships_and_commands() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        let doc_uri = "file:///tmp/stage6_test.rs";
+        let code = "struct MyStruct;\nfn test_foo() {}\nfn do_work() {}\n";
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": doc_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": code
+                }
+            }
+        })));
+        // 1. prepareCallHierarchy
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 70,
+            "method": "textDocument/prepareCallHierarchy",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "position": { "line": 2, "character": 4 }
+            }
+        })));
+        // 2. prepareTypeHierarchy
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 71,
+            "method": "textDocument/prepareTypeHierarchy",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "position": { "line": 0, "character": 8 }
+            }
+        })));
+        // 3. codeLens
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 72,
+            "method": "textDocument/codeLens",
+            "params": {
+                "textDocument": { "uri": doc_uri }
+            }
+        })));
+        // 4. executeCommand
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 73,
+            "method": "workspace/executeCommand",
+            "params": {
+                "command": "ridx.runTest",
+                "arguments": [doc_uri, "test_foo"]
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 74,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 6);
+
+        // Verify prepareCallHierarchy
+        let call_resp = &responses[1];
+        assert_eq!(call_resp["id"], 70);
+        let calls = call_resp["result"].as_array().expect("call array");
+        assert!(!calls.is_empty());
+        assert_eq!(calls[0]["name"], "do_work");
+
+        // Verify prepareTypeHierarchy
+        let type_resp = &responses[2];
+        assert_eq!(type_resp["id"], 71);
+        let types = type_resp["result"].as_array().expect("type array");
+        assert!(!types.is_empty());
+        assert_eq!(types[0]["name"], "MyStruct");
+
+        // Verify codeLens
+        let lens_resp = &responses[3];
+        assert_eq!(lens_resp["id"], 72);
+        let lenses = lens_resp["result"].as_array().expect("lens array");
+        assert!(!lenses.is_empty());
+
+        // Verify executeCommand
+        let exec_resp = &responses[4];
+        assert_eq!(exec_resp["id"], 73);
+        assert_eq!(exec_resp["result"], Value::Null);
     }
 }
