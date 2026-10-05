@@ -1682,3 +1682,148 @@ pub fn handle_code_lens_resolve(msg: &Value) -> Value {
 pub fn handle_execute_command(_msg: &Value) -> Value {
     json!(null)
 }
+
+pub fn handle_document_link(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let mut links = Vec::new();
+
+    if let Some(overlay) = overlay_mgr.get(&file) {
+        for (line_idx, line) in overlay.text.lines().enumerate() {
+            if let Some(http_pos) = line.find("https://") {
+                let end_pos = line[http_pos..]
+                    .find(|c: char| {
+                        c.is_whitespace() || c == '>' || c == ')' || c == ']' || c == '\"'
+                    })
+                    .map(|p| http_pos + p)
+                    .unwrap_or(line.len());
+                let target_url = &line[http_pos..end_pos];
+                let sc =
+                    overlay.char_col_to_utf16_col((line_idx + 1) as u32, (http_pos + 1) as u32);
+                let ec = overlay.char_col_to_utf16_col((line_idx + 1) as u32, (end_pos + 1) as u32);
+                links.push(json!({
+                    "range": {
+                        "start": { "line": line_idx as u32, "character": sc },
+                        "end": { "line": line_idx as u32, "character": ec }
+                    },
+                    "target": target_url
+                }));
+            }
+        }
+    }
+    json!(links)
+}
+
+pub fn handle_document_link_resolve(msg: &Value) -> Value {
+    msg.get("params").cloned().unwrap_or(Value::Null)
+}
+
+pub fn handle_document_color(_msg: &Value) -> Value {
+    json!([])
+}
+
+pub fn handle_color_presentation(_msg: &Value) -> Value {
+    json!([])
+}
+
+pub fn handle_linked_editing_range(
+    msg: &Value,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+    let line_1based = line_0based + 1;
+
+    let overlay_opt = overlay_mgr.get(&file);
+    let col_1based = if let Some(overlay) = overlay_opt {
+        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+    } else {
+        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+    };
+
+    if let Some(def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+        let (sl, sc) = (def.start_line, def.start_col);
+        let (el, ec) = (def.end_line, def.end_col);
+        let start_char = if let Some(ov) = overlay_opt {
+            ov.char_col_to_utf16_col(sl, sc)
+        } else {
+            conv.char_col_to_utf16_col(&file, sl, sc)
+        };
+        let end_char = if let Some(ov) = overlay_opt {
+            ov.char_col_to_utf16_col(el, ec)
+        } else {
+            conv.char_col_to_utf16_col(&file, el, ec)
+        };
+        return json!({
+            "ranges": [
+                {
+                    "start": { "line": sl.saturating_sub(1), "character": start_char },
+                    "end": { "line": el.saturating_sub(1), "character": end_char }
+                }
+            ]
+        });
+    }
+
+    Value::Null
+}
+
+pub fn handle_moniker(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+    let line_1based = line_0based + 1;
+
+    let overlay_opt = overlay_mgr.get(&file);
+    let col_1based = if let Some(overlay) = overlay_opt {
+        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+    } else {
+        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+    };
+
+    let mut monikers = Vec::new();
+
+    if let Some(ws) = workspace {
+        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+        if !is_dirty {
+            if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based) {
+                monikers.push(json!({
+                    "scheme": "cargo",
+                    "identifier": def.path,
+                    "unique": "scheme",
+                    "kind": "export"
+                }));
+            }
+        }
+    }
+
+    json!(monikers)
+}
+
+pub fn handle_inline_value(_msg: &Value) -> Value {
+    json!([])
+}
+
+pub fn handle_inline_completion(_msg: &Value) -> Value {
+    json!({ "items": [] })
+}
+
+pub fn handle_text_document_content(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
+    let uri = msg["params"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    if let Some(overlay) = overlay_mgr.get(&file) {
+        json!({ "text": overlay.text })
+    } else if let Ok(content) = std::fs::read_to_string(&file) {
+        json!({ "text": content })
+    } else {
+        Value::Null
+    }
+}

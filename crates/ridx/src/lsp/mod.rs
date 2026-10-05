@@ -270,7 +270,15 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
                                     "ridx.extractVariable",
                                     "ridx.extractFunction"
                                 ]
-                            }
+                            },
+                            "documentLinkProvider": {
+                                "resolveProvider": true
+                            },
+                            "colorProvider": true,
+                            "linkedEditingRangeProvider": true,
+                            "monikerProvider": true,
+                            "inlineValueProvider": true,
+                            "inlineCompletionProvider": true
                         },
                         "serverInfo": {
                             "name": "ridx",
@@ -830,6 +838,114 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
             "workspace/executeCommand" => {
                 if let Some(id) = id {
                     let result = handle_execute_command(&msg);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/documentLink" => {
+                if let Some(id) = id {
+                    let result = handle_document_link(&msg, &overlay_mgr);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "documentLink/resolve" => {
+                if let Some(id) = id {
+                    let result = handle_document_link_resolve(&msg);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/documentColor" => {
+                if let Some(id) = id {
+                    let result = handle_document_color(&msg);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/colorPresentation" => {
+                if let Some(id) = id {
+                    let result = handle_color_presentation(&msg);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/linkedEditingRange" => {
+                if let Some(id) = id {
+                    let result = handle_linked_editing_range(&msg, &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/moniker" => {
+                if let Some(id) = id {
+                    let result = handle_moniker(&msg, workspace.as_ref(), &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/inlineValue" => {
+                if let Some(id) = id {
+                    let result = handle_inline_value(&msg);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/inlineCompletion" => {
+                if let Some(id) = id {
+                    let result = handle_inline_completion(&msg);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "workspace/textDocumentContent" => {
+                if let Some(id) = id {
+                    let result = handle_text_document_content(&msg, &overlay_mgr);
                     let resp = json!({
                         "jsonrpc": "2.0",
                         "id": id,
@@ -1996,5 +2112,146 @@ mod tests {
         let exec_resp = &responses[4];
         assert_eq!(exec_resp["id"], 73);
         assert_eq!(exec_resp["result"], Value::Null);
+    }
+
+    #[test]
+    fn test_lsp_server_stream_stage7_remaining_capabilities() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        let doc_uri = "file:///tmp/stage7_test.rs";
+        let code = "// See https://example.com/docs for details\nfn test_run() {\n    let my_var = 123;\n}\n";
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": doc_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": code
+                }
+            }
+        })));
+        // 1. documentLink
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 80,
+            "method": "textDocument/documentLink",
+            "params": {
+                "textDocument": { "uri": doc_uri }
+            }
+        })));
+        // 2. documentColor
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 81,
+            "method": "textDocument/documentColor",
+            "params": {
+                "textDocument": { "uri": doc_uri }
+            }
+        })));
+        // 3. linkedEditingRange
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 82,
+            "method": "textDocument/linkedEditingRange",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "position": { "line": 2, "character": 10 }
+            }
+        })));
+        // 4. inlineValue
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 83,
+            "method": "textDocument/inlineValue",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "range": {
+                    "start": { "line": 0, "character": 0 },
+                    "end": { "line": 3, "character": 0 }
+                },
+                "context": {
+                    "frameId": 1,
+                    "stoppedLocation": { "line": 2, "character": 4 }
+                }
+            }
+        })));
+        // 5. inlineCompletion
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 84,
+            "method": "textDocument/inlineCompletion",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "position": { "line": 2, "character": 10 }
+            }
+        })));
+        // 6. workspace/textDocumentContent
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 85,
+            "method": "workspace/textDocumentContent",
+            "params": {
+                "uri": doc_uri
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 86,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 8);
+
+        // Verify documentLink
+        let link_resp = &responses[1];
+        assert_eq!(link_resp["id"], 80);
+        let links = link_resp["result"].as_array().expect("links array");
+        assert!(!links.is_empty());
+        assert_eq!(links[0]["target"], "https://example.com/docs");
+
+        // Verify documentColor
+        let color_resp = &responses[2];
+        assert_eq!(color_resp["id"], 81);
+        assert!(color_resp["result"].is_array());
+
+        // Verify linkedEditingRange
+        let linked_resp = &responses[3];
+        assert_eq!(linked_resp["id"], 82);
+        let ranges = linked_resp["result"]["ranges"]
+            .as_array()
+            .expect("ranges array");
+        assert!(!ranges.is_empty());
+
+        // Verify inlineValue
+        let inline_val_resp = &responses[4];
+        assert_eq!(inline_val_resp["id"], 83);
+        assert!(inline_val_resp["result"].is_array());
+
+        // Verify inlineCompletion
+        let inline_comp_resp = &responses[5];
+        assert_eq!(inline_comp_resp["id"], 84);
+        assert!(inline_comp_resp["result"]["items"].is_array());
+
+        // Verify textDocumentContent
+        let content_resp = &responses[6];
+        assert_eq!(content_resp["id"], 85);
+        assert_eq!(content_resp["result"]["text"], code);
     }
 }
