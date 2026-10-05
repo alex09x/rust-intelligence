@@ -244,4 +244,6 @@ Measured directly against `BTCR` (trading bot workspace: 16 member crates, 188 R
 - [x] Combined hover (`ridx hover`) joining definition signature, kind, and inferred expression type.
 - [x] Location-aware cursor reference resolution (`ridx refs file:line:col`).
 - [x] Machine-readable structured JSON output (`--json`) across all commands.
-- [x] Zero-copy differential index hot-reloading (`WorkspaceIndex::reload_if_modified`) reflecting file updates without server restart.
+- [x] Zero-copy differential index hot-reloading (`WorkspaceIndex::reload_if_modified`) reflecting file updates and removals without server restart.
+- [x] Atomic temporary-file index emission (`fs::rename`) preventing memory map invalidation during reindexing.
+- [x] Standard-compliant LSP position encoding (`positionEncoding: "utf-16"`) and percent-encoded file URI handling.
