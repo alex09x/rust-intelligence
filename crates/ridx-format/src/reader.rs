@@ -57,7 +57,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         // Safely decode header into aligned memory without unaligned pointer casting
         let mut header_buf = [0u8; std::mem::size_of::<Header>()];
         header_buf.copy_from_slice(&bytes[..std::mem::size_of::<Header>()]);
-        let header: Header = unsafe { std::mem::transmute(header_buf) };
+        let raw_header: Header = unsafe { std::mem::transmute(header_buf) };
+        let header = raw_header.from_le();
 
         if header.magic != MAGIC {
             return Err(io::Error::new(
@@ -235,16 +236,16 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let defs_hash = self.defs_by_hash();
         let defs = self.definitions();
 
-        let partition = defs_hash.binary_search_by_key(&hash, |e| e.hash);
+        let partition = defs_hash.binary_search_by_key(&hash, |e| e.hash());
         if let Ok(idx) = partition {
             // Check matching hash range
             let mut i = idx;
-            while i > 0 && defs_hash[i - 1].hash == hash {
+            while i > 0 && defs_hash[i - 1].hash() == hash {
                 i -= 1;
             }
-            while i < defs_hash.len() && defs_hash[i].hash == hash {
-                let def = &defs[defs_hash[i].index as usize];
-                if self.get_str(def.path_offset) == path {
+            while i < defs_hash.len() && defs_hash[i].hash() == hash {
+                let def = &defs[defs_hash[i].index() as usize];
+                if self.get_str(def.path_offset()) == path {
                     return Some(def);
                 }
                 i += 1;
@@ -265,31 +266,33 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         // 1. Check references: is the cursor on a symbol reference?
         let refs = self.references();
         for r in refs {
-            if r.span.file_id == file_id && r.span.contains(file_id, line, col) {
+            let r_span = r.span();
+            if r_span.file_id() == file_id && r_span.contains(file_id, line, col) {
                 // If it resolves to a local def_id:
-                if r.target_def_id != u32::MAX {
+                if r.target_def_id() != u32::MAX {
                     let defs = self.definitions();
-                    if let Some(def) = defs.iter().find(|d| d.def_id == r.target_def_id) {
+                    if let Some(def) = defs.iter().find(|d| d.def_id() == r.target_def_id()) {
+                        let def_span = def.span();
                         return Some(ResolvedDefinition {
-                            name: self.get_str(def.name_offset),
-                            path: self.get_str(def.path_offset),
+                            name: self.get_str(def.name_offset()),
+                            path: self.get_str(def.path_offset()),
                             kind: DefKind::from(def.kind),
-                            signature: if def.sig_offset != 0 {
-                                Some(self.get_str(def.sig_offset))
+                            signature: if def.sig_offset() != 0 {
+                                Some(self.get_str(def.sig_offset()))
                             } else {
                                 None
                             },
-                            file: self.get_file(def.span.file_id),
-                            start_line: def.span.start_line,
-                            start_col: def.span.start_col,
-                            end_line: def.span.end_line,
-                            end_col: def.span.end_col,
+                            file: self.get_file(def_span.file_id()),
+                            start_line: def_span.start_line(),
+                            start_col: def_span.start_col(),
+                            end_line: def_span.end_line(),
+                            end_col: def_span.end_col(),
                         });
                     }
                 }
                 // Otherwise return target path and location
-                let target_path = self.get_str(r.target_path_offset);
-                let target_file = self.get_str(r.target_file_offset);
+                let target_path = self.get_str(r.target_path_offset());
+                let target_file = self.get_str(r.target_file_offset());
                 let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
 
                 return Some(ResolvedDefinition {
@@ -302,31 +305,32 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                     } else {
                         "external"
                     },
-                    start_line: r.target_line,
-                    start_col: r.target_col,
-                    end_line: r.target_line,
-                    end_col: r.target_col + (target_name.len() as u32),
+                    start_line: r.target_line(),
+                    start_col: r.target_col(),
+                    end_line: r.target_line(),
+                    end_col: r.target_col() + (target_name.len() as u32),
                 });
             }
         }
 
         // 2. Check if cursor is directly on a definition span
         for def in self.definitions() {
-            if def.span.file_id == file_id && def.span.contains(file_id, line, col) {
+            let def_span = def.span();
+            if def_span.file_id() == file_id && def_span.contains(file_id, line, col) {
                 return Some(ResolvedDefinition {
-                    name: self.get_str(def.name_offset),
-                    path: self.get_str(def.path_offset),
+                    name: self.get_str(def.name_offset()),
+                    path: self.get_str(def.path_offset()),
                     kind: DefKind::from(def.kind),
-                    signature: if def.sig_offset != 0 {
-                        Some(self.get_str(def.sig_offset))
+                    signature: if def.sig_offset() != 0 {
+                        Some(self.get_str(def.sig_offset()))
                     } else {
                         None
                     },
-                    file: self.get_file(def.span.file_id),
-                    start_line: def.span.start_line,
-                    start_col: def.span.start_col,
-                    end_line: def.span.end_line,
-                    end_col: def.span.end_col,
+                    file: self.get_file(def_span.file_id()),
+                    start_line: def_span.start_line(),
+                    start_col: def_span.start_col(),
+                    end_line: def_span.end_line(),
+                    end_col: def_span.end_col(),
                 });
             }
         }
@@ -341,14 +345,14 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let refs = self.references();
         let mut results = Vec::new();
 
-        if let Ok(idx) = ref_hashes.binary_search_by_key(&hash, |e| e.hash) {
+        if let Ok(idx) = ref_hashes.binary_search_by_key(&hash, |e| e.hash()) {
             let mut i = idx;
-            while i > 0 && ref_hashes[i - 1].hash == hash {
+            while i > 0 && ref_hashes[i - 1].hash() == hash {
                 i -= 1;
             }
-            while i < ref_hashes.len() && ref_hashes[i].hash == hash {
-                let r = &refs[ref_hashes[i].index as usize];
-                if self.get_str(r.target_path_offset) == target_path {
+            while i < ref_hashes.len() && ref_hashes[i].hash() == hash {
+                let r = &refs[ref_hashes[i].index() as usize];
+                if self.get_str(r.target_path_offset()) == target_path {
                     results.push(r);
                 }
                 i += 1;
@@ -364,8 +368,9 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let mut best: Option<(&TypeEntry, u64)> = None;
 
         for entry in self.types() {
-            if entry.span.file_id == file_id && entry.span.contains(file_id, line, col) {
-                let size = entry.span.approximate_size();
+            let span = entry.span();
+            if span.file_id() == file_id && span.contains(file_id, line, col) {
+                let size = span.approximate_size();
                 match best {
                     None => best = Some((entry, size)),
                     Some((_, best_size)) if size < best_size => best = Some((entry, size)),
@@ -374,7 +379,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             }
         }
 
-        best.map(|(e, _)| self.get_str(e.type_offset))
+        best.map(|(e, _)| self.get_str(e.type_offset()))
     }
 
     /// Fast symbol search across definitions matching a query string.
@@ -382,8 +387,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let mut matches = Vec::new();
         let q = query.to_lowercase();
         for def in self.definitions() {
-            let name = self.get_str(def.name_offset);
-            let path = self.get_str(def.path_offset);
+            let name = self.get_str(def.name_offset());
+            let path = self.get_str(def.path_offset());
             if name.to_lowercase().contains(&q) || path.to_lowercase().contains(&q) {
                 matches.push(def);
             }

@@ -82,8 +82,8 @@ fn test_cli_fixture_generation_and_query() {
 
     // Def query by symbol
     let def = reader.find_definition_by_path("sample_crate::processor::process_data").unwrap();
-    assert_eq!(reader.get_str(def.name_offset), "process_data");
-    assert_eq!(reader.get_str(def.sig_offset), "fn(&[u8]) -> Result<usize, String>");
+    assert_eq!(reader.get_str(def.name_offset()), "process_data");
+    assert_eq!(reader.get_str(def.sig_offset()), "fn(&[u8]) -> Result<usize, String>");
 
     // Def query at cursor position
     let target = reader.find_definition_at("src/main.rs", 42, 12).unwrap();
@@ -94,8 +94,8 @@ fn test_cli_fixture_generation_and_query() {
     // Refs query
     let refs = reader.find_references("sample_crate::processor::process_data");
     assert_eq!(refs.len(), 1);
-    assert_eq!(reader.get_file(refs[0].span.file_id), "src/main.rs");
-    assert_eq!(refs[0].span.start_line, 42);
+    assert_eq!(reader.get_file(refs[0].span().file_id()), "src/main.rs");
+    assert_eq!(refs[0].span().start_line(), 42);
 
     // Type query
     let ty = reader.type_at("src/main.rs", 42, 15).unwrap();

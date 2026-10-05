@@ -150,11 +150,12 @@ fn main() {
 
                 match def {
                     Some(d) => {
-                        let name = reader.get_str(d.name_offset);
-                        let path = reader.get_str(d.path_offset);
-                        let file = reader.get_file(d.span.file_id);
-                        let sig = if d.sig_offset != 0 {
-                            Some(reader.get_str(d.sig_offset))
+                        let name = reader.get_str(d.name_offset());
+                        let path = reader.get_str(d.path_offset());
+                        let span = d.span();
+                        let file = reader.get_file(span.file_id());
+                        let sig = if d.sig_offset() != 0 {
+                            Some(reader.get_str(d.sig_offset()))
                         } else {
                             None
                         };
@@ -164,8 +165,8 @@ fn main() {
                             "Definition:".green().bold(),
                             name.bold(),
                             file,
-                            d.span.start_line,
-                            d.span.start_col,
+                            span.start_line(),
+                            span.start_col(),
                             elapsed.as_micros()
                         );
                         println!("  Full Path: {}", path.cyan());
@@ -202,15 +203,16 @@ fn main() {
             );
 
             for (i, r) in refs.iter().enumerate() {
-                let file = reader.get_file(r.span.file_id);
+                let span = r.span();
+                let file = reader.get_file(span.file_id());
                 println!(
                     "  [{}] {}:{}:{}-{}:{} (kind: {:?})",
                     i + 1,
                     file,
-                    r.span.start_line,
-                    r.span.start_col,
-                    r.span.end_line,
-                    r.span.end_col,
+                    span.start_line(),
+                    span.start_col(),
+                    span.end_line(),
+                    span.end_col(),
                     ridx_format::DefKind::from(r.kind)
                 );
             }
@@ -272,15 +274,16 @@ fn main() {
             );
 
             for def in matches.iter().take(50) {
-                let path = reader.get_str(def.path_offset);
-                let file = reader.get_file(def.span.file_id);
+                let path = reader.get_str(def.path_offset());
+                let span = def.span();
+                let file = reader.get_file(span.file_id());
                 println!(
                     "  {} ({:?}) - {}:{}:{}",
                     path.cyan(),
                     def.kind,
                     file,
-                    def.span.start_line,
-                    def.span.start_col
+                    span.start_line(),
+                    span.start_col()
                 );
             }
         }

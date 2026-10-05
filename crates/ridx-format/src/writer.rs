@@ -312,48 +312,54 @@ impl IndexWriter {
             _pad5: 0,
         };
 
-        // Write Header
+        // Write Header in explicit little-endian format
         writer.seek(io::SeekFrom::Start(0))?;
-        writer.write_all(as_byte_slice(&header))?;
+        let header_le = header.to_le();
+        writer.write_all(as_byte_slice(&header_le))?;
 
-        // Write String Pool
+        // Write String Pool (raw bytes, endian-agnostic)
         writer.seek(io::SeekFrom::Start(string_pool_offset))?;
         writer.write_all(&self.string_pool)?;
 
-        // Write File Table
+        // Write File Table (array of u32 in little-endian format)
         writer.seek(io::SeekFrom::Start(files_offset))?;
         for &offset in &self.file_offsets {
             writer.write_all(&offset.to_le_bytes())?;
         }
 
-        // Write Definitions Table
+        // Write Definitions Table (in little-endian format)
         writer.seek(io::SeekFrom::Start(defs_offset))?;
         for entry in &def_entries {
-            writer.write_all(as_byte_slice(entry))?;
+            let entry_le = entry.to_le();
+            writer.write_all(as_byte_slice(&entry_le))?;
         }
 
-        // Write Definitions Hash Index
+        // Write Definitions Hash Index (in little-endian format)
         writer.seek(io::SeekFrom::Start(defs_by_hash_offset))?;
         for entry in &def_hashes {
-            writer.write_all(as_byte_slice(entry))?;
+            let entry_le = entry.to_le();
+            writer.write_all(as_byte_slice(&entry_le))?;
         }
 
-        // Write References Table
+        // Write References Table (in little-endian format)
         writer.seek(io::SeekFrom::Start(refs_offset))?;
         for entry in &ref_entries {
-            writer.write_all(as_byte_slice(entry))?;
+            let entry_le = entry.to_le();
+            writer.write_all(as_byte_slice(&entry_le))?;
         }
 
-        // Write References Target Hash Index
+        // Write References Target Hash Index (in little-endian format)
         writer.seek(io::SeekFrom::Start(refs_by_target_offset))?;
         for entry in &ref_hashes {
-            writer.write_all(as_byte_slice(entry))?;
+            let entry_le = entry.to_le();
+            writer.write_all(as_byte_slice(&entry_le))?;
         }
 
-        // Write Types Table
+        // Write Types Table (in little-endian format)
         writer.seek(io::SeekFrom::Start(types_offset))?;
         for entry in &type_entries {
-            writer.write_all(as_byte_slice(entry))?;
+            let entry_le = entry.to_le();
+            writer.write_all(as_byte_slice(&entry_le))?;
         }
 
         writer.flush()?;

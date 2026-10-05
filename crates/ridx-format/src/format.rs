@@ -71,6 +71,68 @@ pub struct Header {
     pub _pad5: u32,
 }
 
+impl Header {
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            magic: self.magic,
+            version: self.version.to_le(),
+            crate_name_offset: self.crate_name_offset.to_le(),
+            crate_version_offset: self.crate_version_offset.to_le(),
+            string_pool_offset: self.string_pool_offset.to_le(),
+            string_pool_len: self.string_pool_len.to_le(),
+            files_offset: self.files_offset.to_le(),
+            files_count: self.files_count.to_le(),
+            _pad0: 0,
+            defs_offset: self.defs_offset.to_le(),
+            defs_count: self.defs_count.to_le(),
+            _pad1: 0,
+            defs_by_hash_offset: self.defs_by_hash_offset.to_le(),
+            defs_by_hash_count: self.defs_by_hash_count.to_le(),
+            _pad2: 0,
+            refs_offset: self.refs_offset.to_le(),
+            refs_count: self.refs_count.to_le(),
+            _pad3: 0,
+            refs_by_target_offset: self.refs_by_target_offset.to_le(),
+            refs_by_target_count: self.refs_by_target_count.to_le(),
+            _pad4: 0,
+            types_offset: self.types_offset.to_le(),
+            types_count: self.types_count.to_le(),
+            _pad5: 0,
+        }
+    }
+
+    #[inline]
+    pub fn from_le(self) -> Self {
+        Self {
+            magic: self.magic,
+            version: u32::from_le(self.version),
+            crate_name_offset: u32::from_le(self.crate_name_offset),
+            crate_version_offset: u32::from_le(self.crate_version_offset),
+            string_pool_offset: u64::from_le(self.string_pool_offset),
+            string_pool_len: u64::from_le(self.string_pool_len),
+            files_offset: u64::from_le(self.files_offset),
+            files_count: u32::from_le(self.files_count),
+            _pad0: 0,
+            defs_offset: u64::from_le(self.defs_offset),
+            defs_count: u32::from_le(self.defs_count),
+            _pad1: 0,
+            defs_by_hash_offset: u64::from_le(self.defs_by_hash_offset),
+            defs_by_hash_count: u32::from_le(self.defs_by_hash_count),
+            _pad2: 0,
+            refs_offset: u64::from_le(self.refs_offset),
+            refs_count: u32::from_le(self.refs_count),
+            _pad3: 0,
+            refs_by_target_offset: u64::from_le(self.refs_by_target_offset),
+            refs_by_target_count: u32::from_le(self.refs_by_target_count),
+            _pad4: 0,
+            types_offset: u64::from_le(self.types_offset),
+            types_count: u32::from_le(self.types_count),
+            _pad5: 0,
+        }
+    }
+}
+
 /// Source location span: file ID and line:column ranges (1-based, inclusive start, exclusive end).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -94,19 +156,48 @@ impl Span {
         }
     }
 
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            file_id: self.file_id.to_le(),
+            start_line: self.start_line.to_le(),
+            start_col: self.start_col.to_le(),
+            end_line: self.end_line.to_le(),
+            end_col: self.end_col.to_le(),
+        }
+    }
+
+    #[inline]
+    pub fn from_le(self) -> Self {
+        Self {
+            file_id: u32::from_le(self.file_id),
+            start_line: u32::from_le(self.start_line),
+            start_col: u32::from_le(self.start_col),
+            end_line: u32::from_le(self.end_line),
+            end_col: u32::from_le(self.end_col),
+        }
+    }
+
+    #[inline] pub fn file_id(&self) -> u32 { u32::from_le(self.file_id) }
+    #[inline] pub fn start_line(&self) -> u32 { u32::from_le(self.start_line) }
+    #[inline] pub fn start_col(&self) -> u32 { u32::from_le(self.start_col) }
+    #[inline] pub fn end_line(&self) -> u32 { u32::from_le(self.end_line) }
+    #[inline] pub fn end_col(&self) -> u32 { u32::from_le(self.end_col) }
+
     /// Returns true if this span contains the given (line, col) position in the specified file.
     #[inline]
     pub fn contains(&self, file_id: u32, line: u32, col: u32) -> bool {
-        if self.file_id != file_id {
+        let s = self.from_le();
+        if s.file_id != file_id {
             return false;
         }
-        if line < self.start_line || line > self.end_line {
+        if line < s.start_line || line > s.end_line {
             return false;
         }
-        if line == self.start_line && col < self.start_col {
+        if line == s.start_line && col < s.start_col {
             return false;
         }
-        if line == self.end_line && col >= self.end_col {
+        if line == s.end_line && col >= s.end_col {
             return false;
         }
         true
@@ -115,11 +206,12 @@ impl Span {
     /// Approximate character length metric used for picking the innermost span when nested.
     #[inline]
     pub fn approximate_size(&self) -> u64 {
-        let lines = (self.end_line.saturating_sub(self.start_line)) as u64;
+        let s = self.from_le();
+        let lines = (s.end_line.saturating_sub(s.start_line)) as u64;
         if lines == 0 {
-            (self.end_col.saturating_sub(self.start_col)) as u64
+            (s.end_col.saturating_sub(s.start_col)) as u64
         } else {
-            lines * 80 + (self.end_col as u64)
+            lines * 80 + (s.end_col as u64)
         }
     }
 }
@@ -225,6 +317,42 @@ pub struct DefEntry {
     pub span: Span,
 }
 
+impl DefEntry {
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            def_id: self.def_id.to_le(),
+            kind: self.kind,
+            visibility: self.visibility,
+            _pad: self._pad,
+            name_offset: self.name_offset.to_le(),
+            path_offset: self.path_offset.to_le(),
+            sig_offset: self.sig_offset.to_le(),
+            span: self.span.to_le(),
+        }
+    }
+
+    #[inline]
+    pub fn from_le(self) -> Self {
+        Self {
+            def_id: u32::from_le(self.def_id),
+            kind: self.kind,
+            visibility: self.visibility,
+            _pad: self._pad,
+            name_offset: u32::from_le(self.name_offset),
+            path_offset: u32::from_le(self.path_offset),
+            sig_offset: u32::from_le(self.sig_offset),
+            span: self.span.from_le(),
+        }
+    }
+
+    #[inline] pub fn def_id(&self) -> u32 { u32::from_le(self.def_id) }
+    #[inline] pub fn name_offset(&self) -> u32 { u32::from_le(self.name_offset) }
+    #[inline] pub fn path_offset(&self) -> u32 { u32::from_le(self.path_offset) }
+    #[inline] pub fn sig_offset(&self) -> u32 { u32::from_le(self.sig_offset) }
+    #[inline] pub fn span(&self) -> Span { self.span.from_le() }
+}
+
 /// A reference/usage record pointing to a target definition or symbol.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -248,6 +376,45 @@ pub struct RefEntry {
     pub _pad: [u8; 2],
 }
 
+impl RefEntry {
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            span: self.span.to_le(),
+            target_def_id: self.target_def_id.to_le(),
+            target_path_offset: self.target_path_offset.to_le(),
+            target_file_offset: self.target_file_offset.to_le(),
+            target_line: self.target_line.to_le(),
+            target_col: self.target_col.to_le(),
+            kind: self.kind,
+            is_write: self.is_write,
+            _pad: self._pad,
+        }
+    }
+
+    #[inline]
+    pub fn from_le(self) -> Self {
+        Self {
+            span: self.span.from_le(),
+            target_def_id: u32::from_le(self.target_def_id),
+            target_path_offset: u32::from_le(self.target_path_offset),
+            target_file_offset: u32::from_le(self.target_file_offset),
+            target_line: u32::from_le(self.target_line),
+            target_col: u32::from_le(self.target_col),
+            kind: self.kind,
+            is_write: self.is_write,
+            _pad: self._pad,
+        }
+    }
+
+    #[inline] pub fn span(&self) -> Span { self.span.from_le() }
+    #[inline] pub fn target_def_id(&self) -> u32 { u32::from_le(self.target_def_id) }
+    #[inline] pub fn target_path_offset(&self) -> u32 { u32::from_le(self.target_path_offset) }
+    #[inline] pub fn target_file_offset(&self) -> u32 { u32::from_le(self.target_file_offset) }
+    #[inline] pub fn target_line(&self) -> u32 { u32::from_le(self.target_line) }
+    #[inline] pub fn target_col(&self) -> u32 { u32::from_le(self.target_col) }
+}
+
 /// Inferred expression type record.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -259,6 +426,29 @@ pub struct TypeEntry {
     pub _pad: [u8; 4],
 }
 
+impl TypeEntry {
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            span: self.span.to_le(),
+            type_offset: self.type_offset.to_le(),
+            _pad: self._pad,
+        }
+    }
+
+    #[inline]
+    pub fn from_le(self) -> Self {
+        Self {
+            span: self.span.from_le(),
+            type_offset: u32::from_le(self.type_offset),
+            _pad: self._pad,
+        }
+    }
+
+    #[inline] pub fn span(&self) -> Span { self.span.from_le() }
+    #[inline] pub fn type_offset(&self) -> u32 { u32::from_le(self.type_offset) }
+}
+
 /// Hash table entry for $O(\log N)$ or binary search lookup by string hash.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -268,6 +458,29 @@ pub struct HashIndexEntry {
     /// Index into the corresponding records table (defs or refs)
     pub index: u32,
     pub _pad: [u8; 4],
+}
+
+impl HashIndexEntry {
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            hash: self.hash.to_le(),
+            index: self.index.to_le(),
+            _pad: self._pad,
+        }
+    }
+
+    #[inline]
+    pub fn from_le(self) -> Self {
+        Self {
+            hash: u64::from_le(self.hash),
+            index: u32::from_le(self.index),
+            _pad: self._pad,
+        }
+    }
+
+    #[inline] pub fn hash(&self) -> u64 { u64::from_le(self.hash) }
+    #[inline] pub fn index(&self) -> u32 { u32::from_le(self.index) }
 }
 
 /// FNV-1a 64-bit string hash used across the RIDX format.

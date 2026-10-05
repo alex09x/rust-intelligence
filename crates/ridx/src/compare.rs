@@ -24,10 +24,11 @@ pub fn compare_definition(reader: &IndexReader<Mmap>, symbol: &str) -> Compariso
 
     let (ridx_found, ridx_span) = match ridx_def {
         Some(def) => {
-            let file = reader.get_file(def.span.file_id);
+            let span = def.span();
+            let file = reader.get_file(span.file_id());
             (
                 true,
-                format!("{}:{}:{}", file, def.span.start_line, def.span.start_col),
+                format!("{}:{}:{}", file, span.start_line(), span.start_col()),
             )
         }
         None => (false, "Not found".to_string()),
