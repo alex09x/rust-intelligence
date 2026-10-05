@@ -20,6 +20,7 @@ pub struct ResolvedDefinition<'a> {
     pub start_col: u32,
     pub end_line: u32,
     pub end_col: u32,
+    pub is_macro_expansion: bool,
 }
 
 /// Zero-copy reader over a memory-mapped or buffered `.ridx` index.
@@ -297,6 +298,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                         start_col: def_span.start_col(),
                         end_line: def_span.end_line(),
                         end_col: def_span.end_col(),
+                        is_macro_expansion: def.is_macro_expansion(),
                     });
                 }
             }
@@ -319,6 +321,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 start_col: r.target_col(),
                 end_line: r.target_line(),
                 end_col: r.target_col() + (target_name.len() as u32),
+                is_macro_expansion: r.is_macro_expansion(),
             });
         }
 
@@ -352,6 +355,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 start_col: def_span.start_col(),
                 end_line: def_span.end_line(),
                 end_col: def_span.end_col(),
+                is_macro_expansion: def.is_macro_expansion(),
             });
         }
 

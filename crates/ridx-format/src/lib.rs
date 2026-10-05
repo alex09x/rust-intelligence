@@ -29,6 +29,7 @@ mod tests {
             def_id: 100,
             kind: DefKind::Fn,
             visibility: 0,
+            is_macro_expansion: false,
             name: "calculate".to_string(),
             path: "test_crate::math::calculate".to_string(),
             signature: Some("fn(i32, i32) -> i32".to_string()),
@@ -43,6 +44,7 @@ mod tests {
             def_id: 101,
             kind: DefKind::Struct,
             visibility: 0,
+            is_macro_expansion: false,
             name: "Calculator".to_string(),
             path: "test_crate::math::Calculator".to_string(),
             signature: None,
@@ -67,6 +69,7 @@ mod tests {
             target_col: 1,
             kind: DefKind::Fn,
             is_write: false,
+            is_macro_expansion: false,
         });
 
         // Add expression types (outer and inner)

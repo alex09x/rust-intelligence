@@ -18,6 +18,7 @@ fn test_cli_fixture_generation_and_query() {
         def_id: 1,
         kind: DefKind::Fn,
         visibility: 0,
+        is_macro_expansion: false,
         name: "process_data".to_string(),
         path: "sample_crate::processor::process_data".to_string(),
         signature: Some("fn(&[u8]) -> Result<usize, String>".to_string()),
@@ -33,6 +34,7 @@ fn test_cli_fixture_generation_and_query() {
         def_id: 2,
         kind: DefKind::Struct,
         visibility: 0,
+        is_macro_expansion: false,
         name: "DataProcessor".to_string(),
         path: "sample_crate::processor::DataProcessor".to_string(),
         signature: None,
@@ -57,6 +59,7 @@ fn test_cli_fixture_generation_and_query() {
         target_col: 1,
         kind: DefKind::Fn,
         is_write: false,
+        is_macro_expansion: false,
     });
 
     // Add expression type for the call

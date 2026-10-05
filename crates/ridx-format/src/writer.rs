@@ -11,6 +11,7 @@ pub struct RawDefinition {
     pub def_id: u32,
     pub kind: DefKind,
     pub visibility: u8,
+    pub is_macro_expansion: bool,
     pub name: String,
     pub path: String,
     pub signature: Option<String>,
@@ -36,6 +37,7 @@ pub struct RawReference {
     pub target_col: u32,
     pub kind: DefKind,
     pub is_write: bool,
+    pub is_macro_expansion: bool,
 }
 
 /// Raw expression type to be added to the index builder.
@@ -166,7 +168,8 @@ impl IndexWriter {
                 def_id: def.def_id,
                 kind: def.kind as u8,
                 visibility: def.visibility,
-                _pad: [0; 2],
+                flags: if def.is_macro_expansion { FLAG_MACRO_EXPANSION } else { 0 },
+                _pad: 0,
                 name_offset,
                 path_offset,
                 sig_offset,
@@ -205,7 +208,8 @@ impl IndexWriter {
                 target_col: r.target_col,
                 kind: r.kind as u8,
                 is_write: if r.is_write { 1 } else { 0 },
-                _pad: [0; 2],
+                flags: if r.is_macro_expansion { FLAG_MACRO_EXPANSION } else { 0 },
+                _pad: 0,
             };
             ref_entries.push(entry);
         }

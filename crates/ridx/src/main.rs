@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use colored::*;
 use ridx_format::WorkspaceIndex;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Instant;
 
@@ -206,8 +206,27 @@ fn run_indexing(
     package: Option<String>,
     release: bool,
 ) {
+    let (work_dir, manifest_path) = if path.is_file() {
+        if path.file_name().and_then(|s| s.to_str()) != Some("Cargo.toml") {
+            eprintln!("{}: target path {:?} is a file but not a Cargo.toml manifest.", "Error".red().bold(), path);
+            std::process::exit(1);
+        }
+        let dir = path.parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
+        (dir, path)
+    } else if path.is_dir() {
+        let manifest = path.join("Cargo.toml");
+        if !manifest.is_file() {
+            eprintln!("{}: no Cargo.toml found in directory {:?}.", "Error".red().bold(), path);
+            std::process::exit(1);
+        }
+        (path, manifest)
+    } else {
+        eprintln!("{}: path {:?} does not exist.", "Error".red().bold(), path);
+        std::process::exit(1);
+    };
+
     let start = Instant::now();
-    let out_dir = out_dir_opt.unwrap_or_else(|| path.join("target/ridx"));
+    let out_dir = out_dir_opt.unwrap_or_else(|| work_dir.join("target/ridx"));
     if let Err(e) = fs::create_dir_all(&out_dir) {
         eprintln!("{}: failed to create output directory {:?}: {e}", "Error".red().bold(), out_dir);
         std::process::exit(1);
@@ -223,18 +242,18 @@ fn run_indexing(
     };
 
     println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
-    println!("  {} {}", "RIDX Workspace Indexer:".bold(), path.display().to_string().cyan());
+    println!("  {} {}", "RIDX Workspace Indexer:".bold(), work_dir.display().to_string().cyan());
     println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    println!("  Work Directory : {}", work_dir.display().to_string().green());
+    println!("  Manifest Path  : {}", manifest_path.display().to_string().green());
     println!("  Driver Binary  : {}", driver_bin.display().to_string().green());
     println!("  Index Output   : {}", out_dir.display().to_string().green());
     println!("  Action         : cargo check with RUSTC_WORKSPACE_WRAPPER...");
 
     let mut cmd = Command::new("cargo");
+    cmd.current_dir(&work_dir);
     cmd.arg("check");
-    let manifest = path.join("Cargo.toml");
-    if manifest.exists() {
-        cmd.arg("--manifest-path").arg(&manifest);
-    }
+    cmd.arg("--manifest-path").arg(&manifest_path);
     if let Some(ref p) = package {
         cmd.arg("-p").arg(p);
     } else {

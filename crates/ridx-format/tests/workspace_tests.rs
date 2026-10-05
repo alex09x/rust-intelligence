@@ -16,6 +16,7 @@ fn test_multi_crate_workspace_index() {
         def_id: 1,
         kind: DefKind::Struct,
         visibility: 0,
+        is_macro_expansion: false,
         name: "TypeA".to_string(),
         path: "crate_a::types::TypeA".to_string(),
         signature: None,
@@ -29,6 +30,7 @@ fn test_multi_crate_workspace_index() {
         def_id: 2,
         kind: DefKind::Fn,
         visibility: 0,
+        is_macro_expansion: false,
         name: "func_a".to_string(),
         path: "crate_a::func_a".to_string(),
         signature: Some("fn() -> TypeA".to_string()),
@@ -49,6 +51,7 @@ fn test_multi_crate_workspace_index() {
         def_id: 10,
         kind: DefKind::Fn,
         visibility: 0,
+        is_macro_expansion: false,
         name: "use_a".to_string(),
         path: "crate_b::use_a".to_string(),
         signature: Some("fn(TypeA)".to_string()),
@@ -72,6 +75,7 @@ fn test_multi_crate_workspace_index() {
         target_col: 1,
         kind: DefKind::Struct,
         is_write: false,
+        is_macro_expansion: false,
     });
     // Type at position in crate_b
     writer_b.add_type(RawType {
@@ -104,6 +108,7 @@ fn test_multi_crate_workspace_index() {
     assert_eq!(def_a.name, "TypeA");
     assert_eq!(def_a.file, "crates/crate_a/src/types.rs");
     assert_eq!(def_a.start_line, 10);
+    assert_eq!(def_a.end_line, 15);
 
     let def_b = ws
         .find_definition_by_path("crate_b::use_a")
@@ -119,6 +124,8 @@ fn test_multi_crate_workspace_index() {
     assert_eq!(cross_def.path, "crate_a::types::TypeA");
     assert_eq!(cross_def.file, "crates/crate_a/src/types.rs");
     assert_eq!(cross_def.start_line, 10);
+    assert_eq!(cross_def.end_line, 15);
+    assert_eq!(cross_def.end_col, 2);
 
     // 6. Test find_references across workspace
     let refs = ws.find_references("crate_a::types::TypeA");

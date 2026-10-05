@@ -297,6 +297,9 @@ impl From<u8> for DefKind {
 }
 
 /// A definition record in the index.
+pub const FLAG_MACRO_EXPANSION: u8 = 1 << 0;
+
+/// A definition record in the index.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct DefEntry {
@@ -306,7 +309,9 @@ pub struct DefEntry {
     pub kind: u8,
     /// Visibility (0 = Public, 1 = Crate, 2 = Restricted, 3 = Private)
     pub visibility: u8,
-    pub _pad: [u8; 2],
+    /// Flags (bit 0: is_macro_expansion)
+    pub flags: u8,
+    pub _pad: u8,
     /// Short identifier name offset in string pool (e.g. "enter")
     pub name_offset: u32,
     /// Canonical full path offset in string pool (e.g. "stdx::panic_context::enter")
@@ -324,6 +329,7 @@ impl DefEntry {
             def_id: self.def_id.to_le(),
             kind: self.kind,
             visibility: self.visibility,
+            flags: self.flags,
             _pad: self._pad,
             name_offset: self.name_offset.to_le(),
             path_offset: self.path_offset.to_le(),
@@ -338,6 +344,7 @@ impl DefEntry {
             def_id: u32::from_le(self.def_id),
             kind: self.kind,
             visibility: self.visibility,
+            flags: self.flags,
             _pad: self._pad,
             name_offset: u32::from_le(self.name_offset),
             path_offset: u32::from_le(self.path_offset),
@@ -351,6 +358,7 @@ impl DefEntry {
     #[inline] pub fn path_offset(&self) -> u32 { u32::from_le(self.path_offset) }
     #[inline] pub fn sig_offset(&self) -> u32 { u32::from_le(self.sig_offset) }
     #[inline] pub fn span(&self) -> Span { self.span.from_le() }
+    #[inline] pub fn is_macro_expansion(&self) -> bool { (self.flags & FLAG_MACRO_EXPANSION) != 0 }
 }
 
 /// A reference/usage record pointing to a target definition or symbol.
@@ -373,7 +381,9 @@ pub struct RefEntry {
     pub kind: u8,
     /// Usage flags: 1 = write/mutable, 0 = read/call
     pub is_write: u8,
-    pub _pad: [u8; 2],
+    /// Flags (bit 0: is_macro_expansion)
+    pub flags: u8,
+    pub _pad: u8,
 }
 
 impl RefEntry {
@@ -388,6 +398,7 @@ impl RefEntry {
             target_col: self.target_col.to_le(),
             kind: self.kind,
             is_write: self.is_write,
+            flags: self.flags,
             _pad: self._pad,
         }
     }
@@ -403,6 +414,7 @@ impl RefEntry {
             target_col: u32::from_le(self.target_col),
             kind: self.kind,
             is_write: self.is_write,
+            flags: self.flags,
             _pad: self._pad,
         }
     }
@@ -413,6 +425,7 @@ impl RefEntry {
     #[inline] pub fn target_file_offset(&self) -> u32 { u32::from_le(self.target_file_offset) }
     #[inline] pub fn target_line(&self) -> u32 { u32::from_le(self.target_line) }
     #[inline] pub fn target_col(&self) -> u32 { u32::from_le(self.target_col) }
+    #[inline] pub fn is_macro_expansion(&self) -> bool { (self.flags & FLAG_MACRO_EXPANSION) != 0 }
 }
 
 /// Inferred expression type record.

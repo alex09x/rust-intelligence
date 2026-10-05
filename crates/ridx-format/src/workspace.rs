@@ -19,6 +19,7 @@ pub struct WorkspaceSymbol<'a> {
     pub file: &'a str,
     pub span: Span,
     pub signature: Option<&'a str>,
+    pub is_macro_expansion: bool,
 }
 
 /// A reference match within a workspace, including its crate provenance.
@@ -29,6 +30,7 @@ pub struct WorkspaceReference<'a> {
     pub span: Span,
     pub kind: DefKind,
     pub is_write: bool,
+    pub is_macro_expansion: bool,
 }
 
 /// Result of finding references at a cursor location.
@@ -253,6 +255,7 @@ impl WorkspaceIndex {
                         start_col: span.start_col(),
                         end_line: span.end_line(),
                         end_col: span.end_col(),
+                        is_macro_expansion: def.is_macro_expansion(),
                     });
                 }
             }
@@ -276,6 +279,7 @@ impl WorkspaceIndex {
                     start_col: span.start_col(),
                     end_line: span.end_line(),
                     end_col: span.end_col(),
+                    is_macro_expansion: def.is_macro_expansion(),
                 });
             }
         }
@@ -292,11 +296,10 @@ impl WorkspaceIndex {
     ) -> Option<ResolvedDefinition<'a>> {
         for reader in &self.readers {
             if let Some(res) = reader.find_definition_at(file, line, col) {
-                // If it resolves to an external file or path, try resolving in workspace crates
-                if res.file == "external" || res.file.is_empty() {
-                    if let Some(cross_def) = self.find_definition_by_path(res.path) {
-                        return Some(cross_def);
-                    }
+                // If it resolves to a cross-crate target, attempt resolution in
+                // workspace peer crates to retrieve the true indexed definition and signature
+                if let Some(cross_def) = self.find_definition_by_path(res.path) {
+                    return Some(cross_def);
                 }
                 return Some(res);
             }
@@ -322,6 +325,7 @@ impl WorkspaceIndex {
                     span,
                     kind: DefKind::from(r.kind),
                     is_write: r.is_write != 0,
+                    is_macro_expansion: r.is_macro_expansion(),
                 });
             }
         }
@@ -366,6 +370,7 @@ impl WorkspaceIndex {
                     file,
                     span,
                     signature,
+                    is_macro_expansion: def.is_macro_expansion(),
                 });
             }
         }

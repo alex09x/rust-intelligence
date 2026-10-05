@@ -23,6 +23,7 @@ use rustc_span::Span;
 
 struct IndexCallbacks {
     out_dir: PathBuf,
+    disambiguator: Option<String>,
 }
 
 impl Callbacks for IndexCallbacks {
@@ -31,7 +32,7 @@ impl Callbacks for IndexCallbacks {
         _compiler: &rustc_interface::interface::Compiler,
         tcx: TyCtxt<'tcx>,
     ) -> Compilation {
-        build_crate_index(tcx, &self.out_dir);
+        build_crate_index(tcx, &self.out_dir, self.disambiguator.as_deref());
         Compilation::Continue
     }
 }
@@ -73,12 +74,13 @@ fn map_def_kind(kind: hir::def::DefKind) -> RDefKind {
     }
 }
 
-fn resolve_span_coords(tcx: TyCtxt<'_>, span: Span) -> Option<(String, u32, u32, u32, u32)> {
+fn resolve_span_coords(tcx: TyCtxt<'_>, span: Span) -> Option<(String, u32, u32, u32, u32, bool)> {
     if span.is_dummy() {
         return None;
     }
+    let is_macro = span.from_expansion();
     // Remap macro expansions to their outer call-site in source code
-    let actual_span = if span.from_expansion() {
+    let actual_span = if is_macro {
         span.source_callsite()
     } else {
         span
@@ -98,6 +100,7 @@ fn resolve_span_coords(tcx: TyCtxt<'_>, span: Span) -> Option<(String, u32, u32,
         (lo.col.0 + 1) as u32,
         hi.line as u32,
         (hi.col.0 + 1) as u32,
+        is_macro,
     ))
 }
 
@@ -109,7 +112,7 @@ struct HirVisitor<'tcx> {
 
 impl<'tcx> HirVisitor<'tcx> {
     fn add_ref_from_res(&mut self, span: Span, res: Res) {
-        let Some((file, s_line, s_col, e_line, e_col)) = resolve_span_coords(self.tcx, span) else {
+        let Some((file, s_line, s_col, e_line, e_col, is_macro)) = resolve_span_coords(self.tcx, span) else {
             return;
         };
 
@@ -118,7 +121,7 @@ impl<'tcx> HirVisitor<'tcx> {
                 let target_path = self.tcx.def_path_str(def_id);
                 let target_coords = resolve_span_coords(self.tcx, self.tcx.def_span(def_id));
                 let (target_file, target_line, target_col) = match target_coords {
-                    Some((f, l, c, _, _)) => (Some(f), l, c),
+                    Some((f, l, c, _, _, _)) => (Some(f), l, c),
                     None => (None, 0, 0),
                 };
 
@@ -141,13 +144,14 @@ impl<'tcx> HirVisitor<'tcx> {
                     target_col,
                     kind: map_def_kind(kind),
                     is_write: false,
+                    is_macro_expansion: is_macro,
                 });
             }
             Res::Local(hir_id) => {
                 let name = self.tcx.hir_name(hir_id).to_string();
                 let target_coords = resolve_span_coords(self.tcx, self.tcx.hir_span(hir_id));
                 let (target_file, target_line, target_col) = match target_coords {
-                    Some((f, l, c, _, _)) => (Some(f), l, c),
+                    Some((f, l, c, _, _, _)) => (Some(f), l, c),
                     None => (None, 0, 0),
                 };
 
@@ -164,6 +168,7 @@ impl<'tcx> HirVisitor<'tcx> {
                     target_col,
                     kind: RDefKind::Local,
                     is_write: false,
+                    is_macro_expansion: is_macro,
                 });
             }
             _ => {}
@@ -226,7 +231,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
             }
 
             // Inferred expression type
-            if let Some((file, s_line, s_col, e_line, e_col)) =
+            if let Some((file, s_line, s_col, e_line, e_col, _)) =
                 resolve_span_coords(self.tcx, expr.span)
             {
                 if let Some(ty) = typeck.expr_ty_opt(expr) {
@@ -245,7 +250,37 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
     }
 }
 
-fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path) {
+fn extract_target_disambiguator(args: &[String]) -> Option<String> {
+    for i in 0..args.len() {
+        let arg = &args[i];
+        if let Some(rest) = arg.strip_prefix("-Cextra-filename=") {
+            if !rest.is_empty() {
+                return Some(rest.to_string());
+            }
+        }
+        if arg == "-C" && i + 1 < args.len() {
+            if let Some(rest) = args[i + 1].strip_prefix("extra-filename=") {
+                if !rest.is_empty() {
+                    return Some(rest.to_string());
+                }
+            }
+        }
+    }
+    for i in 0..args.len() {
+        let arg = &args[i];
+        if let Some(rest) = arg.strip_prefix("--crate-type=") {
+            if !rest.is_empty() {
+                return Some(format!("_{rest}"));
+            }
+        }
+        if arg == "--crate-type" && i + 1 < args.len() {
+            return Some(format!("_{}", args[i + 1]));
+        }
+    }
+    None
+}
+
+fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str>) {
     let start = Instant::now();
     let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
     let crate_version =
@@ -258,7 +293,7 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path) {
 
     // Extract all crate item definitions
     for def_id in tcx.hir_crate_items(()).definitions() {
-        let Some((file, s_line, s_col, e_line, e_col)) =
+        let Some((file, s_line, s_col, e_line, e_col, is_macro)) =
             resolve_span_coords(tcx, tcx.def_span(def_id))
         else {
             continue;
@@ -279,6 +314,7 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path) {
             def_id: def_id.local_def_index.as_u32(),
             kind: map_def_kind(kind),
             visibility: 0,
+            is_macro_expansion: is_macro,
             name,
             path,
             signature,
@@ -298,7 +334,12 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path) {
         return;
     }
 
-    let out_file_path = out_dir.join(format!("{crate_name}.ridx"));
+    let suffix = match disambiguator {
+        Some(d) if d.starts_with('-') || d.starts_with('_') => d.to_string(),
+        Some(d) if !d.is_empty() => format!("_{d}"),
+        _ => String::new(),
+    };
+    let out_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx"));
     match File::create(&out_file_path) {
         Ok(f) => {
             let mut writer = BufWriter::new(f);
@@ -356,6 +397,7 @@ fn main() {
     let out_dir = std::env::var("RIDX_OUT_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("target/ridx"));
+    let disambiguator = extract_target_disambiguator(&args);
 
-    rustc_driver::run_compiler(&args, &mut IndexCallbacks { out_dir });
+    rustc_driver::run_compiler(&args, &mut IndexCallbacks { out_dir, disambiguator });
 }
