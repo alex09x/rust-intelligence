@@ -170,8 +170,24 @@ impl WorkspaceIndex {
             })?;
             let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
             if !manifest.active_variant_id.is_empty() {
-                let vdir = search_dir.join(&manifest.variant_dir);
-                if !vdir.is_dir() {
+                let vdir_str = manifest.variant_dir.trim();
+                let vpath = Path::new(vdir_str);
+                if vdir_str.is_empty()
+                    || vpath.is_absolute()
+                    || vpath.components().any(|c| c == std::path::Component::ParentDir)
+                    || vpath == Path::new(".")
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "Active variant manifest {:?} specifies an invalid, empty, or escaping variant_dir {:?}",
+                            manifest_file, manifest.variant_dir
+                        ),
+                    ));
+                }
+
+                let vdir = search_dir.join(vpath);
+                if vdir == search_dir || !vdir.is_dir() {
                     return Err(io::Error::new(
                         io::ErrorKind::NotFound,
                         format!(
@@ -536,12 +552,20 @@ impl WorkspaceIndex {
                 if let Ok(content) = fs::read(mf) {
                     if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
                         let base_dir = mf.parent().unwrap_or_else(|| Path::new("."));
-                        let new_vdir = base_dir.join(&manifest.variant_dir);
                         if Some(&manifest.active_variant_id) != self.active_variant_id.as_ref() {
-                            // Active variant changed! Atomically switch reader set
-                            if new_vdir.is_dir() {
-                                let mut new_files = Vec::new();
-                                collect_ridx_files(&new_vdir, &mut new_files)?;
+                            let vdir_str = manifest.variant_dir.trim();
+                            let vpath = Path::new(vdir_str);
+                            if !manifest.active_variant_id.is_empty()
+                                && !vdir_str.is_empty()
+                                && !vpath.is_absolute()
+                                && !vpath.components().any(|c| c == std::path::Component::ParentDir)
+                                && vpath != Path::new(".")
+                            {
+                                let new_vdir = base_dir.join(vpath);
+                                if new_vdir != base_dir && new_vdir.is_dir() {
+                                    // Active variant changed! Atomically switch reader set
+                                    let mut new_files = Vec::new();
+                                    collect_ridx_files(&new_vdir, &mut new_files)?;
                                 new_files.sort();
 
                                 let mut new_readers = Vec::with_capacity(new_files.len());
@@ -570,6 +594,7 @@ impl WorkspaceIndex {
                     }
                 }
             }
+        }
         }
 
         // 1. Reconcile existing files: remove deleted, reload modified

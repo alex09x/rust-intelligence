@@ -289,3 +289,60 @@ fn test_missing_active_variant_returns_not_found() {
     assert!(res.is_err(), "should fail to open when active variant directory does not exist");
     assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::NotFound);
 }
+
+#[test]
+fn test_active_manifest_with_empty_or_escaping_variant_dir_rejected() {
+    let base_dir = PathBuf::from("target/test_invalid_variant_dir_ws");
+    let _ = fs::remove_dir_all(&base_dir);
+    fs::create_dir_all(&base_dir).unwrap();
+
+    // Put a legacy .ridx in base_dir
+    let mut writer = IndexWriter::new("legacy_crate", "0.0.1");
+    let f = File::create(base_dir.join("legacy.ridx")).unwrap();
+    writer.write_to(&mut BufWriter::new(f)).unwrap();
+
+    // 1. Empty variant_dir
+    let manifest_empty = serde_json::json!({
+        "version": "2.0",
+        "active_variant_id": "var1",
+        "variant_dir": "",
+        "workspace_root": base_dir.display().to_string(),
+        "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+    });
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_empty).unwrap()).unwrap();
+
+    let res = WorkspaceIndex::open(&base_dir);
+    assert!(res.is_err(), "should reject empty variant_dir");
+    assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::InvalidData);
+
+    // 2. Dot variant_dir
+    let manifest_dot = serde_json::json!({
+        "version": "2.0",
+        "active_variant_id": "var1",
+        "variant_dir": ".",
+        "workspace_root": base_dir.display().to_string(),
+        "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+    });
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_dot).unwrap()).unwrap();
+
+    let res = WorkspaceIndex::open(&base_dir);
+    assert!(res.is_err(), "should reject '.' variant_dir");
+    assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::InvalidData);
+
+    // 3. Escaping variant_dir
+    let manifest_escape = serde_json::json!({
+        "version": "2.0",
+        "active_variant_id": "var1",
+        "variant_dir": "../escaping",
+        "workspace_root": base_dir.display().to_string(),
+        "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+    });
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest_escape).unwrap()).unwrap();
+
+    let res = WorkspaceIndex::open(&base_dir);
+    assert!(res.is_err(), "should reject escaping variant_dir");
+    assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::InvalidData);
+}

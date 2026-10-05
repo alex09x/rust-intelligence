@@ -217,6 +217,73 @@ fn find_driver_binary() -> Option<PathBuf> {
 }
 
 
+fn find_cargo_configs(work_dir: &Path) -> Vec<PathBuf> {
+    let mut configs = Vec::new();
+    let mut cur = Some(work_dir);
+    while let Some(dir) = cur {
+        for name in [".cargo/config.toml", ".cargo/config"] {
+            let p = dir.join(name);
+            if p.is_file() && !configs.contains(&p) {
+                configs.push(p);
+            }
+        }
+        cur = dir.parent();
+    }
+    if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
+        let home_dir = Path::new(&cargo_home);
+        for name in ["config.toml", "config"] {
+            let p = home_dir.join(name);
+            if p.is_file() && !configs.contains(&p) {
+                configs.push(p);
+            }
+        }
+    }
+    configs
+}
+
+fn extract_config_target(content: &str) -> Option<String> {
+    let mut in_build = false;
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        if line.starts_with('[') && line.ends_with(']') {
+            in_build = line == "[build]";
+            continue;
+        }
+        if in_build {
+            if let Some((k, v)) = line.split_once('=') {
+                if k.trim() == "target" {
+                    let v = v.trim().trim_matches('"').trim_matches('\'').trim();
+                    if !v.is_empty() {
+                        return Some(v.to_string());
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn collect_all_workspace_manifests(dir: &Path, manifests: &mut Vec<PathBuf>) {
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_file() {
+                if p.file_name().and_then(|s| s.to_str()) == Some("Cargo.toml") {
+                    manifests.push(p);
+                }
+            } else if p.is_dir() {
+                let name = p.file_name().and_then(|s| s.to_str()).unwrap_or("");
+                if name != "target" && name != ".git" && !name.starts_with('.') {
+                    collect_all_workspace_manifests(&p, manifests);
+                }
+            }
+        }
+    }
+}
+
 fn compute_variant_id(
     profile: &str,
     target: Option<&str>,
@@ -230,30 +297,56 @@ fn compute_variant_id(
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     profile.hash(&mut hasher);
 
-    // 1. Effective target: explicit CLI flag, or CARGO_BUILD_TARGET, or "host"
+    let work_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
+
+    // 1. Cargo configuration files (.cargo/config.toml, .cargo/config)
+    let config_files = find_cargo_configs(work_dir);
+    let mut config_target = None;
+    for cfg in &config_files {
+        cfg.display().to_string().hash(&mut hasher);
+        if let Ok(content) = fs::read_to_string(cfg) {
+            content.hash(&mut hasher);
+            if config_target.is_none() {
+                config_target = extract_config_target(&content);
+            }
+        }
+    }
+
+    // 2. Effective target: CLI target -> CARGO_BUILD_TARGET -> .cargo/config target -> "host"
     let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
-    let effective_target = target.or(env_target.as_deref()).unwrap_or("host");
+    let effective_target = target
+        .or(env_target.as_deref())
+        .or(config_target.as_deref())
+        .unwrap_or("host");
     effective_target.hash(&mut hasher);
 
-    // 2. Package filter and feature flags
+    // 3. Package filter and feature flags
     package.unwrap_or("workspace").hash(&mut hasher);
     features.unwrap_or("").hash(&mut hasher);
     no_default_features.hash(&mut hasher);
     all_features.hash(&mut hasher);
 
-    // 3. Manifest path and file contents
-    manifest_path.display().to_string().hash(&mut hasher);
-    if let Ok(manifest_bytes) = fs::read(manifest_path) {
-        manifest_bytes.hash(&mut hasher);
+    // 4. All workspace member manifests (Cargo.toml in workspace root and subdirectories)
+    let mut all_manifests = Vec::new();
+    collect_all_workspace_manifests(work_dir, &mut all_manifests);
+    if !all_manifests.contains(&manifest_path.to_path_buf()) {
+        all_manifests.push(manifest_path.to_path_buf());
+    }
+    all_manifests.sort();
+    for m in all_manifests {
+        m.strip_prefix(work_dir).unwrap_or(&m).display().to_string().hash(&mut hasher);
+        if let Ok(bytes) = fs::read(&m) {
+            bytes.hash(&mut hasher);
+        }
     }
 
-    // 4. Cargo.lock full file contents (captures resolved dependency graph, versions, sources, active features)
-    let lock_file = manifest_path.parent().unwrap_or_else(|| Path::new(".")).join("Cargo.lock");
+    // 5. Cargo.lock full file contents (captures resolved dependency graph, versions, sources, active features)
+    let lock_file = work_dir.join("Cargo.lock");
     if let Ok(lock_bytes) = fs::read(&lock_file) {
         lock_bytes.hash(&mut hasher);
     }
 
-    // 5. Toolchain version and host details via rustc -Vv
+    // 6. Toolchain version and host details via rustc -Vv
     if let Ok(out) = Command::new("rustc").arg("-Vv").output() {
         if out.status.success() {
             out.stdout.hash(&mut hasher);
@@ -262,7 +355,7 @@ fn compute_variant_id(
         toolchain.hash(&mut hasher);
     }
 
-    // 6. Flags affecting rustc compilation
+    // 7. Flags affecting rustc compilation
     if let Ok(rustflags) = std::env::var("RUSTFLAGS") {
         rustflags.hash(&mut hasher);
     }
@@ -472,8 +565,18 @@ fn run_indexing(opts: IndexOptions) {
 
     // Record build variant fingerprint manifest atomically in base_out_dir
     let manifest_file = base_out_dir.join("ridx_manifest.json");
+    let config_files = find_cargo_configs(&work_dir);
+    let mut config_target = None;
+    for cfg in &config_files {
+        if let Ok(content) = fs::read_to_string(cfg) {
+            if let Some(t) = extract_config_target(&content) {
+                config_target = Some(t);
+                break;
+            }
+        }
+    }
     let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
-    let effective_target = target.or(env_target);
+    let effective_target = target.or(env_target).or(config_target);
 
     let manifest_data = serde_json::json!({
         "version": "2.0",
