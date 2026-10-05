@@ -340,7 +340,9 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str
         _ => String::new(),
     };
     let out_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx"));
-    match File::create(&out_file_path) {
+    let tmp_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx.tmp.{}", std::process::id()));
+
+    match File::create(&tmp_file_path) {
         Ok(f) => {
             let mut writer = BufWriter::new(f);
             let def_count = visitor.writer.definition_count();
@@ -349,21 +351,31 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str
 
             if let Err(e) = visitor.writer.write_to(&mut writer) {
                 eprintln!("ridx-driver: write failed for {crate_name}: {e}");
+                let _ = fs::remove_file(&tmp_file_path);
             } else {
-                let file_size = fs::metadata(&out_file_path).map(|m| m.len()).unwrap_or(0);
-                eprintln!(
-                    "ridx: indexed {} ({} defs, {} refs, {} types, {} KB in {:.1} ms)",
-                    crate_name,
-                    def_count,
-                    ref_count,
-                    type_count,
-                    file_size / 1024,
-                    start.elapsed().as_secs_f64() * 1000.0
-                );
+                drop(writer);
+                if let Err(e) = fs::rename(&tmp_file_path, &out_file_path) {
+                    eprintln!(
+                        "ridx-driver: failed to atomically rename {:?} to {:?}: {e}",
+                        tmp_file_path, out_file_path
+                    );
+                    let _ = fs::remove_file(&tmp_file_path);
+                } else {
+                    let file_size = fs::metadata(&out_file_path).map(|m| m.len()).unwrap_or(0);
+                    eprintln!(
+                        "ridx: indexed {} ({} defs, {} refs, {} types, {} KB in {:.1} ms)",
+                        crate_name,
+                        def_count,
+                        ref_count,
+                        type_count,
+                        file_size / 1024,
+                        start.elapsed().as_secs_f64() * 1000.0
+                    );
+                }
             }
         }
         Err(e) => {
-            eprintln!("ridx-driver: failed to create {:?}: {e}", out_file_path);
+            eprintln!("ridx-driver: failed to create temporary index {:?}: {e}", tmp_file_path);
         }
     }
 }

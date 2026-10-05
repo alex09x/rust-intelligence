@@ -387,8 +387,8 @@ impl WorkspaceIndex {
     ) -> Option<LocationReferences<'a>> {
         let def = self.find_definition_at(file, line, col)?;
         let mut refs = self.find_references(def.path);
-        // If no references found by full path, try by short name
-        if refs.is_empty() && def.name != def.path {
+        // For local bindings whose references are stored by local name, try by short name if needed
+        if refs.is_empty() && def.kind == DefKind::Local && def.name != def.path {
             refs = self.find_references(def.name);
         }
         Some(LocationReferences {
@@ -416,14 +416,23 @@ impl WorkspaceIndex {
     }
 
     /// Checks timestamps of indexed files and reloads any that have changed.
-    /// Also scans directory for newly generated .ridx files.
-    /// Returns true if any index was updated or added.
+    /// Also scans directory for newly generated .ridx files and removes deleted ones.
+    /// Returns true if any index was updated, added, or removed.
     pub fn reload_if_modified(&mut self) -> io::Result<bool> {
         let mut changed = false;
 
-        // 1. Check existing files for modifications
-        for i in 0..self.paths.len() {
+        // 1. Reconcile existing files: remove deleted, reload modified
+        let mut i = 0;
+        while i < self.paths.len() {
             let p = &self.paths[i];
+            if !p.exists() {
+                self.paths.remove(i);
+                self.readers.remove(i);
+                self.mtimes.remove(i);
+                changed = true;
+                continue;
+            }
+
             let current_mtime = fs::metadata(p).and_then(|m| m.modified()).ok();
             if current_mtime != self.mtimes[i] {
                 if let Ok(new_reader) = IndexReader::open(p) {
@@ -432,6 +441,7 @@ impl WorkspaceIndex {
                     changed = true;
                 }
             }
+            i += 1;
         }
 
         // 2. If loaded from directory, check for new .ridx files
