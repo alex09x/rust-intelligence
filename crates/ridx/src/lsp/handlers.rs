@@ -500,3 +500,255 @@ pub fn handle_document_symbol(
 
     result
 }
+
+pub fn handle_declaration(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    handle_definition(msg, workspace, overlay_mgr, conv)
+}
+
+pub fn handle_type_definition(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+    let line_1based = line_0based + 1;
+
+    let overlay_opt = overlay_mgr.get(&file);
+    let col_1based = if let Some(overlay) = overlay_opt {
+        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+    } else {
+        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+    };
+
+    let Some(ws) = workspace else {
+        return Value::Null;
+    };
+
+    let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+    if is_dirty {
+        return Value::Null;
+    }
+
+    if let Some(ty_str) = ws.type_at(&file, line_1based, col_1based) {
+        let trimmed = ty_str.trim();
+        let base_type = trimmed
+            .trim_start_matches('&')
+            .trim_start_matches("mut ")
+            .trim_start_matches('*')
+            .trim_start_matches("const ")
+            .trim_start_matches("mut ")
+            .trim_start_matches("dyn ")
+            .trim();
+        let bare_type = base_type.split('<').next().unwrap_or(base_type).trim();
+
+        if let Some(def) = ws.find_definition_by_path(bare_type).or_else(|| {
+            ws.search_symbols(bare_type)
+                .into_iter()
+                .find(|s| {
+                    s.name == bare_type
+                        && matches!(
+                            s.kind,
+                            DefKind::Struct | DefKind::Enum | DefKind::Trait | DefKind::TyAlias
+                        )
+                })
+                .and_then(|s| ws.find_definition_by_path(s.path))
+        }) {
+            let resolved_file_path = def.resolved_path();
+            let resolved_file_str = resolved_file_path.to_str().unwrap_or(def.file);
+            let def_uri = path_to_uri(resolved_file_str);
+
+            let (start_line, end_line, start_char, end_char) = if let Some(target_overlay) =
+                overlay_mgr.get(resolved_file_str)
+            {
+                let live_start_line = target_overlay.map_compiled_line_to_live(def.start_line);
+                let live_end_line = target_overlay.map_compiled_line_to_live(def.end_line);
+                match (live_start_line, live_end_line) {
+                    (Some(sl), Some(el)) => (
+                        sl.saturating_sub(1),
+                        el.saturating_sub(1),
+                        target_overlay.char_col_to_utf16_col(sl, def.start_col),
+                        target_overlay.char_col_to_utf16_col(el, def.end_col),
+                    ),
+                    _ => (u32::MAX, u32::MAX, 0, 0),
+                }
+            } else {
+                (
+                    def.start_line.saturating_sub(1),
+                    def.end_line.saturating_sub(1),
+                    conv.char_col_to_utf16_col(resolved_file_str, def.start_line, def.start_col),
+                    conv.char_col_to_utf16_col(resolved_file_str, def.end_line, def.end_col),
+                )
+            };
+
+            if start_line != u32::MAX {
+                return json!({
+                    "uri": def_uri,
+                    "range": {
+                        "start": { "line": start_line, "character": start_char },
+                        "end": { "line": end_line, "character": end_char }
+                    }
+                });
+            }
+        }
+    }
+
+    Value::Null
+}
+
+pub fn handle_document_highlight(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+    let line_1based = line_0based + 1;
+
+    let overlay_opt = overlay_mgr.get(&file);
+    let col_1based = if let Some(overlay) = overlay_opt {
+        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+    } else {
+        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+    };
+
+    let mut highlights = Vec::new();
+
+    if let Some(overlay_def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+        if overlay_def.file == file {
+            let start_char = if let Some(ov) = overlay_opt {
+                ov.char_col_to_utf16_col(overlay_def.start_line, overlay_def.start_col)
+            } else {
+                conv.char_col_to_utf16_col(&file, overlay_def.start_line, overlay_def.start_col)
+            };
+            let end_char = if let Some(ov) = overlay_opt {
+                ov.char_col_to_utf16_col(overlay_def.end_line, overlay_def.end_col)
+            } else {
+                conv.char_col_to_utf16_col(&file, overlay_def.end_line, overlay_def.end_col)
+            };
+            highlights.push(json!({
+                "range": {
+                    "start": { "line": overlay_def.start_line.saturating_sub(1), "character": start_char },
+                    "end": { "line": overlay_def.end_line.saturating_sub(1), "character": end_char }
+                },
+                "kind": 3 // Write / Definition
+            }));
+        }
+    } else if let Some(ws) = workspace {
+        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+        if !is_dirty {
+            if let Some(loc_refs) = ws.find_references_at(&file, line_1based, col_1based) {
+                let target_file_str = loc_refs.target_file;
+                if target_file_str == file || file.ends_with(target_file_str) {
+                    let start_char = conv.char_col_to_utf16_col(
+                        &file,
+                        loc_refs.target_line,
+                        loc_refs.target_col,
+                    );
+                    let end_char = conv.char_col_to_utf16_col(
+                        &file,
+                        loc_refs.target_end_line,
+                        loc_refs.target_end_col,
+                    );
+                    highlights.push(json!({
+                        "range": {
+                            "start": { "line": loc_refs.target_line.saturating_sub(1), "character": start_char },
+                            "end": { "line": loc_refs.target_end_line.saturating_sub(1), "character": end_char }
+                        },
+                        "kind": 3
+                    }));
+                }
+                for r in loc_refs.references {
+                    let r_file_path = r.resolved_path();
+                    let r_file_str = r_file_path.to_str().unwrap_or(r.file);
+                    if r_file_str == file || file.ends_with(r_file_str) {
+                        let span = r.span;
+                        let start_char =
+                            conv.char_col_to_utf16_col(&file, span.start_line(), span.start_col());
+                        let end_char =
+                            conv.char_col_to_utf16_col(&file, span.end_line(), span.end_col());
+                        highlights.push(json!({
+                            "range": {
+                                "start": { "line": span.start_line().saturating_sub(1), "character": start_char },
+                                "end": { "line": span.end_line().saturating_sub(1), "character": end_char }
+                            },
+                            "kind": if r.is_write { 3 } else { 2 } // 3 = Write, 2 = Read
+                        }));
+                    }
+                }
+            }
+        }
+    }
+
+    json!(highlights)
+}
+
+pub fn handle_implementation(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+    let line_1based = line_0based + 1;
+
+    let overlay_opt = overlay_mgr.get(&file);
+    let col_1based = if let Some(overlay) = overlay_opt {
+        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+    } else {
+        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+    };
+
+    let Some(ws) = workspace else {
+        return json!([]);
+    };
+
+    let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+    if is_dirty {
+        return json!([]);
+    }
+
+    let mut results = Vec::new();
+    if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based) {
+        let refs = ws.find_references(def.path);
+        for r in refs {
+            if matches!(r.kind, DefKind::AssocFn | DefKind::Trait | DefKind::Struct) {
+                let resolved_path = r.resolved_path();
+                let path_str = resolved_path.to_str().unwrap_or(r.file);
+                let uri = path_to_uri(path_str);
+                let span = r.span;
+                let start_char =
+                    conv.char_col_to_utf16_col(path_str, span.start_line(), span.start_col());
+                let end_char =
+                    conv.char_col_to_utf16_col(path_str, span.end_line(), span.end_col());
+                results.push(json!({
+                    "uri": uri,
+                    "range": {
+                        "start": { "line": span.start_line().saturating_sub(1), "character": start_char },
+                        "end": { "line": span.end_line().saturating_sub(1), "character": end_char }
+                    }
+                }));
+            }
+        }
+    }
+
+    json!(results)
+}
+
+pub fn handle_workspace_symbol_resolve(msg: &Value, _workspace: Option<&WorkspaceIndex>) -> Value {
+    msg.get("params").cloned().unwrap_or(Value::Null)
+}

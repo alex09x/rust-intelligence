@@ -197,9 +197,15 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
                                 }
                             },
                             "definitionProvider": true,
+                            "declarationProvider": true,
+                            "typeDefinitionProvider": true,
+                            "implementationProvider": true,
+                            "documentHighlightProvider": true,
                             "referencesProvider": true,
                             "hoverProvider": true,
-                            "workspaceSymbolProvider": true,
+                            "workspaceSymbolProvider": {
+                                "resolveProvider": true
+                            },
                             "documentSymbolProvider": true
                         },
                         "serverInfo": {
@@ -415,6 +421,74 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
             "textDocument/documentSymbol" => {
                 if let Some(id) = id {
                     let result = handle_document_symbol(&msg, &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/declaration" => {
+                if let Some(id) = id {
+                    let result =
+                        handle_declaration(&msg, workspace.as_ref(), &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/typeDefinition" => {
+                if let Some(id) = id {
+                    let result =
+                        handle_type_definition(&msg, workspace.as_ref(), &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/implementation" => {
+                if let Some(id) = id {
+                    let result =
+                        handle_implementation(&msg, workspace.as_ref(), &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/documentHighlight" => {
+                if let Some(id) = id {
+                    let result = handle_document_highlight(
+                        &msg,
+                        workspace.as_ref(),
+                        &overlay_mgr,
+                        &mut conv,
+                    );
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "workspace/symbol/resolve" => {
+                if let Some(id) = id {
+                    let result = handle_workspace_symbol_resolve(&msg, workspace.as_ref());
                     let resp = json!({
                         "jsonrpc": "2.0",
                         "id": id,
@@ -1085,5 +1159,102 @@ mod tests {
         let prog_resp = &responses[1];
         assert_eq!(prog_resp["id"], 20);
         assert_eq!(prog_resp["result"], Value::Null);
+    }
+
+    #[test]
+    fn test_lsp_server_stream_stage2_declaration_and_highlight() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        let doc_uri = "file:///tmp/nav_test.rs";
+        let code = "fn compute() {\n    let val = 42;\n    let double = val * 2;\n}\n";
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": doc_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": code
+                }
+            }
+        })));
+        // Test textDocument/declaration at line 2 (val in `val * 2`)
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 30,
+            "method": "textDocument/declaration",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "position": { "line": 2, "character": 18 }
+            }
+        })));
+        // Test textDocument/documentHighlight at line 1 (val in `let val = 42;`)
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 31,
+            "method": "textDocument/documentHighlight",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "position": { "line": 1, "character": 8 }
+            }
+        })));
+        // Test workspace/symbol/resolve
+        let sym_to_resolve = json!({
+            "name": "compute",
+            "kind": 12,
+            "location": {
+                "uri": doc_uri,
+                "range": {
+                    "start": { "line": 0, "character": 0 },
+                    "end": { "line": 0, "character": 12 }
+                }
+            }
+        });
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 32,
+            "method": "workspace/symbol/resolve",
+            "params": sym_to_resolve
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 33,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 5);
+
+        // Verify declaration response resolves to definition of `val` on line 1
+        let decl_resp = &responses[1];
+        assert_eq!(decl_resp["id"], 30);
+        assert_eq!(decl_resp["result"]["range"]["start"]["line"], 1);
+
+        // Verify documentHighlight returns definition/write highlight
+        let hl_resp = &responses[2];
+        assert_eq!(hl_resp["id"], 31);
+        let hls = hl_resp["result"].as_array().expect("array of highlights");
+        assert!(!hls.is_empty());
+        assert_eq!(hls[0]["range"]["start"]["line"], 1);
+
+        // Verify workspace/symbol/resolve echoes the symbol
+        let res_resp = &responses[3];
+        assert_eq!(res_resp["id"], 32);
+        assert_eq!(res_resp["result"]["name"], "compute");
     }
 }
