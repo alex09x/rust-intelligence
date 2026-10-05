@@ -64,6 +64,48 @@ pub struct WorkspaceStats {
     pub total_files: usize,
     pub total_bytes: u64,
     pub crate_summaries: Vec<CrateSummary>,
+    pub active_variant: Option<String>,
+}
+
+/// Active variant metadata stored in `target/ridx/ridx_manifest.json`.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct VariantManifest {
+    #[serde(default = "default_manifest_version")]
+    pub version: String,
+    #[serde(default)]
+    pub active_variant_id: String,
+    #[serde(default)]
+    pub variant_dir: String,
+    #[serde(default)]
+    pub workspace_root: String,
+    #[serde(default)]
+    pub manifest_path: String,
+    #[serde(default)]
+    pub profile: String,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub features: Option<String>,
+    #[serde(default)]
+    pub no_default_features: bool,
+    #[serde(default)]
+    pub all_features: bool,
+    #[serde(default)]
+    pub package_filter: Option<String>,
+    #[serde(default)]
+    pub timestamp_epoch_secs: u64,
+    #[serde(default)]
+    pub total_crates: usize,
+    #[serde(default)]
+    pub total_defs: usize,
+    #[serde(default)]
+    pub total_refs: usize,
+    #[serde(default)]
+    pub total_types: usize,
+}
+
+fn default_manifest_version() -> String {
+    "2.0".to_string()
 }
 
 /// Individual crate summary inside a workspace.
@@ -85,6 +127,9 @@ pub struct WorkspaceIndex {
     paths: Vec<PathBuf>,
     mtimes: Vec<Option<std::time::SystemTime>>,
     root_dir: Option<PathBuf>,
+    manifest_path: Option<PathBuf>,
+    manifest_mtime: Option<std::time::SystemTime>,
+    active_variant_id: Option<String>,
 }
 
 impl WorkspaceIndex {
@@ -100,6 +145,9 @@ impl WorkspaceIndex {
                 paths: vec![p.to_path_buf()],
                 mtimes: vec![mtime],
                 root_dir: None,
+                manifest_path: None,
+                manifest_mtime: None,
+                active_variant_id: None,
             });
         }
 
@@ -110,9 +158,31 @@ impl WorkspaceIndex {
             p.to_path_buf()
         };
 
+        // Check if an active build variant manifest exists
+        let manifest_file = search_dir.join("ridx_manifest.json");
+        let (scan_dir, manifest_info) = if manifest_file.is_file() {
+            if let Ok(content) = fs::read(&manifest_file) {
+                if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
+                    let vdir = search_dir.join(&manifest.variant_dir);
+                    let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
+                    if vdir.is_dir() {
+                        (vdir, Some((manifest_file, mtime, manifest.active_variant_id)))
+                    } else {
+                        (search_dir.clone(), Some((manifest_file, mtime, manifest.active_variant_id)))
+                    }
+                } else {
+                    (search_dir.clone(), None)
+                }
+            } else {
+                (search_dir.clone(), None)
+            }
+        } else {
+            (search_dir.clone(), None)
+        };
+
         let mut ridx_files = Vec::new();
-        if search_dir.is_dir() {
-            collect_ridx_files(&search_dir, &mut ridx_files)?;
+        if scan_dir.is_dir() {
+            collect_ridx_files(&scan_dir, &mut ridx_files)?;
         }
 
         if ridx_files.is_empty() {
@@ -150,11 +220,19 @@ impl WorkspaceIndex {
             ));
         }
 
+        let (manifest_path, manifest_mtime, active_variant_id) = match manifest_info {
+            Some((mp, mm, avid)) => (Some(mp), mm, Some(avid)),
+            None => (None, None, None),
+        };
+
         Ok(Self {
             readers,
             paths,
             mtimes,
-            root_dir: Some(search_dir),
+            root_dir: Some(scan_dir),
+            manifest_path,
+            manifest_mtime,
+            active_variant_id,
         })
     }
 
@@ -207,6 +285,7 @@ impl WorkspaceIndex {
     pub fn stats(&self) -> WorkspaceStats {
         let mut stats = WorkspaceStats {
             total_crates: self.readers.len(),
+            active_variant: self.active_variant_id.clone(),
             ..Default::default()
         };
 
@@ -233,6 +312,11 @@ impl WorkspaceIndex {
         }
 
         stats
+    }
+
+    /// Currently active build variant ID, if loaded from a variant manifest.
+    pub fn active_variant_id(&self) -> Option<&str> {
+        self.active_variant_id.as_deref()
     }
 
     /// Finds a definition by full or relative canonical path across the workspace.
@@ -421,9 +505,63 @@ impl WorkspaceIndex {
 
     /// Checks timestamps of indexed files and reloads any that have changed.
     /// Also scans directory for newly generated .ridx files and removes deleted ones.
-    /// Returns true if any index was updated, added, or removed.
+    /// If an active variant manifest exists and was switched, atomically reloads the new variant's reader set.
+    /// Returns true if any index was updated, added, removed, or switched.
     pub fn reload_if_modified(&mut self) -> io::Result<bool> {
         let mut changed = false;
+
+        // 0. Check if active variant manifest was updated or switched
+        if self.manifest_path.is_none() {
+            if let Some(ref dir) = self.root_dir {
+                let cand = dir.join("ridx_manifest.json");
+                if cand.is_file() {
+                    self.manifest_path = Some(cand);
+                }
+            }
+        }
+
+        if let Some(ref mf) = self.manifest_path {
+            let current_manifest_mtime = fs::metadata(mf).and_then(|m| m.modified()).ok();
+            if current_manifest_mtime != self.manifest_mtime {
+                self.manifest_mtime = current_manifest_mtime;
+                if let Ok(content) = fs::read(mf) {
+                    if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
+                        let base_dir = mf.parent().unwrap_or_else(|| Path::new("."));
+                        let new_vdir = base_dir.join(&manifest.variant_dir);
+                        if Some(&manifest.active_variant_id) != self.active_variant_id.as_ref() {
+                            // Active variant changed! Atomically switch reader set
+                            if new_vdir.is_dir() {
+                                let mut new_files = Vec::new();
+                                collect_ridx_files(&new_vdir, &mut new_files)?;
+                                new_files.sort();
+
+                                let mut new_readers = Vec::with_capacity(new_files.len());
+                                let mut new_paths = Vec::with_capacity(new_files.len());
+                                let mut new_mtimes = Vec::with_capacity(new_files.len());
+
+                                for fp in new_files {
+                                    if let Ok(r) = IndexReader::open(&fp) {
+                                        let mt = fs::metadata(&fp).and_then(|m| m.modified()).ok();
+                                        new_readers.push(r);
+                                        new_paths.push(fp);
+                                        new_mtimes.push(mt);
+                                    }
+                                }
+
+                                if !new_readers.is_empty() {
+                                    self.readers = new_readers;
+                                    self.paths = new_paths;
+                                    self.mtimes = new_mtimes;
+                                    self.root_dir = Some(new_vdir);
+                                    self.active_variant_id = Some(manifest.active_variant_id);
+                                    return Ok(true);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // 1. Reconcile existing files: remove deleted, reload modified
         let mut i = 0;
@@ -488,8 +626,10 @@ fn collect_ridx_files(dir: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
                 }
             }
         } else if p.is_dir() {
-            // Recurse into subdirectories (e.g. target/ridx/deps)
-            let _ = collect_ridx_files(&p, files);
+            // Do not descend into "variants" subdirectory if scanning root target/ridx directly
+            if p.file_name().and_then(|s| s.to_str()) != Some("variants") {
+                let _ = collect_ridx_files(&p, files);
+            }
         }
     }
     Ok(())

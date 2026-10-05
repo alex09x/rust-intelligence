@@ -36,6 +36,22 @@ enum Commands {
         /// Run cargo check in release mode
         #[arg(long)]
         release: bool,
+
+        /// Space or comma separated list of features to activate
+        #[arg(long)]
+        features: Option<String>,
+
+        /// Do not activate the `default` feature
+        #[arg(long)]
+        no_default_features: bool,
+
+        /// Activate all available features
+        #[arg(long)]
+        all_features: bool,
+
+        /// Build for the target triple
+        #[arg(long)]
+        target: Option<String>,
     },
 
     /// Inspect binary header, record counts, and memory layout of a .ridx index file or workspace
@@ -200,12 +216,65 @@ fn find_driver_binary() -> Option<PathBuf> {
     None
 }
 
-fn run_indexing(
+
+fn compute_variant_id(
+    profile: &str,
+    target: Option<&str>,
+    package: Option<&str>,
+    features: Option<&str>,
+    no_default_features: bool,
+    all_features: bool,
+    manifest_path: &Path,
+) -> String {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    profile.hash(&mut hasher);
+    target.unwrap_or("host").hash(&mut hasher);
+    package.unwrap_or("workspace").hash(&mut hasher);
+    features.unwrap_or("").hash(&mut hasher);
+    no_default_features.hash(&mut hasher);
+    all_features.hash(&mut hasher);
+    manifest_path.display().to_string().hash(&mut hasher);
+
+    if let Ok(rustflags) = std::env::var("RUSTFLAGS") {
+        rustflags.hash(&mut hasher);
+    }
+    if let Ok(toolchain) = std::env::var("RUSTUP_TOOLCHAIN") {
+        toolchain.hash(&mut hasher);
+    }
+
+    let lock_file = manifest_path.parent().unwrap_or_else(|| Path::new(".")).join("Cargo.lock");
+    if let Ok(metadata) = fs::metadata(&lock_file) {
+        if let Ok(mtime) = metadata.modified() {
+            format!("{:?}", mtime).hash(&mut hasher);
+        }
+    }
+
+    let hash = hasher.finish();
+    format!("{profile}-{:016x}", hash)
+}
+
+struct IndexOptions {
     path: PathBuf,
     out_dir_opt: Option<PathBuf>,
     package: Option<String>,
     release: bool,
-) {
+    features: Option<String>,
+    no_default_features: bool,
+    all_features: bool,
+    target: Option<String>,
+}
+
+fn run_indexing(opts: IndexOptions) {
+    let path = opts.path;
+    let out_dir_opt = opts.out_dir_opt;
+    let package = opts.package;
+    let release = opts.release;
+    let features = opts.features;
+    let no_default_features = opts.no_default_features;
+    let all_features = opts.all_features;
+    let target = opts.target;
+
     let (work_dir, manifest_path) = if path.is_file() {
         if path.file_name().and_then(|s| s.to_str()) != Some("Cargo.toml") {
             eprintln!("{}: target path {:?} is a file but not a Cargo.toml manifest.", "Error".red().bold(), path);
@@ -240,7 +309,7 @@ fn run_indexing(
     };
 
     let start = Instant::now();
-    let out_dir = match out_dir_opt {
+    let base_out_dir = match out_dir_opt {
         Some(d) => {
             if d.is_absolute() {
                 d
@@ -250,11 +319,11 @@ fn run_indexing(
         }
         None => work_dir.join("target/ridx"),
     };
-    if let Err(e) = fs::create_dir_all(&out_dir) {
-        eprintln!("{}: failed to create output directory {:?}: {e}", "Error".red().bold(), out_dir);
+    if let Err(e) = fs::create_dir_all(&base_out_dir) {
+        eprintln!("{}: failed to create output directory {:?}: {e}", "Error".red().bold(), base_out_dir);
         std::process::exit(1);
     }
-    let out_dir = out_dir.canonicalize().unwrap_or(out_dir);
+    let base_out_dir = base_out_dir.canonicalize().unwrap_or(base_out_dir);
 
     let driver_bin = match find_driver_binary() {
         Some(b) => b,
@@ -266,28 +335,27 @@ fn run_indexing(
     };
 
     let profile_name = if release { "release" } else { "dev" };
-    let manifest_file = out_dir.join("ridx_manifest.json");
+    let variant_id = compute_variant_id(
+        profile_name,
+        target.as_deref(),
+        package.as_deref(),
+        features.as_deref(),
+        no_default_features,
+        all_features,
+        &manifest_path,
+    );
 
-    // Reconcile prior variant: if profile changed, prune old .ridx files to avoid mixing variants
-    if manifest_file.is_file() {
-        if let Ok(manifest_bytes) = fs::read(&manifest_file) {
-            if let Ok(prev) = serde_json::from_slice::<serde_json::Value>(&manifest_bytes) {
-                if let Some(prev_profile) = prev.get("profile").and_then(|p| p.as_str()) {
-                    if prev_profile != profile_name {
-                        println!("  Notice         : variant changed from {prev_profile} to {profile_name}, pruning stale indices...");
-                        if let Ok(entries) = fs::read_dir(&out_dir) {
-                            for entry in entries.flatten() {
-                                let p = entry.path();
-                                if p.is_file() && p.extension().and_then(|s| s.to_str()) == Some("ridx") {
-                                    let _ = fs::remove_file(&p);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    let variant_rel_dir = format!("variants/{}", variant_id);
+    let variant_out_dir = base_out_dir.join(&variant_rel_dir);
+    if let Err(e) = fs::create_dir_all(&variant_out_dir) {
+        eprintln!("{}: failed to create variant directory {:?}: {e}", "Error".red().bold(), variant_out_dir);
+        std::process::exit(1);
     }
+    let variant_out_dir = variant_out_dir.canonicalize().unwrap_or(variant_out_dir);
+
+    // Isolate Cargo target cache per variant so Cargo unconditionally executes wrapper on variant switch
+    let cargo_target_dir = work_dir.join("target/ridx_cargo").join(&variant_id);
+    let _ = fs::create_dir_all(&cargo_target_dir);
 
     println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
     println!("  {} {}", "RIDX Workspace Indexer:".bold(), work_dir.display().to_string().cyan());
@@ -295,8 +363,21 @@ fn run_indexing(
     println!("  Work Directory : {}", work_dir.display().to_string().green());
     println!("  Manifest Path  : {}", manifest_path.display().to_string().green());
     println!("  Driver Binary  : {}", driver_bin.display().to_string().green());
-    println!("  Index Output   : {}", out_dir.display().to_string().green());
+    println!("  Index Output   : {}", variant_out_dir.display().to_string().green());
+    println!("  Active Variant : {}", variant_id.cyan().bold());
     println!("  Build Profile  : {}", profile_name.cyan());
+    if let Some(ref feats) = features {
+        println!("  Features       : {}", feats.cyan());
+    }
+    if no_default_features {
+        println!("  No Default Feat: true");
+    }
+    if all_features {
+        println!("  All Features   : true");
+    }
+    if let Some(ref tgt) = target {
+        println!("  Target Triple  : {}", tgt.cyan());
+    }
     println!("  Action         : cargo check with RUSTC_WORKSPACE_WRAPPER...");
 
     let mut cmd = Command::new("cargo");
@@ -311,9 +392,22 @@ fn run_indexing(
     if release {
         cmd.arg("--release");
     }
+    if let Some(ref feats) = features {
+        cmd.arg("--features").arg(feats);
+    }
+    if no_default_features {
+        cmd.arg("--no-default-features");
+    }
+    if all_features {
+        cmd.arg("--all-features");
+    }
+    if let Some(ref tgt) = target {
+        cmd.arg("--target").arg(tgt);
+    }
 
     cmd.env("RUSTC_WORKSPACE_WRAPPER", &driver_bin);
-    cmd.env("RIDX_OUT_DIR", &out_dir);
+    cmd.env("RIDX_OUT_DIR", &variant_out_dir);
+    cmd.env("CARGO_TARGET_DIR", &cargo_target_dir);
     cmd.env("RUSTC_BOOTSTRAP", "1");
     cmd.env("RUSTC_WRAPPER", "");
 
@@ -348,7 +442,7 @@ fn run_indexing(
 
     println!("\n{} Indexed workspace in {:.2} s", "Success:".green().bold(), elapsed.as_secs_f64());
 
-    if let Ok(ws) = WorkspaceIndex::open(&out_dir) {
+    if let Ok(ws) = WorkspaceIndex::open(&variant_out_dir) {
         let stats = ws.stats();
         println!(
             "Indexed {} crate(s), {} total definitions, {} references, {} types ({:.2} KB total index size)",
@@ -359,12 +453,19 @@ fn run_indexing(
             stats.total_bytes as f64 / 1024.0
         );
 
-        // Record build variant fingerprint manifest
+        // Record build variant fingerprint manifest atomically in base_out_dir
+        let manifest_file = base_out_dir.join("ridx_manifest.json");
         let manifest_data = serde_json::json!({
-            "version": "1.0",
+            "version": "2.0",
+            "active_variant_id": variant_id,
+            "variant_dir": variant_rel_dir,
             "workspace_root": work_dir.display().to_string(),
             "manifest_path": manifest_path.display().to_string(),
             "profile": profile_name,
+            "target": target,
+            "features": features,
+            "no_default_features": no_default_features,
+            "all_features": all_features,
             "package_filter": package,
             "timestamp_epoch_secs": std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -381,8 +482,13 @@ fn run_indexing(
                 "file_size": c.file_size,
             })).collect::<Vec<_>>()
         });
+
+        // Write to temp file then rename for atomic manifest swap
+        let tmp_manifest = base_out_dir.join(format!("ridx_manifest.json.tmp.{}", std::process::id()));
         if let Ok(serialized) = serde_json::to_string_pretty(&manifest_data) {
-            let _ = fs::write(&manifest_file, serialized);
+            if fs::write(&tmp_manifest, serialized).is_ok() {
+                let _ = fs::rename(&tmp_manifest, &manifest_file);
+            }
         }
     }
 }
@@ -396,8 +502,21 @@ fn main() {
             out_dir,
             package,
             release,
+            features,
+            no_default_features,
+            all_features,
+            target,
         } => {
-            run_indexing(path, out_dir, package, release);
+            run_indexing(IndexOptions {
+                path,
+                out_dir_opt: out_dir,
+                package,
+                release,
+                features,
+                no_default_features,
+                all_features,
+                target,
+            });
         }
 
         Commands::Inspect { index_path, json } => {
@@ -412,6 +531,7 @@ fn main() {
                     "total_defs": stats.total_defs,
                     "total_refs": stats.total_refs,
                     "total_types": stats.total_types,
+                    "active_variant": stats.active_variant,
                     "crates": stats.crate_summaries.iter().map(|c| serde_json::json!({
                         "name": c.name,
                         "version": c.version,
@@ -429,6 +549,9 @@ fn main() {
 
             println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
             println!("  {} {} crate(s) loaded", "RIDX Workspace Index:".bold(), stats.total_crates.to_string().cyan());
+            if let Some(ref v) = stats.active_variant {
+                println!("  Active Variant        : {}", v.cyan().bold());
+            }
             println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
             println!("{:<28}: {}", "Total Crates", stats.total_crates.to_string().bold());
             println!("{:<28}: {} bytes ({:.2} KB / {:.2} MB)", "Total Index Size", stats.total_bytes, stats.total_bytes as f64 / 1024.0, stats.total_bytes as f64 / (1024.0 * 1024.0));

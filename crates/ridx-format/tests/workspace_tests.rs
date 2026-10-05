@@ -164,3 +164,100 @@ fn test_multi_crate_workspace_index() {
     assert_eq!(hover.definition.unwrap().name, "TypeA");
     assert_eq!(hover.inferred_type, Some("crate_a::types::TypeA"));
 }
+
+#[test]
+fn test_variant_aware_workspace_and_reload() {
+    let base_dir = PathBuf::from("target/test_variants_ws");
+    let _ = fs::remove_dir_all(&base_dir);
+    fs::create_dir_all(&base_dir).unwrap();
+
+    let var1_dir = base_dir.join("variants/var1");
+    fs::create_dir_all(&var1_dir).unwrap();
+
+    // 1. Write crate_a in var1
+    let mut writer1 = IndexWriter::new("crate_a", "0.1.0");
+    writer1.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "func_var1".to_string(),
+        path: "crate_a::func_var1".to_string(),
+        signature: Some("fn()".to_string()),
+        file: "crates/crate_a/src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 3,
+        end_col: 2,
+    });
+    let f1 = File::create(var1_dir.join("crate_a.ridx")).unwrap();
+    writer1.write_to(&mut BufWriter::new(f1)).unwrap();
+
+    // 2. Write manifest pointing to var1
+    let manifest1 = serde_json::json!({
+        "version": "2.0",
+        "active_variant_id": "var1",
+        "variant_dir": "variants/var1",
+        "workspace_root": base_dir.display().to_string(),
+        "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+        "total_crates": 1,
+        "total_defs": 1,
+        "total_refs": 0,
+        "total_types": 0,
+    });
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest1).unwrap()).unwrap();
+
+    // 3. Open workspace
+    let mut ws = WorkspaceIndex::open(&base_dir).expect("should open variant workspace");
+    assert_eq!(ws.active_variant_id(), Some("var1"));
+    assert_eq!(ws.stats().active_variant.as_deref(), Some("var1"));
+    assert!(ws.find_definition_by_path("crate_a::func_var1").is_some());
+
+    // 4. Create var2 with different definition
+    let var2_dir = base_dir.join("variants/var2");
+    fs::create_dir_all(&var2_dir).unwrap();
+
+    let mut writer2 = IndexWriter::new("crate_a", "0.2.0");
+    writer2.add_definition(RawDefinition {
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "func_var2".to_string(),
+        path: "crate_a::func_var2".to_string(),
+        signature: Some("fn() -> i32".to_string()),
+        file: "crates/crate_a/src/lib.rs".to_string(),
+        start_line: 10,
+        start_col: 1,
+        end_line: 12,
+        end_col: 2,
+    });
+    let f2 = File::create(var2_dir.join("crate_a.ridx")).unwrap();
+    writer2.write_to(&mut BufWriter::new(f2)).unwrap();
+
+    // 5. Update manifest atomically
+    std::thread::sleep(std::time::Duration::from_millis(50));
+    let manifest2 = serde_json::json!({
+        "version": "2.0",
+        "active_variant_id": "var2",
+        "variant_dir": "variants/var2",
+        "workspace_root": base_dir.display().to_string(),
+        "manifest_path": base_dir.join("Cargo.toml").display().to_string(),
+        "profile": "release",
+        "total_crates": 1,
+        "total_defs": 1,
+        "total_refs": 0,
+        "total_types": 0,
+    });
+    fs::write(base_dir.join("ridx_manifest.json"), serde_json::to_string_pretty(&manifest2).unwrap()).unwrap();
+
+    // 6. Reload workspace index
+    let changed = ws.reload_if_modified().expect("reload should succeed");
+    assert!(changed);
+    assert_eq!(ws.active_variant_id(), Some("var2"));
+    assert_eq!(ws.stats().active_variant.as_deref(), Some("var2"));
+    assert!(ws.find_definition_by_path("crate_a::func_var1").is_none());
+    let def2 = ws.find_definition_by_path("crate_a::func_var2").expect("should find func_var2 in var2");
+    assert_eq!(def2.signature, Some("fn() -> i32"));
+}
