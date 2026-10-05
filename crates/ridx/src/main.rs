@@ -265,6 +265,30 @@ fn run_indexing(
         }
     };
 
+    let profile_name = if release { "release" } else { "dev" };
+    let manifest_file = out_dir.join("ridx_manifest.json");
+
+    // Reconcile prior variant: if profile changed, prune old .ridx files to avoid mixing variants
+    if manifest_file.is_file() {
+        if let Ok(manifest_bytes) = fs::read(&manifest_file) {
+            if let Ok(prev) = serde_json::from_slice::<serde_json::Value>(&manifest_bytes) {
+                if let Some(prev_profile) = prev.get("profile").and_then(|p| p.as_str()) {
+                    if prev_profile != profile_name {
+                        println!("  Notice         : variant changed from {prev_profile} to {profile_name}, pruning stale indices...");
+                        if let Ok(entries) = fs::read_dir(&out_dir) {
+                            for entry in entries.flatten() {
+                                let p = entry.path();
+                                if p.is_file() && p.extension().and_then(|s| s.to_str()) == Some("ridx") {
+                                    let _ = fs::remove_file(&p);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
     println!("  {} {}", "RIDX Workspace Indexer:".bold(), work_dir.display().to_string().cyan());
     println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
@@ -272,6 +296,7 @@ fn run_indexing(
     println!("  Manifest Path  : {}", manifest_path.display().to_string().green());
     println!("  Driver Binary  : {}", driver_bin.display().to_string().green());
     println!("  Index Output   : {}", out_dir.display().to_string().green());
+    println!("  Build Profile  : {}", profile_name.cyan());
     println!("  Action         : cargo check with RUSTC_WORKSPACE_WRAPPER...");
 
     let mut cmd = Command::new("cargo");
@@ -333,6 +358,32 @@ fn run_indexing(
             stats.total_types.to_string().green(),
             stats.total_bytes as f64 / 1024.0
         );
+
+        // Record build variant fingerprint manifest
+        let manifest_data = serde_json::json!({
+            "version": "1.0",
+            "workspace_root": work_dir.display().to_string(),
+            "manifest_path": manifest_path.display().to_string(),
+            "profile": profile_name,
+            "package_filter": package,
+            "timestamp_epoch_secs": std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+            "total_crates": stats.total_crates,
+            "total_defs": stats.total_defs,
+            "total_refs": stats.total_refs,
+            "total_types": stats.total_types,
+            "crates": stats.crate_summaries.iter().map(|c| serde_json::json!({
+                "name": c.name,
+                "version": c.version,
+                "file": c.path.file_name().and_then(|s| s.to_str()).unwrap_or(""),
+                "file_size": c.file_size,
+            })).collect::<Vec<_>>()
+        });
+        if let Ok(serialized) = serde_json::to_string_pretty(&manifest_data) {
+            let _ = fs::write(&manifest_file, serialized);
+        }
     }
 }
 
