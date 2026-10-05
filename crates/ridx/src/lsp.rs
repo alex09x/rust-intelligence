@@ -19,6 +19,7 @@ fn lsp_symbol_kind(kind: DefKind) -> u32 {
         DefKind::Mod => 2,        // Module
         DefKind::Const | DefKind::AssocConst => 14, // Constant
         DefKind::Static => 13,    // Variable
+        DefKind::Local => 13,     // Variable
         DefKind::Field => 8,      // Field
         DefKind::TyAlias => 26,   // TypeParameter
         _ => 13,
@@ -155,8 +156,16 @@ fn send_response<W: Write>(writer: &mut W, response: &Value) -> io::Result<()> {
 fn sync_reloaded_index(ws: &mut WorkspaceIndex, overlay_mgr: &mut crate::overlay::OverlayManager) {
     if let Ok(true) = ws.reload_if_modified() {
         for file in overlay_mgr.open_file_paths() {
-            if let Ok(content) = std::fs::read_to_string(&file) {
-                overlay_mgr.advance_compiled_baseline(&file, content);
+            if ws.is_file_reloaded(&file) {
+                if let (Ok(metadata), Some(shard_mtime)) = (std::fs::metadata(&file), ws.shard_mtime_for_file(&file)) {
+                    if let Ok(file_mtime) = metadata.modified() {
+                        if file_mtime <= shard_mtime {
+                            if let Ok(content) = std::fs::read_to_string(&file) {
+                                overlay_mgr.advance_compiled_baseline(&file, content);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -271,7 +280,29 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                 let file = uri_to_path(uri);
                 let version = msg["params"]["textDocument"]["version"].as_i64().unwrap_or(1) as i32;
                 let text = msg["params"]["textDocument"]["text"].as_str().unwrap_or("").to_string();
-                overlay_mgr.open_or_update(uri, &file, version, text);
+
+                let is_compiled = if let Some(ref ws) = workspace {
+                    if let (Some(shard_mtime), Ok(metadata)) = (ws.shard_mtime_for_file(&file), std::fs::metadata(&file)) {
+                        if let Ok(file_mtime) = metadata.modified() {
+                            if file_mtime <= shard_mtime {
+                                if let Ok(disk_text) = std::fs::read_to_string(&file) {
+                                    disk_text == text
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
+                overlay_mgr.open_with_provenance(uri, &file, version, text, is_compiled);
             }
 
             "textDocument/didChange" => {
@@ -281,7 +312,9 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                 if let Some(changes) = msg["params"]["contentChanges"].as_array() {
                     if let Some(last) = changes.last() {
                         if let Some(text) = last["text"].as_str() {
-                            overlay_mgr.open_or_update(uri, &file, version, text.to_string());
+                            if !overlay_mgr.update(&file, version, text.to_string()) {
+                                overlay_mgr.open_with_provenance(uri, &file, version, text.to_string(), false);
+                            }
                         }
                     }
                 }
@@ -548,28 +581,90 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                 if let Some(id) = id {
                     let mut result = Value::Null;
 
-                    if let Some(ref ws) = workspace {
-                        let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-                        let file = uri_to_path(uri);
-                        let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-                        let utf16_col_0based =
-                            msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
-                        let line_1based = line_0based + 1;
-                        let overlay_opt = overlay_mgr.get(&file);
-                        let col_1based = if let Some(overlay) = overlay_opt {
-                            overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
-                        } else {
-                            conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
-                        };
+                    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+                    let file = uri_to_path(uri);
+                    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+                    let utf16_col_0based =
+                        msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+                    let line_1based = line_0based + 1;
+                    let overlay_opt = overlay_mgr.get(&file);
+                    let col_1based = if let Some(overlay) = overlay_opt {
+                        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+                    } else {
+                        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+                    };
 
-                        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+                    let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+
+                    // 1. When buffer is clean (!is_dirty), query compiled workspace index first to preserve inferred types
+                    if !is_dirty {
+                        if let Some(ref ws) = workspace {
+                            if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
+                                let mut md = String::new();
+                                if let Some(ref def) = hover.definition {
+                                    md.push_str("```rust\n");
+                                    if let Some(sig) = def.signature {
+                                        md.push_str(sig);
+                                    } else {
+                                        match def.kind {
+                                            DefKind::Local => md.push_str(&format!("let {}", def.name)),
+                                            _ => md.push_str(&format!("{:?} {}", def.kind, def.name)),
+                                        }
+                                    }
+                                    md.push_str("\n```\n\n");
+                                    md.push_str(&format!(
+                                        "*Defined in `{}` at {}:{}*\n\n",
+                                        def.resolved_path().display(), def.start_line, def.start_col
+                                    ));
+                                    if let Some(ty) = hover.inferred_type {
+                                        md.push_str(&format!("**Type:** `{ty}`\n"));
+                                    }
+                                } else if let Some(ty) = hover.inferred_type {
+                                    if let Some(overlay_def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+                                        md.push_str("```rust\n");
+                                        if let Some(ref sig) = overlay_def.signature {
+                                            md.push_str(sig);
+                                        } else {
+                                            match overlay_def.kind {
+                                                DefKind::Local => md.push_str(&format!("let {}", overlay_def.name)),
+                                                _ => md.push_str(&format!("{:?} {}", overlay_def.kind, overlay_def.name)),
+                                            }
+                                        }
+                                        md.push_str("\n```\n\n");
+                                        md.push_str(&format!(
+                                            "*Defined in `{}` at {}:{}*\n\n",
+                                            overlay_def.file, overlay_def.start_line, overlay_def.start_col
+                                        ));
+                                        md.push_str(&format!("**Type:** `{ty}`\n"));
+                                    } else {
+                                        md.push_str(&format!("**Type:** `{ty}`\n"));
+                                    }
+                                }
+
+                                if !md.is_empty() {
+                                    result = json!({
+                                        "contents": {
+                                            "kind": "markdown",
+                                            "value": md.trim()
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Fall back to overlay definition if clean hover returned nothing, or if buffer is dirty
+                    if result.is_null() {
                         if let Some(overlay_def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
                             let mut md = String::new();
                             md.push_str("```rust\n");
                             if let Some(ref sig) = overlay_def.signature {
                                 md.push_str(sig);
                             } else {
-                                md.push_str(&format!("{:?} {}", overlay_def.kind, overlay_def.name));
+                                match overlay_def.kind {
+                                    DefKind::Local => md.push_str(&format!("let {}", overlay_def.name)),
+                                    _ => md.push_str(&format!("{:?} {}", overlay_def.kind, overlay_def.name)),
+                                }
                             }
                             md.push_str("\n```\n\n");
                             md.push_str(&format!(
@@ -582,37 +677,6 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                                     "value": md.trim()
                                 }
                             });
-                        } else if !is_dirty {
-                            if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
-                                let mut md = String::new();
-                                if let Some(ref def) = hover.definition {
-                                    md.push_str("```rust\n");
-                                    if let Some(sig) = def.signature {
-                                        md.push_str(sig);
-                                    } else {
-                                        md.push_str(&format!("{:?} {}", def.kind, def.name));
-                                    }
-                                    md.push_str("\n```\n\n");
-                                    md.push_str(&format!(
-                                        "*Defined in `{}` at {}:{}*\n\n",
-                                        def.resolved_path().display(), def.start_line, def.start_col
-                                    ));
-                                    if let Some(ty) = hover.inferred_type {
-                                        md.push_str(&format!("**Type:** `{ty}`\n"));
-                                    }
-                                } else if let Some(ty) = hover.inferred_type {
-                                    md.push_str(&format!("**Type:** `{ty}`\n"));
-                                }
-
-                                if !md.is_empty() {
-                                    result = json!({
-                                        "contents": {
-                                            "kind": "markdown",
-                                            "value": md.trim()
-                                        }
-                                    });
-                                }
-                            }
                         }
                     }
 
@@ -803,6 +867,143 @@ mod tests {
 
         // Verify request-scoped converter drops cleanly
         drop(conv);
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_sync_reloaded_index_provenance_check() {
+        use ridx_format::{IndexWriter, RawDefinition, WorkspaceIndex};
+
+        let temp_dir = std::env::temp_dir().join(format!("ridx_sync_test_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        let ws_dir = temp_dir.join("target/ridx");
+        let src_dir = temp_dir.join("src");
+        std::fs::create_dir_all(&ws_dir).unwrap();
+        std::fs::create_dir_all(&src_dir).unwrap();
+
+        let foo_path = src_dir.join("foo.rs");
+        let foo_code = "fn foo() {}\n";
+        std::fs::write(&foo_path, foo_code).unwrap();
+
+        // 1. Build initial index for crate_foo
+        let mut writer_foo = IndexWriter::new("crate_foo", "0.1.0");
+        writer_foo.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "foo".to_string(),
+            path: "crate_foo::foo".to_string(),
+            signature: Some("fn()".to_string()),
+            file: foo_path.to_str().unwrap().to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 11,
+        });
+        let foo_ridx = ws_dir.join("crate_foo.ridx");
+        let f_foo = std::fs::File::create(&foo_ridx).unwrap();
+        writer_foo.write_to(&mut std::io::BufWriter::new(f_foo)).unwrap();
+
+        let mut ws = WorkspaceIndex::open(&ws_dir).unwrap();
+        let mut overlay_mgr = crate::overlay::OverlayManager::new();
+
+        // Open foo.rs in overlay with compiled provenance = true
+        let foo_str = foo_path.to_str().unwrap();
+        overlay_mgr.open_with_provenance("file://foo.rs", foo_str, 1, foo_code.to_string(), true);
+        assert!(!overlay_mgr.get(foo_str).unwrap().is_dirty());
+
+        // Modify foo.rs and save to disk (uncompiled saved edit)
+        let modified_code = "fn foo() {}\nfn foo_uncompiled() {}\n";
+        std::fs::write(&foo_path, modified_code).unwrap();
+        overlay_mgr.update(foo_str, 2, modified_code.to_string());
+        assert!(overlay_mgr.get(foo_str).unwrap().is_dirty());
+
+        // Now, an unrelated crate `crate_bar` is compiled and published
+        let mut writer_bar = IndexWriter::new("crate_bar", "0.1.0");
+        writer_bar.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "bar".to_string(),
+            path: "crate_bar::bar".to_string(),
+            signature: Some("fn()".to_string()),
+            file: "src/bar.rs".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 11,
+        });
+        let bar_ridx = ws_dir.join("crate_bar.ridx");
+        let f_bar = std::fs::File::create(&bar_ridx).unwrap();
+        writer_bar.write_to(&mut std::io::BufWriter::new(f_bar)).unwrap();
+
+        // Sync reloaded index: should reload crate_bar, but MUST NOT certify foo.rs!
+        sync_reloaded_index(&mut ws, &mut overlay_mgr);
+        assert!(
+            overlay_mgr.get(foo_str).unwrap().is_dirty(),
+            "unrelated crate reload must NOT certify uncompiled saved edits in foo.rs"
+        );
+
+        // Case: crate_foo index is reloaded, but file_mtime > shard_mtime
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        let mut writer_foo_v2 = IndexWriter::new("crate_foo", "0.1.0");
+        writer_foo_v2.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "foo".to_string(),
+            path: "crate_foo::foo".to_string(),
+            signature: Some("fn()".to_string()),
+            file: foo_path.to_str().unwrap().to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 11,
+        });
+        let f_foo2 = std::fs::File::create(&foo_ridx).unwrap();
+        writer_foo_v2.write_to(&mut std::io::BufWriter::new(f_foo2)).unwrap();
+
+        // Touch foo.rs after index was created, so file_mtime > shard_mtime
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        let newer_uncompiled = "fn foo() {}\nfn foo_even_newer() {}\n";
+        std::fs::write(&foo_path, newer_uncompiled).unwrap();
+        overlay_mgr.update(foo_str, 3, newer_uncompiled.to_string());
+
+        sync_reloaded_index(&mut ws, &mut overlay_mgr);
+        assert!(
+            overlay_mgr.get(foo_str).unwrap().is_dirty(),
+            "shard reload must NOT advance baseline when file_mtime > shard_mtime"
+        );
+
+        // Case: compiler finishes and publishes shard AFTER foo.rs was saved (file_mtime <= shard_mtime)
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        let mut writer_foo_v3 = IndexWriter::new("crate_foo", "0.1.0");
+        writer_foo_v3.add_definition(RawDefinition {
+            def_id: 1,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "foo".to_string(),
+            path: "crate_foo::foo".to_string(),
+            signature: Some("fn()".to_string()),
+            file: foo_path.to_str().unwrap().to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 11,
+        });
+        let f_foo3 = std::fs::File::create(&foo_ridx).unwrap();
+        writer_foo_v3.write_to(&mut std::io::BufWriter::new(f_foo3)).unwrap();
+
+        sync_reloaded_index(&mut ws, &mut overlay_mgr);
+        assert!(
+            !overlay_mgr.get(foo_str).unwrap().is_dirty(),
+            "shard reload MUST advance baseline when shard indexes the file and file_mtime <= shard_mtime"
+        );
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }

@@ -5,6 +5,7 @@
 use crate::format::{DefKind, Span};
 use crate::reader::{IndexReader, ResolvedDefinition};
 use memmap2::Mmap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -123,6 +124,8 @@ pub struct DependencyShardInfo {
     pub source_root: Option<String>,
     #[serde(default)]
     pub dependencies: Vec<String>,
+    #[serde(default)]
+    pub extern_units: HashMap<String, String>,
 }
 
 fn default_format_version() -> u32 {
@@ -213,6 +216,8 @@ pub struct WorkspaceIndex {
     source_roots: Vec<Option<PathBuf>>,
     unit_keys: Vec<Option<String>>,
     reader_dependencies: Vec<Vec<String>>,
+    reader_extern_units: Vec<HashMap<String, String>>,
+    last_reloaded_files: HashSet<String>,
     root_dir: Option<PathBuf>,
     manifest_path: Option<PathBuf>,
     manifest_mtime: Option<std::time::SystemTime>,
@@ -227,13 +232,20 @@ impl WorkspaceIndex {
         if p.is_file() {
             let mtime = fs::metadata(p).and_then(|m| m.modified()).ok();
             let reader = IndexReader::open(p)?;
+            let (source_root, unit_key, dependencies, extern_units) = if let Some(parent) = p.parent() {
+                Self::load_file_metadata(p, parent, reader.crate_name())
+            } else {
+                (None, None, Vec::new(), HashMap::new())
+            };
             return Ok(Self {
                 readers: vec![reader],
                 paths: vec![p.to_path_buf()],
                 mtimes: vec![mtime],
-                source_roots: vec![None],
-                unit_keys: vec![None],
-                reader_dependencies: vec![Vec::new()],
+                source_roots: vec![source_root],
+                unit_keys: vec![unit_key],
+                reader_dependencies: vec![dependencies],
+                reader_extern_units: vec![extern_units],
+                last_reloaded_files: HashSet::new(),
                 root_dir: None,
                 manifest_path: None,
                 manifest_mtime: None,
@@ -393,17 +405,21 @@ impl WorkspaceIndex {
         let mut source_roots = Vec::with_capacity(ridx_files.len());
         let mut unit_keys = Vec::with_capacity(ridx_files.len());
         let mut reader_dependencies = Vec::with_capacity(ridx_files.len());
+        let mut reader_extern_units = Vec::with_capacity(ridx_files.len());
 
         for file_path in ridx_files {
             match IndexReader::open(&file_path) {
                 Ok(reader) => {
                     let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
+                    let (sroot, ukey, deps, ext_units) =
+                        Self::load_file_metadata(&file_path, &scan_dir, reader.crate_name());
                     readers.push(reader);
                     paths.push(file_path);
                     mtimes.push(mtime);
-                    source_roots.push(None);
-                    unit_keys.push(None);
-                    reader_dependencies.push(Vec::new());
+                    source_roots.push(sroot);
+                    unit_keys.push(ukey);
+                    reader_dependencies.push(deps);
+                    reader_extern_units.push(ext_units);
                 }
                 Err(e) => {
                     eprintln!("Warning: skipping invalid index {:?}: {e}", file_path);
@@ -436,6 +452,7 @@ impl WorkspaceIndex {
                         source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
                         unit_keys.push(Some(dep.unit_key.clone()));
                         reader_dependencies.push(dep.dependencies.clone());
+                        reader_extern_units.push(dep.extern_units.clone());
                     }
                 }
             }
@@ -460,6 +477,8 @@ impl WorkspaceIndex {
             source_roots,
             unit_keys,
             reader_dependencies,
+            reader_extern_units,
+            last_reloaded_files: HashSet::new(),
             root_dir: Some(scan_dir),
             manifest_path,
             manifest_mtime,
@@ -702,16 +721,61 @@ impl WorkspaceIndex {
         res: &ResolvedDefinition<'_>,
     ) -> Option<ResolvedDefinition<'a>> {
         let target_path = res.path;
-        let target_crate = target_path.split("::").next().unwrap_or(target_path);
+        let extern_alias = target_path.split("::").next().unwrap_or(target_path);
 
-        // 1. If referrer reader has explicit dependency mapping:
-        if let Some(referrer_deps) = self.reader_dependencies.get(referrer_idx) {
-            for dep_item in referrer_deps {
+        // 1. Determine target unit key for this extern alias if known
+        let mut target_unit: Option<&str> = self
+            .reader_extern_units
+            .get(referrer_idx)
+            .and_then(|m| m.get(extern_alias).map(|s| s.as_str()));
+
+        // If not found in extern_units, check if referrer_dependencies has a unit key matching a reader
+        if target_unit.is_none() {
+            if let Some(deps) = self.reader_dependencies.get(referrer_idx) {
                 for (j, r) in self.readers.iter().enumerate() {
-                    let matches_unit = self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(dep_item.as_str());
-                    let matches_crate = r.crate_name() == dep_item.as_str();
-                    if (matches_unit || matches_crate) && r.crate_name() == target_crate {
-                        if let Some(def) = r.find_definition_by_path(target_path) {
+                    if let Some(Some(uk)) = self.unit_keys.get(j).map(|u| u.as_deref()) {
+                        if deps.iter().any(|d| d == uk)
+                            && (r.crate_name() == extern_alias
+                                || target_path.starts_with(&format!("{}::", r.crate_name())))
+                        {
+                            target_unit = Some(uk);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. If target unit is known: ONLY search readers matching that exact unit key!
+        if let Some(target_uk) = target_unit {
+            for (j, r) in self.readers.iter().enumerate() {
+                if self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(target_uk) {
+                    // Try looking up with original target_path (e.g. a::foo)
+                    if let Some(def) = r.find_definition_by_path(target_path) {
+                        let def_span = def.span();
+                        return Some(ResolvedDefinition {
+                            name: r.get_str(def.name_offset()),
+                            path: r.get_str(def.path_offset()),
+                            kind: DefKind::from(def.kind),
+                            signature: if def.sig_offset() != 0 {
+                                Some(r.get_str(def.sig_offset()))
+                            } else {
+                                None
+                            },
+                            file: r.get_file(def_span.file_id()),
+                            start_line: def_span.start_line(),
+                            start_col: def_span.start_col(),
+                            end_line: def_span.end_line(),
+                            end_col: def_span.end_col(),
+                            is_macro_expansion: def.is_macro_expansion(),
+                            source_root: self.source_roots.get(j).and_then(|r| r.as_deref()),
+                            unit_key: Some(target_uk),
+                        });
+                    }
+                    // If target_path started with an alias (e.g. a1::foo), try with reader's real crate name
+                    if target_path.starts_with(&format!("{extern_alias}::")) {
+                        let mapped_path = format!("{}::{}", r.crate_name(), &target_path[extern_alias.len() + 2..]);
+                        if let Some(def) = r.find_definition_by_path(&mapped_path) {
                             let def_span = def.span();
                             return Some(ResolvedDefinition {
                                 name: r.get_str(def.name_offset()),
@@ -729,15 +793,18 @@ impl WorkspaceIndex {
                                 end_col: def_span.end_col(),
                                 is_macro_expansion: def.is_macro_expansion(),
                                 source_root: self.source_roots.get(j).and_then(|r| r.as_deref()),
-                                unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
+                                unit_key: Some(target_uk),
                             });
                         }
                     }
                 }
             }
+            // If target unit is known but definition wasn't found in that unit, do NOT fall back to another unit!
+            return None;
         }
 
-        // 2. Search all readers for candidate definitions matching target_path
+        // 3. Target unit is not known. Search readers matching target_crate
+        let target_crate = extern_alias;
         let mut candidates = Vec::new();
         for (j, r) in self.readers.iter().enumerate() {
             if r.crate_name() == target_crate {
@@ -772,21 +839,28 @@ impl WorkspaceIndex {
             return Some(candidates.remove(0));
         }
 
-        // 3. Disambiguate among multiple candidates:
+        // 4. Disambiguate among multiple candidates:
         // Match by start_line and/or file if available from the reference
+        let mut best_candidate = None;
         for c_def in &candidates {
-            if res.start_line != 0 && c_def.start_line == res.start_line {
+            let line_matches = res.start_line != 0 && c_def.start_line == res.start_line;
+            let file_matches = res.file != "external"
+                && !res.file.is_empty()
+                && (c_def.file == res.file || c_def.resolved_path().to_string_lossy().ends_with(res.file));
+            if line_matches && file_matches {
                 return Some(c_def.clone());
             }
-            if res.file != "external"
-                && !res.file.is_empty()
-                && (c_def.file == res.file || c_def.resolved_path().to_string_lossy().ends_with(res.file))
-            {
-                return Some(c_def.clone());
+            if (line_matches || file_matches) && best_candidate.is_none() {
+                best_candidate = Some(c_def.clone());
             }
         }
 
-        Some(candidates.remove(0))
+        if let Some(cand) = best_candidate {
+            return Some(cand);
+        }
+
+        // Ambiguous candidates with no exact unit or file/line match: do not guess!
+        None
     }
 
     /// Finds all references to a symbol, optionally scoped to a target dependency unit.
@@ -803,7 +877,6 @@ impl WorkspaceIndex {
             let reader_crate = reader.crate_name();
 
             // 1. If reader is the target crate itself:
-            // Match target_unit_key so different versions of target crate are excluded.
             if reader_crate == target_crate {
                 if let (Some(target_unit), Some(ru)) = (target_unit_key, reader_unit) {
                     if ru != target_unit {
@@ -811,25 +884,30 @@ impl WorkspaceIndex {
                     }
                 }
             } else {
-                // 2. The reader is an external/referring crate (e.g. dependency B or local app referencing A).
-                // If it has recorded dependency unit keys and target_unit_key is given, verify it depends on target_unit_key or target_crate.
-                if let Some(deps) = self.reader_dependencies.get(i) {
-                    if !deps.is_empty() {
-                        let matches_dep = deps.iter().any(|d| {
-                            if let Some(target_unit) = target_unit_key {
-                                if d == target_unit {
-                                    return true;
-                                }
-                            }
-                            d == target_crate
-                        });
-                        if !matches_dep {
+                // 2. The reader is an external/referring crate.
+                // If target_unit_key is given:
+                if let Some(target_unit) = target_unit_key {
+                    let has_deps = self.reader_dependencies.get(i).map(|d| !d.is_empty()).unwrap_or(false);
+                    let has_extern_units = self.reader_extern_units.get(i).map(|m| !m.is_empty()).unwrap_or(false);
+
+                    if has_deps || has_extern_units {
+                        let in_deps = self.reader_dependencies.get(i).map(|d| d.iter().any(|dep| dep == target_unit)).unwrap_or(false);
+                        let in_extern_units = self.reader_extern_units.get(i).map(|m| m.values().any(|uk| uk == target_unit)).unwrap_or(false);
+                        if !in_deps && !in_extern_units {
+                            // Referring crate has dependency info but does NOT depend on target_unit. Exclude!
+                            continue;
+                        }
+                    } else {
+                        // Legacy reader without dependency info: exclude if multiple versions of target_crate exist in workspace
+                        let target_crate_versions = self.readers.iter().filter(|r| r.crate_name() == target_crate).count();
+                        if target_crate_versions > 1 {
                             continue;
                         }
                     }
                 }
             }
 
+            // References with canonical target_path
             let refs = reader.find_references(target_path);
             let source_root = self.source_roots.get(i).and_then(|r| r.as_deref());
 
@@ -846,6 +924,34 @@ impl WorkspaceIndex {
                     source_root,
                     unit_key: reader_unit,
                 });
+            }
+
+            // Also check if reader refers to target_path via an extern alias (e.g. `a1::foo` instead of `a::foo`)
+            if let Some(extern_map) = self.reader_extern_units.get(i) {
+                for (alias, uk) in extern_map {
+                    if alias != target_crate && target_path.starts_with(&format!("{target_crate}::")) {
+                        if let Some(target_unit) = target_unit_key {
+                            if uk != target_unit {
+                                continue;
+                            }
+                        }
+                        let aliased_path = format!("{alias}::{}", &target_path[target_crate.len() + 2..]);
+                        for r in reader.find_references(&aliased_path) {
+                            let span = r.span();
+                            let file = reader.get_file(span.file_id());
+                            all_refs.push(WorkspaceReference {
+                                crate_name: reader_crate,
+                                file,
+                                span,
+                                kind: DefKind::from(r.kind),
+                                is_write: r.is_write != 0,
+                                is_macro_expansion: r.is_macro_expansion(),
+                                source_root,
+                                unit_key: reader_unit,
+                            });
+                        }
+                    }
+                }
             }
         }
 
@@ -981,6 +1087,7 @@ impl WorkspaceIndex {
     /// Returns true if any index was updated, added, removed, or switched.
     pub fn reload_if_modified(&mut self) -> io::Result<bool> {
         let mut changed = false;
+        self.last_reloaded_files.clear();
 
         // 0. Check if active variant manifest was updated or switched
         if self.manifest_path.is_none() {
@@ -1035,16 +1142,20 @@ impl WorkspaceIndex {
                                     let mut new_source_roots = Vec::with_capacity(new_files.len());
                                     let mut new_unit_keys = Vec::with_capacity(new_files.len());
                                     let mut new_reader_dependencies = Vec::with_capacity(new_files.len());
+                                    let mut new_reader_extern_units = Vec::with_capacity(new_files.len());
 
                                     for fp in new_files {
                                         if let Ok(r) = IndexReader::open(&fp) {
                                             let mt = fs::metadata(&fp).and_then(|m| m.modified()).ok();
+                                            let (sroot, ukey, deps, ext_units) =
+                                                Self::load_file_metadata(&fp, &new_vdir, r.crate_name());
                                             new_readers.push(r);
                                             new_paths.push(fp);
                                             new_mtimes.push(mt);
-                                            new_source_roots.push(None);
-                                            new_unit_keys.push(None);
-                                            new_reader_dependencies.push(Vec::new());
+                                            new_source_roots.push(sroot);
+                                            new_unit_keys.push(ukey);
+                                            new_reader_dependencies.push(deps);
+                                            new_reader_extern_units.push(ext_units);
                                         }
                                     }
 
@@ -1071,6 +1182,7 @@ impl WorkspaceIndex {
                                                 new_source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
                                                 new_unit_keys.push(Some(dep.unit_key.clone()));
                                                 new_reader_dependencies.push(dep.dependencies.clone());
+                                                new_reader_extern_units.push(dep.extern_units.clone());
                                             }
                                         }
                                     }
@@ -1082,8 +1194,12 @@ impl WorkspaceIndex {
                                         self.source_roots = new_source_roots;
                                         self.unit_keys = new_unit_keys;
                                         self.reader_dependencies = new_reader_dependencies;
+                                        self.reader_extern_units = new_reader_extern_units;
                                         self.root_dir = Some(new_vdir);
                                         self.active_variant_id = Some(manifest.active_variant_id);
+                                        for idx in 0..self.readers.len() {
+                                            self.record_reloaded_reader_files(idx);
+                                        }
                                         return Ok(true);
                                     }
                                 }
@@ -1097,7 +1213,7 @@ impl WorkspaceIndex {
         // 1. Reconcile existing files: remove deleted, reload modified
         let mut i = 0;
         while i < self.paths.len() {
-            let p = &self.paths[i];
+            let p = self.paths[i].clone();
             if !p.exists() {
                 self.paths.remove(i);
                 self.readers.remove(i);
@@ -1111,15 +1227,35 @@ impl WorkspaceIndex {
                 if i < self.reader_dependencies.len() {
                     self.reader_dependencies.remove(i);
                 }
+                if i < self.reader_extern_units.len() {
+                    self.reader_extern_units.remove(i);
+                }
                 changed = true;
                 continue;
             }
 
-            let current_mtime = fs::metadata(p).and_then(|m| m.modified()).ok();
+            let current_mtime = fs::metadata(&p).and_then(|m| m.modified()).ok();
             if current_mtime != self.mtimes[i] {
-                if let Ok(new_reader) = IndexReader::open(p) {
+                if let Ok(new_reader) = IndexReader::open(&p) {
                     self.readers[i] = new_reader;
                     self.mtimes[i] = current_mtime;
+                    if let Some(dir) = self.root_dir.clone() {
+                        let (sroot, ukey, deps, ext_units) =
+                            Self::load_file_metadata(&p, &dir, self.readers[i].crate_name());
+                        if let Some(sr) = self.source_roots.get_mut(i) {
+                            *sr = sroot;
+                        }
+                        if let Some(uk) = self.unit_keys.get_mut(i) {
+                            *uk = ukey;
+                        }
+                        if let Some(dp) = self.reader_dependencies.get_mut(i) {
+                            *dp = deps;
+                        }
+                        if let Some(eu) = self.reader_extern_units.get_mut(i) {
+                            *eu = ext_units;
+                        }
+                    }
+                    self.record_reloaded_reader_files(i);
                     changed = true;
                 }
             }
@@ -1127,7 +1263,7 @@ impl WorkspaceIndex {
         }
 
         // 2. If loaded from directory, check for new .ridx files
-        if let Some(ref dir) = self.root_dir {
+        if let Some(dir) = self.root_dir.clone() {
             let mut existing_set = std::collections::HashSet::new();
             for p in &self.paths {
                 existing_set.insert(p.clone());
@@ -1135,19 +1271,24 @@ impl WorkspaceIndex {
 
             let mut all_files = Vec::new();
             if dir.is_dir() {
-                collect_ridx_files(dir, &mut all_files)?;
+                collect_ridx_files(&dir, &mut all_files)?;
             }
 
             for file_path in all_files {
                 if !existing_set.contains(&file_path) {
                     if let Ok(reader) = IndexReader::open(&file_path) {
                         let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
+                        let (sroot, ukey, deps, ext_units) =
+                            Self::load_file_metadata(&file_path, &dir, reader.crate_name());
                         self.readers.push(reader);
                         self.paths.push(file_path);
                         self.mtimes.push(mtime);
-                        self.source_roots.push(None);
-                        self.unit_keys.push(None);
-                        self.reader_dependencies.push(Vec::new());
+                        self.source_roots.push(sroot);
+                        self.unit_keys.push(ukey);
+                        self.reader_dependencies.push(deps);
+                        self.reader_extern_units.push(ext_units);
+                        let new_idx = self.readers.len() - 1;
+                        self.record_reloaded_reader_files(new_idx);
                         changed = true;
                     }
                 }
@@ -1155,6 +1296,113 @@ impl WorkspaceIndex {
         }
 
         Ok(changed)
+    }
+
+    /// Checks if a file path belongs to any shard that was newly reloaded or published in the last reload.
+    pub fn is_file_reloaded(&self, file_path: &str) -> bool {
+        if self.last_reloaded_files.contains(file_path) {
+            return true;
+        }
+        let p = Path::new(file_path);
+        if let Ok(canon) = p.canonicalize() {
+            if self.last_reloaded_files.contains(&canon.to_string_lossy().to_string()) {
+                return true;
+            }
+        }
+        self.last_reloaded_files
+            .iter()
+            .any(|rf| rf == file_path || rf.ends_with(file_path) || file_path.ends_with(rf))
+    }
+
+    /// Returns the file modification timestamp of the index shard containing the given source file.
+    pub fn shard_mtime_for_file(&self, file_path: &str) -> Option<std::time::SystemTime> {
+        let p = Path::new(file_path);
+        let is_abs = p.is_absolute();
+
+        for (i, reader) in self.readers.iter().enumerate() {
+            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
+                if is_abs {
+                    if let Ok(rel) = p.strip_prefix(root) {
+                        rel.to_str().unwrap_or(file_path)
+                    } else {
+                        continue;
+                    }
+                } else {
+                    file_path
+                }
+            } else {
+                if is_abs {
+                    let belongs_to_dep = self.source_roots.iter().any(|r| {
+                        if let Some(r) = r.as_ref() {
+                            p.starts_with(r)
+                        } else {
+                            false
+                        }
+                    });
+                    if belongs_to_dep {
+                        continue;
+                    }
+                }
+                file_path
+            };
+
+            if reader.find_file_id(target_file).is_some() {
+                return self.mtimes.get(i).copied().flatten();
+            }
+        }
+        None
+    }
+
+    fn record_reloaded_reader_files(&mut self, idx: usize) {
+        if let Some(reader) = self.readers.get(idx) {
+            let source_root = self.source_roots.get(idx).and_then(|r| r.as_ref());
+            let header = reader.header();
+            for fid in 0..header.files_count {
+                let f = reader.get_file(fid);
+                if !f.is_empty() {
+                    let full = if let Some(root) = source_root {
+                        root.join(f)
+                    } else {
+                        PathBuf::from(f)
+                    };
+                    self.last_reloaded_files.insert(full.to_string_lossy().to_string());
+                    if let Ok(canon) = full.canonicalize() {
+                        self.last_reloaded_files.insert(canon.to_string_lossy().to_string());
+                    }
+                    self.last_reloaded_files.insert(f.to_string());
+                }
+            }
+        }
+    }
+
+    fn load_file_metadata(
+        file_path: &Path,
+        base_dir: &Path,
+        crate_name: &str,
+    ) -> (Option<PathBuf>, Option<String>, Vec<String>, HashMap<String, String>) {
+        let stem = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
+        let deps_dir = base_dir.join(".deps");
+        let cand_json = [
+            deps_dir.join(format!("{stem_without_lib}.json")),
+            deps_dir.join(format!("{stem}.json")),
+            deps_dir.join(format!("{crate_name}.json")),
+        ];
+        for c in &cand_json {
+            if c.is_file() {
+                if let Ok(content) = fs::read(c) {
+                    if let Ok(info) = serde_json::from_slice::<DependencyShardInfo>(&content) {
+                        return (
+                            info.source_root.as_ref().map(PathBuf::from),
+                            Some(info.unit_key),
+                            info.dependencies,
+                            info.extern_units,
+                        );
+                    }
+                }
+            }
+        }
+        (None, None, Vec::new(), HashMap::new())
     }
 }
 

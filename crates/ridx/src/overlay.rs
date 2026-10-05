@@ -61,13 +61,23 @@ pub struct DocumentOverlay {
 }
 
 impl DocumentOverlay {
-    /// Creates and parses a new DocumentOverlay from buffer text.
-    pub fn new(uri: impl Into<String>, file_path: impl Into<String>, version: i32, text: String) -> Self {
+    /// Creates and parses a new DocumentOverlay with explicit provenance tracking.
+    pub fn new_with_provenance(
+        uri: impl Into<String>,
+        file_path: impl Into<String>,
+        version: i32,
+        text: String,
+        is_compiled: bool,
+    ) -> Self {
         let uri = uri.into();
         let file_path = file_path.into();
         let content_hash = fnv1a_64(text.as_bytes());
         let disk_text = std::fs::read_to_string(&file_path).ok();
-        let compiled_text = disk_text.clone().or_else(|| Some(text.clone()));
+        let compiled_text = if is_compiled {
+            Some(text.clone())
+        } else {
+            None
+        };
         let mut overlay = Self {
             uri,
             file_path,
@@ -82,6 +92,12 @@ impl DocumentOverlay {
         };
         overlay.reparse();
         overlay
+    }
+
+    /// Creates and parses a new DocumentOverlay from buffer text assuming compiled baseline.
+    #[allow(dead_code)]
+    pub fn new(uri: impl Into<String>, file_path: impl Into<String>, version: i32, text: String) -> Self {
+        Self::new_with_provenance(uri, file_path, version, text, true)
     }
 
     /// Updates buffer text, version, and reparses symbols.
@@ -331,50 +347,131 @@ impl DocumentOverlay {
 }
 
 fn strip_trailing_whitespace_and_comments(s: &str) -> &str {
-    let mut slice = s;
+    let bytes = s.as_bytes();
+    let mut cur = bytes.len();
+
     loop {
-        let trimmed = slice.trim_end();
-        if trimmed.ends_with("*/") {
-            if let Some(start) = trimmed.rfind("/*") {
-                slice = &trimmed[..start];
+        // 1. Skip trailing whitespace
+        while cur > 0 && bytes[cur - 1].is_ascii_whitespace() {
+            cur -= 1;
+        }
+
+        // 2. Check for block comment ending at cur: "*/"
+        if cur >= 2 && bytes[cur - 2] == b'*' && bytes[cur - 1] == b'/' {
+            let mut depth = 1usize;
+            let mut scan = cur - 2;
+            let mut found_start = None;
+            while scan >= 2 {
+                if bytes[scan - 2] == b'*' && bytes[scan - 1] == b'/' {
+                    depth += 1;
+                    scan -= 2;
+                } else if bytes[scan - 2] == b'/' && bytes[scan - 1] == b'*' {
+                    depth -= 1;
+                    scan -= 2;
+                    if depth == 0 {
+                        found_start = Some(scan);
+                        break;
+                    }
+                } else {
+                    scan -= 1;
+                }
+            }
+            if let Some(start) = found_start {
+                cur = start;
                 continue;
             }
         }
-        if let Some(last_nl) = trimmed.rfind('\n') {
-            let last_line = &trimmed[last_nl + 1..];
-            if let Some(comment_pos) = last_line.find("//") {
-                let before = &last_line[..comment_pos];
-                slice = &trimmed[..last_nl + 1 + before.len()];
+
+        // 3. Check if current line contains a line comment "//" outside of strings/chars
+        if cur > 0 {
+            let line_start = bytes[..cur].iter().rposition(|&b| b == b'\n').map(|p| p + 1).unwrap_or(0);
+            let line_slice = &bytes[line_start..cur];
+            let mut in_quote: Option<u8> = None;
+            let mut line_cur = 0;
+            let mut comment_start = None;
+            while line_cur < line_slice.len() {
+                let b = line_slice[line_cur];
+                if let Some(q) = in_quote {
+                    if b == b'\\' && line_cur + 1 < line_slice.len() {
+                        line_cur += 2;
+                        continue;
+                    }
+                    if b == q {
+                        in_quote = None;
+                    }
+                    line_cur += 1;
+                } else if b == b'"' || b == b'\'' {
+                    in_quote = Some(b);
+                    line_cur += 1;
+                } else if b == b'/' && line_cur + 1 < line_slice.len() && line_slice[line_cur + 1] == b'/' {
+                    comment_start = Some(line_start + line_cur);
+                    break;
+                } else {
+                    line_cur += 1;
+                }
+            }
+            if let Some(cs) = comment_start {
+                cur = cs;
                 continue;
             }
-        } else if let Some(comment_pos) = trimmed.find("//") {
-            slice = &trimmed[..comment_pos];
-            continue;
         }
-        return trimmed;
+
+        break;
     }
+
+    &s[..cur]
 }
 
 fn strip_leading_whitespace_and_comments(s: &str) -> &str {
-    let mut slice = s;
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+    let mut cur = 0;
+
     loop {
-        let trimmed = slice.trim_start();
-        if trimmed.starts_with("/*") {
-            if let Some(end) = trimmed.find("*/") {
-                slice = &trimmed[end + 2..];
+        // 1. Skip leading whitespace
+        while cur < len && bytes[cur].is_ascii_whitespace() {
+            cur += 1;
+        }
+
+        // 2. Check for line comment: "//"
+        if cur + 1 < len && bytes[cur] == b'/' && bytes[cur + 1] == b'/' {
+            cur += 2;
+            while cur < len && bytes[cur] != b'\n' {
+                cur += 1;
+            }
+            continue;
+        }
+
+        // 3. Check for block comment: "/*"
+        if cur + 1 < len && bytes[cur] == b'/' && bytes[cur + 1] == b'*' {
+            let mut depth = 1usize;
+            let mut scan = cur + 2;
+            let mut found_end = None;
+            while scan + 1 < len {
+                if bytes[scan] == b'/' && bytes[scan + 1] == b'*' {
+                    depth += 1;
+                    scan += 2;
+                } else if bytes[scan] == b'*' && bytes[scan + 1] == b'/' {
+                    depth -= 1;
+                    scan += 2;
+                    if depth == 0 {
+                        found_end = Some(scan);
+                        break;
+                    }
+                } else {
+                    scan += 1;
+                }
+            }
+            if let Some(end) = found_end {
+                cur = end;
                 continue;
             }
         }
-        if trimmed.starts_with("//") {
-            if let Some(end) = trimmed.find('\n') {
-                slice = &trimmed[end + 1..];
-                continue;
-            } else {
-                return "";
-            }
-        }
-        return trimmed;
+
+        break;
     }
+
+    &s[cur..]
 }
 
 impl DocumentOverlay {
@@ -582,11 +679,35 @@ impl OverlayManager {
         }
     }
 
+    pub fn update(&mut self, file_path: &str, version: i32, text: String) -> bool {
+        if let Some(existing) = self.overlays.get_mut(file_path) {
+            existing.update(version, text);
+            true
+        } else {
+            false
+        }
+    }
+
+    #[allow(dead_code)]
     pub fn open_or_update(&mut self, uri: &str, file_path: &str, version: i32, text: String) {
         if let Some(existing) = self.overlays.get_mut(file_path) {
             existing.update(version, text);
         } else {
-            let overlay = DocumentOverlay::new(uri, file_path, version, text);
+            let overlay = DocumentOverlay::new_with_provenance(uri, file_path, version, text, true);
+            self.overlays.insert(file_path.to_string(), overlay);
+        }
+    }
+
+    pub fn open_with_provenance(&mut self, uri: &str, file_path: &str, version: i32, text: String, is_compiled: bool) {
+        if let Some(existing) = self.overlays.get_mut(file_path) {
+            existing.update(version, text);
+            if is_compiled {
+                existing.compiled_text = Some(existing.text.clone());
+            } else {
+                existing.compiled_text = None;
+            }
+        } else {
+            let overlay = DocumentOverlay::new_with_provenance(uri, file_path, version, text, is_compiled);
             self.overlays.insert(file_path.to_string(), overlay);
         }
     }
@@ -706,11 +827,22 @@ impl<'a> OverlayParser<'a> {
 
             // Block comment /* ... */
             if b == b'/' && pos + 1 < len && bytes[pos + 1] == b'*' {
+                let mut depth = 1usize;
                 pos += 2;
-                while pos + 1 < len && !(bytes[pos] == b'*' && bytes[pos + 1] == b'/') {
-                    pos += 1;
+                while pos + 1 < len {
+                    if bytes[pos] == b'/' && bytes[pos + 1] == b'*' {
+                        depth += 1;
+                        pos += 2;
+                    } else if bytes[pos] == b'*' && bytes[pos + 1] == b'/' {
+                        depth -= 1;
+                        pos += 2;
+                        if depth == 0 {
+                            break;
+                        }
+                    } else {
+                        pos += 1;
+                    }
                 }
-                pos = (pos + 2).min(len);
                 continue;
             }
 
@@ -953,7 +1085,7 @@ impl<'a> OverlayParser<'a> {
                         let (e_line, e_col) = self.byte_to_char_line_col(abs_offset + p_name.len());
                         self.symbols.push(OverlaySymbol {
                             name: p_name.to_string(),
-                            kind: DefKind::Field, // Local parameter
+                            kind: DefKind::Local, // Local parameter
                             signature: Some(trimmed.to_string()),
                             start_line: s_line,
                             start_col: s_col,
@@ -1032,11 +1164,22 @@ impl<'a> OverlayParser<'a> {
                 continue;
             }
             if b == b'/' && cur + 1 < len && bytes[cur + 1] == b'*' {
+                let mut depth = 1usize;
                 cur += 2;
-                while cur + 1 < len && !(bytes[cur] == b'*' && bytes[cur + 1] == b'/') {
-                    cur += 1;
+                while cur + 1 < len {
+                    if bytes[cur] == b'/' && bytes[cur + 1] == b'*' {
+                        depth += 1;
+                        cur += 2;
+                    } else if bytes[cur] == b'*' && bytes[cur + 1] == b'/' {
+                        depth -= 1;
+                        cur += 2;
+                        if depth == 0 {
+                            break;
+                        }
+                    } else {
+                        cur += 1;
+                    }
                 }
-                cur = (cur + 2).min(len);
                 continue;
             }
             // Strings and chars
@@ -1106,7 +1249,7 @@ impl<'a> OverlayParser<'a> {
 
         self.symbols.push(OverlaySymbol {
             name: name.to_string(),
-            kind: DefKind::Static, // Local variable
+            kind: DefKind::Local, // Local variable
             signature: None,
             start_line: s_line,
             start_col: s_col,
@@ -1200,6 +1343,15 @@ mod tests {
     }
 
     #[test]
+    fn test_nested_comment_qualification_abstains() {
+        let code = "fn f() {}\nfn run() { external::/* outer /* inner */ outer */f();\n}\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/nested_comment.rs", "src/nested_comment.rs", 1, code);
+        // Querying `f` on line 2, col 51 should abstain (None) because of `external::...` preceding it
+        let def = overlay.find_definition_at(2, 51);
+        assert!(def.is_none(), "overlay must abstain for qualified path with nested comments external::/* outer /* inner */ outer */f()");
+    }
+
+    #[test]
     fn test_save_does_not_advance_compiled_baseline() {
         let initial_code = "fn a() {}\nfn b() {}\n".to_string();
         let mut overlay = DocumentOverlay::new("file:///test/save.rs", "src/save.rs", 1, initial_code);
@@ -1226,13 +1378,13 @@ mod tests {
         let def = overlay.find_definition_at(3, 5).expect("should find local variable 'result'");
         assert_eq!(def.name, "result");
         assert_eq!(def.start_line, 2);
-        assert_eq!(def.kind, DefKind::Static); // local let
+        assert_eq!(def.kind, DefKind::Local); // local let
 
         // 2. Cursor on `input` in expression on line 2, col 19
         let def_param = overlay.find_definition_at(2, 19).expect("should find parameter 'input'");
         assert_eq!(def_param.name, "input");
         assert_eq!(def_param.start_line, 1);
-        assert_eq!(def_param.kind, DefKind::Field); // param
+        assert_eq!(def_param.kind, DefKind::Local); // param
 
         // 3. Cursor on function name `compute` at line 1, col 4
         let def_fn = overlay.find_definition_at(1, 4).expect("should find function 'compute'");

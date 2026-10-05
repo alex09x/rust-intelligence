@@ -506,49 +506,93 @@ fn build_crate_index(
         _ => String::new(),
     };
 
-    if is_immutable {
-        let unit_key = compute_dependency_unit_key(
-            &crate_name,
-            &crate_version,
-            disambiguator,
-            manifest_dir.as_deref(),
-            compiler_args,
-        );
-        let cache_dir = ridx_format::resolve_cache_dir();
-        let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
+    let unit_key = compute_dependency_unit_key(
+        &crate_name,
+        &crate_version,
+        disambiguator,
+        manifest_dir.as_deref(),
+        compiler_args,
+    );
 
-        let mut dep_crate_names = Vec::new();
-        for i in 0..compiler_args.len() {
-            let arg = &compiler_args[i];
-            let ext_val = if arg == "--extern" && i + 1 < compiler_args.len() {
-                Some(compiler_args[i + 1].as_str())
+    let deps_dir = out_dir.join(".deps");
+    let _ = fs::create_dir_all(&deps_dir);
+
+    let mut dep_keys_or_names = Vec::new();
+    let mut extern_units = std::collections::HashMap::new();
+
+    for i in 0..compiler_args.len() {
+        let arg = &compiler_args[i];
+        let ext_val = if arg == "--extern" && i + 1 < compiler_args.len() {
+            Some(compiler_args[i + 1].as_str())
+        } else {
+            arg.strip_prefix("--extern=")
+        };
+        if let Some(val) = ext_val {
+            let (name_part, path_opt) = if let Some((n, p)) = val.split_once('=') {
+                (n.trim(), Some(p.trim()))
+            } else if let Some((n, p)) = val.split_once(':') {
+                (n.trim(), Some(p.trim()))
             } else {
-                arg.strip_prefix("--extern=")
+                (val.trim(), None)
             };
-            if let Some(val) = ext_val {
-                let name_part = val.split_once('=').map(|(n, _)| n).unwrap_or(val);
-                let clean_name = name_part.rsplit(':').next().unwrap_or(name_part);
-                if !clean_name.is_empty() && !dep_crate_names.contains(&clean_name.to_string()) {
-                    dep_crate_names.push(clean_name.to_string());
-                }
+
+            let clean_alias = name_part.rsplit(':').next().unwrap_or(name_part);
+            if !clean_alias.is_empty() && !dep_keys_or_names.contains(&clean_alias.to_string()) {
+                dep_keys_or_names.push(clean_alias.to_string());
             }
-        }
 
-        let deps_dir = out_dir.join(".deps");
-        let _ = fs::create_dir_all(&deps_dir);
-
-        let mut dep_keys_or_names = Vec::new();
-        for dep_name in &dep_crate_names {
-            dep_keys_or_names.push(dep_name.clone());
-            let dep_json_path = deps_dir.join(format!("{dep_name}.json"));
-            if let Ok(content) = fs::read(&dep_json_path) {
-                if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
-                    if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
-                        dep_keys_or_names.push(uk.to_string());
+            // Look up disambiguated .deps/<dep_stem>.json for this extern
+            let mut resolved_unit = None;
+            if let Some(p_str) = path_opt {
+                let p = Path::new(p_str);
+                let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
+                let cand_files = [
+                    deps_dir.join(format!("{stem_without_lib}.json")),
+                    deps_dir.join(format!("{stem}.json")),
+                    deps_dir.join(format!("{clean_alias}.json")),
+                ];
+                for c in &cand_files {
+                    if c.is_file() {
+                        if let Ok(content) = fs::read(c) {
+                            if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
+                                if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
+                                    resolved_unit = Some(uk.to_string());
+                                    let dep_name = val.get("name").and_then(|v| v.as_str()).unwrap_or(clean_alias);
+                                    if !dep_keys_or_names.contains(&dep_name.to_string()) {
+                                        dep_keys_or_names.push(dep_name.to_string());
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                let c = deps_dir.join(format!("{clean_alias}.json"));
+                if c.is_file() {
+                    if let Ok(content) = fs::read(&c) {
+                        if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
+                            if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
+                                resolved_unit = Some(uk.to_string());
+                            }
+                        }
                     }
                 }
             }
+
+            if let Some(uk) = resolved_unit {
+                extern_units.insert(clean_alias.to_string(), uk.clone());
+                if !dep_keys_or_names.contains(&uk) {
+                    dep_keys_or_names.push(uk);
+                }
+            }
         }
+    }
+
+    if is_immutable {
+        let cache_dir = ridx_format::resolve_cache_dir();
+        let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
 
         // Record dependency shard info for active workspace variant
         let dep_info = serde_json::json!({
@@ -558,6 +602,7 @@ fn build_crate_index(
             "object_path": obj_path.display().to_string(),
             "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
             "dependencies": dep_keys_or_names,
+            "extern_units": extern_units,
         });
         let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
         let _ = fs::write(&dep_file, serde_json::to_string_pretty(&dep_info).unwrap_or_default());
@@ -636,6 +681,19 @@ fn build_crate_index(
         eprintln!("ridx-driver: failed to create out_dir {:?}: {e}", out_dir);
         return;
     }
+
+    let out_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx"));
+    let dep_info = serde_json::json!({
+        "name": crate_name,
+        "version": crate_version,
+        "unit_key": unit_key,
+        "object_path": out_file_path.display().to_string(),
+        "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+        "dependencies": dep_keys_or_names,
+        "extern_units": extern_units,
+    });
+    let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
+    let _ = fs::write(&dep_file, serde_json::to_string_pretty(&dep_info).unwrap_or_default());
 
     let mut visitor = HirVisitor {
         tcx,
