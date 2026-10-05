@@ -119,11 +119,14 @@ pub struct DependencyShardInfo {
     pub name: String,
     pub version: String,
     pub unit_key: String,
+    #[serde(default)]
     pub object_path: String,
     #[serde(default)]
     pub source_root: Option<String>,
     #[serde(default)]
     pub is_dependency: bool,
+    #[serde(default)]
+    pub generation: Option<String>,
     #[serde(default)]
     pub dependencies: Vec<String>,
     #[serde(default)]
@@ -219,10 +222,13 @@ pub struct WorkspaceIndex {
     mtimes: Vec<Option<std::time::SystemTime>>,
     source_roots: Vec<Option<PathBuf>>,
     unit_keys: Vec<Option<String>>,
+    reader_generations: Vec<Option<String>>,
     reader_dependencies: Vec<Vec<String>>,
     reader_extern_units: Vec<HashMap<String, String>>,
     reader_file_hashes: Vec<HashMap<String, u64>>,
     reader_is_dependency: Vec<bool>,
+    meta_paths: Vec<Option<PathBuf>>,
+    meta_mtimes: Vec<Option<std::time::SystemTime>>,
     last_reloaded_files: HashSet<String>,
     root_dir: Option<PathBuf>,
     workspace_root: Option<PathBuf>,
@@ -239,12 +245,37 @@ impl WorkspaceIndex {
         if p.is_file() {
             let mtime = fs::metadata(p).and_then(|m| m.modified()).ok();
             let reader = IndexReader::open(p)?;
-            let (source_root, unit_key, dependencies, extern_units, file_hashes) =
-                if let Some(parent) = p.parent() {
-                    Self::load_file_metadata(p, parent, reader.crate_name(), reader.unit_key())
-                } else {
-                    (None, None, Vec::new(), HashMap::new(), HashMap::new())
-                };
+            let embedded = reader.embedded_file_hashes();
+            let (
+                source_root,
+                unit_key,
+                gen,
+                dependencies,
+                extern_units,
+                file_hashes,
+                mpath,
+                mmtime,
+            ) = if let Some(parent) = p.parent() {
+                Self::load_file_metadata(
+                    p,
+                    parent,
+                    reader.crate_name(),
+                    reader.unit_key(),
+                    reader.generation(),
+                    &embedded,
+                )
+            } else {
+                (
+                    None,
+                    None,
+                    None,
+                    Vec::new(),
+                    HashMap::new(),
+                    embedded,
+                    None,
+                    None,
+                )
+            };
             let is_dep = source_root.is_some();
             let ws_root = p.parent().and_then(|parent| {
                 if parent.ends_with("target/ridx") {
@@ -262,10 +293,13 @@ impl WorkspaceIndex {
                 mtimes: vec![mtime],
                 source_roots: vec![source_root],
                 unit_keys: vec![unit_key],
+                reader_generations: vec![gen],
                 reader_dependencies: vec![dependencies],
                 reader_extern_units: vec![extern_units],
                 reader_file_hashes: vec![file_hashes],
                 reader_is_dependency: vec![is_dep],
+                meta_paths: vec![mpath],
+                meta_mtimes: vec![mmtime],
                 last_reloaded_files: HashSet::new(),
                 root_dir: None,
                 workspace_root: ws_root,
@@ -458,31 +492,41 @@ impl WorkspaceIndex {
         let mut mtimes = Vec::with_capacity(ridx_files.len());
         let mut source_roots = Vec::with_capacity(ridx_files.len());
         let mut unit_keys = Vec::with_capacity(ridx_files.len());
+        let mut reader_generations = Vec::with_capacity(ridx_files.len());
         let mut reader_dependencies = Vec::with_capacity(ridx_files.len());
         let mut reader_extern_units = Vec::with_capacity(ridx_files.len());
         let mut reader_file_hashes = Vec::with_capacity(ridx_files.len());
         let mut reader_is_dependency = Vec::with_capacity(ridx_files.len());
+        let mut meta_paths = Vec::with_capacity(ridx_files.len());
+        let mut meta_mtimes = Vec::with_capacity(ridx_files.len());
 
         for file_path in ridx_files {
             match IndexReader::open(&file_path) {
                 Ok(reader) => {
                     let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
-                    let (sroot, ukey, deps, ext_units, file_hashes) = Self::load_file_metadata(
-                        &file_path,
-                        &scan_dir,
-                        reader.crate_name(),
-                        reader.unit_key(),
-                    );
+                    let embedded = reader.embedded_file_hashes();
+                    let (sroot, ukey, gen, deps, ext_units, file_hashes, mpath, mmtime) =
+                        Self::load_file_metadata(
+                            &file_path,
+                            &scan_dir,
+                            reader.crate_name(),
+                            reader.unit_key(),
+                            reader.generation(),
+                            &embedded,
+                        );
                     let is_dep = sroot.is_some();
                     readers.push(reader);
                     paths.push(file_path);
                     mtimes.push(mtime);
                     source_roots.push(sroot);
                     unit_keys.push(ukey);
+                    reader_generations.push(gen);
                     reader_dependencies.push(deps);
                     reader_extern_units.push(ext_units);
                     reader_file_hashes.push(file_hashes);
                     reader_is_dependency.push(is_dep);
+                    meta_paths.push(mpath);
+                    meta_mtimes.push(mmtime);
                 }
                 Err(e) => {
                     eprintln!("Warning: skipping invalid index {:?}: {e}", file_path);
@@ -526,16 +570,29 @@ impl WorkspaceIndex {
                         {
                             continue;
                         }
+                        let embedded = reader.embedded_file_hashes();
+                        let gen = if !reader.generation().is_empty() {
+                            Some(reader.generation().to_string())
+                        } else {
+                            dep.generation.clone()
+                        };
                         let mtime = fs::metadata(&dep_file).and_then(|m| m.modified()).ok();
                         readers.push(reader);
                         paths.push(dep_file);
                         mtimes.push(mtime);
                         source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
                         unit_keys.push(Some(dep.unit_key.clone()));
+                        reader_generations.push(gen);
                         reader_dependencies.push(dep.dependencies.clone());
                         reader_extern_units.push(dep.extern_units.clone());
-                        reader_file_hashes.push(dep.file_hashes.clone());
+                        let mut combined_hashes = embedded;
+                        for (k, v) in &dep.file_hashes {
+                            combined_hashes.insert(k.clone(), *v);
+                        }
+                        reader_file_hashes.push(combined_hashes);
                         reader_is_dependency.push(true);
+                        meta_paths.push(None);
+                        meta_mtimes.push(None);
                     }
                 }
             }
@@ -572,10 +629,13 @@ impl WorkspaceIndex {
             mtimes,
             source_roots,
             unit_keys,
+            reader_generations,
             reader_dependencies,
             reader_extern_units,
             reader_file_hashes,
             reader_is_dependency,
+            meta_paths,
+            meta_mtimes,
             last_reloaded_files: HashSet::new(),
             root_dir: Some(scan_dir),
             workspace_root,
@@ -628,6 +688,21 @@ impl WorkspaceIndex {
     /// Paths to the loaded .ridx index files.
     pub fn paths(&self) -> &[PathBuf] {
         &self.paths
+    }
+
+    /// Returns the snapshot generation for reader at index i.
+    pub fn generation_at(&self, idx: usize) -> Option<&str> {
+        self.reader_generations.get(idx).and_then(|g| g.as_deref())
+    }
+
+    /// Returns the sidecar metadata path for reader at index i.
+    pub fn meta_path_at(&self, idx: usize) -> Option<&Path> {
+        self.meta_paths.get(idx).and_then(|p| p.as_deref())
+    }
+
+    /// Returns the sidecar metadata modification time for reader at index i.
+    pub fn meta_mtime_at(&self, idx: usize) -> Option<std::time::SystemTime> {
+        self.meta_mtimes.get(idx).copied().flatten()
     }
 
     /// Aggregated statistics across all crates in the workspace.
@@ -814,8 +889,14 @@ impl WorkspaceIndex {
 
             if let Some(mut res) = reader.find_definition_at(target_file, line, col) {
                 let crate_prefix = format!("{}::", reader.crate_name());
-                let is_local =
-                    res.path.starts_with(&crate_prefix) || res.path == reader.crate_name();
+                let current_uk = self
+                    .unit_keys
+                    .get(i)
+                    .and_then(|u| u.as_deref())
+                    .unwrap_or_else(|| reader.unit_key());
+                let is_explicit_remote = res.unit_key.is_some() && res.unit_key != Some(current_uk);
+                let is_local = !is_explicit_remote
+                    && (res.path.starts_with(&crate_prefix) || res.path == reader.crate_name());
                 if is_local && res.file != "external" {
                     res.source_root = self
                         .source_roots
@@ -1080,15 +1161,15 @@ impl WorkspaceIndex {
             let reader_unit = self.unit_keys.get(i).and_then(|u| u.as_deref());
             let reader_crate = reader.crate_name();
 
-            // 1. If reader is the target crate itself:
-            if reader_crate == target_crate {
+            let is_target_unit =
                 if let (Some(target_unit), Some(ru)) = (target_unit_key, reader_unit) {
-                    if ru != target_unit {
-                        continue;
-                    }
-                }
-            } else {
-                // 2. The reader is an external/referring crate.
+                    ru == target_unit
+                } else {
+                    reader_crate == target_crate
+                };
+
+            if !is_target_unit {
+                // The reader is an external/referring crate (or a different unit of the same crate name).
                 // If target_unit_key is given:
                 if let Some(target_unit) = target_unit_key {
                     let has_deps = self
@@ -1124,7 +1205,7 @@ impl WorkspaceIndex {
                             .iter()
                             .filter(|r| r.crate_name() == target_crate)
                             .count();
-                        if target_crate_versions > 1 {
+                        if target_crate_versions > 1 && reader_crate == target_crate {
                             continue;
                         }
                     }
@@ -1453,6 +1534,8 @@ impl WorkspaceIndex {
                                     let mut new_mtimes = Vec::with_capacity(new_files.len());
                                     let mut new_source_roots = Vec::with_capacity(new_files.len());
                                     let mut new_unit_keys = Vec::with_capacity(new_files.len());
+                                    let mut new_reader_generations =
+                                        Vec::with_capacity(new_files.len());
                                     let mut new_reader_dependencies =
                                         Vec::with_capacity(new_files.len());
                                     let mut new_reader_extern_units =
@@ -1461,28 +1544,44 @@ impl WorkspaceIndex {
                                         Vec::with_capacity(new_files.len());
                                     let mut new_reader_is_dependency =
                                         Vec::with_capacity(new_files.len());
+                                    let mut new_meta_paths = Vec::with_capacity(new_files.len());
+                                    let mut new_meta_mtimes = Vec::with_capacity(new_files.len());
 
                                     for fp in new_files {
                                         if let Ok(r) = IndexReader::open(&fp) {
                                             let mt =
                                                 fs::metadata(&fp).and_then(|m| m.modified()).ok();
-                                            let (sroot, ukey, deps, ext_units, file_hashes) =
-                                                Self::load_file_metadata(
-                                                    &fp,
-                                                    &new_vdir,
-                                                    r.crate_name(),
-                                                    r.unit_key(),
-                                                );
+                                            let embedded = r.embedded_file_hashes();
+                                            let (
+                                                sroot,
+                                                ukey,
+                                                gen,
+                                                deps,
+                                                ext_units,
+                                                file_hashes,
+                                                mpath,
+                                                mmtime,
+                                            ) = Self::load_file_metadata(
+                                                &fp,
+                                                &new_vdir,
+                                                r.crate_name(),
+                                                r.unit_key(),
+                                                r.generation(),
+                                                &embedded,
+                                            );
                                             let is_dep = sroot.is_some();
                                             new_readers.push(r);
                                             new_paths.push(fp);
                                             new_mtimes.push(mt);
                                             new_source_roots.push(sroot);
                                             new_unit_keys.push(ukey);
+                                            new_reader_generations.push(gen);
                                             new_reader_dependencies.push(deps);
                                             new_reader_extern_units.push(ext_units);
                                             new_reader_file_hashes.push(file_hashes);
                                             new_reader_is_dependency.push(is_dep);
+                                            new_meta_paths.push(mpath);
+                                            new_meta_mtimes.push(mmtime);
                                         }
                                     }
 
@@ -1528,6 +1627,12 @@ impl WorkspaceIndex {
                                                 let mt = fs::metadata(&dep_file)
                                                     .and_then(|m| m.modified())
                                                     .ok();
+                                                let embedded = r.embedded_file_hashes();
+                                                let gen = if !r.generation().is_empty() {
+                                                    Some(r.generation().to_string())
+                                                } else {
+                                                    dep.generation.clone()
+                                                };
                                                 new_readers.push(r);
                                                 new_paths.push(dep_file);
                                                 new_mtimes.push(mt);
@@ -1535,13 +1640,19 @@ impl WorkspaceIndex {
                                                     dep.source_root.as_ref().map(PathBuf::from),
                                                 );
                                                 new_unit_keys.push(Some(dep.unit_key.clone()));
+                                                new_reader_generations.push(gen);
                                                 new_reader_dependencies
                                                     .push(dep.dependencies.clone());
                                                 new_reader_extern_units
                                                     .push(dep.extern_units.clone());
-                                                new_reader_file_hashes
-                                                    .push(dep.file_hashes.clone());
+                                                let mut combined_hashes = embedded;
+                                                for (k, v) in &dep.file_hashes {
+                                                    combined_hashes.insert(k.clone(), *v);
+                                                }
+                                                new_reader_file_hashes.push(combined_hashes);
                                                 new_reader_is_dependency.push(true);
+                                                new_meta_paths.push(None);
+                                                new_meta_mtimes.push(None);
                                             }
                                         }
                                     }
@@ -1552,10 +1663,13 @@ impl WorkspaceIndex {
                                         self.mtimes = new_mtimes;
                                         self.source_roots = new_source_roots;
                                         self.unit_keys = new_unit_keys;
+                                        self.reader_generations = new_reader_generations;
                                         self.reader_dependencies = new_reader_dependencies;
                                         self.reader_extern_units = new_reader_extern_units;
                                         self.reader_file_hashes = new_reader_file_hashes;
                                         self.reader_is_dependency = new_reader_is_dependency;
+                                        self.meta_paths = new_meta_paths;
+                                        self.meta_mtimes = new_meta_mtimes;
                                         self.root_dir = Some(new_vdir);
                                         self.active_variant_id = Some(manifest.active_variant_id);
                                         for idx in 0..self.readers.len() {
@@ -1585,6 +1699,9 @@ impl WorkspaceIndex {
                 if i < self.unit_keys.len() {
                     self.unit_keys.remove(i);
                 }
+                if i < self.reader_generations.len() {
+                    self.reader_generations.remove(i);
+                }
                 if i < self.reader_dependencies.len() {
                     self.reader_dependencies.remove(i);
                 }
@@ -1597,12 +1714,26 @@ impl WorkspaceIndex {
                 if i < self.reader_is_dependency.len() {
                     self.reader_is_dependency.remove(i);
                 }
+                if i < self.meta_paths.len() {
+                    self.meta_paths.remove(i);
+                }
+                if i < self.meta_mtimes.len() {
+                    self.meta_mtimes.remove(i);
+                }
                 changed = true;
                 continue;
             }
 
             let current_mtime = fs::metadata(&p).and_then(|m| m.modified()).ok();
-            if current_mtime != self.mtimes[i] {
+            let current_meta_mtime = self
+                .meta_paths
+                .get(i)
+                .and_then(|p| p.as_ref())
+                .and_then(|p| fs::metadata(p).and_then(|m| m.modified()).ok());
+            let index_changed = current_mtime != self.mtimes[i];
+            let meta_changed = current_meta_mtime != self.meta_mtimes.get(i).copied().flatten();
+
+            if index_changed {
                 if let Ok(new_reader) = IndexReader::open(&p) {
                     self.readers[i] = new_reader;
                     self.mtimes[i] = current_mtime;
@@ -1611,17 +1742,24 @@ impl WorkspaceIndex {
                         .clone()
                         .or_else(|| p.parent().map(PathBuf::from));
                     if let Some(dir) = meta_dir {
-                        let (sroot, ukey, deps, ext_units, file_hashes) = Self::load_file_metadata(
-                            &p,
-                            &dir,
-                            self.readers[i].crate_name(),
-                            self.readers[i].unit_key(),
-                        );
+                        let embedded = self.readers[i].embedded_file_hashes();
+                        let (sroot, ukey, gen, deps, ext_units, file_hashes, mpath, mmtime) =
+                            Self::load_file_metadata(
+                                &p,
+                                &dir,
+                                self.readers[i].crate_name(),
+                                self.readers[i].unit_key(),
+                                self.readers[i].generation(),
+                                &embedded,
+                            );
                         if let Some(sr) = self.source_roots.get_mut(i) {
                             *sr = sroot;
                         }
                         if let Some(uk) = self.unit_keys.get_mut(i) {
                             *uk = ukey;
+                        }
+                        if let Some(g) = self.reader_generations.get_mut(i) {
+                            *g = gen;
                         }
                         if let Some(dp) = self.reader_dependencies.get_mut(i) {
                             *dp = deps;
@@ -1632,6 +1770,55 @@ impl WorkspaceIndex {
                         if let Some(fh) = self.reader_file_hashes.get_mut(i) {
                             *fh = file_hashes;
                         }
+                        if let Some(mp) = self.meta_paths.get_mut(i) {
+                            *mp = mpath;
+                        }
+                        if let Some(mm) = self.meta_mtimes.get_mut(i) {
+                            *mm = mmtime;
+                        }
+                    }
+                    self.record_reloaded_reader_files(i);
+                    changed = true;
+                }
+            } else if meta_changed {
+                let meta_dir = self
+                    .root_dir
+                    .clone()
+                    .or_else(|| p.parent().map(PathBuf::from));
+                if let Some(dir) = meta_dir {
+                    let embedded = self.readers[i].embedded_file_hashes();
+                    let (sroot, ukey, gen, deps, ext_units, file_hashes, mpath, mmtime) =
+                        Self::load_file_metadata(
+                            &p,
+                            &dir,
+                            self.readers[i].crate_name(),
+                            self.readers[i].unit_key(),
+                            self.readers[i].generation(),
+                            &embedded,
+                        );
+                    if let Some(sr) = self.source_roots.get_mut(i) {
+                        *sr = sroot;
+                    }
+                    if let Some(uk) = self.unit_keys.get_mut(i) {
+                        *uk = ukey;
+                    }
+                    if let Some(g) = self.reader_generations.get_mut(i) {
+                        *g = gen;
+                    }
+                    if let Some(dp) = self.reader_dependencies.get_mut(i) {
+                        *dp = deps;
+                    }
+                    if let Some(eu) = self.reader_extern_units.get_mut(i) {
+                        *eu = ext_units;
+                    }
+                    if let Some(fh) = self.reader_file_hashes.get_mut(i) {
+                        *fh = file_hashes;
+                    }
+                    if let Some(mp) = self.meta_paths.get_mut(i) {
+                        *mp = mpath;
+                    }
+                    if let Some(mm) = self.meta_mtimes.get_mut(i) {
+                        *mm = mmtime;
                     }
                     self.record_reloaded_reader_files(i);
                     changed = true;
@@ -1660,12 +1847,16 @@ impl WorkspaceIndex {
                 if !existing_set.contains(&file_path) && !already_present {
                     if let Ok(reader) = IndexReader::open(&file_path) {
                         let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
-                        let (sroot, ukey, deps, ext_units, file_hashes) = Self::load_file_metadata(
-                            &file_path,
-                            &dir,
-                            reader.crate_name(),
-                            reader.unit_key(),
-                        );
+                        let embedded = reader.embedded_file_hashes();
+                        let (sroot, ukey, gen, deps, ext_units, file_hashes, mpath, mmtime) =
+                            Self::load_file_metadata(
+                                &file_path,
+                                &dir,
+                                reader.crate_name(),
+                                reader.unit_key(),
+                                reader.generation(),
+                                &embedded,
+                            );
                         if let Some(ref uk) = ukey {
                             if self
                                 .unit_keys
@@ -1681,10 +1872,13 @@ impl WorkspaceIndex {
                         self.mtimes.push(mtime);
                         self.source_roots.push(sroot);
                         self.unit_keys.push(ukey);
+                        self.reader_generations.push(gen);
                         self.reader_dependencies.push(deps);
                         self.reader_extern_units.push(ext_units);
                         self.reader_file_hashes.push(file_hashes);
                         self.reader_is_dependency.push(is_dep);
+                        self.meta_paths.push(mpath);
+                        self.meta_mtimes.push(mmtime);
                         let new_idx = self.readers.len() - 1;
                         self.record_reloaded_reader_files(new_idx);
                         changed = true;
@@ -1863,12 +2057,17 @@ impl WorkspaceIndex {
         base_dir: &Path,
         crate_name: &str,
         expected_unit_key: &str,
+        expected_generation: &str,
+        embedded_hashes: &HashMap<String, u64>,
     ) -> (
         Option<PathBuf>,
+        Option<String>,
         Option<String>,
         Vec<String>,
         HashMap<String, String>,
         HashMap<String, u64>,
+        Option<PathBuf>,
+        Option<std::time::SystemTime>,
     ) {
         let stem = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
         let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
@@ -1885,18 +2084,66 @@ impl WorkspaceIndex {
                         if !expected_unit_key.is_empty() && info.unit_key != expected_unit_key {
                             continue;
                         }
+                        if !expected_generation.is_empty() {
+                            let sidecar_gen = info.generation.as_deref().unwrap_or("");
+                            if !sidecar_gen.is_empty() {
+                                if sidecar_gen != expected_generation {
+                                    continue;
+                                }
+                            } else if !info.file_hashes.is_empty() {
+                                let computed_digest = crate::format::compute_source_snapshot_digest(
+                                    &info.file_hashes,
+                                );
+                                let computed_gen = format!("{:016x}", computed_digest);
+                                if computed_gen != expected_generation {
+                                    continue;
+                                }
+                            }
+                        }
+                        let mtime = fs::metadata(c).and_then(|m| m.modified()).ok();
+                        let mut combined_hashes = embedded_hashes.clone();
+                        for (k, v) in info.file_hashes {
+                            combined_hashes.insert(k, v);
+                        }
+                        let gen = if !expected_generation.is_empty() {
+                            Some(expected_generation.to_string())
+                        } else {
+                            info.generation
+                        };
                         return (
                             info.source_root.as_ref().map(PathBuf::from),
                             Some(info.unit_key),
+                            gen,
                             info.dependencies,
                             info.extern_units,
-                            info.file_hashes,
+                            combined_hashes,
+                            Some(c.clone()),
+                            mtime,
                         );
                     }
                 }
             }
         }
-        (None, None, Vec::new(), HashMap::new(), HashMap::new())
+        let gen = if !expected_generation.is_empty() {
+            Some(expected_generation.to_string())
+        } else {
+            None
+        };
+        let ukey = if !expected_unit_key.is_empty() {
+            Some(expected_unit_key.to_string())
+        } else {
+            None
+        };
+        (
+            None,
+            ukey,
+            gen,
+            Vec::new(),
+            HashMap::new(),
+            embedded_hashes.clone(),
+            Some(cand_json[0].clone()),
+            None,
+        )
     }
 }
 

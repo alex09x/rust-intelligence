@@ -4,8 +4,8 @@
 //! Structures are designed for zero-copy memory-mapped reading with natural alignment.
 
 pub const MAGIC: [u8; 4] = *b"RIDX";
-pub const CURRENT_VERSION: u32 = 1;
-pub const CURRENT_FORMAT_VERSION: u32 = 1;
+pub const CURRENT_VERSION: u32 = 2;
+pub const CURRENT_FORMAT_VERSION: u32 = 2;
 pub const EXTRACTOR_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Resolves the global RIDX shared cache directory for external crate dependencies.
@@ -117,7 +117,60 @@ const _: () = {
     assert!(std::mem::align_of::<TypeEntry>() == 4);
     assert!(std::mem::size_of::<HashIndexEntry>() == 16);
     assert!(std::mem::align_of::<HashIndexEntry>() == 8);
+    assert!(std::mem::size_of::<FileEntry>() == 16);
+    assert!(std::mem::align_of::<FileEntry>() == 8);
 };
+
+/// Computes an aggregate 64-bit digest over a map of file paths to their 64-bit source hashes.
+pub fn compute_source_snapshot_digest(file_hashes: &std::collections::HashMap<String, u64>) -> u64 {
+    let mut entries: Vec<(&String, &u64)> = file_hashes.iter().collect();
+    entries.sort_by_key(|(k, _)| *k);
+    let mut buf = Vec::new();
+    for (k, h) in entries {
+        buf.extend_from_slice(k.as_bytes());
+        buf.extend_from_slice(&h.to_le_bytes());
+    }
+    fnv1a_64(&buf)
+}
+
+/// File table entry: string pool offset for file path, and 64-bit source text provenance hash.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct FileEntry {
+    pub path_offset: u32,
+    pub _pad: u32,
+    pub source_hash: u64,
+}
+
+impl FileEntry {
+    #[inline]
+    pub fn new(path_offset: u32, source_hash: u64) -> Self {
+        Self {
+            path_offset,
+            _pad: 0,
+            source_hash,
+        }
+    }
+
+    #[inline]
+    pub fn path_offset(&self) -> u32 {
+        u32::from_le(self.path_offset)
+    }
+
+    #[inline]
+    pub fn source_hash(&self) -> u64 {
+        u64::from_le(self.source_hash)
+    }
+
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            path_offset: self.path_offset.to_le(),
+            _pad: 0,
+            source_hash: self.source_hash.to_le(),
+        }
+    }
+}
 
 /// Fixed-size header at offset 0 of any .ridx file.
 #[repr(C)]
@@ -125,7 +178,7 @@ const _: () = {
 pub struct Header {
     /// Magic signature ("RIDX")
     pub magic: [u8; 4],
-    /// Format version (currently 1)
+    /// Format version (currently 2)
     pub version: u32,
     /// Offset in string pool for crate name
     pub crate_name_offset: u32,
@@ -137,7 +190,7 @@ pub struct Header {
     /// Length in bytes of the string intern pool
     pub string_pool_len: u64,
 
-    /// Offset of the file path table (array of u32 string pool offsets)
+    /// Offset of the file path table (array of FileEntry)
     pub files_offset: u64,
     pub files_count: u32,
     /// Offset in string pool for compilation unit key (or 0)
@@ -146,7 +199,8 @@ pub struct Header {
     /// Offset of the definitions table (array of DefEntry)
     pub defs_offset: u64,
     pub defs_count: u32,
-    pub _pad1: u32,
+    /// Offset in string pool for source snapshot generation (or 0)
+    pub generation_offset: u32,
 
     /// Offset of the definitions hash index (array of HashIndexEntry sorted by hash)
     pub defs_by_hash_offset: u64,
@@ -184,7 +238,7 @@ impl Header {
             unit_key_offset: self.unit_key_offset.to_le(),
             defs_offset: self.defs_offset.to_le(),
             defs_count: self.defs_count.to_le(),
-            _pad1: 0,
+            generation_offset: self.generation_offset.to_le(),
             defs_by_hash_offset: self.defs_by_hash_offset.to_le(),
             defs_by_hash_count: self.defs_by_hash_count.to_le(),
             _pad2: 0,
@@ -214,7 +268,7 @@ impl Header {
             unit_key_offset: u32::from_le(self.unit_key_offset),
             defs_offset: u64::from_le(self.defs_offset),
             defs_count: u32::from_le(self.defs_count),
-            _pad1: 0,
+            generation_offset: u32::from_le(self.generation_offset),
             defs_by_hash_offset: u64::from_le(self.defs_by_hash_offset),
             defs_by_hash_count: u32::from_le(self.defs_by_hash_count),
             _pad2: 0,
@@ -233,6 +287,11 @@ impl Header {
     #[inline]
     pub fn unit_key_offset(&self) -> u32 {
         u32::from_le(self.unit_key_offset)
+    }
+
+    #[inline]
+    pub fn generation_offset(&self) -> u32 {
+        u32::from_le(self.generation_offset)
     }
 }
 

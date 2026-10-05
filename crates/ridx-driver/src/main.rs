@@ -354,9 +354,7 @@ fn hash_directory_contents(dir: &Path) -> Option<u64> {
                         .unwrap_or(&p)
                         .to_string_lossy()
                         .to_string();
-                    let hash = fs::read(&p)
-                        .map(|b| ridx_format::normalized_source_hash(&b))
-                        .unwrap_or(0);
+                    let hash = fs::read(&p).map(|b| ridx_format::fnv1a_64(&b)).unwrap_or(0);
                     list.push((rel, hash));
                 } else if p.is_dir() {
                     visit(&p, base, list);
@@ -376,7 +374,7 @@ fn hash_directory_contents(dir: &Path) -> Option<u64> {
 
 fn hash_file_contents(path: &Path) -> Option<u64> {
     let bytes = fs::read(path).ok()?;
-    Some(ridx_format::normalized_source_hash(&bytes))
+    Some(ridx_format::fnv1a_64(&bytes))
 }
 
 fn compute_dependency_unit_key(
@@ -812,6 +810,10 @@ fn build_crate_index(
             manifest_dir.as_deref(),
             &indexed_files,
         );
+        let snapshot_digest = ridx_format::compute_source_snapshot_digest(&file_hashes);
+        let generation = format!("{:016x}", snapshot_digest);
+        visitor.writer.set_generation(&generation);
+        visitor.writer.set_file_hashes(file_hashes.clone());
 
         if let Some(parent) = obj_path.parent() {
             let _ = fs::create_dir_all(parent);
@@ -842,6 +844,7 @@ fn build_crate_index(
                             "name": crate_name,
                             "version": crate_version,
                             "unit_key": unit_key,
+                            "generation": generation,
                             "object_path": obj_path.display().to_string(),
                             "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
                             "is_dependency": true,
@@ -901,6 +904,10 @@ fn build_crate_index(
 
     let indexed_files = visitor.writer.indexed_files();
     let file_hashes = collect_file_hashes(tcx, None, manifest_dir.as_deref(), &indexed_files);
+    let snapshot_digest = ridx_format::compute_source_snapshot_digest(&file_hashes);
+    let generation = format!("{:016x}", snapshot_digest);
+    visitor.writer.set_generation(&generation);
+    visitor.writer.set_file_hashes(file_hashes.clone());
 
     let tmp_file_path = out_dir.join(format!(
         "{crate_name}{suffix}.ridx.tmp.{}",
@@ -931,6 +938,7 @@ fn build_crate_index(
                         "name": crate_name,
                         "version": crate_version,
                         "unit_key": unit_key,
+                        "generation": generation,
                         "object_path": out_file_path.display().to_string(),
                         "source_root": serde_json::Value::Null,
                         "is_dependency": false,

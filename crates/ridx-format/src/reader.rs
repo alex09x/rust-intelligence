@@ -116,7 +116,22 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
     /// Compilation unit key stored in the index (or empty string if none).
     pub fn unit_key(&self) -> &str {
-        self.get_str(self.header.unit_key_offset())
+        let offset = self.header.unit_key_offset();
+        if offset == 0 {
+            ""
+        } else {
+            self.get_str(offset)
+        }
+    }
+
+    /// Source snapshot generation digest stored in the index (or empty string if none).
+    pub fn generation(&self) -> &str {
+        let offset = self.header.generation_offset();
+        if offset == 0 {
+            ""
+        } else {
+            self.get_str(offset)
+        }
     }
 
     /// Target compilation unit key for a reference (or empty string if none).
@@ -153,8 +168,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if file_id >= self.header.files_count {
             return "";
         }
-        let offset_in_file_table =
-            (self.header.files_offset as usize) + (file_id as usize) * std::mem::size_of::<u32>();
+        let offset_in_file_table = (self.header.files_offset as usize)
+            + (file_id as usize) * std::mem::size_of::<crate::format::FileEntry>();
         let bytes = self.bytes();
         if offset_in_file_table + 4 > bytes.len() {
             return "";
@@ -165,6 +180,37 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 .unwrap(),
         );
         self.get_str(str_offset)
+    }
+
+    /// Returns the compiled source text hash for a given file_id embedded directly in this index.
+    pub fn file_source_hash(&self, file_id: u32) -> u64 {
+        if file_id >= self.header.files_count {
+            return 0;
+        }
+        let offset_in_file_table = (self.header.files_offset as usize)
+            + (file_id as usize) * std::mem::size_of::<crate::format::FileEntry>();
+        let bytes = self.bytes();
+        if offset_in_file_table + std::mem::size_of::<crate::format::FileEntry>() > bytes.len() {
+            return 0;
+        }
+        u64::from_le_bytes(
+            bytes[offset_in_file_table + 8..offset_in_file_table + 16]
+                .try_into()
+                .unwrap(),
+        )
+    }
+
+    /// Returns all source file provenance hashes embedded directly inside this index shard.
+    pub fn embedded_file_hashes(&self) -> std::collections::HashMap<String, u64> {
+        let mut map = std::collections::HashMap::with_capacity(self.header.files_count as usize);
+        for id in 0..self.header.files_count {
+            let f = self.get_file(id);
+            let h = self.file_source_hash(id);
+            if !f.is_empty() && h != 0 {
+                map.insert(f.to_string(), h);
+            }
+        }
+        map
     }
 
     /// Look up the file_id for a given path substring or exact match.

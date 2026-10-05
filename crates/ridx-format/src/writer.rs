@@ -70,6 +70,8 @@ pub struct IndexWriter {
     references: Vec<RawReference>,
     types: Vec<RawType>,
     unit_key: Option<String>,
+    generation: Option<String>,
+    file_hashes: HashMap<String, u64>,
 }
 
 impl IndexWriter {
@@ -85,6 +87,8 @@ impl IndexWriter {
             references: Vec::new(),
             types: Vec::new(),
             unit_key: None,
+            generation: None,
+            file_hashes: HashMap::new(),
         };
         // Offset 0 is reserved for empty string
         writer.string_pool.push(0);
@@ -100,6 +104,26 @@ impl IndexWriter {
     /// Returns the compilation unit key if set.
     pub fn unit_key(&self) -> Option<&str> {
         self.unit_key.as_deref()
+    }
+
+    /// Sets the source snapshot generation digest for this index shard.
+    pub fn set_generation(&mut self, generation: impl Into<String>) {
+        self.generation = Some(generation.into());
+    }
+
+    /// Returns the source snapshot generation digest if set.
+    pub fn generation(&self) -> Option<&str> {
+        self.generation.as_deref()
+    }
+
+    /// Sets the source file provenance hashes for files indexed in this shard.
+    pub fn set_file_hashes(&mut self, hashes: HashMap<String, u64>) {
+        self.file_hashes = hashes;
+    }
+
+    /// Records or updates the source text provenance hash for a single indexed file.
+    pub fn add_file_hash(&mut self, file: &str, hash: u64) {
+        self.file_hashes.insert(file.to_string(), hash);
     }
 
     /// Intern a string into the pool, returning its byte offset.
@@ -182,6 +206,11 @@ impl IndexWriter {
         let unit_key = self.unit_key.clone();
         let unit_key_offset = match &unit_key {
             Some(k) => self.intern_string(k),
+            None => 0,
+        };
+        let generation = self.generation.clone();
+        let generation_offset = match &generation {
+            Some(g) => self.intern_string(g),
             None => 0,
         };
 
@@ -330,7 +359,8 @@ impl IndexWriter {
         current_offset = align_up(string_pool_offset + string_pool_len, 8);
 
         let files_offset = current_offset;
-        let files_len = (self.file_offsets.len() * std::mem::size_of::<u32>()) as u64;
+        let files_len =
+            (self.file_offsets.len() * std::mem::size_of::<crate::format::FileEntry>()) as u64;
         current_offset = align_up(files_offset + files_len, 8);
 
         let defs_offset = current_offset;
@@ -364,7 +394,7 @@ impl IndexWriter {
             unit_key_offset,
             defs_offset,
             defs_count: def_entries.len() as u32,
-            _pad1: 0,
+            generation_offset,
             defs_by_hash_offset,
             defs_by_hash_count: def_hashes.len() as u32,
             _pad2: 0,
@@ -388,10 +418,14 @@ impl IndexWriter {
         writer.seek(io::SeekFrom::Start(string_pool_offset))?;
         writer.write_all(&self.string_pool)?;
 
-        // Write File Table (array of u32 in little-endian format)
+        // Write File Table (array of FileEntry in little-endian format)
         writer.seek(io::SeekFrom::Start(files_offset))?;
         for &offset in &self.file_offsets {
-            writer.write_all(&offset.to_le_bytes())?;
+            let f_path = self.get_interned_str(offset);
+            let f_str = std::str::from_utf8(f_path).unwrap_or("");
+            let hash = self.file_hashes.get(f_str).copied().unwrap_or(0);
+            let entry = crate::format::FileEntry::new(offset, hash);
+            writer.write_all(as_byte_slice(&entry.to_le()))?;
         }
 
         // Write Definitions Table (in little-endian format)
