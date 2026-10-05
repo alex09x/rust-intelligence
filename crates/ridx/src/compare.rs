@@ -1,8 +1,7 @@
 //! Comparison module: benchmarks and compares query results between RIDX and prod-code.
 
 use colored::*;
-use memmap2::Mmap;
-use ridx_format::IndexReader;
+use ridx_format::WorkspaceIndex;
 use std::process::Command;
 use std::time::Instant;
 
@@ -16,29 +15,43 @@ pub struct ComparisonResult {
     pub prodcode_latency_micros: u128,
 }
 
-pub fn compare_definition(reader: &IndexReader<Mmap>, symbol: &str) -> ComparisonResult {
+pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> ComparisonResult {
+    let is_loc = target.contains(':') && target.split(':').count() >= 3;
+
     // 1. Query local RIDX memory-mapped index
     let t_ridx = Instant::now();
-    let ridx_def = reader.find_definition_by_path(symbol);
+    let ridx_def = if is_loc {
+        let parts: Vec<&str> = target.rsplitn(3, ':').collect();
+        if let (Some(col), Some(line)) = (parts[0].parse::<u32>().ok(), parts[1].parse::<u32>().ok()) {
+            workspace.find_definition_at(parts[2], line, col)
+        } else {
+            workspace.find_definition_by_path(target)
+        }
+    } else {
+        workspace.find_definition_by_path(target)
+    };
     let ridx_latency = t_ridx.elapsed().as_micros();
 
     let (ridx_found, ridx_span) = match ridx_def {
-        Some(def) => {
-            let span = def.span();
-            let file = reader.get_file(span.file_id());
-            (
-                true,
-                format!("{}:{}:{}", file, span.start_line(), span.start_col()),
-            )
-        }
+        Some(def) => (
+            true,
+            format!("{}:{}:{}", def.file, def.start_line, def.start_col),
+        ),
         None => (false, "Not found".to_string()),
     };
 
     // 2. Query prod-code CLI if available
     let t_prodcode = Instant::now();
-    let prodcode_output = Command::new("prod-code")
-        .args(["def", "--symbol", symbol])
-        .output();
+    let prodcode_output = if is_loc {
+        let parts: Vec<&str> = target.rsplitn(3, ':').collect();
+        Command::new("prod-code")
+            .args(["def", parts[2], parts[1], parts[0]])
+            .output()
+    } else {
+        Command::new("prod-code")
+            .args(["def", "--symbol", target])
+            .output()
+    };
     let prodcode_latency = t_prodcode.elapsed().as_micros();
 
     let (prodcode_found, prodcode_span) = match prodcode_output {
@@ -58,7 +71,7 @@ pub fn compare_definition(reader: &IndexReader<Mmap>, symbol: &str) -> Compariso
     };
 
     ComparisonResult {
-        symbol: symbol.to_string(),
+        symbol: target.to_string(),
         ridx_found,
         ridx_span,
         ridx_latency_micros: ridx_latency,

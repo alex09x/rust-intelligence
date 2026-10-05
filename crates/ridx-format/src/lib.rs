@@ -7,10 +7,12 @@
 
 pub mod format;
 pub mod reader;
+pub mod workspace;
 pub mod writer;
 
 pub use format::*;
 pub use reader::{IndexReader, ResolvedDefinition};
+pub use workspace::*;
 pub use writer::{IndexWriter, RawDefinition, RawReference, RawType};
 
 #[cfg(test)]

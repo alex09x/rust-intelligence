@@ -100,4 +100,9 @@ fn test_cli_fixture_generation_and_query() {
     // Type query
     let ty = reader.type_at("src/main.rs", 42, 15).unwrap();
     assert_eq!(ty, "Result<usize, String>");
+
+    // Verify cursor on definition returns innermost definition (Struct rather than enclosing Mod)
+    let def_cursor = reader.find_definition_at("src/processor.rs", 10, 5).unwrap();
+    assert_eq!(def_cursor.name, "DataProcessor");
+    assert_eq!(def_cursor.start_line, 10);
 }

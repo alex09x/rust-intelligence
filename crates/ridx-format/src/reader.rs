@@ -263,76 +263,96 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     ) -> Option<ResolvedDefinition<'_>> {
         let file_id = self.find_file_id(file)?;
 
-        // 1. Check references: is the cursor on a symbol reference?
-        let refs = self.references();
-        for r in refs {
+        // 1. Check references: is the cursor on a symbol reference? Pick innermost span.
+        let mut best_ref: Option<(&RefEntry, u64)> = None;
+        for r in self.references() {
             let r_span = r.span();
             if r_span.file_id() == file_id && r_span.contains(file_id, line, col) {
-                // If it resolves to a local def_id:
-                if r.target_def_id() != u32::MAX {
-                    let defs = self.definitions();
-                    if let Some(def) = defs.iter().find(|d| d.def_id() == r.target_def_id()) {
-                        let def_span = def.span();
-                        return Some(ResolvedDefinition {
-                            name: self.get_str(def.name_offset()),
-                            path: self.get_str(def.path_offset()),
-                            kind: DefKind::from(def.kind),
-                            signature: if def.sig_offset() != 0 {
-                                Some(self.get_str(def.sig_offset()))
-                            } else {
-                                None
-                            },
-                            file: self.get_file(def_span.file_id()),
-                            start_line: def_span.start_line(),
-                            start_col: def_span.start_col(),
-                            end_line: def_span.end_line(),
-                            end_col: def_span.end_col(),
-                        });
-                    }
+                let size = r_span.approximate_size();
+                match best_ref {
+                    None => best_ref = Some((r, size)),
+                    Some((_, best_size)) if size < best_size => best_ref = Some((r, size)),
+                    _ => {}
                 }
-                // Otherwise return target path and location
-                let target_path = self.get_str(r.target_path_offset());
-                let target_file = self.get_str(r.target_file_offset());
-                let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
-
-                return Some(ResolvedDefinition {
-                    name: target_name,
-                    path: target_path,
-                    kind: DefKind::from(r.kind),
-                    signature: None,
-                    file: if !target_file.is_empty() {
-                        target_file
-                    } else {
-                        "external"
-                    },
-                    start_line: r.target_line(),
-                    start_col: r.target_col(),
-                    end_line: r.target_line(),
-                    end_col: r.target_col() + (target_name.len() as u32),
-                });
             }
         }
 
-        // 2. Check if cursor is directly on a definition span
+        if let Some((r, _)) = best_ref {
+            // If it resolves to a local def_id:
+            if r.target_def_id() != u32::MAX {
+                let defs = self.definitions();
+                if let Some(def) = defs.iter().find(|d| d.def_id() == r.target_def_id()) {
+                    let def_span = def.span();
+                    return Some(ResolvedDefinition {
+                        name: self.get_str(def.name_offset()),
+                        path: self.get_str(def.path_offset()),
+                        kind: DefKind::from(def.kind),
+                        signature: if def.sig_offset() != 0 {
+                            Some(self.get_str(def.sig_offset()))
+                        } else {
+                            None
+                        },
+                        file: self.get_file(def_span.file_id()),
+                        start_line: def_span.start_line(),
+                        start_col: def_span.start_col(),
+                        end_line: def_span.end_line(),
+                        end_col: def_span.end_col(),
+                    });
+                }
+            }
+            // Otherwise return target path and location
+            let target_path = self.get_str(r.target_path_offset());
+            let target_file = self.get_str(r.target_file_offset());
+            let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
+
+            return Some(ResolvedDefinition {
+                name: target_name,
+                path: target_path,
+                kind: DefKind::from(r.kind),
+                signature: None,
+                file: if !target_file.is_empty() {
+                    target_file
+                } else {
+                    "external"
+                },
+                start_line: r.target_line(),
+                start_col: r.target_col(),
+                end_line: r.target_line(),
+                end_col: r.target_col() + (target_name.len() as u32),
+            });
+        }
+
+        // 2. Check if cursor is directly on a definition span (pick innermost span, e.g. struct inside mod)
+        let mut best_def: Option<(&DefEntry, u64)> = None;
         for def in self.definitions() {
             let def_span = def.span();
             if def_span.file_id() == file_id && def_span.contains(file_id, line, col) {
-                return Some(ResolvedDefinition {
-                    name: self.get_str(def.name_offset()),
-                    path: self.get_str(def.path_offset()),
-                    kind: DefKind::from(def.kind),
-                    signature: if def.sig_offset() != 0 {
-                        Some(self.get_str(def.sig_offset()))
-                    } else {
-                        None
-                    },
-                    file: self.get_file(def_span.file_id()),
-                    start_line: def_span.start_line(),
-                    start_col: def_span.start_col(),
-                    end_line: def_span.end_line(),
-                    end_col: def_span.end_col(),
-                });
+                let size = def_span.approximate_size();
+                match best_def {
+                    None => best_def = Some((def, size)),
+                    Some((_, best_size)) if size < best_size => best_def = Some((def, size)),
+                    _ => {}
+                }
             }
+        }
+
+        if let Some((def, _)) = best_def {
+            let def_span = def.span();
+            return Some(ResolvedDefinition {
+                name: self.get_str(def.name_offset()),
+                path: self.get_str(def.path_offset()),
+                kind: DefKind::from(def.kind),
+                signature: if def.sig_offset() != 0 {
+                    Some(self.get_str(def.sig_offset()))
+                } else {
+                    None
+                },
+                file: self.get_file(def_span.file_id()),
+                start_line: def_span.start_line(),
+                start_col: def_span.start_col(),
+                end_line: def_span.end_line(),
+                end_col: def_span.end_col(),
+            });
         }
 
         None

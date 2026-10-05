@@ -50,13 +50,13 @@ fn map_def_kind(kind: hir::def::DefKind) -> RDefKind {
         hir::def::DefKind::AssocTy => RDefKind::AssocTy,
         hir::def::DefKind::TyParam => RDefKind::TyParam,
         hir::def::DefKind::Fn => RDefKind::Fn,
-        hir::def::DefKind::Const => RDefKind::Const,
+        hir::def::DefKind::Const { .. } => RDefKind::Const,
         hir::def::DefKind::ConstParam => RDefKind::ConstParam,
         hir::def::DefKind::Static { .. } => RDefKind::Static,
         hir::def::DefKind::Ctor(hir::def::CtorOf::Struct, _) => RDefKind::StructCtor,
         hir::def::DefKind::Ctor(hir::def::CtorOf::Variant, _) => RDefKind::VariantCtor,
         hir::def::DefKind::AssocFn => RDefKind::AssocFn,
-        hir::def::DefKind::AssocConst => RDefKind::AssocConst,
+        hir::def::DefKind::AssocConst { .. } => RDefKind::AssocConst,
         hir::def::DefKind::Macro(_) => RDefKind::Macro,
         hir::def::DefKind::ExternCrate => RDefKind::ExternCrate,
         hir::def::DefKind::Use => RDefKind::Use,
@@ -69,17 +69,27 @@ fn map_def_kind(kind: hir::def::DefKind) -> RDefKind {
         hir::def::DefKind::GlobalAsm => RDefKind::GlobalAsm,
         hir::def::DefKind::Impl { .. } => RDefKind::Impl,
         hir::def::DefKind::Closure => RDefKind::Closure,
+        _ => RDefKind::Other,
     }
 }
 
 fn resolve_span_coords(tcx: TyCtxt<'_>, span: Span) -> Option<(String, u32, u32, u32, u32)> {
-    if span.from_expansion() || span.is_dummy() {
+    if span.is_dummy() {
+        return None;
+    }
+    // Remap macro expansions to their outer call-site in source code
+    let actual_span = if span.from_expansion() {
+        span.source_callsite()
+    } else {
+        span
+    };
+    if actual_span.is_dummy() {
         return None;
     }
     let source_map = tcx.sess.source_map();
     let (lo, hi) = (
-        source_map.lookup_char_pos(span.lo()),
-        source_map.lookup_char_pos(span.hi()),
+        source_map.lookup_char_pos(actual_span.lo()),
+        source_map.lookup_char_pos(actual_span.hi()),
     );
     let file = source_map.filename_for_diagnostics(&lo.file.name).to_string();
     Some((
@@ -264,7 +274,7 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path) {
         };
 
         visitor.writer.add_definition(RawDefinition {
-            def_id: def_id.index.as_u32(),
+            def_id: def_id.local_def_index.as_u32(),
             kind: map_def_kind(kind),
             visibility: 0,
             name,
@@ -315,14 +325,30 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path) {
     }
 }
 
-fn main() {
-    let mut args: Vec<String> = std::env::args().skip(1).collect();
+struct NoopCallbacks;
+impl Callbacks for NoopCallbacks {}
 
-    // When invoked as RUSTC_WORKSPACE_WRAPPER, cargo passes "rustc" as the first argument
-    if let Some(first) = args.first() {
-        if first.ends_with("rustc") || first == "rustc" {
-            args.remove(0);
-        }
+fn main() {
+    let mut args: Vec<String> = std::env::args().collect();
+
+    // When invoked as RUSTC_WORKSPACE_WRAPPER or RUSTC_WRAPPER, cargo passes the rustc binary as args[1]
+    if args.len() > 1 && (args[1].ends_with("rustc") || args[1] == "rustc") {
+        args.remove(1);
+    }
+
+    let is_query = args.iter().any(|a| {
+        a == "-vV"
+            || a == "-V"
+            || a == "--version"
+            || a == "-h"
+            || a == "--help"
+            || a == "--print"
+            || a.starts_with("--print=")
+    });
+
+    if is_query {
+        rustc_driver::run_compiler(&args, &mut NoopCallbacks);
+        return;
     }
 
     let out_dir = std::env::var("RIDX_OUT_DIR")
