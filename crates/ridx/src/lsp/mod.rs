@@ -206,7 +206,19 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
                             "workspaceSymbolProvider": {
                                 "resolveProvider": true
                             },
-                            "documentSymbolProvider": true
+                            "documentSymbolProvider": true,
+                            "completionProvider": {
+                                "resolveProvider": true,
+                                "triggerCharacters": [".", ":"]
+                            },
+                            "signatureHelpProvider": {
+                                "triggerCharacters": ["(", ","]
+                            },
+                            "documentFormattingProvider": true,
+                            "diagnosticProvider": {
+                                "interFileDependencies": false,
+                                "workspaceDiagnostics": false
+                            }
                         },
                         "serverInfo": {
                             "name": "ridx",
@@ -489,6 +501,67 @@ pub fn run_lsp_server_stream<R: BufRead, W: io::Write>(
             "workspace/symbol/resolve" => {
                 if let Some(id) = id {
                     let result = handle_workspace_symbol_resolve(&msg, workspace.as_ref());
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/completion" => {
+                if let Some(id) = id {
+                    let result =
+                        handle_completion(&msg, workspace.as_ref(), &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "completionItem/resolve" => {
+                if let Some(id) = id {
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": msg.get("params").cloned().unwrap_or(Value::Null)
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/signatureHelp" => {
+                if let Some(id) = id {
+                    let result =
+                        handle_signature_help(&msg, workspace.as_ref(), &overlay_mgr, &mut conv);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/formatting" => {
+                if let Some(id) = id {
+                    let result = handle_formatting(&msg, &overlay_mgr);
+                    let resp = json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    });
+                    send_response(&mut writer, &resp)?;
+                }
+            }
+
+            "textDocument/diagnostic" => {
+                if let Some(id) = id {
+                    let result = handle_diagnostic(&msg, &overlay_mgr);
                     let resp = json!({
                         "jsonrpc": "2.0",
                         "id": id,
@@ -1256,5 +1329,94 @@ mod tests {
         let res_resp = &responses[3];
         assert_eq!(res_resp["id"], 32);
         assert_eq!(res_resp["result"]["name"], "compute");
+    }
+
+    #[test]
+    fn test_lsp_server_stream_stage3_completion_and_diagnostic() {
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        let doc_uri = "file:///tmp/completion_test.rs";
+        let code = "fn helper() {\n    let candidate_var = 123;\n}\n";
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": doc_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": code
+                }
+            }
+        })));
+        // 1. Completion
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 40,
+            "method": "textDocument/completion",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "position": { "line": 1, "character": 10 }
+            }
+        })));
+        // 2. Diagnostic
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 41,
+            "method": "textDocument/diagnostic",
+            "params": {
+                "textDocument": { "uri": doc_uri }
+            }
+        })));
+        // 3. Formatting
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 42,
+            "method": "textDocument/formatting",
+            "params": {
+                "textDocument": { "uri": doc_uri },
+                "options": { "tabSize": 4, "insertSpaces": true }
+            }
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 43,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        assert!(res.is_ok());
+
+        let responses = parse_lsp_responses(&output);
+        assert_eq!(responses.len(), 5);
+
+        // Verify completion returns candidate_var
+        let comp_resp = &responses[1];
+        assert_eq!(comp_resp["id"], 40);
+        let items = comp_resp["result"]["items"]
+            .as_array()
+            .expect("items array");
+        assert!(items.iter().any(|i| i["label"] == "candidate_var"));
+
+        // Verify diagnostic returns full report
+        let diag_resp = &responses[2];
+        assert_eq!(diag_resp["id"], 41);
+        assert_eq!(diag_resp["result"]["kind"], "full");
+
+        // Verify formatting response is array
+        let fmt_resp = &responses[3];
+        assert_eq!(fmt_resp["id"], 42);
+        assert!(fmt_resp["result"].is_array());
     }
 }

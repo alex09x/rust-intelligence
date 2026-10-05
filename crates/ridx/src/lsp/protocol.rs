@@ -24,6 +24,23 @@ pub fn lsp_symbol_kind(kind: DefKind) -> u32 {
     }
 }
 
+pub fn lsp_completion_kind(kind: DefKind) -> u32 {
+    match kind {
+        DefKind::Fn => 3,                           // Function
+        DefKind::AssocFn => 2,                      // Method
+        DefKind::Struct => 22,                      // Struct
+        DefKind::Enum => 13,                        // Enum
+        DefKind::Variant => 20,                     // EnumMember
+        DefKind::Trait => 8,                        // Interface
+        DefKind::Mod => 9,                          // Module
+        DefKind::Const | DefKind::AssocConst => 21, // Constant
+        DefKind::Static | DefKind::Local => 6,      // Variable
+        DefKind::Field => 5,                        // Field
+        DefKind::TyAlias => 25,                     // TypeParameter
+        _ => 6,
+    }
+}
+
 pub fn percent_decode(s: &str) -> String {
     let bytes = s.as_bytes();
     let mut decoded = Vec::with_capacity(bytes.len());

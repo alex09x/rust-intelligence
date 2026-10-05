@@ -752,3 +752,159 @@ pub fn handle_implementation(
 pub fn handle_workspace_symbol_resolve(msg: &Value, _workspace: Option<&WorkspaceIndex>) -> Value {
     msg.get("params").cloned().unwrap_or(Value::Null)
 }
+
+pub fn handle_completion(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    _conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+
+    let mut items = Vec::new();
+    let mut seen_names = std::collections::HashSet::new();
+
+    // 1. Overlay symbols in open buffer
+    if let Some(symbols) = overlay_mgr.document_symbols(&file) {
+        for s in symbols {
+            if seen_names.insert(s.name.clone()) {
+                items.push(json!({
+                    "label": s.name,
+                    "kind": super::protocol::lsp_completion_kind(s.kind),
+                    "detail": s.signature
+                }));
+            }
+        }
+    }
+
+    // 2. Workspace symbols
+    if let Some(ws) = workspace {
+        let ws_symbols = ws.search_symbols("");
+        for s in ws_symbols.into_iter().take(100) {
+            if seen_names.insert(s.name.to_string()) {
+                items.push(json!({
+                    "label": s.name,
+                    "kind": super::protocol::lsp_completion_kind(s.kind),
+                    "detail": s.signature.map(|sig| sig.to_string())
+                }));
+            }
+        }
+    }
+
+    json!({
+        "isIncomplete": false,
+        "items": items
+    })
+}
+
+pub fn handle_signature_help(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+    let line_1based = line_0based + 1;
+
+    let overlay_opt = overlay_mgr.get(&file);
+    let col_1based = if let Some(overlay) = overlay_opt {
+        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+    } else {
+        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+    };
+
+    if let Some(ws) = workspace {
+        if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based.saturating_sub(1)) {
+            if let Some(sig) = def.signature {
+                let params: Vec<Value> = if let Some(start) = sig.find('(') {
+                    if let Some(end) = sig.rfind(')') {
+                        let inner = &sig[start + 1..end];
+                        inner
+                            .split(',')
+                            .map(|p| p.trim())
+                            .filter(|p| !p.is_empty())
+                            .map(|p| json!({ "label": p }))
+                            .collect()
+                    } else {
+                        Vec::new()
+                    }
+                } else {
+                    Vec::new()
+                };
+                return json!({
+                    "signatures": [
+                        {
+                            "label": sig,
+                            "parameters": params
+                        }
+                    ],
+                    "activeSignature": 0,
+                    "activeParameter": 0
+                });
+            }
+        }
+    }
+
+    Value::Null
+}
+
+pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+
+    let doc_text = if let Some(overlay) = overlay_mgr.get(&file) {
+        overlay.text.clone()
+    } else if let Ok(t) = std::fs::read_to_string(&file) {
+        t
+    } else {
+        return json!([]);
+    };
+
+    use std::io::Write as _;
+    let mut child = match std::process::Command::new("rustfmt")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+    {
+        Ok(c) => c,
+        Err(_) => return json!([]),
+    };
+
+    if let Some(ref mut stdin) = child.stdin {
+        let _ = stdin.write_all(doc_text.as_bytes());
+    }
+
+    let output = match child.wait_with_output() {
+        Ok(o) if o.status.success() => o,
+        _ => return json!([]),
+    };
+
+    if let Ok(formatted) = String::from_utf8(output.stdout) {
+        if formatted != doc_text {
+            let line_count = doc_text.lines().count() as u32;
+            return json!([
+                {
+                    "range": {
+                        "start": { "line": 0, "character": 0 },
+                        "end": { "line": line_count + 1, "character": 0 }
+                    },
+                    "newText": formatted
+                }
+            ]);
+        }
+    }
+
+    json!([])
+}
+
+pub fn handle_diagnostic(_msg: &Value, _overlay_mgr: &OverlayManager) -> Value {
+    json!({
+        "kind": "full",
+        "items": []
+    })
+}
