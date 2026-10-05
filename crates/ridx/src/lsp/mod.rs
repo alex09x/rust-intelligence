@@ -2254,4 +2254,132 @@ mod tests {
         assert_eq!(content_resp["id"], 85);
         assert_eq!(content_resp["result"]["text"], code);
     }
+
+    #[test]
+    fn test_lsp_server_stream_comparison_harness_benchmarks() {
+        use std::time::Instant;
+
+        let mut input = Vec::new();
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "capabilities": {} }
+        })));
+        let doc_uri = "file:///tmp/tokio_sample.rs";
+        let code = r#"
+pub struct AsyncChannel<T> {
+    buffer: Vec<T>,
+}
+
+impl<T> AsyncChannel<T> {
+    pub fn new() -> Self {
+        Self { buffer: Vec::new() }
+    }
+
+    pub async fn send(&mut self, val: T) {
+        self.buffer.push(val);
+    }
+}
+
+pub async fn run_runtime() {
+    let mut ch = AsyncChannel::new();
+    ch.send(42).await;
+}
+"#;
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": doc_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": code
+                }
+            }
+        })));
+
+        let iterations = 50;
+        let mut req_id = 100;
+        for _ in 0..iterations {
+            // 1. Definition
+            req_id += 1;
+            input.extend(make_lsp_msg(&json!({
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "method": "textDocument/definition",
+                "params": {
+                    "textDocument": { "uri": doc_uri },
+                    "position": { "line": 15, "character": 8 }
+                }
+            })));
+            // 2. Hover
+            req_id += 1;
+            input.extend(make_lsp_msg(&json!({
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "method": "textDocument/hover",
+                "params": {
+                    "textDocument": { "uri": doc_uri },
+                    "position": { "line": 6, "character": 12 }
+                }
+            })));
+            // 3. DocumentSymbol
+            req_id += 1;
+            input.extend(make_lsp_msg(&json!({
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "method": "textDocument/documentSymbol",
+                "params": {
+                    "textDocument": { "uri": doc_uri }
+                }
+            })));
+            // 4. FoldingRange
+            req_id += 1;
+            input.extend(make_lsp_msg(&json!({
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "method": "textDocument/foldingRange",
+                "params": {
+                    "textDocument": { "uri": doc_uri }
+                }
+            })));
+            // 5. SemanticTokens
+            req_id += 1;
+            input.extend(make_lsp_msg(&json!({
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "method": "textDocument/semanticTokens/full",
+                "params": {
+                    "textDocument": { "uri": doc_uri }
+                }
+            })));
+        }
+
+        req_id += 1;
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "method": "shutdown",
+            "params": null
+        })));
+        input.extend(make_lsp_msg(&json!({
+            "jsonrpc": "2.0",
+            "method": "exit"
+        })));
+
+        let t_start = Instant::now();
+        let mut output = Vec::new();
+        let res = run_lsp_server_stream(std::io::Cursor::new(input), &mut output, None);
+        let elapsed = t_start.elapsed();
+
+        assert!(res.is_ok());
+        let responses = parse_lsp_responses(&output);
+        let expected_responses = 1 + iterations * 5 + 1;
+        assert_eq!(responses.len(), expected_responses);
+
+        let per_req_micros = elapsed.as_micros() / (responses.len() as u128);
+        assert!(per_req_micros < 500, "per_req_micros was {per_req_micros}");
+    }
 }
