@@ -213,6 +213,12 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         map
     }
 
+    /// Total count of source files in the index.
+    #[inline]
+    pub fn files_count(&self) -> u32 {
+        self.header.files_count
+    }
+
     /// Look up the file_id for a given path substring or exact match.
     pub fn find_file_id(&self, file_path: &str) -> Option<u32> {
         for id in 0..self.header.files_count {

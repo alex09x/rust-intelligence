@@ -6,200 +6,287 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// Normalizes a path by removing redundant `.` and resolving `..` components lexically.
+fn normalize_path(path: &Path) -> PathBuf {
+    use std::path::Component;
+    let mut components = Vec::new();
+    for c in path.components() {
+        match c {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if let Some(Component::Normal(_)) = components.last() {
+                    components.pop();
+                } else if !components
+                    .iter()
+                    .any(|comp| matches!(comp, Component::RootDir | Component::Prefix(_)))
+                {
+                    components.push(c);
+                }
+            }
+            _ => components.push(c),
+        }
+    }
+    components.into_iter().collect()
+}
+
+/// Matches an entry path from an index shard or sidecar map against a requested file path,
+/// resolving the entry under the reader's explicit path origin and checking exact normalized
+/// and canonical path identity rather than ambiguous suffix matches.
+fn file_entry_matches(
+    entry_str: &str,
+    reader_origin: Option<&Path>,
+    req_path: &Path,
+    req_canon: Option<&Path>,
+) -> bool {
+    if entry_str.is_empty() {
+        return false;
+    }
+    // 1. Literal string match
+    if entry_str == req_path.to_str().unwrap_or("") {
+        return true;
+    }
+
+    let entry_p = Path::new(entry_str);
+
+    // 2. Compute normalized entry path under reader's explicit path origin
+    let norm_entry = if entry_p.is_absolute() {
+        normalize_path(entry_p)
+    } else if let Some(orig) = reader_origin {
+        normalize_path(&orig.join(entry_p))
+    } else {
+        normalize_path(entry_p)
+    };
+
+    if req_path.is_absolute() {
+        let norm_req = normalize_path(req_path);
+        if norm_entry == norm_req {
+            return true;
+        }
+
+        // Canonical comparison when absolute paths exist on disk
+        if let Some(c_req) = req_canon {
+            if let Ok(c_entry) = norm_entry.canonicalize() {
+                if c_entry == *c_req {
+                    return true;
+                }
+            }
+        }
+    } else {
+        // Requested path is relative (e.g. "src/lib.rs")
+        let norm_req = normalize_path(req_path);
+        if norm_entry.is_relative() {
+            if norm_entry == norm_req {
+                return true;
+            }
+        } else if let Some(orig) = reader_origin {
+            let norm_orig = normalize_path(orig);
+            if let Ok(rel) = norm_entry.strip_prefix(&norm_orig) {
+                if rel == norm_req || normalize_path(rel) == norm_req {
+                    return true;
+                }
+            }
+            if let (Ok(c_entry), Ok(c_orig)) = (norm_entry.canonicalize(), orig.canonicalize()) {
+                if let Ok(rel) = c_entry.strip_prefix(&c_orig) {
+                    if rel == norm_req || normalize_path(rel) == norm_req {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    false
+}
+
 impl WorkspaceIndex {
     /// Returns the file modification timestamp of the index shard containing the given source file.
     pub fn shard_mtime_for_file(&self, file_path: &str) -> Option<std::time::SystemTime> {
         let p = Path::new(file_path);
-        let is_abs = p.is_absolute();
+        let req_canon = p.canonicalize().ok();
+        let ws_abs = if p.is_relative() {
+            self.workspace_root
+                .as_ref()
+                .map(|ws_root| normalize_path(&ws_root.join(p)))
+                .or_else(|| {
+                    self.root_dir
+                        .as_ref()
+                        .map(|rdir| normalize_path(&rdir.join(p)))
+                })
+        } else {
+            None
+        };
+        let ws_canon = ws_abs.as_ref().and_then(|a| a.canonicalize().ok());
 
-        for (i, reader) in self.readers.iter().enumerate() {
-            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
-                if is_abs {
-                    if let Ok(rel) = p.strip_prefix(root) {
-                        rel.to_str().unwrap_or(file_path)
-                    } else {
-                        continue;
-                    }
-                } else {
-                    file_path
-                }
-            } else {
-                if is_abs {
-                    let belongs_to_dep = self.source_roots.iter().any(|r| {
-                        if let Some(r) = r.as_ref() {
-                            p.starts_with(r)
-                        } else {
-                            false
-                        }
-                    });
-                    if belongs_to_dep {
-                        continue;
+        let mut candidate_indices: Vec<usize> = Vec::with_capacity(self.readers.len());
+        if p.is_absolute() {
+            let norm_p = normalize_path(p);
+            for (i, _) in self.readers.iter().enumerate() {
+                if let Some(Some(ref root)) = self.source_roots.get(i) {
+                    let norm_root = normalize_path(root);
+                    if norm_p.starts_with(&norm_root) {
+                        candidate_indices.push(i);
                     }
                 }
-                file_path
-            };
-
-            if reader.find_file_id(target_file).is_some() {
-                return self.mtimes.get(i).copied().flatten();
             }
         }
+        for (i, _) in self.readers.iter().enumerate() {
+            let is_dep = self.reader_is_dependency.get(i).copied().unwrap_or(false)
+                || self.source_roots.get(i).and_then(|r| r.as_ref()).is_some();
+            if !is_dep && !candidate_indices.contains(&i) {
+                candidate_indices.push(i);
+            }
+        }
+        for (i, _) in self.readers.iter().enumerate() {
+            if !candidate_indices.contains(&i) {
+                candidate_indices.push(i);
+            }
+        }
+
+        // Phase 1: Search authoritative embedded FileEntry table across candidate readers
+        for &i in &candidate_indices {
+            let reader = &self.readers[i];
+            let origin = self
+                .source_roots
+                .get(i)
+                .and_then(|r| r.as_deref())
+                .or(self.workspace_root.as_deref())
+                .or(self.root_dir.as_deref());
+
+            for fid in 0..reader.files_count() {
+                let entry_str = reader.get_file(fid);
+                if entry_str.is_empty() {
+                    continue;
+                }
+                if file_entry_matches(entry_str, origin, p, req_canon.as_deref()) {
+                    return self.mtimes.get(i).copied().flatten();
+                }
+                if let Some(ref abs_req) = ws_abs {
+                    if file_entry_matches(entry_str, origin, abs_req, ws_canon.as_deref()) {
+                        return self.mtimes.get(i).copied().flatten();
+                    }
+                }
+            }
+        }
+
+        // Phase 2: Fallback to sidecar metadata maps across candidate readers
+        for &i in &candidate_indices {
+            let origin = self
+                .source_roots
+                .get(i)
+                .and_then(|r| r.as_deref())
+                .or(self.workspace_root.as_deref())
+                .or(self.root_dir.as_deref());
+
+            if let Some(map) = self.reader_file_hashes.get(i) {
+                for k in map.keys() {
+                    if file_entry_matches(k, origin, p, req_canon.as_deref()) {
+                        return self.mtimes.get(i).copied().flatten();
+                    }
+                    if let Some(ref abs_req) = ws_abs {
+                        if file_entry_matches(k, origin, abs_req, ws_canon.as_deref()) {
+                            return self.mtimes.get(i).copied().flatten();
+                        }
+                    }
+                }
+            }
+        }
+
         None
     }
 
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
     pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
         let p = Path::new(file_path);
-        let is_abs = p.is_absolute();
+        let req_canon = p.canonicalize().ok();
+        let ws_abs = if p.is_relative() {
+            self.workspace_root
+                .as_ref()
+                .map(|ws_root| normalize_path(&ws_root.join(p)))
+                .or_else(|| {
+                    self.root_dir
+                        .as_ref()
+                        .map(|rdir| normalize_path(&rdir.join(p)))
+                })
+        } else {
+            None
+        };
+        let ws_canon = ws_abs.as_ref().and_then(|a| a.canonicalize().ok());
 
-        // 1. If absolute path, check if any dependency shard owns this file (specific source_root)
-        if is_abs {
-            for (i, reader) in self.readers.iter().enumerate() {
-                if let Some(Some(root)) = self.source_roots.get(i) {
-                    let matched_rel = p
-                        .strip_prefix(root)
-                        .ok()
-                        .map(|r| r.to_string_lossy().to_string())
-                        .or_else(|| {
-                            if let (Ok(canon_p), Ok(canon_root)) =
-                                (p.canonicalize(), root.canonicalize())
-                            {
-                                canon_p
-                                    .strip_prefix(canon_root)
-                                    .ok()
-                                    .map(|r| r.to_string_lossy().to_string())
-                            } else {
-                                None
-                            }
-                        });
-
-                    if let Some(rel_str) = matched_rel {
-                        // Check owning reader's embedded FileEntry table (highest priority)
-                        if let Some(fid) = reader.find_file_id(&rel_str) {
-                            let h = reader.file_source_hash(fid);
-                            if h != 0 {
-                                return Some(h);
-                            }
-                        }
-                        if let Some(fid) = reader.find_file_id(file_path) {
-                            let h = reader.file_source_hash(fid);
-                            if h != 0 {
-                                return Some(h);
-                            }
-                        }
-                        if let Some(map) = self.reader_file_hashes.get(i) {
-                            if let Some(&h) = map.get(&rel_str) {
-                                return Some(h);
-                            }
-                            if let Some(&h) = map.get(file_path) {
-                                return Some(h);
-                            }
-                        }
-                        return None;
+        // Order candidate readers:
+        // 1. Dependency readers whose source_root contains p
+        // 2. Workspace member readers (non-dependency)
+        // 3. Other dependency readers
+        let mut candidate_indices: Vec<usize> = Vec::with_capacity(self.readers.len());
+        if p.is_absolute() {
+            let norm_p = normalize_path(p);
+            for (i, _) in self.readers.iter().enumerate() {
+                if let Some(Some(ref root)) = self.source_roots.get(i) {
+                    let norm_root = normalize_path(root);
+                    if norm_p.starts_with(&norm_root) {
+                        candidate_indices.push(i);
                     }
                 }
             }
+        }
+        for (i, _) in self.readers.iter().enumerate() {
+            let is_dep = self.reader_is_dependency.get(i).copied().unwrap_or(false)
+                || self.source_roots.get(i).and_then(|r| r.as_ref()).is_some();
+            if !is_dep && !candidate_indices.contains(&i) {
+                candidate_indices.push(i);
+            }
+        }
+        for (i, _) in self.readers.iter().enumerate() {
+            if !candidate_indices.contains(&i) {
+                candidate_indices.push(i);
+            }
+        }
 
-            // 2. Absolute path in workspace root (not belonging to any dependency)
-            let belongs_to_any_dep = self.source_roots.iter().any(|r| {
-                if let Some(r) = r.as_ref() {
-                    p.starts_with(r)
-                } else {
-                    false
+        // Phase 1: Search authoritative embedded FileEntry table across candidate readers
+        for &i in &candidate_indices {
+            let reader = &self.readers[i];
+            let origin = self
+                .source_roots
+                .get(i)
+                .and_then(|r| r.as_deref())
+                .or(self.workspace_root.as_deref())
+                .or(self.root_dir.as_deref());
+
+            for fid in 0..reader.files_count() {
+                let entry_str = reader.get_file(fid);
+                let h = reader.file_source_hash(fid);
+                if h == 0 || entry_str.is_empty() {
+                    continue;
                 }
-            });
-
-            if !belongs_to_any_dep {
-                if let Some(ref ws_root) = self.workspace_root {
-                    let matched_rel = p
-                        .strip_prefix(ws_root)
-                        .ok()
-                        .map(|r| r.to_string_lossy().to_string())
-                        .or_else(|| {
-                            if let (Ok(canon_p), Ok(canon_root)) =
-                                (p.canonicalize(), ws_root.canonicalize())
-                            {
-                                canon_p
-                                    .strip_prefix(canon_root)
-                                    .ok()
-                                    .map(|r| r.to_string_lossy().to_string())
-                            } else {
-                                None
-                            }
-                        });
-
-                    if let Some(rel_str) = matched_rel {
-                        for (i, reader) in self.readers.iter().enumerate() {
-                            if self.source_roots.get(i).and_then(|r| r.as_ref()).is_none() {
-                                if let Some(fid) = reader.find_file_id(&rel_str) {
-                                    let h = reader.file_source_hash(fid);
-                                    if h != 0 {
-                                        return Some(h);
-                                    }
-                                }
-                                if let Some(fid) = reader.find_file_id(file_path) {
-                                    let h = reader.file_source_hash(fid);
-                                    if h != 0 {
-                                        return Some(h);
-                                    }
-                                }
-                                if let Some(map) = self.reader_file_hashes.get(i) {
-                                    if let Some(&h) = map.get(&rel_str) {
-                                        return Some(h);
-                                    }
-                                    if let Some(&h) = map.get(file_path) {
-                                        return Some(h);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if file_entry_matches(entry_str, origin, p, req_canon.as_deref()) {
+                    return Some(h);
                 }
-
-                // Fallback exact or canonical match across reader_file_hashes for workspace crates
-                for map in &self.reader_file_hashes {
-                    if let Some(&h) = map.get(file_path) {
+                if let Some(ref abs_req) = ws_abs {
+                    if file_entry_matches(entry_str, origin, abs_req, ws_canon.as_deref()) {
                         return Some(h);
                     }
                 }
-                if let Ok(canon) = p.canonicalize() {
-                    let canon_str = canon.to_string_lossy();
-                    for map in &self.reader_file_hashes {
-                        if let Some(&h) = map.get(canon_str.as_ref()) {
-                            return Some(h);
-                        }
-                    }
-                }
             }
-        } else {
-            // 3. Relative path query
-            // First check workspace crates (non-dependency)
-            for (i, reader) in self.readers.iter().enumerate() {
-                if !self.reader_is_dependency.get(i).copied().unwrap_or(false) {
-                    if let Some(fid) = reader.find_file_id(file_path) {
-                        let h = reader.file_source_hash(fid);
-                        if h != 0 {
-                            return Some(h);
-                        }
-                    }
-                    if let Some(map) = self.reader_file_hashes.get(i) {
-                        if let Some(&h) = map.get(file_path) {
-                            return Some(h);
-                        }
-                    }
-                }
-            }
+        }
 
-            // Then check dependency crates
-            for (i, reader) in self.readers.iter().enumerate() {
-                if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
-                    if let Some(fid) = reader.find_file_id(file_path) {
-                        let h = reader.file_source_hash(fid);
-                        if h != 0 {
-                            return Some(h);
-                        }
+        // Phase 2: Fallback to sidecar metadata maps across candidate readers
+        for &i in &candidate_indices {
+            let origin = self
+                .source_roots
+                .get(i)
+                .and_then(|r| r.as_deref())
+                .or(self.workspace_root.as_deref())
+                .or(self.root_dir.as_deref());
+
+            if let Some(map) = self.reader_file_hashes.get(i) {
+                for (k, &h) in map {
+                    if h == 0 || k.is_empty() {
+                        continue;
                     }
-                    if let Some(map) = self.reader_file_hashes.get(i) {
-                        if let Some(&h) = map.get(file_path) {
+                    if file_entry_matches(k, origin, p, req_canon.as_deref()) {
+                        return Some(h);
+                    }
+                    if let Some(ref abs_req) = ws_abs {
+                        if file_entry_matches(k, origin, abs_req, ws_canon.as_deref()) {
                             return Some(h);
                         }
                     }
