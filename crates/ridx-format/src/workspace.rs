@@ -31,7 +31,7 @@ impl<'a> WorkspaceSymbol<'a> {
         if p.is_absolute() {
             p.to_path_buf()
         } else if let Some(root) = self.source_root {
-            root.join(p)
+            crate::format::join_resolving_overlap(root, p)
         } else {
             p.to_path_buf()
         }
@@ -57,7 +57,7 @@ impl<'a> WorkspaceReference<'a> {
         if p.is_absolute() {
             p.to_path_buf()
         } else if let Some(root) = self.source_root {
-            root.join(p)
+            crate::format::join_resolving_overlap(root, p)
         } else {
             p.to_path_buf()
         }
@@ -86,7 +86,7 @@ impl<'a> LocationReferences<'a> {
         if p.is_absolute() {
             p.to_path_buf()
         } else if let Some(root) = self.target_source_root {
-            root.join(p)
+            crate::format::join_resolving_overlap(root, p)
         } else {
             p.to_path_buf()
         }
@@ -123,9 +123,13 @@ pub struct DependencyShardInfo {
     #[serde(default)]
     pub source_root: Option<String>,
     #[serde(default)]
+    pub is_dependency: bool,
+    #[serde(default)]
     pub dependencies: Vec<String>,
     #[serde(default)]
     pub extern_units: HashMap<String, String>,
+    #[serde(default)]
+    pub file_hashes: HashMap<String, u64>,
 }
 
 fn default_format_version() -> u32 {
@@ -217,6 +221,7 @@ pub struct WorkspaceIndex {
     unit_keys: Vec<Option<String>>,
     reader_dependencies: Vec<Vec<String>>,
     reader_extern_units: Vec<HashMap<String, String>>,
+    reader_file_hashes: Vec<HashMap<String, u64>>,
     last_reloaded_files: HashSet<String>,
     root_dir: Option<PathBuf>,
     manifest_path: Option<PathBuf>,
@@ -232,11 +237,12 @@ impl WorkspaceIndex {
         if p.is_file() {
             let mtime = fs::metadata(p).and_then(|m| m.modified()).ok();
             let reader = IndexReader::open(p)?;
-            let (source_root, unit_key, dependencies, extern_units) = if let Some(parent) = p.parent() {
-                Self::load_file_metadata(p, parent, reader.crate_name())
-            } else {
-                (None, None, Vec::new(), HashMap::new())
-            };
+            let (source_root, unit_key, dependencies, extern_units, file_hashes) =
+                if let Some(parent) = p.parent() {
+                    Self::load_file_metadata(p, parent, reader.crate_name())
+                } else {
+                    (None, None, Vec::new(), HashMap::new(), HashMap::new())
+                };
             return Ok(Self {
                 readers: vec![reader],
                 paths: vec![p.to_path_buf()],
@@ -245,6 +251,7 @@ impl WorkspaceIndex {
                 unit_keys: vec![unit_key],
                 reader_dependencies: vec![dependencies],
                 reader_extern_units: vec![extern_units],
+                reader_file_hashes: vec![file_hashes],
                 last_reloaded_files: HashSet::new(),
                 root_dir: None,
                 manifest_path: None,
@@ -278,7 +285,9 @@ impl WorkspaceIndex {
                 let vpath = Path::new(vdir_str);
                 if vdir_str.is_empty()
                     || vpath.is_absolute()
-                    || vpath.components().any(|c| c == std::path::Component::ParentDir)
+                    || vpath
+                        .components()
+                        .any(|c| c == std::path::Component::ParentDir)
                     || vpath == Path::new(".")
                     || vdir_str != expected_variant_dir
                 {
@@ -326,15 +335,20 @@ impl WorkspaceIndex {
                     None => {
                         return Err(io::Error::new(
                             io::ErrorKind::InvalidData,
-                            format!(
-                                "Extractor version missing in manifest {:?}",
-                                manifest_file
-                            ),
+                            format!("Extractor version missing in manifest {:?}", manifest_file),
                         ));
                     }
                 }
 
-                (vdir, Some((manifest_file, mtime, manifest.active_variant_id, manifest.dependency_shards)))
+                (
+                    vdir,
+                    Some((
+                        manifest_file,
+                        mtime,
+                        manifest.active_variant_id,
+                        manifest.dependency_shards,
+                    )),
+                )
             } else {
                 // Legacy manifest without active_variant_id: scan search_dir directly
                 (search_dir.clone(), None)
@@ -345,16 +359,23 @@ impl WorkspaceIndex {
             let manifest = serde_json::from_slice::<VariantManifest>(&content).map_err(|e| {
                 io::Error::new(
                     io::ErrorKind::InvalidData,
-                    format!("Failed to parse variant manifest {:?}: {e}", v_manifest_file),
+                    format!(
+                        "Failed to parse variant manifest {:?}: {e}",
+                        v_manifest_file
+                    ),
                 )
             })?;
-            let mtime = fs::metadata(&v_manifest_file).and_then(|m| m.modified()).ok();
+            let mtime = fs::metadata(&v_manifest_file)
+                .and_then(|m| m.modified())
+                .ok();
             if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     format!(
                         "Format version mismatch in manifest {:?}: format_version {} != current {}",
-                        v_manifest_file, manifest.format_version, crate::format::CURRENT_FORMAT_VERSION
+                        v_manifest_file,
+                        manifest.format_version,
+                        crate::format::CURRENT_FORMAT_VERSION
                     ),
                 ));
             }
@@ -379,7 +400,15 @@ impl WorkspaceIndex {
                     ));
                 }
             }
-            (search_dir.clone(), Some((v_manifest_file, mtime, manifest.active_variant_id, manifest.dependency_shards)))
+            (
+                search_dir.clone(),
+                Some((
+                    v_manifest_file,
+                    mtime,
+                    manifest.active_variant_id,
+                    manifest.dependency_shards,
+                )),
+            )
         } else {
             (search_dir.clone(), None)
         };
@@ -406,12 +435,13 @@ impl WorkspaceIndex {
         let mut unit_keys = Vec::with_capacity(ridx_files.len());
         let mut reader_dependencies = Vec::with_capacity(ridx_files.len());
         let mut reader_extern_units = Vec::with_capacity(ridx_files.len());
+        let mut reader_file_hashes = Vec::with_capacity(ridx_files.len());
 
         for file_path in ridx_files {
             match IndexReader::open(&file_path) {
                 Ok(reader) => {
                     let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
-                    let (sroot, ukey, deps, ext_units) =
+                    let (sroot, ukey, deps, ext_units, file_hashes) =
                         Self::load_file_metadata(&file_path, &scan_dir, reader.crate_name());
                     readers.push(reader);
                     paths.push(file_path);
@@ -420,6 +450,7 @@ impl WorkspaceIndex {
                     unit_keys.push(ukey);
                     reader_dependencies.push(deps);
                     reader_extern_units.push(ext_units);
+                    reader_file_hashes.push(file_hashes);
                 }
                 Err(e) => {
                     eprintln!("Warning: skipping invalid index {:?}: {e}", file_path);
@@ -444,6 +475,18 @@ impl WorkspaceIndex {
                 };
 
                 if let Some(dep_file) = cand {
+                    let canon_cand =
+                        fs::canonicalize(&dep_file).unwrap_or_else(|_| dep_file.clone());
+                    let already_loaded = paths.iter().any(|existing| {
+                        fs::canonicalize(existing).unwrap_or_else(|_| existing.clone())
+                            == canon_cand
+                    }) || unit_keys
+                        .iter()
+                        .any(|existing_uk| existing_uk.as_deref() == Some(&dep.unit_key));
+                    if already_loaded {
+                        continue;
+                    }
+
                     if let Ok(reader) = IndexReader::open(&dep_file) {
                         let mtime = fs::metadata(&dep_file).and_then(|m| m.modified()).ok();
                         readers.push(reader);
@@ -453,6 +496,7 @@ impl WorkspaceIndex {
                         unit_keys.push(Some(dep.unit_key.clone()));
                         reader_dependencies.push(dep.dependencies.clone());
                         reader_extern_units.push(dep.extern_units.clone());
+                        reader_file_hashes.push(dep.file_hashes.clone());
                     }
                 }
             }
@@ -478,6 +522,7 @@ impl WorkspaceIndex {
             unit_keys,
             reader_dependencies,
             reader_extern_units,
+            reader_file_hashes,
             last_reloaded_files: HashSet::new(),
             root_dir: Some(scan_dir),
             manifest_path,
@@ -698,7 +743,8 @@ impl WorkspaceIndex {
                 res.source_root = self.source_roots.get(i).and_then(|r| r.as_deref());
                 res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
                 let crate_prefix = format!("{}::", reader.crate_name());
-                let is_local = res.path.starts_with(&crate_prefix) || res.path == reader.crate_name();
+                let is_local =
+                    res.path.starts_with(&crate_prefix) || res.path == reader.crate_name();
                 if is_local && res.file != "external" {
                     return Some(res);
                 }
@@ -724,86 +770,98 @@ impl WorkspaceIndex {
         let extern_alias = target_path.split("::").next().unwrap_or(target_path);
 
         // 1. Determine target unit key for this extern alias if known
-        let mut target_unit: Option<&str> = self
+        let target_unit: Option<&str> = self
             .reader_extern_units
             .get(referrer_idx)
             .and_then(|m| m.get(extern_alias).map(|s| s.as_str()));
 
-        // If not found in extern_units, check if referrer_dependencies has a unit key matching a reader
-        if target_unit.is_none() {
-            if let Some(deps) = self.reader_dependencies.get(referrer_idx) {
-                for (j, r) in self.readers.iter().enumerate() {
-                    if let Some(Some(uk)) = self.unit_keys.get(j).map(|u| u.as_deref()) {
-                        if deps.iter().any(|d| d == uk)
-                            && (r.crate_name() == extern_alias
-                                || target_path.starts_with(&format!("{}::", r.crate_name())))
-                        {
-                            target_unit = Some(uk);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. If target unit is known: ONLY search readers matching that exact unit key!
+        // 2. Identify candidate readers: either matching the exact target unit key,
+        // or matching extern_alias among referrer's direct dependencies
+        let mut candidate_readers = Vec::new();
         if let Some(target_uk) = target_unit {
             for (j, r) in self.readers.iter().enumerate() {
                 if self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(target_uk) {
-                    // Try looking up with original target_path (e.g. a::foo)
-                    if let Some(def) = r.find_definition_by_path(target_path) {
-                        let def_span = def.span();
-                        return Some(ResolvedDefinition {
-                            name: r.get_str(def.name_offset()),
-                            path: r.get_str(def.path_offset()),
-                            kind: DefKind::from(def.kind),
-                            signature: if def.sig_offset() != 0 {
-                                Some(r.get_str(def.sig_offset()))
-                            } else {
-                                None
-                            },
-                            file: r.get_file(def_span.file_id()),
-                            start_line: def_span.start_line(),
-                            start_col: def_span.start_col(),
-                            end_line: def_span.end_line(),
-                            end_col: def_span.end_col(),
-                            is_macro_expansion: def.is_macro_expansion(),
-                            source_root: self.source_roots.get(j).and_then(|r| r.as_deref()),
-                            unit_key: Some(target_uk),
-                        });
-                    }
-                    // If target_path started with an alias (e.g. a1::foo), try with reader's real crate name
-                    if target_path.starts_with(&format!("{extern_alias}::")) {
-                        let mapped_path = format!("{}::{}", r.crate_name(), &target_path[extern_alias.len() + 2..]);
-                        if let Some(def) = r.find_definition_by_path(&mapped_path) {
-                            let def_span = def.span();
-                            return Some(ResolvedDefinition {
-                                name: r.get_str(def.name_offset()),
-                                path: r.get_str(def.path_offset()),
-                                kind: DefKind::from(def.kind),
-                                signature: if def.sig_offset() != 0 {
-                                    Some(r.get_str(def.sig_offset()))
-                                } else {
-                                    None
-                                },
-                                file: r.get_file(def_span.file_id()),
-                                start_line: def_span.start_line(),
-                                start_col: def_span.start_col(),
-                                end_line: def_span.end_line(),
-                                end_col: def_span.end_col(),
-                                is_macro_expansion: def.is_macro_expansion(),
-                                source_root: self.source_roots.get(j).and_then(|r| r.as_deref()),
-                                unit_key: Some(target_uk),
-                            });
-                        }
+                    candidate_readers.push((j, r));
+                }
+            }
+        } else if let Some(deps) = self.reader_dependencies.get(referrer_idx) {
+            for (j, r) in self.readers.iter().enumerate() {
+                if let Some(Some(uk)) = self.unit_keys.get(j).map(|u| u.as_deref()) {
+                    if deps.iter().any(|d| d == uk)
+                        && (r.crate_name() == extern_alias
+                            || target_path.starts_with(&format!("{}::", r.crate_name())))
+                    {
+                        candidate_readers.push((j, r));
                     }
                 }
             }
-            // If target unit is known but definition wasn't found in that unit, do NOT fall back to another unit!
-            return None;
         }
 
-        // 3. Target unit is not known. Search readers matching target_crate
+        if !candidate_readers.is_empty() {
+            let mut resolved_candidates = Vec::new();
+            for &(j, r) in &candidate_readers {
+                let cand_def = if let Some(def) = r.find_definition_by_path(target_path) {
+                    Some(def)
+                } else if target_path.starts_with(&format!("{extern_alias}::")) {
+                    let mapped_path = format!(
+                        "{}::{}",
+                        r.crate_name(),
+                        &target_path[extern_alias.len() + 2..]
+                    );
+                    r.find_definition_by_path(&mapped_path)
+                } else {
+                    None
+                };
+                if let Some(def) = cand_def {
+                    let def_span = def.span();
+                    let file = r.get_file(def_span.file_id());
+                    resolved_candidates.push(ResolvedDefinition {
+                        name: r.get_str(def.name_offset()),
+                        path: r.get_str(def.path_offset()),
+                        kind: DefKind::from(def.kind),
+                        signature: if def.sig_offset() != 0 {
+                            Some(r.get_str(def.sig_offset()))
+                        } else {
+                            None
+                        },
+                        file,
+                        start_line: def_span.start_line(),
+                        start_col: def_span.start_col(),
+                        end_line: def_span.end_line(),
+                        end_col: def_span.end_col(),
+                        is_macro_expansion: def.is_macro_expansion(),
+                        source_root: self.source_roots.get(j).and_then(|r| r.as_deref()),
+                        unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
+                    });
+                }
+            }
+
+            if resolved_candidates.len() == 1 {
+                return Some(resolved_candidates.remove(0));
+            } else if resolved_candidates.len() > 1 {
+                for cand in &resolved_candidates {
+                    let line_matches = res.start_line != 0 && cand.start_line == res.start_line;
+                    let file_matches = res.file != "external"
+                        && !res.file.is_empty()
+                        && (cand.file == res.file
+                            || cand.resolved_path().to_string_lossy().ends_with(res.file));
+                    if line_matches && file_matches {
+                        return Some(cand.clone());
+                    }
+                }
+                for cand in &resolved_candidates {
+                    if res.start_line != 0 && cand.start_line == res.start_line {
+                        return Some(cand.clone());
+                    }
+                }
+                return Some(resolved_candidates.remove(0));
+            }
+            if target_unit.is_some() {
+                return None;
+            }
+        }
+
+        // 3. Fallback when referrer has no dependency metadata: search all readers matching target_crate
         let target_crate = extern_alias;
         let mut candidates = Vec::new();
         for (j, r) in self.readers.iter().enumerate() {
@@ -846,7 +904,8 @@ impl WorkspaceIndex {
             let line_matches = res.start_line != 0 && c_def.start_line == res.start_line;
             let file_matches = res.file != "external"
                 && !res.file.is_empty()
-                && (c_def.file == res.file || c_def.resolved_path().to_string_lossy().ends_with(res.file));
+                && (c_def.file == res.file
+                    || c_def.resolved_path().to_string_lossy().ends_with(res.file));
             if line_matches && file_matches {
                 return Some(c_def.clone());
             }
@@ -872,6 +931,33 @@ impl WorkspaceIndex {
         let mut all_refs = Vec::new();
         let target_crate = target_path.split("::").next().unwrap_or(target_path);
 
+        // If target_unit_key is given, locate the definition in target_unit to get its line and file
+        let target_def_coords = if let Some(target_unit) = target_unit_key {
+            let mut coords = None;
+            for (j, r) in self.readers.iter().enumerate() {
+                if self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(target_unit) {
+                    if let Some(def) = r.find_definition_by_path(target_path) {
+                        let span = def.span();
+                        let file = r.get_file(span.file_id());
+                        coords = Some((file.to_string(), span.start_line()));
+                        break;
+                    }
+                    if let Some(rest) = target_path.strip_prefix(&format!("{}::", r.crate_name())) {
+                        let mapped = format!("{}::{}", r.crate_name(), rest);
+                        if let Some(def) = r.find_definition_by_path(&mapped) {
+                            let span = def.span();
+                            let file = r.get_file(span.file_id());
+                            coords = Some((file.to_string(), span.start_line()));
+                            break;
+                        }
+                    }
+                }
+            }
+            coords
+        } else {
+            None
+        };
+
         for (i, reader) in self.readers.iter().enumerate() {
             let reader_unit = self.unit_keys.get(i).and_then(|u| u.as_deref());
             let reader_crate = reader.crate_name();
@@ -887,19 +973,39 @@ impl WorkspaceIndex {
                 // 2. The reader is an external/referring crate.
                 // If target_unit_key is given:
                 if let Some(target_unit) = target_unit_key {
-                    let has_deps = self.reader_dependencies.get(i).map(|d| !d.is_empty()).unwrap_or(false);
-                    let has_extern_units = self.reader_extern_units.get(i).map(|m| !m.is_empty()).unwrap_or(false);
+                    let has_deps = self
+                        .reader_dependencies
+                        .get(i)
+                        .map(|d| !d.is_empty())
+                        .unwrap_or(false);
+                    let has_extern_units = self
+                        .reader_extern_units
+                        .get(i)
+                        .map(|m| !m.is_empty())
+                        .unwrap_or(false);
 
                     if has_deps || has_extern_units {
-                        let in_deps = self.reader_dependencies.get(i).map(|d| d.iter().any(|dep| dep == target_unit)).unwrap_or(false);
-                        let in_extern_units = self.reader_extern_units.get(i).map(|m| m.values().any(|uk| uk == target_unit)).unwrap_or(false);
+                        let in_deps = self
+                            .reader_dependencies
+                            .get(i)
+                            .map(|d| d.iter().any(|dep| dep == target_unit))
+                            .unwrap_or(false);
+                        let in_extern_units = self
+                            .reader_extern_units
+                            .get(i)
+                            .map(|m| m.values().any(|uk| uk == target_unit))
+                            .unwrap_or(false);
                         if !in_deps && !in_extern_units {
                             // Referring crate has dependency info but does NOT depend on target_unit. Exclude!
                             continue;
                         }
                     } else {
                         // Legacy reader without dependency info: exclude if multiple versions of target_crate exist in workspace
-                        let target_crate_versions = self.readers.iter().filter(|r| r.crate_name() == target_crate).count();
+                        let target_crate_versions = self
+                            .readers
+                            .iter()
+                            .filter(|r| r.crate_name() == target_crate)
+                            .count();
                         if target_crate_versions > 1 {
                             continue;
                         }
@@ -912,6 +1018,25 @@ impl WorkspaceIndex {
             let source_root = self.source_roots.get(i).and_then(|r| r.as_deref());
 
             for r in refs {
+                if let Some((ref target_def_file, target_def_line)) = target_def_coords {
+                    if r.target_line() != 0 && r.target_line() != target_def_line {
+                        continue;
+                    }
+                    if r.target_file_offset() != 0 {
+                        let ref_file = reader.get_str(r.target_file_offset());
+                        if !ref_file.is_empty() && !target_def_file.is_empty() {
+                            let r_p = Path::new(ref_file);
+                            let t_p = Path::new(target_def_file);
+                            if r_p != t_p
+                                && !ref_file.ends_with(target_def_file)
+                                && !target_def_file.ends_with(ref_file)
+                            {
+                                continue;
+                            }
+                        }
+                    }
+                }
+
                 let span = r.span();
                 let file = reader.get_file(span.file_id());
                 all_refs.push(WorkspaceReference {
@@ -929,14 +1054,37 @@ impl WorkspaceIndex {
             // Also check if reader refers to target_path via an extern alias (e.g. `a1::foo` instead of `a::foo`)
             if let Some(extern_map) = self.reader_extern_units.get(i) {
                 for (alias, uk) in extern_map {
-                    if alias != target_crate && target_path.starts_with(&format!("{target_crate}::")) {
+                    if alias != target_crate
+                        && target_path.starts_with(&format!("{target_crate}::"))
+                    {
                         if let Some(target_unit) = target_unit_key {
                             if uk != target_unit {
                                 continue;
                             }
                         }
-                        let aliased_path = format!("{alias}::{}", &target_path[target_crate.len() + 2..]);
+                        let aliased_path =
+                            format!("{alias}::{}", &target_path[target_crate.len() + 2..]);
                         for r in reader.find_references(&aliased_path) {
+                            if let Some((ref target_def_file, target_def_line)) = target_def_coords
+                            {
+                                if r.target_line() != 0 && r.target_line() != target_def_line {
+                                    continue;
+                                }
+                                if r.target_file_offset() != 0 {
+                                    let ref_file = reader.get_str(r.target_file_offset());
+                                    if !ref_file.is_empty() && !target_def_file.is_empty() {
+                                        let r_p = Path::new(ref_file);
+                                        let t_p = Path::new(target_def_file);
+                                        if r_p != t_p
+                                            && !ref_file.ends_with(target_def_file)
+                                            && !target_def_file.ends_with(ref_file)
+                                        {
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+
                             let span = r.span();
                             let file = reader.get_file(span.file_id());
                             all_refs.push(WorkspaceReference {
@@ -1114,7 +1262,9 @@ impl WorkspaceIndex {
                                 ),
                             ));
                         }
-                        if manifest.extractor_version.as_deref() != Some(crate::format::EXTRACTOR_VERSION) {
+                        if manifest.extractor_version.as_deref()
+                            != Some(crate::format::EXTRACTOR_VERSION)
+                        {
                             return Err(io::Error::new(
                                 io::ErrorKind::InvalidData,
                                 format!(
@@ -1126,9 +1276,12 @@ impl WorkspaceIndex {
 
                         let base_dir = mf.parent().unwrap_or_else(|| Path::new("."));
                         if Some(&manifest.active_variant_id) != self.active_variant_id.as_ref() {
-                            let expected_variant_dir = format!("variants/{}", manifest.active_variant_id);
+                            let expected_variant_dir =
+                                format!("variants/{}", manifest.active_variant_id);
                             let vdir_str = manifest.variant_dir.trim();
-                            if !manifest.active_variant_id.is_empty() && vdir_str == expected_variant_dir {
+                            if !manifest.active_variant_id.is_empty()
+                                && vdir_str == expected_variant_dir
+                            {
                                 let new_vdir = base_dir.join(&expected_variant_dir);
                                 if new_vdir != base_dir && new_vdir.is_dir() {
                                     // Active variant changed! Atomically switch reader set
@@ -1141,14 +1294,23 @@ impl WorkspaceIndex {
                                     let mut new_mtimes = Vec::with_capacity(new_files.len());
                                     let mut new_source_roots = Vec::with_capacity(new_files.len());
                                     let mut new_unit_keys = Vec::with_capacity(new_files.len());
-                                    let mut new_reader_dependencies = Vec::with_capacity(new_files.len());
-                                    let mut new_reader_extern_units = Vec::with_capacity(new_files.len());
+                                    let mut new_reader_dependencies =
+                                        Vec::with_capacity(new_files.len());
+                                    let mut new_reader_extern_units =
+                                        Vec::with_capacity(new_files.len());
+                                    let mut new_reader_file_hashes =
+                                        Vec::with_capacity(new_files.len());
 
                                     for fp in new_files {
                                         if let Ok(r) = IndexReader::open(&fp) {
-                                            let mt = fs::metadata(&fp).and_then(|m| m.modified()).ok();
-                                            let (sroot, ukey, deps, ext_units) =
-                                                Self::load_file_metadata(&fp, &new_vdir, r.crate_name());
+                                            let mt =
+                                                fs::metadata(&fp).and_then(|m| m.modified()).ok();
+                                            let (sroot, ukey, deps, ext_units, file_hashes) =
+                                                Self::load_file_metadata(
+                                                    &fp,
+                                                    &new_vdir,
+                                                    r.crate_name(),
+                                                );
                                             new_readers.push(r);
                                             new_paths.push(fp);
                                             new_mtimes.push(mt);
@@ -1156,6 +1318,7 @@ impl WorkspaceIndex {
                                             new_unit_keys.push(ukey);
                                             new_reader_dependencies.push(deps);
                                             new_reader_extern_units.push(ext_units);
+                                            new_reader_file_hashes.push(file_hashes);
                                         }
                                     }
 
@@ -1166,7 +1329,10 @@ impl WorkspaceIndex {
                                         let cand = if obj_path.is_file() {
                                             Some(obj_path)
                                         } else {
-                                            let fallback = crate::format::cache_object_path(&cache_dir, &dep.unit_key);
+                                            let fallback = crate::format::cache_object_path(
+                                                &cache_dir,
+                                                &dep.unit_key,
+                                            );
                                             if fallback.is_file() {
                                                 Some(fallback)
                                             } else {
@@ -1174,15 +1340,37 @@ impl WorkspaceIndex {
                                             }
                                         };
                                         if let Some(dep_file) = cand {
+                                            let canon_cand = fs::canonicalize(&dep_file)
+                                                .unwrap_or_else(|_| dep_file.clone());
+                                            let already_loaded =
+                                                new_paths.iter().any(|existing| {
+                                                    fs::canonicalize(existing)
+                                                        .unwrap_or_else(|_| existing.clone())
+                                                        == canon_cand
+                                                }) || new_unit_keys.iter().any(|existing_uk| {
+                                                    existing_uk.as_deref() == Some(&dep.unit_key)
+                                                });
+                                            if already_loaded {
+                                                continue;
+                                            }
+
                                             if let Ok(r) = IndexReader::open(&dep_file) {
-                                                let mt = fs::metadata(&dep_file).and_then(|m| m.modified()).ok();
+                                                let mt = fs::metadata(&dep_file)
+                                                    .and_then(|m| m.modified())
+                                                    .ok();
                                                 new_readers.push(r);
                                                 new_paths.push(dep_file);
                                                 new_mtimes.push(mt);
-                                                new_source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
+                                                new_source_roots.push(
+                                                    dep.source_root.as_ref().map(PathBuf::from),
+                                                );
                                                 new_unit_keys.push(Some(dep.unit_key.clone()));
-                                                new_reader_dependencies.push(dep.dependencies.clone());
-                                                new_reader_extern_units.push(dep.extern_units.clone());
+                                                new_reader_dependencies
+                                                    .push(dep.dependencies.clone());
+                                                new_reader_extern_units
+                                                    .push(dep.extern_units.clone());
+                                                new_reader_file_hashes
+                                                    .push(dep.file_hashes.clone());
                                             }
                                         }
                                     }
@@ -1195,6 +1383,7 @@ impl WorkspaceIndex {
                                         self.unit_keys = new_unit_keys;
                                         self.reader_dependencies = new_reader_dependencies;
                                         self.reader_extern_units = new_reader_extern_units;
+                                        self.reader_file_hashes = new_reader_file_hashes;
                                         self.root_dir = Some(new_vdir);
                                         self.active_variant_id = Some(manifest.active_variant_id);
                                         for idx in 0..self.readers.len() {
@@ -1230,6 +1419,9 @@ impl WorkspaceIndex {
                 if i < self.reader_extern_units.len() {
                     self.reader_extern_units.remove(i);
                 }
+                if i < self.reader_file_hashes.len() {
+                    self.reader_file_hashes.remove(i);
+                }
                 changed = true;
                 continue;
             }
@@ -1240,7 +1432,7 @@ impl WorkspaceIndex {
                     self.readers[i] = new_reader;
                     self.mtimes[i] = current_mtime;
                     if let Some(dir) = self.root_dir.clone() {
-                        let (sroot, ukey, deps, ext_units) =
+                        let (sroot, ukey, deps, ext_units, file_hashes) =
                             Self::load_file_metadata(&p, &dir, self.readers[i].crate_name());
                         if let Some(sr) = self.source_roots.get_mut(i) {
                             *sr = sroot;
@@ -1253,6 +1445,9 @@ impl WorkspaceIndex {
                         }
                         if let Some(eu) = self.reader_extern_units.get_mut(i) {
                             *eu = ext_units;
+                        }
+                        if let Some(fh) = self.reader_file_hashes.get_mut(i) {
+                            *fh = file_hashes;
                         }
                     }
                     self.record_reloaded_reader_files(i);
@@ -1275,11 +1470,24 @@ impl WorkspaceIndex {
             }
 
             for file_path in all_files {
-                if !existing_set.contains(&file_path) {
+                let canon_fp = fs::canonicalize(&file_path).unwrap_or_else(|_| file_path.clone());
+                let already_present = self.paths.iter().any(|existing| {
+                    fs::canonicalize(existing).unwrap_or_else(|_| existing.clone()) == canon_fp
+                });
+                if !existing_set.contains(&file_path) && !already_present {
                     if let Ok(reader) = IndexReader::open(&file_path) {
                         let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
-                        let (sroot, ukey, deps, ext_units) =
+                        let (sroot, ukey, deps, ext_units, file_hashes) =
                             Self::load_file_metadata(&file_path, &dir, reader.crate_name());
+                        if let Some(ref uk) = ukey {
+                            if self
+                                .unit_keys
+                                .iter()
+                                .any(|existing_uk| existing_uk.as_deref() == Some(uk))
+                            {
+                                continue;
+                            }
+                        }
                         self.readers.push(reader);
                         self.paths.push(file_path);
                         self.mtimes.push(mtime);
@@ -1287,6 +1495,7 @@ impl WorkspaceIndex {
                         self.unit_keys.push(ukey);
                         self.reader_dependencies.push(deps);
                         self.reader_extern_units.push(ext_units);
+                        self.reader_file_hashes.push(file_hashes);
                         let new_idx = self.readers.len() - 1;
                         self.record_reloaded_reader_files(new_idx);
                         changed = true;
@@ -1305,7 +1514,10 @@ impl WorkspaceIndex {
         }
         let p = Path::new(file_path);
         if let Ok(canon) = p.canonicalize() {
-            if self.last_reloaded_files.contains(&canon.to_string_lossy().to_string()) {
+            if self
+                .last_reloaded_files
+                .contains(&canon.to_string_lossy().to_string())
+            {
                 return true;
             }
         }
@@ -1361,13 +1573,15 @@ impl WorkspaceIndex {
                 let f = reader.get_file(fid);
                 if !f.is_empty() {
                     let full = if let Some(root) = source_root {
-                        root.join(f)
+                        crate::format::join_resolving_overlap(root, Path::new(f))
                     } else {
                         PathBuf::from(f)
                     };
-                    self.last_reloaded_files.insert(full.to_string_lossy().to_string());
+                    self.last_reloaded_files
+                        .insert(full.to_string_lossy().to_string());
                     if let Ok(canon) = full.canonicalize() {
-                        self.last_reloaded_files.insert(canon.to_string_lossy().to_string());
+                        self.last_reloaded_files
+                            .insert(canon.to_string_lossy().to_string());
                     }
                     self.last_reloaded_files.insert(f.to_string());
                 }
@@ -1375,11 +1589,37 @@ impl WorkspaceIndex {
         }
     }
 
+    /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
+    pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
+        let p = Path::new(file_path);
+        let file_name = p.file_name().and_then(|s| s.to_str()).unwrap_or(file_path);
+
+        for map in &self.reader_file_hashes {
+            if let Some(&h) = map.get(file_path) {
+                return Some(h);
+            }
+            for (k, &h) in map {
+                let kp = Path::new(k);
+                if kp == p || p.ends_with(kp) || kp.ends_with(p) || k.ends_with(file_name) {
+                    return Some(h);
+                }
+            }
+        }
+        None
+    }
+
+    #[allow(clippy::type_complexity)]
     fn load_file_metadata(
         file_path: &Path,
         base_dir: &Path,
         crate_name: &str,
-    ) -> (Option<PathBuf>, Option<String>, Vec<String>, HashMap<String, String>) {
+    ) -> (
+        Option<PathBuf>,
+        Option<String>,
+        Vec<String>,
+        HashMap<String, String>,
+        HashMap<String, u64>,
+    ) {
         let stem = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
         let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
         let deps_dir = base_dir.join(".deps");
@@ -1397,12 +1637,13 @@ impl WorkspaceIndex {
                             Some(info.unit_key),
                             info.dependencies,
                             info.extern_units,
+                            info.file_hashes,
                         );
                     }
                 }
             }
         }
-        (None, None, Vec::new(), HashMap::new())
+        (None, None, Vec::new(), HashMap::new(), HashMap::new())
     }
 }
 

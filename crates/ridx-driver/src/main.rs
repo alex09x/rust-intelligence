@@ -13,11 +13,14 @@ use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use ridx_format::{
-    DefKind as RDefKind, IndexWriter, RawDefinition, RawReference, RawType,
-};
+use ridx_format::{DefKind as RDefKind, IndexWriter, RawDefinition, RawReference, RawType};
 use rustc_driver::{Callbacks, Compilation};
-use rustc_hir::{self as hir, def::Res, intravisit::{self, Visitor}, HirId};
+use rustc_hir::{
+    self as hir,
+    def::Res,
+    intravisit::{self, Visitor},
+    HirId,
+};
 use rustc_middle::ty::{TyCtxt, TypeckResults};
 use rustc_span::Span;
 
@@ -33,7 +36,12 @@ impl Callbacks for IndexCallbacks {
         _compiler: &rustc_interface::interface::Compiler,
         tcx: TyCtxt<'tcx>,
     ) -> Compilation {
-        build_crate_index(tcx, &self.out_dir, self.disambiguator.as_deref(), &self.compiler_args);
+        build_crate_index(
+            tcx,
+            &self.out_dir,
+            self.disambiguator.as_deref(),
+            &self.compiler_args,
+        );
         Compilation::Continue
     }
 }
@@ -98,7 +106,9 @@ fn resolve_span_coords(
         source_map.lookup_char_pos(actual_span.lo()),
         source_map.lookup_char_pos(actual_span.hi()),
     );
-    let full_file = source_map.filename_for_diagnostics(&lo.file.name).to_string();
+    let full_file = source_map
+        .filename_for_diagnostics(&lo.file.name)
+        .to_string();
     let file = if let Some(root) = package_root {
         let p = Path::new(&full_file);
         if let Ok(rel) = p.strip_prefix(root) {
@@ -233,7 +243,10 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                 }
                 hir::ExprKind::Path(hir::QPath::TypeRelative(_, segment)) => {
                     if let hir::ExprKind::Path(ref qpath) = expr.kind {
-                        self.add_ref_from_res(segment.ident.span, typeck.qpath_res(qpath, expr.hir_id));
+                        self.add_ref_from_res(
+                            segment.ident.span,
+                            typeck.qpath_res(qpath, expr.hir_id),
+                        );
                     }
                 }
                 hir::ExprKind::Field(base, field) => {
@@ -316,7 +329,11 @@ fn hash_directory_contents(dir: &Path) -> Option<u64> {
             for entry in rd.flatten() {
                 let p = entry.path();
                 if p.is_file() {
-                    let rel = p.strip_prefix(base).unwrap_or(&p).to_string_lossy().to_string();
+                    let rel = p
+                        .strip_prefix(base)
+                        .unwrap_or(&p)
+                        .to_string_lossy()
+                        .to_string();
                     let hash = fs::read(&p).map(|b| ridx_format::fnv1a_64(&b)).unwrap_or(0);
                     list.push((rel, hash));
                 } else if p.is_dir() {
@@ -472,7 +489,8 @@ fn extract_crate_items<'tcx>(
 fn is_immutable_package(manifest_dir: &Path) -> bool {
     if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
         let ch = Path::new(&cargo_home);
-        if manifest_dir.starts_with(ch.join("registry")) || manifest_dir.starts_with(ch.join("git")) {
+        if manifest_dir.starts_with(ch.join("registry")) || manifest_dir.starts_with(ch.join("git"))
+        {
             return true;
         }
     }
@@ -483,6 +501,88 @@ fn is_immutable_package(manifest_dir: &Path) -> bool {
         || s.contains("\\.cargo\\git\\")
 }
 
+fn collect_file_hashes<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    package_root: Option<&Path>,
+    manifest_dir: Option<&Path>,
+    additional_files: &[String],
+) -> std::collections::HashMap<String, u64> {
+    let mut hashes = std::collections::HashMap::new();
+    let source_map = tcx.sess.source_map();
+
+    for file in source_map.files().iter() {
+        let name_str = source_map.filename_for_diagnostics(&file.name).to_string();
+        if name_str.starts_with('<') {
+            continue;
+        }
+
+        let hash_opt = if let Some(ref src) = file.src {
+            Some(ridx_format::fnv1a_64(src.as_bytes()))
+        } else {
+            let p = Path::new(&name_str);
+            if p.is_file() {
+                hash_file_contents(p)
+            } else if let Some(m) = manifest_dir {
+                let mp = m.join(p);
+                if mp.is_file() {
+                    hash_file_contents(&mp)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+
+        if let Some(h) = hash_opt {
+            let p = Path::new(&name_str);
+            hashes.insert(name_str.clone(), h);
+
+            if let Ok(canon) = p.canonicalize() {
+                hashes.insert(canon.to_string_lossy().to_string(), h);
+            }
+
+            if let Some(root) = package_root.or(manifest_dir) {
+                if let Ok(rel) = p.strip_prefix(root) {
+                    hashes.insert(rel.to_string_lossy().to_string(), h);
+                }
+                let full = root.join(p);
+                if let Ok(canon) = full.canonicalize() {
+                    hashes.insert(canon.to_string_lossy().to_string(), h);
+                }
+            }
+        }
+    }
+
+    for extra in additional_files {
+        if !hashes.contains_key(extra) {
+            let p = Path::new(extra);
+            let cand = if p.is_file() {
+                Some(p.to_path_buf())
+            } else if let Some(m) = manifest_dir {
+                let mp = m.join(p);
+                if mp.is_file() {
+                    Some(mp)
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+            if let Some(fp) = cand {
+                if let Some(h) = hash_file_contents(&fp) {
+                    hashes.insert(extra.clone(), h);
+                    if let Ok(canon) = fp.canonicalize() {
+                        hashes.insert(canon.to_string_lossy().to_string(), h);
+                    }
+                }
+            }
+        }
+    }
+
+    hashes
+}
+
 fn build_crate_index(
     tcx: TyCtxt<'_>,
     out_dir: &Path,
@@ -491,8 +591,7 @@ fn build_crate_index(
 ) {
     let start = Instant::now();
     let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
-    let crate_version =
-        std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
+    let crate_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
 
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from);
     let is_immutable = manifest_dir
@@ -558,7 +657,10 @@ fn build_crate_index(
                             if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
                                 if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
                                     resolved_unit = Some(uk.to_string());
-                                    let dep_name = val.get("name").and_then(|v| v.as_str()).unwrap_or(clean_alias);
+                                    let dep_name = val
+                                        .get("name")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or(clean_alias);
                                     if !dep_keys_or_names.contains(&dep_name.to_string()) {
                                         dep_keys_or_names.push(dep_name.to_string());
                                     }
@@ -594,20 +696,26 @@ fn build_crate_index(
         let cache_dir = ridx_format::resolve_cache_dir();
         let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
 
-        // Record dependency shard info for active workspace variant
-        let dep_info = serde_json::json!({
-            "name": crate_name,
-            "version": crate_version,
-            "unit_key": unit_key,
-            "object_path": obj_path.display().to_string(),
-            "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
-            "dependencies": dep_keys_or_names,
-            "extern_units": extern_units,
-        });
-        let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
-        let _ = fs::write(&dep_file, serde_json::to_string_pretty(&dep_info).unwrap_or_default());
-
         if obj_path.is_file() {
+            let file_hashes =
+                collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref(), &[]);
+            let dep_info = serde_json::json!({
+                "name": crate_name,
+                "version": crate_version,
+                "unit_key": unit_key,
+                "object_path": obj_path.display().to_string(),
+                "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+                "is_dependency": true,
+                "dependencies": dep_keys_or_names,
+                "extern_units": extern_units,
+                "file_hashes": file_hashes,
+            });
+            let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
+            let _ = fs::write(
+                &dep_file,
+                serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
+            );
+
             let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
             eprintln!(
                 "ridx: cache hit for {} v{} ({} KB, unit: {}) in {:.1} ms",
@@ -629,6 +737,32 @@ fn build_crate_index(
         };
 
         extract_crate_items(tcx, &mut visitor, manifest_dir.as_deref());
+
+        let indexed_files = visitor.writer.indexed_files();
+        let file_hashes = collect_file_hashes(
+            tcx,
+            manifest_dir.as_deref(),
+            manifest_dir.as_deref(),
+            &indexed_files,
+        );
+
+        // Record dependency shard info for active workspace variant
+        let dep_info = serde_json::json!({
+            "name": crate_name,
+            "version": crate_version,
+            "unit_key": unit_key,
+            "object_path": obj_path.display().to_string(),
+            "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+            "is_dependency": true,
+            "dependencies": dep_keys_or_names,
+            "extern_units": extern_units,
+            "file_hashes": file_hashes,
+        });
+        let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
+        let _ = fs::write(
+            &dep_file,
+            serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
+        );
 
         if let Some(parent) = obj_path.parent() {
             let _ = fs::create_dir_all(parent);
@@ -670,7 +804,10 @@ fn build_crate_index(
                 }
             }
             Err(e) => {
-                eprintln!("ridx-driver: failed to create temporary index {:?}: {e}", tmp_file_path);
+                eprintln!(
+                    "ridx-driver: failed to create temporary index {:?}: {e}",
+                    tmp_file_path
+                );
             }
         }
         return;
@@ -683,17 +820,6 @@ fn build_crate_index(
     }
 
     let out_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx"));
-    let dep_info = serde_json::json!({
-        "name": crate_name,
-        "version": crate_version,
-        "unit_key": unit_key,
-        "object_path": out_file_path.display().to_string(),
-        "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
-        "dependencies": dep_keys_or_names,
-        "extern_units": extern_units,
-    });
-    let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
-    let _ = fs::write(&dep_file, serde_json::to_string_pretty(&dep_info).unwrap_or_default());
 
     let mut visitor = HirVisitor {
         tcx,
@@ -704,8 +830,30 @@ fn build_crate_index(
 
     extract_crate_items(tcx, &mut visitor, None);
 
-    let out_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx"));
-    let tmp_file_path = out_dir.join(format!("{crate_name}{suffix}.ridx.tmp.{}", std::process::id()));
+    let indexed_files = visitor.writer.indexed_files();
+    let file_hashes = collect_file_hashes(tcx, None, manifest_dir.as_deref(), &indexed_files);
+
+    let dep_info = serde_json::json!({
+        "name": crate_name,
+        "version": crate_version,
+        "unit_key": unit_key,
+        "object_path": out_file_path.display().to_string(),
+        "source_root": serde_json::Value::Null,
+        "is_dependency": false,
+        "dependencies": dep_keys_or_names,
+        "extern_units": extern_units,
+        "file_hashes": file_hashes,
+    });
+    let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
+    let _ = fs::write(
+        &dep_file,
+        serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
+    );
+
+    let tmp_file_path = out_dir.join(format!(
+        "{crate_name}{suffix}.ridx.tmp.{}",
+        std::process::id()
+    ));
 
     match File::create(&tmp_file_path) {
         Ok(f) => {
@@ -740,7 +888,10 @@ fn build_crate_index(
             }
         }
         Err(e) => {
-            eprintln!("ridx-driver: failed to create temporary index {:?}: {e}", tmp_file_path);
+            eprintln!(
+                "ridx-driver: failed to create temporary index {:?}: {e}",
+                tmp_file_path
+            );
         }
     }
 }
@@ -781,7 +932,10 @@ fn main() {
     }
 
     // Skip build scripts
-    let crate_name_arg = args.windows(2).find(|w| w[0] == "--crate-name").map(|w| w[1].as_str());
+    let crate_name_arg = args
+        .windows(2)
+        .find(|w| w[0] == "--crate-name")
+        .map(|w| w[1].as_str());
     if crate_name_arg == Some("build_script_build") || crate_name_arg == Some("build_script_main") {
         rustc_driver::run_compiler(&args, &mut NoopCallbacks);
         return;
@@ -792,9 +946,12 @@ fn main() {
         .unwrap_or_else(|_| PathBuf::from("target/ridx"));
     let disambiguator = extract_target_disambiguator(&args);
 
-    rustc_driver::run_compiler(&args, &mut IndexCallbacks {
-        out_dir,
-        disambiguator,
-        compiler_args: args.clone(),
-    });
+    rustc_driver::run_compiler(
+        &args,
+        &mut IndexCallbacks {
+            out_dir,
+            disambiguator,
+            compiler_args: args.clone(),
+        },
+    );
 }

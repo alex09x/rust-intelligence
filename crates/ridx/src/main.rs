@@ -199,7 +199,9 @@ fn find_manifest_for_path(p: &Path) -> Option<(PathBuf, ridx_format::VariantMani
         let v_manifest_file = dir.join("variant_manifest.json");
         if v_manifest_file.is_file() {
             if let Ok(content) = fs::read(&v_manifest_file) {
-                if let Ok(manifest) = serde_json::from_slice::<ridx_format::VariantManifest>(&content) {
+                if let Ok(manifest) =
+                    serde_json::from_slice::<ridx_format::VariantManifest>(&content)
+                {
                     return Some((dir.clone(), manifest));
                 }
             }
@@ -211,7 +213,9 @@ fn find_manifest_for_path(p: &Path) -> Option<(PathBuf, ridx_format::VariantMani
         let manifest_file = dir.join("ridx_manifest.json");
         if manifest_file.is_file() {
             if let Ok(content) = fs::read(&manifest_file) {
-                if let Ok(manifest) = serde_json::from_slice::<ridx_format::VariantManifest>(&content) {
+                if let Ok(manifest) =
+                    serde_json::from_slice::<ridx_format::VariantManifest>(&content)
+                {
                     // If p specifies a variant directory or shard under variants/<id>, verify that
                     // it matches manifest.active_variant_id. If p targets an inactive variant shard
                     // whose recipe is not the root active manifest, return None rather than substituting
@@ -220,7 +224,10 @@ fn find_manifest_for_path(p: &Path) -> Option<(PathBuf, ridx_format::VariantMani
                     if let Some(pos) = p_str.find("variants/") {
                         let sub = &p_str[pos + "variants/".len()..];
                         let var_id = sub.split('/').next().unwrap_or("");
-                        if !var_id.is_empty() && !manifest.active_variant_id.is_empty() && var_id != manifest.active_variant_id {
+                        if !var_id.is_empty()
+                            && !manifest.active_variant_id.is_empty()
+                            && var_id != manifest.active_variant_id
+                        {
                             return None;
                         }
                     }
@@ -237,49 +244,87 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
         Some(p) => match WorkspaceIndex::open(&p) {
             Ok(ws) => ws,
             Err(e) => {
-                if ridx_format::is_version_mismatch(&e) || e.kind() == std::io::ErrorKind::NotFound {
+                if ridx_format::is_version_mismatch(&e) || e.kind() == std::io::ErrorKind::NotFound
+                {
                     eprintln!(
                         "{} Index at {:?} is missing or incompatible with format v{}. Automatically reindexing...",
                         "Notice:".yellow().bold(), p, ridx_format::CURRENT_FORMAT_VERSION
                     );
-                    let (work_dir, out_dir_opt, package, release, features, no_default_features, all_features, target) =
-                        if let Some((manifest_dir, manifest)) = find_manifest_for_path(&p) {
-                            let ws_dir = if !manifest.workspace_root.is_empty() && Path::new(&manifest.workspace_root).exists() {
-                                PathBuf::from(manifest.workspace_root)
-                            } else if let Some(ws) = find_enclosing_workspace(&p) {
-                                ws
-                            } else {
-                                eprintln!("{}: Cannot find Cargo workspace for index at {:?}.", "Error".red().bold(), p);
-                                std::process::exit(1);
-                            };
-                            let base_dir = if let Some(ref b) = manifest.base_out_dir {
-                                PathBuf::from(b)
-                            } else if manifest_dir.parent().and_then(|pr| pr.file_name()).and_then(|s| s.to_str()) == Some("variants") {
-                                manifest_dir.parent().unwrap().parent().unwrap().to_path_buf()
-                            } else if manifest_dir.file_name().and_then(|s| s.to_str()) == Some("variants") {
-                                manifest_dir.parent().unwrap().to_path_buf()
-                            } else {
-                                manifest_dir
-                            };
-                            (ws_dir, Some(base_dir), manifest.package_filter, manifest.profile == "release", manifest.features, manifest.no_default_features, manifest.all_features, manifest.target)
+                    let (
+                        work_dir,
+                        out_dir_opt,
+                        package,
+                        release,
+                        features,
+                        no_default_features,
+                        all_features,
+                        target,
+                    ) = if let Some((manifest_dir, manifest)) = find_manifest_for_path(&p) {
+                        let ws_dir = if !manifest.workspace_root.is_empty()
+                            && Path::new(&manifest.workspace_root).exists()
+                        {
+                            PathBuf::from(manifest.workspace_root)
+                        } else if let Some(ws) = find_enclosing_workspace(&p) {
+                            ws
                         } else {
-                            let p_str = p.to_string_lossy();
-                            if p_str.contains("variants/") {
-                                eprintln!(
+                            eprintln!(
+                                "{}: Cannot find Cargo workspace for index at {:?}.",
+                                "Error".red().bold(),
+                                p
+                            );
+                            std::process::exit(1);
+                        };
+                        let base_dir = if let Some(ref b) = manifest.base_out_dir {
+                            PathBuf::from(b)
+                        } else if manifest_dir
+                            .parent()
+                            .and_then(|pr| pr.file_name())
+                            .and_then(|s| s.to_str())
+                            == Some("variants")
+                        {
+                            manifest_dir
+                                .parent()
+                                .unwrap()
+                                .parent()
+                                .unwrap()
+                                .to_path_buf()
+                        } else if manifest_dir.file_name().and_then(|s| s.to_str())
+                            == Some("variants")
+                        {
+                            manifest_dir.parent().unwrap().to_path_buf()
+                        } else {
+                            manifest_dir
+                        };
+                        (
+                            ws_dir,
+                            Some(base_dir),
+                            manifest.package_filter,
+                            manifest.profile == "release",
+                            manifest.features,
+                            manifest.no_default_features,
+                            manifest.all_features,
+                            manifest.target,
+                        )
+                    } else {
+                        let p_str = p.to_string_lossy();
+                        if p_str.contains("variants/") {
+                            eprintln!(
                                     "{}: Cannot automatically reindex inactive variant shard at {:?}: no matching variant manifest found.",
                                     "Error".red().bold(), p
                                 );
-                                eprintln!("Run 'ridx index' with the appropriate build configuration for this variant.");
-                                std::process::exit(1);
-                            }
-                            if let Some(ws) = find_enclosing_workspace(&p) {
-                                (ws, None, None, false, None, false, false, None)
-                            } else {
-                                eprintln!("{}: Cannot determine Cargo workspace for {:?}. No Cargo.toml found in path or parent directories.", "Error".red().bold(), p);
-                                eprintln!("Specify the path to a Cargo workspace or run 'ridx index' first.");
-                                std::process::exit(1);
-                            }
-                        };
+                            eprintln!("Run 'ridx index' with the appropriate build configuration for this variant.");
+                            std::process::exit(1);
+                        }
+                        if let Some(ws) = find_enclosing_workspace(&p) {
+                            (ws, None, None, false, None, false, false, None)
+                        } else {
+                            eprintln!("{}: Cannot determine Cargo workspace for {:?}. No Cargo.toml found in path or parent directories.", "Error".red().bold(), p);
+                            eprintln!(
+                                "Specify the path to a Cargo workspace or run 'ridx index' first."
+                            );
+                            std::process::exit(1);
+                        }
+                    };
 
                     let published = run_indexing(IndexOptions {
                         path: work_dir,
@@ -293,7 +338,9 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
                     });
 
                     // Reopen the rebuilt variant or shard rather than failing on an obsolete artifact path:
-                    let cand_paths = if p.is_file() || p.extension().and_then(|s| s.to_str()) == Some("ridx") {
+                    let cand_paths = if p.is_file()
+                        || p.extension().and_then(|s| s.to_str()) == Some("ridx")
+                    {
                         let mut v = Vec::new();
                         if let Some(file_name) = p.file_name() {
                             let shard_in_new_variant = published.variant_out_dir.join(file_name);
@@ -306,7 +353,11 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
                         v.push(p.clone());
                         v
                     } else {
-                        vec![published.variant_out_dir.clone(), published.base_out_dir.clone(), p.clone()]
+                        vec![
+                            published.variant_out_dir.clone(),
+                            published.base_out_dir.clone(),
+                            p.clone(),
+                        ]
                     };
 
                     for cand in cand_paths {
@@ -315,10 +366,18 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
                         }
                     }
 
-                    eprintln!("{}: Failed to open reindexed workspace after variant publish {:?}.", "Error".red().bold(), published.variant_out_dir);
+                    eprintln!(
+                        "{}: Failed to open reindexed workspace after variant publish {:?}.",
+                        "Error".red().bold(),
+                        published.variant_out_dir
+                    );
                     std::process::exit(1);
                 }
-                eprintln!("{}: Failed to open index {:?}: {e}", "Error".red().bold(), p);
+                eprintln!(
+                    "{}: Failed to open index {:?}: {e}",
+                    "Error".red().bold(),
+                    p
+                );
                 std::process::exit(1);
             }
         },
@@ -326,24 +385,47 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
             Ok(ws) => ws,
             Err(e) => {
                 let cur = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-                let (work_dir, out_dir_opt, package, release, features, no_default_features, all_features, target) =
-                    if let Some((manifest_dir, manifest)) = find_manifest_for_path(&cur) {
-                        let ws_dir = if !manifest.workspace_root.is_empty() && Path::new(&manifest.workspace_root).exists() {
-                            PathBuf::from(manifest.workspace_root)
-                        } else if let Some(ws) = find_enclosing_workspace(&cur) {
-                            ws
-                        } else {
-                            eprintln!("{}: Cannot find Cargo workspace for manifest at {:?}.", "Error".red().bold(), manifest_dir);
-                            std::process::exit(1);
-                        };
-                        (ws_dir, Some(manifest_dir), manifest.package_filter, manifest.profile == "release", manifest.features, manifest.no_default_features, manifest.all_features, manifest.target)
+                let (
+                    work_dir,
+                    out_dir_opt,
+                    package,
+                    release,
+                    features,
+                    no_default_features,
+                    all_features,
+                    target,
+                ) = if let Some((manifest_dir, manifest)) = find_manifest_for_path(&cur) {
+                    let ws_dir = if !manifest.workspace_root.is_empty()
+                        && Path::new(&manifest.workspace_root).exists()
+                    {
+                        PathBuf::from(manifest.workspace_root)
                     } else if let Some(ws) = find_enclosing_workspace(&cur) {
-                        (ws, None, None, false, None, false, false, None)
+                        ws
                     } else {
-                        eprintln!("{}: {e}", "Error".red().bold());
-                        eprintln!("Specify the path to a .ridx file or directory, or run from a workspace with target/ridx/.");
+                        eprintln!(
+                            "{}: Cannot find Cargo workspace for manifest at {:?}.",
+                            "Error".red().bold(),
+                            manifest_dir
+                        );
                         std::process::exit(1);
                     };
+                    (
+                        ws_dir,
+                        Some(manifest_dir),
+                        manifest.package_filter,
+                        manifest.profile == "release",
+                        manifest.features,
+                        manifest.no_default_features,
+                        manifest.all_features,
+                        manifest.target,
+                    )
+                } else if let Some(ws) = find_enclosing_workspace(&cur) {
+                    (ws, None, None, false, None, false, false, None)
+                } else {
+                    eprintln!("{}: {e}", "Error".red().bold());
+                    eprintln!("Specify the path to a .ridx file or directory, or run from a workspace with target/ridx/.");
+                    std::process::exit(1);
+                };
 
                 eprintln!(
                     "{} No valid RIDX index found for current workspace (expected format v{}). Automatically indexing...",
@@ -362,7 +444,10 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
                 match WorkspaceIndex::auto_discover() {
                     Ok(ws) => ws,
                     Err(e2) => {
-                        eprintln!("{}: Failed to auto-discover reindexed workspace: {e2}", "Error".red().bold());
+                        eprintln!(
+                            "{}: Failed to auto-discover reindexed workspace: {e2}",
+                            "Error".red().bold()
+                        );
                         std::process::exit(1);
                     }
                 }
@@ -407,7 +492,6 @@ fn find_driver_binary() -> Option<PathBuf> {
     }
     None
 }
-
 
 fn resolve_cargo_home() -> Option<PathBuf> {
     if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
@@ -548,7 +632,11 @@ fn compute_variant_id(
     }
     all_manifests.sort();
     for m in all_manifests {
-        m.strip_prefix(work_dir).unwrap_or(&m).display().to_string().hash(&mut hasher);
+        m.strip_prefix(work_dir)
+            .unwrap_or(&m)
+            .display()
+            .to_string()
+            .hash(&mut hasher);
         if let Ok(bytes) = fs::read(&m) {
             bytes.hash(&mut hasher);
         }
@@ -615,29 +703,48 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
 
     let (work_dir, manifest_path) = if path.is_file() {
         if path.file_name().and_then(|s| s.to_str()) != Some("Cargo.toml") {
-            eprintln!("{}: target path {:?} is a file but not a Cargo.toml manifest.", "Error".red().bold(), path);
+            eprintln!(
+                "{}: target path {:?} is a file but not a Cargo.toml manifest.",
+                "Error".red().bold(),
+                path
+            );
             std::process::exit(1);
         }
         let canon = match path.canonicalize() {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("{}: failed to canonicalize manifest path {:?}: {e}", "Error".red().bold(), path);
+                eprintln!(
+                    "{}: failed to canonicalize manifest path {:?}: {e}",
+                    "Error".red().bold(),
+                    path
+                );
                 std::process::exit(1);
             }
         };
-        let dir = canon.parent().unwrap_or_else(|| Path::new("/")).to_path_buf();
+        let dir = canon
+            .parent()
+            .unwrap_or_else(|| Path::new("/"))
+            .to_path_buf();
         (dir, canon)
     } else if path.is_dir() {
         let canon = match path.canonicalize() {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("{}: failed to canonicalize workspace path {:?}: {e}", "Error".red().bold(), path);
+                eprintln!(
+                    "{}: failed to canonicalize workspace path {:?}: {e}",
+                    "Error".red().bold(),
+                    path
+                );
                 std::process::exit(1);
             }
         };
         let manifest = canon.join("Cargo.toml");
         if !manifest.is_file() {
-            eprintln!("{}: no Cargo.toml found in directory {:?}.", "Error".red().bold(), path);
+            eprintln!(
+                "{}: no Cargo.toml found in directory {:?}.",
+                "Error".red().bold(),
+                path
+            );
             std::process::exit(1);
         }
         (canon, manifest)
@@ -652,13 +759,19 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
             if d.is_absolute() {
                 d
             } else {
-                std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).join(d)
+                std::env::current_dir()
+                    .unwrap_or_else(|_| PathBuf::from("."))
+                    .join(d)
             }
         }
         None => work_dir.join("target/ridx"),
     };
     if let Err(e) = fs::create_dir_all(&base_out_dir) {
-        eprintln!("{}: failed to create output directory {:?}: {e}", "Error".red().bold(), base_out_dir);
+        eprintln!(
+            "{}: failed to create output directory {:?}: {e}",
+            "Error".red().bold(),
+            base_out_dir
+        );
         std::process::exit(1);
     }
     let base_out_dir = base_out_dir.canonicalize().unwrap_or(base_out_dir);
@@ -666,7 +779,10 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
     let driver_bin = match find_driver_binary() {
         Some(b) => b,
         None => {
-            eprintln!("{}: could not find ridx-driver binary.", "Error".red().bold());
+            eprintln!(
+                "{}: could not find ridx-driver binary.",
+                "Error".red().bold()
+            );
             eprintln!("Please build ridx-driver first (e.g. cargo build -p ridx-driver) or place it in PATH.");
             std::process::exit(1);
         }
@@ -686,7 +802,11 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
     let variant_rel_dir = format!("variants/{}", variant_id);
     let variant_out_dir = base_out_dir.join(&variant_rel_dir);
     if let Err(e) = fs::create_dir_all(&variant_out_dir) {
-        eprintln!("{}: failed to create variant directory {:?}: {e}", "Error".red().bold(), variant_out_dir);
+        eprintln!(
+            "{}: failed to create variant directory {:?}: {e}",
+            "Error".red().bold(),
+            variant_out_dir
+        );
         std::process::exit(1);
     }
     let variant_out_dir = variant_out_dir.canonicalize().unwrap_or(variant_out_dir);
@@ -695,13 +815,35 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
     let cargo_target_dir = work_dir.join("target/ridx_cargo").join(&variant_id);
     let _ = fs::create_dir_all(&cargo_target_dir);
 
-    eprintln!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
-    eprintln!("  {} {}", "RIDX Workspace Indexer:".bold(), work_dir.display().to_string().cyan());
-    eprintln!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
-    eprintln!("  Work Directory : {}", work_dir.display().to_string().green());
-    eprintln!("  Manifest Path  : {}", manifest_path.display().to_string().green());
-    eprintln!("  Driver Binary  : {}", driver_bin.display().to_string().green());
-    eprintln!("  Index Output   : {}", variant_out_dir.display().to_string().green());
+    eprintln!(
+        "{}",
+        "═══════════════════════════════════════════════════════════════════════".dimmed()
+    );
+    eprintln!(
+        "  {} {}",
+        "RIDX Workspace Indexer:".bold(),
+        work_dir.display().to_string().cyan()
+    );
+    eprintln!(
+        "{}",
+        "═══════════════════════════════════════════════════════════════════════".dimmed()
+    );
+    eprintln!(
+        "  Work Directory : {}",
+        work_dir.display().to_string().green()
+    );
+    eprintln!(
+        "  Manifest Path  : {}",
+        manifest_path.display().to_string().green()
+    );
+    eprintln!(
+        "  Driver Binary  : {}",
+        driver_bin.display().to_string().green()
+    );
+    eprintln!(
+        "  Index Output   : {}",
+        variant_out_dir.display().to_string().green()
+    );
     eprintln!("  Active Variant : {}", variant_id.cyan().bold());
     eprintln!("  Build Profile  : {}", profile_name.cyan());
     if let Some(ref feats) = features {
@@ -776,7 +918,10 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
     let status = match cmd.status() {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("{}: failed to execute cargo check: {e}", "Error".red().bold());
+            eprintln!(
+                "{}: failed to execute cargo check: {e}",
+                "Error".red().bold()
+            );
             std::process::exit(1);
         }
     };
@@ -784,14 +929,21 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
     let elapsed = start.elapsed();
 
     if !status.success() {
-        eprintln!("{}: cargo check exited with status {status}", "Error".red().bold());
+        eprintln!(
+            "{}: cargo check exited with status {status}",
+            "Error".red().bold()
+        );
         std::process::exit(1);
     }
 
     let ws = match WorkspaceIndex::open(&variant_out_dir) {
         Ok(w) => w,
         Err(e) => {
-            eprintln!("{}: failed to open generated variant index {:?}: {e}", "Error".red().bold(), variant_out_dir);
+            eprintln!(
+                "{}: failed to open generated variant index {:?}: {e}",
+                "Error".red().bold(),
+                variant_out_dir
+            );
             std::process::exit(1);
         }
     };
@@ -810,8 +962,12 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
                 let path = entry.path();
                 if path.extension().and_then(|s| s.to_str()) == Some("json") {
                     if let Ok(content) = fs::read(&path) {
-                        if let Ok(info) = serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content) {
-                            dep_shards.push(info);
+                        if let Ok(info) =
+                            serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content)
+                        {
+                            if info.is_dependency {
+                                dep_shards.push(info);
+                            }
                         }
                     }
                 }
@@ -869,7 +1025,10 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
     let serialized = match serde_json::to_string_pretty(&manifest_data) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("{}: failed to serialize variant manifest: {e}", "Error".red().bold());
+            eprintln!(
+                "{}: failed to serialize variant manifest: {e}",
+                "Error".red().bold()
+            );
             std::process::exit(1);
         }
     };
@@ -881,13 +1040,21 @@ fn run_indexing(opts: IndexOptions) -> PublishedVariant {
     // Write to temp file then rename for atomic manifest swap
     let tmp_manifest = base_out_dir.join(format!("ridx_manifest.json.tmp.{}", std::process::id()));
     if let Err(e) = fs::write(&tmp_manifest, serialized) {
-        eprintln!("{}: failed to write temporary variant manifest {:?}: {e}", "Error".red().bold(), tmp_manifest);
+        eprintln!(
+            "{}: failed to write temporary variant manifest {:?}: {e}",
+            "Error".red().bold(),
+            tmp_manifest
+        );
         std::process::exit(1);
     }
 
     if let Err(e) = fs::rename(&tmp_manifest, &manifest_file) {
         let _ = fs::remove_file(&tmp_manifest);
-        eprintln!("{}: failed to publish active variant manifest {:?}: {e}", "Error".red().bold(), manifest_file);
+        eprintln!(
+            "{}: failed to publish active variant manifest {:?}: {e}",
+            "Error".red().bold(),
+            manifest_file
+        );
         std::process::exit(1);
     }
 
@@ -975,21 +1142,64 @@ fn main() {
                 return;
             }
 
-            println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
-            println!("  {} {} crate(s) loaded", "RIDX Workspace Index:".bold(), stats.total_crates.to_string().cyan());
+            println!(
+                "{}",
+                "═══════════════════════════════════════════════════════════════════════".dimmed()
+            );
+            println!(
+                "  {} {} crate(s) loaded",
+                "RIDX Workspace Index:".bold(),
+                stats.total_crates.to_string().cyan()
+            );
             if let Some(ref v) = stats.active_variant {
                 println!("  Active Variant        : {}", v.cyan().bold());
             }
-            println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
-            println!("{:<28}: {}", "Total Crates", stats.total_crates.to_string().bold());
-            println!("{:<28}: {} bytes ({:.2} KB / {:.2} MB)", "Total Index Size", stats.total_bytes, stats.total_bytes as f64 / 1024.0, stats.total_bytes as f64 / (1024.0 * 1024.0));
+            println!(
+                "{}",
+                "═══════════════════════════════════════════════════════════════════════".dimmed()
+            );
+            println!(
+                "{:<28}: {}",
+                "Total Crates",
+                stats.total_crates.to_string().bold()
+            );
+            println!(
+                "{:<28}: {} bytes ({:.2} KB / {:.2} MB)",
+                "Total Index Size",
+                stats.total_bytes,
+                stats.total_bytes as f64 / 1024.0,
+                stats.total_bytes as f64 / (1024.0 * 1024.0)
+            );
             println!("{:<28}: {}", "Indexed Files", stats.total_files);
-            println!("{:<28}: {}", "Definitions Count", stats.total_defs.to_string().green().bold());
-            println!("{:<28}: {}", "References Count", stats.total_refs.to_string().green().bold());
-            println!("{:<28}: {}", "Inferred Types Count", stats.total_types.to_string().green().bold());
-            println!("{:<28}: {}", "Zero-Copy Lookup Ready", "YES (Mmap)".green().bold());
-            println!("{:<28}: {}", "Daemon Memory Required", "0 MB (pure disk index)".green().bold());
-            println!("{}", "───────────────────────────────────────────────────────────────────────".dimmed());
+            println!(
+                "{:<28}: {}",
+                "Definitions Count",
+                stats.total_defs.to_string().green().bold()
+            );
+            println!(
+                "{:<28}: {}",
+                "References Count",
+                stats.total_refs.to_string().green().bold()
+            );
+            println!(
+                "{:<28}: {}",
+                "Inferred Types Count",
+                stats.total_types.to_string().green().bold()
+            );
+            println!(
+                "{:<28}: {}",
+                "Zero-Copy Lookup Ready",
+                "YES (Mmap)".green().bold()
+            );
+            println!(
+                "{:<28}: {}",
+                "Daemon Memory Required",
+                "0 MB (pure disk index)".green().bold()
+            );
+            println!(
+                "{}",
+                "───────────────────────────────────────────────────────────────────────".dimmed()
+            );
             println!("  Crate Breakdown:");
             for c in &stats.crate_summaries {
                 println!(
@@ -1003,7 +1213,10 @@ fn main() {
                     c.path.display()
                 );
             }
-            println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+            println!(
+                "{}",
+                "═══════════════════════════════════════════════════════════════════════".dimmed()
+            );
         }
 
         Commands::Def { arg1, arg2, json } => {
@@ -1424,7 +1637,10 @@ fn main() {
 
         Commands::Lsp { index_path } => {
             if let Err(e) = lsp::run_lsp_server(index_path) {
-                eprintln!("{}: LSP server exited with error: {e}", "Error".red().bold());
+                eprintln!(
+                    "{}: LSP server exited with error: {e}",
+                    "Error".red().bold()
+                );
                 std::process::exit(1);
             }
         }

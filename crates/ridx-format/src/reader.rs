@@ -1,10 +1,10 @@
 //! Fast zero-copy memory-mapped reader for .ridx files.
 #![allow(clippy::manual_is_multiple_of)]
 
+use memmap2::Mmap;
 use std::fs::File;
 use std::io;
 use std::path::Path;
-use memmap2::Mmap;
 
 use crate::format::*;
 
@@ -31,7 +31,7 @@ impl<'a> ResolvedDefinition<'a> {
         if p.is_absolute() {
             p.to_path_buf()
         } else if let Some(root) = self.source_root {
-            root.join(p)
+            join_resolving_overlap(root, p)
         } else {
             p.to_path_buf()
         }
@@ -179,9 +179,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if start + len > bytes.len() {
             return &[];
         }
-        unsafe {
-            std::slice::from_raw_parts(bytes[start..].as_ptr() as *const DefEntry, count)
-        }
+        unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const DefEntry, count) }
     }
 
     #[inline]
@@ -210,9 +208,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if start + len > bytes.len() {
             return &[];
         }
-        unsafe {
-            std::slice::from_raw_parts(bytes[start..].as_ptr() as *const RefEntry, count)
-        }
+        unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const RefEntry, count) }
     }
 
     #[inline]
@@ -241,9 +237,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if start + len > bytes.len() {
             return &[];
         }
-        unsafe {
-            std::slice::from_raw_parts(bytes[start..].as_ptr() as *const TypeEntry, count)
-        }
+        unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const TypeEntry, count) }
     }
 
     /// Find a definition by its canonical path (e.g. `stdx::panic_context::enter`).
@@ -452,9 +446,9 @@ fn validate_sections(buf_len: usize, header: &Header) -> io::Result<()> {
     }
     let pool_start = header.string_pool_offset as usize;
     let pool_len = header.string_pool_len as usize;
-    let pool_end = pool_start.checked_add(pool_len).ok_or_else(|| {
-        io::Error::new(io::ErrorKind::InvalidData, "String pool length overflow")
-    })?;
+    let pool_end = pool_start
+        .checked_add(pool_len)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "String pool length overflow"))?;
     if pool_end > buf_len {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,

@@ -96,7 +96,12 @@ impl DocumentOverlay {
 
     /// Creates and parses a new DocumentOverlay from buffer text assuming compiled baseline.
     #[allow(dead_code)]
-    pub fn new(uri: impl Into<String>, file_path: impl Into<String>, version: i32, text: String) -> Self {
+    pub fn new(
+        uri: impl Into<String>,
+        file_path: impl Into<String>,
+        version: i32,
+        text: String,
+    ) -> Self {
         Self::new_with_provenance(uri, file_path, version, text, true)
     }
 
@@ -384,7 +389,11 @@ fn strip_trailing_whitespace_and_comments(s: &str) -> &str {
 
         // 3. Check if current line contains a line comment "//" outside of strings/chars
         if cur > 0 {
-            let line_start = bytes[..cur].iter().rposition(|&b| b == b'\n').map(|p| p + 1).unwrap_or(0);
+            let line_start = bytes[..cur]
+                .iter()
+                .rposition(|&b| b == b'\n')
+                .map(|p| p + 1)
+                .unwrap_or(0);
             let line_slice = &bytes[line_start..cur];
             let mut in_quote: Option<u8> = None;
             let mut line_cur = 0;
@@ -403,7 +412,10 @@ fn strip_trailing_whitespace_and_comments(s: &str) -> &str {
                 } else if b == b'"' || b == b'\'' {
                     in_quote = Some(b);
                     line_cur += 1;
-                } else if b == b'/' && line_cur + 1 < line_slice.len() && line_slice[line_cur + 1] == b'/' {
+                } else if b == b'/'
+                    && line_cur + 1 < line_slice.len()
+                    && line_slice[line_cur + 1] == b'/'
+                {
                     comment_start = Some(line_start + line_cur);
                     break;
                 } else {
@@ -465,6 +477,9 @@ fn strip_leading_whitespace_and_comments(s: &str) -> &str {
             if let Some(end) = found_end {
                 cur = end;
                 continue;
+            } else {
+                cur = len;
+                break;
             }
         }
 
@@ -479,7 +494,11 @@ impl DocumentOverlay {
     pub fn find_definition_at(&self, line: u32, col: u32) -> Option<OverlayDefinition> {
         // 1. Direct hit on an existing overlay definition span
         for sym in &self.symbols {
-            if line >= sym.start_line && line <= sym.end_line && col >= sym.start_col && col <= sym.end_col {
+            if line >= sym.start_line
+                && line <= sym.end_line
+                && col >= sym.start_col
+                && col <= sym.end_col
+            {
                 return Some(OverlayDefinition {
                     name: sym.name.clone(),
                     kind: sym.kind,
@@ -698,7 +717,14 @@ impl OverlayManager {
         }
     }
 
-    pub fn open_with_provenance(&mut self, uri: &str, file_path: &str, version: i32, text: String, is_compiled: bool) {
+    pub fn open_with_provenance(
+        &mut self,
+        uri: &str,
+        file_path: &str,
+        version: i32,
+        text: String,
+        is_compiled: bool,
+    ) {
         if let Some(existing) = self.overlays.get_mut(file_path) {
             existing.update(version, text);
             if is_compiled {
@@ -707,7 +733,8 @@ impl OverlayManager {
                 existing.compiled_text = None;
             }
         } else {
-            let overlay = DocumentOverlay::new_with_provenance(uri, file_path, version, text, is_compiled);
+            let overlay =
+                DocumentOverlay::new_with_provenance(uri, file_path, version, text, is_compiled);
             self.overlays.insert(file_path.to_string(), overlay);
         }
     }
@@ -720,7 +747,12 @@ impl OverlayManager {
         self.overlays.get(file_path)
     }
 
-    pub fn find_definition_at(&self, file_path: &str, line: u32, col: u32) -> Option<OverlayDefinition> {
+    pub fn find_definition_at(
+        &self,
+        file_path: &str,
+        line: u32,
+        col: u32,
+    ) -> Option<OverlayDefinition> {
         let overlay = self.overlays.get(file_path)?;
         overlay.find_definition_at(line, col)
     }
@@ -741,7 +773,9 @@ impl OverlayManager {
 
     #[allow(dead_code)]
     pub fn map_compiled_line_to_live(&self, file_path: &str, compiled_line: u32) -> Option<u32> {
-        self.overlays.get(file_path)?.map_compiled_line_to_live(compiled_line)
+        self.overlays
+            .get(file_path)?
+            .map_compiled_line_to_live(compiled_line)
     }
 
     #[allow(dead_code)]
@@ -842,6 +876,9 @@ impl<'a> OverlayParser<'a> {
                     } else {
                         pos += 1;
                     }
+                }
+                if depth > 0 {
+                    pos = len;
                 }
                 continue;
             }
@@ -965,11 +1002,25 @@ impl<'a> OverlayParser<'a> {
                     *pos += 1;
                 }
             } else if b == b'/' && *pos + 1 < len && bytes[*pos + 1] == b'*' {
+                let mut depth = 1usize;
                 *pos += 2;
-                while *pos + 1 < len && !(bytes[*pos] == b'*' && bytes[*pos + 1] == b'/') {
-                    *pos += 1;
+                while *pos + 1 < len {
+                    if bytes[*pos] == b'/' && bytes[*pos + 1] == b'*' {
+                        depth += 1;
+                        *pos += 2;
+                    } else if bytes[*pos] == b'*' && bytes[*pos + 1] == b'/' {
+                        depth -= 1;
+                        *pos += 2;
+                        if depth == 0 {
+                            break;
+                        }
+                    } else {
+                        *pos += 1;
+                    }
                 }
-                *pos = (*pos + 2).min(len);
+                if depth > 0 {
+                    *pos = len;
+                }
             } else {
                 break;
             }
@@ -1051,7 +1102,8 @@ impl<'a> OverlayParser<'a> {
         // Parse parameters inside `(...)` and assign them to fn_scope_id
         if let Some(open_paren) = self.text[start..sig_end].find('(') {
             if let Some(close_paren) = self.text[start + open_paren..sig_end].find(')') {
-                let params_text = self.text[start + open_paren + 1..start + open_paren + close_paren].to_string();
+                let params_text =
+                    self.text[start + open_paren + 1..start + open_paren + close_paren].to_string();
                 self.extract_params(&params_text, start + open_paren + 1, fn_scope_id);
             }
         }
@@ -1068,7 +1120,11 @@ impl<'a> OverlayParser<'a> {
     fn extract_params(&mut self, params_text: &str, base_byte: usize, scope_id: usize) {
         for part in params_text.split(',') {
             let trimmed = part.trim();
-            if trimmed.is_empty() || trimmed == "self" || trimmed == "&self" || trimmed == "&mut self" {
+            if trimmed.is_empty()
+                || trimmed == "self"
+                || trimmed == "&self"
+                || trimmed == "&mut self"
+            {
                 continue;
             }
             if let Some((p_name, _)) = trimmed.split_once(':') {
@@ -1080,7 +1136,9 @@ impl<'a> OverlayParser<'a> {
                 }
                 if !p_name.is_empty() && is_ident(p_name) {
                     if let Some(offset) = part.find(p_name) {
-                        let abs_offset = base_byte + (part.as_ptr() as usize - params_text.as_ptr() as usize) + offset;
+                        let abs_offset = base_byte
+                            + (part.as_ptr() as usize - params_text.as_ptr() as usize)
+                            + offset;
                         let (s_line, s_col) = self.byte_to_char_line_col(abs_offset);
                         let (e_line, e_col) = self.byte_to_char_line_col(abs_offset + p_name.len());
                         self.symbols.push(OverlaySymbol {
@@ -1179,6 +1237,9 @@ impl<'a> OverlayParser<'a> {
                     } else {
                         cur += 1;
                     }
+                }
+                if depth > 0 {
+                    cur = len;
                 }
                 continue;
             }
@@ -1297,14 +1358,19 @@ mod tests {
     #[test]
     fn test_shadow_initializer_sees_previous_binding() {
         let code = "fn test() {\n    let x = 1;\n    let x = x + 1;\n    x;\n}\n".to_string();
-        let overlay = DocumentOverlay::new("file:///test/shadow_init.rs", "src/shadow_init.rs", 1, code);
+        let overlay =
+            DocumentOverlay::new("file:///test/shadow_init.rs", "src/shadow_init.rs", 1, code);
         // Cursor on `x` in `x + 1` at line 3, col 13
-        let def = overlay.find_definition_at(3, 13).expect("should resolve to outer x");
+        let def = overlay
+            .find_definition_at(3, 13)
+            .expect("should resolve to outer x");
         assert_eq!(def.name, "x");
         assert_eq!(def.start_line, 2);
 
         // Cursor on `x;` on line 4, col 5 -> resolves to second `let x = x + 1` on line 3
-        let def2 = overlay.find_definition_at(4, 5).expect("should resolve to inner x");
+        let def2 = overlay
+            .find_definition_at(4, 5)
+            .expect("should resolve to inner x");
         assert_eq!(def2.name, "x");
         assert_eq!(def2.start_line, 3);
     }
@@ -1315,20 +1381,29 @@ mod tests {
         let overlay = DocumentOverlay::new("file:///test/qual.rs", "src/qual.rs", 1, code);
         // Querying external::f on line 2, col 25 (the `f` in `external::f`) should abstain (None)
         let def = overlay.find_definition_at(2, 25);
-        assert!(def.is_none(), "overlay must abstain for qualified path segment external::f");
+        assert!(
+            def.is_none(),
+            "overlay must abstain for qualified path segment external::f"
+        );
     }
 
     #[test]
     fn test_nested_initializer_keeps_outer_binding() {
-        let code = "fn test() {\n    let x = 1;\n    let x = { let t = 2; x };\n    x;\n}\n".to_string();
-        let overlay = DocumentOverlay::new("file:///test/nested_init.rs", "src/nested_init.rs", 1, code);
+        let code =
+            "fn test() {\n    let x = 1;\n    let x = { let t = 2; x };\n    x;\n}\n".to_string();
+        let overlay =
+            DocumentOverlay::new("file:///test/nested_init.rs", "src/nested_init.rs", 1, code);
         // Cursor on `x` inside block `{ let t = 2; x }` on line 3, col 27 -> resolves to line 2 (outer x)
-        let def = overlay.find_definition_at(3, 27).expect("should resolve to outer x");
+        let def = overlay
+            .find_definition_at(3, 27)
+            .expect("should resolve to outer x");
         assert_eq!(def.name, "x");
         assert_eq!(def.start_line, 2);
 
         // Cursor on `x;` on line 4, col 5 -> resolves to line 3 (inner x)
-        let def2 = overlay.find_definition_at(4, 5).expect("should resolve to inner x");
+        let def2 = overlay
+            .find_definition_at(4, 5)
+            .expect("should resolve to inner x");
         assert_eq!(def2.name, "x");
         assert_eq!(def2.start_line, 3);
     }
@@ -1336,16 +1411,30 @@ mod tests {
     #[test]
     fn test_multiline_qualified_path_abstains() {
         let code = "fn f() {}\nfn run() { external::\n    f();\n}\n".to_string();
-        let overlay = DocumentOverlay::new("file:///test/multiline_qual.rs", "src/multiline_qual.rs", 1, code);
+        let overlay = DocumentOverlay::new(
+            "file:///test/multiline_qual.rs",
+            "src/multiline_qual.rs",
+            1,
+            code,
+        );
         // Querying `f` on line 3, col 5 should abstain (None) because of `external::` on previous line
         let def = overlay.find_definition_at(3, 5);
-        assert!(def.is_none(), "overlay must abstain for multiline qualified path external::\\n    f()");
+        assert!(
+            def.is_none(),
+            "overlay must abstain for multiline qualified path external::\\n    f()"
+        );
     }
 
     #[test]
     fn test_nested_comment_qualification_abstains() {
-        let code = "fn f() {}\nfn run() { external::/* outer /* inner */ outer */f();\n}\n".to_string();
-        let overlay = DocumentOverlay::new("file:///test/nested_comment.rs", "src/nested_comment.rs", 1, code);
+        let code =
+            "fn f() {}\nfn run() { external::/* outer /* inner */ outer */f();\n}\n".to_string();
+        let overlay = DocumentOverlay::new(
+            "file:///test/nested_comment.rs",
+            "src/nested_comment.rs",
+            1,
+            code,
+        );
         // Querying `f` on line 2, col 51 should abstain (None) because of `external::...` preceding it
         let def = overlay.find_definition_at(2, 51);
         assert!(def.is_none(), "overlay must abstain for qualified path with nested comments external::/* outer /* inner */ outer */f()");
@@ -1354,7 +1443,8 @@ mod tests {
     #[test]
     fn test_save_does_not_advance_compiled_baseline() {
         let initial_code = "fn a() {}\nfn b() {}\n".to_string();
-        let mut overlay = DocumentOverlay::new("file:///test/save.rs", "src/save.rs", 1, initial_code);
+        let mut overlay =
+            DocumentOverlay::new("file:///test/save.rs", "src/save.rs", 1, initial_code);
         // User inserts a new line at top
         let edited_code = "// new line\nfn a() {}\nfn b() {}\n".to_string();
         overlay.update(2, edited_code.clone());
@@ -1371,23 +1461,30 @@ mod tests {
 
     #[test]
     fn test_overlay_local_variables_and_params() {
-        let code = "fn compute(input: i32) {\n    let result = input * 2;\n    result\n}\n".to_string();
+        let code =
+            "fn compute(input: i32) {\n    let result = input * 2;\n    result\n}\n".to_string();
         let overlay = DocumentOverlay::new("file:///test/main.rs", "src/main.rs", 1, code);
 
         // 1. Cursor on `result` in expression on line 3, col 5
-        let def = overlay.find_definition_at(3, 5).expect("should find local variable 'result'");
+        let def = overlay
+            .find_definition_at(3, 5)
+            .expect("should find local variable 'result'");
         assert_eq!(def.name, "result");
         assert_eq!(def.start_line, 2);
         assert_eq!(def.kind, DefKind::Local); // local let
 
         // 2. Cursor on `input` in expression on line 2, col 19
-        let def_param = overlay.find_definition_at(2, 19).expect("should find parameter 'input'");
+        let def_param = overlay
+            .find_definition_at(2, 19)
+            .expect("should find parameter 'input'");
         assert_eq!(def_param.name, "input");
         assert_eq!(def_param.start_line, 1);
         assert_eq!(def_param.kind, DefKind::Local); // param
 
         // 3. Cursor on function name `compute` at line 1, col 4
-        let def_fn = overlay.find_definition_at(1, 4).expect("should find function 'compute'");
+        let def_fn = overlay
+            .find_definition_at(1, 4)
+            .expect("should find function 'compute'");
         assert_eq!(def_fn.name, "compute");
         assert_eq!(def_fn.kind, DefKind::Fn);
         assert_eq!(def_fn.start_line, 1);
@@ -1399,11 +1496,15 @@ mod tests {
         let overlay = DocumentOverlay::new("file:///test/unicode.rs", "src/unicode.rs", 1, code);
 
         assert!(!overlay.symbols.is_empty());
-        let def = overlay.find_definition_at(3, 16).expect("should resolve 'привет'");
+        let def = overlay
+            .find_definition_at(3, 16)
+            .expect("should resolve 'привет'");
         assert_eq!(def.name, "привет");
         assert_eq!(def.start_line, 2);
 
-        let mir = overlay.find_definition_at(3, 9).expect("should resolve 'мир'");
+        let mir = overlay
+            .find_definition_at(3, 9)
+            .expect("should resolve 'мир'");
         assert_eq!(mir.name, "мир");
         assert_eq!(mir.start_line, 3);
     }
@@ -1414,7 +1515,9 @@ mod tests {
         let overlay = DocumentOverlay::new("file:///test/scopes.rs", "src/scopes.rs", 1, code);
 
         // Cursor on `x;` inside b: line 2, col 16
-        let def = overlay.find_definition_at(2, 16).expect("should find x in b");
+        let def = overlay
+            .find_definition_at(2, 16)
+            .expect("should find x in b");
         assert_eq!(def.name, "x");
         // Parameter in b is on line 2, NOT line 1!
         assert_eq!(def.start_line, 2);
@@ -1426,7 +1529,9 @@ mod tests {
         let overlay = DocumentOverlay::new("file:///test/shadow.rs", "src/shadow.rs", 1, code);
 
         // Cursor on `x;` on line 4, col 5 -> should resolve to second `let x = 2` on line 3
-        let def = overlay.find_definition_at(4, 5).expect("should resolve nearest shadowed binding");
+        let def = overlay
+            .find_definition_at(4, 5)
+            .expect("should resolve nearest shadowed binding");
         assert_eq!(def.name, "x");
         assert_eq!(def.start_line, 3);
     }
@@ -1434,13 +1539,15 @@ mod tests {
     #[test]
     fn test_overlay_edit_mapping() {
         let saved_text = "fn foo() {\n    call_a();\n    call_b();\n}\n".to_string();
-        let mut overlay = DocumentOverlay::new("file:///test/edit.rs", "src/edit.rs", 1, saved_text.clone());
+        let mut overlay =
+            DocumentOverlay::new("file:///test/edit.rs", "src/edit.rs", 1, saved_text.clone());
         overlay.disk_text = Some(saved_text);
 
         assert_eq!(overlay.map_line_to_compiled(2), Some(2));
 
         // Insert a new line at line 2:
-        let edited = "fn foo() {\n    // new comment\n    call_a();\n    call_b();\n}\n".to_string();
+        let edited =
+            "fn foo() {\n    // new comment\n    call_a();\n    call_b();\n}\n".to_string();
         overlay.update(2, edited);
 
         // Line 1 (unchanged prefix) maps to line 1
@@ -1474,10 +1581,18 @@ mod tests {
         let overlay = DocumentOverlay::new("file:///test/broken.rs", "src/broken.rs", 1, broken);
 
         assert!(!overlay.symbols.is_empty());
-        let fn_sym = overlay.symbols.iter().find(|s| s.name == "unclosed").expect("should extract function name");
+        let fn_sym = overlay
+            .symbols
+            .iter()
+            .find(|s| s.name == "unclosed")
+            .expect("should extract function name");
         assert_eq!(fn_sym.kind, DefKind::Fn);
 
-        let let_sym = overlay.symbols.iter().find(|s| s.name == "partial").expect("should extract incomplete let binding");
+        let let_sym = overlay
+            .symbols
+            .iter()
+            .find(|s| s.name == "partial")
+            .expect("should extract incomplete let binding");
         assert_eq!(let_sym.start_line, 2);
     }
 
@@ -1502,5 +1617,25 @@ mod tests {
 
         mgr.close(file);
         assert_eq!(mgr.open_count(), 0);
+    }
+
+    #[test]
+    fn test_unterminated_unicode_block_comment_is_safe() {
+        // Probe test case: unterminated block comment ending in multibyte Unicode character (e.g. 🚀)
+        let broken = "fn f() { /* 🚀".to_string();
+        let overlay = DocumentOverlay::new("file:///test/broken.rs", "src/broken.rs", 1, broken);
+        assert_eq!(overlay.symbols.len(), 1);
+        assert_eq!(overlay.symbols[0].name, "f");
+
+        let broken_let = "fn f() {\n    let x = /* 🚀\n}\n".to_string();
+        let overlay_let = DocumentOverlay::new(
+            "file:///test/broken_let.rs",
+            "src/broken_let.rs",
+            1,
+            broken_let,
+        );
+        assert_eq!(overlay_let.symbols.len(), 2);
+        assert_eq!(overlay_let.symbols[0].name, "f");
+        assert_eq!(overlay_let.symbols[1].name, "x");
     }
 }

@@ -28,7 +28,10 @@ pub fn resolve_cache_dir() -> std::path::PathBuf {
     if let Ok(home) = std::env::var("HOME") {
         let p = std::path::PathBuf::from(home.trim());
         if !p.as_os_str().is_empty() {
-            return p.join(".cache").join("ridx").join(format!("v{}", CURRENT_VERSION));
+            return p
+                .join(".cache")
+                .join("ridx")
+                .join(format!("v{}", CURRENT_VERSION));
         }
     }
     #[cfg(windows)]
@@ -48,9 +51,36 @@ pub fn cache_object_path(cache_dir: &std::path::Path, unit_key: &str) -> std::pa
     } else {
         "00"
     };
-    cache_dir.join("objects").join(prefix).join(format!("{}.ridx", unit_key))
+    cache_dir
+        .join("objects")
+        .join(prefix)
+        .join(format!("{}.ridx", unit_key))
 }
 
+/// Joins a base root directory with a relative path, resolving any overlapping path prefix.
+///
+/// For instance, if `root` is `/workspace/crates/app` and `rel` is `crates/app/src/lib.rs`,
+/// naive joining yields `/workspace/crates/app/crates/app/src/lib.rs`.
+/// This helper strips the overlapping `crates/app` prefix to yield `/workspace/crates/app/src/lib.rs`.
+pub fn join_resolving_overlap(root: &std::path::Path, rel: &std::path::Path) -> std::path::PathBuf {
+    if rel.is_absolute() {
+        return rel.to_path_buf();
+    }
+    let direct = root.join(rel);
+    if direct.exists() {
+        return direct;
+    }
+    let rel_comps: Vec<_> = rel.components().collect();
+    for i in (1..rel_comps.len()).rev() {
+        let prefix: std::path::PathBuf = rel_comps[..i].iter().collect();
+        if root.ends_with(&prefix) {
+            let stripped: std::path::PathBuf = rel_comps[i..].iter().collect();
+            let cand = root.join(stripped);
+            return cand;
+        }
+    }
+    direct
+}
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
@@ -224,11 +254,26 @@ impl Span {
         }
     }
 
-    #[inline] pub fn file_id(&self) -> u32 { u32::from_le(self.file_id) }
-    #[inline] pub fn start_line(&self) -> u32 { u32::from_le(self.start_line) }
-    #[inline] pub fn start_col(&self) -> u32 { u32::from_le(self.start_col) }
-    #[inline] pub fn end_line(&self) -> u32 { u32::from_le(self.end_line) }
-    #[inline] pub fn end_col(&self) -> u32 { u32::from_le(self.end_col) }
+    #[inline]
+    pub fn file_id(&self) -> u32 {
+        u32::from_le(self.file_id)
+    }
+    #[inline]
+    pub fn start_line(&self) -> u32 {
+        u32::from_le(self.start_line)
+    }
+    #[inline]
+    pub fn start_col(&self) -> u32 {
+        u32::from_le(self.start_col)
+    }
+    #[inline]
+    pub fn end_line(&self) -> u32 {
+        u32::from_le(self.end_line)
+    }
+    #[inline]
+    pub fn end_col(&self) -> u32 {
+        u32::from_le(self.end_col)
+    }
 
     /// Returns true if this span contains the given (line, col) position in the specified file.
     #[inline]
@@ -399,12 +444,30 @@ impl DefEntry {
         }
     }
 
-    #[inline] pub fn def_id(&self) -> u32 { u32::from_le(self.def_id) }
-    #[inline] pub fn name_offset(&self) -> u32 { u32::from_le(self.name_offset) }
-    #[inline] pub fn path_offset(&self) -> u32 { u32::from_le(self.path_offset) }
-    #[inline] pub fn sig_offset(&self) -> u32 { u32::from_le(self.sig_offset) }
-    #[inline] pub fn span(&self) -> Span { self.span.from_le() }
-    #[inline] pub fn is_macro_expansion(&self) -> bool { (self.flags & FLAG_MACRO_EXPANSION) != 0 }
+    #[inline]
+    pub fn def_id(&self) -> u32 {
+        u32::from_le(self.def_id)
+    }
+    #[inline]
+    pub fn name_offset(&self) -> u32 {
+        u32::from_le(self.name_offset)
+    }
+    #[inline]
+    pub fn path_offset(&self) -> u32 {
+        u32::from_le(self.path_offset)
+    }
+    #[inline]
+    pub fn sig_offset(&self) -> u32 {
+        u32::from_le(self.sig_offset)
+    }
+    #[inline]
+    pub fn span(&self) -> Span {
+        self.span.from_le()
+    }
+    #[inline]
+    pub fn is_macro_expansion(&self) -> bool {
+        (self.flags & FLAG_MACRO_EXPANSION) != 0
+    }
 }
 
 /// A reference/usage record pointing to a target definition or symbol.
@@ -465,13 +528,34 @@ impl RefEntry {
         }
     }
 
-    #[inline] pub fn span(&self) -> Span { self.span.from_le() }
-    #[inline] pub fn target_def_id(&self) -> u32 { u32::from_le(self.target_def_id) }
-    #[inline] pub fn target_path_offset(&self) -> u32 { u32::from_le(self.target_path_offset) }
-    #[inline] pub fn target_file_offset(&self) -> u32 { u32::from_le(self.target_file_offset) }
-    #[inline] pub fn target_line(&self) -> u32 { u32::from_le(self.target_line) }
-    #[inline] pub fn target_col(&self) -> u32 { u32::from_le(self.target_col) }
-    #[inline] pub fn is_macro_expansion(&self) -> bool { (self.flags & FLAG_MACRO_EXPANSION) != 0 }
+    #[inline]
+    pub fn span(&self) -> Span {
+        self.span.from_le()
+    }
+    #[inline]
+    pub fn target_def_id(&self) -> u32 {
+        u32::from_le(self.target_def_id)
+    }
+    #[inline]
+    pub fn target_path_offset(&self) -> u32 {
+        u32::from_le(self.target_path_offset)
+    }
+    #[inline]
+    pub fn target_file_offset(&self) -> u32 {
+        u32::from_le(self.target_file_offset)
+    }
+    #[inline]
+    pub fn target_line(&self) -> u32 {
+        u32::from_le(self.target_line)
+    }
+    #[inline]
+    pub fn target_col(&self) -> u32 {
+        u32::from_le(self.target_col)
+    }
+    #[inline]
+    pub fn is_macro_expansion(&self) -> bool {
+        (self.flags & FLAG_MACRO_EXPANSION) != 0
+    }
 }
 
 /// Inferred expression type record.
@@ -504,8 +588,14 @@ impl TypeEntry {
         }
     }
 
-    #[inline] pub fn span(&self) -> Span { self.span.from_le() }
-    #[inline] pub fn type_offset(&self) -> u32 { u32::from_le(self.type_offset) }
+    #[inline]
+    pub fn span(&self) -> Span {
+        self.span.from_le()
+    }
+    #[inline]
+    pub fn type_offset(&self) -> u32 {
+        u32::from_le(self.type_offset)
+    }
 }
 
 /// Hash table entry for $O(\log N)$ or binary search lookup by string hash.
@@ -538,8 +628,14 @@ impl HashIndexEntry {
         }
     }
 
-    #[inline] pub fn hash(&self) -> u64 { u64::from_le(self.hash) }
-    #[inline] pub fn index(&self) -> u32 { u32::from_le(self.index) }
+    #[inline]
+    pub fn hash(&self) -> u64 {
+        u64::from_le(self.hash)
+    }
+    #[inline]
+    pub fn index(&self) -> u32 {
+        u32::from_le(self.index)
+    }
 }
 
 /// FNV-1a 64-bit string hash used across the RIDX format.

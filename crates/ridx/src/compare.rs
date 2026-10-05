@@ -22,7 +22,9 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
     let t_ridx = Instant::now();
     let ridx_def = if is_loc {
         let parts: Vec<&str> = target.rsplitn(3, ':').collect();
-        if let (Some(col), Some(line)) = (parts[0].parse::<u32>().ok(), parts[1].parse::<u32>().ok()) {
+        if let (Some(col), Some(line)) =
+            (parts[0].parse::<u32>().ok(), parts[1].parse::<u32>().ok())
+        {
             workspace.find_definition_at(parts[2], line, col)
         } else {
             workspace.find_definition_by_path(target)
@@ -35,7 +37,12 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
     let (ridx_found, ridx_span) = match ridx_def {
         Some(def) => (
             true,
-            format!("{}:{}:{}", def.resolved_path().display(), def.start_line, def.start_col),
+            format!(
+                "{}:{}:{}",
+                def.resolved_path().display(),
+                def.start_line,
+                def.start_col
+            ),
         ),
         None => (false, "Not found".to_string()),
     };
@@ -82,9 +89,15 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
 }
 
 pub fn print_comparison(cmp: &ComparisonResult) {
-    println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    println!(
+        "{}",
+        "═══════════════════════════════════════════════════════════════════════".dimmed()
+    );
     println!("  {} {}", "Comparison Target:".bold(), cmp.symbol.cyan());
-    println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    println!(
+        "{}",
+        "═══════════════════════════════════════════════════════════════════════".dimmed()
+    );
 
     println!(
         "{:<20} | {:<22} | {:<22}",
@@ -121,8 +134,15 @@ pub fn print_comparison(cmp: &ComparisonResult) {
     println!(
         "{:<20} | {:<22} | {:<22}",
         "Query Latency",
-        format!("{} µs ({})", cmp.ridx_latency_micros, speedup).green().bold(),
-        format!("{} µs ({} ms)", cmp.prodcode_latency_micros, cmp.prodcode_latency_micros / 1000).dimmed()
+        format!("{} µs ({})", cmp.ridx_latency_micros, speedup)
+            .green()
+            .bold(),
+        format!(
+            "{} µs ({} ms)",
+            cmp.prodcode_latency_micros,
+            cmp.prodcode_latency_micros / 1000
+        )
+        .dimmed()
     );
 
     println!(
@@ -132,5 +152,8 @@ pub fn print_comparison(cmp: &ComparisonResult) {
         "~2700 MB (remote server)".yellow()
     );
 
-    println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    println!(
+        "{}",
+        "═══════════════════════════════════════════════════════════════════════".dimmed()
+    );
 }

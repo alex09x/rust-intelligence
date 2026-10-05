@@ -10,18 +10,18 @@ use std::path::{Path, PathBuf};
 
 fn lsp_symbol_kind(kind: DefKind) -> u32 {
     match kind {
-        DefKind::Fn => 12,        // Function
-        DefKind::AssocFn => 6,    // Method
-        DefKind::Struct => 23,    // Struct
-        DefKind::Enum => 10,      // Enum
-        DefKind::Variant => 22,   // EnumMember
-        DefKind::Trait => 11,     // Interface
-        DefKind::Mod => 2,        // Module
+        DefKind::Fn => 12,                          // Function
+        DefKind::AssocFn => 6,                      // Method
+        DefKind::Struct => 23,                      // Struct
+        DefKind::Enum => 10,                        // Enum
+        DefKind::Variant => 22,                     // EnumMember
+        DefKind::Trait => 11,                       // Interface
+        DefKind::Mod => 2,                          // Module
         DefKind::Const | DefKind::AssocConst => 14, // Constant
-        DefKind::Static => 13,    // Variable
-        DefKind::Local => 13,     // Variable
-        DefKind::Field => 8,      // Field
-        DefKind::TyAlias => 26,   // TypeParameter
+        DefKind::Static => 13,                      // Variable
+        DefKind::Local => 13,                       // Variable
+        DefKind::Field => 8,                        // Field
+        DefKind::TyAlias => 26,                     // TypeParameter
         _ => 13,
     }
 }
@@ -32,7 +32,9 @@ fn percent_decode(s: &str) -> String {
     let mut i = 0;
     while i < bytes.len() {
         if bytes[i] == b'%' && i + 2 < bytes.len() {
-            if let Ok(byte) = u8::from_str_radix(std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or(""), 16) {
+            if let Ok(byte) =
+                u8::from_str_radix(std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or(""), 16)
+            {
                 decoded.push(byte);
                 i += 3;
                 continue;
@@ -98,13 +100,16 @@ impl PositionConverter {
     }
 
     fn get_line(&mut self, file_path: &str, line_1based: u32) -> Option<&str> {
-        let lines = self.cache.entry(file_path.to_string()).or_insert_with(|| {
-            match std::fs::read_to_string(file_path) {
-                Ok(content) => content.lines().map(|s| s.to_string()).collect(),
-                Err(_) => Vec::new(),
-            }
-        });
-        lines.get(line_1based.saturating_sub(1) as usize).map(|s| s.as_str())
+        let lines =
+            self.cache.entry(file_path.to_string()).or_insert_with(
+                || match std::fs::read_to_string(file_path) {
+                    Ok(content) => content.lines().map(|s| s.to_string()).collect(),
+                    Err(_) => Vec::new(),
+                },
+            );
+        lines
+            .get(line_1based.saturating_sub(1) as usize)
+            .map(|s| s.as_str())
     }
 
     fn char_col_to_utf16_col(&mut self, file_path: &str, line_1based: u32, col_1based: u32) -> u32 {
@@ -123,7 +128,12 @@ impl PositionConverter {
         }
     }
 
-    fn utf16_col_to_char_col(&mut self, file_path: &str, line_1based: u32, utf16_col_0based: u32) -> u32 {
+    fn utf16_col_to_char_col(
+        &mut self,
+        file_path: &str,
+        line_1based: u32,
+        utf16_col_0based: u32,
+    ) -> u32 {
         if let Some(line) = self.get_line(file_path, line_1based) {
             let mut curr_utf16 = 0;
             let mut char_count = 0;
@@ -143,12 +153,7 @@ impl PositionConverter {
 
 fn send_response<W: Write>(writer: &mut W, response: &Value) -> io::Result<()> {
     let body = serde_json::to_string(response)?;
-    write!(
-        writer,
-        "Content-Length: {}\r\n\r\n{}",
-        body.len(),
-        body
-    )?;
+    write!(writer, "Content-Length: {}\r\n\r\n{}", body.len(), body)?;
     writer.flush()?;
     Ok(())
 }
@@ -157,12 +162,11 @@ fn sync_reloaded_index(ws: &mut WorkspaceIndex, overlay_mgr: &mut crate::overlay
     if let Ok(true) = ws.reload_if_modified() {
         for file in overlay_mgr.open_file_paths() {
             if ws.is_file_reloaded(&file) {
-                if let (Ok(metadata), Some(shard_mtime)) = (std::fs::metadata(&file), ws.shard_mtime_for_file(&file)) {
-                    if let Ok(file_mtime) = metadata.modified() {
-                        if file_mtime <= shard_mtime {
-                            if let Ok(content) = std::fs::read_to_string(&file) {
-                                overlay_mgr.advance_compiled_baseline(&file, content);
-                            }
+                if let Ok(content) = std::fs::read_to_string(&file) {
+                    let disk_hash = ridx_format::fnv1a_64(content.as_bytes());
+                    if let Some(compiled_hash) = ws.source_hash_for_file(&file) {
+                        if disk_hash == compiled_hash {
+                            overlay_mgr.advance_compiled_baseline(&file, content);
                         }
                     }
                 }
@@ -278,18 +282,20 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
             "textDocument/didOpen" => {
                 let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
                 let file = uri_to_path(uri);
-                let version = msg["params"]["textDocument"]["version"].as_i64().unwrap_or(1) as i32;
-                let text = msg["params"]["textDocument"]["text"].as_str().unwrap_or("").to_string();
+                let version = msg["params"]["textDocument"]["version"]
+                    .as_i64()
+                    .unwrap_or(1) as i32;
+                let text = msg["params"]["textDocument"]["text"]
+                    .as_str()
+                    .unwrap_or("")
+                    .to_string();
 
                 let is_compiled = if let Some(ref ws) = workspace {
-                    if let (Some(shard_mtime), Ok(metadata)) = (ws.shard_mtime_for_file(&file), std::fs::metadata(&file)) {
-                        if let Ok(file_mtime) = metadata.modified() {
-                            if file_mtime <= shard_mtime {
-                                if let Ok(disk_text) = std::fs::read_to_string(&file) {
-                                    disk_text == text
-                                } else {
-                                    false
-                                }
+                    if let Ok(disk_text) = std::fs::read_to_string(&file) {
+                        if disk_text == text {
+                            let text_hash = ridx_format::fnv1a_64(text.as_bytes());
+                            if let Some(compiled_hash) = ws.source_hash_for_file(&file) {
+                                text_hash == compiled_hash
                             } else {
                                 false
                             }
@@ -308,12 +314,20 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
             "textDocument/didChange" => {
                 let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
                 let file = uri_to_path(uri);
-                let version = msg["params"]["textDocument"]["version"].as_i64().unwrap_or(1) as i32;
+                let version = msg["params"]["textDocument"]["version"]
+                    .as_i64()
+                    .unwrap_or(1) as i32;
                 if let Some(changes) = msg["params"]["contentChanges"].as_array() {
                     if let Some(last) = changes.last() {
                         if let Some(text) = last["text"].as_str() {
                             if !overlay_mgr.update(&file, version, text.to_string()) {
-                                overlay_mgr.open_with_provenance(uri, &file, version, text.to_string(), false);
+                                overlay_mgr.open_with_provenance(
+                                    uri,
+                                    &file,
+                                    version,
+                                    text.to_string(),
+                                    false,
+                                );
                             }
                         }
                     }
@@ -344,7 +358,8 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 
                     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
                     let file = uri_to_path(uri);
-                    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+                    let line_0based =
+                        msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
                     let utf16_col_0based =
                         msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
                     let line_1based = line_0based + 1;
@@ -357,17 +372,33 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                     };
 
                     // 1. Check live buffer overlay first (resolves local variables, params, unsaved items)
-                    if let Some(overlay_def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+                    if let Some(overlay_def) =
+                        overlay_mgr.find_definition_at(&file, line_1based, col_1based)
+                    {
                         let def_uri = path_to_uri(&overlay_def.file);
                         let (start_char, end_char) = if let Some(overlay) = overlay_opt {
                             (
-                                overlay.char_col_to_utf16_col(overlay_def.start_line, overlay_def.start_col),
-                                overlay.char_col_to_utf16_col(overlay_def.end_line, overlay_def.end_col),
+                                overlay.char_col_to_utf16_col(
+                                    overlay_def.start_line,
+                                    overlay_def.start_col,
+                                ),
+                                overlay.char_col_to_utf16_col(
+                                    overlay_def.end_line,
+                                    overlay_def.end_col,
+                                ),
                             )
                         } else {
                             (
-                                conv.char_col_to_utf16_col(&overlay_def.file, overlay_def.start_line, overlay_def.start_col),
-                                conv.char_col_to_utf16_col(&overlay_def.file, overlay_def.end_line, overlay_def.end_col),
+                                conv.char_col_to_utf16_col(
+                                    &overlay_def.file,
+                                    overlay_def.start_line,
+                                    overlay_def.start_col,
+                                ),
+                                conv.char_col_to_utf16_col(
+                                    &overlay_def.file,
+                                    overlay_def.end_line,
+                                    overlay_def.end_col,
+                                ),
                             )
                         };
                         result = json!({
@@ -389,14 +420,22 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         // must be suppressed to avoid returning stale cross-file definitions (e.g. from changed imports).
                         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
                         if !is_dirty {
-                            if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based) {
+                            if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based)
+                            {
                                 let resolved_file_path = def.resolved_path();
-                                let resolved_file_str = resolved_file_path.to_str().unwrap_or(def.file);
+                                let resolved_file_str =
+                                    resolved_file_path.to_str().unwrap_or(def.file);
                                 let def_uri = path_to_uri(resolved_file_str);
 
-                                let (start_line, end_line, start_char, end_char) = if let Some(target_overlay) = overlay_mgr.get(resolved_file_str) {
-                                    let live_start_line = target_overlay.map_compiled_line_to_live(def.start_line);
-                                    let live_end_line = target_overlay.map_compiled_line_to_live(def.end_line);
+                                let (start_line, end_line, start_char, end_char) = if let Some(
+                                    target_overlay,
+                                ) =
+                                    overlay_mgr.get(resolved_file_str)
+                                {
+                                    let live_start_line =
+                                        target_overlay.map_compiled_line_to_live(def.start_line);
+                                    let live_end_line =
+                                        target_overlay.map_compiled_line_to_live(def.end_line);
                                     match (live_start_line, live_end_line) {
                                         (Some(sl), Some(el)) => (
                                             sl.saturating_sub(1),
@@ -410,8 +449,16 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                                     (
                                         def.start_line.saturating_sub(1),
                                         def.end_line.saturating_sub(1),
-                                        conv.char_col_to_utf16_col(resolved_file_str, def.start_line, def.start_col),
-                                        conv.char_col_to_utf16_col(resolved_file_str, def.end_line, def.end_col),
+                                        conv.char_col_to_utf16_col(
+                                            resolved_file_str,
+                                            def.start_line,
+                                            def.start_col,
+                                        ),
+                                        conv.char_col_to_utf16_col(
+                                            resolved_file_str,
+                                            def.end_line,
+                                            def.end_col,
+                                        ),
                                     )
                                 };
 
@@ -450,7 +497,8 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                     if let Some(ref ws) = workspace {
                         let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
                         let file = uri_to_path(uri);
-                        let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+                        let line_0based =
+                            msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
                         let utf16_col_0based =
                             msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
                         let line_1based = line_0based + 1;
@@ -460,28 +508,58 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         } else {
                             conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
                         };
-                        let include_decl = msg["params"]["context"]["includeDeclaration"].as_bool().unwrap_or(false);
+                        let include_decl = msg["params"]["context"]["includeDeclaration"]
+                            .as_bool()
+                            .unwrap_or(false);
 
                         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
                         if !is_dirty {
-                            if let Some(loc_refs) = ws.find_references_at(&file, line_1based, col_1based) {
+                            if let Some(loc_refs) =
+                                ws.find_references_at(&file, line_1based, col_1based)
+                            {
                                 let mut locs = Vec::new();
-                                if include_decl && !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
+                                if include_decl
+                                    && !loc_refs.target_file.is_empty()
+                                    && loc_refs.target_file != "external"
+                                {
                                     let decl_file_path = loc_refs.target_resolved_path();
-                                    let decl_file_str = decl_file_path.to_str().unwrap_or(loc_refs.target_file);
+                                    let decl_file_str =
+                                        decl_file_path.to_str().unwrap_or(loc_refs.target_file);
                                     let decl_uri = path_to_uri(decl_file_str);
 
-                                    let (decl_start_line, decl_end_line, decl_start_col, decl_end_col) = if let Some(target_overlay) = overlay_mgr.get(decl_file_str) {
-                                        let live_start = target_overlay.map_compiled_line_to_live(loc_refs.target_line);
-                                        let end_line_to_map = if loc_refs.target_end_line > 0 { loc_refs.target_end_line } else { loc_refs.target_line };
-                                        let live_end = target_overlay.map_compiled_line_to_live(end_line_to_map);
+                                    let (
+                                        decl_start_line,
+                                        decl_end_line,
+                                        decl_start_col,
+                                        decl_end_col,
+                                    ) = if let Some(target_overlay) = overlay_mgr.get(decl_file_str)
+                                    {
+                                        let live_start = target_overlay
+                                            .map_compiled_line_to_live(loc_refs.target_line);
+                                        let end_line_to_map = if loc_refs.target_end_line > 0 {
+                                            loc_refs.target_end_line
+                                        } else {
+                                            loc_refs.target_line
+                                        };
+                                        let live_end = target_overlay
+                                            .map_compiled_line_to_live(end_line_to_map);
                                         match (live_start, live_end) {
                                             (Some(sl), Some(el)) => {
-                                                let sc = target_overlay.char_col_to_utf16_col(sl, loc_refs.target_col);
-                                                let ec = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
-                                                    target_overlay.char_col_to_utf16_col(el, loc_refs.target_end_col)
+                                                let sc = target_overlay
+                                                    .char_col_to_utf16_col(sl, loc_refs.target_col);
+                                                let ec = if loc_refs.target_end_line > 0
+                                                    && loc_refs.target_end_col > 0
+                                                {
+                                                    target_overlay.char_col_to_utf16_col(
+                                                        el,
+                                                        loc_refs.target_end_col,
+                                                    )
                                                 } else {
-                                                    sc + (loc_refs.target_symbol.encode_utf16().count() as u32)
+                                                    sc + (loc_refs
+                                                        .target_symbol
+                                                        .encode_utf16()
+                                                        .count()
+                                                        as u32)
                                                 };
                                                 (sl.saturating_sub(1), el.saturating_sub(1), sc, ec)
                                             }
@@ -489,16 +567,27 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                                         }
                                     } else {
                                         let sl = loc_refs.target_line.saturating_sub(1);
-                                        let sc = conv.char_col_to_utf16_col(decl_file_str, loc_refs.target_line, loc_refs.target_col);
+                                        let sc = conv.char_col_to_utf16_col(
+                                            decl_file_str,
+                                            loc_refs.target_line,
+                                            loc_refs.target_col,
+                                        );
                                         let el = if loc_refs.target_end_line > 0 {
                                             loc_refs.target_end_line.saturating_sub(1)
                                         } else {
                                             sl
                                         };
-                                        let ec = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
-                                            conv.char_col_to_utf16_col(decl_file_str, loc_refs.target_end_line, loc_refs.target_end_col)
+                                        let ec = if loc_refs.target_end_line > 0
+                                            && loc_refs.target_end_col > 0
+                                        {
+                                            conv.char_col_to_utf16_col(
+                                                decl_file_str,
+                                                loc_refs.target_end_line,
+                                                loc_refs.target_end_col,
+                                            )
                                         } else {
-                                            sc + (loc_refs.target_symbol.encode_utf16().count() as u32)
+                                            sc + (loc_refs.target_symbol.encode_utf16().count()
+                                                as u32)
                                         };
                                         (sl, el, sc, ec)
                                     };
@@ -526,26 +615,41 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                                     let r_file_str = r_file_path.to_str().unwrap_or(r.file);
                                     let r_uri = path_to_uri(r_file_str);
 
-                                    let (start_line, end_line, start_char, end_char) = if let Some(target_overlay) = overlay_mgr.get(r_file_str) {
-                                        let live_start = target_overlay.map_compiled_line_to_live(span.start_line());
-                                        let live_end = target_overlay.map_compiled_line_to_live(span.end_line());
-                                        match (live_start, live_end) {
-                                            (Some(sl), Some(el)) => (
-                                                sl.saturating_sub(1),
-                                                el.saturating_sub(1),
-                                                target_overlay.char_col_to_utf16_col(sl, span.start_col()),
-                                                target_overlay.char_col_to_utf16_col(el, span.end_col()),
-                                            ),
-                                            _ => (u32::MAX, u32::MAX, 0, 0),
-                                        }
-                                    } else {
-                                        (
-                                            span.start_line().saturating_sub(1),
-                                            span.end_line().saturating_sub(1),
-                                            conv.char_col_to_utf16_col(r_file_str, span.start_line(), span.start_col()),
-                                            conv.char_col_to_utf16_col(r_file_str, span.end_line(), span.end_col()),
-                                        )
-                                    };
+                                    let (start_line, end_line, start_char, end_char) =
+                                        if let Some(target_overlay) = overlay_mgr.get(r_file_str) {
+                                            let live_start = target_overlay
+                                                .map_compiled_line_to_live(span.start_line());
+                                            let live_end = target_overlay
+                                                .map_compiled_line_to_live(span.end_line());
+                                            match (live_start, live_end) {
+                                                (Some(sl), Some(el)) => (
+                                                    sl.saturating_sub(1),
+                                                    el.saturating_sub(1),
+                                                    target_overlay.char_col_to_utf16_col(
+                                                        sl,
+                                                        span.start_col(),
+                                                    ),
+                                                    target_overlay
+                                                        .char_col_to_utf16_col(el, span.end_col()),
+                                                ),
+                                                _ => (u32::MAX, u32::MAX, 0, 0),
+                                            }
+                                        } else {
+                                            (
+                                                span.start_line().saturating_sub(1),
+                                                span.end_line().saturating_sub(1),
+                                                conv.char_col_to_utf16_col(
+                                                    r_file_str,
+                                                    span.start_line(),
+                                                    span.start_col(),
+                                                ),
+                                                conv.char_col_to_utf16_col(
+                                                    r_file_str,
+                                                    span.end_line(),
+                                                    span.end_col(),
+                                                ),
+                                            )
+                                        };
 
                                     if start_line != u32::MAX {
                                         locs.push(json!({
@@ -583,7 +687,8 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 
                     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
                     let file = uri_to_path(uri);
-                    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
+                    let line_0based =
+                        msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
                     let utf16_col_0based =
                         msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
                     let line_1based = line_0based + 1;
@@ -607,33 +712,49 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                                         md.push_str(sig);
                                     } else {
                                         match def.kind {
-                                            DefKind::Local => md.push_str(&format!("let {}", def.name)),
-                                            _ => md.push_str(&format!("{:?} {}", def.kind, def.name)),
+                                            DefKind::Local => {
+                                                md.push_str(&format!("let {}", def.name))
+                                            }
+                                            _ => {
+                                                md.push_str(&format!("{:?} {}", def.kind, def.name))
+                                            }
                                         }
                                     }
                                     md.push_str("\n```\n\n");
                                     md.push_str(&format!(
                                         "*Defined in `{}` at {}:{}*\n\n",
-                                        def.resolved_path().display(), def.start_line, def.start_col
+                                        def.resolved_path().display(),
+                                        def.start_line,
+                                        def.start_col
                                     ));
                                     if let Some(ty) = hover.inferred_type {
                                         md.push_str(&format!("**Type:** `{ty}`\n"));
                                     }
                                 } else if let Some(ty) = hover.inferred_type {
-                                    if let Some(overlay_def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+                                    if let Some(overlay_def) = overlay_mgr.find_definition_at(
+                                        &file,
+                                        line_1based,
+                                        col_1based,
+                                    ) {
                                         md.push_str("```rust\n");
                                         if let Some(ref sig) = overlay_def.signature {
                                             md.push_str(sig);
                                         } else {
                                             match overlay_def.kind {
-                                                DefKind::Local => md.push_str(&format!("let {}", overlay_def.name)),
-                                                _ => md.push_str(&format!("{:?} {}", overlay_def.kind, overlay_def.name)),
+                                                DefKind::Local => md
+                                                    .push_str(&format!("let {}", overlay_def.name)),
+                                                _ => md.push_str(&format!(
+                                                    "{:?} {}",
+                                                    overlay_def.kind, overlay_def.name
+                                                )),
                                             }
                                         }
                                         md.push_str("\n```\n\n");
                                         md.push_str(&format!(
                                             "*Defined in `{}` at {}:{}*\n\n",
-                                            overlay_def.file, overlay_def.start_line, overlay_def.start_col
+                                            overlay_def.file,
+                                            overlay_def.start_line,
+                                            overlay_def.start_col
                                         ));
                                         md.push_str(&format!("**Type:** `{ty}`\n"));
                                     } else {
@@ -655,15 +776,22 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 
                     // 2. Fall back to overlay definition if clean hover returned nothing, or if buffer is dirty
                     if result.is_null() {
-                        if let Some(overlay_def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+                        if let Some(overlay_def) =
+                            overlay_mgr.find_definition_at(&file, line_1based, col_1based)
+                        {
                             let mut md = String::new();
                             md.push_str("```rust\n");
                             if let Some(ref sig) = overlay_def.signature {
                                 md.push_str(sig);
                             } else {
                                 match overlay_def.kind {
-                                    DefKind::Local => md.push_str(&format!("let {}", overlay_def.name)),
-                                    _ => md.push_str(&format!("{:?} {}", overlay_def.kind, overlay_def.name)),
+                                    DefKind::Local => {
+                                        md.push_str(&format!("let {}", overlay_def.name))
+                                    }
+                                    _ => md.push_str(&format!(
+                                        "{:?} {}",
+                                        overlay_def.kind, overlay_def.name
+                                    )),
                                 }
                             }
                             md.push_str("\n```\n\n");
@@ -703,8 +831,16 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                             let res_path = s.resolved_path();
                             let res_str = res_path.to_str().unwrap_or(s.file);
                             let uri = path_to_uri(res_str);
-                            let start_char = conv.char_col_to_utf16_col(res_str, span.start_line(), span.start_col());
-                            let end_char = conv.char_col_to_utf16_col(res_str, span.end_line(), span.end_col());
+                            let start_char = conv.char_col_to_utf16_col(
+                                res_str,
+                                span.start_line(),
+                                span.start_col(),
+                            );
+                            let end_char = conv.char_col_to_utf16_col(
+                                res_str,
+                                span.end_line(),
+                                span.end_col(),
+                            );
                             list.push(json!({
                                 "name": s.name,
                                 "kind": lsp_symbol_kind(s.kind),
@@ -753,7 +889,11 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                                 )
                             } else {
                                 (
-                                    conv.char_col_to_utf16_col(&file, sym.start_line, sym.start_col),
+                                    conv.char_col_to_utf16_col(
+                                        &file,
+                                        sym.start_line,
+                                        sym.start_col,
+                                    ),
                                     conv.char_col_to_utf16_col(&file, sym.end_line, sym.end_col),
                                 )
                             };
@@ -886,6 +1026,29 @@ mod tests {
         let foo_code = "fn foo() {}\n";
         std::fs::write(&foo_path, foo_code).unwrap();
 
+        let foo_ridx = ws_dir.join("crate_foo.ridx");
+        let deps_dir = ws_dir.join(".deps");
+        std::fs::create_dir_all(&deps_dir).unwrap();
+        let write_foo_meta = |code: &str| {
+            let mut hashes = std::collections::HashMap::new();
+            hashes.insert(
+                foo_path.to_str().unwrap().to_string(),
+                ridx_format::fnv1a_64(code.as_bytes()),
+            );
+            let meta = serde_json::json!({
+                "name": "crate_foo",
+                "version": "0.1.0",
+                "unit_key": "crate_foo_unit",
+                "object_path": foo_ridx.to_str().unwrap(),
+                "file_hashes": hashes,
+            });
+            std::fs::write(
+                deps_dir.join("crate_foo.json"),
+                serde_json::to_string(&meta).unwrap(),
+            )
+            .unwrap();
+        };
+
         // 1. Build initial index for crate_foo
         let mut writer_foo = IndexWriter::new("crate_foo", "0.1.0");
         writer_foo.add_definition(RawDefinition {
@@ -902,9 +1065,11 @@ mod tests {
             end_line: 1,
             end_col: 11,
         });
-        let foo_ridx = ws_dir.join("crate_foo.ridx");
         let f_foo = std::fs::File::create(&foo_ridx).unwrap();
-        writer_foo.write_to(&mut std::io::BufWriter::new(f_foo)).unwrap();
+        writer_foo
+            .write_to(&mut std::io::BufWriter::new(f_foo))
+            .unwrap();
+        write_foo_meta(foo_code);
 
         let mut ws = WorkspaceIndex::open(&ws_dir).unwrap();
         let mut overlay_mgr = crate::overlay::OverlayManager::new();
@@ -938,7 +1103,9 @@ mod tests {
         });
         let bar_ridx = ws_dir.join("crate_bar.ridx");
         let f_bar = std::fs::File::create(&bar_ridx).unwrap();
-        writer_bar.write_to(&mut std::io::BufWriter::new(f_bar)).unwrap();
+        writer_bar
+            .write_to(&mut std::io::BufWriter::new(f_bar))
+            .unwrap();
 
         // Sync reloaded index: should reload crate_bar, but MUST NOT certify foo.rs!
         sync_reloaded_index(&mut ws, &mut overlay_mgr);
@@ -947,7 +1114,7 @@ mod tests {
             "unrelated crate reload must NOT certify uncompiled saved edits in foo.rs"
         );
 
-        // Case: crate_foo index is reloaded, but file_mtime > shard_mtime
+        // Case: user saves newer edit while compilation runs (compilation had older snapshot `modified_code`)
         std::thread::sleep(std::time::Duration::from_millis(50));
         let mut writer_foo_v2 = IndexWriter::new("crate_foo", "0.1.0");
         writer_foo_v2.add_definition(RawDefinition {
@@ -965,21 +1132,26 @@ mod tests {
             end_col: 11,
         });
         let f_foo2 = std::fs::File::create(&foo_ridx).unwrap();
-        writer_foo_v2.write_to(&mut std::io::BufWriter::new(f_foo2)).unwrap();
+        writer_foo_v2
+            .write_to(&mut std::io::BufWriter::new(f_foo2))
+            .unwrap();
+        // Index published with provenance of modified_code
+        write_foo_meta(modified_code);
 
-        // Touch foo.rs after index was created, so file_mtime > shard_mtime
+        // But user already saved `newer_uncompiled` to disk
         std::thread::sleep(std::time::Duration::from_millis(50));
         let newer_uncompiled = "fn foo() {}\nfn foo_even_newer() {}\n";
         std::fs::write(&foo_path, newer_uncompiled).unwrap();
         overlay_mgr.update(foo_str, 3, newer_uncompiled.to_string());
 
+        // Shard reload must NOT advance baseline because disk content hash != compiled index hash!
         sync_reloaded_index(&mut ws, &mut overlay_mgr);
         assert!(
             overlay_mgr.get(foo_str).unwrap().is_dirty(),
-            "shard reload must NOT advance baseline when file_mtime > shard_mtime"
+            "shard reload must NOT advance baseline when disk hash does not match compiled source hash"
         );
 
-        // Case: compiler finishes and publishes shard AFTER foo.rs was saved (file_mtime <= shard_mtime)
+        // Case: compiler finishes and publishes shard with exact compiled provenance of newer_uncompiled
         std::thread::sleep(std::time::Duration::from_millis(50));
         let mut writer_foo_v3 = IndexWriter::new("crate_foo", "0.1.0");
         writer_foo_v3.add_definition(RawDefinition {
@@ -997,15 +1169,17 @@ mod tests {
             end_col: 11,
         });
         let f_foo3 = std::fs::File::create(&foo_ridx).unwrap();
-        writer_foo_v3.write_to(&mut std::io::BufWriter::new(f_foo3)).unwrap();
+        writer_foo_v3
+            .write_to(&mut std::io::BufWriter::new(f_foo3))
+            .unwrap();
+        write_foo_meta(newer_uncompiled);
 
         sync_reloaded_index(&mut ws, &mut overlay_mgr);
         assert!(
             !overlay_mgr.get(foo_str).unwrap().is_dirty(),
-            "shard reload MUST advance baseline when shard indexes the file and file_mtime <= shard_mtime"
+            "shard reload MUST advance baseline when shard provenance matches disk text"
         );
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }
-

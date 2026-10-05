@@ -140,6 +140,26 @@ impl IndexWriter {
         self.types.len()
     }
 
+    /// Returns all unique file paths known to this writer.
+    pub fn indexed_files(&self) -> Vec<String> {
+        let mut set = std::collections::HashSet::new();
+        for k in self.file_map.keys() {
+            set.insert(k.clone());
+        }
+        for def in &self.definitions {
+            set.insert(def.file.clone());
+        }
+        for r in &self.references {
+            set.insert(r.file.clone());
+        }
+        for t in &self.types {
+            set.insert(t.file.clone());
+        }
+        let mut list: Vec<String> = set.into_iter().collect();
+        list.sort();
+        list
+    }
+
     /// Serializes the entire index to any writer implementing `Write + Seek`.
     pub fn write_to<W: Write + Seek>(&mut self, writer: &mut W) -> io::Result<()> {
         let crate_name = self.crate_name.clone();
@@ -168,12 +188,22 @@ impl IndexWriter {
                 def_id: def.def_id,
                 kind: def.kind as u8,
                 visibility: def.visibility,
-                flags: if def.is_macro_expansion { FLAG_MACRO_EXPANSION } else { 0 },
+                flags: if def.is_macro_expansion {
+                    FLAG_MACRO_EXPANSION
+                } else {
+                    0
+                },
                 _pad: 0,
                 name_offset,
                 path_offset,
                 sig_offset,
-                span: Span::new(file_id, def.start_line, def.start_col, def.end_line, def.end_col),
+                span: Span::new(
+                    file_id,
+                    def.start_line,
+                    def.start_col,
+                    def.end_line,
+                    def.end_col,
+                ),
             };
             def_entries.push(entry);
         }
@@ -208,7 +238,11 @@ impl IndexWriter {
                 target_col: r.target_col,
                 kind: r.kind as u8,
                 is_write: if r.is_write { 1 } else { 0 },
-                flags: if r.is_macro_expansion { FLAG_MACRO_EXPANSION } else { 0 },
+                flags: if r.is_macro_expansion {
+                    FLAG_MACRO_EXPANSION
+                } else {
+                    0
+                },
                 _pad: 0,
             };
             ref_entries.push(entry);
@@ -216,8 +250,11 @@ impl IndexWriter {
 
         // Sort references by source span for binary search position lookup
         ref_entries.sort_by(|a, b| {
-            (a.span.file_id, a.span.start_line, a.span.start_col)
-                .cmp(&(b.span.file_id, b.span.start_line, b.span.start_col))
+            (a.span.file_id, a.span.start_line, a.span.start_col).cmp(&(
+                b.span.file_id,
+                b.span.start_line,
+                b.span.start_col,
+            ))
         });
 
         // Build references target path hash index
@@ -249,8 +286,11 @@ impl IndexWriter {
 
         // Sort types by source span
         type_entries.sort_by(|a, b| {
-            (a.span.file_id, a.span.start_line, a.span.start_col)
-                .cmp(&(b.span.file_id, b.span.start_line, b.span.start_col))
+            (a.span.file_id, a.span.start_line, a.span.start_col).cmp(&(
+                b.span.file_id,
+                b.span.start_line,
+                b.span.start_col,
+            ))
         });
 
         // Restore original collections on self
@@ -391,10 +431,5 @@ fn align_up(offset: u64, align: u64) -> u64 {
 
 #[inline]
 fn as_byte_slice<T: Sized>(val: &T) -> &[u8] {
-    unsafe {
-        std::slice::from_raw_parts(
-            (val as *const T) as *const u8,
-            std::mem::size_of::<T>(),
-        )
-    }
+    unsafe { std::slice::from_raw_parts((val as *const T) as *const u8, std::mem::size_of::<T>()) }
 }

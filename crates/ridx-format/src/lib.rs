@@ -123,10 +123,14 @@ mod tests {
         assert_eq!(refs[0].span.start_line, 15);
 
         // Verify type_at selects innermost type
-        let ty_inner = reader.type_at("src/main.rs", 15, 22).expect("type not found");
+        let ty_inner = reader
+            .type_at("src/main.rs", 15, 22)
+            .expect("type not found");
         assert_eq!(ty_inner, "i32");
 
-        let ty_outer = reader.type_at("src/main.rs", 15, 10).expect("type not found");
+        let ty_outer = reader
+            .type_at("src/main.rs", 15, 10)
+            .expect("type not found");
         assert_eq!(ty_outer, "std::result::Result<i32, String>");
     }
 
