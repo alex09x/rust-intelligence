@@ -20,6 +20,21 @@ pub struct WorkspaceSymbol<'a> {
     pub span: Span,
     pub signature: Option<&'a str>,
     pub is_macro_expansion: bool,
+    pub source_root: Option<&'a Path>,
+    pub unit_key: Option<&'a str>,
+}
+
+impl<'a> WorkspaceSymbol<'a> {
+    pub fn resolved_path(&self) -> PathBuf {
+        let p = Path::new(self.file);
+        if p.is_absolute() {
+            p.to_path_buf()
+        } else if let Some(root) = self.source_root {
+            root.join(p)
+        } else {
+            p.to_path_buf()
+        }
+    }
 }
 
 /// A reference match within a workspace, including its crate provenance.
@@ -31,6 +46,21 @@ pub struct WorkspaceReference<'a> {
     pub kind: DefKind,
     pub is_write: bool,
     pub is_macro_expansion: bool,
+    pub source_root: Option<&'a Path>,
+    pub unit_key: Option<&'a str>,
+}
+
+impl<'a> WorkspaceReference<'a> {
+    pub fn resolved_path(&self) -> PathBuf {
+        let p = Path::new(self.file);
+        if p.is_absolute() {
+            p.to_path_buf()
+        } else if let Some(root) = self.source_root {
+            root.join(p)
+        } else {
+            p.to_path_buf()
+        }
+    }
 }
 
 /// Result of finding references at a cursor location.
@@ -44,7 +74,22 @@ pub struct LocationReferences<'a> {
     pub target_col: u32,
     pub target_end_line: u32,
     pub target_end_col: u32,
+    pub target_source_root: Option<&'a Path>,
+    pub target_unit_key: Option<&'a str>,
     pub references: Vec<WorkspaceReference<'a>>,
+}
+
+impl<'a> LocationReferences<'a> {
+    pub fn target_resolved_path(&self) -> PathBuf {
+        let p = Path::new(self.target_file);
+        if p.is_absolute() {
+            p.to_path_buf()
+        } else if let Some(root) = self.target_source_root {
+            root.join(p)
+        } else {
+            p.to_path_buf()
+        }
+    }
 }
 
 /// Detailed hover information for a source location.
@@ -86,7 +131,10 @@ fn default_format_version() -> u32 {
 pub fn is_version_mismatch(err: &io::Error) -> bool {
     if err.kind() == io::ErrorKind::InvalidData {
         let msg = err.to_string();
-        msg.contains("Unsupported RIDX version") || msg.contains("Format version mismatch")
+        msg.contains("Unsupported RIDX version")
+            || msg.contains("Format version mismatch")
+            || msg.contains("Extractor version mismatch")
+            || msg.contains("Extractor version missing")
     } else {
         false
     }
@@ -159,6 +207,7 @@ pub struct WorkspaceIndex {
     paths: Vec<PathBuf>,
     mtimes: Vec<Option<std::time::SystemTime>>,
     source_roots: Vec<Option<PathBuf>>,
+    unit_keys: Vec<Option<String>>,
     root_dir: Option<PathBuf>,
     manifest_path: Option<PathBuf>,
     manifest_mtime: Option<std::time::SystemTime>,
@@ -178,6 +227,7 @@ impl WorkspaceIndex {
                 paths: vec![p.to_path_buf()],
                 mtimes: vec![mtime],
                 source_roots: vec![None],
+                unit_keys: vec![None],
                 root_dir: None,
                 manifest_path: None,
                 manifest_mtime: None,
@@ -202,16 +252,6 @@ impl WorkspaceIndex {
                     format!("Failed to parse variant manifest {:?}: {e}", manifest_file),
                 )
             })?;
-
-            if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!(
-                        "Format version mismatch in manifest {:?}: format_version {} != current {}",
-                        manifest_file, manifest.format_version, crate::format::CURRENT_FORMAT_VERSION
-                    ),
-                ));
-            }
 
             let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
             if !manifest.active_variant_id.is_empty() {
@@ -243,6 +283,39 @@ impl WorkspaceIndex {
                         ),
                     ));
                 }
+
+                if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "Format version mismatch in manifest {:?}: format_version {} != current {}",
+                            manifest_file, manifest.format_version, crate::format::CURRENT_FORMAT_VERSION
+                        ),
+                    ));
+                }
+
+                match manifest.extractor_version.as_deref() {
+                    Some(ver) if ver == crate::format::EXTRACTOR_VERSION => {}
+                    Some(ver) => {
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            format!(
+                                "Extractor version mismatch in manifest {:?}: extractor_version {} != current {}",
+                                manifest_file, ver, crate::format::EXTRACTOR_VERSION
+                            ),
+                        ));
+                    }
+                    None => {
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            format!(
+                                "Extractor version missing in manifest {:?}",
+                                manifest_file
+                            ),
+                        ));
+                    }
+                }
+
                 (vdir, Some((manifest_file, mtime, manifest.active_variant_id, manifest.dependency_shards)))
             } else {
                 // Legacy manifest without active_variant_id: scan search_dir directly
@@ -271,6 +344,7 @@ impl WorkspaceIndex {
         let mut paths = Vec::with_capacity(ridx_files.len());
         let mut mtimes = Vec::with_capacity(ridx_files.len());
         let mut source_roots = Vec::with_capacity(ridx_files.len());
+        let mut unit_keys = Vec::with_capacity(ridx_files.len());
 
         for file_path in ridx_files {
             match IndexReader::open(&file_path) {
@@ -280,6 +354,7 @@ impl WorkspaceIndex {
                     paths.push(file_path);
                     mtimes.push(mtime);
                     source_roots.push(None);
+                    unit_keys.push(None);
                 }
                 Err(e) => {
                     eprintln!("Warning: skipping invalid index {:?}: {e}", file_path);
@@ -310,6 +385,7 @@ impl WorkspaceIndex {
                         paths.push(dep_file);
                         mtimes.push(mtime);
                         source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
+                        unit_keys.push(Some(dep.unit_key.clone()));
                     }
                 }
             }
@@ -332,6 +408,7 @@ impl WorkspaceIndex {
             paths,
             mtimes,
             source_roots,
+            unit_keys,
             root_dir: Some(scan_dir),
             manifest_path,
             manifest_mtime,
@@ -426,7 +503,7 @@ impl WorkspaceIndex {
     /// Finds a definition by full or relative canonical path across the workspace.
     pub fn find_definition_by_path<'a>(&'a self, path: &str) -> Option<ResolvedDefinition<'a>> {
         // Fast path: if path starts with `<crate_name>::`, check that crate first
-        for reader in &self.readers {
+        for (i, reader) in self.readers.iter().enumerate() {
             let prefix = format!("{}::", reader.crate_name());
             if path.starts_with(&prefix) {
                 if let Some(def) = reader.find_definition_by_path(path) {
@@ -446,13 +523,15 @@ impl WorkspaceIndex {
                         end_line: span.end_line(),
                         end_col: span.end_col(),
                         is_macro_expansion: def.is_macro_expansion(),
+                        source_root: self.source_roots.get(i).and_then(|r| r.as_deref()),
+                        unit_key: self.unit_keys.get(i).and_then(|u| u.as_deref()),
                     });
                 }
             }
         }
 
         // General search across all crates
-        for reader in &self.readers {
+        for (i, reader) in self.readers.iter().enumerate() {
             if let Some(def) = reader.find_definition_by_path(path) {
                 let span = def.span();
                 return Some(ResolvedDefinition {
@@ -470,6 +549,8 @@ impl WorkspaceIndex {
                     end_line: span.end_line(),
                     end_col: span.end_col(),
                     is_macro_expansion: def.is_macro_expansion(),
+                    source_root: self.source_roots.get(i).and_then(|r| r.as_deref()),
+                    unit_key: self.unit_keys.get(i).and_then(|u| u.as_deref()),
                 });
             }
         }
@@ -510,20 +591,44 @@ impl WorkspaceIndex {
         line: u32,
         col: u32,
     ) -> Option<ResolvedDefinition<'a>> {
+        let p = Path::new(file);
+        let is_abs = p.is_absolute();
+
         for (i, reader) in self.readers.iter().enumerate() {
             let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
-                let p = Path::new(file);
-                if let Ok(rel) = p.strip_prefix(root) {
-                    rel.to_str().unwrap_or(file)
+                if is_abs {
+                    if let Ok(rel) = p.strip_prefix(root) {
+                        rel.to_str().unwrap_or(file)
+                    } else {
+                        // The queried file is absolute and outside this dependency's source_root.
+                        // Skip this reader to prevent suffix collision.
+                        continue;
+                    }
                 } else {
                     file
                 }
             } else {
+                if is_abs {
+                    // Workspace member reader: skip if file belongs to any external dependency's source_root
+                    let belongs_to_dep = self.source_roots.iter().any(|r| {
+                        if let Some(r) = r.as_ref() {
+                            p.starts_with(r)
+                        } else {
+                            false
+                        }
+                    });
+                    if belongs_to_dep {
+                        continue;
+                    }
+                }
                 file
             };
-            if let Some(res) = reader.find_definition_at(target_file, line, col) {
+
+            if let Some(mut res) = reader.find_definition_at(target_file, line, col) {
+                res.source_root = self.source_roots.get(i).and_then(|r| r.as_deref());
+                res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
                 // If it resolves to a cross-crate target, attempt resolution in
-                // workspace peer crates to retrieve the true indexed definition and signature
+                // workspace peer crates / dependencies to retrieve the true indexed definition and signature
                 if let Some(cross_def) = self.find_definition_by_path(res.path) {
                     return Some(cross_def);
                 }
@@ -538,9 +643,11 @@ impl WorkspaceIndex {
     pub fn find_references<'a>(&'a self, target_path: &str) -> Vec<WorkspaceReference<'a>> {
         let mut all_refs = Vec::new();
 
-        for reader in &self.readers {
+        for (i, reader) in self.readers.iter().enumerate() {
             let refs = reader.find_references(target_path);
             let crate_name = reader.crate_name();
+            let source_root = self.source_roots.get(i).and_then(|r| r.as_deref());
+            let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
 
             for r in refs {
                 let span = r.span();
@@ -552,6 +659,8 @@ impl WorkspaceIndex {
                     kind: DefKind::from(r.kind),
                     is_write: r.is_write != 0,
                     is_macro_expansion: r.is_macro_expansion(),
+                    source_root,
+                    unit_key,
                 });
             }
         }
@@ -561,15 +670,33 @@ impl WorkspaceIndex {
 
     /// Inferred expression type at cursor location.
     pub fn type_at(&self, file: &str, line: u32, col: u32) -> Option<&str> {
+        let p = Path::new(file);
+        let is_abs = p.is_absolute();
+
         for (i, reader) in self.readers.iter().enumerate() {
             let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
-                let p = Path::new(file);
-                if let Ok(rel) = p.strip_prefix(root) {
-                    rel.to_str().unwrap_or(file)
+                if is_abs {
+                    if let Ok(rel) = p.strip_prefix(root) {
+                        rel.to_str().unwrap_or(file)
+                    } else {
+                        continue;
+                    }
                 } else {
                     file
                 }
             } else {
+                if is_abs {
+                    let belongs_to_dep = self.source_roots.iter().any(|r| {
+                        if let Some(r) = r.as_ref() {
+                            p.starts_with(r)
+                        } else {
+                            false
+                        }
+                    });
+                    if belongs_to_dep {
+                        continue;
+                    }
+                }
                 file
             };
             if let Some(ty) = reader.type_at(target_file, line, col) {
@@ -583,9 +710,11 @@ impl WorkspaceIndex {
     pub fn search_symbols<'a>(&'a self, query: &str) -> Vec<WorkspaceSymbol<'a>> {
         let mut matches = Vec::new();
 
-        for reader in &self.readers {
+        for (i, reader) in self.readers.iter().enumerate() {
             let crate_name = reader.crate_name();
             let defs = reader.search_symbols(query);
+            let source_root = self.source_roots.get(i).and_then(|r| r.as_deref());
+            let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
 
             for def in defs {
                 let name = reader.get_str(def.name_offset());
@@ -607,6 +736,8 @@ impl WorkspaceIndex {
                     span,
                     signature,
                     is_macro_expansion: def.is_macro_expansion(),
+                    source_root,
+                    unit_key,
                 });
             }
         }
@@ -636,6 +767,8 @@ impl WorkspaceIndex {
             target_col: def.start_col,
             target_end_line: def.end_line,
             target_end_col: def.end_col,
+            target_source_root: def.source_root,
+            target_unit_key: def.unit_key,
             references: refs,
         })
     }
@@ -676,6 +809,25 @@ impl WorkspaceIndex {
                 self.manifest_mtime = current_manifest_mtime;
                 if let Ok(content) = fs::read(mf) {
                     if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
+                        if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
+                            return Err(io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                format!(
+                                    "Format version mismatch in reloaded manifest {:?}: format_version {} != current {}",
+                                    mf, manifest.format_version, crate::format::CURRENT_FORMAT_VERSION
+                                ),
+                            ));
+                        }
+                        if manifest.extractor_version.as_deref() != Some(crate::format::EXTRACTOR_VERSION) {
+                            return Err(io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                format!(
+                                    "Extractor version mismatch in reloaded manifest {:?}: extractor_version {:?} != current {:?}",
+                                    mf, manifest.extractor_version, crate::format::EXTRACTOR_VERSION
+                                ),
+                            ));
+                        }
+
                         let base_dir = mf.parent().unwrap_or_else(|| Path::new("."));
                         if Some(&manifest.active_variant_id) != self.active_variant_id.as_ref() {
                             let expected_variant_dir = format!("variants/{}", manifest.active_variant_id);
@@ -686,63 +838,67 @@ impl WorkspaceIndex {
                                     // Active variant changed! Atomically switch reader set
                                     let mut new_files = Vec::new();
                                     collect_ridx_files(&new_vdir, &mut new_files)?;
-                                new_files.sort();
+                                    new_files.sort();
 
-                                let mut new_readers = Vec::with_capacity(new_files.len());
-                                let mut new_paths = Vec::with_capacity(new_files.len());
-                                let mut new_mtimes = Vec::with_capacity(new_files.len());
-                                let mut new_source_roots = Vec::with_capacity(new_files.len());
+                                    let mut new_readers = Vec::with_capacity(new_files.len());
+                                    let mut new_paths = Vec::with_capacity(new_files.len());
+                                    let mut new_mtimes = Vec::with_capacity(new_files.len());
+                                    let mut new_source_roots = Vec::with_capacity(new_files.len());
+                                    let mut new_unit_keys = Vec::with_capacity(new_files.len());
 
-                                for fp in new_files {
-                                    if let Ok(r) = IndexReader::open(&fp) {
-                                        let mt = fs::metadata(&fp).and_then(|m| m.modified()).ok();
-                                        new_readers.push(r);
-                                        new_paths.push(fp);
-                                        new_mtimes.push(mt);
-                                        new_source_roots.push(None);
-                                    }
-                                }
-
-                                // Load dependency shards for new variant if any
-                                let cache_dir = crate::format::resolve_cache_dir();
-                                for dep in &manifest.dependency_shards {
-                                    let obj_path = PathBuf::from(&dep.object_path);
-                                    let cand = if obj_path.is_file() {
-                                        Some(obj_path)
-                                    } else {
-                                        let fallback = crate::format::cache_object_path(&cache_dir, &dep.unit_key);
-                                        if fallback.is_file() {
-                                            Some(fallback)
-                                        } else {
-                                            None
-                                        }
-                                    };
-                                    if let Some(dep_file) = cand {
-                                        if let Ok(r) = IndexReader::open(&dep_file) {
-                                            let mt = fs::metadata(&dep_file).and_then(|m| m.modified()).ok();
+                                    for fp in new_files {
+                                        if let Ok(r) = IndexReader::open(&fp) {
+                                            let mt = fs::metadata(&fp).and_then(|m| m.modified()).ok();
                                             new_readers.push(r);
-                                            new_paths.push(dep_file);
+                                            new_paths.push(fp);
                                             new_mtimes.push(mt);
-                                            new_source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
+                                            new_source_roots.push(None);
+                                            new_unit_keys.push(None);
                                         }
                                     }
-                                }
 
-                                if !new_readers.is_empty() {
-                                    self.readers = new_readers;
-                                    self.paths = new_paths;
-                                    self.mtimes = new_mtimes;
-                                    self.source_roots = new_source_roots;
-                                    self.root_dir = Some(new_vdir);
-                                    self.active_variant_id = Some(manifest.active_variant_id);
-                                    return Ok(true);
+                                    // Load dependency shards for new variant if any
+                                    let cache_dir = crate::format::resolve_cache_dir();
+                                    for dep in &manifest.dependency_shards {
+                                        let obj_path = PathBuf::from(&dep.object_path);
+                                        let cand = if obj_path.is_file() {
+                                            Some(obj_path)
+                                        } else {
+                                            let fallback = crate::format::cache_object_path(&cache_dir, &dep.unit_key);
+                                            if fallback.is_file() {
+                                                Some(fallback)
+                                            } else {
+                                                None
+                                            }
+                                        };
+                                        if let Some(dep_file) = cand {
+                                            if let Ok(r) = IndexReader::open(&dep_file) {
+                                                let mt = fs::metadata(&dep_file).and_then(|m| m.modified()).ok();
+                                                new_readers.push(r);
+                                                new_paths.push(dep_file);
+                                                new_mtimes.push(mt);
+                                                new_source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
+                                                new_unit_keys.push(Some(dep.unit_key.clone()));
+                                            }
+                                        }
+                                    }
+
+                                    if !new_readers.is_empty() {
+                                        self.readers = new_readers;
+                                        self.paths = new_paths;
+                                        self.mtimes = new_mtimes;
+                                        self.source_roots = new_source_roots;
+                                        self.unit_keys = new_unit_keys;
+                                        self.root_dir = Some(new_vdir);
+                                        self.active_variant_id = Some(manifest.active_variant_id);
+                                        return Ok(true);
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
         }
 
         // 1. Reconcile existing files: remove deleted, reload modified
@@ -755,6 +911,9 @@ impl WorkspaceIndex {
                 self.mtimes.remove(i);
                 if i < self.source_roots.len() {
                     self.source_roots.remove(i);
+                }
+                if i < self.unit_keys.len() {
+                    self.unit_keys.remove(i);
                 }
                 changed = true;
                 continue;
@@ -791,6 +950,7 @@ impl WorkspaceIndex {
                         self.paths.push(file_path);
                         self.mtimes.push(mtime);
                         self.source_roots.push(None);
+                        self.unit_keys.push(None);
                         changed = true;
                     }
                 }

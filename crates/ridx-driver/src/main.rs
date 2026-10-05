@@ -374,6 +374,20 @@ fn extract_crate_items<'tcx>(
     tcx.hir_visit_all_item_likes_in_crate(visitor);
 }
 
+fn is_immutable_package(manifest_dir: &Path) -> bool {
+    if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
+        let ch = Path::new(&cargo_home);
+        if manifest_dir.starts_with(ch.join("registry")) || manifest_dir.starts_with(ch.join("git")) {
+            return true;
+        }
+    }
+    let s = manifest_dir.to_string_lossy();
+    s.contains("/.cargo/registry/")
+        || s.contains("\\.cargo\\registry\\")
+        || s.contains("/.cargo/git/")
+        || s.contains("\\.cargo\\git\\")
+}
+
 fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str>) {
     let start = Instant::now();
     let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
@@ -381,12 +395,10 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str
         std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
 
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from);
-    let ws_root = std::env::var("RIDX_WORKSPACE_ROOT").ok().map(PathBuf::from);
-
-    let is_workspace_crate = match (&manifest_dir, &ws_root) {
-        (Some(m), Some(w)) => m.starts_with(w),
-        _ => true,
-    };
+    let is_immutable = manifest_dir
+        .as_ref()
+        .map(|m| is_immutable_package(m))
+        .unwrap_or(false);
 
     let suffix = match disambiguator {
         Some(d) if d.starts_with('-') || d.starts_with('_') => d.to_string(),
@@ -394,7 +406,7 @@ fn build_crate_index(tcx: TyCtxt<'_>, out_dir: &Path, disambiguator: Option<&str
         _ => String::new(),
     };
 
-    if !is_workspace_crate {
+    if is_immutable {
         let unit_key = compute_dependency_unit_key(
             &crate_name,
             &crate_version,
@@ -548,9 +560,18 @@ impl Callbacks for NoopCallbacks {}
 fn main() {
     let mut args: Vec<String> = std::env::args().collect();
 
-    // When invoked as RUSTC_WORKSPACE_WRAPPER or RUSTC_WRAPPER, cargo passes the rustc binary as args[1]
-    if args.len() > 1 && (args[1].ends_with("rustc") || args[1] == "rustc") {
-        args.remove(1);
+    // Strip any leading compiler wrapper or rustc binary invocations passed by Cargo.
+    // When Cargo chains wrappers or when multiple wrappers are configured, args may contain
+    // multiple wrapper executable paths or rustc before the actual compiler flags.
+    while args.len() > 1 {
+        let arg1 = &args[1];
+        let p = Path::new(arg1);
+        let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        if stem == "rustc" || stem == "ridx-driver" || stem.ends_with("-driver") {
+            args.remove(1);
+        } else {
+            break;
+        }
     }
 
     let is_query = args.iter().any(|a| {

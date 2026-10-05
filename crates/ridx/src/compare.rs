@@ -35,7 +35,7 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
     let (ridx_found, ridx_span) = match ridx_def {
         Some(def) => (
             true,
-            format!("{}:{}:{}", def.file, def.start_line, def.start_col),
+            format!("{}:{}:{}", def.resolved_path().display(), def.start_line, def.start_col),
         ),
         None => (false, "Not found".to_string()),
     };

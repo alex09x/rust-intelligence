@@ -21,6 +21,21 @@ pub struct ResolvedDefinition<'a> {
     pub end_line: u32,
     pub end_col: u32,
     pub is_macro_expansion: bool,
+    pub source_root: Option<&'a Path>,
+    pub unit_key: Option<&'a str>,
+}
+
+impl<'a> ResolvedDefinition<'a> {
+    pub fn resolved_path(&self) -> std::path::PathBuf {
+        let p = Path::new(self.file);
+        if p.is_absolute() {
+            p.to_path_buf()
+        } else if let Some(root) = self.source_root {
+            root.join(p)
+        } else {
+            p.to_path_buf()
+        }
+    }
 }
 
 /// Zero-copy reader over a memory-mapped or buffered `.ridx` index.
@@ -299,6 +314,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                         end_line: def_span.end_line(),
                         end_col: def_span.end_col(),
                         is_macro_expansion: def.is_macro_expansion(),
+                        source_root: None,
+                        unit_key: None,
                     });
                 }
             }
@@ -322,6 +339,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 end_line: r.target_line(),
                 end_col: r.target_col() + (target_name.len() as u32),
                 is_macro_expansion: r.is_macro_expansion(),
+                source_root: None,
+                unit_key: None,
             });
         }
 
@@ -356,6 +375,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 end_line: def_span.end_line(),
                 end_col: def_span.end_col(),
                 is_macro_expansion: def.is_macro_expansion(),
+                source_root: None,
+                unit_key: None,
             });
         }
 

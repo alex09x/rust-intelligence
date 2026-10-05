@@ -160,6 +160,58 @@ fn parse_location(loc: &str) -> Option<(&str, u32, u32)> {
     }
 }
 
+fn find_enclosing_workspace(start: &Path) -> Option<PathBuf> {
+    let mut cur = if start.is_dir() {
+        Some(start)
+    } else {
+        start.parent()
+    };
+    while let Some(dir) = cur {
+        if dir.join("Cargo.toml").is_file() {
+            return Some(dir.to_path_buf());
+        }
+        cur = dir.parent();
+    }
+    None
+}
+
+fn find_manifest_for_path(p: &Path) -> Option<(PathBuf, ridx_format::VariantManifest)> {
+    let mut candidate_dirs = Vec::new();
+    if p.is_dir() {
+        candidate_dirs.push(p.to_path_buf());
+        candidate_dirs.push(p.join("target/ridx"));
+        if let Some(parent) = p.parent() {
+            candidate_dirs.push(parent.to_path_buf());
+            if let Some(grandparent) = parent.parent() {
+                candidate_dirs.push(grandparent.to_path_buf());
+                if let Some(great) = grandparent.parent() {
+                    candidate_dirs.push(great.to_path_buf());
+                }
+            }
+        }
+    } else if let Some(parent) = p.parent() {
+        candidate_dirs.push(parent.to_path_buf());
+        if let Some(grandparent) = parent.parent() {
+            candidate_dirs.push(grandparent.to_path_buf());
+            if let Some(great) = grandparent.parent() {
+                candidate_dirs.push(great.to_path_buf());
+            }
+        }
+    }
+
+    for dir in candidate_dirs {
+        let manifest_file = dir.join("ridx_manifest.json");
+        if manifest_file.is_file() {
+            if let Ok(content) = fs::read(&manifest_file) {
+                if let Ok(manifest) = serde_json::from_slice::<ridx_format::VariantManifest>(&content) {
+                    return Some((dir, manifest));
+                }
+            }
+        }
+    }
+    None
+}
+
 fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
     match path_opt {
         Some(p) => match WorkspaceIndex::open(&p) {
@@ -170,18 +222,46 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
                         "{} Index at {:?} is missing or incompatible with format v{}. Automatically reindexing...",
                         "Notice:".yellow().bold(), p, ridx_format::CURRENT_FORMAT_VERSION
                     );
-                    let work_dir = if p.is_dir() { p.clone() } else { p.parent().unwrap_or(&p).to_path_buf() };
+                    let (work_dir, out_dir_opt, package, release, features, no_default_features, all_features, target, manifest_dir_opt) =
+                        if let Some((manifest_dir, manifest)) = find_manifest_for_path(&p) {
+                            let ws_dir = if !manifest.workspace_root.is_empty() && Path::new(&manifest.workspace_root).exists() {
+                                PathBuf::from(manifest.workspace_root)
+                            } else if let Some(ws) = find_enclosing_workspace(&p) {
+                                ws
+                            } else {
+                                eprintln!("{}: Cannot find Cargo workspace for index at {:?}.", "Error".red().bold(), p);
+                                std::process::exit(1);
+                            };
+                            (ws_dir, Some(manifest_dir.clone()), manifest.package_filter, manifest.profile == "release", manifest.features, manifest.no_default_features, manifest.all_features, manifest.target, Some(manifest_dir))
+                        } else if let Some(ws) = find_enclosing_workspace(&p) {
+                            (ws, None, None, false, None, false, false, None, None)
+                        } else {
+                            eprintln!("{}: Cannot determine Cargo workspace for {:?}. No Cargo.toml found in path or parent directories.", "Error".red().bold(), p);
+                            eprintln!("Specify the path to a Cargo workspace or run 'ridx index' first.");
+                            std::process::exit(1);
+                        };
+
                     run_indexing(IndexOptions {
-                        path: work_dir.clone(),
-                        out_dir_opt: None,
-                        package: None,
-                        release: false,
-                        features: None,
-                        no_default_features: false,
-                        all_features: false,
-                        target: None,
+                        path: work_dir,
+                        out_dir_opt: out_dir_opt.clone(),
+                        package,
+                        release,
+                        features,
+                        no_default_features,
+                        all_features,
+                        target,
                     });
-                    match WorkspaceIndex::open(&p) {
+
+                    let reopen_res = WorkspaceIndex::open(&p).or_else(|_| {
+                        if let Some(ref md) = manifest_dir_opt {
+                            WorkspaceIndex::open(md)
+                        } else if let Some(ref od) = out_dir_opt {
+                            WorkspaceIndex::open(od)
+                        } else {
+                            WorkspaceIndex::auto_discover()
+                        }
+                    });
+                    match reopen_res {
                         Ok(ws) => return ws,
                         Err(e2) => {
                             eprintln!("{}: Failed to open reindexed workspace {:?}: {e2}", "Error".red().bold(), p);
@@ -197,32 +277,46 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
             Ok(ws) => ws,
             Err(e) => {
                 let cur = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-                if cur.join("Cargo.toml").is_file() {
-                    eprintln!(
-                        "{} No valid RIDX index found for current workspace (expected format v{}). Automatically indexing...",
-                        "Notice:".yellow().bold(), ridx_format::CURRENT_FORMAT_VERSION
-                    );
-                    run_indexing(IndexOptions {
-                        path: cur.clone(),
-                        out_dir_opt: None,
-                        package: None,
-                        release: false,
-                        features: None,
-                        no_default_features: false,
-                        all_features: false,
-                        target: None,
-                    });
-                    match WorkspaceIndex::auto_discover() {
-                        Ok(ws) => return ws,
-                        Err(e2) => {
-                            eprintln!("{}: Failed to auto-discover reindexed workspace: {e2}", "Error".red().bold());
+                let (work_dir, out_dir_opt, package, release, features, no_default_features, all_features, target) =
+                    if let Some((manifest_dir, manifest)) = find_manifest_for_path(&cur) {
+                        let ws_dir = if !manifest.workspace_root.is_empty() && Path::new(&manifest.workspace_root).exists() {
+                            PathBuf::from(manifest.workspace_root)
+                        } else if let Some(ws) = find_enclosing_workspace(&cur) {
+                            ws
+                        } else {
+                            eprintln!("{}: Cannot find Cargo workspace for manifest at {:?}.", "Error".red().bold(), manifest_dir);
                             std::process::exit(1);
-                        }
+                        };
+                        (ws_dir, Some(manifest_dir), manifest.package_filter, manifest.profile == "release", manifest.features, manifest.no_default_features, manifest.all_features, manifest.target)
+                    } else if let Some(ws) = find_enclosing_workspace(&cur) {
+                        (ws, None, None, false, None, false, false, None)
+                    } else {
+                        eprintln!("{}: {e}", "Error".red().bold());
+                        eprintln!("Specify the path to a .ridx file or directory, or run from a workspace with target/ridx/.");
+                        std::process::exit(1);
+                    };
+
+                eprintln!(
+                    "{} No valid RIDX index found for current workspace (expected format v{}). Automatically indexing...",
+                    "Notice:".yellow().bold(), ridx_format::CURRENT_FORMAT_VERSION
+                );
+                run_indexing(IndexOptions {
+                    path: work_dir,
+                    out_dir_opt,
+                    package,
+                    release,
+                    features,
+                    no_default_features,
+                    all_features,
+                    target,
+                });
+                match WorkspaceIndex::auto_discover() {
+                    Ok(ws) => ws,
+                    Err(e2) => {
+                        eprintln!("{}: Failed to auto-discover reindexed workspace: {e2}", "Error".red().bold());
+                        std::process::exit(1);
                     }
                 }
-                eprintln!("{}: {e}", "Error".red().bold());
-                eprintln!("Specify the path to a .ridx file or directory, or run from a workspace with target/ridx/.");
-                std::process::exit(1);
             }
         },
     }
@@ -545,28 +639,28 @@ fn run_indexing(opts: IndexOptions) {
     let cargo_target_dir = work_dir.join("target/ridx_cargo").join(&variant_id);
     let _ = fs::create_dir_all(&cargo_target_dir);
 
-    println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
-    println!("  {} {}", "RIDX Workspace Indexer:".bold(), work_dir.display().to_string().cyan());
-    println!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
-    println!("  Work Directory : {}", work_dir.display().to_string().green());
-    println!("  Manifest Path  : {}", manifest_path.display().to_string().green());
-    println!("  Driver Binary  : {}", driver_bin.display().to_string().green());
-    println!("  Index Output   : {}", variant_out_dir.display().to_string().green());
-    println!("  Active Variant : {}", variant_id.cyan().bold());
-    println!("  Build Profile  : {}", profile_name.cyan());
+    eprintln!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    eprintln!("  {} {}", "RIDX Workspace Indexer:".bold(), work_dir.display().to_string().cyan());
+    eprintln!("{}", "═══════════════════════════════════════════════════════════════════════".dimmed());
+    eprintln!("  Work Directory : {}", work_dir.display().to_string().green());
+    eprintln!("  Manifest Path  : {}", manifest_path.display().to_string().green());
+    eprintln!("  Driver Binary  : {}", driver_bin.display().to_string().green());
+    eprintln!("  Index Output   : {}", variant_out_dir.display().to_string().green());
+    eprintln!("  Active Variant : {}", variant_id.cyan().bold());
+    eprintln!("  Build Profile  : {}", profile_name.cyan());
     if let Some(ref feats) = features {
-        println!("  Features       : {}", feats.cyan());
+        eprintln!("  Features       : {}", feats.cyan());
     }
     if no_default_features {
-        println!("  No Default Feat: true");
+        eprintln!("  No Default Feat: true");
     }
     if all_features {
-        println!("  All Features   : true");
+        eprintln!("  All Features   : true");
     }
     if let Some(ref tgt) = target {
-        println!("  Target Triple  : {}", tgt.cyan());
+        eprintln!("  Target Triple  : {}", tgt.cyan());
     }
-    println!("  Action         : cargo check with RUSTC_WORKSPACE_WRAPPER...");
+    eprintln!("  Action         : cargo check with RUSTC_WRAPPER...");
 
     let mut cmd = Command::new("cargo");
     cmd.current_dir(&work_dir);
@@ -596,7 +690,6 @@ fn run_indexing(opts: IndexOptions) {
     let cache_dir = ridx_format::resolve_cache_dir();
     let _ = fs::create_dir_all(cache_dir.join("objects"));
 
-    cmd.env("RUSTC_WORKSPACE_WRAPPER", &driver_bin);
     cmd.env("RIDX_OUT_DIR", &variant_out_dir);
     cmd.env("RIDX_CACHE_DIR", &cache_dir);
     cmd.env("RIDX_WORKSPACE_ROOT", &work_dir);
@@ -604,8 +697,10 @@ fn run_indexing(opts: IndexOptions) {
     cmd.env("RUSTC_BOOTSTRAP", "1");
     if std::env::var("RIDX_NO_DEPS").is_err() {
         cmd.env("RUSTC_WRAPPER", &driver_bin);
+        cmd.env_remove("RUSTC_WORKSPACE_WRAPPER");
     } else {
-        cmd.env("RUSTC_WRAPPER", "");
+        cmd.env("RUSTC_WORKSPACE_WRAPPER", &driver_bin);
+        cmd.env_remove("RUSTC_WRAPPER");
     }
 
     // Ensure librustc_driver shared library can be located by dynamic linker
@@ -664,27 +759,6 @@ fn run_indexing(opts: IndexOptions) {
                         }
                     }
                 }
-            }
-        }
-    }
-    // Also preserve existing dependencies from previous manifest if still present in cache
-    let existing_deps = if manifest_file.is_file() {
-        if let Ok(content) = fs::read(&manifest_file) {
-            serde_json::from_slice::<ridx_format::VariantManifest>(&content)
-                .ok()
-                .map(|m| m.dependency_shards)
-                .unwrap_or_default()
-        } else {
-            Vec::new()
-        }
-    } else {
-        Vec::new()
-    };
-    for existing in existing_deps {
-        if !dep_shards.iter().any(|d| d.name == existing.name) {
-            let p = Path::new(&existing.object_path);
-            if p.is_file() {
-                dep_shards.push(existing);
             }
         }
     }
@@ -756,14 +830,14 @@ fn run_indexing(opts: IndexOptions) {
         std::process::exit(1);
     }
 
-    println!(
+    eprintln!(
         "\n{} Indexed workspace in {:.2} s (active variant: {})",
         "Success:".green().bold(),
         elapsed.as_secs_f64(),
         variant_id.cyan().bold()
     );
 
-    println!(
+    eprintln!(
         "Indexed {} crate(s), {} total definitions, {} references, {} types ({:.2} KB total index size)",
         stats.total_crates.to_string().bold(),
         stats.total_defs.to_string().green(),
@@ -773,7 +847,7 @@ fn run_indexing(opts: IndexOptions) {
     );
 
     if !dep_shards.is_empty() {
-        println!(
+        eprintln!(
             "Linked {} external dependency shard(s) from global cache",
             dep_shards.len().to_string().cyan().bold()
         );
@@ -884,7 +958,7 @@ fn main() {
                         "path": def.path,
                         "kind": format!("{:?}", def.kind),
                         "signature": def.signature,
-                        "file": def.file,
+                        "file": def.resolved_path().display().to_string(),
                         "start_line": def.start_line,
                         "start_col": def.start_col,
                         "end_line": def.end_line,
@@ -907,7 +981,7 @@ fn main() {
                         "{} {} at {}:{}:{} (kind: {:?}) [{:.1} µs]",
                         "Definition:".green().bold(),
                         def.name.bold(),
-                        def.file,
+                        def.resolved_path().display(),
                         def.start_line,
                         def.start_col,
                         def.kind,
@@ -943,14 +1017,14 @@ fn main() {
                             "target_symbol": lr.target_symbol,
                             "target_kind": format!("{:?}", lr.target_kind),
                             "target_path": lr.target_path,
-                            "target_file": lr.target_file,
+                            "target_file": lr.target_resolved_path().display().to_string(),
                             "target_line": lr.target_line,
                             "target_col": lr.target_col,
                             "references_count": lr.references.len(),
                             "latency_us": elapsed.as_micros(),
                             "references": lr.references.iter().map(|r| serde_json::json!({
                                 "crate": r.crate_name,
-                                "file": r.file,
+                                "file": r.resolved_path().display().to_string(),
                                 "start_line": r.span.start_line(),
                                 "start_col": r.span.start_col(),
                                 "end_line": r.span.end_line(),
@@ -977,7 +1051,7 @@ fn main() {
                             "Found:".green().bold(),
                             lr.target_symbol.cyan().bold(),
                             lr.target_kind,
-                            lr.target_file,
+                            lr.target_resolved_path().display(),
                             lr.target_line,
                             lr.target_col,
                             lr.references.len(),
@@ -990,7 +1064,7 @@ fn main() {
                                 "  [{}] ({}) {}:{}:{}-{}:{} (kind: {:?})",
                                 i + 1,
                                 r.crate_name.cyan(),
-                                r.file,
+                                r.resolved_path().display(),
                                 span.start_line(),
                                 span.start_col(),
                                 span.end_line(),
@@ -1019,7 +1093,7 @@ fn main() {
                         "latency_us": elapsed.as_micros(),
                         "references": refs.iter().map(|r| serde_json::json!({
                             "crate": r.crate_name,
-                            "file": r.file,
+                            "file": r.resolved_path().display().to_string(),
                             "start_line": r.span.start_line(),
                             "start_col": r.span.start_col(),
                             "end_line": r.span.end_line(),
@@ -1046,7 +1120,7 @@ fn main() {
                         "  [{}] ({}) {}:{}:{}-{}:{} (kind: {:?})",
                         i + 1,
                         r.crate_name.cyan(),
-                        r.file,
+                        r.resolved_path().display(),
                         span.start_line(),
                         span.start_col(),
                         span.end_line(),
@@ -1130,7 +1204,7 @@ fn main() {
                             "path": d.path,
                             "kind": format!("{:?}", d.kind),
                             "signature": d.signature,
-                            "file": d.file,
+                            "file": d.resolved_path().display().to_string(),
                             "start_line": d.start_line,
                             "start_col": d.start_col,
                             "end_line": d.end_line,
@@ -1162,7 +1236,7 @@ fn main() {
                             "  Definition : {} ({:?}) at {}:{}:{}",
                             d.name.bold(),
                             d.kind,
-                            d.file,
+                            d.resolved_path().display(),
                             d.start_line,
                             d.start_col
                         );
@@ -1202,7 +1276,7 @@ fn main() {
                         "name": s.name,
                         "path": s.path,
                         "kind": format!("{:?}", s.kind),
-                        "file": s.file,
+                        "file": s.resolved_path().display().to_string(),
                         "start_line": s.span.start_line(),
                         "start_col": s.span.start_col(),
                         "signature": s.signature,
@@ -1227,7 +1301,7 @@ fn main() {
                     sym.crate_name.dimmed(),
                     sym.kind,
                     sym.path.cyan(),
-                    sym.file,
+                    sym.resolved_path().display(),
                     span.start_line(),
                     span.start_col()
                 );

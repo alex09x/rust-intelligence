@@ -19,6 +19,7 @@ pub struct OverlaySymbol {
     pub end_line: u32,
     pub end_col: u32,
     pub scope_id: usize,
+    pub bind_byte: usize,
 }
 
 /// Representation of a resolved definition within the live buffer overlay.
@@ -50,6 +51,7 @@ pub struct DocumentOverlay {
     pub version: i32,
     pub content_hash: u64,
     pub text: String,
+    pub disk_text: Option<String>,
     line_starts: Vec<usize>,
     symbols: Vec<OverlaySymbol>,
     scopes: Vec<Scope>,
@@ -62,16 +64,19 @@ impl DocumentOverlay {
         let uri = uri.into();
         let file_path = file_path.into();
         let content_hash = fnv1a_64(text.as_bytes());
+        let disk_text = std::fs::read_to_string(&file_path).ok();
+        let is_synced_with_disk = disk_text.as_deref() == Some(&text);
         let mut overlay = Self {
             uri,
             file_path,
             version,
             content_hash,
             text,
+            disk_text,
             line_starts: Vec::new(),
             symbols: Vec::new(),
             scopes: Vec::new(),
-            is_synced_with_disk: false,
+            is_synced_with_disk,
         };
         overlay.reparse();
         overlay
@@ -81,9 +86,162 @@ impl DocumentOverlay {
     pub fn update(&mut self, version: i32, text: String) {
         self.version = version;
         self.content_hash = fnv1a_64(text.as_bytes());
+        self.is_synced_with_disk = self.disk_text.as_deref() == Some(&text);
         self.text = text;
-        self.is_synced_with_disk = false;
         self.reparse();
+    }
+
+    /// Whether this buffer has unsaved or unindexed edits relative to disk.
+    #[allow(dead_code)]
+    pub fn is_dirty(&self) -> bool {
+        !self.is_synced_with_disk
+    }
+
+    /// Maps a 1-based line number from the live overlay buffer to the corresponding
+    /// 1-based line number in the compiled disk snapshot.
+    ///
+    /// Returns `Some(compiled_line)` if the line is in a proven unchanged region,
+    /// or `None` if the line falls in an edited, inserted, or modified region.
+    pub fn map_line_to_compiled(&self, line: u32) -> Option<u32> {
+        if self.is_synced_with_disk {
+            return Some(line);
+        }
+        let disk_text = self.disk_text.as_ref()?;
+
+        let curr_lines: Vec<&str> = self.text.lines().collect();
+        let disk_lines: Vec<&str> = disk_text.lines().collect();
+
+        let l_idx = (line.saturating_sub(1)) as usize;
+        if l_idx >= curr_lines.len() {
+            return None;
+        }
+
+        // Count common prefix lines
+        let mut prefix_common = 0;
+        while prefix_common < curr_lines.len()
+            && prefix_common < disk_lines.len()
+            && curr_lines[prefix_common] == disk_lines[prefix_common]
+        {
+            prefix_common += 1;
+        }
+
+        // If line is in proven unchanged prefix
+        if l_idx < prefix_common {
+            return Some(line);
+        }
+
+        // Count common suffix lines
+        let mut suffix_common = 0;
+        while suffix_common < curr_lines.len()
+            && suffix_common < disk_lines.len()
+            && curr_lines[curr_lines.len() - 1 - suffix_common]
+                == disk_lines[disk_lines.len() - 1 - suffix_common]
+        {
+            suffix_common += 1;
+        }
+
+        // If line is in proven unchanged suffix
+        if l_idx >= curr_lines.len().saturating_sub(suffix_common) {
+            let offset_from_end = curr_lines.len() - 1 - l_idx;
+            if offset_from_end < disk_lines.len() {
+                let disk_line_idx = disk_lines.len() - 1 - offset_from_end;
+                return Some((disk_line_idx + 1) as u32);
+            }
+        }
+
+        // The line is in the modified/inserted region
+        None
+    }
+
+    /// Converts a 0-based UTF-16 character column on a 1-based line to a 1-based Unicode character column.
+    pub fn utf16_col_to_char_col(&self, line_1based: u32, utf16_col_0based: u32) -> u32 {
+        let line_idx = line_1based.saturating_sub(1) as usize;
+        if line_idx >= self.line_starts.len() {
+            return utf16_col_0based + 1;
+        }
+        let start = self.line_starts[line_idx];
+        let end = if line_idx + 1 < self.line_starts.len() {
+            self.line_starts[line_idx + 1]
+        } else {
+            self.text.len()
+        };
+        let line_str = &self.text[start..end];
+
+        let mut utf16_count = 0;
+        let mut char_count = 0;
+        for c in line_str.chars() {
+            if utf16_count >= utf16_col_0based {
+                break;
+            }
+            utf16_count += c.len_utf16() as u32;
+            char_count += 1;
+        }
+        char_count + 1
+    }
+
+    /// Converts a 1-based Unicode character column on a 1-based line to a 0-based UTF-16 character column.
+    pub fn char_col_to_utf16_col(&self, line_1based: u32, char_col_1based: u32) -> u32 {
+        let line_idx = line_1based.saturating_sub(1) as usize;
+        if line_idx >= self.line_starts.len() {
+            return char_col_1based.saturating_sub(1);
+        }
+        let start = self.line_starts[line_idx];
+        let end = if line_idx + 1 < self.line_starts.len() {
+            self.line_starts[line_idx + 1]
+        } else {
+            self.text.len()
+        };
+        let line_str = &self.text[start..end];
+
+        let target_char = char_col_1based.saturating_sub(1);
+        let mut utf16_count = 0;
+        for (i, c) in line_str.chars().enumerate() {
+            if (i as u32) >= target_char {
+                break;
+            }
+            utf16_count += c.len_utf16() as u32;
+        }
+        utf16_count
+    }
+
+    /// Converts a byte offset to 1-based line and 1-based character column.
+    #[allow(dead_code)]
+    pub fn byte_to_char_line_col(&self, byte_offset: usize) -> (u32, u32) {
+        let b = byte_offset.min(self.text.len());
+        let line_idx = match self.line_starts.binary_search(&b) {
+            Ok(idx) => idx,
+            Err(idx) => idx.saturating_sub(1),
+        };
+        let line = (line_idx + 1) as u32;
+        let line_start_byte = self.line_starts[line_idx];
+        let line_prefix = &self.text[line_start_byte..b];
+        let char_col = (line_prefix.chars().count() + 1) as u32;
+        (line, char_col)
+    }
+
+    /// Converts 1-based line and 1-based character column to byte offset.
+    pub fn line_char_col_to_byte(&self, line: u32, col: u32) -> usize {
+        let line_idx = line.saturating_sub(1) as usize;
+        if line_idx >= self.line_starts.len() {
+            return self.text.len();
+        }
+        let start = self.line_starts[line_idx];
+        let end = if line_idx + 1 < self.line_starts.len() {
+            self.line_starts[line_idx + 1]
+        } else {
+            self.text.len()
+        };
+        let line_str = &self.text[start..end];
+
+        let target_char = col.saturating_sub(1) as usize;
+        let mut byte_offset = start;
+        for (i, c) in line_str.chars().enumerate() {
+            if i >= target_char {
+                break;
+            }
+            byte_offset += c.len_utf8();
+        }
+        byte_offset
     }
 
     /// Re-indexes line boundaries, lexical scopes, and declarations.
@@ -125,32 +283,59 @@ impl DocumentOverlay {
 
         // 2. Identifier at cursor location -> resolve to visible binding in lexical scope
         let ident = self.get_ident_at(line, col)?;
-        let byte_pos = self.line_col_to_byte(line, col);
+        let byte_pos = self.line_char_col_to_byte(line, col);
 
-        // Find enclosing scope
+        // Find innermost enclosing scope
         let mut best_scope = 0;
+        let mut min_scope_len = usize::MAX;
         for s in &self.scopes {
             if byte_pos >= s.start_byte && byte_pos <= s.end_byte {
-                best_scope = s.id;
+                let scope_len = s.end_byte.saturating_sub(s.start_byte);
+                if scope_len < min_scope_len {
+                    min_scope_len = scope_len;
+                    best_scope = s.id;
+                }
             }
         }
 
-        // Walk up scope chain to find matching symbol
+        // Walk up scope chain to find nearest visible matching symbol
         let mut cur = Some(best_scope);
         while let Some(sid) = cur {
+            let mut best_match: Option<&OverlaySymbol> = None;
             for sym in &self.symbols {
                 if sym.scope_id == sid && sym.name == ident {
-                    return Some(OverlayDefinition {
-                        name: sym.name.clone(),
-                        kind: sym.kind,
-                        signature: sym.signature.clone(),
-                        file: self.file_path.clone(),
-                        start_line: sym.start_line,
-                        start_col: sym.start_col,
-                        end_line: sym.end_line,
-                        end_col: sym.end_col,
-                    });
+                    let is_visible = match sym.kind {
+                        DefKind::Fn
+                        | DefKind::Struct
+                        | DefKind::Enum
+                        | DefKind::Trait
+                        | DefKind::TyAlias
+                        | DefKind::Const
+                        | DefKind::Mod => true,
+                        _ => sym.bind_byte <= byte_pos,
+                    };
+                    if is_visible {
+                        if let Some(prev) = best_match {
+                            if sym.bind_byte > prev.bind_byte {
+                                best_match = Some(sym);
+                            }
+                        } else {
+                            best_match = Some(sym);
+                        }
+                    }
                 }
+            }
+            if let Some(sym) = best_match {
+                return Some(OverlayDefinition {
+                    name: sym.name.clone(),
+                    kind: sym.kind,
+                    signature: sym.signature.clone(),
+                    file: self.file_path.clone(),
+                    start_line: sym.start_line,
+                    start_col: sym.start_col,
+                    end_line: sym.end_line,
+                    end_col: sym.end_col,
+                });
             }
             cur = self.scopes.get(sid).and_then(|s| s.parent);
         }
@@ -158,49 +343,83 @@ impl DocumentOverlay {
         None
     }
 
-    /// Returns the identifier at a given (line, col) in the buffer.
+    /// Returns the identifier at a given 1-based (line, char_col) in the buffer.
     pub fn get_ident_at(&self, line: u32, col: u32) -> Option<String> {
+        let byte_pos = self.line_char_col_to_byte(line, col);
         let line_idx = line.saturating_sub(1) as usize;
         if line_idx >= self.line_starts.len() {
             return None;
         }
-        let start = self.line_starts[line_idx];
-        let end = if line_idx + 1 < self.line_starts.len() {
+        let line_start = self.line_starts[line_idx];
+        let line_end = if line_idx + 1 < self.line_starts.len() {
             self.line_starts[line_idx + 1]
         } else {
             self.text.len()
         };
+        let line_text = &self.text[line_start..line_end];
+        let col_byte = byte_pos.saturating_sub(line_start).min(line_text.len());
 
-        let line_text = &self.text[start..end];
-        let col_idx = col.saturating_sub(1) as usize;
-        if col_idx >= line_text.len() {
+        let char_indices: Vec<(usize, char)> = line_text.char_indices().collect();
+        if char_indices.is_empty() {
             return None;
         }
 
-        let bytes = line_text.as_bytes();
-        if !is_ident_part(bytes[col_idx]) {
+        let mut target_idx = None;
+        for (i, &(idx, c)) in char_indices.iter().enumerate() {
+            if idx <= col_byte && col_byte < idx + c.len_utf8() {
+                target_idx = Some(i);
+                break;
+            }
+        }
+        if target_idx.is_none() && col_byte >= line_text.len() {
+            target_idx = Some(char_indices.len().saturating_sub(1));
+        }
+
+        let idx = target_idx?;
+        let c = char_indices[idx].1;
+        if !is_rust_ident_continue(c) {
+            if idx > 0 && is_rust_ident_continue(char_indices[idx - 1].1) {
+                let mut start_i = idx - 1;
+                while start_i > 0 && is_rust_ident_continue(char_indices[start_i - 1].1) {
+                    start_i -= 1;
+                }
+                let mut end_i = idx;
+                while end_i < char_indices.len() && is_rust_ident_continue(char_indices[end_i].1) {
+                    end_i += 1;
+                }
+                if is_rust_ident_start(char_indices[start_i].1) {
+                    let start_b = char_indices[start_i].0;
+                    let end_b = if end_i < char_indices.len() {
+                        char_indices[end_i].0
+                    } else {
+                        line_text.len()
+                    };
+                    return Some(line_text[start_b..end_b].to_string());
+                }
+            }
             return None;
         }
 
-        let mut left = col_idx;
-        while left > 0 && is_ident_part(bytes[left - 1]) {
-            left -= 1;
+        let mut start_i = idx;
+        while start_i > 0 && is_rust_ident_continue(char_indices[start_i - 1].1) {
+            start_i -= 1;
         }
-        let mut right = col_idx;
-        while right < bytes.len() && is_ident_part(bytes[right]) {
-            right += 1;
+        let mut end_i = idx + 1;
+        while end_i < char_indices.len() && is_rust_ident_continue(char_indices[end_i].1) {
+            end_i += 1;
         }
 
-        Some(line_text[left..right].to_string())
-    }
-
-    fn line_col_to_byte(&self, line: u32, col: u32) -> usize {
-        let line_idx = line.saturating_sub(1) as usize;
-        if line_idx >= self.line_starts.len() {
-            return self.text.len();
+        if is_rust_ident_start(char_indices[start_i].1) {
+            let start_b = char_indices[start_i].0;
+            let end_b = if end_i < char_indices.len() {
+                char_indices[end_i].0
+            } else {
+                line_text.len()
+            };
+            Some(line_text[start_b..end_b].to_string())
+        } else {
+            None
         }
-        let start = self.line_starts[line_idx];
-        (start + col.saturating_sub(1) as usize).min(self.text.len())
     }
 
     /// Returns all top-level and item symbols for LSP documentSymbol.
@@ -235,7 +454,6 @@ impl OverlayManager {
         self.overlays.remove(file_path);
     }
 
-    #[allow(dead_code)]
     pub fn get(&self, file_path: &str) -> Option<&DocumentOverlay> {
         self.overlays.get(file_path)
     }
@@ -251,7 +469,13 @@ impl OverlayManager {
 
     pub fn reconcile_with_disk(&mut self, file_path: &str, disk_content_hash: u64) {
         if let Some(overlay) = self.overlays.get_mut(file_path) {
-            overlay.is_synced_with_disk = overlay.content_hash == disk_content_hash;
+            if overlay.content_hash == disk_content_hash {
+                overlay.is_synced_with_disk = true;
+                overlay.disk_text = Some(overlay.text.clone());
+            } else if let Ok(disk) = std::fs::read_to_string(file_path) {
+                overlay.disk_text = Some(disk);
+                overlay.is_synced_with_disk = false;
+            }
         }
     }
 
@@ -266,6 +490,7 @@ struct OverlayParser<'a> {
     line_starts: &'a [usize],
     scopes: Vec<Scope>,
     symbols: Vec<OverlaySymbol>,
+    pending_fn_scope: Option<usize>,
 }
 
 impl<'a> OverlayParser<'a> {
@@ -275,10 +500,11 @@ impl<'a> OverlayParser<'a> {
             line_starts,
             scopes: Vec::new(),
             symbols: Vec::new(),
+            pending_fn_scope: None,
         }
     }
 
-    fn byte_to_line_col(&self, byte_offset: usize) -> (u32, u32) {
+    fn byte_to_char_line_col(&self, byte_offset: usize) -> (u32, u32) {
         let b = byte_offset.min(self.text.len());
         let line_idx = match self.line_starts.binary_search(&b) {
             Ok(idx) => idx,
@@ -286,8 +512,9 @@ impl<'a> OverlayParser<'a> {
         };
         let line = (line_idx + 1) as u32;
         let line_start_byte = self.line_starts[line_idx];
-        let col = (b.saturating_sub(line_start_byte) + 1) as u32;
-        (line, col)
+        let line_prefix = &self.text[line_start_byte..b];
+        let char_col = (line_prefix.chars().count() + 1) as u32;
+        (line, char_col)
     }
 
     fn parse(&mut self) {
@@ -351,15 +578,20 @@ impl<'a> OverlayParser<'a> {
 
             // Scopes { ... }
             if b == b'{' {
-                let new_id = self.scopes.len();
-                let parent = scope_stack.last().copied();
-                self.scopes.push(Scope {
-                    id: new_id,
-                    parent,
-                    start_byte: pos,
-                    end_byte: len,
-                });
-                scope_stack.push(new_id);
+                let sid = if let Some(fn_sid) = self.pending_fn_scope.take() {
+                    fn_sid
+                } else {
+                    let new_id = self.scopes.len();
+                    let parent = scope_stack.last().copied();
+                    self.scopes.push(Scope {
+                        id: new_id,
+                        parent,
+                        start_byte: pos,
+                        end_byte: len,
+                    });
+                    new_id
+                };
+                scope_stack.push(sid);
                 pos += 1;
                 continue;
             }
@@ -367,7 +599,7 @@ impl<'a> OverlayParser<'a> {
             if b == b'}' {
                 if let Some(id) = scope_stack.pop() {
                     if id < self.scopes.len() {
-                        self.scopes[id].end_byte = pos;
+                        self.scopes[id].end_byte = pos + 1;
                     }
                 }
                 pos += 1;
@@ -375,45 +607,56 @@ impl<'a> OverlayParser<'a> {
             }
 
             // Identifiers / keywords
-            if is_ident_start(b) {
-                let start = pos;
-                while pos < len && is_ident_part(bytes[pos]) {
-                    pos += 1;
-                }
-                let token = &self.text[start..pos];
-                let current_scope = scope_stack.last().copied().unwrap_or(0);
+            if let Some(first_char) = self.text[pos..].chars().next() {
+                if is_rust_ident_start(first_char) {
+                    let start = pos;
+                    pos += first_char.len_utf8();
+                    while pos < len {
+                        let c = match self.text[pos..].chars().next() {
+                            Some(c) => c,
+                            None => break,
+                        };
+                        if is_rust_ident_continue(c) {
+                            pos += c.len_utf8();
+                        } else {
+                            break;
+                        }
+                    }
+                    let token = &self.text[start..pos];
+                    let current_scope = scope_stack.last().copied().unwrap_or(0);
 
-                match token {
-                    "fn" => {
-                        self.parse_fn_item(&mut pos, current_scope);
+                    match token {
+                        "fn" => {
+                            self.parse_fn_item(&mut pos, current_scope);
+                        }
+                        "struct" => {
+                            self.parse_named_item(&mut pos, DefKind::Struct, current_scope);
+                        }
+                        "enum" => {
+                            self.parse_named_item(&mut pos, DefKind::Enum, current_scope);
+                        }
+                        "trait" => {
+                            self.parse_named_item(&mut pos, DefKind::Trait, current_scope);
+                        }
+                        "type" => {
+                            self.parse_named_item(&mut pos, DefKind::TyAlias, current_scope);
+                        }
+                        "const" => {
+                            self.parse_named_item(&mut pos, DefKind::Const, current_scope);
+                        }
+                        "static" => {
+                            self.parse_named_item(&mut pos, DefKind::Static, current_scope);
+                        }
+                        "mod" => {
+                            self.parse_named_item(&mut pos, DefKind::Mod, current_scope);
+                        }
+                        "let" => {
+                            self.parse_let_binding(&mut pos, current_scope);
+                        }
+                        _ => {}
                     }
-                    "struct" => {
-                        self.parse_named_item(&mut pos, DefKind::Struct, current_scope);
-                    }
-                    "enum" => {
-                        self.parse_named_item(&mut pos, DefKind::Enum, current_scope);
-                    }
-                    "trait" => {
-                        self.parse_named_item(&mut pos, DefKind::Trait, current_scope);
-                    }
-                    "type" => {
-                        self.parse_named_item(&mut pos, DefKind::TyAlias, current_scope);
-                    }
-                    "const" => {
-                        self.parse_named_item(&mut pos, DefKind::Const, current_scope);
-                    }
-                    "static" => {
-                        self.parse_named_item(&mut pos, DefKind::Static, current_scope);
-                    }
-                    "mod" => {
-                        self.parse_named_item(&mut pos, DefKind::Mod, current_scope);
-                    }
-                    "let" => {
-                        self.parse_let_binding(&mut pos, current_scope);
-                    }
-                    _ => {}
+                    continue;
                 }
-                continue;
             }
 
             pos += 1;
@@ -440,25 +683,36 @@ impl<'a> OverlayParser<'a> {
 
     fn parse_ident(&self, pos: &mut usize) -> Option<(&'a str, usize, usize)> {
         self.skip_whitespace_and_comments(pos);
-        let bytes = self.text.as_bytes();
-        let len = bytes.len();
-        if *pos < len && is_ident_start(bytes[*pos]) {
-            let start = *pos;
-            while *pos < len && is_ident_part(bytes[*pos]) {
-                *pos += 1;
-            }
-            Some((&self.text[start..*pos], start, *pos))
-        } else {
-            None
+        if *pos >= self.text.len() {
+            return None;
         }
+        let first_char = self.text[*pos..].chars().next()?;
+        if !is_rust_ident_start(first_char) {
+            return None;
+        }
+        let start = *pos;
+        let mut cur = *pos + first_char.len_utf8();
+        while cur < self.text.len() {
+            let c = match self.text[cur..].chars().next() {
+                Some(c) => c,
+                None => break,
+            };
+            if is_rust_ident_continue(c) {
+                cur += c.len_utf8();
+            } else {
+                break;
+            }
+        }
+        *pos = cur;
+        Some((&self.text[start..cur], start, cur))
     }
 
     fn parse_fn_item(&mut self, pos: &mut usize, current_scope: usize) {
         let Some((name, start, end)) = self.parse_ident(pos) else {
             return;
         };
-        let (s_line, s_col) = self.byte_to_line_col(start);
-        let (e_line, e_col) = self.byte_to_line_col(end);
+        let (s_line, s_col) = self.byte_to_char_line_col(start);
+        let (e_line, e_col) = self.byte_to_char_line_col(end);
 
         // Find signature up to `{` or `;`
         let sig_start = start;
@@ -475,6 +729,7 @@ impl<'a> OverlayParser<'a> {
             None
         };
 
+        // Add function symbol to enclosing outer scope
         self.symbols.push(OverlaySymbol {
             name: name.to_string(),
             kind: DefKind::Fn,
@@ -484,14 +739,32 @@ impl<'a> OverlayParser<'a> {
             end_line: e_line,
             end_col: e_col,
             scope_id: current_scope,
+            bind_byte: start,
         });
 
-        // Parse parameters inside `(...)`
+        // Allocate a dedicated scope for this function's parameters and body
+        let fn_scope_id = self.scopes.len();
+        self.scopes.push(Scope {
+            id: fn_scope_id,
+            parent: Some(current_scope),
+            start_byte: start,
+            end_byte: len,
+        });
+
+        // Parse parameters inside `(...)` and assign them to fn_scope_id
         if let Some(open_paren) = self.text[start..sig_end].find('(') {
             if let Some(close_paren) = self.text[start + open_paren..sig_end].find(')') {
                 let params_text = self.text[start + open_paren + 1..start + open_paren + close_paren].to_string();
-                self.extract_params(&params_text, start + open_paren + 1, current_scope);
+                self.extract_params(&params_text, start + open_paren + 1, fn_scope_id);
             }
+        }
+
+        // If followed by `{`, register pending_fn_scope so the body block reuses this scope
+        if *pos < len && bytes[*pos] == b'{' {
+            self.pending_fn_scope = Some(fn_scope_id);
+        } else if *pos < len && bytes[*pos] == b';' {
+            // Trait fn declaration without body
+            self.scopes[fn_scope_id].end_byte = *pos + 1;
         }
     }
 
@@ -502,12 +775,17 @@ impl<'a> OverlayParser<'a> {
                 continue;
             }
             if let Some((p_name, _)) = trimmed.split_once(':') {
-                let p_name = p_name.trim().trim_start_matches("mut ").trim();
+                let mut p_name = p_name.trim();
+                if let Some(after) = p_name.strip_prefix("mut") {
+                    if after.chars().next().is_some_and(|c| c.is_whitespace()) {
+                        p_name = after.trim();
+                    }
+                }
                 if !p_name.is_empty() && is_ident(p_name) {
                     if let Some(offset) = part.find(p_name) {
                         let abs_offset = base_byte + (part.as_ptr() as usize - params_text.as_ptr() as usize) + offset;
-                        let (s_line, s_col) = self.byte_to_line_col(abs_offset);
-                        let (e_line, e_col) = self.byte_to_line_col(abs_offset + p_name.len());
+                        let (s_line, s_col) = self.byte_to_char_line_col(abs_offset);
+                        let (e_line, e_col) = self.byte_to_char_line_col(abs_offset + p_name.len());
                         self.symbols.push(OverlaySymbol {
                             name: p_name.to_string(),
                             kind: DefKind::Field, // Local parameter
@@ -517,6 +795,7 @@ impl<'a> OverlayParser<'a> {
                             end_line: e_line,
                             end_col: e_col,
                             scope_id,
+                            bind_byte: abs_offset,
                         });
                     }
                 }
@@ -528,8 +807,8 @@ impl<'a> OverlayParser<'a> {
         let Some((name, start, end)) = self.parse_ident(pos) else {
             return;
         };
-        let (s_line, s_col) = self.byte_to_line_col(start);
-        let (e_line, e_col) = self.byte_to_line_col(end);
+        let (s_line, s_col) = self.byte_to_char_line_col(start);
+        let (e_line, e_col) = self.byte_to_char_line_col(end);
 
         self.symbols.push(OverlaySymbol {
             name: name.to_string(),
@@ -540,21 +819,27 @@ impl<'a> OverlayParser<'a> {
             end_line: e_line,
             end_col: e_col,
             scope_id: current_scope,
+            bind_byte: start,
         });
     }
 
     fn parse_let_binding(&mut self, pos: &mut usize, current_scope: usize) {
+        let bind_start = *pos;
         self.skip_whitespace_and_comments(pos);
-        // Optional `mut`
-        if *pos + 3 < self.text.len() && &self.text[*pos..*pos + 3] == "mut" && self.text.as_bytes()[*pos + 3].is_ascii_whitespace() {
-            *pos += 4;
+        // Optional `mut` keyword (byte-safe UTF-8 check)
+        let remainder = &self.text[*pos..];
+        if let Some(after_mut) = remainder.strip_prefix("mut") {
+            if after_mut.chars().next().is_some_and(|c| c.is_whitespace()) {
+                *pos += 3;
+                self.skip_whitespace_and_comments(pos);
+            }
         }
 
         let Some((name, start, end)) = self.parse_ident(pos) else {
             return;
         };
-        let (s_line, s_col) = self.byte_to_line_col(start);
-        let (e_line, e_col) = self.byte_to_line_col(end);
+        let (s_line, s_col) = self.byte_to_char_line_col(start);
+        let (e_line, e_col) = self.byte_to_char_line_col(end);
 
         self.symbols.push(OverlaySymbol {
             name: name.to_string(),
@@ -565,26 +850,27 @@ impl<'a> OverlayParser<'a> {
             end_line: e_line,
             end_col: e_col,
             scope_id: current_scope,
+            bind_byte: bind_start,
         });
     }
 }
 
 #[inline]
-fn is_ident_start(b: u8) -> bool {
-    b.is_ascii_alphabetic() || b == b'_'
+pub fn is_rust_ident_start(c: char) -> bool {
+    c == '_' || c.is_alphabetic()
 }
 
 #[inline]
-fn is_ident_part(b: u8) -> bool {
-    b.is_ascii_alphanumeric() || b == b'_'
+pub fn is_rust_ident_continue(c: char) -> bool {
+    c == '_' || c.is_alphanumeric()
 }
 
-fn is_ident(s: &str) -> bool {
-    let bytes = s.as_bytes();
-    if bytes.is_empty() || !is_ident_start(bytes[0]) {
-        return false;
+pub fn is_ident(s: &str) -> bool {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(c) if is_rust_ident_start(c) => chars.all(is_rust_ident_continue),
+        _ => false,
     }
-    bytes[1..].iter().all(|&b| is_ident_part(b))
 }
 
 #[cfg(test)]
@@ -616,12 +902,86 @@ mod tests {
     }
 
     #[test]
+    fn test_unicode_binding_does_not_panic() {
+        let code = "fn f() {\n    let привет = 1;\n    let мир = привет;\n}\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/unicode.rs", "src/unicode.rs", 1, code);
+
+        assert!(!overlay.symbols.is_empty());
+        let def = overlay.find_definition_at(3, 16).expect("should resolve 'привет'");
+        assert_eq!(def.name, "привет");
+        assert_eq!(def.start_line, 2);
+
+        let mir = overlay.find_definition_at(3, 9).expect("should resolve 'мир'");
+        assert_eq!(mir.name, "мир");
+        assert_eq!(mir.start_line, 3);
+    }
+
+    #[test]
+    fn test_function_parameter_scope_isolation() {
+        let code = "fn a(x: i32) {}\nfn b(x: i32) { x; }\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/scopes.rs", "src/scopes.rs", 1, code);
+
+        // Cursor on `x;` inside b: line 2, col 16
+        let def = overlay.find_definition_at(2, 16).expect("should find x in b");
+        assert_eq!(def.name, "x");
+        // Parameter in b is on line 2, NOT line 1!
+        assert_eq!(def.start_line, 2);
+    }
+
+    #[test]
+    fn test_lexical_binding_shadowing_and_visibility() {
+        let code = "fn test() {\n    let x = 1;\n    let x = 2;\n    x;\n}\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/shadow.rs", "src/shadow.rs", 1, code);
+
+        // Cursor on `x;` on line 4, col 5 -> should resolve to second `let x = 2` on line 3
+        let def = overlay.find_definition_at(4, 5).expect("should resolve nearest shadowed binding");
+        assert_eq!(def.name, "x");
+        assert_eq!(def.start_line, 3);
+    }
+
+    #[test]
+    fn test_overlay_edit_mapping() {
+        let saved_text = "fn foo() {\n    call_a();\n    call_b();\n}\n".to_string();
+        let mut overlay = DocumentOverlay::new("file:///test/edit.rs", "src/edit.rs", 1, saved_text.clone());
+        overlay.disk_text = Some(saved_text);
+        overlay.is_synced_with_disk = true;
+
+        assert_eq!(overlay.map_line_to_compiled(2), Some(2));
+
+        // Insert a new line at line 2:
+        let edited = "fn foo() {\n    // new comment\n    call_a();\n    call_b();\n}\n".to_string();
+        overlay.update(2, edited);
+
+        // Line 1 (unchanged prefix) maps to line 1
+        assert_eq!(overlay.map_line_to_compiled(1), Some(1));
+        // Line 2 (newly inserted comment) is modified region -> None
+        assert_eq!(overlay.map_line_to_compiled(2), None);
+        // Line 3 (`call_a()`) is in unchanged suffix -> maps to line 2 in compiled snapshot!
+        assert_eq!(overlay.map_line_to_compiled(3), Some(2));
+        // Line 4 (`call_b()`) -> maps to line 3 in compiled snapshot!
+        assert_eq!(overlay.map_line_to_compiled(4), Some(3));
+    }
+
+    #[test]
+    fn test_overlay_position_conversion_with_unicode() {
+        let code = "let привет = 42;\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/conv.rs", "src/conv.rs", 1, code);
+
+        // 'let ' = 4 chars / 4 utf-16
+        // 'привет' = 6 Cyrillic chars (12 utf-8 bytes, 6 utf-16 code units)
+        // utf-16 col 4 -> 1-based char col 5 (the start of 'привет')
+        let char_col = overlay.utf16_col_to_char_col(1, 4);
+        assert_eq!(char_col, 5);
+
+        let utf16_col = overlay.char_col_to_utf16_col(1, 5);
+        assert_eq!(utf16_col, 4);
+    }
+
+    #[test]
     fn test_overlay_incomplete_syntax_tolerance() {
-        // Incomplete code with unclosed brace and incomplete member expression
         let broken = "fn unclosed(val: &str) {\n    let partial = val.\n".to_string();
         let overlay = DocumentOverlay::new("file:///test/broken.rs", "src/broken.rs", 1, broken);
 
-        // Parser does not panic and extracts symbols despite syntax errors
         assert!(!overlay.symbols.is_empty());
         let fn_sym = overlay.symbols.iter().find(|s| s.name == "unclosed").expect("should extract function name");
         assert_eq!(fn_sym.kind, DefKind::Fn);
@@ -653,4 +1013,3 @@ mod tests {
         assert_eq!(mgr.open_count(), 0);
     }
 }
-

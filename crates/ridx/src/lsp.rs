@@ -305,13 +305,28 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                     let utf16_col_0based =
                         msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
                     let line_1based = line_0based + 1;
-                    let col_1based = conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based);
+
+                    let overlay_opt = overlay_mgr.get(&file);
+                    let col_1based = if let Some(overlay) = overlay_opt {
+                        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+                    } else {
+                        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+                    };
 
                     // 1. Check live buffer overlay first (resolves local variables, params, unsaved items)
                     if let Some(overlay_def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
                         let def_uri = path_to_uri(&overlay_def.file);
-                        let start_char = conv.char_col_to_utf16_col(&overlay_def.file, overlay_def.start_line, overlay_def.start_col);
-                        let end_char = conv.char_col_to_utf16_col(&overlay_def.file, overlay_def.end_line, overlay_def.end_col);
+                        let (start_char, end_char) = if let Some(overlay) = overlay_opt {
+                            (
+                                overlay.char_col_to_utf16_col(overlay_def.start_line, overlay_def.start_col),
+                                overlay.char_col_to_utf16_col(overlay_def.end_line, overlay_def.end_col),
+                            )
+                        } else {
+                            (
+                                conv.char_col_to_utf16_col(&overlay_def.file, overlay_def.start_line, overlay_def.start_col),
+                                conv.char_col_to_utf16_col(&overlay_def.file, overlay_def.end_line, overlay_def.end_col),
+                            )
+                        };
                         result = json!({
                             "uri": def_uri,
                             "range": {
@@ -327,26 +342,48 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         });
                     } else if let Some(ref ws) = workspace {
                         // 2. Fall back to compiled zero-copy workspace index
-                        if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based) {
-                            let crate_name = def.path.split("::").next().unwrap_or("");
-                            let resolved_file_path = ws.resolve_path_for_crate(crate_name, def.file);
-                            let resolved_file_str = resolved_file_path.to_str().unwrap_or(def.file);
-                            let def_uri = path_to_uri(resolved_file_str);
-                            let start_char = conv.char_col_to_utf16_col(resolved_file_str, def.start_line, def.start_col);
-                            let end_char = conv.char_col_to_utf16_col(resolved_file_str, def.end_line, def.end_col);
-                            result = json!({
-                                "uri": def_uri,
-                                "range": {
-                                    "start": {
-                                        "line": def.start_line.saturating_sub(1),
-                                        "character": start_char
-                                    },
-                                    "end": {
-                                        "line": def.end_line.saturating_sub(1),
-                                        "character": end_char
-                                    }
+                        // For open buffers with unsaved/unindexed edits: translate line via edit map and verify token
+                        let (can_query_compiled, compiled_line) = if let Some(overlay) = overlay_opt {
+                            if let Some(mapped_line) = overlay.map_line_to_compiled(line_1based) {
+                                (true, mapped_line)
+                            } else {
+                                // Position is in an edited or newly inserted region; suppress stale compiled lookup
+                                (false, line_1based)
+                            }
+                        } else {
+                            (true, line_1based)
+                        };
+
+                        if can_query_compiled {
+                            if let Some(def) = ws.find_definition_at(&file, compiled_line, col_1based) {
+                                // Verify that the identifier at the cursor matches the compiled definition name
+                                let token_matches = if let Some(overlay) = overlay_opt {
+                                    overlay.get_ident_at(line_1based, col_1based).as_deref() == Some(def.name)
+                                } else {
+                                    true
+                                };
+
+                                if token_matches {
+                                    let resolved_file_path = def.resolved_path();
+                                    let resolved_file_str = resolved_file_path.to_str().unwrap_or(def.file);
+                                    let def_uri = path_to_uri(resolved_file_str);
+                                    let start_char = conv.char_col_to_utf16_col(resolved_file_str, def.start_line, def.start_col);
+                                    let end_char = conv.char_col_to_utf16_col(resolved_file_str, def.end_line, def.end_col);
+                                    result = json!({
+                                        "uri": def_uri,
+                                        "range": {
+                                            "start": {
+                                                "line": def.start_line.saturating_sub(1),
+                                                "character": start_char
+                                            },
+                                            "end": {
+                                                "line": def.end_line.saturating_sub(1),
+                                                "character": end_char
+                                            }
+                                        }
+                                    });
                                 }
-                            });
+                            }
                         }
                     }
 
@@ -370,75 +407,97 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         let utf16_col_0based =
                             msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
                         let line_1based = line_0based + 1;
-                        let col_1based = conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based);
+                        let overlay_opt = overlay_mgr.get(&file);
+                        let col_1based = if let Some(overlay) = overlay_opt {
+                            overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+                        } else {
+                            conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+                        };
                         let include_decl = msg["params"]["context"]["includeDeclaration"].as_bool().unwrap_or(false);
 
-                        if let Some(loc_refs) =
-                            ws.find_references_at(&file, line_1based, col_1based)
-                        {
-                            let mut locs = Vec::new();
-                            if include_decl && !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
-                                let decl_crate = loc_refs.target_path.split("::").next().unwrap_or("");
-                                let decl_file_path = ws.resolve_path_for_crate(decl_crate, loc_refs.target_file);
-                                let decl_file_str = decl_file_path.to_str().unwrap_or(loc_refs.target_file);
-                                let decl_uri = path_to_uri(decl_file_str);
-                                let decl_start_line = loc_refs.target_line.saturating_sub(1);
-                                let decl_start_col = conv.char_col_to_utf16_col(
-                                    decl_file_str,
-                                    loc_refs.target_line,
-                                    loc_refs.target_col,
-                                );
-                                let decl_end_line = if loc_refs.target_end_line > 0 {
-                                    loc_refs.target_end_line.saturating_sub(1)
-                                } else {
-                                    decl_start_line
-                                };
-                                let decl_end_col = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
-                                    conv.char_col_to_utf16_col(
-                                        decl_file_str,
-                                        loc_refs.target_end_line,
-                                        loc_refs.target_end_col,
-                                    )
-                                } else {
-                                    decl_start_col + (loc_refs.target_symbol.encode_utf16().count() as u32)
-                                };
-                                locs.push(json!({
-                                    "uri": decl_uri,
-                                    "range": {
-                                        "start": {
-                                            "line": decl_start_line,
-                                            "character": decl_start_col
-                                        },
-                                        "end": {
-                                            "line": decl_end_line,
-                                            "character": decl_end_col
-                                        }
-                                    }
-                                }));
+                        let (can_query, query_line) = if let Some(overlay) = overlay_opt {
+                            if let Some(mapped) = overlay.map_line_to_compiled(line_1based) {
+                                (true, mapped)
+                            } else {
+                                (false, line_1based)
                             }
+                        } else {
+                            (true, line_1based)
+                        };
 
-                            for r in loc_refs.references {
-                                let span = r.span;
-                                let r_file_path = ws.resolve_path_for_crate(r.crate_name, r.file);
-                                let r_file_str = r_file_path.to_str().unwrap_or(r.file);
-                                let r_uri = path_to_uri(r_file_str);
-                                let start_char = conv.char_col_to_utf16_col(r_file_str, span.start_line(), span.start_col());
-                                let end_char = conv.char_col_to_utf16_col(r_file_str, span.end_line(), span.end_col());
-                                locs.push(json!({
-                                    "uri": r_uri,
-                                    "range": {
-                                        "start": {
-                                            "line": span.start_line().saturating_sub(1),
-                                            "character": start_char
-                                        },
-                                        "end": {
-                                            "line": span.end_line().saturating_sub(1),
-                                            "character": end_char
-                                        }
+                        if can_query {
+                            if let Some(loc_refs) = ws.find_references_at(&file, query_line, col_1based) {
+                                let token_matches = if let Some(overlay) = overlay_opt {
+                                    overlay.get_ident_at(line_1based, col_1based).as_deref() == Some(loc_refs.target_symbol)
+                                } else {
+                                    true
+                                };
+
+                                if token_matches {
+                                    let mut locs = Vec::new();
+                                    if include_decl && !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
+                                        let decl_file_path = loc_refs.target_resolved_path();
+                                        let decl_file_str = decl_file_path.to_str().unwrap_or(loc_refs.target_file);
+                                        let decl_uri = path_to_uri(decl_file_str);
+                                        let decl_start_line = loc_refs.target_line.saturating_sub(1);
+                                        let decl_start_col = conv.char_col_to_utf16_col(
+                                            decl_file_str,
+                                            loc_refs.target_line,
+                                            loc_refs.target_col,
+                                        );
+                                        let decl_end_line = if loc_refs.target_end_line > 0 {
+                                            loc_refs.target_end_line.saturating_sub(1)
+                                        } else {
+                                            decl_start_line
+                                        };
+                                        let decl_end_col = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
+                                            conv.char_col_to_utf16_col(
+                                                decl_file_str,
+                                                loc_refs.target_end_line,
+                                                loc_refs.target_end_col,
+                                            )
+                                        } else {
+                                            decl_start_col + (loc_refs.target_symbol.encode_utf16().count() as u32)
+                                        };
+                                        locs.push(json!({
+                                            "uri": decl_uri,
+                                            "range": {
+                                                "start": {
+                                                    "line": decl_start_line,
+                                                    "character": decl_start_col
+                                                },
+                                                "end": {
+                                                    "line": decl_end_line,
+                                                    "character": decl_end_col
+                                                }
+                                            }
+                                        }));
                                     }
-                                }));
+
+                                    for r in loc_refs.references {
+                                        let span = r.span;
+                                        let r_file_path = r.resolved_path();
+                                        let r_file_str = r_file_path.to_str().unwrap_or(r.file);
+                                        let r_uri = path_to_uri(r_file_str);
+                                        let start_char = conv.char_col_to_utf16_col(r_file_str, span.start_line(), span.start_col());
+                                        let end_char = conv.char_col_to_utf16_col(r_file_str, span.end_line(), span.end_col());
+                                        locs.push(json!({
+                                            "uri": r_uri,
+                                            "range": {
+                                                "start": {
+                                                    "line": span.start_line().saturating_sub(1),
+                                                    "character": start_char
+                                                },
+                                                "end": {
+                                                    "line": span.end_line().saturating_sub(1),
+                                                    "character": end_char
+                                                }
+                                            }
+                                        }));
+                                    }
+                                    result = json!(locs);
+                                }
                             }
-                            result = json!(locs);
                         }
                     }
 
@@ -462,34 +521,60 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         let utf16_col_0based =
                             msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
                         let line_1based = line_0based + 1;
-                        let col_1based = conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based);
+                        let overlay_opt = overlay_mgr.get(&file);
+                        let col_1based = if let Some(overlay) = overlay_opt {
+                            overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
+                        } else {
+                            conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
+                        };
 
-                        if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
-                            let mut md = String::new();
-                            if let Some(ref def) = hover.definition {
-                                md.push_str("```rust\n");
-                                if let Some(sig) = def.signature {
-                                    md.push_str(sig);
-                                } else {
-                                    md.push_str(&format!("{:?} {}", def.kind, def.name));
-                                }
-                                md.push_str("\n```\n\n");
-                                md.push_str(&format!(
-                                    "*Defined in `{}` at {}:{}*\n\n",
-                                    def.file, def.start_line, def.start_col
-                                ));
+                        let (can_query, query_line) = if let Some(overlay) = overlay_opt {
+                            if let Some(mapped) = overlay.map_line_to_compiled(line_1based) {
+                                (true, mapped)
+                            } else {
+                                (false, line_1based)
                             }
-                            if let Some(ty) = hover.inferred_type {
-                                md.push_str(&format!("**Type:** `{ty}`\n"));
-                            }
+                        } else {
+                            (true, line_1based)
+                        };
 
-                            if !md.is_empty() {
-                                result = json!({
-                                    "contents": {
-                                        "kind": "markdown",
-                                        "value": md.trim()
+                        if can_query {
+                            if let Some(hover) = ws.hover_at(&file, query_line, col_1based) {
+                                let mut md = String::new();
+                                if let Some(ref def) = hover.definition {
+                                    let token_matches = if let Some(overlay) = overlay_opt {
+                                        overlay.get_ident_at(line_1based, col_1based).as_deref() == Some(def.name)
+                                    } else {
+                                        true
+                                    };
+                                    if token_matches {
+                                        md.push_str("```rust\n");
+                                        if let Some(sig) = def.signature {
+                                            md.push_str(sig);
+                                        } else {
+                                            md.push_str(&format!("{:?} {}", def.kind, def.name));
+                                        }
+                                        md.push_str("\n```\n\n");
+                                        md.push_str(&format!(
+                                            "*Defined in `{}` at {}:{}*\n\n",
+                                            def.resolved_path().display(), def.start_line, def.start_col
+                                        ));
+                                        if let Some(ty) = hover.inferred_type {
+                                            md.push_str(&format!("**Type:** `{ty}`\n"));
+                                        }
                                     }
-                                });
+                                } else if let Some(ty) = hover.inferred_type {
+                                    md.push_str(&format!("**Type:** `{ty}`\n"));
+                                }
+
+                                if !md.is_empty() {
+                                    result = json!({
+                                        "contents": {
+                                            "kind": "markdown",
+                                            "value": md.trim()
+                                        }
+                                    });
+                                }
                             }
                         }
                     }
@@ -514,9 +599,11 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
 
                         for s in symbols.iter().take(100) {
                             let span = s.span;
-                            let uri = path_to_uri(s.file);
-                            let start_char = conv.char_col_to_utf16_col(s.file, span.start_line(), span.start_col());
-                            let end_char = conv.char_col_to_utf16_col(s.file, span.end_line(), span.end_col());
+                            let res_path = s.resolved_path();
+                            let res_str = res_path.to_str().unwrap_or(s.file);
+                            let uri = path_to_uri(res_str);
+                            let start_char = conv.char_col_to_utf16_col(res_str, span.start_line(), span.start_col());
+                            let end_char = conv.char_col_to_utf16_col(res_str, span.end_line(), span.end_col());
                             list.push(json!({
                                 "name": s.name,
                                 "kind": lsp_symbol_kind(s.kind),
@@ -555,10 +642,20 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                     let file = uri_to_path(uri);
 
                     if let Some(symbols) = overlay_mgr.document_symbols(&file) {
+                        let overlay = overlay_mgr.get(&file);
                         let mut list = Vec::new();
                         for sym in symbols {
-                            let start_char = conv.char_col_to_utf16_col(&file, sym.start_line, sym.start_col);
-                            let end_char = conv.char_col_to_utf16_col(&file, sym.end_line, sym.end_col);
+                            let (start_char, end_char) = if let Some(ov) = overlay {
+                                (
+                                    ov.char_col_to_utf16_col(sym.start_line, sym.start_col),
+                                    ov.char_col_to_utf16_col(sym.end_line, sym.end_col),
+                                )
+                            } else {
+                                (
+                                    conv.char_col_to_utf16_col(&file, sym.start_line, sym.start_col),
+                                    conv.char_col_to_utf16_col(&file, sym.end_line, sym.end_col),
+                                )
+                            };
                             list.push(json!({
                                 "name": sym.name,
                                 "kind": lsp_symbol_kind(sym.kind),

@@ -196,6 +196,8 @@ fn test_variant_aware_workspace_and_reload() {
     // 2. Write manifest pointing to var1
     let manifest1 = serde_json::json!({
         "version": "2.0",
+        "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+        "extractor_version": ridx_format::EXTRACTOR_VERSION,
         "active_variant_id": "var1",
         "variant_dir": "variants/var1",
         "workspace_root": base_dir.display().to_string(),
@@ -240,6 +242,8 @@ fn test_variant_aware_workspace_and_reload() {
     std::thread::sleep(std::time::Duration::from_millis(50));
     let manifest2 = serde_json::json!({
         "version": "2.0",
+        "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+        "extractor_version": ridx_format::EXTRACTOR_VERSION,
         "active_variant_id": "var2",
         "variant_dir": "variants/var2",
         "workspace_root": base_dir.display().to_string(),
@@ -449,6 +453,7 @@ fn test_dependency_shard_loading() {
     let manifest = serde_json::json!({
         "version": "2.0",
         "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+        "extractor_version": ridx_format::EXTRACTOR_VERSION,
         "active_variant_id": "var1",
         "variant_dir": "variants/var1",
         "workspace_root": test_dir.display().to_string(),
