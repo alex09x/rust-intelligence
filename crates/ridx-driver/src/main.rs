@@ -335,6 +335,11 @@ fn hash_directory_contents(dir: &Path) -> Option<u64> {
     Some(ridx_format::fnv1a_64(&hasher_input))
 }
 
+fn hash_file_contents(path: &Path) -> Option<u64> {
+    let bytes = fs::read(path).ok()?;
+    Some(ridx_format::fnv1a_64(&bytes))
+}
+
 fn compute_dependency_unit_key(
     crate_name: &str,
     crate_version: &str,
@@ -385,7 +390,7 @@ fn compute_dependency_unit_key(
         key_str.push_str(&cfg);
     }
 
-    // Extract and sort all `--extern` flags
+    // Extract and sort all `--extern` flags, hashing dependency artifact content instead of physical target paths
     let mut externs = Vec::new();
     for i in 0..compiler_args.len() {
         if compiler_args[i] == "--extern" && i + 1 < compiler_args.len() {
@@ -396,8 +401,17 @@ fn compute_dependency_unit_key(
     }
     externs.sort();
     for ext in externs {
-        key_str.push_str(":ext=");
-        key_str.push_str(&ext);
+        if let Some((name_part, path_str)) = ext.split_once('=') {
+            let p = Path::new(path_str);
+            if p.is_file() {
+                let digest = hash_file_contents(p).unwrap_or(0);
+                key_str.push_str(&format!(":ext={name_part}:digest={:016x}", digest));
+            } else {
+                key_str.push_str(&format!(":ext={name_part}:missing"));
+            }
+        } else {
+            key_str.push_str(&format!(":ext={ext}"));
+        }
     }
 
     // Hash OUT_DIR contents if present
@@ -503,6 +517,39 @@ fn build_crate_index(
         let cache_dir = ridx_format::resolve_cache_dir();
         let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
 
+        let mut dep_crate_names = Vec::new();
+        for i in 0..compiler_args.len() {
+            let arg = &compiler_args[i];
+            let ext_val = if arg == "--extern" && i + 1 < compiler_args.len() {
+                Some(compiler_args[i + 1].as_str())
+            } else {
+                arg.strip_prefix("--extern=")
+            };
+            if let Some(val) = ext_val {
+                let name_part = val.split_once('=').map(|(n, _)| n).unwrap_or(val);
+                let clean_name = name_part.rsplit(':').next().unwrap_or(name_part);
+                if !clean_name.is_empty() && !dep_crate_names.contains(&clean_name.to_string()) {
+                    dep_crate_names.push(clean_name.to_string());
+                }
+            }
+        }
+
+        let deps_dir = out_dir.join(".deps");
+        let _ = fs::create_dir_all(&deps_dir);
+
+        let mut dep_keys_or_names = Vec::new();
+        for dep_name in &dep_crate_names {
+            dep_keys_or_names.push(dep_name.clone());
+            let dep_json_path = deps_dir.join(format!("{dep_name}.json"));
+            if let Ok(content) = fs::read(&dep_json_path) {
+                if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
+                    if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
+                        dep_keys_or_names.push(uk.to_string());
+                    }
+                }
+            }
+        }
+
         // Record dependency shard info for active workspace variant
         let dep_info = serde_json::json!({
             "name": crate_name,
@@ -510,9 +557,8 @@ fn build_crate_index(
             "unit_key": unit_key,
             "object_path": obj_path.display().to_string(),
             "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+            "dependencies": dep_keys_or_names,
         });
-        let deps_dir = out_dir.join(".deps");
-        let _ = fs::create_dir_all(&deps_dir);
         let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
         let _ = fs::write(&dep_file, serde_json::to_string_pretty(&dep_info).unwrap_or_default());
 

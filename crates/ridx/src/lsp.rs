@@ -152,6 +152,16 @@ fn send_response<W: Write>(writer: &mut W, response: &Value) -> io::Result<()> {
     Ok(())
 }
 
+fn sync_reloaded_index(ws: &mut WorkspaceIndex, overlay_mgr: &mut crate::overlay::OverlayManager) {
+    if let Ok(true) = ws.reload_if_modified() {
+        for file in overlay_mgr.open_file_paths() {
+            if let Ok(content) = std::fs::read_to_string(&file) {
+                overlay_mgr.advance_compiled_baseline(&file, content);
+            }
+        }
+    }
+}
+
 /// Runs the LSP server over standard I/O.
 pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
     let stdin = io::stdin();
@@ -203,9 +213,9 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
         let method = msg.get("method").and_then(|m| m.as_str()).unwrap_or("");
         let id = msg.get("id").cloned();
 
-        // Automatically reload indices if files changed on disk
+        // Automatically reload indices if files changed on disk and sync open overlay baselines
         if let Some(ref mut ws) = workspace {
-            let _ = ws.reload_if_modified();
+            sync_reloaded_index(ws, &mut overlay_mgr);
         }
 
         // Request-scoped line cache: reuses read file lines across all coordinate
@@ -291,11 +301,7 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                     overlay_mgr.reconcile_with_disk(&file, hash);
                 }
                 if let Some(ref mut ws) = workspace {
-                    if let Ok(true) = ws.reload_if_modified() {
-                        if let Ok(content) = std::fs::read_to_string(&file) {
-                            overlay_mgr.advance_compiled_baseline(&file, content);
-                        }
-                    }
+                    sync_reloaded_index(ws, &mut overlay_mgr);
                 }
             }
 
@@ -346,20 +352,11 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         });
                     } else if let Some(ref ws) = workspace {
                         // 2. Fall back to compiled zero-copy workspace index
-                        // For open buffers with unsaved/unindexed edits: translate line via edit map
-                        let (can_query_compiled, compiled_line) = if let Some(overlay) = overlay_opt {
-                            if let Some(mapped_line) = overlay.map_line_to_compiled(line_1based) {
-                                (true, mapped_line)
-                            } else {
-                                // Position is in an edited or newly inserted region; suppress stale compiled lookup
-                                (false, line_1based)
-                            }
-                        } else {
-                            (true, line_1based)
-                        };
-
-                        if can_query_compiled {
-                            if let Some(def) = ws.find_definition_at(&file, compiled_line, col_1based) {
+                        // If the current buffer is dirty (contains uncompiled edits), compiled fallback
+                        // must be suppressed to avoid returning stale cross-file definitions (e.g. from changed imports).
+                        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+                        if !is_dirty {
+                            if let Some(def) = ws.find_definition_at(&file, line_1based, col_1based) {
                                 let resolved_file_path = def.resolved_path();
                                 let resolved_file_str = resolved_file_path.to_str().unwrap_or(def.file);
                                 let def_uri = path_to_uri(resolved_file_str);
@@ -432,18 +429,9 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                         };
                         let include_decl = msg["params"]["context"]["includeDeclaration"].as_bool().unwrap_or(false);
 
-                        let (can_query, query_line) = if let Some(overlay) = overlay_opt {
-                            if let Some(mapped) = overlay.map_line_to_compiled(line_1based) {
-                                (true, mapped)
-                            } else {
-                                (false, line_1based)
-                            }
-                        } else {
-                            (true, line_1based)
-                        };
-
-                        if can_query {
-                            if let Some(loc_refs) = ws.find_references_at(&file, query_line, col_1based) {
+                        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+                        if !is_dirty {
+                            if let Some(loc_refs) = ws.find_references_at(&file, line_1based, col_1based) {
                                 let mut locs = Vec::new();
                                 if include_decl && !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
                                     let decl_file_path = loc_refs.target_resolved_path();
@@ -574,18 +562,28 @@ pub fn run_lsp_server(index_path: Option<PathBuf>) -> io::Result<()> {
                             conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
                         };
 
-                        let (can_query, query_line) = if let Some(overlay) = overlay_opt {
-                            if let Some(mapped) = overlay.map_line_to_compiled(line_1based) {
-                                (true, mapped)
+                        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
+                        if let Some(overlay_def) = overlay_mgr.find_definition_at(&file, line_1based, col_1based) {
+                            let mut md = String::new();
+                            md.push_str("```rust\n");
+                            if let Some(ref sig) = overlay_def.signature {
+                                md.push_str(sig);
                             } else {
-                                (false, line_1based)
+                                md.push_str(&format!("{:?} {}", overlay_def.kind, overlay_def.name));
                             }
-                        } else {
-                            (true, line_1based)
-                        };
-
-                        if can_query {
-                            if let Some(hover) = ws.hover_at(&file, query_line, col_1based) {
+                            md.push_str("\n```\n\n");
+                            md.push_str(&format!(
+                                "*Defined in `{}` at {}:{}*",
+                                overlay_def.file, overlay_def.start_line, overlay_def.start_col
+                            ));
+                            result = json!({
+                                "contents": {
+                                    "kind": "markdown",
+                                    "value": md.trim()
+                                }
+                            });
+                        } else if !is_dirty {
+                            if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
                                 let mut md = String::new();
                                 if let Some(ref def) = hover.definition {
                                     md.push_str("```rust\n");

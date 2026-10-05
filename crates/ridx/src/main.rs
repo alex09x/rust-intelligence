@@ -252,8 +252,12 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
                                 eprintln!("{}: Cannot find Cargo workspace for index at {:?}.", "Error".red().bold(), p);
                                 std::process::exit(1);
                             };
-                            let base_dir = if manifest_dir.ends_with("variants") || manifest_dir.parent().and_then(|pr| pr.file_name()).and_then(|s| s.to_str()) == Some("variants") {
-                                manifest_dir.ancestors().find(|a| a.ends_with("target/ridx") || a.file_name().and_then(|s| s.to_str()) == Some("ridx")).map(|a| a.to_path_buf()).unwrap_or(manifest_dir)
+                            let base_dir = if let Some(ref b) = manifest.base_out_dir {
+                                PathBuf::from(b)
+                            } else if manifest_dir.parent().and_then(|pr| pr.file_name()).and_then(|s| s.to_str()) == Some("variants") {
+                                manifest_dir.parent().unwrap().parent().unwrap().to_path_buf()
+                            } else if manifest_dir.file_name().and_then(|s| s.to_str()) == Some("variants") {
+                                manifest_dir.parent().unwrap().to_path_buf()
                             } else {
                                 manifest_dir
                             };
@@ -277,7 +281,7 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
                             }
                         };
 
-                    run_indexing(IndexOptions {
+                    let published = run_indexing(IndexOptions {
                         path: work_dir,
                         out_dir_opt,
                         package,
@@ -288,13 +292,31 @@ fn resolve_workspace(path_opt: Option<PathBuf>) -> WorkspaceIndex {
                         target,
                     });
 
-                    match WorkspaceIndex::open(&p) {
-                        Ok(ws) => return ws,
-                        Err(e2) => {
-                            eprintln!("{}: Failed to open reindexed workspace {:?}: {e2}", "Error".red().bold(), p);
-                            std::process::exit(1);
+                    // Reopen the rebuilt variant or shard rather than failing on an obsolete artifact path:
+                    let cand_paths = if p.is_file() || p.extension().and_then(|s| s.to_str()) == Some("ridx") {
+                        let mut v = Vec::new();
+                        if let Some(file_name) = p.file_name() {
+                            let shard_in_new_variant = published.variant_out_dir.join(file_name);
+                            if shard_in_new_variant.exists() {
+                                v.push(shard_in_new_variant);
+                            }
+                        }
+                        v.push(published.variant_out_dir.clone());
+                        v.push(published.base_out_dir.clone());
+                        v.push(p.clone());
+                        v
+                    } else {
+                        vec![published.variant_out_dir.clone(), published.base_out_dir.clone(), p.clone()]
+                    };
+
+                    for cand in cand_paths {
+                        if let Ok(ws) = WorkspaceIndex::open(&cand) {
+                            return ws;
                         }
                     }
+
+                    eprintln!("{}: Failed to open reindexed workspace after variant publish {:?}.", "Error".red().bold(), published.variant_out_dir);
+                    std::process::exit(1);
                 }
                 eprintln!("{}: Failed to open index {:?}: {e}", "Error".red().bold(), p);
                 std::process::exit(1);
@@ -574,7 +596,14 @@ struct IndexOptions {
     target: Option<String>,
 }
 
-fn run_indexing(opts: IndexOptions) {
+#[derive(Debug, Clone)]
+pub struct PublishedVariant {
+    pub base_out_dir: PathBuf,
+    pub variant_out_dir: PathBuf,
+    pub variant_id: String,
+}
+
+fn run_indexing(opts: IndexOptions) -> PublishedVariant {
     let path = opts.path;
     let out_dir_opt = opts.out_dir_opt;
     let package = opts.package;
@@ -810,6 +839,7 @@ fn run_indexing(opts: IndexOptions) {
         "extractor_version": ridx_format::EXTRACTOR_VERSION,
         "active_variant_id": variant_id,
         "variant_dir": variant_rel_dir,
+        "base_out_dir": base_out_dir.display().to_string(),
         "workspace_root": work_dir.display().to_string(),
         "manifest_path": manifest_path.display().to_string(),
         "profile": profile_name,
@@ -882,6 +912,12 @@ fn run_indexing(opts: IndexOptions) {
             "Linked {} external dependency shard(s) from global cache",
             dep_shards.len().to_string().cyan().bold()
         );
+    }
+
+    PublishedVariant {
+        base_out_dir,
+        variant_out_dir,
+        variant_id,
     }
 }
 

@@ -114,6 +114,7 @@ impl DocumentOverlay {
     ///
     /// Returns `Some(compiled_line)` if the line is in a proven unchanged region,
     /// or `None` if the line falls in an edited, inserted, or modified region.
+    #[allow(dead_code)]
     pub fn map_line_to_compiled(&self, line: u32) -> Option<u32> {
         if self.compiled_text.as_deref() == Some(&self.text) {
             return Some(line);
@@ -327,7 +328,56 @@ impl DocumentOverlay {
         self.scopes = parser.scopes;
         self.symbols = parser.symbols;
     }
+}
 
+fn strip_trailing_whitespace_and_comments(s: &str) -> &str {
+    let mut slice = s;
+    loop {
+        let trimmed = slice.trim_end();
+        if trimmed.ends_with("*/") {
+            if let Some(start) = trimmed.rfind("/*") {
+                slice = &trimmed[..start];
+                continue;
+            }
+        }
+        if let Some(last_nl) = trimmed.rfind('\n') {
+            let last_line = &trimmed[last_nl + 1..];
+            if let Some(comment_pos) = last_line.find("//") {
+                let before = &last_line[..comment_pos];
+                slice = &trimmed[..last_nl + 1 + before.len()];
+                continue;
+            }
+        } else if let Some(comment_pos) = trimmed.find("//") {
+            slice = &trimmed[..comment_pos];
+            continue;
+        }
+        return trimmed;
+    }
+}
+
+fn strip_leading_whitespace_and_comments(s: &str) -> &str {
+    let mut slice = s;
+    loop {
+        let trimmed = slice.trim_start();
+        if trimmed.starts_with("/*") {
+            if let Some(end) = trimmed.find("*/") {
+                slice = &trimmed[end + 2..];
+                continue;
+            }
+        }
+        if trimmed.starts_with("//") {
+            if let Some(end) = trimmed.find('\n') {
+                slice = &trimmed[end + 1..];
+                continue;
+            } else {
+                return "";
+            }
+        }
+        return trimmed;
+    }
+}
+
+impl DocumentOverlay {
     /// Finds a symbol definition at a cursor location within the active buffer.
     pub fn find_definition_at(&self, line: u32, col: u32) -> Option<OverlayDefinition> {
         // 1. Direct hit on an existing overlay definition span
@@ -355,21 +405,17 @@ impl DocumentOverlay {
             return None;
         }
         let line_start = self.line_starts[line_idx];
-        let line_end = if line_idx + 1 < self.line_starts.len() {
-            self.line_starts[line_idx + 1]
-        } else {
-            self.text.len()
-        };
-        let line_text = &self.text[line_start..line_end];
+        let ident_start = line_start + start_b;
+        let ident_end = line_start + end_b;
 
         // If the token is part of a qualified path (e.g. `foo::bar` or `foo.bar` or `bar::baz`),
-        // the single-file lexical overlay lacks path/type semantics: abstain (return None)
-        // so the compiled index can resolve it accurately.
-        let prefix = line_text[..start_b].trim_end();
+        // across newlines or comments, the single-file lexical overlay lacks path/type semantics:
+        // abstain (return None) so the compiled index can resolve it accurately.
+        let prefix = strip_trailing_whitespace_and_comments(&self.text[..ident_start]);
         if prefix.ends_with("::") || prefix.ends_with('.') {
             return None;
         }
-        let suffix = line_text[end_b..].trim_start();
+        let suffix = strip_leading_whitespace_and_comments(&self.text[ident_end..]);
         if suffix.starts_with("::") {
             return None;
         }
@@ -587,6 +633,10 @@ impl OverlayManager {
     #[allow(dead_code)]
     pub fn open_count(&self) -> usize {
         self.overlays.len()
+    }
+
+    pub fn open_file_paths(&self) -> Vec<String> {
+        self.overlays.keys().cloned().collect()
     }
 }
 
@@ -960,14 +1010,38 @@ impl<'a> OverlayParser<'a> {
         let (s_line, s_col) = self.byte_to_char_line_col(start);
         let (e_line, e_col) = self.byte_to_char_line_col(end);
 
-        // Scan ahead to find the end of statement (';') or block end ('}')
-        // In Rust, a let binding's scope starts AFTER its initializer statement.
+        // Scan ahead to find the end of the entire let statement (';') or enclosing block end ('}').
+        // In Rust, a let binding's scope starts AFTER its entire initializer statement.
+        // We track nested braces, parentheses, and brackets so that inner semicolons/braces
+        // (such as in block initializers `let x = { let t = 2; x };`) do not end the outer let scope early.
         let bytes = self.text.as_bytes();
         let len = bytes.len();
         let mut cur = *pos;
-        while cur < len && bytes[cur] != b';' && bytes[cur] != b'}' {
-            if bytes[cur] == b'"' || bytes[cur] == b'\'' {
-                let quote = bytes[cur];
+        let mut brace_depth: usize = 0;
+        let mut paren_depth: usize = 0;
+        let mut bracket_depth: usize = 0;
+
+        while cur < len {
+            let b = bytes[cur];
+            // Comments
+            if b == b'/' && cur + 1 < len && bytes[cur + 1] == b'/' {
+                cur += 2;
+                while cur < len && bytes[cur] != b'\n' {
+                    cur += 1;
+                }
+                continue;
+            }
+            if b == b'/' && cur + 1 < len && bytes[cur + 1] == b'*' {
+                cur += 2;
+                while cur + 1 < len && !(bytes[cur] == b'*' && bytes[cur + 1] == b'/') {
+                    cur += 1;
+                }
+                cur = (cur + 2).min(len);
+                continue;
+            }
+            // Strings and chars
+            if b == b'"' || b == b'\'' {
+                let quote = b;
                 cur += 1;
                 while cur < len && bytes[cur] != quote {
                     if bytes[cur] == b'\\' && cur + 1 < len {
@@ -979,15 +1053,56 @@ impl<'a> OverlayParser<'a> {
                 if cur < len {
                     cur += 1;
                 }
-            } else {
-                cur += 1;
+                continue;
             }
+            // Delimiters
+            if b == b'{' {
+                brace_depth += 1;
+                cur += 1;
+                continue;
+            }
+            if b == b'}' {
+                if brace_depth > 0 {
+                    brace_depth -= 1;
+                    cur += 1;
+                    continue;
+                } else {
+                    // Closing brace of enclosing block: ends the let statement
+                    break;
+                }
+            }
+            if b == b'(' {
+                paren_depth += 1;
+                cur += 1;
+                continue;
+            }
+            if b == b')' {
+                paren_depth = paren_depth.saturating_sub(1);
+                cur += 1;
+                continue;
+            }
+            if b == b'[' {
+                bracket_depth += 1;
+                cur += 1;
+                continue;
+            }
+            if b == b']' {
+                bracket_depth = bracket_depth.saturating_sub(1);
+                cur += 1;
+                continue;
+            }
+            if b == b';' {
+                if brace_depth == 0 && paren_depth == 0 && bracket_depth == 0 {
+                    cur += 1;
+                    break;
+                }
+                cur += 1;
+                continue;
+            }
+            cur += 1;
         }
-        let scope_start = if cur < len && bytes[cur] == b';' {
-            cur + 1
-        } else {
-            cur
-        };
+
+        let scope_start = cur;
 
         self.symbols.push(OverlaySymbol {
             name: name.to_string(),
@@ -1058,6 +1173,30 @@ mod tests {
         // Querying external::f on line 2, col 25 (the `f` in `external::f`) should abstain (None)
         let def = overlay.find_definition_at(2, 25);
         assert!(def.is_none(), "overlay must abstain for qualified path segment external::f");
+    }
+
+    #[test]
+    fn test_nested_initializer_keeps_outer_binding() {
+        let code = "fn test() {\n    let x = 1;\n    let x = { let t = 2; x };\n    x;\n}\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/nested_init.rs", "src/nested_init.rs", 1, code);
+        // Cursor on `x` inside block `{ let t = 2; x }` on line 3, col 27 -> resolves to line 2 (outer x)
+        let def = overlay.find_definition_at(3, 27).expect("should resolve to outer x");
+        assert_eq!(def.name, "x");
+        assert_eq!(def.start_line, 2);
+
+        // Cursor on `x;` on line 4, col 5 -> resolves to line 3 (inner x)
+        let def2 = overlay.find_definition_at(4, 5).expect("should resolve to inner x");
+        assert_eq!(def2.name, "x");
+        assert_eq!(def2.start_line, 3);
+    }
+
+    #[test]
+    fn test_multiline_qualified_path_abstains() {
+        let code = "fn f() {}\nfn run() { external::\n    f();\n}\n".to_string();
+        let overlay = DocumentOverlay::new("file:///test/multiline_qual.rs", "src/multiline_qual.rs", 1, code);
+        // Querying `f` on line 3, col 5 should abstain (None) because of `external::` on previous line
+        let def = overlay.find_definition_at(3, 5);
+        assert!(def.is_none(), "overlay must abstain for multiline qualified path external::\\n    f()");
     }
 
     #[test]
