@@ -151,6 +151,8 @@ fn test_multi_crate_workspace_index() {
         .find_references_at("crates/crate_b/src/lib.rs", 12, 12)
         .expect("should find references at cursor");
     assert_eq!(loc_refs.target_symbol, "TypeA");
+    assert_eq!(loc_refs.target_end_line, 15);
+    assert_eq!(loc_refs.target_end_col, 2);
     assert_eq!(loc_refs.references.len(), 1);
     assert_eq!(loc_refs.references[0].crate_name, "crate_b");
 

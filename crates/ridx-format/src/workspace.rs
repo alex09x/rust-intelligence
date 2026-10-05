@@ -42,6 +42,8 @@ pub struct LocationReferences<'a> {
     pub target_file: &'a str,
     pub target_line: u32,
     pub target_col: u32,
+    pub target_end_line: u32,
+    pub target_end_col: u32,
     pub references: Vec<WorkspaceReference<'a>>,
 }
 
@@ -398,6 +400,8 @@ impl WorkspaceIndex {
             target_file: def.file,
             target_line: def.start_line,
             target_col: def.start_col,
+            target_end_line: def.end_line,
+            target_end_col: def.end_col,
             references: refs,
         })
     }
