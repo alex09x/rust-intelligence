@@ -211,26 +211,50 @@ fn run_indexing(
             eprintln!("{}: target path {:?} is a file but not a Cargo.toml manifest.", "Error".red().bold(), path);
             std::process::exit(1);
         }
-        let dir = path.parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
-        (dir, path)
+        let canon = match path.canonicalize() {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("{}: failed to canonicalize manifest path {:?}: {e}", "Error".red().bold(), path);
+                std::process::exit(1);
+            }
+        };
+        let dir = canon.parent().unwrap_or_else(|| Path::new("/")).to_path_buf();
+        (dir, canon)
     } else if path.is_dir() {
-        let manifest = path.join("Cargo.toml");
+        let canon = match path.canonicalize() {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("{}: failed to canonicalize workspace path {:?}: {e}", "Error".red().bold(), path);
+                std::process::exit(1);
+            }
+        };
+        let manifest = canon.join("Cargo.toml");
         if !manifest.is_file() {
             eprintln!("{}: no Cargo.toml found in directory {:?}.", "Error".red().bold(), path);
             std::process::exit(1);
         }
-        (path, manifest)
+        (canon, manifest)
     } else {
         eprintln!("{}: path {:?} does not exist.", "Error".red().bold(), path);
         std::process::exit(1);
     };
 
     let start = Instant::now();
-    let out_dir = out_dir_opt.unwrap_or_else(|| work_dir.join("target/ridx"));
+    let out_dir = match out_dir_opt {
+        Some(d) => {
+            if d.is_absolute() {
+                d
+            } else {
+                std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).join(d)
+            }
+        }
+        None => work_dir.join("target/ridx"),
+    };
     if let Err(e) = fs::create_dir_all(&out_dir) {
         eprintln!("{}: failed to create output directory {:?}: {e}", "Error".red().bold(), out_dir);
         std::process::exit(1);
     }
+    let out_dir = out_dir.canonicalize().unwrap_or(out_dir);
 
     let driver_bin = match find_driver_binary() {
         Some(b) => b,
