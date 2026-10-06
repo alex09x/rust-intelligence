@@ -85,10 +85,11 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(
     let mut lifecycle = LifecycleManager::new();
     let cancelled_requests: Arc<Mutex<HashSet<Value>>> = Arc::new(Mutex::new(HashSet::new()));
 
-    let (tx, rx) = std::sync::mpsc::sync_channel::<protocol::LspMessage>(64);
-    let tx_diag = tx.clone();
-    lifecycle.flycheck.set_notifier(move |notif| {
-        let _ = tx_diag.try_send(protocol::LspMessage::InternalDiagnostic(notif));
+    let (tx, rx) = std::sync::mpsc::sync_channel::<Value>(64);
+    let (tx_diag, rx_diag) = std::sync::mpsc::channel::<(u64, Value)>();
+
+    lifecycle.flycheck.set_notifier(move |gen, notif| {
+        let _ = tx_diag.send((gen, notif));
     });
     let cancelled_reader = Arc::clone(&cancelled_requests);
 
@@ -130,24 +131,55 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(
                     let id_raw = msg["params"]["id"].clone();
                     cancelled_reader.lock().unwrap().insert(id_raw);
                 }
-                if tx.send(protocol::LspMessage::Client(msg)).is_err() {
+                if tx.send(msg).is_err() {
                     return;
                 }
             }
         })?;
 
-    while let Ok(msg) = rx.recv() {
-        let should_continue = dispatch::dispatch_lsp_message(
-            msg,
-            &mut writer,
-            &mut lifecycle,
-            &mut multi_root,
-            &mut overlay_mgr,
-            &cancelled_requests,
-            index_path.as_ref(),
-        )?;
-        if !should_continue {
-            break;
+    loop {
+        while let Ok((gen, diag)) = rx_diag.try_recv() {
+            dispatch::dispatch_lsp_message(
+                protocol::LspMessage::InternalDiagnostic(gen, diag),
+                &mut writer,
+                &mut lifecycle,
+                &mut multi_root,
+                &mut overlay_mgr,
+                &cancelled_requests,
+                index_path.as_ref(),
+            )?;
+        }
+
+        match rx.recv_timeout(std::time::Duration::from_millis(20)) {
+            Ok(msg) => {
+                let should_continue = dispatch::dispatch_lsp_message(
+                    protocol::LspMessage::Client(msg),
+                    &mut writer,
+                    &mut lifecycle,
+                    &mut multi_root,
+                    &mut overlay_mgr,
+                    &cancelled_requests,
+                    index_path.as_ref(),
+                )?;
+                if !should_continue {
+                    break;
+                }
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => continue,
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                while let Ok((gen, diag)) = rx_diag.try_recv() {
+                    let _ = dispatch::dispatch_lsp_message(
+                        protocol::LspMessage::InternalDiagnostic(gen, diag),
+                        &mut writer,
+                        &mut lifecycle,
+                        &mut multi_root,
+                        &mut overlay_mgr,
+                        &cancelled_requests,
+                        index_path.as_ref(),
+                    );
+                }
+                break;
+            }
         }
     }
 

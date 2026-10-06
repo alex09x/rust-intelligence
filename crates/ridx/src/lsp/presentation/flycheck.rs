@@ -20,7 +20,24 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-pub type FlycheckCallback = Box<dyn Fn(Value) + Send + Sync>;
+#[inline]
+fn kill_child_process_tree(child: &mut Child) {
+    #[cfg(unix)]
+    {
+        let pid = child.id() as i32;
+        if pid > 1 {
+            unsafe {
+                extern "C" {
+                    fn kill(pid: i32, sig: i32) -> i32;
+                }
+                let _ = kill(-pid, 9);
+            }
+        }
+    }
+    let _ = child.kill();
+}
+
+pub type FlycheckCallback = Box<dyn Fn(u64, Value) + Send + Sync>;
 
 pub struct FlycheckState {
     running_child: Arc<Mutex<Option<(u64, Child)>>>,
@@ -47,7 +64,11 @@ impl FlycheckState {
         Self::default()
     }
 
-    pub fn set_notifier<F: Fn(Value) + Send + Sync + 'static>(&self, notifier: F) {
+    pub fn current_generation(&self) -> u64 {
+        self.generation.load(Ordering::SeqCst)
+    }
+
+    pub fn set_notifier<F: Fn(u64, Value) + Send + Sync + 'static>(&self, notifier: F) {
         let mut guard = self.notifier.lock().unwrap();
         *guard = Some(Box::new(notifier));
     }
@@ -56,7 +77,7 @@ impl FlycheckState {
         self.generation.fetch_add(1, Ordering::SeqCst);
         let mut guard = self.running_child.lock().unwrap();
         if let Some((_gen, mut child)) = guard.take() {
-            let _ = child.kill();
+            kill_child_process_tree(&mut child);
             let _ = child.wait();
         }
     }
@@ -89,9 +110,9 @@ impl FlycheckState {
                     &generation,
                     &running_child,
                     &published_uris,
-                    |notif| {
+                    |gen, notif| {
                         if let Some(ref cb) = *notifier.lock().unwrap() {
-                            cb(notif);
+                            cb(gen, notif);
                         }
                         Ok(())
                     },
@@ -122,7 +143,7 @@ impl FlycheckState {
             &generation,
             &running_child,
             &published_uris,
-            |notif| super::super::protocol::send_response(writer, &notif),
+            |_gen, notif| super::super::protocol::send_response(writer, &notif),
         )
     }
 }
@@ -136,7 +157,7 @@ fn run_check_internal<F>(
     mut emit_notif: F,
 ) -> std::io::Result<usize>
 where
-    F: FnMut(Value) -> std::io::Result<()>,
+    F: FnMut(u64, Value) -> std::io::Result<()>,
 {
     if generation.load(Ordering::SeqCst) != my_gen {
         return Ok(0);
@@ -153,6 +174,12 @@ where
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
 
     // Use isolated target directory to prevent lock contention and fingerprint invalidation
     let target_dir = workspace_root.join("target").join("ridx-flycheck");
@@ -177,7 +204,7 @@ where
     {
         let mut guard = running_child.lock().unwrap();
         if generation.load(Ordering::SeqCst) != my_gen {
-            let _ = child.kill();
+            kill_child_process_tree(&mut child);
             let _ = child.wait();
             return Ok(0);
         }
@@ -255,7 +282,7 @@ where
                 "diagnostics": diags
             }
         });
-        emit_notif(notif)?;
+        emit_notif(my_gen, notif)?;
     }
 
     // 2. Clear previously published URIs for THIS root that now have 0 errors
@@ -272,7 +299,7 @@ where
                     "diagnostics": []
                 }
             });
-            emit_notif(clear_notif)?;
+            emit_notif(my_gen, clear_notif)?;
         }
     }
 

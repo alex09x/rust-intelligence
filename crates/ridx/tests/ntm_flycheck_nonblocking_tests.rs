@@ -25,7 +25,7 @@ static PATH_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 #[test]
 fn test_didsave_does_not_block_dispatch_loop_and_hover_responds_immediately() {
-    let _path_lock = PATH_MUTEX.lock().unwrap();
+    let _path_lock = PATH_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
     let pid = std::process::id();
     let tmp = std::env::temp_dir().join(format!("test_flycheck_async_{pid}"));
     let bin_dir = tmp.join("bin");
@@ -142,7 +142,7 @@ fn test_didsave_does_not_block_dispatch_loop_and_hover_responds_immediately() {
 
 #[test]
 fn test_flycheck_overlapping_workers_race_and_cancel() {
-    let _path_lock = PATH_MUTEX.lock().unwrap();
+    let _path_lock = PATH_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
     use ridx::lsp::presentation::flycheck::FlycheckState;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
@@ -200,7 +200,7 @@ exit 0
     let state = FlycheckState::new();
     let captured = Arc::new(Mutex::new(Vec::new()));
     let cap_clone = Arc::clone(&captured);
-    state.set_notifier(move |notif| {
+    state.set_notifier(move |_gen, notif| {
         cap_clone.lock().unwrap().push(notif);
     });
 

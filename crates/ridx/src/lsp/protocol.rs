@@ -56,12 +56,18 @@ pub fn lsp_completion_kind(kind: DefKind) -> u32 {
 #[derive(Debug, Clone)]
 pub enum LspMessage {
     Client(Value),
-    InternalDiagnostic(Value),
+    InternalDiagnostic(u64, Value),
 }
 
 impl From<Value> for LspMessage {
     fn from(val: Value) -> Self {
         LspMessage::Client(val)
+    }
+}
+
+impl From<(u64, Value)> for LspMessage {
+    fn from((gen, val): (u64, Value)) -> Self {
+        LspMessage::InternalDiagnostic(gen, val)
     }
 }
 

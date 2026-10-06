@@ -135,6 +135,20 @@ impl MultiRootWorkspace {
             }
         }
     }
+
+    #[inline]
+    pub fn doc_ws(&self, msg: &Value) -> Option<&WorkspaceIndex> {
+        let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+        let file = super::protocol::uri_to_path(uri);
+        self.find_workspace_for_path(Path::new(&file))
+    }
+
+    pub fn check_file_provenance(&self, file: &str, text: &str) -> bool {
+        let text_hash = ridx_format::normalized_source_hash(text.as_bytes());
+        self.find_workspace_for_path(Path::new(file))
+            .and_then(|ws| ws.source_hash_for_file(file))
+            == Some(text_hash)
+    }
 }
 
 #[cfg(test)]
