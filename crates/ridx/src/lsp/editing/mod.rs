@@ -14,6 +14,7 @@ pub mod actions;
 pub mod format;
 pub mod ident;
 pub mod linked;
+pub mod organize;
 pub mod rename;
 
 #[cfg(test)]
@@ -23,4 +24,5 @@ pub use actions::*;
 pub use format::*;
 pub use ident::*;
 pub use linked::*;
+pub use organize::*;
 pub use rename::*;

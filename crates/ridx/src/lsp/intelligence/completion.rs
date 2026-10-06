@@ -113,16 +113,22 @@ pub fn handle_completion(
                     continue;
                 }
             }
-            // Filter out nested functions inside other functions or closures
-            let path_parts: Vec<&str> = s.path.split("::").collect();
-            if path_parts.len() > 2
-                && path_parts[..path_parts.len() - 1].iter().any(|seg| {
-                    seg.starts_with(|c: char| c.is_lowercase())
-                        && *seg != "crate"
-                        && *seg != s.crate_name
-                })
-            {
+            // Filter out synthetic compiler items (closures, blocks)
+            if s.path.contains("{closure}") || s.path.contains("{block}") {
                 continue;
+            }
+            // Filter out nested helpers inside functions, methods, or closures using owner kind
+            if let Some((parent_path, _)) = s.path.rsplit_once("::") {
+                if let Some(parent_def) = ws.find_definition_by_path(parent_path) {
+                    if matches!(
+                        parent_def.kind,
+                        ridx_format::DefKind::Fn
+                            | ridx_format::DefKind::AssocFn
+                            | ridx_format::DefKind::Closure
+                    ) {
+                        continue;
+                    }
+                }
             }
             if seen_names.insert(s.name.to_string()) {
                 items.push(json!({

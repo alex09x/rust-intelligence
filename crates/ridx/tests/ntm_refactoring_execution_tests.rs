@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use ridx::lsp::editing::actions::handle_code_action;
+use ridx::lsp::editing::actions::{handle_code_action, handle_execute_command};
 use ridx::lsp::editing::format::{handle_formatting, handle_range_formatting};
 use ridx::lsp::editing::rename::handle_rename;
 use ridx::lsp::protocol::PositionConverter;
@@ -418,4 +418,168 @@ fn test_refactor_cross_file_workspace_rename_execution() {
     );
 
     let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_organize_imports_multiline_items() {
+    let code = "use z::Z;\nuse a::{\n    A,\n};\n";
+    let overlay_mgr = OverlayManager::new();
+    let temp_file =
+        std::env::temp_dir().join(format!("test_org_multiline_{}.rs", std::process::id()));
+    let _ = fs::write(&temp_file, code);
+    let uri = format!("file://{}", temp_file.display());
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 0 } },
+            "context": { "only": ["source.organizeImports"], "diagnostics": [] }
+        }
+    });
+
+    let actions = handle_code_action(&req, &overlay_mgr);
+    let act_arr = actions.as_array().expect("actions array");
+    assert!(
+        !act_arr.is_empty(),
+        "organize imports action must be proposed"
+    );
+    let edits = act_arr[0]["edit"]["changes"][&uri]
+        .as_array()
+        .expect("edits");
+    let organized = apply_text_edits(code, edits);
+    assert!(organized.starts_with("use a::{\n    A,\n};\nuse z::Z;"));
+    let _ = fs::remove_file(temp_file);
+}
+
+#[test]
+fn test_extract_variable_unicode_and_dependency_order() {
+    let mut overlay_mgr = OverlayManager::new();
+    let uri = "file:///tmp/extract_dep.rs";
+    let file = "/tmp/extract_dep.rs";
+
+    // 1. Dependency order: fn f(){ let a=2; let b=a+1; } -> extract a+1
+    let code1 = "fn f(){ let a=2; let b=a+1; }";
+    overlay_mgr.open_document(uri, file, 1, code1.to_string());
+
+    let req1 = json!({
+        "params": {
+            "textDocument": { "uri": uri },
+            "range": { "start": { "line": 0, "character": 23 }, "end": { "line": 0, "character": 26 } },
+            "context": { "only": ["refactor.extract"], "diagnostics": [] }
+        }
+    });
+    let actions1 = handle_code_action(&req1, &overlay_mgr);
+    let act_arr1 = actions1.as_array().expect("actions");
+    assert!(
+        !act_arr1.is_empty(),
+        "extract variable action must be proposed"
+    );
+    let edits1 = act_arr1[0]["edit"]["changes"][uri]
+        .as_array()
+        .expect("edits");
+    let transformed1 = apply_text_edits(code1, edits1);
+    assert_eq!(
+        transformed1,
+        "fn f(){ let a=2; let extracted = a+1; let b=extracted; }"
+    );
+
+    // 2. Unicode safety: fn f(){ let привет=1; } -> extract 1 without panic
+    let code2 = "fn f(){ let привет=1; }";
+    overlay_mgr.open_document(uri, file, 2, code2.to_string());
+    let sc = code2[..code2.find('1').unwrap()].encode_utf16().count() as u32;
+    let ec = sc + 1;
+    let req2 = json!({
+        "params": {
+            "textDocument": { "uri": uri },
+            "range": { "start": { "line": 0, "character": sc }, "end": { "line": 0, "character": ec } },
+            "context": { "only": ["refactor.extract"], "diagnostics": [] }
+        }
+    });
+    let actions2 = handle_code_action(&req2, &overlay_mgr);
+    let act_arr2 = actions2.as_array().expect("actions");
+    assert!(
+        !act_arr2.is_empty(),
+        "extract variable must be proposed on unicode line"
+    );
+    let edits2 = act_arr2[0]["edit"]["changes"][uri]
+        .as_array()
+        .expect("edits");
+    let transformed2 = apply_text_edits(code2, edits2);
+    assert_eq!(
+        transformed2,
+        "fn f(){ let extracted = 1; let привет=extracted; }"
+    );
+}
+
+#[test]
+fn test_apply_workspace_edit_with_newtext() {
+    let mut overlay_mgr = OverlayManager::new();
+    let uri = "file:///tmp/test_apply.rs";
+    let file = "/tmp/test_apply.rs";
+    overlay_mgr.open_document(uri, file, 1, "fn foo() {}\n".to_string());
+
+    let edit_req = json!({
+        "params": {
+            "command": "ridx.applyEdits",
+            "arguments": [
+                {
+                    "changes": {
+                        uri: [
+                            {
+                                "range": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 6 } },
+                                "newText": "bar"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    });
+
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    assert_eq!(res["applied"], true);
+    assert_eq!(res["count"], 1);
+    let overlay = overlay_mgr.get(file).unwrap();
+    assert_eq!(overlay.text, "fn bar() {}\n");
+    assert!(overlay.version >= 2);
+}
+
+#[test]
+fn test_diagnostics_ignores_comment_example() {
+    let code = "/* let x: u32 = \"wrong\"; */\nfn main() {}\n";
+    let diag = ridx::lsp::presentation::diagnostics::handle_document_diagnostic_text(code);
+    let items = diag["items"].as_array().unwrap();
+    assert!(
+        items.is_empty(),
+        "Should not report E0308 inside block comment"
+    );
+
+    let code_real = "fn main() { let x: u32 = \"wrong\"; }\n";
+    let diag_real =
+        ridx::lsp::presentation::diagnostics::handle_document_diagnostic_text(code_real);
+    let items_real = diag_real["items"].as_array().unwrap();
+    assert!(
+        !items_real.is_empty(),
+        "Must report E0308 for real code type mismatch"
+    );
+    assert_eq!(items_real[0]["code"], "E0308");
+}
+
+#[test]
+fn test_comparison_preserves_full_path_and_rejects_errors() {
+    use ridx::compare::types::{CapabilityKind, ComparisonResult};
+    let mut res = ComparisonResult::new(CapabilityKind::Def, "test_sym");
+    res.ridx_found = true;
+    res.prodcode_found = true;
+    res.ridx_span = "/one/src/lib.rs:10:1".to_string();
+    res.prodcode_span = "/other/src/lib.rs:10:1".to_string();
+    assert!(!res.is_match(), "Different directory paths must NOT match");
+
+    res.prodcode_span = "/one/src/lib.rs:10:1".to_string();
+    assert!(res.is_match(), "Identical directory paths must match");
+
+    // Errors must not match even if both are found: false
+    res.ridx_found = false;
+    res.prodcode_found = false;
+    res.prodcode_span = "Error (failed)".to_string();
+    assert!(!res.is_match(), "Errors must not match");
 }

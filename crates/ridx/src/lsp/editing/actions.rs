@@ -10,8 +10,9 @@
 
 //! Code actions, refactoring suggestions, and workspace command execution.
 
+use super::ident::{byte_offset_to_utf16_col, utf16_col_to_byte_offset};
 use crate::lsp::protocol::uri_to_path;
-use crate::overlay::OverlayManager;
+use crate::overlay::{DocumentOverlay, OverlayManager};
 use serde_json::{json, Value};
 
 pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
@@ -40,107 +41,8 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     let mut actions = Vec::new();
 
     if matches_kind("source.organizeImports") {
-        let lines: Vec<&str> = doc_text.lines().collect();
-        struct UseEntry {
-            attrs_and_comments: Vec<String>,
-            use_line: String,
-            sort_key: String,
-        }
-        let mut entries: Vec<UseEntry> = Vec::new();
-        let mut current_attrs: Vec<String> = Vec::new();
-        let mut block_start_line = None;
-        let mut block_end_line = None;
-        let mut in_import_block = false;
-
-        for (i, line) in lines.iter().enumerate() {
-            let trimmed = line.trim();
-            if trimmed.starts_with("#[") || trimmed.starts_with("//") {
-                if block_start_line.is_none() {
-                    let has_following_use = lines
-                        .iter()
-                        .skip(i + 1)
-                        .take_while(|l| {
-                            let t = l.trim();
-                            t.starts_with("#[") || t.starts_with("//") || t.is_empty()
-                        })
-                        .count();
-                    let next_line = lines.get(i + 1 + has_following_use).map(|l| l.trim());
-                    if let Some(nl) = next_line {
-                        if nl.starts_with("use ") || nl.starts_with("pub use ") {
-                            block_start_line = Some(i);
-                            in_import_block = true;
-                        }
-                    }
-                }
-                if in_import_block {
-                    current_attrs.push(line.to_string());
-                }
-            } else if trimmed.starts_with("use ") || trimmed.starts_with("pub use ") {
-                if block_start_line.is_none() {
-                    block_start_line = Some(i);
-                }
-                in_import_block = true;
-                block_end_line = Some(i);
-                let sort_key = trimmed.to_string();
-                entries.push(UseEntry {
-                    attrs_and_comments: std::mem::take(&mut current_attrs),
-                    use_line: line.to_string(),
-                    sort_key,
-                });
-            } else if in_import_block {
-                if trimmed.is_empty() {
-                    let next_non_empty = lines
-                        .iter()
-                        .skip(i + 1)
-                        .find(|l| !l.trim().is_empty())
-                        .map(|l| l.trim());
-                    if let Some(nl) = next_non_empty {
-                        if nl.starts_with("use ")
-                            || nl.starts_with("pub use ")
-                            || nl.starts_with("#[")
-                        {
-                            continue;
-                        }
-                    }
-                }
-                break;
-            }
-        }
-
-        if let (Some(start_idx), Some(end_idx)) = (block_start_line, block_end_line) {
-            if !entries.is_empty() {
-                entries.sort_by(|a, b| a.sort_key.cmp(&b.sort_key));
-                entries.dedup_by(|a, b| {
-                    a.sort_key == b.sort_key && a.attrs_and_comments == b.attrs_and_comments
-                });
-                let mut new_text_lines = Vec::new();
-                for e in &entries {
-                    for a in &e.attrs_and_comments {
-                        new_text_lines.push(a.clone());
-                    }
-                    new_text_lines.push(e.use_line.clone());
-                }
-                let new_text = new_text_lines.join("\n");
-                let last_line_len = lines[end_idx].chars().count() as u32;
-
-                actions.push(json!({
-                    "title": "Organize imports",
-                    "kind": "source.organizeImports",
-                    "edit": {
-                        "changes": {
-                            uri: [
-                                {
-                                    "range": {
-                                        "start": { "line": start_idx as u32, "character": 0 },
-                                        "end": { "line": end_idx as u32, "character": last_line_len }
-                                    },
-                                    "newText": new_text
-                                }
-                            ]
-                        }
-                    }
-                }));
-            }
+        if let Some(action) = super::organize::organize_imports_action(&doc_text, uri) {
+            actions.push(action);
         }
     }
 
@@ -203,58 +105,77 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
 
             // Only extract if inside a function/block
             if brace_depth > 0 {
-                let expr = if sl == el {
-                    let line_chars: Vec<char> = lines[sl].chars().collect();
-                    if sc <= line_chars.len() && ec <= line_chars.len() && sc < ec {
-                        line_chars[sc..ec].iter().collect::<String>()
+                let (expr, start_byte) = if sl == el {
+                    let sb = utf16_col_to_byte_offset(lines[sl], sc);
+                    let eb = utf16_col_to_byte_offset(lines[sl], ec);
+                    if sb < eb && eb <= lines[sl].len() {
+                        (lines[sl][sb..eb].to_string(), sb)
                     } else {
-                        String::new()
+                        (String::new(), 0)
                     }
                 } else {
                     let mut s = String::new();
+                    let sb = utf16_col_to_byte_offset(lines[sl], sc);
+                    let eb = utf16_col_to_byte_offset(lines[el], ec);
                     for (l, line_str) in lines.iter().enumerate().take(el + 1).skip(sl) {
-                        let chars: Vec<char> = line_str.chars().collect();
                         if l == sl {
-                            if sc < chars.len() {
-                                s.push_str(&chars[sc..].iter().collect::<String>());
+                            if sb < line_str.len() {
+                                s.push_str(&line_str[sb..]);
                             }
                         } else if l == el {
-                            let end_c = ec.min(chars.len());
                             s.push('\n');
-                            s.push_str(&chars[..end_c].iter().collect::<String>());
+                            if eb <= line_str.len() {
+                                s.push_str(&line_str[..eb]);
+                            }
                         } else {
                             s.push('\n');
                             s.push_str(line_str);
                         }
                     }
-                    s
+                    (s, sb)
                 };
 
                 if !expr.trim().is_empty() {
-                    // Check if opening brace { exists on line `sl` before `sc`
-                    let line_before = &lines[sl][..sc.min(lines[sl].len())];
-                    let (insert_line, insert_col, new_text) =
-                        if let Some(b_idx) = line_before.rfind('{') {
-                            let mut after_brace = b_idx + 1;
-                            if lines[sl].as_bytes().get(after_brace) == Some(&b' ') {
-                                after_brace += 1;
-                            }
-                            (
-                                sl as u32,
-                                after_brace as u32,
-                                format!("let extracted = {}; ", expr.trim()),
-                            )
-                        } else {
-                            let indent: String = lines[sl]
-                                .chars()
-                                .take_while(|c| c.is_whitespace())
-                                .collect();
-                            (
-                                sl as u32,
-                                0u32,
-                                format!("{indent}let extracted = {};\n", expr.trim()),
-                            )
-                        };
+                    let line_before = &lines[sl][..start_byte];
+                    let last_semi = line_before.rfind(';');
+                    let last_close = line_before.rfind('}');
+                    let last_open = line_before.rfind('{');
+                    let last_delim = [last_semi, last_close, last_open]
+                        .into_iter()
+                        .flatten()
+                        .max();
+
+                    let mut var_name = "extracted".to_string();
+                    let mut counter = 1;
+                    while doc_text.contains(&var_name) {
+                        var_name = format!("extracted_{counter}");
+                        counter += 1;
+                    }
+
+                    let (insert_line, insert_col, new_text) = if let Some(delim_idx) = last_delim {
+                        let mut after_delim = delim_idx + 1;
+                        while after_delim < lines[sl].len()
+                            && lines[sl].as_bytes()[after_delim].is_ascii_whitespace()
+                        {
+                            after_delim += 1;
+                        }
+                        let col = byte_offset_to_utf16_col(lines[sl], after_delim) as u32;
+                        (
+                            sl as u32,
+                            col,
+                            format!("let {} = {}; ", var_name, expr.trim()),
+                        )
+                    } else {
+                        let indent: String = lines[sl]
+                            .chars()
+                            .take_while(|c| c.is_whitespace())
+                            .collect();
+                        (
+                            sl as u32,
+                            0u32,
+                            format!("{indent}let {} = {};\n", var_name, expr.trim()),
+                        )
+                    };
 
                     let insert_edit = json!({
                         "range": {
@@ -265,7 +186,7 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
                     });
                     let replace_edit = json!({
                         "range": range,
-                        "newText": "extracted"
+                        "newText": var_name
                     });
 
                     actions.push(json!({
@@ -323,8 +244,32 @@ pub fn handle_code_action_resolve(msg: &Value) -> Value {
 pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
     let cmd = msg["params"]["command"].as_str().unwrap_or("");
     match cmd {
-        "ridx.resolveWorkspace" => json!({ "resolved": true }),
-        "ridx.showReferences" => json!({ "success": true }),
+        "ridx.resolveWorkspace" => {
+            let root = msg["params"]["rootUri"]
+                .as_str()
+                .or_else(|| msg["params"]["rootPath"].as_str())
+                .unwrap_or("");
+            json!({
+                "resolved": true,
+                "workspaceRoot": root,
+                "status": "ready"
+            })
+        }
+        "ridx.showReferences" => {
+            let uri = msg["params"]["uri"].as_str().unwrap_or("");
+            let pos = &msg["params"]["position"];
+            let locs = msg["params"]["locations"]
+                .as_array()
+                .cloned()
+                .unwrap_or_default();
+            json!({
+                "success": true,
+                "uri": uri,
+                "position": pos,
+                "locations": locs,
+                "count": locs.len()
+            })
+        }
         "ridx.applyEdits" => {
             let mut applied_count = 0;
             if let Some(args) = msg["params"]["arguments"].as_array() {
@@ -337,20 +282,87 @@ pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> 
                         } else {
                             arg
                         };
+
+                    if let Some(doc_changes) =
+                        edit.get("documentChanges").and_then(|dc| dc.as_array())
+                    {
+                        for dc in doc_changes {
+                            let uri = dc["textDocument"]["uri"].as_str().unwrap_or("");
+                            let doc_version =
+                                dc["textDocument"]["version"].as_i64().map(|v| v as i32);
+                            let file_path = uri_to_path(uri);
+                            if let Some(edits) = dc["edits"].as_array() {
+                                if apply_workspace_text_edits(
+                                    overlay_mgr,
+                                    &file_path,
+                                    uri,
+                                    doc_version,
+                                    edits,
+                                ) {
+                                    applied_count += edits.len();
+                                }
+                            }
+                        }
+                    }
+
                     if let Some(changes) = edit.get("changes").and_then(|c| c.as_object()) {
                         for (uri, edits) in changes {
                             let file_path = uri_to_path(uri);
                             if let Some(edits_arr) = edits.as_array() {
-                                if overlay_mgr.apply_content_changes(&file_path, 0, edits_arr) {
-                                    applied_count += 1;
+                                if apply_workspace_text_edits(
+                                    overlay_mgr,
+                                    &file_path,
+                                    uri,
+                                    None,
+                                    edits_arr,
+                                ) {
+                                    applied_count += edits_arr.len();
                                 }
                             }
                         }
                     }
                 }
             }
-            json!({ "applied": true, "count": applied_count })
+            json!({ "applied": applied_count > 0, "count": applied_count })
         }
         _ => Value::Null,
+    }
+}
+
+fn apply_workspace_text_edits(
+    overlay_mgr: &mut OverlayManager,
+    file_path: &str,
+    uri: &str,
+    version: Option<i32>,
+    edits: &[Value],
+) -> bool {
+    if edits.is_empty() {
+        return false;
+    }
+    if let Some(overlay) = overlay_mgr.get_mut(file_path) {
+        let v = match version {
+            Some(ver) if ver > 0 => ver,
+            _ => overlay.version + 1,
+        };
+        overlay.apply_content_changes(v, edits);
+        true
+    } else if let Ok(content) = std::fs::read_to_string(file_path) {
+        let mut overlay = DocumentOverlay::new_with_provenance(
+            uri,
+            file_path,
+            version.unwrap_or(1),
+            content,
+            true,
+        );
+        overlay.apply_content_changes(version.unwrap_or(1), edits);
+        let modified = overlay.text.clone();
+        if std::fs::write(file_path, &modified).is_ok() {
+            overlay_mgr.open_with_provenance(uri, file_path, version.unwrap_or(1), modified, true);
+            true
+        } else {
+            false
+        }
+    } else {
+        false
     }
 }

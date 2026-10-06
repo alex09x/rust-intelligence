@@ -194,3 +194,25 @@ pub fn extract_ident_at_col(line: &str, col_1based: u32) -> Option<&str> {
         None
     }
 }
+
+pub fn utf16_col_to_byte_offset(s: &str, utf16_col: usize) -> usize {
+    let mut cur = 0;
+    for (byte_idx, ch) in s.char_indices() {
+        if cur >= utf16_col {
+            return byte_idx;
+        }
+        cur += ch.len_utf16();
+    }
+    s.len()
+}
+
+pub fn byte_offset_to_utf16_col(s: &str, byte_offset: usize) -> usize {
+    let mut cur = 0;
+    for (byte_idx, ch) in s.char_indices() {
+        if byte_idx >= byte_offset {
+            break;
+        }
+        cur += ch.len_utf16();
+    }
+    cur
+}

@@ -159,10 +159,18 @@ impl DocumentOverlay {
 
     /// Applies incremental or full LSP content changes in sequence and reparses the overlay.
     pub fn apply_content_changes(&mut self, version: i32, changes: &[serde_json::Value]) {
-        self.version = version;
+        if version > 0 {
+            self.version = version;
+        } else {
+            self.version += 1;
+        }
         for change in changes {
             if let Some(range) = change.get("range") {
-                let Some(text_to_insert) = change.get("text").and_then(|t| t.as_str()) else {
+                let Some(text_to_insert) = change
+                    .get("newText")
+                    .or_else(|| change.get("text"))
+                    .and_then(|t| t.as_str())
+                else {
                     continue;
                 };
                 let start_line = range
@@ -202,7 +210,11 @@ impl DocumentOverlay {
                 new_text.push_str(&self.text[end_byte..]);
                 self.text = new_text;
                 self.rebuild_line_starts();
-            } else if let Some(full_text) = change.get("text").and_then(|t| t.as_str()) {
+            } else if let Some(full_text) = change
+                .get("newText")
+                .or_else(|| change.get("text"))
+                .and_then(|t| t.as_str())
+            {
                 self.text = full_text.to_string();
                 self.rebuild_line_starts();
             }
