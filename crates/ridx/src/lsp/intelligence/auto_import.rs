@@ -92,56 +92,106 @@ pub fn compute_auto_import_edit(doc_text: &str, symbol_path: &str) -> Option<Val
 }
 
 pub fn is_already_imported(doc_text: &str, symbol_path: &str, symbol_name: &str) -> bool {
-    let parent_mod = symbol_path.rsplit_once("::").map(|(p, _)| p);
-
     for stmt in extract_use_statements(doc_text) {
-        let trimmed = stmt.trim();
-        // Exact full import: use foo::bar::Baz;
-        if trimmed == symbol_path {
+        if match_use_tree("", &stmt, symbol_path, symbol_name) {
             return true;
         }
+    }
+    false
+}
 
-        // Glob import: use foo::bar::*;
-        if let Some(parent) = parent_mod {
-            if trimmed == format!("{parent}::*")
-                || (trimmed.starts_with(parent) && trimmed.ends_with("::*"))
-            {
-                return true;
-            }
-        }
+fn match_use_tree(prefix: &str, tree: &str, target_path: &str, target_name: &str) -> bool {
+    let mut depth = 0usize;
+    let mut start = 0;
+    let chars: Vec<char> = tree.chars().collect();
+    let mut items = Vec::new();
 
-        // Braced groups: use foo::bar::{Baz, Qux}; or use foo::bar::{ Baz }; or multiline
-        if let Some(parent) = parent_mod {
-            if trimmed.starts_with(parent) && trimmed.contains('{') && trimmed.contains('}') {
-                if let Some(open) = trimmed.find('{') {
-                    if let Some(close) = trimmed.rfind('}') {
-                        let inner = &trimmed[open + 1..close];
-                        for item in inner.split(',') {
-                            let item_trimmed = item.trim();
-                            if item_trimmed == "*" {
-                                return true;
-                            }
-                            if item_trimmed == symbol_name {
-                                return true;
-                            }
-                            // Check alias: use foo::bar::{Baz as Alias} vs use foo::bar::{Qux as Baz}
-                            if let Some((orig, alias)) = item_trimmed.split_once(" as ") {
-                                if orig.trim() == symbol_name || alias.trim() == symbol_name {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
+    for (i, &c) in chars.iter().enumerate() {
+        match c {
+            '{' => depth += 1,
+            '}' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => {
+                let slice: String = chars[start..i].iter().collect();
+                let trimmed = slice.trim();
+                if !trimmed.is_empty() {
+                    items.push(trimmed.to_string());
                 }
+                start = i + 1;
             }
+            _ => {}
         }
+    }
+    if start < chars.len() {
+        let slice: String = chars[start..].iter().collect();
+        let trimmed = slice.trim();
+        if !trimmed.is_empty() {
+            items.push(trimmed.to_string());
+        }
+    }
 
-        // Top-level alias: use foo::bar::Qux as Baz;
-        if let Some((orig, alias)) = trimmed.split_once(" as ") {
-            if orig.trim() == symbol_path || alias.trim() == symbol_name {
-                return true;
+    for item in items {
+        if check_use_item(prefix, &item, target_path, target_name) {
+            return true;
+        }
+    }
+    false
+}
+
+fn check_use_item(prefix: &str, item: &str, target_path: &str, target_name: &str) -> bool {
+    let trimmed = item.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+
+    // Check if this item has a group: e.g. "collections::{HashMap, HashSet}" or "{HashMap}"
+    if let Some(open) = trimmed.find('{') {
+        if let Some(close) = trimmed.rfind('}') {
+            if open < close {
+                let head = trimmed[..open].trim_end_matches(':').trim();
+                let new_prefix = if head.is_empty() {
+                    prefix.to_string()
+                } else if prefix.is_empty() {
+                    head.to_string()
+                } else {
+                    format!("{prefix}::{head}")
+                };
+                let inner = &trimmed[open + 1..close];
+                return match_use_tree(&new_prefix, inner, target_path, target_name);
             }
         }
+    }
+
+    // Leaf item
+    let full = if prefix.is_empty() {
+        trimmed.to_string()
+    } else if trimmed == "*" {
+        format!("{prefix}::*")
+    } else {
+        format!("{prefix}::{trimmed}")
+    };
+
+    if full == target_path {
+        return true;
+    }
+
+    // Glob import with strict segment boundary check (prevents foo::bar matching foo::bar_ext::*)
+    if let Some(glob_parent) = full.strip_suffix("::*") {
+        let parent_boundary = format!("{glob_parent}::");
+        if target_path.starts_with(&parent_boundary) {
+            return true;
+        }
+    }
+
+    // Top-level or nested alias
+    if let Some((orig, alias)) = full.split_once(" as ") {
+        if orig.trim() == target_path || alias.trim() == target_name {
+            return true;
+        }
+    }
+
+    let leaf_name = full.rsplit("::").next().unwrap_or(&full);
+    if leaf_name == target_name && (full == target_path || full == target_name) {
+        return true;
     }
 
     false

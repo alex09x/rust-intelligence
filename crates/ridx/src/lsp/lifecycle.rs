@@ -169,8 +169,8 @@ impl LifecycleManager {
         if self.state == ServerState::ShutDown {
             return Err((-32600, "Server is already shut down".to_string()));
         }
-        self.flycheck.cancel();
         self.state = ServerState::ShutDown;
+        self.flycheck.shutdown();
         Ok(Value::Null)
     }
 

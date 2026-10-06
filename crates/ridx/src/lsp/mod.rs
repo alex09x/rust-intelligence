@@ -85,8 +85,11 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(
     let mut lifecycle = LifecycleManager::new();
     let cancelled_requests: Arc<Mutex<HashSet<Value>>> = Arc::new(Mutex::new(HashSet::new()));
 
-    let (tx, rx) = std::sync::mpsc::channel::<Value>();
-    lifecycle.flycheck.set_notifier(tx.clone());
+    let (tx, rx) = std::sync::mpsc::sync_channel::<protocol::LspMessage>(64);
+    let tx_diag = tx.clone();
+    lifecycle.flycheck.set_notifier(move |notif| {
+        let _ = tx_diag.try_send(protocol::LspMessage::InternalDiagnostic(notif));
+    });
     let cancelled_reader = Arc::clone(&cancelled_requests);
 
     std::thread::Builder::new()
@@ -127,7 +130,7 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(
                     let id_raw = msg["params"]["id"].clone();
                     cancelled_reader.lock().unwrap().insert(id_raw);
                 }
-                if tx.send(msg).is_err() {
+                if tx.send(protocol::LspMessage::Client(msg)).is_err() {
                     return;
                 }
             }

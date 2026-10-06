@@ -224,6 +224,24 @@ fn test_auto_import_detects_braced_spaces_and_glob_imports() {
         "HashMap"
     ));
     assert!(compute_auto_import_edit(doc3, "std::collections::HashMap").is_none());
+
+    // Nested braced groups
+    let doc4 = "use std::{collections::{HashMap}, io};\nfn main() {}";
+    assert!(is_already_imported(
+        doc4,
+        "std::collections::HashMap",
+        "HashMap"
+    ));
+    assert!(compute_auto_import_edit(doc4, "std::collections::HashMap").is_none());
+
+    // Neighbor module with common prefix must NOT trigger glob match
+    let doc5 = "use foo::bar_ext::*;\nfn main() {}";
+    assert!(!is_already_imported(doc5, "foo::bar::Baz", "Baz"));
+    let edit5 = compute_auto_import_edit(doc5, "foo::bar::Baz");
+    assert!(
+        edit5.is_some(),
+        "Neighbor glob must not suppress target import"
+    );
 }
 
 #[test]

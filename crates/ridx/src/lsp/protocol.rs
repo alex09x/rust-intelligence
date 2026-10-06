@@ -51,6 +51,20 @@ pub fn lsp_completion_kind(kind: DefKind) -> u32 {
     }
 }
 
+/// Represents an inbound message to the LSP dispatch loop, distinguishing
+/// client requests from internal events (such as background flycheck diagnostics).
+#[derive(Debug, Clone)]
+pub enum LspMessage {
+    Client(Value),
+    InternalDiagnostic(Value),
+}
+
+impl From<Value> for LspMessage {
+    fn from(val: Value) -> Self {
+        LspMessage::Client(val)
+    }
+}
+
 pub fn percent_decode(s: &str) -> String {
     let bytes = s.as_bytes();
     let mut decoded = Vec::with_capacity(bytes.len());

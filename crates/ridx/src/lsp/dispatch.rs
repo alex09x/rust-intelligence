@@ -13,7 +13,7 @@
 use super::editing::*;
 use super::hierarchy::*;
 use super::intelligence::*;
-use super::lifecycle::LifecycleManager;
+use super::lifecycle::{LifecycleManager, ServerState};
 use super::navigation::*;
 use super::presentation::*;
 use super::protocol::{send_response, uri_to_path, PositionConverter};
@@ -28,7 +28,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 pub fn dispatch_lsp_message<W: Write>(
-    msg: Value,
+    lsp_msg: impl Into<super::protocol::LspMessage>,
     writer: &mut W,
     lifecycle: &mut LifecycleManager,
     multi_root: &mut MultiRootWorkspace,
@@ -36,6 +36,16 @@ pub fn dispatch_lsp_message<W: Write>(
     cancelled_requests: &Arc<Mutex<HashSet<Value>>>,
     index_path: Option<&PathBuf>,
 ) -> io::Result<bool> {
+    let msg = match lsp_msg.into() {
+        super::protocol::LspMessage::InternalDiagnostic(diag) => {
+            if lifecycle.state() != ServerState::ShutDown {
+                send_response(writer, &diag)?;
+            }
+            return Ok(true);
+        }
+        super::protocol::LspMessage::Client(m) => m,
+    };
+
     if msg.get("method").is_none() {
         if let Some((Some(ref cmd_id), resp)) = handle_apply_edit_response(&msg) {
             send_response(
@@ -157,10 +167,7 @@ pub fn dispatch_lsp_message<W: Write>(
             return Ok(true);
         }
 
-        "textDocument/publishDiagnostics" => {
-            send_response(writer, &msg)?;
-            return Ok(true);
-        }
+        "textDocument/publishDiagnostics" => return Ok(true),
 
         "workspace/didChangeWorkspaceFolders" => {
             multi_root.handle_did_change_workspace_folders(&msg);
@@ -200,24 +207,19 @@ pub fn dispatch_lsp_message<W: Write>(
         }
 
         "textDocument/definition" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_definition(&msg, ws, overlay_mgr, &mut conv)
+            handle_definition(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
         "textDocument/references" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_references(&msg, ws, overlay_mgr, &mut conv)
+            handle_references(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
         "textDocument/typeDefinition" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_type_definition(&msg, ws, overlay_mgr, &mut conv)
+            handle_type_definition(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
         "textDocument/implementation" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_implementation(&msg, ws, overlay_mgr, &mut conv)
+            handle_implementation(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
         "textDocument/declaration" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_declaration(&msg, ws, overlay_mgr, &mut conv)
+            handle_declaration(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
         "textDocument/documentSymbol" => handle_document_symbol(&msg, overlay_mgr, &mut conv),
         "workspace/symbol" => handle_workspace_symbol(&msg, multi_root.all_workspaces(), &mut conv),
@@ -225,31 +227,23 @@ pub fn dispatch_lsp_message<W: Write>(
             handle_workspace_symbol_resolve(&msg, multi_root.all_workspaces(), &mut conv)
         }
         "textDocument/documentHighlight" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_document_highlight(&msg, ws, overlay_mgr, &mut conv)
+            handle_document_highlight(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
         "textDocument/hover" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_hover(&msg, ws, overlay_mgr, &mut conv)
+            handle_hover(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
         "textDocument/completion" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_completion(&msg, ws, overlay_mgr, &mut conv)
+            handle_completion(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
         "completionItem/resolve" => handle_completion_resolve(&msg),
         "textDocument/signatureHelp" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_signature_help(&msg, ws, overlay_mgr, &mut conv)
+            handle_signature_help(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
-        "textDocument/inlayHint" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_inlay_hint(&msg, ws, overlay_mgr)
-        }
+        "textDocument/inlayHint" => handle_inlay_hint(&msg, doc_ws(&msg, multi_root), overlay_mgr),
         "textDocument/inlineValue" => handle_inline_value(&msg, Some(overlay_mgr)),
         "textDocument/inlineCompletion" => handle_inline_completion(&msg, Some(overlay_mgr)),
         "textDocument/prepareCallHierarchy" => {
-            let ws = doc_ws(&msg, multi_root);
-            handle_prepare_call_hierarchy(&msg, ws, overlay_mgr, &mut conv)
+            handle_prepare_call_hierarchy(&msg, doc_ws(&msg, multi_root), overlay_mgr, &mut conv)
         }
         "callHierarchy/incomingCalls" => {
             let f = uri_to_path(msg["params"]["item"]["uri"].as_str().unwrap_or(""));

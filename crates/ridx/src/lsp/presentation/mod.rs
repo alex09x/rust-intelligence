@@ -10,6 +10,7 @@
 
 //! LSP presentation handlers: selection range, document links, diagnostics, moniker, and content.
 
+pub mod compiler_message;
 pub mod diagnostics;
 pub mod flycheck;
 pub mod tokens;
@@ -18,6 +19,7 @@ pub mod workspace_diag;
 #[cfg(test)]
 pub mod tests;
 
+pub use compiler_message::*;
 pub use diagnostics::*;
 pub use flycheck::*;
 pub use tokens::*;
