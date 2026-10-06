@@ -265,7 +265,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/codeLens" => handle_code_lens(&msg, overlay_mgr),
         "codeLens/resolve" => handle_code_lens_resolve(&msg),
         "textDocument/diagnostic" => handle_diagnostic(&msg, overlay_mgr),
-        "workspace/diagnostic" => json!({ "items": [] }),
+        "workspace/diagnostic" => handle_workspace_diagnostic(&msg, overlay_mgr),
         "textDocument/moniker" => {
             let ws = doc_ws(&msg, multi_root);
             handle_moniker(&msg, ws, overlay_mgr, &mut conv)

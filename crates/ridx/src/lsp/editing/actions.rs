@@ -10,9 +10,7 @@
 
 //! Code actions, refactoring suggestions, and workspace command execution.
 
-use super::ident::{
-    apply_workspace_text_edits_to_content, byte_offset_to_utf16_col, utf16_col_to_byte_offset,
-};
+use super::ident::{byte_offset_to_utf16_col, utf16_col_to_byte_offset};
 use crate::lsp::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
@@ -138,22 +136,55 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
                 };
 
                 if !expr.trim().is_empty() {
-                    let line_before = &lines[sl][..start_byte];
-                    let last_semi = line_before.rfind(';');
-                    let last_close = line_before.rfind('}');
-                    let last_open = line_before.rfind('{');
-                    let last_delim = [last_semi, last_close, last_open]
-                        .into_iter()
-                        .flatten()
-                        .max();
+                    let mut delim_info: Option<(usize, usize)> = None;
+                    let mut prefix_text = String::new();
 
-                    let stmt_fragment = if let Some(delim_idx) = last_delim {
-                        &line_before[delim_idx + 1..]
-                    } else {
-                        line_before
+                    for cur_l in (0..=sl).rev() {
+                        let cur_line = lines[cur_l];
+                        let cur_limit = if cur_l == sl {
+                            start_byte
+                        } else {
+                            cur_line.len()
+                        };
+                        let slice = &cur_line[..cur_limit];
+
+                        let last_semi = slice.rfind(';');
+                        let last_close = slice.rfind('}');
+                        let last_open = slice.rfind('{');
+                        let local_delim = [last_semi, last_close, last_open]
+                            .into_iter()
+                            .flatten()
+                            .max();
+
+                        if let Some(d_idx) = local_delim {
+                            delim_info = Some((cur_l, d_idx));
+                            let seg = &slice[d_idx + 1..];
+                            if prefix_text.is_empty() {
+                                prefix_text = seg.to_string();
+                            } else {
+                                prefix_text = format!("{seg}\n{prefix_text}");
+                            }
+                            break;
+                        } else if prefix_text.is_empty() {
+                            prefix_text = slice.to_string();
+                        } else {
+                            prefix_text = format!("{slice}\n{prefix_text}");
+                        }
+                    }
+
+                    let has_control_flow = {
+                        let p = &prefix_text;
+                        p.contains("&&")
+                            || p.contains("||")
+                            || p.contains("=>")
+                            || p.contains("while")
+                            || p.contains("for")
+                            || p.contains("if")
+                            || p.contains("match")
+                            || p.contains("loop")
                     };
 
-                    if !stmt_fragment.contains("&&") && !stmt_fragment.contains("||") {
+                    if !has_control_flow {
                         let mut var_name = "extracted".to_string();
                         let mut counter = 1;
                         while doc_text.contains(&var_name) {
@@ -161,31 +192,51 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
                             counter += 1;
                         }
 
-                        let (insert_line, insert_col, new_text) =
-                            if let Some(delim_idx) = last_delim {
-                                let mut after_delim = delim_idx + 1;
-                                while after_delim < lines[sl].len()
-                                    && lines[sl].as_bytes()[after_delim].is_ascii_whitespace()
-                                {
-                                    after_delim += 1;
-                                }
-                                let col = byte_offset_to_utf16_col(lines[sl], after_delim) as u32;
+                        let (insert_line, insert_col, new_text) = if let Some((dl, d_idx)) =
+                            delim_info
+                        {
+                            let mut after_delim = d_idx + 1;
+                            while after_delim < lines[dl].len()
+                                && lines[dl].as_bytes()[after_delim].is_ascii_whitespace()
+                            {
+                                after_delim += 1;
+                            }
+                            if after_delim < lines[dl].len() {
+                                let col = byte_offset_to_utf16_col(lines[dl], after_delim) as u32;
                                 (
-                                    sl as u32,
+                                    dl as u32,
                                     col,
                                     format!("let {} = {}; ", var_name, expr.trim()),
                                 )
-                            } else {
-                                let indent: String = lines[sl]
+                            } else if dl + 1 < lines.len() {
+                                let next_l = dl + 1;
+                                let indent: String = lines[next_l]
                                     .chars()
                                     .take_while(|c| c.is_whitespace())
                                     .collect();
                                 (
-                                    sl as u32,
+                                    next_l as u32,
                                     0u32,
                                     format!("{indent}let {} = {};\n", var_name, expr.trim()),
                                 )
-                            };
+                            } else {
+                                (
+                                    dl as u32,
+                                    lines[dl].len() as u32,
+                                    format!("let {} = {}; ", var_name, expr.trim()),
+                                )
+                            }
+                        } else {
+                            let indent: String = lines[sl]
+                                .chars()
+                                .take_while(|c| c.is_whitespace())
+                                .collect();
+                            (
+                                sl as u32,
+                                0u32,
+                                format!("{indent}let {} = {};\n", var_name, expr.trim()),
+                            )
+                        };
 
                         let insert_edit = json!({
                             "range": {
@@ -250,137 +301,4 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
 
 pub fn handle_code_action_resolve(msg: &Value) -> Value {
     msg.get("params").cloned().unwrap_or(Value::Null)
-}
-
-pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
-    let cmd = msg["params"]["command"].as_str().unwrap_or("");
-    match cmd {
-        "ridx.resolveWorkspace" => {
-            let root = msg["params"]["rootUri"]
-                .as_str()
-                .or_else(|| msg["params"]["rootPath"].as_str())
-                .unwrap_or("");
-            json!({
-                "resolved": true,
-                "workspaceRoot": root,
-                "status": "ready"
-            })
-        }
-        "ridx.showReferences" => {
-            let uri = msg["params"]["uri"].as_str().unwrap_or("");
-            let pos = &msg["params"]["position"];
-            let locs = msg["params"]["locations"]
-                .as_array()
-                .cloned()
-                .unwrap_or_default();
-            json!({
-                "success": true,
-                "uri": uri,
-                "position": pos,
-                "locations": locs,
-                "count": locs.len()
-            })
-        }
-        "ridx.applyEdits" => {
-            let mut applied_count = 0;
-            if let Some(args) = msg["params"]["arguments"].as_array() {
-                for arg in args {
-                    let edit =
-                        if arg.get("changes").is_some() || arg.get("documentChanges").is_some() {
-                            arg
-                        } else if let Some(e) = arg.get("edit") {
-                            e
-                        } else {
-                            arg
-                        };
-
-                    let mut has_doc_changes = false;
-                    if let Some(doc_changes) =
-                        edit.get("documentChanges").and_then(|dc| dc.as_array())
-                    {
-                        if !doc_changes.is_empty() {
-                            has_doc_changes = true;
-                            for dc in doc_changes {
-                                let uri = dc["textDocument"]["uri"].as_str().unwrap_or("");
-                                let doc_version =
-                                    dc["textDocument"]["version"].as_i64().map(|v| v as i32);
-                                let file_path = uri_to_path(uri);
-                                if let Some(edits) = dc["edits"].as_array() {
-                                    if apply_workspace_text_edits(
-                                        overlay_mgr,
-                                        &file_path,
-                                        uri,
-                                        doc_version,
-                                        edits,
-                                    ) {
-                                        applied_count += edits.len();
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if !has_doc_changes {
-                        if let Some(changes) = edit.get("changes").and_then(|c| c.as_object()) {
-                            for (uri, edits) in changes {
-                                let file_path = uri_to_path(uri);
-                                if let Some(edits_arr) = edits.as_array() {
-                                    if apply_workspace_text_edits(
-                                        overlay_mgr,
-                                        &file_path,
-                                        uri,
-                                        None,
-                                        edits_arr,
-                                    ) {
-                                        applied_count += edits_arr.len();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            json!({ "applied": applied_count > 0, "count": applied_count })
-        }
-        _ => Value::Null,
-    }
-}
-
-fn apply_workspace_text_edits(
-    overlay_mgr: &mut OverlayManager,
-    file_path: &str,
-    uri: &str,
-    version: Option<i32>,
-    edits: &[Value],
-) -> bool {
-    if edits.is_empty() {
-        return false;
-    }
-    if let Some(overlay) = overlay_mgr.get_mut(file_path) {
-        if let Some(expected_ver) = version {
-            if expected_ver != overlay.version {
-                return false;
-            }
-        }
-        let new_text = match apply_workspace_text_edits_to_content(&overlay.text, edits) {
-            Some(t) => t,
-            None => return false,
-        };
-        let new_ver = overlay.version + 1;
-        overlay.update(new_ver, new_text);
-        true
-    } else if let Ok(content) = std::fs::read_to_string(file_path) {
-        let new_text = match apply_workspace_text_edits_to_content(&content, edits) {
-            Some(t) => t,
-            None => return false,
-        };
-        if std::fs::write(file_path, &new_text).is_ok() {
-            overlay_mgr.open_with_provenance(uri, file_path, version.unwrap_or(1), new_text, false);
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    }
 }

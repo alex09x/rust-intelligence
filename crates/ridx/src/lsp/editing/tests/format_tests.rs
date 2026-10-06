@@ -10,6 +10,7 @@
 
 use super::setup_test_editing;
 use crate::lsp::editing::actions::*;
+use crate::lsp::editing::commands::*;
 use crate::lsp::editing::format::*;
 use crate::lsp::protocol::path_to_uri;
 use serde_json::json;

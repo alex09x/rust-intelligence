@@ -12,71 +12,12 @@
 
 use super::harness::ExternalLspResult;
 use super::system::get_process_rss_bytes;
+pub use super::transport::*;
 use serde_json::Value;
-use std::io::{BufRead, BufReader, Write};
+use std::io::BufReader;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Instant;
-
-pub fn resolve_file_uri(f: &str, root: Option<&Path>) -> String {
-    if f.starts_with("file://") {
-        return f.to_string();
-    }
-    let p = Path::new(f);
-    let abs_path = if p.is_relative() {
-        if let Some(r) = root {
-            r.join(p)
-        } else {
-            std::env::current_dir().unwrap_or_default().join(p)
-        }
-    } else {
-        p.to_path_buf()
-    };
-    format!(
-        "file://{}",
-        abs_path.canonicalize().unwrap_or(abs_path).display()
-    )
-}
-
-pub fn send_lsp_msg<W: Write>(w: &mut W, val: &Value) -> std::io::Result<()> {
-    let payload = serde_json::to_vec(val)?;
-    write!(w, "Content-Length: {}\r\n\r\n", payload.len())?;
-    w.write_all(&payload)?;
-    w.flush()
-}
-
-pub fn read_lsp_msg<R: BufRead>(r: &mut R) -> Option<Value> {
-    let mut content_len: Option<usize> = None;
-    loop {
-        let mut line = String::new();
-        if r.read_line(&mut line).ok()? == 0 {
-            return None;
-        }
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            break;
-        }
-        if let Some(rest) = trimmed.strip_prefix("Content-Length:") {
-            content_len = rest.trim().parse().ok();
-        }
-    }
-    let len = content_len?;
-    let mut buf = vec![0u8; len];
-    r.read_exact(&mut buf).ok()?;
-    serde_json::from_slice(&buf).ok()
-}
-
-pub fn read_lsp_response<R: BufRead>(r: &mut R, expected_id: i64) -> Option<Value> {
-    for _ in 0..100 {
-        let msg = read_lsp_msg(r)?;
-        if let Some(id) = msg.get("id").and_then(|i| i.as_i64()) {
-            if id == expected_id {
-                return Some(msg);
-            }
-        }
-    }
-    None
-}
 
 pub fn execute_pinned_ra_lsp(
     ra_bin: &Path,
@@ -118,9 +59,9 @@ pub fn execute_pinned_ra_lsp(
         }
     });
     send_lsp_msg(&mut stdin, &init_req).ok()?;
-    let _init_resp = read_lsp_response(&mut reader, 1)?;
+    let _init_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, 1)?;
 
-    // 2. initialized
+    // 2. initialized notification
     let init_notif = serde_json::json!({
         "jsonrpc": "2.0",
         "method": "initialized",
@@ -128,113 +69,168 @@ pub fn execute_pinned_ra_lsp(
     });
     send_lsp_msg(&mut stdin, &init_notif).ok()?;
 
-    // 3. query capability
-    let query_req = match capability {
-        "def" | "textDocument/definition" => {
-            if let Some((f, l, c)) = loc_opt {
-                serde_json::json!({
+    // 2b. Warmup / readiness check
+    let warmup_req = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 99,
+        "method": "workspace/symbol",
+        "params": { "query": "" }
+    });
+    let _ = send_lsp_msg(&mut stdin, &warmup_req);
+    let _ = read_lsp_response_with_writer(&mut reader, &mut stdin, 99);
+
+    // 3. Resolve target location
+    let resolved_loc: Option<(String, u32, u32)> = if let Some((f, l, c)) = loc_opt {
+        Some((
+            resolve_file_uri(f, root),
+            l.saturating_sub(1),
+            c.saturating_sub(1),
+        ))
+    } else if matches!(
+        capability,
+        "def"
+            | "textDocument/definition"
+            | "refs"
+            | "textDocument/references"
+            | "hover"
+            | "textDocument/hover"
+            | "callers"
+            | "incomingCalls"
+    ) {
+        let sym_req = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "workspace/symbol",
+            "params": { "query": target }
+        });
+        send_lsp_msg(&mut stdin, &sym_req).ok()?;
+        let sym_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, 10)?;
+        extract_symbol_location(&sym_resp)
+    } else {
+        None
+    };
+
+    // 4. Execute requested capability
+    let (resp, latency) = match capability {
+        "callers" | "incomingCalls" => {
+            if let Some((uri, line, col)) = &resolved_loc {
+                let t_start = Instant::now();
+                let prep_req = serde_json::json!({
                     "jsonrpc": "2.0",
-                    "id": 2,
-                    "method": "textDocument/definition",
+                    "id": 20,
+                    "method": "textDocument/prepareCallHierarchy",
                     "params": {
-                        "textDocument": { "uri": resolve_file_uri(f, root) },
-                        "position": { "line": l.saturating_sub(1), "character": c.saturating_sub(1) }
+                        "textDocument": { "uri": uri },
+                        "position": { "line": line, "character": col }
                     }
-                })
+                });
+                send_lsp_msg(&mut stdin, &prep_req).ok()?;
+                let prep_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, 20)?;
+                let final_resp =
+                    if let Some(items) = prep_resp.get("result").and_then(|r| r.as_array()) {
+                        if let Some(first_item) = items.first() {
+                            let inc_req = serde_json::json!({
+                                "jsonrpc": "2.0",
+                                "id": 21,
+                                "method": "callHierarchy/incomingCalls",
+                                "params": { "item": first_item }
+                            });
+                            send_lsp_msg(&mut stdin, &inc_req).ok()?;
+                            read_lsp_response_with_writer(&mut reader, &mut stdin, 21)?
+                        } else {
+                            prep_resp
+                        }
+                    } else {
+                        prep_resp
+                    };
+                (final_resp, t_start.elapsed().as_micros())
             } else {
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 2,
-                    "method": "workspace/symbol",
-                    "params": { "query": target }
-                })
+                (serde_json::json!({ "result": null }), 0)
             }
         }
         "refs" | "textDocument/references" => {
-            if let Some((f, l, c)) = loc_opt {
-                serde_json::json!({
+            if let Some((uri, line, col)) = &resolved_loc {
+                let t_start = Instant::now();
+                let ref_req = serde_json::json!({
                     "jsonrpc": "2.0",
-                    "id": 2,
+                    "id": 20,
                     "method": "textDocument/references",
                     "params": {
-                        "textDocument": { "uri": resolve_file_uri(f, root) },
-                        "position": { "line": l.saturating_sub(1), "character": c.saturating_sub(1) },
+                        "textDocument": { "uri": uri },
+                        "position": { "line": line, "character": col },
                         "context": { "includeDeclaration": true }
                     }
-                })
+                });
+                send_lsp_msg(&mut stdin, &ref_req).ok()?;
+                let r = read_lsp_response_with_writer(&mut reader, &mut stdin, 20)?;
+                (r, t_start.elapsed().as_micros())
             } else {
-                serde_json::json!({
+                (serde_json::json!({ "result": null }), 0)
+            }
+        }
+        "def" | "textDocument/definition" => {
+            if let Some((uri, line, col)) = &resolved_loc {
+                let t_start = Instant::now();
+                let def_req = serde_json::json!({
                     "jsonrpc": "2.0",
-                    "id": 2,
-                    "method": "workspace/symbol",
-                    "params": { "query": target }
-                })
+                    "id": 20,
+                    "method": "textDocument/definition",
+                    "params": {
+                        "textDocument": { "uri": uri },
+                        "position": { "line": line, "character": col }
+                    }
+                });
+                send_lsp_msg(&mut stdin, &def_req).ok()?;
+                let r = read_lsp_response_with_writer(&mut reader, &mut stdin, 20)?;
+                (r, t_start.elapsed().as_micros())
+            } else {
+                (serde_json::json!({ "result": null }), 0)
             }
         }
         "hover" | "textDocument/hover" => {
-            if let Some((f, l, c)) = loc_opt {
-                serde_json::json!({
+            if let Some((uri, line, col)) = &resolved_loc {
+                let t_start = Instant::now();
+                let hover_req = serde_json::json!({
                     "jsonrpc": "2.0",
-                    "id": 2,
+                    "id": 20,
                     "method": "textDocument/hover",
                     "params": {
-                        "textDocument": { "uri": resolve_file_uri(f, root) },
-                        "position": { "line": l.saturating_sub(1), "character": c.saturating_sub(1) }
+                        "textDocument": { "uri": uri },
+                        "position": { "line": line, "character": col }
                     }
-                })
+                });
+                send_lsp_msg(&mut stdin, &hover_req).ok()?;
+                let r = read_lsp_response_with_writer(&mut reader, &mut stdin, 20)?;
+                (r, t_start.elapsed().as_micros())
             } else {
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 2,
-                    "method": "workspace/symbol",
-                    "params": { "query": target }
-                })
+                (serde_json::json!({ "result": null }), 0)
             }
         }
-        "callers" | "incomingCalls" => {
-            if let Some((f, l, c)) = loc_opt {
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 2,
-                    "method": "textDocument/prepareCallHierarchy",
-                    "params": {
-                        "textDocument": { "uri": resolve_file_uri(f, root) },
-                        "position": { "line": l.saturating_sub(1), "character": c.saturating_sub(1) }
-                    }
-                })
-            } else {
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 2,
-                    "method": "workspace/symbol",
-                    "params": { "query": target }
-                })
-            }
+        _ => {
+            let t_start = Instant::now();
+            let sym_req = serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 20,
+                "method": "workspace/symbol",
+                "params": { "query": target }
+            });
+            send_lsp_msg(&mut stdin, &sym_req).ok()?;
+            let r = read_lsp_response_with_writer(&mut reader, &mut stdin, 20)?;
+            (r, t_start.elapsed().as_micros())
         }
-        _ => serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": 2,
-            "method": "workspace/symbol",
-            "params": { "query": target }
-        }),
     };
-
-    let t_query = Instant::now();
-    send_lsp_msg(&mut stdin, &query_req).ok()?;
-    let resp = read_lsp_response(&mut reader, 2)?;
-    let latency = t_query.elapsed().as_micros();
 
     let rss = get_process_rss_bytes(pid).unwrap_or(0);
 
-    // 4. shutdown & exit
+    // 5. shutdown & exit
     let shutdown_req = serde_json::json!({
         "jsonrpc": "2.0",
-        "id": 3,
+        "id": 30,
         "method": "shutdown",
         "params": null
     });
     let _ = send_lsp_msg(&mut stdin, &shutdown_req);
-    let _ = read_lsp_response(&mut reader, 3);
+    let _ = read_lsp_response_with_writer(&mut reader, &mut stdin, 30);
     let exit_notif = serde_json::json!({
         "jsonrpc": "2.0",
         "method": "exit",
@@ -258,8 +254,23 @@ pub fn execute_pinned_ra_lsp(
         });
     }
 
-    let result = resp.get("result");
-    if result.is_none() || result == Some(&Value::Null) {
+    parse_lsp_result(&resp, latency, rss)
+}
+
+fn extract_symbol_location(resp: &Value) -> Option<(String, u32, u32)> {
+    let arr = resp.get("result")?.as_array()?;
+    let first = arr.first()?;
+    let loc = first.get("location").unwrap_or(first);
+    let uri = loc.get("uri")?.as_str()?.to_string();
+    let range = loc.get("range")?;
+    let line = range.get("start")?.get("line")?.as_u64()? as u32;
+    let col = range.get("start")?.get("character")?.as_u64()? as u32;
+    Some((uri, line, col))
+}
+
+fn parse_lsp_result(resp: &Value, latency: u128, rss: u64) -> Option<ExternalLspResult> {
+    let val = resp.get("result")?;
+    if val.is_null() {
         return Some(ExternalLspResult {
             found: false,
             span: "Not found".to_string(),
@@ -269,7 +280,6 @@ pub fn execute_pinned_ra_lsp(
         });
     }
 
-    let val = result.unwrap();
     if let Some(arr) = val.as_array() {
         if arr.is_empty() {
             Some(ExternalLspResult {
@@ -281,16 +291,17 @@ pub fn execute_pinned_ra_lsp(
             })
         } else {
             let first = &arr[0];
-            let uri = first
+            let item = first.get("from").unwrap_or(first);
+            let uri = item
                 .get("uri")
-                .or_else(|| first.get("targetUri"))
-                .or_else(|| first.get("location").and_then(|l| l.get("uri")))
+                .or_else(|| item.get("targetUri"))
+                .or_else(|| item.get("location").and_then(|l| l.get("uri")))
                 .and_then(|u| u.as_str())
                 .unwrap_or("");
-            let range = first
+            let range = item
                 .get("range")
-                .or_else(|| first.get("targetRange"))
-                .or_else(|| first.get("location").and_then(|l| l.get("range")));
+                .or_else(|| item.get("targetRange"))
+                .or_else(|| item.get("location").and_then(|l| l.get("range")));
             let line = range
                 .and_then(|r| r.get("start"))
                 .and_then(|s| s.get("line"))

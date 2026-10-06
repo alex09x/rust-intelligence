@@ -12,12 +12,14 @@
 
 pub mod diagnostics;
 pub mod tokens;
+pub mod workspace_diag;
 
 #[cfg(test)]
 pub mod tests;
 
 pub use diagnostics::*;
 pub use tokens::*;
+pub use workspace_diag::*;
 
 use super::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;

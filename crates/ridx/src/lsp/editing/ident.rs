@@ -231,6 +231,7 @@ pub fn apply_workspace_text_edits_to_content(
         start_byte: usize,
         end_byte: usize,
         new_text: String,
+        orig_idx: usize,
     }
 
     let mut line_starts = Vec::new();
@@ -260,7 +261,7 @@ pub fn apply_workspace_text_edits_to_content(
     };
 
     let mut parsed: Vec<ParsedEdit> = Vec::with_capacity(edits.len());
-    for e in edits {
+    for (orig_idx, e) in edits.iter().enumerate() {
         let range = e.get("range")?;
         let sl = range.get("start")?.get("line")?.as_u64()? as usize;
         let sc = range.get("start")?.get("character")?.as_u64()? as usize;
@@ -283,23 +284,62 @@ pub fn apply_workspace_text_edits_to_content(
             start_byte,
             end_byte,
             new_text,
+            orig_idx,
         });
     }
 
-    parsed.sort_by(|a, b| {
-        b.start_byte
-            .cmp(&a.start_byte)
-            .then_with(|| b.end_byte.cmp(&a.end_byte))
-    });
+    use std::collections::BTreeMap;
+    let mut by_start: BTreeMap<usize, Vec<ParsedEdit>> = BTreeMap::new();
+    for edit in parsed {
+        by_start.entry(edit.start_byte).or_default().push(edit);
+    }
 
-    for i in 0..parsed.len().saturating_sub(1) {
-        if parsed[i + 1].end_byte > parsed[i].start_byte {
+    struct MergedEdit {
+        start_byte: usize,
+        end_byte: usize,
+        new_text: String,
+    }
+
+    let mut merged = Vec::with_capacity(by_start.len());
+    for (start_byte, mut group) in by_start {
+        group.sort_by_key(|e| e.orig_idx);
+        let mut combined_text = String::new();
+        let mut replacement_opt: Option<(usize, String)> = None;
+
+        for e in group {
+            if e.start_byte == e.end_byte {
+                combined_text.push_str(&e.new_text);
+            } else if replacement_opt.is_none() {
+                replacement_opt = Some((e.end_byte, e.new_text));
+            } else {
+                return None;
+            }
+        }
+
+        let end_byte = if let Some((repl_end, repl_text)) = replacement_opt {
+            combined_text.push_str(&repl_text);
+            repl_end
+        } else {
+            start_byte
+        };
+
+        merged.push(MergedEdit {
+            start_byte,
+            end_byte,
+            new_text: combined_text,
+        });
+    }
+
+    for i in 0..merged.len().saturating_sub(1) {
+        if merged[i].end_byte > merged[i + 1].start_byte {
             return None;
         }
     }
 
+    merged.sort_by_key(|e| std::cmp::Reverse(e.start_byte));
+
     let mut result = content.to_string();
-    for edit in parsed {
+    for edit in merged {
         if edit.start_byte <= result.len() && edit.end_byte <= result.len() {
             result.replace_range(edit.start_byte..edit.end_byte, &edit.new_text);
         } else {

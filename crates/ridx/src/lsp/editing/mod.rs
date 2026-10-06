@@ -11,6 +11,7 @@
 //! LSP editing handlers: rename, formatting, code actions, and commands.
 
 pub mod actions;
+pub mod commands;
 pub mod format;
 pub mod ident;
 pub mod linked;
@@ -21,6 +22,7 @@ pub mod rename;
 mod tests;
 
 pub use actions::*;
+pub use commands::*;
 pub use format::*;
 pub use ident::*;
 pub use linked::*;
