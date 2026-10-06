@@ -20,7 +20,8 @@ In large Rust workspaces (e.g. Tokio, `rust-analyzer` itself, or BTCR with hundr
 
 Instead of running a heavy persistent daemon that duplicates compiler logic, **Rust Intelligence** introduces a zero-copy, binary on-disk index format (`.ridx` v2):
 
-- **Zero Daemon RSS**: 0.00 MB resident memory footprint. Indices are accessed directly from disk via zero-copy `mmap(2)`.
+- **No Idle Daemon for CLI Navigation**: CLI queries (`ridx def`, `ridx refs`, `ridx hover`) execute on-demand without any running background daemon (0.00 MB idle resident memory). Indices are paged directly from the OS page cache via zero-copy `mmap(2)`.
+- **Lightweight LSP Server**: `ridx lsp` runs with a compact resident memory footprint (~12–15 MB RSS) storing only active editor buffers and lexical overlays, without holding multi-gigabyte compiler syntax trees in RAM.
 - **Zero Open File Descriptors**: Under POSIX, memory mappings persist after file descriptor closure (`close(fd)`). `ridx` maintains zero open file descriptors for index shards, never exhausting `ulimit -n`.
 - **Instant Response Latencies**:
   - `goto definition`: **10 – 30 µs** ($O(\log N)$ binary search).
@@ -79,7 +80,7 @@ When combined with `mitts` (distributed compilation and build artifact store):
 
 ## 4. Full LSP 3.18 Capability Matrix
 
-`ridx lsp` provides complete, autonomous LSP 3.18 support without relying on external language servers:
+`ridx lsp` implements core LSP 3.18 protocol capabilities backed by zero-copy index lookup and live buffer overlays (see [ROADMAP.md](ROADMAP.md) for detailed per-method status):
 
 | Category | LSP Methods | Latency (`ridx`) | Latency (`rust-analyzer`) |
 |---|---|---|---|
@@ -96,26 +97,26 @@ When combined with `mitts` (distributed compilation and build artifact store):
 
 ## 5. Real-World Benchmark Results
 
-Benchmarks measured on a 32-core Linux server with warm OS page caches comparing `ridx` directly against `rust-analyzer 1.97.1`:
+Measurements comparing local `ridx` index lookups against a warm, pinned `rust-analyzer 1.97.1` language server instance on a 32-core Linux server with warm OS page caches (detailed methodology, command pins, and reproduction instructions in [LSP_BENCHMARK_COMPARISON_REPORT.md](LSP_BENCHMARK_COMPARISON_REPORT.md)):
 
 ### A. Tokio Workspace (42 Crates, 880 Files, 298k References)
-| Capability | Target Symbol | `ridx` Latency | `rust-analyzer` Latency | Speedup | Parity |
+| Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Speedup | Verified Target |
 |---|---|---|---|---|---|
-| **Definition** | `runtime::context::blocking::try_enter_blocking_region` | **24 µs** | 10,554 ms | **439,785x** | MATCH |
-| **References** | `runtime::context::blocking::try_enter_blocking_region` | **655 µs** | 1,273 ms | **1,944x** | MATCH |
-| **Hover** | `runtime::context::blocking::try_enter_blocking_region` | **42 µs** | 344 ms | **8,189x** | MATCH |
-| **Callers** | `runtime::context::blocking::try_enter_blocking_region` | **262 µs** | 363 ms | **1,389x** | MATCH |
-| **Symbols** | `Runtime` | **16.9 ms** | 323 ms | **19.1x** | MATCH |
-| **Daemon RSS**| Workspace Idle | **0.00 MB** | **1,420 MB** | **Infinite** | — |
+| **Definition** | `runtime::context::blocking::try_enter_blocking_region` | **24 µs** | 10,554 ms | **439,785x** | Identical definition span |
+| **References** | `runtime::context::blocking::try_enter_blocking_region` | **655 µs** | 1,273 ms | **1,944x** | Full reference set |
+| **Hover** | `runtime::context::blocking::try_enter_blocking_region` | **42 µs** | 344 ms | **8,189x** | Matching signature & docs |
+| **Callers** | `runtime::context::blocking::try_enter_blocking_region` | **262 µs** | 363 ms | **1,389x** | Matching call hierarchy |
+| **Symbols** | `Runtime` | **16.9 ms** | 323 ms | **19.1x** | Matching symbol list |
+| **Idle Daemon RSS**| Workspace Idle | **0.00 MB (CLI)** / **~12 MB (LSP)** | **1,420 MB** | **> 118x** | Resident set size |
 
 ### B. `rust-analyzer` Workspace (261 Crates, 3,050 Files, 2.3M References)
-| Capability | Target Symbol | `ridx` Latency | `rust-analyzer` Latency | Speedup | Parity |
+| Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Speedup | Verified Target |
 |---|---|---|---|---|---|
-| **Definition** | `ide::AnalysisHost` | **704 µs** | 10,905 ms | **15,490x** | MATCH |
-| **References** | `ide::AnalysisHost` | **4.06 ms** | 1,487 ms | **365x** | MATCH |
-| **Hover** | `ide::AnalysisHost` | **410 µs** | 381 ms | **931x** | MATCH |
-| **Callers** | `ide::AnalysisHost` | **1.61 ms** | 382 ms | **236x** | MATCH |
-| **Daemon RSS**| Workspace Idle | **0.00 MB** | **3,240 MB** | **Infinite** | — |
+| **Definition** | `ide::AnalysisHost` | **704 µs** | 10,905 ms | **15,490x** | Identical definition span |
+| **References** | `ide::AnalysisHost` | **4.06 ms** | 1,487 ms | **365x** | Full reference set |
+| **Hover** | `ide::AnalysisHost` | **410 µs** | 381 ms | **931x** | Matching signature & docs |
+| **Callers** | `ide::AnalysisHost` | **1.61 ms** | 382 ms | **236x** | Matching call hierarchy |
+| **Idle Daemon RSS**| Workspace Idle | **0.00 MB (CLI)** / **~15 MB (LSP)** | **3,240 MB** | **> 216x** | Resident set size |
 
 ---
 
@@ -129,13 +130,13 @@ All records are little-endian with strict 8-byte alignment:
 ├────────────────────────────────────────────────────────┤
 │ String Intern Pool (Null-terminated Deduplicated UTF-8)│
 ├────────────────────────────────────────────────────────┤
-│ File Path Table (u32 String Pool Offsets)              │
+│ File Path Table (Array of FileEntry, 16 bytes each)    │
 ├────────────────────────────────────────────────────────┤
 │ Definitions Table (Array of DefEntry, 40 bytes each)   │
 ├────────────────────────────────────────────────────────┤
 │ Definitions Hash Index (FNV-1a 64-bit Path Hashes, 16B)│
 ├────────────────────────────────────────────────────────┤
-│ References Table (Sorted by Span, 44 bytes each)       │
+│ References Table (Sorted by Span, 48 bytes each)       │
 ├────────────────────────────────────────────────────────┤
 │ References Target Hash Index (Target Hashes, 16B)      │
 ├────────────────────────────────────────────────────────┤

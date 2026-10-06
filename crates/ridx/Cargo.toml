@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "CLI code intelligence tool for ultra-fast, zero-memory Rust code navigation"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 ridx-format = { path = "../ridx-format" }

@@ -3,6 +3,7 @@ name = "ridx-driver"
 version = "0.1.0"
 edition = "2021"
 authors = ["Alexander Panasenko <alex@prod.codes>"]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 ridx-format = { path = "../ridx-format" }

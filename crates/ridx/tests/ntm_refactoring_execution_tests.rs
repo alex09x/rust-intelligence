@@ -17,6 +17,25 @@ use ridx_format::{IndexWriter, RawDefinition, RawReference, WorkspaceIndex};
 use serde_json::json;
 use std::fs;
 
+fn utf16_col_to_char_slice(line: &str, utf16_col: usize) -> (String, String) {
+    let mut utf16_count = 0;
+    let mut split_byte = line.len();
+    for (b_idx, c) in line.char_indices() {
+        if utf16_count >= utf16_col {
+            split_byte = b_idx;
+            break;
+        }
+        utf16_count += c.len_utf16();
+    }
+    if utf16_count < utf16_col {
+        split_byte = line.len();
+    }
+    (
+        line[..split_byte].to_string(),
+        line[split_byte..].to_string(),
+    )
+}
+
 fn apply_text_edits(content: &str, edits: &[serde_json::Value]) -> String {
     let mut parsed: Vec<(u32, u32, u32, u32, String)> = edits
         .iter()
@@ -48,14 +67,14 @@ fn apply_text_edits(content: &str, edits: &[serde_json::Value]) -> String {
 
         if s_l == e_l {
             let line = &lines[s_l];
-            let before: String = line.chars().take(s_c).collect();
-            let after: String = line.chars().skip(e_c).collect();
+            let (before, _) = utf16_col_to_char_slice(line, s_c);
+            let (_, after) = utf16_col_to_char_slice(line, e_c);
             let replaced = format!("{}{}{}", before, new_text, after);
             let repl_lines: Vec<String> = replaced.split('\n').map(|s| s.to_string()).collect();
             lines.splice(s_l..=s_l, repl_lines);
         } else {
-            let start_prefix: String = lines[s_l].chars().take(s_c).collect();
-            let end_suffix: String = lines[e_l].chars().skip(e_c).collect();
+            let (start_prefix, _) = utf16_col_to_char_slice(&lines[s_l], s_c);
+            let (_, end_suffix) = utf16_col_to_char_slice(&lines[e_l], e_c);
             let combined = format!("{}{}{}", start_prefix, new_text, end_suffix);
             let repl_lines: Vec<String> = combined.split('\n').map(|s| s.to_string()).collect();
             lines.splice(s_l..=e_l, repl_lines);
@@ -235,7 +254,17 @@ fn test_refactor_formatting_and_range_formatting_execution() {
 
     overlay_mgr.open_document(uri, file_path, 1, unformatted.to_string());
 
-    // 1. Full formatting
+    let rustfmt_available = std::process::Command::new("rustfmt")
+        .arg("--version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+    if !rustfmt_available {
+        eprintln!("Skipping formatting execution test: rustfmt binary is not available in PATH");
+        return;
+    }
+
+    // 1. Full formatting: MUST return non-empty edits and format both functions
     let fmt_req = json!({
         "params": {
             "textDocument": { "uri": uri },
@@ -244,11 +273,14 @@ fn test_refactor_formatting_and_range_formatting_execution() {
     });
     let fmt_edits = handle_formatting(&fmt_req, &overlay_mgr);
     let edits_arr = fmt_edits.as_array().expect("formatting edits array");
-    if !edits_arr.is_empty() {
-        let formatted = apply_text_edits(unformatted, edits_arr);
-        assert!(formatted.contains("fn first(x: i32) -> i32 {"));
-        assert!(formatted.contains("fn second(y: i32) -> i32 {"));
-    }
+    assert!(
+        !edits_arr.is_empty(),
+        "Full formatting MUST return edits for unformatted code when rustfmt is available"
+    );
+    let formatted = apply_text_edits(unformatted, edits_arr);
+    assert_ne!(formatted, unformatted);
+    assert!(formatted.contains("fn first(x: i32) -> i32 {"));
+    assert!(formatted.contains("fn second(y: i32) -> i32 {"));
 
     // 2. Range formatting: only second function (lines 3..5)
     let range_req = json!({
@@ -263,10 +295,14 @@ fn test_refactor_formatting_and_range_formatting_execution() {
     });
     let range_edits = handle_range_formatting(&range_req, &overlay_mgr);
     let r_arr = range_edits.as_array().expect("range edits array");
-    if !r_arr.is_empty() {
-        let partially_formatted = apply_text_edits(unformatted, r_arr);
-        assert!(partially_formatted.starts_with("fn first( x: i32 ) -> i32 {"));
-    }
+    assert!(
+        !r_arr.is_empty(),
+        "Range formatting MUST return edits for unformatted second function when rustfmt is available"
+    );
+    let partially_formatted = apply_text_edits(unformatted, r_arr);
+    assert_ne!(partially_formatted, unformatted);
+    assert!(partially_formatted.starts_with("fn first( x: i32 ) -> i32 {"));
+    assert!(partially_formatted.contains("fn second(y: i32) -> i32 {"));
 }
 
 #[test]
