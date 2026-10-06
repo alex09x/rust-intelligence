@@ -10,12 +10,12 @@
 
 //! LSP workspace command execution and atomic multi-document WorkspaceEdit application.
 
+pub use super::atomic_write::commit_closed_writes_atomic;
 use super::ident::apply_workspace_text_edits_to_content;
 use crate::lsp::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 
@@ -45,6 +45,7 @@ struct WorkingDoc {
     file_path: String,
     uri: String,
     is_overlay: bool,
+    client_version: Option<i32>,
     version: i32,
     initial_text: String,
     current_text: String,
@@ -94,12 +95,14 @@ pub fn plan_apply_edits(args: &[Value], overlay_mgr: &OverlayManager) -> Result<
                 } else {
                     (false, 0, std::fs::read_to_string(file_path).ok()?)
                 };
+                let client_version = if is_overlay { Some(version) } else { None };
                 docs.insert(
                     file_path.to_string(),
                     WorkingDoc {
                         file_path: file_path.to_string(),
                         uri: uri.to_string(),
                         is_overlay,
+                        client_version,
                         version,
                         initial_text: text.clone(),
                         current_text: text,
@@ -112,6 +115,7 @@ pub fn plan_apply_edits(args: &[Value], overlay_mgr: &OverlayManager) -> Result<
             Some(())
         };
 
+    let mut uses_document_changes = false;
     for arg in args {
         let edit = if arg.get("changes").is_some() || arg.get("documentChanges").is_some() {
             arg
@@ -125,6 +129,7 @@ pub fn plan_apply_edits(args: &[Value], overlay_mgr: &OverlayManager) -> Result<
         if let Some(doc_changes) = edit.get("documentChanges").and_then(|dc| dc.as_array()) {
             if !doc_changes.is_empty() {
                 has_doc_changes = true;
+                uses_document_changes = true;
                 for dc in doc_changes {
                     let uri = dc["textDocument"]["uri"].as_str().unwrap_or("");
                     let doc_version = dc["textDocument"]["version"].as_i64().map(|v| v as i32);
@@ -141,6 +146,7 @@ pub fn plan_apply_edits(args: &[Value], overlay_mgr: &OverlayManager) -> Result<
                     }
                     let doc = working_docs.get_mut(&file_path).unwrap();
                     if let Some(expected_ver) = doc_version {
+                        doc.client_version = Some(expected_ver);
                         if expected_ver != doc.version {
                             return Err(
                                 json!({ "applied": false, "count": 0, "failure": "version_mismatch" }),
@@ -201,6 +207,7 @@ pub fn plan_apply_edits(args: &[Value], overlay_mgr: &OverlayManager) -> Result<
 
     let mut total_count = 0;
     let mut combined_changes = serde_json::Map::new();
+    let mut doc_changes = Vec::new();
     let mut closed_writes = Vec::new();
     let mut open_updates = Vec::new();
 
@@ -214,7 +221,18 @@ pub fn plan_apply_edits(args: &[Value], overlay_mgr: &OverlayManager) -> Result<
         } else {
             doc.all_edits
         };
-        combined_changes.insert(doc.uri.clone(), Value::Array(edits));
+
+        if uses_document_changes {
+            doc_changes.push(json!({
+                "textDocument": {
+                    "uri": doc.uri.clone(),
+                    "version": doc.client_version
+                },
+                "edits": edits
+            }));
+        } else {
+            combined_changes.insert(doc.uri.clone(), Value::Array(edits));
+        }
 
         if doc.is_overlay {
             open_updates.push((doc.file_path, doc.version, doc.current_text));
@@ -223,78 +241,18 @@ pub fn plan_apply_edits(args: &[Value], overlay_mgr: &OverlayManager) -> Result<
         }
     }
 
+    let combined_edit = if uses_document_changes {
+        json!({ "documentChanges": doc_changes })
+    } else {
+        json!({ "changes": combined_changes })
+    };
+
     Ok(ApplyPlan {
         total_count,
-        combined_edit: json!({ "changes": combined_changes }),
+        combined_edit,
         closed_writes,
         open_updates,
     })
-}
-
-pub fn commit_closed_writes_atomic(closed_writes: &[(String, String)]) -> bool {
-    if closed_writes.is_empty() {
-        return true;
-    }
-
-    for (file_path, _) in closed_writes {
-        if Path::new(file_path).exists()
-            && std::fs::OpenOptions::new()
-                .write(true)
-                .open(file_path)
-                .is_err()
-        {
-            return false;
-        }
-    }
-
-    let pid = std::process::id();
-    let mut tmp_files: Vec<(String, String)> = Vec::with_capacity(closed_writes.len());
-
-    for (i, (file_path, new_text)) in closed_writes.iter().enumerate() {
-        let tmp_path = format!("{file_path}.ridx_tmp_{pid}_{i}");
-        if std::fs::write(&tmp_path, new_text).is_err() {
-            let _ = std::fs::remove_file(&tmp_path);
-            for (_, tmp) in &tmp_files {
-                let _ = std::fs::remove_file(tmp);
-            }
-            return false;
-        }
-        tmp_files.push((file_path.clone(), tmp_path));
-    }
-
-    let mut backups: Vec<(String, String)> = Vec::new();
-    let mut publish_success = true;
-
-    for (file_path, tmp_path) in &tmp_files {
-        let bak_path = format!("{file_path}.ridx_bak_{pid}");
-        if Path::new(file_path).exists() {
-            if std::fs::rename(file_path, &bak_path).is_err() {
-                publish_success = false;
-                break;
-            }
-            backups.push((file_path.clone(), bak_path));
-        }
-        if std::fs::rename(tmp_path, file_path).is_err() {
-            publish_success = false;
-            break;
-        }
-    }
-
-    if !publish_success {
-        for (file_path, bak_path) in backups {
-            let _ = std::fs::rename(&bak_path, &file_path);
-        }
-        for (_, tmp_path) in &tmp_files {
-            let _ = std::fs::remove_file(tmp_path);
-        }
-        return false;
-    }
-
-    for (_, bak_path) in backups {
-        let _ = std::fs::remove_file(&bak_path);
-    }
-
-    true
 }
 
 fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
@@ -368,21 +326,14 @@ pub fn handle_apply_edit_response(msg: &Value) -> Option<(Option<Value>, Value)>
         .unwrap_or(false);
 
     if client_applied {
-        if !commit_closed_writes_atomic(&state.plan.closed_writes) {
-            Some((
-                state.command_req_id,
-                json!({ "applied": false, "count": 0, "failure": "disk_write_failed" }),
-            ))
-        } else {
-            Some((
-                state.command_req_id,
-                json!({
-                    "applied": true,
-                    "count": state.plan.total_count,
-                    "edit": state.plan.combined_edit,
-                }),
-            ))
-        }
+        Some((
+            state.command_req_id,
+            json!({
+                "applied": true,
+                "count": state.plan.total_count,
+                "edit": state.plan.combined_edit,
+            }),
+        ))
     } else {
         Some((
             state.command_req_id,
