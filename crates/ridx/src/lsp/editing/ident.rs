@@ -216,3 +216,96 @@ pub fn byte_offset_to_utf16_col(s: &str, byte_offset: usize) -> usize {
     }
     cur
 }
+
+/// Applies a slice of LSP TextEdits from a WorkspaceEdit to the original document text.
+/// Edits refer to the same snapshot, so they are sorted descending and applied in reverse order.
+pub fn apply_workspace_text_edits_to_content(
+    content: &str,
+    edits: &[serde_json::Value],
+) -> Option<String> {
+    if edits.is_empty() {
+        return Some(content.to_string());
+    }
+
+    struct ParsedEdit {
+        start_byte: usize,
+        end_byte: usize,
+        new_text: String,
+    }
+
+    let mut line_starts = Vec::new();
+    let mut current_offset = 0;
+    line_starts.push(0);
+    for b in content.bytes() {
+        current_offset += 1;
+        if b == b'\n' {
+            line_starts.push(current_offset);
+        }
+    }
+
+    let get_byte_offset = |line: usize, utf16_col: usize| -> usize {
+        if line >= line_starts.len() {
+            return content.len();
+        }
+        let line_start = line_starts[line];
+        let next_start = if line + 1 < line_starts.len() {
+            line_starts[line + 1]
+        } else {
+            content.len()
+        };
+        let line_slice = &content[line_start..next_start];
+        let line_text = line_slice.trim_end_matches(['\r', '\n']);
+        let col_offset = utf16_col_to_byte_offset(line_text, utf16_col);
+        (line_start + col_offset).min(content.len())
+    };
+
+    let mut parsed: Vec<ParsedEdit> = Vec::with_capacity(edits.len());
+    for e in edits {
+        let range = e.get("range")?;
+        let sl = range.get("start")?.get("line")?.as_u64()? as usize;
+        let sc = range.get("start")?.get("character")?.as_u64()? as usize;
+        let el = range.get("end")?.get("line")?.as_u64()? as usize;
+        let ec = range.get("end")?.get("character")?.as_u64()? as usize;
+
+        let new_text = e
+            .get("newText")
+            .or_else(|| e.get("text"))
+            .and_then(|t| t.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        let start_byte = get_byte_offset(sl, sc);
+        let end_byte = get_byte_offset(el, ec);
+        if start_byte > end_byte {
+            return None;
+        }
+        parsed.push(ParsedEdit {
+            start_byte,
+            end_byte,
+            new_text,
+        });
+    }
+
+    parsed.sort_by(|a, b| {
+        b.start_byte
+            .cmp(&a.start_byte)
+            .then_with(|| b.end_byte.cmp(&a.end_byte))
+    });
+
+    for i in 0..parsed.len().saturating_sub(1) {
+        if parsed[i + 1].end_byte > parsed[i].start_byte {
+            return None;
+        }
+    }
+
+    let mut result = content.to_string();
+    for edit in parsed {
+        if edit.start_byte <= result.len() && edit.end_byte <= result.len() {
+            result.replace_range(edit.start_byte..edit.end_byte, &edit.new_text);
+        } else {
+            return None;
+        }
+    }
+
+    Some(result)
+}

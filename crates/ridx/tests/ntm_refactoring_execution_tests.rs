@@ -583,3 +583,257 @@ fn test_comparison_preserves_full_path_and_rejects_errors() {
     res.prodcode_span = "Error (failed)".to_string();
     assert!(!res.is_match(), "Errors must not match");
 }
+
+#[test]
+fn test_review_v4651_edits_use_original_coordinates() {
+    let mut overlay_mgr = OverlayManager::new();
+    let uri = "file:///tmp/test_orig_coords.rs";
+    let file = "/tmp/test_orig_coords.rs";
+    overlay_mgr.open_document(uri, file, 1, "alpha beta".to_string());
+
+    let edit_req = json!({
+        "params": {
+            "command": "ridx.applyEdits",
+            "arguments": [
+                {
+                    "changes": {
+                        uri: [
+                            {
+                                "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 5 } },
+                                "newText": "a"
+                            },
+                            {
+                                "range": { "start": { "line": 0, "character": 6 }, "end": { "line": 0, "character": 10 } },
+                                "newText": "b"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    });
+
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    assert_eq!(res["applied"], true);
+    let overlay = overlay_mgr.get(file).unwrap();
+    assert_eq!(overlay.text, "a b");
+}
+
+#[test]
+fn test_review_v4651_dual_edit_representation_applied_once() {
+    let mut overlay_mgr = OverlayManager::new();
+    let uri = "file:///tmp/test_dual_rep.rs";
+    let file = "/tmp/test_dual_rep.rs";
+    overlay_mgr.open_document(uri, file, 1, "fn foo() {}".to_string());
+
+    // Both documentChanges and changes are provided (like rename output)
+    let edit_req = json!({
+        "params": {
+            "command": "ridx.applyEdits",
+            "arguments": [
+                {
+                    "documentChanges": [
+                        {
+                            "textDocument": { "uri": uri, "version": 1 },
+                            "edits": [
+                                {
+                                    "range": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 6 } },
+                                    "newText": "bar"
+                                }
+                            ]
+                        }
+                    ],
+                    "changes": {
+                        uri: [
+                            {
+                                "range": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 6 } },
+                                "newText": "bar"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    });
+
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    assert_eq!(res["applied"], true);
+    assert_eq!(
+        res["count"], 1,
+        "Only documentChanges should be applied, not both"
+    );
+    let overlay = overlay_mgr.get(file).unwrap();
+    assert_eq!(overlay.text, "fn bar() {}");
+}
+
+#[test]
+fn test_review_v4651_stale_version_rejected() {
+    let mut overlay_mgr = OverlayManager::new();
+    let uri = "file:///tmp/test_stale_ver.rs";
+    let file = "/tmp/test_stale_ver.rs";
+    overlay_mgr.open_document(uri, file, 7, "fn foo() {}".to_string());
+
+    let stale_req = json!({
+        "params": {
+            "command": "ridx.applyEdits",
+            "arguments": [
+                {
+                    "documentChanges": [
+                        {
+                            "textDocument": { "uri": uri, "version": 1 },
+                            "edits": [
+                                {
+                                    "range": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 6 } },
+                                    "newText": "bar"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    });
+
+    let res = handle_execute_command(&stale_req, &mut overlay_mgr);
+    assert_eq!(res["applied"], false, "Stale version edit must be rejected");
+    let overlay = overlay_mgr.get(file).unwrap();
+    assert_eq!(overlay.text, "fn foo() {}");
+    assert_eq!(overlay.version, 7, "Version must not rollback");
+}
+
+#[test]
+fn test_review_v4651_closed_edit_remains_dirty() {
+    let mut overlay_mgr = OverlayManager::new();
+    let temp_file = std::env::temp_dir().join(format!("test_closed_{}.rs", std::process::id()));
+    let _ = fs::write(&temp_file, "fn foo() {}");
+    let uri = format!("file://{}", temp_file.display());
+    let file = temp_file.to_str().unwrap();
+
+    let edit_req = json!({
+        "params": {
+            "command": "ridx.applyEdits",
+            "arguments": [
+                {
+                    "changes": {
+                        &uri: [
+                            {
+                                "range": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 6 } },
+                                "newText": "bar"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    });
+
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    assert_eq!(res["applied"], true);
+    let overlay = overlay_mgr.get(file).unwrap();
+    assert_eq!(overlay.text, "fn bar() {}");
+    assert!(
+        overlay.is_dirty(),
+        "Closed file edited on disk must remain dirty relative to compiled index"
+    );
+    let _ = fs::remove_file(temp_file);
+}
+
+#[test]
+fn test_review_v4651_extract_preserves_short_circuit() {
+    let code = "fn f(){ let ok = false && side_effect(); }";
+    let overlay_mgr = OverlayManager::new();
+    let temp_file = std::env::temp_dir().join(format!("test_sc_{}.rs", std::process::id()));
+    let _ = fs::write(&temp_file, code);
+    let uri = format!("file://{}", temp_file.display());
+
+    // Target side_effect() (col 26..39)
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "range": {
+                "start": { "line": 0, "character": 26 },
+                "end": { "line": 0, "character": 39 }
+            },
+            "context": {
+                "diagnostics": [],
+                "only": ["refactor.extract"]
+            }
+        }
+    });
+
+    let actions = handle_code_action(&req, &overlay_mgr);
+    let act_arr = actions.as_array().expect("actions array");
+    assert!(
+        act_arr.is_empty(),
+        "Extract variable must NOT be proposed for right-hand side of short-circuit operator"
+    );
+    let _ = fs::remove_file(temp_file);
+}
+
+#[test]
+fn test_review_v4651_inline_completion_unicode_edit() {
+    let code = "fn f(){ привет }";
+    let overlay_mgr = OverlayManager::new();
+    let temp_file = std::env::temp_dir().join(format!("test_inline_u_{}.rs", std::process::id()));
+    let _ = fs::write(&temp_file, code);
+    let uri = format!("file://{}", temp_file.display());
+
+    // Cursor at end of 'привет' (col 14 in UTF-16)
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 0, "character": 14 }
+        }
+    });
+
+    let res = ridx::lsp::intelligence::hints::handle_inline_completion(&req, Some(&overlay_mgr));
+    let items = res["items"].as_array().expect("items array");
+    assert!(!items.is_empty());
+    let range = &items[0]["range"];
+    assert_eq!(
+        range["start"]["character"], 8,
+        "Must start at start of 'привет', not earlier"
+    );
+    assert_eq!(range["end"]["character"], 14);
+    assert_eq!(items[0]["insertText"], "привет");
+    let _ = fs::remove_file(temp_file);
+}
+
+#[test]
+fn test_review_v4651_harness_routes_response_ids_and_preserves_errors() {
+    use ridx::compare::client::{read_lsp_response, send_lsp_msg};
+    use std::io::Cursor;
+
+    let notif = json!({
+        "jsonrpc": "2.0",
+        "method": "window/logMessage",
+        "params": {}
+    });
+    let resp = json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": ["test"]
+    });
+    let mut stream = Vec::new();
+    send_lsp_msg(&mut stream, &notif).unwrap();
+    send_lsp_msg(&mut stream, &resp).unwrap();
+
+    let mut reader = std::io::BufReader::new(Cursor::new(stream));
+    let parsed_resp = read_lsp_response(&mut reader, 2).expect("Must find response id 2");
+    assert_eq!(parsed_resp["id"], 2);
+    assert_eq!(parsed_resp["result"][0], "test");
+
+    // Stream with JSON-RPC error response
+    let err = json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "error": { "code": -32602, "message": "Invalid" }
+    });
+    let mut err_stream = Vec::new();
+    send_lsp_msg(&mut err_stream, &err).unwrap();
+
+    let mut err_reader = std::io::BufReader::new(Cursor::new(err_stream));
+    let err_resp = read_lsp_response(&mut err_reader, 2).expect("Must read error response");
+    assert!(err_resp.get("error").is_some());
+    assert_eq!(err_resp["error"]["code"], -32602);
+}

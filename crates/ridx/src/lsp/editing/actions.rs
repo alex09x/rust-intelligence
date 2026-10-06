@@ -10,9 +10,11 @@
 
 //! Code actions, refactoring suggestions, and workspace command execution.
 
-use super::ident::{byte_offset_to_utf16_col, utf16_col_to_byte_offset};
+use super::ident::{
+    apply_workspace_text_edits_to_content, byte_offset_to_utf16_col, utf16_col_to_byte_offset,
+};
 use crate::lsp::protocol::uri_to_path;
-use crate::overlay::{DocumentOverlay, OverlayManager};
+use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 
 pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
@@ -145,59 +147,68 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
                         .flatten()
                         .max();
 
-                    let mut var_name = "extracted".to_string();
-                    let mut counter = 1;
-                    while doc_text.contains(&var_name) {
-                        var_name = format!("extracted_{counter}");
-                        counter += 1;
-                    }
-
-                    let (insert_line, insert_col, new_text) = if let Some(delim_idx) = last_delim {
-                        let mut after_delim = delim_idx + 1;
-                        while after_delim < lines[sl].len()
-                            && lines[sl].as_bytes()[after_delim].is_ascii_whitespace()
-                        {
-                            after_delim += 1;
-                        }
-                        let col = byte_offset_to_utf16_col(lines[sl], after_delim) as u32;
-                        (
-                            sl as u32,
-                            col,
-                            format!("let {} = {}; ", var_name, expr.trim()),
-                        )
+                    let stmt_fragment = if let Some(delim_idx) = last_delim {
+                        &line_before[delim_idx + 1..]
                     } else {
-                        let indent: String = lines[sl]
-                            .chars()
-                            .take_while(|c| c.is_whitespace())
-                            .collect();
-                        (
-                            sl as u32,
-                            0u32,
-                            format!("{indent}let {} = {};\n", var_name, expr.trim()),
-                        )
+                        line_before
                     };
 
-                    let insert_edit = json!({
-                        "range": {
-                            "start": { "line": insert_line, "character": insert_col },
-                            "end": { "line": insert_line, "character": insert_col }
-                        },
-                        "newText": new_text
-                    });
-                    let replace_edit = json!({
-                        "range": range,
-                        "newText": var_name
-                    });
-
-                    actions.push(json!({
-                        "title": "Extract variable",
-                        "kind": "refactor.extract",
-                        "edit": {
-                            "changes": {
-                                uri: [insert_edit, replace_edit]
-                            }
+                    if !stmt_fragment.contains("&&") && !stmt_fragment.contains("||") {
+                        let mut var_name = "extracted".to_string();
+                        let mut counter = 1;
+                        while doc_text.contains(&var_name) {
+                            var_name = format!("extracted_{counter}");
+                            counter += 1;
                         }
-                    }));
+
+                        let (insert_line, insert_col, new_text) =
+                            if let Some(delim_idx) = last_delim {
+                                let mut after_delim = delim_idx + 1;
+                                while after_delim < lines[sl].len()
+                                    && lines[sl].as_bytes()[after_delim].is_ascii_whitespace()
+                                {
+                                    after_delim += 1;
+                                }
+                                let col = byte_offset_to_utf16_col(lines[sl], after_delim) as u32;
+                                (
+                                    sl as u32,
+                                    col,
+                                    format!("let {} = {}; ", var_name, expr.trim()),
+                                )
+                            } else {
+                                let indent: String = lines[sl]
+                                    .chars()
+                                    .take_while(|c| c.is_whitespace())
+                                    .collect();
+                                (
+                                    sl as u32,
+                                    0u32,
+                                    format!("{indent}let {} = {};\n", var_name, expr.trim()),
+                                )
+                            };
+
+                        let insert_edit = json!({
+                            "range": {
+                                "start": { "line": insert_line, "character": insert_col },
+                                "end": { "line": insert_line, "character": insert_col }
+                            },
+                            "newText": new_text
+                        });
+                        let replace_edit = json!({
+                            "range": range,
+                            "newText": var_name
+                        });
+
+                        actions.push(json!({
+                            "title": "Extract variable",
+                            "kind": "refactor.extract",
+                            "edit": {
+                                "changes": {
+                                    uri: [insert_edit, replace_edit]
+                                }
+                            }
+                        }));
+                    }
                 }
             }
         }
@@ -283,40 +294,46 @@ pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> 
                             arg
                         };
 
+                    let mut has_doc_changes = false;
                     if let Some(doc_changes) =
                         edit.get("documentChanges").and_then(|dc| dc.as_array())
                     {
-                        for dc in doc_changes {
-                            let uri = dc["textDocument"]["uri"].as_str().unwrap_or("");
-                            let doc_version =
-                                dc["textDocument"]["version"].as_i64().map(|v| v as i32);
-                            let file_path = uri_to_path(uri);
-                            if let Some(edits) = dc["edits"].as_array() {
-                                if apply_workspace_text_edits(
-                                    overlay_mgr,
-                                    &file_path,
-                                    uri,
-                                    doc_version,
-                                    edits,
-                                ) {
-                                    applied_count += edits.len();
+                        if !doc_changes.is_empty() {
+                            has_doc_changes = true;
+                            for dc in doc_changes {
+                                let uri = dc["textDocument"]["uri"].as_str().unwrap_or("");
+                                let doc_version =
+                                    dc["textDocument"]["version"].as_i64().map(|v| v as i32);
+                                let file_path = uri_to_path(uri);
+                                if let Some(edits) = dc["edits"].as_array() {
+                                    if apply_workspace_text_edits(
+                                        overlay_mgr,
+                                        &file_path,
+                                        uri,
+                                        doc_version,
+                                        edits,
+                                    ) {
+                                        applied_count += edits.len();
+                                    }
                                 }
                             }
                         }
                     }
 
-                    if let Some(changes) = edit.get("changes").and_then(|c| c.as_object()) {
-                        for (uri, edits) in changes {
-                            let file_path = uri_to_path(uri);
-                            if let Some(edits_arr) = edits.as_array() {
-                                if apply_workspace_text_edits(
-                                    overlay_mgr,
-                                    &file_path,
-                                    uri,
-                                    None,
-                                    edits_arr,
-                                ) {
-                                    applied_count += edits_arr.len();
+                    if !has_doc_changes {
+                        if let Some(changes) = edit.get("changes").and_then(|c| c.as_object()) {
+                            for (uri, edits) in changes {
+                                let file_path = uri_to_path(uri);
+                                if let Some(edits_arr) = edits.as_array() {
+                                    if apply_workspace_text_edits(
+                                        overlay_mgr,
+                                        &file_path,
+                                        uri,
+                                        None,
+                                        edits_arr,
+                                    ) {
+                                        applied_count += edits_arr.len();
+                                    }
                                 }
                             }
                         }
@@ -340,24 +357,25 @@ fn apply_workspace_text_edits(
         return false;
     }
     if let Some(overlay) = overlay_mgr.get_mut(file_path) {
-        let v = match version {
-            Some(ver) if ver > 0 => ver,
-            _ => overlay.version + 1,
+        if let Some(expected_ver) = version {
+            if expected_ver != overlay.version {
+                return false;
+            }
+        }
+        let new_text = match apply_workspace_text_edits_to_content(&overlay.text, edits) {
+            Some(t) => t,
+            None => return false,
         };
-        overlay.apply_content_changes(v, edits);
+        let new_ver = overlay.version + 1;
+        overlay.update(new_ver, new_text);
         true
     } else if let Ok(content) = std::fs::read_to_string(file_path) {
-        let mut overlay = DocumentOverlay::new_with_provenance(
-            uri,
-            file_path,
-            version.unwrap_or(1),
-            content,
-            true,
-        );
-        overlay.apply_content_changes(version.unwrap_or(1), edits);
-        let modified = overlay.text.clone();
-        if std::fs::write(file_path, &modified).is_ok() {
-            overlay_mgr.open_with_provenance(uri, file_path, version.unwrap_or(1), modified, true);
+        let new_text = match apply_workspace_text_edits_to_content(&content, edits) {
+            Some(t) => t,
+            None => return false,
+        };
+        if std::fs::write(file_path, &new_text).is_ok() {
+            overlay_mgr.open_with_provenance(uri, file_path, version.unwrap_or(1), new_text, false);
             true
         } else {
             false

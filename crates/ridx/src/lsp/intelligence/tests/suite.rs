@@ -190,9 +190,12 @@ fn test_inlay_hints_and_inline() {
     let res_mut = handle_inlay_hint(&req_mut, Some(&ws), &overlay_mgr);
     assert!(res_mut.is_array());
 
-    let inline_vals = handle_inline_value(&hint_req);
+    let inline_vals = handle_inline_value(&hint_req, Some(&overlay_mgr));
     assert!(inline_vals.is_array());
-    assert_eq!(handle_inline_completion(&hint_req), json!({ "items": [] }));
+    assert_eq!(
+        handle_inline_completion(&hint_req, Some(&overlay_mgr)),
+        json!({ "items": [] })
+    );
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

@@ -227,8 +227,8 @@ pub fn dispatch_lsp_message<W: Write>(
             let ws = doc_ws(&msg, multi_root);
             handle_inlay_hint(&msg, ws, overlay_mgr)
         }
-        "textDocument/inlineValue" => handle_inline_value(&msg),
-        "textDocument/inlineCompletion" => handle_inline_completion(&msg),
+        "textDocument/inlineValue" => handle_inline_value(&msg, Some(overlay_mgr)),
+        "textDocument/inlineCompletion" => handle_inline_completion(&msg, Some(overlay_mgr)),
         "textDocument/prepareCallHierarchy" => {
             let ws = doc_ws(&msg, multi_root);
             handle_prepare_call_hierarchy(&msg, ws, overlay_mgr, &mut conv)
@@ -258,11 +258,14 @@ pub fn dispatch_lsp_message<W: Write>(
         "documentLink/resolve" => handle_document_link_resolve(&msg),
         "textDocument/documentColor" => handle_document_color(&msg),
         "textDocument/colorPresentation" => handle_color_presentation(&msg),
-        "textDocument/semanticTokens/full" => handle_semantic_tokens_full(&msg, overlay_mgr),
+        "textDocument/semanticTokens/full" | "textDocument/semanticTokens/full/delta" => {
+            handle_semantic_tokens_full(&msg, overlay_mgr)
+        }
         "textDocument/foldingRange" => handle_folding_range(&msg, overlay_mgr),
         "textDocument/codeLens" => handle_code_lens(&msg, overlay_mgr),
         "codeLens/resolve" => handle_code_lens_resolve(&msg),
         "textDocument/diagnostic" => handle_diagnostic(&msg, overlay_mgr),
+        "workspace/diagnostic" => json!({ "items": [] }),
         "textDocument/moniker" => {
             let ws = doc_ws(&msg, multi_root);
             handle_moniker(&msg, ws, overlay_mgr, &mut conv)
