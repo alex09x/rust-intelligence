@@ -11,17 +11,10 @@
 //! Direct LSP comparison harness for pinned rust-analyzer and RIDX.
 
 use super::client::execute_pinned_ra_lsp;
+pub use super::types::ExternalLspResult;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Instant;
-
-pub struct ExternalLspResult {
-    pub found: bool,
-    pub span: String,
-    pub count: usize,
-    pub latency_micros: u128,
-    pub rss_bytes: u64,
-}
 
 pub fn find_pinned_rust_analyzer() -> Option<PathBuf> {
     if let Ok(path) = std::env::var("RUST_ANALYZER_BIN") {

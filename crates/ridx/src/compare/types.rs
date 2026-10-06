@@ -36,6 +36,45 @@ impl CapabilityKind {
     }
 }
 
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExternalLspResult {
+    pub found: bool,
+    pub span: String,
+    pub count: usize,
+    pub latency_micros: u128,
+    pub rss_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SymmetricScenario {
+    pub name: String,
+    pub capability: String,
+    pub target: String,
+    pub location: Option<(String, u32, u32)>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServerMetrics {
+    pub server_name: String,
+    pub server_version: String,
+    pub spawn_and_init_micros: u128,
+    pub readiness_warmup_micros: u128,
+    pub query_latencies_micros: HashMap<String, u128>,
+    pub query_results: HashMap<String, ExternalLspResult>,
+    pub shutdown_micros: u128,
+    pub peak_rss_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SymmetricComparisonSummary {
+    pub workspace_root: String,
+    pub ridx: ServerMetrics,
+    pub rust_analyzer: ServerMetrics,
+    pub scenario_matches: HashMap<String, bool>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComparisonResult {
     pub symbol: String,

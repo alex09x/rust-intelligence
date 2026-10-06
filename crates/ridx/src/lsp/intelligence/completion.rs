@@ -131,11 +131,28 @@ pub fn handle_completion(
                 }
             }
             if seen_names.insert(s.name.to_string()) {
-                items.push(json!({
+                let auto_import_edit = overlay_opt
+                    .and_then(|ov| super::auto_import::compute_auto_import_edit(&ov.text, s.path));
+
+                let detail = if auto_import_edit.is_some() {
+                    format!("{} (auto-import)", s.path)
+                } else if let Some(sig) = s.signature {
+                    sig.to_string()
+                } else {
+                    s.path.to_string()
+                };
+
+                let mut item = json!({
                     "label": s.name,
                     "kind": lsp_completion_kind(s.kind),
-                    "detail": s.signature
-                }));
+                    "detail": detail
+                });
+
+                if let Some(edit) = auto_import_edit {
+                    item["additionalTextEdits"] = json!([edit]);
+                }
+
+                items.push(item);
                 if items.len() >= 100 {
                     is_capped = true;
                     break;

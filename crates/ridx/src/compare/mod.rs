@@ -14,6 +14,7 @@ pub mod client;
 pub mod def_refs;
 pub mod harness;
 pub mod hover_syms;
+pub mod symmetric;
 pub mod system;
 pub mod transport;
 pub mod types;
@@ -21,6 +22,7 @@ pub mod types;
 #[cfg(test)]
 mod tests;
 
+pub use symmetric::*;
 pub use transport::*;
 
 pub use def_refs::{compare_definition, compare_references};

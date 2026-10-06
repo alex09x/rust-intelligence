@@ -149,6 +149,11 @@ pub fn dispatch_lsp_message<W: Write>(
             let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
             let file = uri_to_path(uri);
             overlay_mgr.save_document(&file);
+            if let Some(ws) = multi_root.find_workspace_for_path(Path::new(&file)) {
+                if let Some(root) = ws.workspace_root() {
+                    let _ = lifecycle.flycheck.run_check(root, writer);
+                }
+            }
             return Ok(true);
         }
 

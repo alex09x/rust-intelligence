@@ -1,0 +1,341 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+//! Symmetric framed JSON-RPC comparison runner for benchmarking RIDX and rust-analyzer.
+
+use super::client::extract_symbol_location;
+use super::system::get_process_rss_bytes;
+use super::transport::*;
+use super::types::{
+    ExternalLspResult, ServerMetrics, SymmetricComparisonSummary, SymmetricScenario,
+};
+use std::collections::HashMap;
+use std::io::BufReader;
+use std::path::Path;
+use std::process::{Command, Stdio};
+use std::time::Instant;
+
+pub fn get_server_version(cmd: &[String]) -> String {
+    if let Some(bin) = cmd.first() {
+        if let Ok(out) = Command::new(bin).arg("--version").output() {
+            if out.status.success() {
+                return String::from_utf8_lossy(&out.stdout).trim().to_string();
+            }
+        }
+    }
+    "unknown".to_string()
+}
+
+pub fn run_server_session(
+    server_name: &str,
+    cmd_args: &[String],
+    root: &Path,
+    scenarios: &[SymmetricScenario],
+) -> Option<ServerMetrics> {
+    if cmd_args.is_empty() {
+        return None;
+    }
+
+    let version = get_server_version(cmd_args);
+
+    let mut cmd = Command::new(&cmd_args[0]);
+    if cmd_args.len() > 1 {
+        cmd.args(&cmd_args[1..]);
+    }
+    cmd.current_dir(root);
+    cmd.stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+
+    let mut child = cmd.spawn().ok()?;
+    let pid = child.id();
+    let mut stdin = child.stdin.take()?;
+    let stdout = child.stdout.take()?;
+    let mut reader = BufReader::new(stdout);
+
+    let canon_root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+    let root_uri = format!("file://{}", canon_root.display());
+
+    // 1. Initialize
+    let t_init_start = Instant::now();
+    let init_req = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "processId": null,
+            "rootUri": root_uri,
+            "capabilities": {}
+        }
+    });
+    send_lsp_msg(&mut stdin, &init_req).ok()?;
+    let _init_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, 1)?;
+    let init_notif = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "initialized",
+        "params": {}
+    });
+    send_lsp_msg(&mut stdin, &init_notif).ok()?;
+    let spawn_and_init_micros = t_init_start.elapsed().as_micros();
+
+    // 2. Readiness / Warmup
+    let t_warmup_start = Instant::now();
+    let warmup_symbol = scenarios
+        .first()
+        .map(|s| s.target.as_str())
+        .unwrap_or("main");
+    let warmup_req = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 99,
+        "method": "workspace/symbol",
+        "params": { "query": warmup_symbol }
+    });
+    send_lsp_msg(&mut stdin, &warmup_req).ok()?;
+    let _ = read_lsp_response_with_writer(&mut reader, &mut stdin, 99);
+    let readiness_warmup_micros = t_warmup_start.elapsed().as_micros();
+
+    // 3. Run Scenarios
+    let mut query_latencies_micros = HashMap::new();
+    let mut query_results = HashMap::new();
+
+    let mut req_id = 100i64;
+    for sc in scenarios {
+        req_id += 1;
+        let resolved_loc: Option<(String, u32, u32)> = if let Some((f, l, c)) = &sc.location {
+            Some((
+                resolve_file_uri(f, Some(root)),
+                l.saturating_sub(1),
+                c.saturating_sub(1),
+            ))
+        } else if matches!(
+            sc.capability.as_str(),
+            "def"
+                | "textDocument/definition"
+                | "refs"
+                | "textDocument/references"
+                | "hover"
+                | "textDocument/hover"
+                | "callers"
+                | "incomingCalls"
+        ) {
+            let sym_id = req_id;
+            req_id += 1;
+            let sym_req = serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": sym_id,
+                "method": "workspace/symbol",
+                "params": { "query": sc.target }
+            });
+            let _ = send_lsp_msg(&mut stdin, &sym_req);
+            let sym_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, sym_id);
+            sym_resp
+                .as_ref()
+                .and_then(|r| extract_symbol_location(r, &sc.target))
+        } else {
+            None
+        };
+
+        let t_query_start = Instant::now();
+        let resp = execute_scenario_query(
+            &mut reader,
+            &mut stdin,
+            req_id,
+            &sc.capability,
+            &sc.target,
+            resolved_loc.as_ref(),
+        );
+        let query_latency = t_query_start.elapsed().as_micros();
+
+        let lsp_res = resp
+            .and_then(|r| parse_lsp_result(&r, query_latency, 0))
+            .unwrap_or_else(|| ExternalLspResult {
+                found: false,
+                span: "Query failed or timed out".to_string(),
+                count: 0,
+                latency_micros: query_latency,
+                rss_bytes: 0,
+            });
+
+        query_latencies_micros.insert(sc.name.clone(), query_latency);
+        query_results.insert(sc.name.clone(), lsp_res);
+    }
+
+    let peak_rss_bytes = get_process_rss_bytes(pid).unwrap_or(0);
+
+    // 4. Shutdown & Exit
+    let t_shutdown_start = Instant::now();
+    let shutdown_req = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 999,
+        "method": "shutdown",
+        "params": null
+    });
+    let _ = send_lsp_msg(&mut stdin, &shutdown_req);
+    let _ = read_lsp_response_with_writer(&mut reader, &mut stdin, 999);
+    let exit_notif = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "exit",
+        "params": null
+    });
+    let _ = send_lsp_msg(&mut stdin, &exit_notif);
+    let _ = child.kill();
+    let _ = child.wait();
+    let shutdown_micros = t_shutdown_start.elapsed().as_micros();
+
+    Some(ServerMetrics {
+        server_name: server_name.to_string(),
+        server_version: version,
+        spawn_and_init_micros,
+        readiness_warmup_micros,
+        query_latencies_micros,
+        query_results,
+        shutdown_micros,
+        peak_rss_bytes,
+    })
+}
+
+fn execute_scenario_query<R: std::io::BufRead, W: std::io::Write>(
+    reader: &mut R,
+    writer: &mut W,
+    id: i64,
+    capability: &str,
+    target: &str,
+    resolved_loc: Option<&(String, u32, u32)>,
+) -> Option<serde_json::Value> {
+    match capability {
+        "callers" | "incomingCalls" => {
+            let (uri, line, col) = resolved_loc?;
+            let prep_req = serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "method": "textDocument/prepareCallHierarchy",
+                "params": {
+                    "textDocument": { "uri": uri },
+                    "position": { "line": line, "character": col }
+                }
+            });
+            send_lsp_msg(writer, &prep_req).ok()?;
+            let prep_resp = read_lsp_response_with_writer(reader, writer, id)?;
+            if let Some(items) = prep_resp.get("result").and_then(|r| r.as_array()) {
+                if let Some(first_item) = items.first() {
+                    let inc_req = serde_json::json!({
+                        "jsonrpc": "2.0",
+                        "id": id + 500,
+                        "method": "callHierarchy/incomingCalls",
+                        "params": { "item": first_item }
+                    });
+                    send_lsp_msg(writer, &inc_req).ok()?;
+                    return read_lsp_response_with_writer(reader, writer, id + 500);
+                }
+            }
+            Some(prep_resp)
+        }
+        "refs" | "textDocument/references" => {
+            let (uri, line, col) = resolved_loc?;
+            let ref_req = serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "method": "textDocument/references",
+                "params": {
+                    "textDocument": { "uri": uri },
+                    "position": { "line": line, "character": col },
+                    "context": { "includeDeclaration": true }
+                }
+            });
+            send_lsp_msg(writer, &ref_req).ok()?;
+            read_lsp_response_with_writer(reader, writer, id)
+        }
+        "def" | "textDocument/definition" => {
+            let (uri, line, col) = resolved_loc?;
+            let def_req = serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "method": "textDocument/definition",
+                "params": {
+                    "textDocument": { "uri": uri },
+                    "position": { "line": line, "character": col }
+                }
+            });
+            send_lsp_msg(writer, &def_req).ok()?;
+            read_lsp_response_with_writer(reader, writer, id)
+        }
+        "hover" | "textDocument/hover" => {
+            let (uri, line, col) = resolved_loc?;
+            let hover_req = serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "method": "textDocument/hover",
+                "params": {
+                    "textDocument": { "uri": uri },
+                    "position": { "line": line, "character": col }
+                }
+            });
+            send_lsp_msg(writer, &hover_req).ok()?;
+            read_lsp_response_with_writer(reader, writer, id)
+        }
+        _ => {
+            let sym_req = serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "method": "workspace/symbol",
+                "params": { "query": target }
+            });
+            send_lsp_msg(writer, &sym_req).ok()?;
+            read_lsp_response_with_writer(reader, writer, id)
+        }
+    }
+}
+
+pub fn run_symmetric_comparison(
+    root: &Path,
+    ridx_cmd: &[String],
+    ra_cmd: &[String],
+    scenarios: &[SymmetricScenario],
+) -> Option<SymmetricComparisonSummary> {
+    let ridx_metrics = run_server_session("ridx", ridx_cmd, root, scenarios)?;
+    let ra_metrics = run_server_session("rust-analyzer", ra_cmd, root, scenarios)?;
+
+    let mut scenario_matches = HashMap::new();
+    for sc in scenarios {
+        let r_res = ridx_metrics.query_results.get(&sc.name);
+        let ra_res = ra_metrics.query_results.get(&sc.name);
+        let is_match = match (r_res, ra_res) {
+            (Some(r), Some(ra)) => {
+                if !r.found && !ra.found {
+                    true
+                } else if r.found && ra.found {
+                    normalize_span(&r.span) == normalize_span(&ra.span)
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        };
+        scenario_matches.insert(sc.name.clone(), is_match);
+    }
+
+    Some(SymmetricComparisonSummary {
+        workspace_root: root.display().to_string(),
+        ridx: ridx_metrics,
+        rust_analyzer: ra_metrics,
+        scenario_matches,
+    })
+}
+
+fn normalize_span(span: &str) -> String {
+    let s = span.trim().trim_start_matches("file://");
+    if let Some((path_part, rest)) = s.split_once(':') {
+        let p = Path::new(path_part);
+        let norm_path = p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
+        format!("{}:{rest}", norm_path.display())
+    } else {
+        s.to_string()
+    }
+}

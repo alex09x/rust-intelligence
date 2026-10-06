@@ -93,3 +93,106 @@ pub fn read_lsp_response_with_writer<R: BufRead, W: Write>(
     }
     None
 }
+
+pub fn extract_target_span(item: &Value) -> String {
+    let uri = item
+        .get("uri")
+        .or_else(|| item.get("targetUri"))
+        .or_else(|| item.get("location").and_then(|l| l.get("uri")))
+        .and_then(|u| u.as_str())
+        .unwrap_or("");
+    let range = item
+        .get("range")
+        .or_else(|| item.get("targetRange"))
+        .or_else(|| item.get("location").and_then(|l| l.get("range")));
+    let line = range
+        .and_then(|r| r.get("start"))
+        .and_then(|s| s.get("line"))
+        .and_then(|l| l.as_u64())
+        .unwrap_or(0);
+    let col = range
+        .and_then(|r| r.get("start"))
+        .and_then(|s| s.get("character"))
+        .and_then(|c| c.as_u64())
+        .unwrap_or(0);
+    format!(
+        "{}:{}:{}",
+        uri.trim_start_matches("file://"),
+        line + 1,
+        col + 1
+    )
+}
+
+pub fn parse_lsp_result(
+    resp: &Value,
+    latency: u128,
+    rss: u64,
+) -> Option<super::types::ExternalLspResult> {
+    let val = resp.get("result")?;
+    if val.is_null() {
+        return Some(super::types::ExternalLspResult {
+            found: false,
+            span: "Not found".to_string(),
+            count: 0,
+            latency_micros: latency,
+            rss_bytes: rss,
+        });
+    }
+
+    if let Some(arr) = val.as_array() {
+        if arr.is_empty() {
+            Some(super::types::ExternalLspResult {
+                found: false,
+                span: "Not found".to_string(),
+                count: 0,
+                latency_micros: latency,
+                rss_bytes: rss,
+            })
+        } else {
+            let first = &arr[0];
+            let item = first.get("from").unwrap_or(first);
+            let span = extract_target_span(item);
+            Some(super::types::ExternalLspResult {
+                found: true,
+                span,
+                count: arr.len(),
+                latency_micros: latency,
+                rss_bytes: rss,
+            })
+        }
+    } else if let Some(obj) = val.as_object() {
+        if let Some(contents) = obj.get("contents") {
+            let text = if let Some(v) = contents.get("value").and_then(|v| v.as_str()) {
+                v.to_string()
+            } else if let Some(s) = contents.as_str() {
+                s.to_string()
+            } else {
+                contents.to_string()
+            };
+            Some(super::types::ExternalLspResult {
+                found: !text.is_empty(),
+                span: text,
+                count: 1,
+                latency_micros: latency,
+                rss_bytes: rss,
+            })
+        } else {
+            let span = extract_target_span(val);
+            Some(super::types::ExternalLspResult {
+                found: true,
+                span,
+                count: 1,
+                latency_micros: latency,
+                rss_bytes: rss,
+            })
+        }
+    } else {
+        Some(super::types::ExternalLspResult {
+            found: false,
+            span: "Not found".to_string(),
+            count: 0,
+            latency_micros: latency,
+            rss_bytes: rss,
+        })
+    }
+}

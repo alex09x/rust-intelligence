@@ -23,6 +23,7 @@ pub mod rename;
 mod tests;
 
 pub use actions::*;
+#[allow(unused_imports)]
 pub use atomic_write::*;
 pub use commands::*;
 pub use format::*;

@@ -10,8 +10,10 @@
 
 //! LSP server lifecycle state machine, capability advertisement, and shutdown handling.
 
+use crate::lsp::presentation::flycheck::FlycheckState;
 use serde_json::{json, Value};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServerState {
@@ -22,6 +24,7 @@ pub enum ServerState {
 
 pub struct LifecycleManager {
     state: ServerState,
+    pub flycheck: Arc<FlycheckState>,
 }
 
 impl Default for LifecycleManager {
@@ -34,6 +37,7 @@ impl LifecycleManager {
     pub fn new() -> Self {
         Self {
             state: ServerState::Uninitialized,
+            flycheck: Arc::new(FlycheckState::new()),
         }
     }
 
@@ -165,6 +169,7 @@ impl LifecycleManager {
         if self.state == ServerState::ShutDown {
             return Err((-32600, "Server is already shut down".to_string()));
         }
+        self.flycheck.cancel();
         self.state = ServerState::ShutDown;
         Ok(Value::Null)
     }

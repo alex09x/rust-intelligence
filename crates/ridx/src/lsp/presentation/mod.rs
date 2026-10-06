@@ -11,6 +11,7 @@
 //! LSP presentation handlers: selection range, document links, diagnostics, moniker, and content.
 
 pub mod diagnostics;
+pub mod flycheck;
 pub mod tokens;
 pub mod workspace_diag;
 
@@ -18,6 +19,7 @@ pub mod workspace_diag;
 pub mod tests;
 
 pub use diagnostics::*;
+pub use flycheck::*;
 pub use tokens::*;
 pub use workspace_diag::*;
 

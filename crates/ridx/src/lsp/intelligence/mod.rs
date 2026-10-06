@@ -10,6 +10,7 @@
 
 //! LSP intelligence handlers: hover, completion, signature help, and inlay hints.
 
+pub mod auto_import;
 pub mod completion;
 pub mod hints;
 pub mod hover;
@@ -18,6 +19,7 @@ pub mod signature;
 #[cfg(test)]
 pub mod tests;
 
+pub use auto_import::*;
 pub use completion::*;
 pub use hints::*;
 pub use hover::*;
