@@ -15,12 +15,15 @@
 //! declared items within milliseconds, even when the buffer contains incomplete syntax
 //! or compilation errors.
 
+pub mod imports;
 pub mod manager;
 pub mod mapping;
 pub mod parser;
 pub mod position;
 pub mod query;
 
+#[allow(unused_imports)]
+pub use imports::*;
 #[allow(unused_imports)]
 pub use manager::*;
 #[allow(unused_imports)]

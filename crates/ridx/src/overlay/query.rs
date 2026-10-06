@@ -246,6 +246,12 @@ pub fn find_document_matching_identifiers(text: &str, target_name: &str) -> Vec<
     let mut line_start_byte = 0;
 
     while i < n {
+        while i < n && !text.is_char_boundary(i) {
+            i += 1;
+        }
+        if i >= n {
+            break;
+        }
         let b = bytes[i];
 
         if b == b'\n' {
@@ -281,6 +287,9 @@ pub fn find_document_matching_identifiers(text: &str, target_name: &str) -> Vec<
                     i += 1;
                 }
             }
+            if depth > 0 {
+                i = n;
+            }
             continue;
         }
 
@@ -313,6 +322,7 @@ pub fn find_document_matching_identifiers(text: &str, target_name: &str) -> Vec<
 
         if b == b'"' {
             i += 1;
+            let mut closed = false;
             while i < n {
                 if bytes[i] == b'\n' {
                     line += 1;
@@ -324,9 +334,13 @@ pub fn find_document_matching_identifiers(text: &str, target_name: &str) -> Vec<
                 }
                 if bytes[i] == b'"' {
                     i += 1;
+                    closed = true;
                     break;
                 }
                 i += 1;
+            }
+            if !closed {
+                i = n;
             }
             continue;
         }

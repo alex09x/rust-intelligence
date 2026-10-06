@@ -171,10 +171,12 @@ pub fn handle_rename(
                     .next()
                     .unwrap_or(loc_refs.target_symbol);
 
+                let decl_path = loc_refs.target_resolved_path();
+                let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);
+                let mut decl_final_line = None;
+
                 // Add declaration edit with exact identifier span
                 if !loc_refs.target_file.is_empty() && loc_refs.target_file != "external" {
-                    let decl_path = loc_refs.target_resolved_path();
-                    let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);
                     let decl_uri = path_to_uri(decl_str);
 
                     let decl_ov = overlay_mgr.get(decl_str);
@@ -218,6 +220,7 @@ pub fn handle_rename(
                         Some(pos) => pos,
                         None => return json!({ "changes": {} }),
                     };
+                    decl_final_line = Some(final_line);
 
                     let name_len = target_name.chars().count() as u32;
                     let end_col = ident_col + name_len;
@@ -260,19 +263,27 @@ pub fn handle_rename(
                     let r_uri = path_to_uri(r_str);
 
                     let ref_ov = overlay_mgr.get(r_str);
-                    if let Some(rov) = ref_ov {
-                        if rov.is_dirty() && rov.has_modified_imports() {
-                            return json!({ "changes": {} });
-                        }
-                    }
-
                     let (mapped_line, mapped_col) = if let Some(rov) = ref_ov {
                         if rov.is_dirty() {
-                            match rov.map_compiled_to_live(r.span.start_line(), r.span.start_col())
-                            {
-                                Some(pos) => pos,
-                                None => return json!({ "changes": {} }),
+                            if rov.has_modified_imports() {
+                                return json!({ "changes": {} });
                             }
+                            let pos = match rov
+                                .map_compiled_to_live(r.span.start_line(), r.span.start_col())
+                            {
+                                Some(p) => p,
+                                None => return json!({ "changes": {} }),
+                            };
+                            if let Some(local_def) = rov.find_definition_at(pos.0, pos.1) {
+                                if r_str != decl_str
+                                    || decl_final_line
+                                        .map(|fl| local_def.start_line != fl)
+                                        .unwrap_or(true)
+                                {
+                                    return json!({ "changes": {} });
+                                }
+                            }
+                            pos
                         } else {
                             (r.span.start_line(), r.span.start_col())
                         }
@@ -296,6 +307,10 @@ pub fn handle_rename(
                         Some(s) if !s.is_empty() => s,
                         _ => return json!({ "changes": {} }),
                     };
+
+                    if occ_str != target_name {
+                        continue;
+                    }
 
                     let occ_len = occ_str.chars().count() as u32;
                     let end_col = mapped_col + occ_len;
@@ -349,41 +364,4 @@ pub fn handle_rename(
         "changes": changes_map,
         "documentChanges": doc_changes
     })
-}
-
-pub fn handle_linked_editing_range(
-    msg: &Value,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
-    let line_1based = line_0based + 1;
-
-    let overlay_opt = overlay_mgr.get(&file);
-    let col_1based = if let Some(overlay) = overlay_opt {
-        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
-    } else {
-        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
-    };
-
-    if let Some(overlay) = overlay_opt {
-        let refs = overlay.find_local_binding_references(line_1based, col_1based);
-        if !refs.is_empty() {
-            let mut ranges = Vec::new();
-            for (sl, sc, el, ec) in refs {
-                let start_char = overlay.char_col_to_utf16_col(sl, sc);
-                let end_char = overlay.char_col_to_utf16_col(el, ec);
-                ranges.push(json!({
-                    "start": { "line": sl.saturating_sub(1), "character": start_char },
-                    "end": { "line": el.saturating_sub(1), "character": end_char }
-                }));
-            }
-            return json!({ "ranges": ranges });
-        }
-    }
-
-    Value::Null
 }

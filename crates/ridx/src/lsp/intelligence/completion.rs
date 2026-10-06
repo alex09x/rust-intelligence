@@ -104,6 +104,26 @@ pub fn handle_completion(
             if s.kind == ridx_format::DefKind::Local {
                 continue;
             }
+            // If the symbol is from the current file, the overlay already handled
+            // lexical scope filtering for this buffer.
+            if overlay_opt.is_some() {
+                let resolved = s.resolved_path();
+                let res_str = resolved.to_str().unwrap_or(s.file);
+                if res_str == file || s.file == file {
+                    continue;
+                }
+            }
+            // Filter out nested functions inside other functions or closures
+            let path_parts: Vec<&str> = s.path.split("::").collect();
+            if path_parts.len() > 2
+                && path_parts[..path_parts.len() - 1].iter().any(|seg| {
+                    seg.starts_with(|c: char| c.is_lowercase())
+                        && *seg != "crate"
+                        && *seg != s.crate_name
+                })
+            {
+                continue;
+            }
             if seen_names.insert(s.name.to_string()) {
                 items.push(json!({
                     "label": s.name,

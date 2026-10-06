@@ -13,6 +13,7 @@
 pub mod actions;
 pub mod format;
 pub mod ident;
+pub mod linked;
 pub mod rename;
 
 #[cfg(test)]
@@ -21,4 +22,5 @@ mod tests;
 pub use actions::*;
 pub use format::*;
 pub use ident::*;
+pub use linked::*;
 pub use rename::*;

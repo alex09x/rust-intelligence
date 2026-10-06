@@ -244,21 +244,30 @@ pub fn handle_call_hierarchy_outgoing_calls(
         let line_num = line_idx + 1;
         let line_str = lines[line_idx as usize];
 
-        let chars: Vec<char> = line_str.chars().collect();
+        let char_indices: Vec<(usize, char)> = line_str.char_indices().collect();
         let mut i = 0;
-        while i < chars.len() {
-            if chars[i] == '_' || chars[i].is_alphabetic() {
+        while i < char_indices.len() {
+            let (_, ch) = char_indices[i];
+            if ch == '_' || ch.is_alphabetic() {
                 let start_c = i;
-                while i < chars.len() && (chars[i] == '_' || chars[i].is_alphanumeric()) {
+                let start_byte = char_indices[start_c].0;
+                while i < char_indices.len()
+                    && (char_indices[i].1 == '_' || char_indices[i].1.is_alphanumeric())
+                {
                     i += 1;
                 }
-                let ident: String = chars[start_c..i].iter().collect();
+                let end_byte = if i < char_indices.len() {
+                    char_indices[i].0
+                } else {
+                    line_str.len()
+                };
+                let ident = &line_str[start_byte..end_byte];
 
-                let line_prefix = &line_str[..start_c];
+                let line_prefix = &line_str[..start_byte];
                 let is_decl = line_prefix.split_whitespace().last() == Some("fn");
 
-                let rest: String = chars[i..].iter().collect();
-                let mut full_rest = rest.clone();
+                let rest = &line_str[end_byte..];
+                let mut full_rest = rest.to_string();
                 if full_rest.trim().is_empty() {
                     for next_l in lines.iter().skip(line_idx as usize + 1).take(3) {
                         full_rest.push('\n');
@@ -272,9 +281,9 @@ pub fn handle_call_hierarchy_outgoing_calls(
                 let is_call = trimmed.starts_with('(')
                     || (trimmed.starts_with("::<") && trimmed.contains('('));
 
-                if is_call && !is_decl && !is_rust_keyword(&ident) {
+                if is_call && !is_decl && !is_rust_keyword(ident) {
                     let col_1based = (start_c + 1) as u32;
-                    let end_col_1based = (start_c + ident.len() + 1) as u32;
+                    let end_col_1based = (i + 1) as u32;
 
                     if let Some(def) = ws.find_definition_at(&file, line_num, col_1based) {
                         if matches!(def.kind, DefKind::Fn | DefKind::AssocFn) {

@@ -286,7 +286,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/onTypeFormatting" => handle_on_type_formatting(&msg, overlay_mgr),
         "textDocument/codeAction" => handle_code_action(&msg, overlay_mgr),
         "codeAction/resolve" => handle_code_action_resolve(&msg),
-        "workspace/executeCommand" => handle_execute_command(&msg),
+        "workspace/executeCommand" => handle_execute_command(&msg, overlay_mgr),
 
         _ => {
             if let Some(ref req_id) = id {

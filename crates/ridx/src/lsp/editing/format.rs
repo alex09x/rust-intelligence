@@ -147,49 +147,15 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
     }
     let end_line = end_line.min(doc_lines.len().saturating_sub(1) as u32);
 
+    let orig_slice = &doc_lines[start_line as usize..=end_line as usize];
+    let orig_text = orig_slice.join("\n");
     let edition = find_crate_edition(&file);
 
-    let mut cmd = Command::new("rustfmt");
-    cmd.arg("--edition").arg(&edition);
-    cmd.stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
-
-    let Ok(mut child) = cmd.spawn() else {
+    let Some(formatted_snippet) = format_range_snippet(&orig_text, &edition) else {
         return json!([]);
     };
 
-    if let Some(mut stdin) = child.stdin.take() {
-        let _ = stdin.write_all(doc_text.as_bytes());
-    }
-
-    let Ok(output) = child.wait_with_output() else {
-        return json!([]);
-    };
-
-    if !output.status.success() {
-        return json!([]);
-    }
-
-    let Ok(formatted) = String::from_utf8(output.stdout) else {
-        return json!([]);
-    };
-
-    let fmt_lines: Vec<&str> = formatted.lines().collect();
-
-    let prefix_len = start_line as usize;
-    let suffix_len = doc_lines.len().saturating_sub(end_line as usize + 1);
-
-    if prefix_len + suffix_len > fmt_lines.len() {
-        return json!([]);
-    }
-
-    let fmt_slice = &fmt_lines[prefix_len..fmt_lines.len() - suffix_len];
-    let new_text = fmt_slice.join("\n");
-    let orig_slice = &doc_lines[prefix_len..=end_line as usize];
-    let orig_text = orig_slice.join("\n");
-
-    if new_text == orig_text {
+    if formatted_snippet == orig_text {
         return json!([]);
     }
 
@@ -202,9 +168,80 @@ pub fn handle_range_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Val
                 "start": { "line": start_line, "character": 0 },
                 "end": { "line": end_line, "character": last_char }
             },
-            "newText": new_text
+            "newText": formatted_snippet
         }
     ])
+}
+
+fn format_range_snippet(snippet: &str, edition: &str) -> Option<String> {
+    // 1. Try formatting the range snippet directly as Rust items
+    let mut cmd = Command::new("rustfmt");
+    cmd.arg("--edition").arg(edition);
+    cmd.stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+
+    if let Ok(mut child) = cmd.spawn() {
+        if let Some(mut stdin) = child.stdin.take() {
+            let _ = stdin.write_all(snippet.as_bytes());
+        }
+        if let Ok(output) = child.wait_with_output() {
+            if output.status.success() {
+                if let Ok(formatted) = String::from_utf8(output.stdout) {
+                    let trimmed = formatted.trim_end().to_string();
+                    if !trimmed.is_empty() {
+                        return Some(trimmed);
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Wrap snippet inside a function body if it contains statements
+    let wrapped = format!("fn __ridx_wrap() {{\n{snippet}\n}}\n");
+    let mut cmd = Command::new("rustfmt");
+    cmd.arg("--edition").arg(edition);
+    cmd.stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+
+    if let Ok(mut child) = cmd.spawn() {
+        if let Some(mut stdin) = child.stdin.take() {
+            let _ = stdin.write_all(wrapped.as_bytes());
+        }
+        if let Ok(output) = child.wait_with_output() {
+            if output.status.success() {
+                if let Ok(formatted) = String::from_utf8(output.stdout) {
+                    let lines: Vec<&str> = formatted.lines().collect();
+                    if lines.len() >= 2
+                        && lines
+                            .first()
+                            .map(|l| l.contains("__ridx_wrap"))
+                            .unwrap_or(false)
+                        && lines.last() == Some(&"}")
+                    {
+                        let inner_lines = &lines[1..lines.len() - 1];
+                        let unwrapped: Vec<String> = inner_lines
+                            .iter()
+                            .map(|l| {
+                                if let Some(stripped) = l.strip_prefix("    ") {
+                                    stripped.to_string()
+                                } else {
+                                    l.to_string()
+                                }
+                            })
+                            .collect();
+                        let res = unwrapped.join("\n").trim_end().to_string();
+                        if !res.is_empty() {
+                            return Some(res);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None
 }
 
 pub fn handle_on_type_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {

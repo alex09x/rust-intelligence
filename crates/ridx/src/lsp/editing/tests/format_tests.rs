@@ -90,9 +90,12 @@ fn test_format_and_actions() {
     assert_eq!(act_res.as_array().unwrap().len(), 1);
 
     // 3. Execute command
-    assert!(handle_execute_command(&action_req).is_null());
+    assert!(handle_execute_command(&action_req, &mut overlay_mgr).is_null());
     let cmd_resolve = json!({ "params": { "command": "ridx.resolveWorkspace" } });
-    assert_eq!(handle_execute_command(&cmd_resolve)["resolved"], true);
+    assert_eq!(
+        handle_execute_command(&cmd_resolve, &mut overlay_mgr)["resolved"],
+        true
+    );
 
     // 4. Edition helper
     let cargo_toml = temp_dir.join("Cargo.toml");

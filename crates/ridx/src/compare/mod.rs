@@ -11,6 +11,7 @@
 //! Comparison module: benchmarks and compares query results between RIDX and rust-analyzer.
 
 pub mod def_refs;
+pub mod harness;
 pub mod hover_syms;
 pub mod system;
 pub mod types;

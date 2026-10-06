@@ -10,11 +10,11 @@
 
 //! Definition and References comparison handlers.
 
+use super::harness::query_pinned_rust_analyzer;
 use super::system::*;
 use super::types::{CapabilityKind, ComparisonResult};
 use crate::cli::resolve::parse_location;
 use ridx_format::WorkspaceIndex;
-use std::process::Command;
 use std::time::Instant;
 
 pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> ComparisonResult {
@@ -43,37 +43,8 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
         None => (false, "Not found".to_string()),
     };
 
-    // 2. Query rust-analyzer / prod-code CLI
-    let ws_root = workspace.workspace_root();
-    let t_prodcode = Instant::now();
-    let mut cmd = Command::new("prod-code");
-    if let Some(root) = ws_root {
-        cmd.current_dir(root);
-    }
-    let prodcode_output = if let Some((file, line, col)) = loc_opt {
-        cmd.args(["def", file, &line.to_string(), &col.to_string()])
-            .output()
-    } else {
-        cmd.args(["def", "--symbol", target]).output()
-    };
-    let prodcode_latency = t_prodcode.elapsed().as_micros();
-    let prodcode_rss_bytes = get_rust_analyzer_rss_bytes();
-
-    let (prodcode_found, prodcode_span) = match prodcode_output {
-        Ok(out) if out.status.success() => {
-            let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if text.is_empty() || text.contains("No definition") {
-                (false, "Not found".to_string())
-            } else {
-                (true, text.lines().next().unwrap_or(&text).to_string())
-            }
-        }
-        Ok(out) => {
-            let err = String::from_utf8_lossy(&out.stderr).trim().to_string();
-            (false, format!("Error ({err})"))
-        }
-        Err(e) => (false, format!("prod-code unavailable ({e})")),
-    };
+    // 2. Query pinned rust-analyzer
+    let ext = query_pinned_rust_analyzer(workspace.workspace_root(), "def", target, loc_opt);
 
     ComparisonResult {
         symbol: target.to_string(),
@@ -83,11 +54,11 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
         ridx_count: if ridx_found { 1 } else { 0 },
         ridx_latency_micros: ridx_latency,
         ridx_rss_bytes,
-        prodcode_found,
-        prodcode_span,
-        prodcode_count: if prodcode_found { 1 } else { 0 },
-        prodcode_latency_micros: prodcode_latency,
-        prodcode_rss_bytes,
+        prodcode_found: ext.found,
+        prodcode_span: ext.span,
+        prodcode_count: ext.count,
+        prodcode_latency_micros: ext.latency_micros,
+        prodcode_rss_bytes: ext.rss_bytes,
     }
 }
 
@@ -120,41 +91,8 @@ pub fn compare_references(workspace: &WorkspaceIndex, target: &str) -> Compariso
         "0 refs".to_string()
     };
 
-    // 2. Query rust-analyzer / prod-code CLI
-    let ws_root = workspace.workspace_root();
-    let t_prodcode = Instant::now();
-    let mut cmd = Command::new("prod-code");
-    if let Some(root) = ws_root {
-        cmd.current_dir(root);
-    }
-    let prodcode_output = if let Some((file, line, col)) = loc_opt {
-        cmd.args(["refs", file, &line.to_string(), &col.to_string()])
-            .output()
-    } else {
-        cmd.args(["refs", "--symbol", target]).output()
-    };
-    let prodcode_latency = t_prodcode.elapsed().as_micros();
-    let prodcode_rss_bytes = get_rust_analyzer_rss_bytes();
-
-    let (prodcode_found, prodcode_count, prodcode_span) = match prodcode_output {
-        Ok(out) if out.status.success() => {
-            let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            let count = text
-                .lines()
-                .filter(|l| l.contains('•') || l.contains("file://"))
-                .count();
-            if count > 0 {
-                (true, count, format!("{} refs found", count))
-            } else {
-                (false, 0, "0 refs".to_string())
-            }
-        }
-        Ok(out) => {
-            let err = String::from_utf8_lossy(&out.stderr).trim().to_string();
-            (false, 0, format!("Error ({err})"))
-        }
-        Err(e) => (false, 0, format!("prod-code unavailable ({e})")),
-    };
+    // 2. Query pinned rust-analyzer
+    let ext = query_pinned_rust_analyzer(workspace.workspace_root(), "refs", target, loc_opt);
 
     ComparisonResult {
         symbol: target.to_string(),
@@ -164,10 +102,10 @@ pub fn compare_references(workspace: &WorkspaceIndex, target: &str) -> Compariso
         ridx_count,
         ridx_latency_micros: ridx_latency,
         ridx_rss_bytes,
-        prodcode_found,
-        prodcode_span,
-        prodcode_count,
-        prodcode_latency_micros: prodcode_latency,
-        prodcode_rss_bytes,
+        prodcode_found: ext.found,
+        prodcode_span: ext.span,
+        prodcode_count: ext.count,
+        prodcode_latency_micros: ext.latency_micros,
+        prodcode_rss_bytes: ext.rss_bytes,
     }
 }

@@ -38,6 +38,12 @@ pub fn publish_syntax_diagnostics(msg: &Value, overlay_mgr: &OverlayManager) -> 
     let mut line_start_byte = 0;
 
     while i < n {
+        while i < n && !doc_text.is_char_boundary(i) {
+            i += 1;
+        }
+        if i >= n {
+            break;
+        }
         let b = bytes[i];
 
         if b == b'\n' {
@@ -74,6 +80,9 @@ pub fn publish_syntax_diagnostics(msg: &Value, overlay_mgr: &OverlayManager) -> 
                 } else {
                     i += 1;
                 }
+            }
+            if depth > 0 {
+                i = n;
             }
             continue;
         }
@@ -258,6 +267,69 @@ pub fn publish_syntax_diagnostics(msg: &Value, overlay_mgr: &OverlayManager) -> 
             "source": "ridx",
             "message": format!("unclosed delimiter '{}'", c)
         }));
+    }
+
+    // Type error detection for explicit primitive let bindings (e.g. let x: u32 = "hello";)
+    for (line_idx, line_str) in doc_text.lines().enumerate() {
+        let trimmed = line_str.trim();
+        if let Some(rest) = trimmed.strip_prefix("let ") {
+            if let Some((lhs, rhs_full)) = rest.split_once('=') {
+                if let Some((_var, ty_part)) = lhs.split_once(':') {
+                    let expected_ty = ty_part.trim();
+                    let rhs = rhs_full.trim().trim_end_matches(';').trim();
+                    let found_ty = if rhs.starts_with('"') && rhs.ends_with('"') {
+                        Some("&str")
+                    } else if rhs == "true" || rhs == "false" {
+                        Some("bool")
+                    } else if !rhs.is_empty()
+                        && (rhs.chars().all(|c| c.is_ascii_digit() || c == '_')
+                            || (rhs.starts_with('-')
+                                && rhs[1..].chars().all(|c| c.is_ascii_digit() || c == '_')))
+                    {
+                        Some("{integer}")
+                    } else {
+                        None
+                    };
+
+                    let is_mismatch = matches!(
+                        (expected_ty, found_ty),
+                        (
+                            "u8" | "u16"
+                                | "u32"
+                                | "u64"
+                                | "u128"
+                                | "usize"
+                                | "i8"
+                                | "i16"
+                                | "i32"
+                                | "i64"
+                                | "i128"
+                                | "isize",
+                            Some("&str" | "bool"),
+                        ) | ("&str" | "String", Some("{integer}" | "bool"))
+                            | ("bool", Some("&str" | "{integer}"))
+                    );
+
+                    if is_mismatch {
+                        if let Some(found) = found_ty {
+                            let rhs_col = line_str.find(rhs).unwrap_or(0);
+                            let sc = line_str[..rhs_col].encode_utf16().count() as u32;
+                            let ec = sc + rhs.encode_utf16().count() as u32;
+                            items.push(json!({
+                                "range": {
+                                    "start": { "line": line_idx as u32, "character": sc },
+                                    "end": { "line": line_idx as u32, "character": ec }
+                                },
+                                "severity": 1,
+                                "code": "E0308",
+                                "source": "ridx",
+                                "message": format!("mismatched types: expected `{expected_ty}`, found `{found}`")
+                            }));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     json!({

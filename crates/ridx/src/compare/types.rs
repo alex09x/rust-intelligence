@@ -62,6 +62,44 @@ impl ComparisonResult {
     }
 
     pub fn is_match(&self) -> bool {
-        self.ridx_found == self.prodcode_found
+        if self.ridx_found != self.prodcode_found {
+            return false;
+        }
+        if !self.ridx_found {
+            return true;
+        }
+        if self.prodcode_span.starts_with("Error")
+            || self.prodcode_span.contains("unavailable")
+            || self.ridx_span.starts_with("Error")
+        {
+            return false;
+        }
+
+        let r_norm = normalize_target_span(&self.ridx_span);
+        let p_norm = normalize_target_span(&self.prodcode_span);
+
+        match self.capability {
+            CapabilityKind::Def => r_norm == p_norm,
+            CapabilityKind::Refs | CapabilityKind::Callers => {
+                (self.ridx_count == self.prodcode_count && self.ridx_count > 0)
+                    || (r_norm == p_norm && !r_norm.is_empty())
+            }
+            _ => {
+                r_norm == p_norm || (self.ridx_count > 0 && self.ridx_count == self.prodcode_count)
+            }
+        }
+    }
+}
+
+fn normalize_target_span(span: &str) -> String {
+    let s = span.trim().trim_start_matches("file://");
+    if let Some((path_part, rest)) = s.split_once(':') {
+        let file_name = std::path::Path::new(path_part)
+            .file_name()
+            .and_then(|f| f.to_str())
+            .unwrap_or(path_part);
+        format!("{file_name}:{rest}")
+    } else {
+        s.to_string()
     }
 }
