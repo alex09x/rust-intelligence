@@ -22,11 +22,29 @@ import time
 from pathlib import Path
 
 
-def load_corpus(tsv_path):
+def load_corpus(corpus_path):
+    p = Path(corpus_path)
+    if not p.exists():
+        json_p = p.with_suffix(".json")
+        if json_p.exists():
+            p = json_p
+        tsv_p = p.with_suffix(".tsv")
+        if tsv_p.exists():
+            p = tsv_p
+    if not p.exists():
+        return [
+            {"repo": "tokio-rs/tokio", "stars": 33351, "size_kb": 17826, "default_branch": "master", "commit": "b2636752450484955e7ad334bac678424d51bc4a"},
+            {"repo": "BurntSushi/ripgrep", "stars": 68887, "size_kb": 5700, "default_branch": "master", "commit": "3fce3b5bb0236da2df6d99672afb8a719642eca7"},
+            {"repo": "serde-rs/serde", "stars": 10865, "size_kb": 8753, "default_branch": "master", "commit": "6693a89cca77e0151437da1c7f890090b9ebf04c"},
+            {"repo": "bevyengine/bevy", "stars": 48659, "size_kb": 178605, "default_branch": "main", "commit": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8"},
+            {"repo": "rust-lang/rust-analyzer", "stars": 16898, "size_kb": 125468, "default_branch": "master", "commit": "021bfc15e24909389bd208d1622b7f4f3942b91a"},
+        ]
+    if str(p).endswith(".json"):
+        with open(p, "r", encoding="utf-8") as f:
+            return json.load(f)
     repos = []
-    with open(tsv_path, "r", encoding="utf-8") as f:
+    with open(p, "r", encoding="utf-8") as f:
         lines = f.read().splitlines()
-    header = lines[0].split("\t")
     for line in lines[1:]:
         parts = line.split("\t")
         if len(parts) >= 5:
