@@ -91,6 +91,7 @@ When combined with `mitts` (distributed compilation and build artifact store):
 | **Refactoring** | `textDocument/prepareRename`<br>`textDocument/rename`<br>`textDocument/codeAction`<br>`workspace/executeCommand` | **0.2 – 2 ms** | 100 – 800 ms |
 | **Formatting** | `textDocument/formatting`<br>`textDocument/rangeFormatting`<br>`textDocument/onTypeFormatting` | **5 – 25 ms** | 10 – 40 ms |
 | **Symbols** | `textDocument/documentSymbol`<br>`workspace/symbol`<br>`workspaceSymbol/resolve` | **0.1 – 15 ms** | 20 – 350 ms |
+| **Diagnostics** | `textDocument/publishDiagnostics`<br>`textDocument/diagnostic`<br>`workspace/diagnostic` | **Background async (flycheck)** | 500 – 4,000 ms |
 | **Workspaces** | `workspace/didChangeWorkspaceFolders`<br>`workspace/didChangeWatchedFiles` | **< 1 ms** | 500 – 5,000 ms |
 
 ---
