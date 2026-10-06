@@ -165,7 +165,17 @@ impl WorkspaceIndex {
     /// Returns the file modification timestamp of the index shard containing the given source file.
     pub fn shard_mtime_for_file(&self, file_path: &str) -> Option<std::time::SystemTime> {
         let p = Path::new(file_path);
-        let explicit_origin = self.workspace_root.as_deref().or(self.root_dir.as_deref());
+        let explicit_origin = self
+            .workspace_root
+            .as_deref()
+            .or(self.root_dir.as_deref())
+            .or_else(|| {
+                if self.readers.len() == 1 {
+                    self.source_roots.first().and_then(|r| r.as_deref())
+                } else {
+                    None
+                }
+            });
 
         let (ws_abs, req_canon) = if p.is_absolute() {
             (None, p.canonicalize().ok())
@@ -174,7 +184,7 @@ impl WorkspaceIndex {
             let canon = abs.canonicalize().ok();
             (Some(abs), canon)
         } else {
-            (None, p.canonicalize().ok())
+            (None, None)
         };
         let ws_canon = req_canon.clone();
 
@@ -279,7 +289,17 @@ impl WorkspaceIndex {
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
     pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
         let p = Path::new(file_path);
-        let explicit_origin = self.workspace_root.as_deref().or(self.root_dir.as_deref());
+        let explicit_origin = self
+            .workspace_root
+            .as_deref()
+            .or(self.root_dir.as_deref())
+            .or_else(|| {
+                if self.readers.len() == 1 {
+                    self.source_roots.first().and_then(|r| r.as_deref())
+                } else {
+                    None
+                }
+            });
 
         let (ws_abs, req_canon) = if p.is_absolute() {
             (None, p.canonicalize().ok())
@@ -288,7 +308,7 @@ impl WorkspaceIndex {
             let canon = abs.canonicalize().ok();
             (Some(abs), canon)
         } else {
-            (None, p.canonicalize().ok())
+            (None, None)
         };
         let ws_canon = req_canon.clone();
 

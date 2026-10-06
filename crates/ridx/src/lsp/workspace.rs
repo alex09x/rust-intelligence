@@ -18,6 +18,12 @@ pub struct MultiRootWorkspace {
     roots: Vec<(PathBuf, WorkspaceIndex)>,
 }
 
+impl Default for MultiRootWorkspace {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MultiRootWorkspace {
     pub fn new() -> Self {
         Self { roots: Vec::new() }
@@ -203,7 +209,10 @@ mod tests {
         let _ = mr_dirs.add_root(sub_dir.clone());
         assert!(mr_dirs.find_workspace_for_path(&sub_file).is_some());
 
-        // Test open_from_folders
+        // Test default and open_from_folders
+        let mr_def = MultiRootWorkspace::default();
+        assert!(mr_def.is_empty());
+
         let mut mr_folders = MultiRootWorkspace::new();
         mr_folders.open_from_folders(&[ridx_file.clone(), sub_ridx.clone()]);
         assert_eq!(mr_folders.len(), 2);

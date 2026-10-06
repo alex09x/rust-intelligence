@@ -1,0 +1,107 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+//! Computation of stable, hermetic variant cache identifiers.
+
+use super::cargo::{collect_all_workspace_manifests, extract_config_target, find_cargo_configs};
+use std::fs;
+use std::path::Path;
+use std::process::Command;
+
+pub fn compute_variant_id(
+    profile: &str,
+    target: Option<&str>,
+    package: Option<&str>,
+    features: Option<&str>,
+    no_default_features: bool,
+    all_features: bool,
+    manifest_path: &Path,
+) -> String {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    profile.hash(&mut hasher);
+
+    let work_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
+
+    // 1. Cargo configuration files (.cargo/config.toml, .cargo/config)
+    let config_files = find_cargo_configs(work_dir);
+    let mut config_target = None;
+    for cfg in &config_files {
+        cfg.display().to_string().hash(&mut hasher);
+        if let Ok(content) = fs::read_to_string(cfg) {
+            content.hash(&mut hasher);
+            if config_target.is_none() {
+                config_target = extract_config_target(&content);
+            }
+        }
+    }
+
+    // 2. Effective target: CLI target -> CARGO_BUILD_TARGET -> .cargo/config target -> "host"
+    let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
+    let effective_target = target
+        .or(env_target.as_deref())
+        .or(config_target.as_deref())
+        .unwrap_or("host");
+    effective_target.hash(&mut hasher);
+
+    // 3. Package filter and feature flags
+    package.unwrap_or("workspace").hash(&mut hasher);
+    features.unwrap_or("").hash(&mut hasher);
+    no_default_features.hash(&mut hasher);
+    all_features.hash(&mut hasher);
+
+    // 4. All workspace member manifests (Cargo.toml in workspace root and subdirectories)
+    let mut all_manifests = Vec::new();
+    collect_all_workspace_manifests(work_dir, &mut all_manifests);
+    if !all_manifests.contains(&manifest_path.to_path_buf()) {
+        all_manifests.push(manifest_path.to_path_buf());
+    }
+    all_manifests.sort();
+    for m in all_manifests {
+        m.strip_prefix(work_dir)
+            .unwrap_or(&m)
+            .display()
+            .to_string()
+            .hash(&mut hasher);
+        if let Ok(bytes) = fs::read(&m) {
+            bytes.hash(&mut hasher);
+        }
+    }
+
+    // 5. Cargo.lock full file contents (captures resolved dependency graph, versions, sources, active features)
+    let lock_file = work_dir.join("Cargo.lock");
+    if let Ok(lock_bytes) = fs::read(&lock_file) {
+        lock_bytes.hash(&mut hasher);
+    }
+
+    // 6. Toolchain version and host details via rustc -Vv
+    if let Ok(out) = Command::new("rustc").arg("-Vv").output() {
+        if out.status.success() {
+            out.stdout.hash(&mut hasher);
+        }
+    } else if let Ok(toolchain) = std::env::var("RUSTUP_TOOLCHAIN") {
+        toolchain.hash(&mut hasher);
+    }
+
+    // 7. Flags affecting rustc compilation
+    if let Ok(rustflags) = std::env::var("RUSTFLAGS") {
+        rustflags.hash(&mut hasher);
+    }
+    if let Ok(encoded_flags) = std::env::var("CARGO_ENCODED_RUSTFLAGS") {
+        encoded_flags.hash(&mut hasher);
+    }
+
+    // 8. RIDX binary format and extractor version
+    ridx_format::CURRENT_FORMAT_VERSION.hash(&mut hasher);
+    ridx_format::EXTRACTOR_VERSION.hash(&mut hasher);
+
+    let hash = hasher.finish();
+    format!("{profile}-{:016x}", hash)
+}

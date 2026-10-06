@@ -272,6 +272,7 @@ mod tests {
     fn test_uri_conversion_and_encoding() {
         assert_eq!(percent_decode("hello%20world%2Ftest"), "hello world/test");
         assert_eq!(percent_decode("incomplete%2"), "incomplete%2");
+        assert_eq!(percent_decode("hello%zzworld"), "hello%zzworld");
         assert_eq!(percent_decode("plain"), "plain");
 
         let encoded = percent_encode_path("/path with spaces/file.rs");
@@ -283,6 +284,7 @@ mod tests {
 
         let uri = path_to_uri("/foo/bar baz.rs");
         assert_eq!(uri, "file:///foo/bar%20baz.rs");
+        assert!(path_to_uri("Cargo.toml").starts_with("file:///"));
     }
 
     #[test]
@@ -303,6 +305,8 @@ mod tests {
         // 'let ' = 4 chars, 'привет' = 6 chars
         assert_eq!(conv.char_col_to_utf16_col(path, 1, 5), 4);
         assert_eq!(conv.utf16_col_to_char_col(path, 1, 4), 5);
+        // Column beyond line length
+        assert_eq!(conv.utf16_col_to_char_col(path, 1, 999), 17);
 
         // Line 2: rocket is 2 UTF-16 code units
         let _ = conv.char_col_to_utf16_col(path, 2, 16);

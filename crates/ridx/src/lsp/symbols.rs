@@ -186,6 +186,23 @@ mod tests {
             signature: None,
         });
 
+        for i in 10..125 {
+            writer.add_definition(RawDefinition {
+                def_id: i,
+                kind: ridx_format::DefKind::Fn,
+                visibility: 0,
+                is_macro_expansion: false,
+                file: "src/lib.rs".to_string(),
+                name: format!("sym_{i}"),
+                start_line: i,
+                start_col: 1,
+                end_line: i,
+                end_col: 5,
+                path: format!("test_syms::sym_{i}"),
+                signature: None,
+            });
+        }
+
         let ridx_file = temp_dir.join("index.ridx");
         let mut f = fs::File::create(&ridx_file).unwrap();
         writer.write_to(&mut f).unwrap();
@@ -231,6 +248,14 @@ mod tests {
         });
         let ws_sym_res = handle_workspace_symbol(&ws_sym_req, std::iter::once(&ws), &mut conv);
         assert!(!ws_sym_res.as_array().unwrap().is_empty());
+
+        let ws_all_req = json!({
+            "params": {
+                "query": "sym"
+            }
+        });
+        let ws_all_res = handle_workspace_symbol(&ws_all_req, std::iter::once(&ws), &mut conv);
+        assert_eq!(ws_all_res.as_array().unwrap().len(), 100);
 
         // 3. Workspace symbol resolve
         let resolve_req = json!({

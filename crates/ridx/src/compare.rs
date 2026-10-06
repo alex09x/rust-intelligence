@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Comparison module: benchmarks and compares query results between RIDX and prod-code.
+//! Comparison module: benchmarks and compares query results between RIDX and rust-analyzer.
 
 use colored::*;
 use ridx_format::WorkspaceIndex;
@@ -20,9 +20,46 @@ pub struct ComparisonResult {
     pub ridx_found: bool,
     pub ridx_span: String,
     pub ridx_latency_micros: u128,
+    pub ridx_rss_bytes: u64,
     pub prodcode_found: bool,
     pub prodcode_span: String,
     pub prodcode_latency_micros: u128,
+    pub prodcode_rss_bytes: u64,
+}
+
+pub fn get_process_rss_bytes_fallback_ps(pid: u32) -> Option<u64> {
+    let output = Command::new("ps")
+        .args(["-o", "rss=", "-p", &pid.to_string()])
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        let s = String::from_utf8_lossy(&output.stdout);
+        s.trim().parse::<u64>().ok().map(|kb| kb * 1024)
+    } else {
+        None
+    }
+}
+
+pub fn get_process_rss_bytes(pid: u32) -> Option<u64> {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(statm) = std::fs::read_to_string(format!("/proc/{}/statm", pid)) {
+            if let Some(pages) = statm
+                .split_whitespace()
+                .nth(1)
+                .and_then(|s| s.parse::<u64>().ok())
+            {
+                return Some(pages * 4096);
+            }
+        }
+    }
+
+    get_process_rss_bytes_fallback_ps(pid)
+}
+
+pub fn get_current_process_rss_bytes() -> u64 {
+    get_process_rss_bytes(std::process::id()).unwrap_or(0)
 }
 
 pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> ComparisonResult {
@@ -43,6 +80,7 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
         workspace.find_definition_by_path(target)
     };
     let ridx_latency = t_ridx.elapsed().as_micros();
+    let ridx_rss_bytes = get_current_process_rss_bytes();
 
     let (ridx_found, ridx_span) = match ridx_def {
         Some(def) => (
@@ -57,7 +95,7 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
         None => (false, "Not found".to_string()),
     };
 
-    // 2. Query prod-code CLI if available
+    // 2. Query rust-analyzer / prod-code CLI if available
     let t_prodcode = Instant::now();
     let prodcode_output = if is_loc {
         let parts: Vec<&str> = target.rsplitn(3, ':').collect();
@@ -70,6 +108,18 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
             .output()
     };
     let prodcode_latency = t_prodcode.elapsed().as_micros();
+
+    let prodcode_rss_bytes =
+        if let Ok(output) = Command::new("pgrep").args(["-f", "rust-analyzer"]).output() {
+            let pids = String::from_utf8_lossy(&output.stdout);
+            pids.lines()
+                .filter_map(|p| p.trim().parse::<u32>().ok())
+                .filter_map(get_process_rss_bytes)
+                .max()
+                .unwrap_or(0)
+        } else {
+            0
+        };
 
     let (prodcode_found, prodcode_span) = match prodcode_output {
         Ok(out) if out.status.success() => {
@@ -92,9 +142,11 @@ pub fn compare_definition(workspace: &WorkspaceIndex, target: &str) -> Compariso
         ridx_found,
         ridx_span,
         ridx_latency_micros: ridx_latency,
+        ridx_rss_bytes,
         prodcode_found,
         prodcode_span,
         prodcode_latency_micros: prodcode_latency,
+        prodcode_rss_bytes,
     }
 }
 
@@ -155,11 +207,28 @@ pub fn print_comparison(cmp: &ComparisonResult) {
         .dimmed()
     );
 
+    let ridx_rss_str = if cmp.ridx_rss_bytes > 0 {
+        format!(
+            "{:.2} MB (transient CLI)",
+            (cmp.ridx_rss_bytes as f64) / 1_048_576.0
+        )
+    } else {
+        "0.00 MB (transient CLI)".to_string()
+    };
+    let ra_rss_str = if cmp.prodcode_rss_bytes > 0 {
+        format!(
+            "{:.2} MB (persistent daemon)",
+            (cmp.prodcode_rss_bytes as f64) / 1_048_576.0
+        )
+    } else {
+        "~0.00 MB (remote server)".to_string()
+    };
+
     println!(
         "{:<20} | {:<22} | {:<22}",
         "Daemon Memory RSS",
-        "0.00 MB (no daemon)".green().bold(),
-        "~2700 MB (remote server)".yellow()
+        ridx_rss_str.green().bold(),
+        ra_rss_str.yellow()
     );
 
     println!(
@@ -172,135 +241,115 @@ pub fn print_comparison(cmp: &ComparisonResult) {
 mod tests {
     use super::*;
     use ridx_format::{DefKind, IndexWriter, RawDefinition};
-
     use std::fs;
     use std::path::PathBuf;
 
     struct TestDir(PathBuf);
     impl Drop for TestDir {
         fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
+            let _ = fs::remove_dir_all(&self.0);
         }
     }
 
-    fn create_test_workspace() -> (TestDir, WorkspaceIndex) {
-        static CNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        let id = CNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        let path =
-            std::env::temp_dir().join(format!("ridx_cmp_test_{}_{}", std::process::id(), id));
-        let _ = std::fs::remove_dir_all(&path);
-        std::fs::create_dir_all(&path).unwrap();
+    #[test]
+    fn test_compare_definition_and_print() {
+        let temp_dir = std::env::temp_dir().join(format!("ridx_test_cmp_{}", std::process::id()));
+        let _ = fs::create_dir_all(&temp_dir);
+        let _guard = TestDir(temp_dir.clone());
 
-        let index_file = path.join("test_crate.ridx");
-
+        let ridx_path = temp_dir.join("test.ridx");
         let mut writer = IndexWriter::new("test_crate", "0.1.0");
         writer.add_definition(RawDefinition {
             def_id: 1,
             kind: DefKind::Fn,
             visibility: 0,
             is_macro_expansion: false,
-            name: "test_fn".to_string(),
-            path: "test_crate::test_fn".to_string(),
-            signature: Some("fn()".to_string()),
             file: "src/lib.rs".to_string(),
+            name: "test_fn".to_string(),
             start_line: 10,
             start_col: 1,
             end_line: 12,
             end_col: 2,
+            path: "test_crate::test_fn".to_string(),
+            signature: Some("fn()".to_string()),
         });
+        let mut f = fs::File::create(&ridx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
 
-        let mut file = std::fs::File::create(&index_file).unwrap();
-        writer.write_to(&mut file).unwrap();
+        let ws = WorkspaceIndex::open(&ridx_path).unwrap();
+        let res = compare_definition(&ws, "test_crate::test_fn");
+        assert!(res.ridx_found);
+        print_comparison(&res);
 
-        let ws = WorkspaceIndex::open(&path).unwrap();
-        (TestDir(path), ws)
-    }
+        let res_missing = compare_definition(&ws, "nonexistent::symbol");
+        assert!(!res_missing.ridx_found);
+        print_comparison(&res_missing);
 
-    #[test]
-    fn test_compare_definition_symbol_path_found_and_not_found() {
-        let (_dir, ws) = create_test_workspace();
+        let res_loc = compare_definition(&ws, "src/lib.rs:10:1");
+        assert!(res_loc.ridx_found);
 
-        let cmp = compare_definition(&ws, "test_crate::test_fn");
-        assert_eq!(cmp.symbol, "test_crate::test_fn");
-        assert!(cmp.ridx_found);
-        assert!(cmp.ridx_span.contains("src/lib.rs:10:1"));
-
-        print_comparison(&cmp);
-
-        let cmp_not_found = compare_definition(&ws, "test_crate::missing_fn");
-        assert_eq!(cmp_not_found.symbol, "test_crate::missing_fn");
-        assert!(!cmp_not_found.ridx_found);
-        assert_eq!(cmp_not_found.ridx_span, "Not found");
-
-        print_comparison(&cmp_not_found);
-    }
-
-    #[test]
-    fn test_compare_definition_location() {
-        let (_dir, ws) = create_test_workspace();
-
-        // Valid location format file:line:col
-        let cmp = compare_definition(&ws, "src/lib.rs:10:1");
-        assert_eq!(cmp.symbol, "src/lib.rs:10:1");
-
-        // Invalid numbers in location format falls back to path
-        let cmp_invalid = compare_definition(&ws, "src/lib.rs:not_a_line:not_a_col");
-        assert_eq!(cmp_invalid.symbol, "src/lib.rs:not_a_line:not_a_col");
-
-        // Edge case: latency is 0 and prodcode_found is true (line 124)
-        let zero_lat = ComparisonResult {
-            symbol: "test".to_string(),
+        let cmp_custom = ComparisonResult {
+            symbol: "test_crate::test_fn".to_string(),
             ridx_found: true,
-            ridx_span: "file.rs:1:1".to_string(),
+            ridx_span: "src/lib.rs:10:1".to_string(),
             ridx_latency_micros: 0,
+            ridx_rss_bytes: 0,
             prodcode_found: true,
-            prodcode_span: "src/lib.rs:1:1".to_string(),
+            prodcode_span: "src/lib.rs:10:1".to_string(),
             prodcode_latency_micros: 100,
+            prodcode_rss_bytes: 0,
         };
-        print_comparison(&zero_lat);
+        print_comparison(&cmp_custom);
 
-        // Test prodcode_output success with definition and with "No definition" (lines 76-80)
+        let cmp_not_found = ComparisonResult {
+            symbol: "test_crate::test_fn".to_string(),
+            ridx_found: false,
+            ridx_span: "Not found".to_string(),
+            ridx_latency_micros: 10,
+            ridx_rss_bytes: 1024 * 1024,
+            prodcode_found: false,
+            prodcode_span: "Not found".to_string(),
+            prodcode_latency_micros: 200,
+            prodcode_rss_bytes: 2048 * 1024,
+        };
+        print_comparison(&cmp_not_found);
+
+        assert!(get_process_rss_bytes(std::process::id()).is_some());
+        let _ = get_process_rss_bytes_fallback_ps(std::process::id());
+        let _ = get_process_rss_bytes(99999999);
+
+        // Mock prod-code execution (lines 121-126)
+        let mock_bin = temp_dir.join("bin");
+        let _ = fs::create_dir_all(&mock_bin);
+        let mock_script = mock_bin.join("prod-code");
+        let _ = fs::write(&mock_script, b"#!/bin/sh\necho 'src/lib.rs:10:1'\n");
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let mock_dir =
-                std::env::temp_dir().join(format!("mock_prodcode_{}", std::process::id()));
-            let _ = fs::create_dir_all(&mock_dir);
-            let script_path = mock_dir.join("prod-code");
-            fs::write(
-                &script_path,
-                b"#!/bin/sh\ncase \"$*\" in *nodef*) echo 'No definition' ;; *err_target*) echo 'simulated error' >&2; exit 1 ;; *) echo 'src/lib.rs:10:1' ;; esac\n",
-            )
-            .unwrap();
-            fs::set_permissions(&script_path, fs::Permissions::from_mode(0o755)).unwrap();
-
-            let orig_path = std::env::var("PATH").ok();
-            let new_path = format!(
-                "{}:{}",
-                mock_dir.display(),
-                orig_path.as_deref().unwrap_or("")
-            );
-            std::env::set_var("PATH", &new_path);
-
-            let cmp_mock = compare_definition(&ws, "test_crate::test_fn");
-            assert!(cmp_mock.prodcode_found);
-            assert_eq!(cmp_mock.prodcode_span, "src/lib.rs:10:1");
-
-            // Location target (lines 62-66)
-            let cmp_loc = compare_definition(&ws, "src/lib.rs:10:1");
-            assert!(cmp_loc.prodcode_found);
-
-            let cmp_nodef = compare_definition(&ws, "nodef");
-            assert!(!cmp_nodef.prodcode_found);
-
-            // Error output from prodcode command (lines 83-86)
-            let cmp_err = compare_definition(&ws, "err_target");
-            assert!(!cmp_err.prodcode_found);
-            assert!(cmp_err.prodcode_span.starts_with("Error"));
-
-            let _ = orig_path.map(|p| std::env::set_var("PATH", p));
-
-            let _ = fs::remove_dir_all(&mock_dir);
+            let _ = fs::set_permissions(&mock_script, fs::Permissions::from_mode(0o755));
         }
+        let orig_path = std::env::var("PATH").unwrap_or_default();
+        std::env::set_var("PATH", format!("{}:{}", mock_bin.display(), orig_path));
+        let res_mock = compare_definition(&ws, "test_crate::test_fn");
+        assert!(res_mock.prodcode_found);
+
+        let _ = fs::write(&mock_script, b"#!/bin/sh\necho 'No definition'\n");
+        let res_mock_none = compare_definition(&ws, "test_crate::test_fn");
+        assert!(!res_mock_none.prodcode_found);
+
+        let _ = fs::write(
+            &mock_script,
+            b"#!/bin/sh\necho 'internal failure' >&2\nexit 1\n",
+        );
+        let res_mock_err = compare_definition(&ws, "test_crate::test_fn");
+        assert!(!res_mock_err.prodcode_found);
+        assert!(!res_mock_err.prodcode_span.is_empty());
+
+        std::env::set_var("PATH", "/nonexistent_bin_dir_123");
+        let res_no_bin = compare_definition(&ws, "test_crate::test_fn");
+        assert!(!res_no_bin.prodcode_found);
+        assert!(!res_no_bin.prodcode_span.is_empty());
+
+        std::env::set_var("PATH", orig_path);
     }
 }

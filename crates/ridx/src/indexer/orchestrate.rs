@@ -1,0 +1,376 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+//! Execution and orchestration of Cargo indexing with compiler driver wrapping.
+
+use super::cargo::{extract_config_target, find_cargo_configs};
+use super::driver::find_driver_binary;
+use super::manifest::{publish_manifest, ManifestParams};
+use super::types::{IndexOptions, PublishedVariant};
+use super::variant::compute_variant_id;
+use colored::*;
+use ridx_format::WorkspaceIndex;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::time::Instant;
+
+pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> {
+    let path = opts.path;
+    let out_dir_opt = opts.out_dir_opt;
+    let package = opts.package;
+    let release = opts.release;
+    let features = opts.features;
+    let no_default_features = opts.no_default_features;
+    let all_features = opts.all_features;
+    let target = opts.target;
+
+    let (work_dir, manifest_path) = if path.is_file() {
+        if path.file_name().and_then(|s| s.to_str()) != Some("Cargo.toml") {
+            return Err(format!(
+                "target path {:?} is a file but not a Cargo.toml manifest.",
+                path
+            ));
+        }
+        let canon = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+        let dir = canon
+            .parent()
+            .unwrap_or_else(|| Path::new("/"))
+            .to_path_buf();
+        (dir, canon)
+    } else if path.is_dir() {
+        let canon = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+        let manifest = canon.join("Cargo.toml");
+        if !manifest.is_file() {
+            return Err(format!("no Cargo.toml found in directory {:?}.", path));
+        }
+        (canon, manifest)
+    } else {
+        return Err(format!("path {:?} does not exist.", path));
+    };
+
+    let start = Instant::now();
+    let base_out_dir = match out_dir_opt {
+        Some(d) => {
+            if d.is_absolute() {
+                d
+            } else {
+                std::env::current_dir()
+                    .unwrap_or_else(|_| PathBuf::from("."))
+                    .join(d)
+            }
+        }
+        None => work_dir.join("target/ridx"),
+    };
+    if let Err(e) = fs::create_dir_all(&base_out_dir) {
+        return Err(format!(
+            "failed to create output directory {:?}: {e}",
+            base_out_dir
+        ));
+    }
+    let base_out_dir = base_out_dir.canonicalize().unwrap_or(base_out_dir);
+
+    let driver_bin = match find_driver_binary() {
+        Some(b) => b,
+        None => {
+            return Err("could not find ridx-driver binary. Please build ridx-driver first (e.g. cargo build -p ridx-driver) or place it in PATH.".to_string());
+        }
+    };
+
+    let profile_name = if release { "release" } else { "dev" };
+    let variant_id = compute_variant_id(
+        profile_name,
+        target.as_deref(),
+        package.as_deref(),
+        features.as_deref(),
+        no_default_features,
+        all_features,
+        &manifest_path,
+    );
+
+    let variant_rel_dir = format!("variants/{}", variant_id);
+    let variant_out_dir = base_out_dir.join(&variant_rel_dir);
+    if let Err(e) = fs::create_dir_all(&variant_out_dir) {
+        return Err(format!(
+            "failed to create variant directory {:?}: {e}",
+            variant_out_dir
+        ));
+    }
+    let variant_out_dir = variant_out_dir.canonicalize().unwrap_or(variant_out_dir);
+
+    // Isolate Cargo target cache per variant so Cargo unconditionally executes wrapper on variant switch
+    let cargo_target_dir = work_dir.join("target/ridx_cargo").join(&variant_id);
+    let _ = fs::create_dir_all(&cargo_target_dir);
+
+    eprintln!(
+        "{}",
+        "═══════════════════════════════════════════════════════════════════════".dimmed()
+    );
+    eprintln!(
+        "  {} {}",
+        "RIDX Workspace Indexer:".bold(),
+        work_dir.display().to_string().cyan()
+    );
+    eprintln!(
+        "{}",
+        "═══════════════════════════════════════════════════════════════════════".dimmed()
+    );
+    eprintln!(
+        "  Work Directory : {}",
+        work_dir.display().to_string().green()
+    );
+    eprintln!(
+        "  Manifest Path  : {}",
+        manifest_path.display().to_string().green()
+    );
+    eprintln!(
+        "  Driver Binary  : {}",
+        driver_bin.display().to_string().green()
+    );
+    eprintln!(
+        "  Index Output   : {}",
+        variant_out_dir.display().to_string().green()
+    );
+    eprintln!("  Active Variant : {}", variant_id.cyan().bold());
+    eprintln!("  Build Profile  : {}", profile_name.cyan());
+    if let Some(ref feats) = features {
+        eprintln!("  Features       : {}", feats.cyan());
+    }
+    if no_default_features {
+        eprintln!("  No Default Feat: true");
+    }
+    if all_features {
+        eprintln!("  All Features   : true");
+    }
+    if let Some(ref tgt) = target {
+        eprintln!("  Target Triple  : {}", tgt.cyan());
+    }
+    eprintln!("  Action         : cargo check with RUSTC_WRAPPER...");
+
+    let mut cmd = Command::new("cargo");
+    cmd.current_dir(&work_dir);
+    cmd.arg("check");
+    cmd.arg("--manifest-path").arg(&manifest_path);
+    if let Some(ref p) = package {
+        cmd.arg("-p").arg(p);
+    } else {
+        cmd.arg("--workspace");
+    }
+    if release {
+        cmd.arg("--release");
+    }
+    if let Some(ref feats) = features {
+        cmd.arg("--features").arg(feats);
+    }
+    if no_default_features {
+        cmd.arg("--no-default-features");
+    }
+    if all_features {
+        cmd.arg("--all-features");
+    }
+    if let Some(ref tgt) = target {
+        cmd.arg("--target").arg(tgt);
+    }
+
+    let cache_dir = ridx_format::resolve_cache_dir();
+    let _ = fs::create_dir_all(cache_dir.join("objects"));
+
+    cmd.env("RIDX_OUT_DIR", &variant_out_dir);
+    cmd.env("RIDX_CACHE_DIR", &cache_dir);
+    cmd.env("RIDX_WORKSPACE_ROOT", &work_dir);
+    cmd.env("CARGO_TARGET_DIR", &cargo_target_dir);
+    cmd.env("RUSTC_BOOTSTRAP", "1");
+    if std::env::var("RIDX_NO_DEPS").is_err() {
+        cmd.env("RUSTC_WRAPPER", &driver_bin);
+        cmd.env("RUSTC_WORKSPACE_WRAPPER", "");
+    } else {
+        cmd.env("RUSTC_WORKSPACE_WRAPPER", &driver_bin);
+        cmd.env("RUSTC_WRAPPER", "");
+    }
+
+    // Ensure librustc_driver shared library can be located by dynamic linker
+    if let Ok(out) = Command::new("rustc").args(["--print", "sysroot"]).output() {
+        if out.status.success() {
+            let sysroot = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            let lib_dir = PathBuf::from(&sysroot).join("lib");
+            let mut ld_path = lib_dir.to_string_lossy().to_string();
+            if let Some(parent) = PathBuf::from(&sysroot).parent() {
+                if let Ok(entries) = std::fs::read_dir(parent) {
+                    for entry in entries.flatten() {
+                        let cand_lib = entry.path().join("lib");
+                        if cand_lib.is_dir() {
+                            ld_path = format!("{}:{}", ld_path, cand_lib.to_string_lossy());
+                        }
+                    }
+                }
+            }
+            if let Ok(existing) = std::env::var("LD_LIBRARY_PATH") {
+                ld_path = format!("{}:{}", ld_path, existing);
+            }
+            cmd.env("LD_LIBRARY_PATH", &ld_path);
+            cmd.env("DYLD_FALLBACK_LIBRARY_PATH", &ld_path);
+        }
+    }
+
+    let status = match cmd.status() {
+        Ok(s) => s,
+        Err(e) => {
+            return Err(format!("failed to execute cargo check: {e}"));
+        }
+    };
+
+    let elapsed = start.elapsed();
+
+    if !status.success() {
+        return Err(format!("cargo check exited with status {status}"));
+    }
+
+    let ws = match WorkspaceIndex::open(&variant_out_dir) {
+        Ok(w) => w,
+        Err(e) => {
+            return Err(format!(
+                "failed to open generated variant index {:?}: {e}",
+                variant_out_dir
+            ));
+        }
+    };
+
+    let stats = ws.stats();
+
+    // Record build variant fingerprint manifest atomically in base_out_dir
+    let manifest_file = base_out_dir.join("ridx_manifest.json");
+
+    // Collect external dependency shards recorded by compiler driver
+    let mut dep_shards: Vec<ridx_format::DependencyShardInfo> = Vec::new();
+    let deps_dir = variant_out_dir.join(".deps");
+    if deps_dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(&deps_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|s| s.to_str()) == Some("json") {
+                    if let Ok(content) = fs::read(&path) {
+                        if let Ok(mut info) =
+                            serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content)
+                        {
+                            if info.is_dependency {
+                                let obj_p = Path::new(&info.object_path);
+                                if obj_p.is_file() {
+                                    if let Ok(r) = ridx_format::IndexReader::open(obj_p) {
+                                        let bin_gen = r.generation();
+                                        if !bin_gen.is_empty() {
+                                            let sidecar_gen =
+                                                info.generation.as_deref().unwrap_or("");
+                                            let gen_matches = if !sidecar_gen.is_empty() {
+                                                sidecar_gen == bin_gen
+                                            } else if !info.file_hashes.is_empty() {
+                                                let computed_digest =
+                                                    ridx_format::compute_source_snapshot_digest(
+                                                        &info.file_hashes,
+                                                    );
+                                                format!("{:016x}", computed_digest) == bin_gen
+                                            } else {
+                                                false
+                                            };
+                                            if !gen_matches {
+                                                info.file_hashes.clear();
+                                                info.dependencies.clear();
+                                                info.extern_units.clear();
+                                            }
+                                            info.generation = Some(bin_gen.to_string());
+                                        }
+                                        let embedded = r.embedded_file_hashes();
+                                        let sroot_path = info.source_root.as_deref().map(Path::new);
+                                        ridx_format::merge_embedded_hashes_authoritative(
+                                            &mut info.file_hashes,
+                                            &embedded,
+                                            sroot_path,
+                                        );
+                                    }
+                                }
+                                dep_shards.push(info);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    dep_shards.sort_by(|a, b| a.name.cmp(&b.name));
+
+    let config_files = find_cargo_configs(&work_dir);
+    let mut config_target = None;
+    for cfg in &config_files {
+        if let Ok(content) = fs::read_to_string(cfg) {
+            if let Some(t) = extract_config_target(&content) {
+                config_target = Some(t);
+                break;
+            }
+        }
+    }
+    let env_target = std::env::var("CARGO_BUILD_TARGET").ok();
+    let effective_target = target.or(env_target).or(config_target);
+
+    publish_manifest(ManifestParams {
+        variant_id: &variant_id,
+        variant_rel_dir: &variant_rel_dir,
+        base_out_dir: &base_out_dir,
+        variant_out_dir: &variant_out_dir,
+        manifest_file: &manifest_file,
+        work_dir: &work_dir,
+        manifest_path: &manifest_path,
+        profile_name,
+        target: effective_target,
+        features,
+        no_default_features,
+        all_features,
+        package,
+        stats: &stats,
+        dep_shards: &dep_shards,
+    })?;
+
+    eprintln!(
+        "\n{} Indexed workspace in {:.2} s (active variant: {})",
+        "Success:".green().bold(),
+        elapsed.as_secs_f64(),
+        variant_id.cyan().bold()
+    );
+
+    eprintln!(
+        "Indexed {} crate(s), {} total definitions, {} references, {} types ({:.2} KB total index size)",
+        stats.total_crates.to_string().bold(),
+        stats.total_defs.to_string().green(),
+        stats.total_refs.to_string().green(),
+        stats.total_types.to_string().green(),
+        stats.total_bytes as f64 / 1024.0
+    );
+
+    if !dep_shards.is_empty() {
+        eprintln!(
+            "Linked {} external dependency shard(s) from global cache",
+            dep_shards.len().to_string().cyan().bold()
+        );
+    }
+
+    Ok(PublishedVariant {
+        base_out_dir,
+        variant_out_dir,
+        variant_id,
+    })
+}
+
+pub fn run_indexing(opts: IndexOptions) -> PublishedVariant {
+    match try_run_indexing(opts) {
+        Ok(pv) => pv,
+        Err(e) => {
+            eprintln!("{}: {e}", "Error".red().bold());
+            std::process::exit(1);
+        }
+    }
+}

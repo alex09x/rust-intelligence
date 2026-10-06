@@ -28,6 +28,7 @@ pub use super::symbols::*;
 pub use super::workspace::*;
 
 #[cfg(test)]
+#[allow(hidden_glob_reexports)]
 pub(crate) mod tests {
     use super::*;
     use crate::lsp::protocol::PositionConverter;

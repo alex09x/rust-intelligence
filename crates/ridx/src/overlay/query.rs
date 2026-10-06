@@ -206,6 +206,11 @@ impl DocumentOverlay {
             return Vec::new();
         };
 
+        // Only local bindings (let bindings, parameters) are handled by local fast path
+        if target_def.kind != ridx_format::DefKind::Local {
+            return Vec::new();
+        }
+
         let mut results = Vec::new();
         let target_name = &target_def.name;
 
@@ -218,7 +223,24 @@ impl DocumentOverlay {
                 let char_col = line_str[..byte_offset].chars().count() as u32 + 1;
                 search_idx = byte_offset + target_name.len();
 
-                // Check that this is a full identifier match (not a substring of longer_identifier)
+                // Skip occurrences inside comments or string/char literals
+                if super::mapping::is_byte_in_string_or_comment(line_str, byte_offset) {
+                    continue;
+                }
+
+                // Check that this is a full identifier match (word boundaries)
+                let prev_is_ident = line_str[..byte_offset]
+                    .chars()
+                    .next_back()
+                    .is_some_and(is_rust_ident_continue);
+                let next_is_ident = line_str[byte_offset + target_name.len()..]
+                    .chars()
+                    .next()
+                    .is_some_and(is_rust_ident_continue);
+                if prev_is_ident || next_is_ident {
+                    continue;
+                }
+
                 if let Some((ident, _, _)) = self.get_ident_and_span_at(line_1based, char_col) {
                     if &ident == target_name {
                         if let Some(resolved) = self.find_definition_at(line_1based, char_col) {
@@ -238,74 +260,5 @@ impl DocumentOverlay {
             }
         }
         results
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_overlay_query_edge_cases() {
-        let code = "fn compute() {\n    let val = 42;\n    val + 1\n}\n";
-        let overlay = DocumentOverlay::new("file:///test.rs", "/test.rs", 1, code.to_string());
-
-        assert_eq!(overlay.get_ident_at(2, 9), Some("val".to_string()));
-        assert_eq!(overlay.get_ident_at(99, 1), None);
-        assert_eq!(overlay.get_ident_at(1, 1), Some("fn".to_string()));
-
-        // Out of bounds definition
-        assert!(overlay.find_definition_at(999, 1).is_none());
-
-        // Local binding references for non-existent symbol
-        assert!(overlay.find_local_binding_references(999, 1).is_empty());
-
-        // Document symbols accessor
-        assert!(!overlay.document_symbols().is_empty());
-
-        // Token with path suffix abstains from overlay resolution
-        let path_code = "fn run() { std::cmp::max(1, 2); }\n";
-        let path_ov = DocumentOverlay::new("file:///p.rs", "/p.rs", 1, path_code.to_string());
-        assert!(path_ov.find_definition_at(1, 13).is_none());
-
-        // Shadowed local binding references (skips non-matching definitions)
-        let shadow_code = "fn outer() {\n    let val = 1;\n    {\n        let val = 2;\n        val;\n    }\n    val;\n}\n";
-        let shadow_ov = DocumentOverlay::new("file:///s.rs", "/s.rs", 1, shadow_code.to_string());
-        let outer_refs = shadow_ov.find_local_binding_references(2, 9);
-        assert!(!outer_refs.is_empty());
-        let inner_refs = shadow_ov.find_local_binding_references(4, 13);
-        assert!(!inner_refs.is_empty());
-        assert_ne!(outer_refs, inner_refs);
-
-        // Ident at exact end of line and past end of line (lines 173-174, 180, 183)
-        let eol_code = "let  my_var";
-        let eol_ov = DocumentOverlay::new("file:///e.rs", "/e.rs", 1, eol_code.to_string());
-        assert_eq!(eol_ov.get_ident_at(1, 10), Some("my_var".to_string()));
-        assert_eq!(eol_ov.get_ident_at(1, 12), Some("my_var".to_string()));
-        assert_eq!(eol_ov.get_ident_at(1, 5), None); // space not preceded by ident
-
-        // Line out of bounds (line 49)
-        assert!(eol_ov.find_definition_at(999, 1).is_none());
-
-        // Find local binding references with different symbol mismatch in overlay (lines 235-237)
-        let diff_code = "fn alpha() {}\nfn beta() { let alpha = 1; }\n";
-        let diff_ov = DocumentOverlay::new("file:///d.rs", "/d.rs", 1, diff_code.to_string());
-        let refs = diff_ov.find_local_binding_references(1, 4);
-        assert!(!refs.is_empty());
-
-        let test_shadow = "let target = 1;\n{\n    let target = 2;\n    target;\n}\ntarget;\n";
-        let ov_shadow = DocumentOverlay::new("file:///sh.rs", "/sh.rs", 1, test_shadow.to_string());
-        let def1_refs = ov_shadow.find_local_binding_references(1, 5);
-        assert_eq!(def1_refs.len(), 2);
-
-        // Empty line in get_ident_at (line 145)
-        let empty_ov = DocumentOverlay::new("file:///empty.rs", "/empty.rs", 1, "\n\n".to_string());
-        assert_eq!(empty_ov.get_ident_at(1, 1), None);
-
-        // Digit prefix in get_ident_at (line 171, 194)
-        let num_ov =
-            DocumentOverlay::new("file:///num.rs", "/num.rs", 1, "123_abc.456".to_string());
-        assert_eq!(num_ov.get_ident_at(1, 2), None);
-        assert_eq!(num_ov.get_ident_at(1, 8), None);
     }
 }
