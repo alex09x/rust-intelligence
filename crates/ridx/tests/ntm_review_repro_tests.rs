@@ -44,6 +44,18 @@ fn parse_framed_json(bytes: &[u8]) -> Vec<Value> {
     out
 }
 
+fn make_apply_cmd(id: i64, uri: &str, new_text: &str) -> Value {
+    json!({
+        "jsonrpc": "2.0", "id": id, "method": "workspace/executeCommand",
+        "params": {
+            "command": "ridx.applyEdits",
+            "arguments": [{
+                "changes": { uri: [{ "range": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 6 } }, "newText": new_text }] }
+            }]
+        }
+    })
+}
+
 #[test]
 fn test_extract_variable_inside_closure_rejected() {
     let mut overlay_mgr = OverlayManager::new();
@@ -168,22 +180,7 @@ fn test_apply_edit_two_way_handshake_reject_and_accept() {
         None,
     );
 
-    let edit_cmd = json!({
-        "jsonrpc": "2.0",
-        "id": 42,
-        "method": "workspace/executeCommand",
-        "params": {
-            "command": "ridx.applyEdits",
-            "arguments": [{
-                "changes": {
-                    uri.clone(): [{
-                        "range": { "start": { "line": 0, "character": 3 }, "end": { "line": 0, "character": 7 } },
-                        "newText": "renamed"
-                    }]
-                }
-            }]
-        }
-    });
+    let edit_cmd = make_apply_cmd(42, &uri, "renamed");
 
     let mut cmd_out = Cursor::new(Vec::new());
     let _ = dispatch_lsp_message(
@@ -203,11 +200,12 @@ fn test_apply_edit_two_way_handshake_reject_and_accept() {
         "Must emit workspace/applyEdit without command response yet"
     );
     assert_eq!(msgs[0]["method"], "workspace/applyEdit");
-    assert_eq!(msgs[0]["id"], 9999);
+    let apply_id = msgs[0]["id"].clone();
+    assert!(apply_id.as_u64().is_some());
 
     let reject_resp = json!({
         "jsonrpc": "2.0",
-        "id": 9999,
+        "id": apply_id,
         "result": { "applied": false }
     });
 
@@ -235,8 +233,126 @@ fn test_apply_edit_two_way_handshake_reject_and_accept() {
     let overlay = overlay_mgr.get(file).unwrap();
     assert_eq!(
         overlay.text, initial_text,
-        "Overlay must be rolled back on client rejection"
+        "Overlay must remain untouched on client rejection"
     );
+}
+
+#[test]
+fn test_two_concurrent_pending_edits_distinct_ids() {
+    let mut overlay_mgr = OverlayManager::new();
+    let file = "/tmp/test_concurrent.rs";
+    let uri = format!("file://{file}");
+    overlay_mgr.open_with_provenance(&uri, file, 1, "fn foo() {}\n".to_string(), true);
+
+    let mut lifecycle = LifecycleManager::new();
+    let mut out = Cursor::new(Vec::new());
+    let mut multi_root = MultiRootWorkspace::new();
+    let cancelled = Arc::new(Mutex::new(HashSet::new()));
+
+    let _ = dispatch_lsp_message(
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "capabilities": {} } }),
+        &mut out,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    );
+
+    let cmd1 = make_apply_cmd(101, &uri, "bar");
+    let mut out1 = Cursor::new(Vec::new());
+    let _ = dispatch_lsp_message(
+        cmd1,
+        &mut out1,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    );
+    let msgs1 = parse_framed_json(&out1.into_inner());
+    assert_eq!(msgs1.len(), 1);
+    let id1 = msgs1[0]["id"].clone();
+
+    let cmd2 = make_apply_cmd(102, &uri, "baz");
+    let mut out2 = Cursor::new(Vec::new());
+    let _ = dispatch_lsp_message(
+        cmd2,
+        &mut out2,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    );
+    let msgs2 = parse_framed_json(&out2.into_inner());
+    assert_eq!(msgs2.len(), 1);
+    let id2 = msgs2[0]["id"].clone();
+
+    assert_ne!(
+        id1, id2,
+        "Concurrent commands must have distinct applyEdit request IDs"
+    );
+
+    // Reply to id1:
+    let mut resp_out1 = Cursor::new(Vec::new());
+    let _ = dispatch_lsp_message(
+        json!({ "jsonrpc": "2.0", "id": id1, "result": { "applied": true } }),
+        &mut resp_out1,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    );
+    let final1 = parse_framed_json(&resp_out1.into_inner());
+    assert_eq!(final1.len(), 1);
+    assert_eq!(final1[0]["id"], 101);
+    assert_eq!(final1[0]["result"]["applied"], true);
+
+    // Reply to id2:
+    let mut resp_out2 = Cursor::new(Vec::new());
+    let _ = dispatch_lsp_message(
+        json!({ "jsonrpc": "2.0", "id": id2, "result": { "applied": false } }),
+        &mut resp_out2,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    );
+    let final2 = parse_framed_json(&resp_out2.into_inner());
+    assert_eq!(final2.len(), 1);
+    assert_eq!(final2[0]["id"], 102);
+    assert_eq!(final2[0]["result"]["applied"], false);
+}
+
+#[test]
+fn test_atomic_closed_write_preserves_large_file_on_error() {
+    let tmp = std::env::temp_dir().join(format!("ridx_atomic_{}", std::process::id()));
+    let _ = fs::create_dir_all(&tmp);
+    let target = tmp.join("original.rs");
+    let original_content = "X".repeat(256);
+    fs::write(&target, &original_content).unwrap();
+
+    let invalid_target = "/invalid_nonexistent_dir_cannot_write/should_fail.rs".to_string();
+    let writes = vec![
+        (
+            target.to_str().unwrap().to_string(),
+            "new content".to_string(),
+        ),
+        (invalid_target, "fail".to_string()),
+    ];
+
+    let ok = ridx::lsp::editing::commit_closed_writes_atomic(&writes);
+    assert!(!ok, "Batch write with failing path must return false");
+
+    let restored = fs::read_to_string(&target).unwrap();
+    assert_eq!(
+        restored, original_content,
+        "Original file must be 100% preserved without truncation"
+    );
+    let _ = fs::remove_dir_all(&tmp);
 }
 
 #[test]

@@ -37,7 +37,7 @@ pub fn dispatch_lsp_message<W: Write>(
     index_path: Option<&PathBuf>,
 ) -> io::Result<bool> {
     if msg.get("method").is_none() {
-        if let Some((Some(ref cmd_id), resp)) = handle_apply_edit_response(&msg, overlay_mgr) {
+        if let Some((Some(ref cmd_id), resp)) = handle_apply_edit_response(&msg) {
             send_response(
                 writer,
                 &json!({ "jsonrpc": "2.0", "id": cmd_id, "result": resp }),
@@ -304,30 +304,38 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/codeAction" => handle_code_action(&msg, overlay_mgr),
         "codeAction/resolve" => handle_code_action_resolve(&msg),
         "workspace/executeCommand" => {
-            let pre_snapshots = capture_overlay_snapshots(overlay_mgr);
-            let res = handle_execute_command(&msg, overlay_mgr);
-            if msg["params"]["command"].as_str() == Some("ridx.applyEdits")
-                && res
-                    .get("applied")
-                    .and_then(|a| a.as_bool())
-                    .unwrap_or(false)
-            {
-                if let Some(edit) = res.get("edit") {
-                    let apply_req_id = json!(9999);
-                    send_response(
-                        writer,
-                        &json!({
-                            "jsonrpc": "2.0",
-                            "id": apply_req_id,
-                            "method": "workspace/applyEdit",
-                            "params": { "label": "Apply refactoring edits", "edit": edit }
-                        }),
-                    )?;
-                    register_pending_apply(apply_req_id, id.take(), pre_snapshots, res);
-                    return Ok(true);
+            if msg["params"]["command"].as_str() == Some("ridx.applyEdits") {
+                let args = msg["params"]["arguments"]
+                    .as_array()
+                    .map(|a| a.as_slice())
+                    .unwrap_or(&[]);
+                match plan_apply_edits(args, overlay_mgr) {
+                    Ok(plan) => {
+                        let apply_req_id = get_next_apply_id();
+                        send_response(
+                            writer,
+                            &json!({
+                                "jsonrpc": "2.0",
+                                "id": apply_req_id,
+                                "method": "workspace/applyEdit",
+                                "params": { "label": "Apply refactoring edits", "edit": plan.combined_edit }
+                            }),
+                        )?;
+                        register_pending_apply(apply_req_id, id.take(), plan);
+                        return Ok(true);
+                    }
+                    Err(err) => {
+                        if let Some(ref req_id) = id {
+                            send_response(
+                                writer,
+                                &json!({ "jsonrpc": "2.0", "id": req_id, "result": err }),
+                            )?;
+                        }
+                        return Ok(true);
+                    }
                 }
             }
-            res
+            handle_execute_command(&msg, overlay_mgr)
         }
 
         _ => {

@@ -15,6 +15,9 @@ use crate::lsp::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 
 pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
     let cmd = msg["params"]["command"].as_str().unwrap_or("");
@@ -24,26 +27,14 @@ pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> 
                 .as_str()
                 .or_else(|| msg["params"]["rootPath"].as_str())
                 .unwrap_or("");
-            json!({
-                "resolved": true,
-                "workspaceRoot": root,
-                "status": "ready"
-            })
+            json!({ "resolved": true, "workspaceRoot": root, "status": "ready" })
         }
         "ridx.showReferences" => {
-            let uri = msg["params"]["uri"].as_str().unwrap_or("");
-            let pos = &msg["params"]["position"];
             let locs = msg["params"]["locations"]
                 .as_array()
                 .cloned()
                 .unwrap_or_default();
-            json!({
-                "success": true,
-                "uri": uri,
-                "position": pos,
-                "locations": locs,
-                "count": locs.len()
-            })
+            json!({ "success": true, "uri": msg["params"]["uri"].as_str().unwrap_or(""), "position": &msg["params"]["position"], "count": locs.len(), "locations": locs })
         }
         "ridx.applyEdits" => execute_apply_edits(msg, overlay_mgr),
         _ => Value::Null,
@@ -79,55 +70,47 @@ fn full_document_range(text: &str) -> Value {
     })
 }
 
-fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
-    let args = match msg["params"]["arguments"].as_array() {
-        Some(a) if !a.is_empty() => a,
-        _ => return json!({ "applied": false, "count": 0, "failure": "no_arguments" }),
-    };
+#[derive(Debug, Clone)]
+pub struct ApplyPlan {
+    pub total_count: usize,
+    pub combined_edit: Value,
+    pub closed_writes: Vec<(String, String)>,
+    pub open_updates: Vec<(String, i32, String)>,
+}
+
+pub fn plan_apply_edits(args: &[Value], overlay_mgr: &OverlayManager) -> Result<ApplyPlan, Value> {
+    if args.is_empty() {
+        return Err(json!({ "applied": false, "count": 0, "failure": "no_arguments" }));
+    }
 
     let mut working_docs: HashMap<String, WorkingDoc> = HashMap::new();
 
-    let get_or_load_doc = |docs: &mut HashMap<String, WorkingDoc>,
-                           file_path: &str,
-                           uri: &str,
-                           overlay_mgr: &OverlayManager|
-     -> Option<()> {
-        if !docs.contains_key(file_path) {
-            if let Some(overlay) = overlay_mgr.get(file_path) {
+    let get_or_load_doc =
+        |docs: &mut HashMap<String, WorkingDoc>, file_path: &str, uri: &str| -> Option<()> {
+            if !docs.contains_key(file_path) {
+                let (is_overlay, version, text) = if let Some(overlay) = overlay_mgr.get(file_path)
+                {
+                    (true, overlay.version, overlay.text.clone())
+                } else {
+                    (false, 0, std::fs::read_to_string(file_path).ok()?)
+                };
                 docs.insert(
                     file_path.to_string(),
                     WorkingDoc {
                         file_path: file_path.to_string(),
                         uri: uri.to_string(),
-                        is_overlay: true,
-                        version: overlay.version,
-                        initial_text: overlay.text.clone(),
-                        current_text: overlay.text.clone(),
-                        edit_count: 0,
-                        arg_count: 0,
-                        all_edits: Vec::new(),
-                    },
-                );
-            } else {
-                let content = std::fs::read_to_string(file_path).ok()?;
-                docs.insert(
-                    file_path.to_string(),
-                    WorkingDoc {
-                        file_path: file_path.to_string(),
-                        uri: uri.to_string(),
-                        is_overlay: false,
-                        version: 0,
-                        initial_text: content.clone(),
-                        current_text: content,
+                        is_overlay,
+                        version,
+                        initial_text: text.clone(),
+                        current_text: text,
                         edit_count: 0,
                         arg_count: 0,
                         all_edits: Vec::new(),
                     },
                 );
             }
-        }
-        Some(())
-    };
+            Some(())
+        };
 
     for arg in args {
         let edit = if arg.get("changes").is_some() || arg.get("documentChanges").is_some() {
@@ -151,19 +134,25 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
                         _ => continue,
                     };
 
-                    if get_or_load_doc(&mut working_docs, &file_path, uri, overlay_mgr).is_none() {
-                        return json!({ "applied": false, "count": 0, "failure": "file_not_found" });
+                    if get_or_load_doc(&mut working_docs, &file_path, uri).is_none() {
+                        return Err(
+                            json!({ "applied": false, "count": 0, "failure": "file_not_found" }),
+                        );
                     }
                     let doc = working_docs.get_mut(&file_path).unwrap();
                     if let Some(expected_ver) = doc_version {
                         if expected_ver != doc.version {
-                            return json!({ "applied": false, "count": 0, "failure": "version_mismatch" });
+                            return Err(
+                                json!({ "applied": false, "count": 0, "failure": "version_mismatch" }),
+                            );
                         }
                     }
                     let Some(new_text) =
                         apply_workspace_text_edits_to_content(&doc.current_text, edits)
                     else {
-                        return json!({ "applied": false, "count": 0, "failure": "validation_failed" });
+                        return Err(
+                            json!({ "applied": false, "count": 0, "failure": "validation_failed" }),
+                        );
                     };
                     doc.current_text = new_text;
                     doc.version += 1;
@@ -183,14 +172,18 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
                         _ => continue,
                     };
 
-                    if get_or_load_doc(&mut working_docs, &file_path, uri, overlay_mgr).is_none() {
-                        return json!({ "applied": false, "count": 0, "failure": "file_not_found" });
+                    if get_or_load_doc(&mut working_docs, &file_path, uri).is_none() {
+                        return Err(
+                            json!({ "applied": false, "count": 0, "failure": "file_not_found" }),
+                        );
                     }
                     let doc = working_docs.get_mut(&file_path).unwrap();
                     let Some(new_text) =
                         apply_workspace_text_edits_to_content(&doc.current_text, edits_arr)
                     else {
-                        return json!({ "applied": false, "count": 0, "failure": "validation_failed" });
+                        return Err(
+                            json!({ "applied": false, "count": 0, "failure": "validation_failed" }),
+                        );
                     };
                     doc.current_text = new_text;
                     doc.version += 1;
@@ -203,44 +196,13 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
     }
 
     if working_docs.is_empty() {
-        return json!({ "applied": false, "count": 0 });
+        return Err(json!({ "applied": false, "count": 0 }));
     }
 
-    // Phase 2: Commit.
-    // 2a. Pre-capture snapshots of all closed files for atomic rollback if ANY write fails/partially fails.
-    let mut orig_snapshots: Vec<(String, String)> = Vec::new();
-    for doc in working_docs.values() {
-        if !doc.is_overlay {
-            let orig = std::fs::read_to_string(&doc.file_path).unwrap_or_default();
-            orig_snapshots.push((doc.file_path.clone(), orig));
-        }
-    }
-
-    let mut write_failed = false;
-    for doc in working_docs.values() {
-        if !doc.is_overlay && std::fs::write(&doc.file_path, &doc.current_text).is_err() {
-            write_failed = true;
-            break;
-        }
-    }
-
-    if write_failed {
-        // Rollback all closed files, crucially including the file that failed write
-        for (fp, orig_text) in &orig_snapshots {
-            let _ = std::fs::write(fp, orig_text);
-        }
-        return json!({
-            "applied": false,
-            "count": 0,
-            "failure": "disk_write_failed"
-        });
-    }
-
-    // 2b. Commit in-memory state:
-    // For open overlays: update memory only! DO NOT write to disk (prevents saving dirty draft).
-    // For closed files: register in overlay manager with compiled baseline = false.
     let mut total_count = 0;
     let mut combined_changes = serde_json::Map::new();
+    let mut closed_writes = Vec::new();
+    let mut open_updates = Vec::new();
 
     for doc in working_docs.into_values() {
         total_count += doc.edit_count;
@@ -255,86 +217,150 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
         combined_changes.insert(doc.uri.clone(), Value::Array(edits));
 
         if doc.is_overlay {
-            if let Some(overlay) = overlay_mgr.get_mut(&doc.file_path) {
-                overlay.update(doc.version, doc.current_text);
-            }
+            open_updates.push((doc.file_path, doc.version, doc.current_text));
         } else {
-            overlay_mgr.open_with_provenance(
-                &doc.uri,
-                &doc.file_path,
-                doc.version,
-                doc.current_text,
-                false,
-            );
+            closed_writes.push((doc.file_path, doc.current_text));
         }
     }
 
-    let combined_edit = json!({ "changes": combined_changes });
-
-    json!({
-        "applied": true,
-        "count": total_count,
-        "edit": combined_edit,
-        "orig_closed": orig_snapshots,
+    Ok(ApplyPlan {
+        total_count,
+        combined_edit: json!({ "changes": combined_changes }),
+        closed_writes,
+        open_updates,
     })
 }
 
-struct PendingApplyState {
-    apply_req_id: Value,
-    command_req_id: Option<Value>,
-    pre_snapshots: Vec<(String, i32, String)>,
-    orig_closed: Vec<(String, String)>,
-    success_result: Value,
-}
-
-static PENDING_APPLY_STATE: std::sync::Mutex<Option<PendingApplyState>> =
-    std::sync::Mutex::new(None);
-
-pub fn capture_overlay_snapshots(overlay_mgr: &OverlayManager) -> Vec<(String, i32, String)> {
-    overlay_mgr
-        .open_file_paths()
-        .iter()
-        .filter_map(|fp| {
-            overlay_mgr
-                .get(fp)
-                .map(|o| (fp.clone(), o.version, o.text.clone()))
-        })
-        .collect()
-}
-
-pub fn register_pending_apply(
-    apply_req_id: Value,
-    command_req_id: Option<Value>,
-    pre_snapshots: Vec<(String, i32, String)>,
-    mut success_result: Value,
-) {
-    let orig_closed: Vec<(String, String)> = success_result
-        .get_mut("orig_closed")
-        .and_then(|v| serde_json::from_value(v.take()).ok())
-        .unwrap_or_default();
-    if let Some(obj) = success_result.as_object_mut() {
-        obj.remove("orig_closed");
+pub fn commit_closed_writes_atomic(closed_writes: &[(String, String)]) -> bool {
+    if closed_writes.is_empty() {
+        return true;
     }
-    *PENDING_APPLY_STATE.lock().unwrap() = Some(PendingApplyState {
+
+    for (file_path, _) in closed_writes {
+        if Path::new(file_path).exists()
+            && std::fs::OpenOptions::new()
+                .write(true)
+                .open(file_path)
+                .is_err()
+        {
+            return false;
+        }
+    }
+
+    let pid = std::process::id();
+    let mut tmp_files: Vec<(String, String)> = Vec::with_capacity(closed_writes.len());
+
+    for (i, (file_path, new_text)) in closed_writes.iter().enumerate() {
+        let tmp_path = format!("{file_path}.ridx_tmp_{pid}_{i}");
+        if std::fs::write(&tmp_path, new_text).is_err() {
+            let _ = std::fs::remove_file(&tmp_path);
+            for (_, tmp) in &tmp_files {
+                let _ = std::fs::remove_file(tmp);
+            }
+            return false;
+        }
+        tmp_files.push((file_path.clone(), tmp_path));
+    }
+
+    let mut backups: Vec<(String, String)> = Vec::new();
+    let mut publish_success = true;
+
+    for (file_path, tmp_path) in &tmp_files {
+        let bak_path = format!("{file_path}.ridx_bak_{pid}");
+        if Path::new(file_path).exists() {
+            if std::fs::rename(file_path, &bak_path).is_err() {
+                publish_success = false;
+                break;
+            }
+            backups.push((file_path.clone(), bak_path));
+        }
+        if std::fs::rename(tmp_path, file_path).is_err() {
+            publish_success = false;
+            break;
+        }
+    }
+
+    if !publish_success {
+        for (file_path, bak_path) in backups {
+            let _ = std::fs::rename(&bak_path, &file_path);
+        }
+        for (_, tmp_path) in &tmp_files {
+            let _ = std::fs::remove_file(tmp_path);
+        }
+        return false;
+    }
+
+    for (_, bak_path) in backups {
+        let _ = std::fs::remove_file(&bak_path);
+    }
+
+    true
+}
+
+fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
+    let args = match msg["params"]["arguments"].as_array() {
+        Some(a) if !a.is_empty() => a.as_slice(),
+        _ => return json!({ "applied": false, "count": 0, "failure": "no_arguments" }),
+    };
+
+    let plan = match plan_apply_edits(args, overlay_mgr) {
+        Ok(p) => p,
+        Err(err) => return err,
+    };
+
+    if !commit_closed_writes_atomic(&plan.closed_writes) {
+        return json!({ "applied": false, "count": 0, "failure": "disk_write_failed" });
+    }
+
+    for (fp, text) in &plan.closed_writes {
+        let uri = format!("file://{fp}");
+        overlay_mgr.open_with_provenance(&uri, fp, 0, text.clone(), false);
+    }
+
+    for (fp, ver, text) in plan.open_updates {
+        if let Some(overlay) = overlay_mgr.get_mut(&fp) {
+            overlay.update(ver, text);
+        }
+    }
+
+    json!({
+        "applied": true,
+        "count": plan.total_count,
+        "edit": plan.combined_edit,
+    })
+}
+
+static NEXT_APPLY_ID: AtomicU64 = AtomicU64::new(10000);
+
+pub fn get_next_apply_id() -> Value {
+    json!(NEXT_APPLY_ID.fetch_add(1, Ordering::Relaxed))
+}
+
+pub struct PendingApplyState {
+    pub command_req_id: Option<Value>,
+    pub plan: ApplyPlan,
+}
+
+static PENDING_APPLIES: Mutex<Option<HashMap<Value, PendingApplyState>>> = Mutex::new(None);
+
+pub fn register_pending_apply(apply_req_id: Value, command_req_id: Option<Value>, plan: ApplyPlan) {
+    let mut lock = PENDING_APPLIES.lock().unwrap();
+    let map = lock.get_or_insert_with(HashMap::new);
+    map.insert(
         apply_req_id,
-        command_req_id,
-        pre_snapshots,
-        orig_closed,
-        success_result,
-    });
+        PendingApplyState {
+            command_req_id,
+            plan,
+        },
+    );
 }
 
-pub fn handle_apply_edit_response(
-    msg: &Value,
-    overlay_mgr: &mut OverlayManager,
-) -> Option<(Option<Value>, Value)> {
+pub fn handle_apply_edit_response(msg: &Value) -> Option<(Option<Value>, Value)> {
     let resp_id = msg.get("id")?;
-    let mut pending_lock = PENDING_APPLY_STATE.lock().unwrap();
-    let pending = pending_lock.as_ref()?;
-    if &pending.apply_req_id != resp_id {
-        return None;
-    }
-    let state = pending_lock.take()?;
+    let mut lock = PENDING_APPLIES.lock().unwrap();
+    let map = lock.as_mut()?;
+    let state = map.remove(resp_id)?;
+
     let client_applied = msg
         .get("result")
         .and_then(|r| r.get("applied"))
@@ -342,16 +368,22 @@ pub fn handle_apply_edit_response(
         .unwrap_or(false);
 
     if client_applied {
-        Some((state.command_req_id, state.success_result))
+        if !commit_closed_writes_atomic(&state.plan.closed_writes) {
+            Some((
+                state.command_req_id,
+                json!({ "applied": false, "count": 0, "failure": "disk_write_failed" }),
+            ))
+        } else {
+            Some((
+                state.command_req_id,
+                json!({
+                    "applied": true,
+                    "count": state.plan.total_count,
+                    "edit": state.plan.combined_edit,
+                }),
+            ))
+        }
     } else {
-        for (fp, ver, text) in state.pre_snapshots {
-            if let Some(overlay) = overlay_mgr.get_mut(&fp) {
-                overlay.update(ver, text);
-            }
-        }
-        for (fp, orig_text) in state.orig_closed {
-            let _ = std::fs::write(&fp, orig_text);
-        }
         Some((
             state.command_req_id,
             json!({ "applied": false, "count": 0, "failure": "client_rejected" }),
