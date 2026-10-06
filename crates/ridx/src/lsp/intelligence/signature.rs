@@ -15,6 +15,22 @@ use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 
+fn safe_slice(text: &str, raw_start: usize, raw_end: usize) -> &str {
+    let mut start = raw_start.min(text.len());
+    while start < text.len() && !text.is_char_boundary(start) {
+        start += 1;
+    }
+    let mut end = raw_end.min(text.len());
+    while end > 0 && !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    if start <= end {
+        &text[start..end]
+    } else {
+        ""
+    }
+}
+
 pub fn handle_signature_help(
     msg: &Value,
     workspace: Option<&WorkspaceIndex>,
@@ -38,7 +54,7 @@ pub fn handle_signature_help(
     let text_preceding = if let Some(overlay) = overlay_opt {
         let byte_pos = overlay.line_char_col_to_byte(line_1based, col_1based);
         let start_byte = byte_pos.saturating_sub(8192);
-        overlay.text[start_byte..byte_pos.min(overlay.text.len())].to_string()
+        safe_slice(&overlay.text, start_byte, byte_pos).to_string()
     } else if let Ok(content) = std::fs::read_to_string(&file) {
         let mut byte_pos = 0;
         for (idx, line) in content.lines().enumerate() {
@@ -56,7 +72,7 @@ pub fn handle_signature_help(
             }
         }
         let start_byte = byte_pos.saturating_sub(8192);
-        content[start_byte..byte_pos.min(content.len())].to_string()
+        safe_slice(&content, start_byte, byte_pos).to_string()
     } else {
         return Value::Null;
     };

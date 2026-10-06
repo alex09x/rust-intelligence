@@ -137,6 +137,10 @@ pub enum Commands {
         #[arg(long, short)]
         symbol: Option<String>,
 
+        /// Capability to compare: def, refs, hover, symbols, callers, all (default: def)
+        #[arg(long, short, default_value = "def")]
+        capability: String,
+
         /// Output result as JSON
         #[arg(long)]
         json: bool,

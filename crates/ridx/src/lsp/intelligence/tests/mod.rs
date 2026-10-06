@@ -9,6 +9,7 @@
  */
 
 pub mod edge_tests;
+pub mod extra_suite;
 pub mod suite;
 
 use crate::lsp::protocol::PositionConverter;

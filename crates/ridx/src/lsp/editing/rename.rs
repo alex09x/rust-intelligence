@@ -144,8 +144,19 @@ pub fn handle_rename(
                     edits.push(edit);
                 }
             }
-            changes_map.insert(uri.to_string(), edits);
-            return json!({ "changes": changes_map });
+            changes_map.insert(uri.to_string(), edits.clone());
+            let version = json!(overlay.version);
+            let doc_changes = vec![json!({
+                "textDocument": {
+                    "uri": uri,
+                    "version": version
+                },
+                "edits": edits
+            })];
+            return json!({
+                "changes": changes_map,
+                "documentChanges": doc_changes
+            });
         }
     }
 
@@ -173,7 +184,7 @@ pub fn handle_rename(
                         }
                     }
 
-                    let (mapped_line, mapped_col) = if let Some(dov) = decl_ov {
+                    let (mapped_line, _mapped_col) = if let Some(dov) = decl_ov {
                         if dov.is_dirty() {
                             match dov
                                 .map_compiled_to_live(loc_refs.target_line, loc_refs.target_col)
@@ -188,48 +199,47 @@ pub fn handle_rename(
                         (loc_refs.target_line, loc_refs.target_col)
                     };
 
-                    let line_content = if let Some(dov) = decl_ov {
-                        dov.text
-                            .lines()
-                            .nth(mapped_line.saturating_sub(1) as usize)
-                            .map(|s| s.to_string())
+                    let decl_lines_vec: Vec<String> = if let Some(dov) = decl_ov {
+                        dov.text.lines().map(|s| s.to_string()).collect()
                     } else {
-                        std::fs::read_to_string(decl_str).ok().and_then(|t| {
-                            t.lines()
-                                .nth(mapped_line.saturating_sub(1) as usize)
-                                .map(|s| s.to_string())
-                        })
+                        std::fs::read_to_string(decl_str)
+                            .map(|t| t.lines().map(|s| s.to_string()).collect())
+                            .unwrap_or_default()
                     };
+                    let decl_lines_ref: Vec<&str> =
+                        decl_lines_vec.iter().map(|s| s.as_str()).collect();
 
-                    let ident_col = line_content
-                        .as_deref()
-                        .and_then(|s| {
-                            find_declaration_ident_col(s, target_name, loc_refs.target_kind)
-                        })
-                        .unwrap_or(mapped_col);
+                    let (final_line, ident_col) = match find_declaration_ident_in_lines(
+                        &decl_lines_ref,
+                        mapped_line,
+                        target_name,
+                        loc_refs.target_kind,
+                    ) {
+                        Some(pos) => pos,
+                        None => return json!({ "changes": {} }),
+                    };
 
                     let name_len = target_name.chars().count() as u32;
                     let end_col = ident_col + name_len;
 
                     if let Some(dov) = decl_ov {
-                        if dov.get_ident_at(mapped_line, ident_col).as_deref() != Some(target_name)
-                        {
+                        if dov.get_ident_at(final_line, ident_col).as_deref() != Some(target_name) {
                             return json!({ "changes": {} });
                         }
                     }
 
                     let sc = if let Some(dov) = decl_ov {
-                        dov.char_col_to_utf16_col(mapped_line, ident_col)
+                        dov.char_col_to_utf16_col(final_line, ident_col)
                     } else {
-                        conv.char_col_to_utf16_col(decl_str, mapped_line, ident_col)
+                        conv.char_col_to_utf16_col(decl_str, final_line, ident_col)
                     };
                     let ec = if let Some(dov) = decl_ov {
-                        dov.char_col_to_utf16_col(mapped_line, end_col)
+                        dov.char_col_to_utf16_col(final_line, end_col)
                     } else {
-                        conv.char_col_to_utf16_col(decl_str, mapped_line, end_col)
+                        conv.char_col_to_utf16_col(decl_str, final_line, end_col)
                     };
 
-                    let sl = mapped_line.saturating_sub(1);
+                    let sl = final_line.saturating_sub(1);
                     let edits = changes_map.entry(decl_uri).or_default();
                     let edit = json!({
                         "range": {
@@ -270,15 +280,25 @@ pub fn handle_rename(
                         (r.span.start_line(), r.span.start_col())
                     };
 
-                    let name_len = target_name.chars().count() as u32;
-                    let end_col = mapped_col + name_len;
+                    let occ_name = if let Some(rov) = ref_ov {
+                        rov.get_ident_at(mapped_line, mapped_col)
+                    } else {
+                        std::fs::read_to_string(r_str).ok().and_then(|t| {
+                            t.lines()
+                                .nth(mapped_line.saturating_sub(1) as usize)
+                                .and_then(|line| {
+                                    extract_ident_at_col(line, mapped_col).map(|s| s.to_string())
+                                })
+                        })
+                    };
 
-                    if let Some(rov) = ref_ov {
-                        if rov.get_ident_at(mapped_line, mapped_col).as_deref() != Some(target_name)
-                        {
-                            return json!({ "changes": {} });
-                        }
-                    }
+                    let occ_str = match occ_name {
+                        Some(s) if !s.is_empty() => s,
+                        _ => return json!({ "changes": {} }),
+                    };
+
+                    let occ_len = occ_str.chars().count() as u32;
+                    let end_col = mapped_col + occ_len;
 
                     let sc = if let Some(rov) = ref_ov {
                         rov.char_col_to_utf16_col(mapped_line, mapped_col)
@@ -310,10 +330,16 @@ pub fn handle_rename(
 
     let mut doc_changes = Vec::new();
     for (doc_uri, edits) in &changes_map {
+        let doc_path = uri_to_path(doc_uri);
+        let version = overlay_mgr
+            .get(&doc_path)
+            .map(|ov| json!(ov.version))
+            .unwrap_or(Value::Null);
+
         doc_changes.push(json!({
             "textDocument": {
                 "uri": doc_uri,
-                "version": Value::Null
+                "version": version
             },
             "edits": edits
         }));

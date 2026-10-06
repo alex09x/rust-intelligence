@@ -62,12 +62,12 @@ fn test_call_hierarchy_incoming_and_outgoing() {
     });
     let outgoing = handle_call_hierarchy_outgoing_calls(&outgoing_req, Some(&ws), &mut conv);
     let out_arr = outgoing.as_array().unwrap();
-    assert_eq!(out_arr.len(), 2);
+    assert_eq!(out_arr.len(), 1);
     let names: Vec<&str> = out_arr
         .iter()
         .filter_map(|it| it["to"]["name"].as_str())
         .collect();
-    assert!(names.contains(&"caller"));
+    assert!(!names.contains(&"caller"));
     assert!(names.contains(&"add"));
 
     // Outgoing calls: nonexistent file returns empty

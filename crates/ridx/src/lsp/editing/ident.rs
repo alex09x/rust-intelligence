@@ -149,3 +149,48 @@ pub fn find_declaration_ident_col(
 
     first_match
 }
+
+/// Locates (line_1based, col_1based) of `target_name` in multiline declaration text.
+pub fn find_declaration_ident_in_lines(
+    lines: &[&str],
+    start_line_1based: u32,
+    target_name: &str,
+    target_kind: DefKind,
+) -> Option<(u32, u32)> {
+    let start_idx = start_line_1based.saturating_sub(1) as usize;
+    for (offset, line) in lines.iter().skip(start_idx).take(10).enumerate() {
+        let curr_line = start_line_1based + offset as u32;
+        if let Some(col) = find_declaration_ident_col(line, target_name, target_kind) {
+            return Some((curr_line, col));
+        }
+    }
+    None
+}
+
+/// Extracts identifier string at 1-based character column.
+pub fn extract_ident_at_col(line: &str, col_1based: u32) -> Option<&str> {
+    let char_idx = col_1based.saturating_sub(1) as usize;
+    let mut byte_start = None;
+    for (current_char_idx, (b_idx, c)) in line.char_indices().enumerate() {
+        if current_char_idx == char_idx {
+            if is_ident_start(c) || is_ident_continue(c) {
+                byte_start = Some(b_idx);
+            }
+            break;
+        }
+    }
+    let start = byte_start?;
+    let mut end = start;
+    for (b_idx, c) in line[start..].char_indices() {
+        if is_ident_continue(c) {
+            end = start + b_idx + c.len_utf8();
+        } else {
+            break;
+        }
+    }
+    if end > start {
+        Some(&line[start..end])
+    } else {
+        None
+    }
+}

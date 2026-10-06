@@ -151,24 +151,28 @@ fn test_cli_inspect_and_queries() {
         arg1: dir_str.clone(),
         arg2: Some("test_crate::test_fn".to_string()),
         symbol: None,
+        capability: "def".to_string(),
         json: false,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
         arg2: Some("test_crate::test_fn".to_string()),
         symbol: None,
+        capability: "def".to_string(),
         json: true,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
         arg2: None,
         symbol: Some("test_crate::test_fn".to_string()),
+        capability: "def".to_string(),
         json: false,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
         arg2: None,
         symbol: Some("test_crate::test_fn".to_string()),
+        capability: "def".to_string(),
         json: true,
     });
 

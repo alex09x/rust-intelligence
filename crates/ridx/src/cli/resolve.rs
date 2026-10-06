@@ -110,7 +110,14 @@ pub(crate) fn find_manifest_for_path(p: &Path) -> Option<(PathBuf, ridx_format::
 pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<WorkspaceIndex, String> {
     match path_opt {
         Some(p) => match WorkspaceIndex::open(&p) {
-            Ok(ws) => Ok(ws),
+            Ok(mut ws) => {
+                if ws.workspace_root().is_none() {
+                    if let Some(enclosing) = find_enclosing_workspace(&p) {
+                        ws.set_workspace_root(Some(enclosing));
+                    }
+                }
+                Ok(ws)
+            }
             Err(e) => {
                 if ridx_format::is_version_mismatch(&e) || e.kind() == std::io::ErrorKind::NotFound
                 {

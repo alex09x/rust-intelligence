@@ -22,12 +22,24 @@ pub(crate) fn is_call_site(file: &str, span_end_line: u32, span_end_col: u32) ->
     let Some(ref text) = content else {
         return false;
     };
-    let Some(line_str) = text.lines().nth(span_end_line.saturating_sub(1) as usize) else {
+    let lines: Vec<&str> = text.lines().collect();
+    let l_idx = span_end_line.saturating_sub(1) as usize;
+    if l_idx >= lines.len() {
         return false;
-    };
+    }
     let char_offset = span_end_col.saturating_sub(1) as usize;
-    let after_ident: String = line_str.chars().skip(char_offset).collect();
-    let trimmed = after_ident.trim_start();
+    let first_line: String = lines[l_idx].chars().skip(char_offset).collect();
+    let mut rest = first_line.clone();
+    if rest.trim().is_empty() {
+        for next_l in lines.iter().skip(l_idx + 1).take(3) {
+            rest.push('\n');
+            rest.push_str(next_l);
+            if !next_l.trim().is_empty() {
+                break;
+            }
+        }
+    }
+    let trimmed = rest.trim_start();
     if trimmed.starts_with('(') {
         return true;
     }
@@ -242,17 +254,36 @@ pub fn handle_call_hierarchy_outgoing_calls(
                 }
                 let ident: String = chars[start_c..i].iter().collect();
 
+                let line_prefix = &line_str[..start_c];
+                let is_decl = line_prefix.split_whitespace().last() == Some("fn");
+
                 let rest: String = chars[i..].iter().collect();
-                let trimmed = rest.trim_start();
+                let mut full_rest = rest.clone();
+                if full_rest.trim().is_empty() {
+                    for next_l in lines.iter().skip(line_idx as usize + 1).take(3) {
+                        full_rest.push('\n');
+                        full_rest.push_str(next_l);
+                        if !next_l.trim().is_empty() {
+                            break;
+                        }
+                    }
+                }
+                let trimmed = full_rest.trim_start();
                 let is_call = trimmed.starts_with('(')
                     || (trimmed.starts_with("::<") && trimmed.contains('('));
 
-                if is_call && !is_rust_keyword(&ident) {
+                if is_call && !is_decl && !is_rust_keyword(&ident) {
                     let col_1based = (start_c + 1) as u32;
                     let end_col_1based = (start_c + ident.len() + 1) as u32;
 
                     if let Some(def) = ws.find_definition_at(&file, line_num, col_1based) {
                         if matches!(def.kind, DefKind::Fn | DefKind::AssocFn) {
+                            if def.file == file
+                                && def.start_line == start_line
+                                && line_num == start_line
+                            {
+                                continue;
+                            }
                             let target_path = def.resolved_path();
                             let target_str = target_path.to_str().unwrap_or(def.file);
                             let target_uri = path_to_uri(target_str);

@@ -10,11 +10,13 @@
 
 //! LSP presentation handlers: selection range, document links, diagnostics, moniker, and content.
 
+pub mod diagnostics;
 pub mod tokens;
 
 #[cfg(test)]
 pub mod tests;
 
+pub use diagnostics::*;
 pub use tokens::*;
 
 use super::protocol::{uri_to_path, PositionConverter};
@@ -113,134 +115,6 @@ pub fn handle_document_link(msg: &Value, overlay_mgr: &OverlayManager) -> Value 
 
 pub fn handle_document_link_resolve(msg: &Value) -> Value {
     msg.get("params").cloned().unwrap_or(Value::Null)
-}
-
-pub fn handle_diagnostic(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-
-    let doc_text = if let Some(overlay) = overlay_mgr.get(&file) {
-        overlay.text.clone()
-    } else if let Ok(t) = std::fs::read_to_string(&file) {
-        t
-    } else {
-        return json!({ "kind": "full", "items": [] });
-    };
-
-    let mut items = Vec::new();
-    let mut delimiter_stack: Vec<(char, u32, u32)> = Vec::new();
-    let mut in_string = false;
-    let mut string_start = (0, 0);
-
-    for (line_idx, line) in doc_text.lines().enumerate() {
-        let line_num = line_idx as u32;
-        let mut char_idx = 0;
-        let chars: Vec<char> = line.chars().collect();
-
-        while char_idx < chars.len() {
-            let c = chars[char_idx];
-            if !in_string && c == '/' && char_idx + 1 < chars.len() && chars[char_idx + 1] == '/' {
-                break;
-            }
-
-            if c == '"' && (char_idx == 0 || chars[char_idx - 1] != '\\') {
-                in_string = !in_string;
-                if in_string {
-                    string_start = (line_num, char_idx as u32);
-                }
-            } else if !in_string {
-                match c {
-                    '(' | '[' | '{' => {
-                        delimiter_stack.push((c, line_num, char_idx as u32));
-                    }
-                    ')' => match delimiter_stack.pop() {
-                        Some(('(', _, _)) => {}
-                        Some((expected, el, _)) => {
-                            items.push(json!({
-                                    "range": {
-                                        "start": { "line": line_num, "character": char_idx },
-                                        "end": { "line": line_num, "character": char_idx + 1 }
-                                    },
-                                    "severity": 1,
-                                    "source": "ridx",
-                                    "message": format!("mismatched closing delimiter ')', expected matching for '{}' at line {}", expected, el + 1)
-                                }));
-                        }
-                        None => {
-                            items.push(json!({
-                                "range": {
-                                    "start": { "line": line_num, "character": char_idx },
-                                    "end": { "line": line_num, "character": char_idx + 1 }
-                                },
-                                "severity": 1,
-                                "source": "ridx",
-                                "message": "unmatched closing delimiter ')'"
-                            }));
-                        }
-                    },
-                    ']' => match delimiter_stack.pop() {
-                        Some(('[', _, _)) => {}
-                        _ => {
-                            items.push(json!({
-                                "range": {
-                                    "start": { "line": line_num, "character": char_idx },
-                                    "end": { "line": line_num, "character": char_idx + 1 }
-                                },
-                                "severity": 1,
-                                "source": "ridx",
-                                "message": "unmatched closing delimiter ']'"
-                            }));
-                        }
-                    },
-                    '}' => match delimiter_stack.pop() {
-                        Some(('{', _, _)) => {}
-                        _ => {
-                            items.push(json!({
-                                "range": {
-                                    "start": { "line": line_num, "character": char_idx },
-                                    "end": { "line": line_num, "character": char_idx + 1 }
-                                },
-                                "severity": 1,
-                                "source": "ridx",
-                                "message": "unmatched closing delimiter '}'"
-                            }));
-                        }
-                    },
-                    _ => {}
-                }
-            }
-            char_idx += 1;
-        }
-    }
-
-    if in_string {
-        items.push(json!({
-            "range": {
-                "start": { "line": string_start.0, "character": string_start.1 },
-                "end": { "line": string_start.0, "character": string_start.1 + 1 }
-            },
-            "severity": 1,
-            "source": "ridx",
-            "message": "unclosed string literal"
-        }));
-    }
-
-    while let Some((c, l, col)) = delimiter_stack.pop() {
-        items.push(json!({
-            "range": {
-                "start": { "line": l, "character": col },
-                "end": { "line": l, "character": col + 1 }
-            },
-            "severity": 1,
-            "source": "ridx",
-            "message": format!("unclosed delimiter '{}'", c)
-        }));
-    }
-
-    json!({
-        "kind": "full",
-        "items": items
-    })
 }
 
 pub fn handle_moniker(

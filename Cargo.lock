@@ -185,6 +185,7 @@ dependencies = [
  "colored",
  "memmap2",
  "ridx-format",
+ "serde",
  "serde_json",
 ]
 

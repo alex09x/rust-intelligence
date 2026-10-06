@@ -164,12 +164,7 @@ impl DocumentOverlay {
         let l_idx = live_line.saturating_sub(1) as usize;
         let curr_lines: Vec<&str> = self.text.lines().collect();
 
-        let Some(compiled_text) = self.compiled_text.as_ref() else {
-            if l_idx < curr_lines.len() {
-                return Some(live_line);
-            }
-            return None;
-        };
+        let compiled_text = self.compiled_text.as_ref()?;
 
         let compiled_lines: Vec<&str> = compiled_text.lines().collect();
         if self.text == *compiled_text {
@@ -213,12 +208,7 @@ impl DocumentOverlay {
         let c_idx = compiled_line.saturating_sub(1) as usize;
         let curr_lines: Vec<&str> = self.text.lines().collect();
 
-        let Some(compiled_text) = self.compiled_text.as_ref() else {
-            if c_idx < curr_lines.len() {
-                return Some(compiled_line);
-            }
-            return None;
-        };
+        let compiled_text = self.compiled_text.as_ref()?;
 
         let compiled_lines: Vec<&str> = compiled_text.lines().collect();
         if self.text == *compiled_text {
@@ -276,56 +266,106 @@ impl DocumentOverlay {
         if self.compiled_text.as_deref() == Some(&self.text) {
             return false;
         }
-        let Some(compiled_text) = self.compiled_text.as_ref() else {
+        if !self.is_dirty() {
             return false;
-        };
-
-        let curr_lines: Vec<&str> = self.text.lines().collect();
-        let compiled_lines: Vec<&str> = compiled_text.lines().collect();
-
-        let mut prefix_common = 0;
-        while prefix_common < curr_lines.len()
-            && prefix_common < compiled_lines.len()
-            && curr_lines[prefix_common] == compiled_lines[prefix_common]
-        {
-            prefix_common += 1;
         }
-
-        let mut suffix_common = 0;
-        while suffix_common < curr_lines.len()
-            && suffix_common < compiled_lines.len()
-            && curr_lines[curr_lines.len() - 1 - suffix_common]
-                == compiled_lines[compiled_lines.len() - 1 - suffix_common]
-        {
-            suffix_common += 1;
-        }
-
-        let curr_end = curr_lines.len().saturating_sub(suffix_common);
-        let comp_end = compiled_lines.len().saturating_sub(suffix_common);
-
-        let modified_curr = if prefix_common < curr_end {
-            &curr_lines[prefix_common..curr_end]
-        } else {
-            &[][..]
+        let Some(compiled_text) = self.compiled_text.as_ref() else {
+            return !extract_normalized_imports(&self.text).is_empty();
         };
-        let modified_comp = if prefix_common < comp_end {
-            &compiled_lines[prefix_common..comp_end]
-        } else {
-            &[][..]
-        };
-
-        for l in modified_curr.iter().chain(modified_comp.iter()) {
-            let t = l.trim_start();
-            if t.starts_with("use ")
-                || t.starts_with("pub use ")
-                || t.starts_with("mod ")
-                || t.starts_with("extern crate ")
-            {
-                return true;
-            }
-        }
-        false
+        extract_normalized_imports(&self.text) != extract_normalized_imports(compiled_text)
     }
+}
+
+pub fn extract_normalized_imports(text: &str) -> Vec<String> {
+    let mut imports = Vec::new();
+    let bytes = text.as_bytes();
+    let n = bytes.len();
+    let mut i = 0;
+
+    while i < n {
+        let b = bytes[i];
+
+        if b == b'/' && i + 1 < n && bytes[i + 1] == b'/' {
+            i += 2;
+            while i < n && bytes[i] != b'\n' {
+                i += 1;
+            }
+            continue;
+        }
+
+        if b == b'/' && i + 1 < n && bytes[i + 1] == b'*' {
+            i += 2;
+            let mut depth = 1;
+            while i + 1 < n && depth > 0 {
+                if bytes[i] == b'/' && bytes[i + 1] == b'*' {
+                    depth += 1;
+                    i += 2;
+                } else if bytes[i] == b'*' && bytes[i + 1] == b'/' {
+                    depth -= 1;
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
+            continue;
+        }
+
+        if b == b'"' {
+            i += 1;
+            while i < n {
+                if bytes[i] == b'\\' && i + 1 < n {
+                    i += 2;
+                    continue;
+                }
+                if bytes[i] == b'"' {
+                    i += 1;
+                    break;
+                }
+                i += 1;
+            }
+            continue;
+        }
+
+        if b.is_ascii_whitespace() {
+            i += 1;
+            continue;
+        }
+
+        let rem = &text[i..];
+        let is_import_start = rem.starts_with("use ")
+            || rem.starts_with("pub use ")
+            || (rem.starts_with("pub(") && rem.contains(") use "))
+            || rem.starts_with("mod ")
+            || rem.starts_with("pub mod ")
+            || rem.starts_with("extern crate ");
+
+        if is_import_start {
+            let start = i;
+            let mut end = i;
+            let mut depth: usize = 0;
+            while end < n {
+                let eb = bytes[end];
+                if eb == b'{' {
+                    depth += 1;
+                } else if eb == b'}' {
+                    depth = depth.saturating_sub(1);
+                } else if eb == b';' && depth == 0 {
+                    end += 1;
+                    break;
+                }
+                end += 1;
+            }
+            let raw_stmt = &text[start..end];
+            let normalized = raw_stmt.split_whitespace().collect::<Vec<_>>().join(" ");
+            imports.push(normalized);
+            i = end;
+            continue;
+        }
+
+        i += 1;
+    }
+
+    imports
 }
 
 pub fn compute_line_starts(text: &str) -> Vec<usize> {

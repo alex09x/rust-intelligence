@@ -107,12 +107,12 @@ fn test_mapping_edge_cases() {
         "line1\nline2\n".to_string(),
         false,
     );
-    assert_eq!(ov_no_compiled.map_line_to_compiled(1), Some(1));
+    assert_eq!(ov_no_compiled.map_line_to_compiled(1), None);
     assert_eq!(ov_no_compiled.map_line_to_compiled(999), None);
-    assert_eq!(ov_no_compiled.map_compiled_line_to_live(1), Some(1));
+    assert_eq!(ov_no_compiled.map_compiled_line_to_live(1), None);
     assert_eq!(ov_no_compiled.map_compiled_line_to_live(999), None);
-    assert_eq!(ov_no_compiled.map_live_to_compiled(1, 5), Some((1, 5)));
-    assert_eq!(ov_no_compiled.map_compiled_to_live(1, 5), Some((1, 5)));
+    assert_eq!(ov_no_compiled.map_live_to_compiled(1, 5), None);
+    assert_eq!(ov_no_compiled.map_compiled_to_live(1, 5), None);
 
     // 2. compiled_text equal to text
     ov_no_compiled.advance_compiled_baseline("line1\nline2\n".to_string());

@@ -95,12 +95,14 @@ fn test_manifest_discovery_and_auto_reindexing() {
         arg1: dir_str.clone(),
         arg2: Some("test_crate::test_fn".to_string()),
         symbol: None,
+        capability: "def".to_string(),
         json: false,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
         arg2: Some("test_crate::test_fn".to_string()),
         symbol: None,
+        capability: "def".to_string(),
         json: true,
     });
 

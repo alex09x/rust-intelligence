@@ -101,6 +101,9 @@ pub fn handle_completion(
     if let Some(ws) = workspace {
         let ws_symbols = ws.search_symbols(&prefix);
         for s in ws_symbols {
+            if s.kind == ridx_format::DefKind::Local {
+                continue;
+            }
             if seen_names.insert(s.name.to_string()) {
                 items.push(json!({
                     "label": s.name,

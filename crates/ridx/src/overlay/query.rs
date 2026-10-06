@@ -214,51 +214,166 @@ impl DocumentOverlay {
         let mut results = Vec::new();
         let target_name = &target_def.name;
 
-        // Iterate through all lines of the buffer to find matching identifier tokens
-        for (line_idx, line_str) in self.text.lines().enumerate() {
-            let line_1based = (line_idx + 1) as u32;
-            let mut search_idx = 0;
-            while let Some(pos) = line_str[search_idx..].find(target_name.as_str()) {
-                let byte_offset = search_idx + pos;
-                let char_col = line_str[..byte_offset].chars().count() as u32 + 1;
-                search_idx = byte_offset + target_name.len();
-
-                // Skip occurrences inside comments or string/char literals
-                if super::mapping::is_byte_in_string_or_comment(line_str, byte_offset) {
-                    continue;
-                }
-
-                // Check that this is a full identifier match (word boundaries)
-                let prev_is_ident = line_str[..byte_offset]
-                    .chars()
-                    .next_back()
-                    .is_some_and(is_rust_ident_continue);
-                let next_is_ident = line_str[byte_offset + target_name.len()..]
-                    .chars()
-                    .next()
-                    .is_some_and(is_rust_ident_continue);
-                if prev_is_ident || next_is_ident {
-                    continue;
-                }
-
-                if let Some((ident, _, _)) = self.get_ident_and_span_at(line_1based, char_col) {
-                    if &ident == target_name {
-                        if let Some(resolved) = self.find_definition_at(line_1based, char_col) {
-                            if resolved.start_line == target_def.start_line
-                                && resolved.start_col == target_def.start_col
-                                && resolved.file == target_def.file
-                            {
-                                let end_col = char_col + target_name.chars().count() as u32;
-                                let span = (line_1based, char_col, line_1based, end_col);
-                                if !results.contains(&span) {
-                                    results.push(span);
-                                }
-                            }
-                        }
+        // Iterate through all real code identifier tokens across the document
+        for (line_1based, char_col) in find_document_matching_identifiers(&self.text, target_name) {
+            if let Some(resolved) = self.find_definition_at(line_1based, char_col) {
+                if resolved.start_line == target_def.start_line
+                    && resolved.start_col == target_def.start_col
+                    && resolved.file == target_def.file
+                {
+                    let end_col = char_col + target_name.chars().count() as u32;
+                    let span = (line_1based, char_col, line_1based, end_col);
+                    if !results.contains(&span) {
+                        results.push(span);
                     }
                 }
             }
         }
         results
     }
+}
+
+/// Scans the full document text in lexer order and returns (line_1based, char_col_1based)
+/// for all identifier occurrences matching `target_name` that are real code tokens
+/// (ignoring comments, block comments with nesting, string literals, raw string literals, and char literals).
+pub fn find_document_matching_identifiers(text: &str, target_name: &str) -> Vec<(u32, u32)> {
+    let mut matches = Vec::new();
+    let bytes = text.as_bytes();
+    let n = bytes.len();
+    let mut i = 0;
+
+    let mut line = 1u32;
+    let mut line_start_byte = 0;
+
+    while i < n {
+        let b = bytes[i];
+
+        if b == b'\n' {
+            line += 1;
+            i += 1;
+            line_start_byte = i;
+            continue;
+        }
+
+        if b == b'/' && i + 1 < n && bytes[i + 1] == b'/' {
+            i += 2;
+            while i < n && bytes[i] != b'\n' {
+                i += 1;
+            }
+            continue;
+        }
+
+        if b == b'/' && i + 1 < n && bytes[i + 1] == b'*' {
+            i += 2;
+            let mut depth = 1;
+            while i + 1 < n && depth > 0 {
+                if bytes[i] == b'\n' {
+                    line += 1;
+                    line_start_byte = i + 1;
+                }
+                if bytes[i] == b'/' && bytes[i + 1] == b'*' {
+                    depth += 1;
+                    i += 2;
+                } else if bytes[i] == b'*' && bytes[i + 1] == b'/' {
+                    depth -= 1;
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
+            continue;
+        }
+
+        if b == b'r' && i + 1 < n && (bytes[i + 1] == b'"' || bytes[i + 1] == b'#') {
+            let mut h_idx = i + 1;
+            let mut hashes = 0;
+            while h_idx < n && bytes[h_idx] == b'#' {
+                hashes += 1;
+                h_idx += 1;
+            }
+            if h_idx < n && bytes[h_idx] == b'"' {
+                i = h_idx + 1;
+                while i < n {
+                    if bytes[i] == b'\n' {
+                        line += 1;
+                        line_start_byte = i + 1;
+                    }
+                    if bytes[i] == b'"'
+                        && i + hashes < n
+                        && (0..hashes).all(|k| bytes[i + 1 + k] == b'#')
+                    {
+                        i += 1 + hashes;
+                        break;
+                    }
+                    i += 1;
+                }
+                continue;
+            }
+        }
+
+        if b == b'"' {
+            i += 1;
+            while i < n {
+                if bytes[i] == b'\n' {
+                    line += 1;
+                    line_start_byte = i + 1;
+                }
+                if bytes[i] == b'\\' && i + 1 < n {
+                    i += 2;
+                    continue;
+                }
+                if bytes[i] == b'"' {
+                    i += 1;
+                    break;
+                }
+                i += 1;
+            }
+            continue;
+        }
+
+        if b == b'\'' {
+            let mut j = i + 1;
+            if j < n && bytes[j] == b'\\' {
+                j += 2;
+                while j < n && bytes[j] != b'\'' && bytes[j] != b'\n' {
+                    j += 1;
+                }
+                if j < n && bytes[j] == b'\'' {
+                    i = j + 1;
+                    continue;
+                }
+            } else if j + 1 < n && bytes[j + 1] == b'\'' {
+                i = j + 2;
+                continue;
+            }
+        }
+
+        let ch = text[i..].chars().next().unwrap();
+        if is_rust_ident_start(ch) {
+            let start_byte = i;
+            let ident_line = line;
+            let line_slice_before = &text[line_start_byte..start_byte];
+            let char_col = line_slice_before.chars().count() as u32 + 1;
+
+            let mut ident_len = 0;
+            for c in text[start_byte..].chars() {
+                if is_rust_ident_continue(c) {
+                    ident_len += c.len_utf8();
+                } else {
+                    break;
+                }
+            }
+
+            let ident = &text[start_byte..start_byte + ident_len];
+            if ident == target_name {
+                matches.push((ident_line, char_col));
+            }
+            i += ident_len;
+            continue;
+        }
+
+        i += ch.len_utf8();
+    }
+
+    matches
 }

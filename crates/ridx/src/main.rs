@@ -8,12 +8,6 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-pub mod cli;
-pub mod compare;
-pub mod indexer;
-pub mod lsp;
-pub mod overlay;
-
 fn main() {
-    cli::run();
+    ridx::cli::run();
 }

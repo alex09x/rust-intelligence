@@ -302,12 +302,21 @@ pub fn dispatch_lsp_message<W: Write>(
     };
 
     if let Some(ref req_id) = id {
-        let resp = json!({
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "result": result
-        });
-        send_response(writer, &resp)?;
+        if cancelled_requests.lock().unwrap().remove(req_id) {
+            let resp = json!({
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": { "code": -32800, "message": "Request cancelled" }
+            });
+            send_response(writer, &resp)?;
+        } else {
+            let resp = json!({
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": result
+            });
+            send_response(writer, &resp)?;
+        }
     }
 
     Ok(true)

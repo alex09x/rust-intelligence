@@ -74,24 +74,28 @@ fn test_cli_not_found_branches_and_helpers() {
         arg1: dir_str.clone(),
         arg2: Some("nonexistent_symbol".to_string()),
         symbol: None,
+        capability: "def".to_string(),
         json: false,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
         arg2: Some("nonexistent_symbol".to_string()),
         symbol: None,
+        capability: "def".to_string(),
         json: true,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
         arg2: Some("src/lib.rs:10:1".to_string()),
         symbol: None,
+        capability: "def".to_string(),
         json: true,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
         arg2: Some("src/lib.rs:10:1".to_string()),
         symbol: None,
+        capability: "def".to_string(),
         json: false,
     });
 
