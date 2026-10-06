@@ -146,7 +146,9 @@ pub fn plan_apply_edits(args: &[Value], overlay_mgr: &OverlayManager) -> Result<
                     }
                     let doc = working_docs.get_mut(&file_path).unwrap();
                     if let Some(expected_ver) = doc_version {
-                        doc.client_version = Some(expected_ver);
+                        if doc.client_version.is_none() {
+                            doc.client_version = Some(expected_ver);
+                        }
                         if expected_ver != doc.version {
                             return Err(
                                 json!({ "applied": false, "count": 0, "failure": "version_mismatch" }),
