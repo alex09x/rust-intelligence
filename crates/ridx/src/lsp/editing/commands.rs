@@ -55,9 +55,28 @@ struct WorkingDoc {
     uri: String,
     is_overlay: bool,
     version: i32,
+    initial_text: String,
     current_text: String,
     edit_count: usize,
+    arg_count: usize,
     all_edits: Vec<Value>,
+}
+
+fn full_document_range(text: &str) -> Value {
+    let mut line = 0;
+    let mut last_col = 0;
+    for c in text.chars() {
+        if c == '\n' {
+            line += 1;
+            last_col = 0;
+        } else {
+            last_col += c.len_utf16();
+        }
+    }
+    json!({
+        "start": { "line": 0, "character": 0 },
+        "end": { "line": line, "character": last_col }
+    })
 }
 
 fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
@@ -82,8 +101,10 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
                         uri: uri.to_string(),
                         is_overlay: true,
                         version: overlay.version,
+                        initial_text: overlay.text.clone(),
                         current_text: overlay.text.clone(),
                         edit_count: 0,
+                        arg_count: 0,
                         all_edits: Vec::new(),
                     },
                 );
@@ -96,8 +117,10 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
                         uri: uri.to_string(),
                         is_overlay: false,
                         version: 0,
+                        initial_text: content.clone(),
                         current_text: content,
                         edit_count: 0,
+                        arg_count: 0,
                         all_edits: Vec::new(),
                     },
                 );
@@ -145,6 +168,7 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
                     doc.current_text = new_text;
                     doc.version += 1;
                     doc.edit_count += edits.len();
+                    doc.arg_count += 1;
                     doc.all_edits.extend(edits.iter().cloned());
                 }
             }
@@ -171,6 +195,7 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
                     doc.current_text = new_text;
                     doc.version += 1;
                     doc.edit_count += edits_arr.len();
+                    doc.arg_count += 1;
                     doc.all_edits.extend(edits_arr.iter().cloned());
                 }
             }
@@ -182,23 +207,26 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
     }
 
     // Phase 2: Commit.
-    // 2a. Check and write closed files to disk. If any write fails, rollback and report failure.
-    let mut written_closed_files: Vec<(String, String)> = Vec::new();
-    let mut write_failed = false;
+    // 2a. Pre-capture snapshots of all closed files for atomic rollback if ANY write fails/partially fails.
+    let mut orig_snapshots: Vec<(String, String)> = Vec::new();
     for doc in working_docs.values() {
         if !doc.is_overlay {
             let orig = std::fs::read_to_string(&doc.file_path).unwrap_or_default();
-            if std::fs::write(&doc.file_path, &doc.current_text).is_err() {
-                write_failed = true;
-                break;
-            }
-            written_closed_files.push((doc.file_path.clone(), orig));
+            orig_snapshots.push((doc.file_path.clone(), orig));
+        }
+    }
+
+    let mut write_failed = false;
+    for doc in working_docs.values() {
+        if !doc.is_overlay && std::fs::write(&doc.file_path, &doc.current_text).is_err() {
+            write_failed = true;
+            break;
         }
     }
 
     if write_failed {
-        // Rollback any closed files written so far
-        for (fp, orig_text) in written_closed_files {
+        // Rollback all closed files, crucially including the file that failed write
+        for (fp, orig_text) in &orig_snapshots {
             let _ = std::fs::write(fp, orig_text);
         }
         return json!({
@@ -216,7 +244,15 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
 
     for doc in working_docs.into_values() {
         total_count += doc.edit_count;
-        combined_changes.insert(doc.uri.clone(), Value::Array(doc.all_edits));
+        let edits = if doc.arg_count > 1 {
+            vec![json!({
+                "range": full_document_range(&doc.initial_text),
+                "newText": doc.current_text
+            })]
+        } else {
+            doc.all_edits
+        };
+        combined_changes.insert(doc.uri.clone(), Value::Array(edits));
 
         if doc.is_overlay {
             if let Some(overlay) = overlay_mgr.get_mut(&doc.file_path) {
@@ -239,5 +275,86 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
         "applied": true,
         "count": total_count,
         "edit": combined_edit,
+        "orig_closed": orig_snapshots,
     })
+}
+
+struct PendingApplyState {
+    apply_req_id: Value,
+    command_req_id: Option<Value>,
+    pre_snapshots: Vec<(String, i32, String)>,
+    orig_closed: Vec<(String, String)>,
+    success_result: Value,
+}
+
+static PENDING_APPLY_STATE: std::sync::Mutex<Option<PendingApplyState>> =
+    std::sync::Mutex::new(None);
+
+pub fn capture_overlay_snapshots(overlay_mgr: &OverlayManager) -> Vec<(String, i32, String)> {
+    overlay_mgr
+        .open_file_paths()
+        .iter()
+        .filter_map(|fp| {
+            overlay_mgr
+                .get(fp)
+                .map(|o| (fp.clone(), o.version, o.text.clone()))
+        })
+        .collect()
+}
+
+pub fn register_pending_apply(
+    apply_req_id: Value,
+    command_req_id: Option<Value>,
+    pre_snapshots: Vec<(String, i32, String)>,
+    mut success_result: Value,
+) {
+    let orig_closed: Vec<(String, String)> = success_result
+        .get_mut("orig_closed")
+        .and_then(|v| serde_json::from_value(v.take()).ok())
+        .unwrap_or_default();
+    if let Some(obj) = success_result.as_object_mut() {
+        obj.remove("orig_closed");
+    }
+    *PENDING_APPLY_STATE.lock().unwrap() = Some(PendingApplyState {
+        apply_req_id,
+        command_req_id,
+        pre_snapshots,
+        orig_closed,
+        success_result,
+    });
+}
+
+pub fn handle_apply_edit_response(
+    msg: &Value,
+    overlay_mgr: &mut OverlayManager,
+) -> Option<(Option<Value>, Value)> {
+    let resp_id = msg.get("id")?;
+    let mut pending_lock = PENDING_APPLY_STATE.lock().unwrap();
+    let pending = pending_lock.as_ref()?;
+    if &pending.apply_req_id != resp_id {
+        return None;
+    }
+    let state = pending_lock.take()?;
+    let client_applied = msg
+        .get("result")
+        .and_then(|r| r.get("applied"))
+        .and_then(|a| a.as_bool())
+        .unwrap_or(false);
+
+    if client_applied {
+        Some((state.command_req_id, state.success_result))
+    } else {
+        for (fp, ver, text) in state.pre_snapshots {
+            if let Some(overlay) = overlay_mgr.get_mut(&fp) {
+                overlay.update(ver, text);
+            }
+        }
+        for (fp, orig_text) in state.orig_closed {
+            let _ = std::fs::write(&fp, orig_text);
+        }
+        Some((
+            state.command_req_id,
+            json!({ "applied": false, "count": 0, "failure": "client_rejected" }),
+        ))
+    }
 }

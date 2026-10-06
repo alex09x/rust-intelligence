@@ -17,26 +17,27 @@
 `ridx` is designed to eliminate the multi-gigabyte memory footprint and multi-second indexing/query latency typical of language server daemons (`rust-analyzer`). By intercepting `cargo check` at compile-time via `ridx-driver`, all typeck, HIR definitions, cross-crate resolutions, and span coordinates are serialized into a flat, zero-copy memory-mapped binary format (`.ridx`).
 
 ### Key Performance Highlights:
-* **Microsecond Query Latency:** Direct memory-mapped index lookups execute in **8 – 66 µs**, compared to **300 – 5,500 ms** in `rust-analyzer` — a measured speedup of **1,000x to 462,000x**.
-* **LSP Transport Overhead Accounting:** Over framed standard I/O (JSON-RPC 2.0 pipe transport), end-to-end roundtrip latency remains **150 – 350 µs** (sub-millisecond), maintaining a **1,000x+** advantage over background daemons.
+* **Microsecond Index Query Latency:** Direct memory-mapped index lookups execute in **8 – 66 µs**, compared to **300 – 5,500 ms** for `rust-analyzer` LSP queries.
+* **Separation of Raw vs Transport Measurements:** Direct zero-copy mmap lookups are measured at the storage/query boundary. Transport over framed JSON-RPC 2.0 pipe introduces standard serialization/IPC overhead. A unified common runner measuring both systems under identical end-to-end framed LSP scenarios is currently being developed; until completed, end-to-end transport parity remains an open milestone.
 * **Zero Persistent RAM Overhead:** `ridx` requires **0.00 MB** of persistent daemon heap memory. Memory-mapped files rely directly on kernel virtual memory pages, leaving physical RAM free for builds and compilers.
 * **Instant Editor Readiness:** While `rust-analyzer` requires **12 to 30 seconds** of cold Salsa warmup on workspace open, `ridx` achieves full editor readiness in **0.31 ms** (pure `mmap` syscalls).
-* **100% Semantic Parity:** Verified across all core LSP capabilities (`Def`, `Refs`, `Hover`, `Symbols`, `Callers`) on real-world production codebases.
+* **100% Semantic Parity:** Verified across core LSP capabilities (`Def`, `Refs`, `Hover`, `Symbols`, `Callers`) on real-world production codebases.
 
 ---
 
 ## 2. Real-World Multi-Project Comparison Matrix
 
-### Benchmark Methodology & Readiness Verification:
-- **Raw Lookups vs Pipe Roundtrips:** Column `ridx Latency` reflects the zero-copy mmap query kernel. When transported over the framed LSP wire, serialization and pipe latency add a predictable ~150 µs.
-- **Warmup Protocol:** In comparison harness runs (`compare/client.rs`), rust-analyzer processes undergo a validated `workspace/symbol` readiness query following initialization to ensure crate graph loading before measuring target query roundtrips.
+### Benchmark Methodology & Measurement Boundaries:
+- **Raw Memory-Mapped Index Lookups:** The `ridx (Raw mmap Query)` column reflects verified direct memory-mapped lookups against the `WorkspaceIndex` query kernel.
+- **rust-analyzer LSP Baseline:** `rust-analyzer` latency reflects LSP roundtrip queries against a warm server process following a validated `workspace/symbol` readiness query.
+- **Transport Boundary & Common Runner Status:** Direct index lookups isolate query engine efficiency. End-to-end transport overhead for framed JSON-RPC roundtrips is measured separately. A common unified benchmark runner executing identical end-to-end transport scenarios against both servers under identical warmup protocols is actively being developed. Symmetric transport comparison requirements remain open until that unified harness runs.
 - **Timer Isolation:** Latency measurements isolate pure query response duration, excluding process spawn and teardown.
 
 ### 2.1 `sonic-rs` Workspace (SIMD JSON Engine)
 * **Workspace Scale:** 29 Crates | 353 Files | 42,003 Definitions | 280,963 References | 288,227 Types | 38.91 MB Index Size
 * **Target Symbol:** `lazyvalue::get::get_from_str_unchecked`
 
-| LSP Capability | `ridx` Latency | `rust-analyzer` Latency | Speedup | Parity Status | Verification Span |
+| LSP Capability | `ridx` (Raw mmap Query) | `rust-analyzer` (LSP Roundtrip) | Raw Speedup | Parity Status | Verification Span |
 |---|---|---|---|---|---|
 | **Go to Definition (`Def`)** | **8 µs** | 330,400 µs (330.4 ms) | **41,303.0x** | **MATCH** | Exact line/col `src/lazyvalue/get.rs:51:1` |
 | **Find References (`Refs`)** | **315 µs** | 513,000 µs (513.0 ms) | **1,628.5x** | **MATCH** | All 4 workspace references identified |
@@ -46,7 +47,7 @@
 
 * **Target Function:** `serde::de::from_slice`
 
-| LSP Capability | `ridx` Latency | `rust-analyzer` Latency | Speedup | Parity Status | Verification Span |
+| LSP Capability | `ridx` (Raw mmap Query) | `rust-analyzer` (LSP Roundtrip) | Raw Speedup | Parity Status | Verification Span |
 |---|---|---|---|---|---|
 | **Go to Definition (`Def`)** | **13 µs** | 333,200 µs (333.2 ms) | **25,630.2x** | **MATCH** | `src/serde/de.rs:1318:1` |
 | **Find References (`Refs`)** | **347 µs** | 1,700,400 µs (1.70 s) | **4,900.3x** | **MATCH** | Scoped references matched across crate |
@@ -60,7 +61,7 @@
 * **Workspace Scale:** 358 Crates/Shards | 1,420 Files | 19,340 Definitions | 507,621 References | 804,543 Types | 62.67 MB Index Size
 * **Target Symbol:** `lsp_bridge::reconnect::reconnect_editor_session`
 
-| LSP Capability | `ridx` Latency | `rust-analyzer` Latency | Speedup | Parity Status | Verification Span |
+| LSP Capability | `ridx` (Raw mmap Query) | `rust-analyzer` (LSP Roundtrip) | Raw Speedup | Parity Status | Verification Span |
 |---|---|---|---|---|---|
 | **Go to Definition (`Def`)** | **66 µs** | 2,771,000 µs (2.77 s) | **41,984.6x** | **MATCH** | `crates/prod-code-client/.../reconnect.rs:175:1` |
 | **Find References (`Refs`)** | **4,264 µs** | 1,860,800 µs (1.86 s) | **436.4x** | **MATCH** | 507k references scanned in 4.2 ms |
@@ -70,7 +71,7 @@
 
 * **Target Location:** `crates/prod-code-client/src/lsp_bridge/reconnect.rs:175:8` (Cursor Coordinate)
 
-| LSP Capability | `ridx` Latency | `rust-analyzer` Latency | Speedup | Parity Status | Verification Span |
+| LSP Capability | `ridx` (Raw mmap Query) | `rust-analyzer` (LSP Roundtrip) | Raw Speedup | Parity Status | Verification Span |
 |---|---|---|---|---|---|
 | **Go to Definition (`Def`)** | **313 µs** | 306,300 µs (306.3 ms) | **978.5x** | **MATCH** | Innermost cursor span resolved |
 | **Find References (`Refs`)** | **1,492 µs** | 1,917,900 µs (1.92 s) | **1,285.5x** | **MATCH** | Identical call site collection |
@@ -83,7 +84,7 @@
 * **Workspace Scale:** 33 Crates/Shards | 240 Files | 1,396 Definitions | 34,641 References | 53,526 Types | 4.22 MB Index Size
 * **Target Symbol:** `workspace::WorkspaceIndex`
 
-| LSP Capability | `ridx` Latency | `rust-analyzer` Latency | Speedup | Parity Status | Verification Span |
+| LSP Capability | `ridx` (Raw mmap Query) | `rust-analyzer` (LSP Roundtrip) | Raw Speedup | Parity Status | Verification Span |
 |---|---|---|---|---|---|
 | **Go to Definition (`Def`)** | **12 µs** | 5,551,100 µs (5.55 s) | **462,589.2x** | **MATCH** | `crates/ridx-format/src/workspace/mod.rs:30:1` |
 | **Find References (`Refs`)** | **780 µs** | 1,701,100 µs (1.70 s) | **2,180.9x** | **MATCH** | Cross-crate usage in `ridx` and tests |
@@ -93,7 +94,7 @@
 
 * **Target Location:** `crates/ridx-format/src/workspace/mod.rs:30:12` (Cursor Coordinate)
 
-| LSP Capability | `ridx` Latency | `rust-analyzer` Latency | Speedup | Parity Status | Verification Span |
+| LSP Capability | `ridx` (Raw mmap Query) | `rust-analyzer` (LSP Roundtrip) | Raw Speedup | Parity Status | Verification Span |
 |---|---|---|---|---|---|
 | **Go to Definition (`Def`)** | **58 µs** | 283,200 µs (283.2 ms) | **4,883.4x** | **MATCH** | Exact struct name token selection |
 | **Find References (`Refs`)** | **479 µs** | 384,700 µs (384.7 ms) | **803.1x** | **MATCH** | References resolved in 479 microseconds |
@@ -106,7 +107,7 @@
 * **Workspace Scale:** 16 Crates | 188 Files | 9,362 Definitions | 214,427 References | 303,818 Types | 24.52 MB Index Size
 * **Target Symbol:** `SectionConfig` / `arg_value`
 
-| LSP Capability | `ridx` Latency | `rust-analyzer` Latency | Speedup | Parity Status | Verification Span |
+| LSP Capability | `ridx` (Raw mmap Query) | `rust-analyzer` (LSP Roundtrip) | Raw Speedup | Parity Status | Verification Span |
 |---|---|---|---|---|---|
 | **Go to Definition (`Def`)** | **25 µs** | 45,000 µs (45.0 ms) | **1,800.0x** | **MATCH** | `crates/config-tools/../../src/upload_config.rs:44:1` |
 | **Find References (`Refs`)** | **74 µs** | 220,000 µs (220.0 ms) | **2,972.9x** | **MATCH** | 11 references across workspace |

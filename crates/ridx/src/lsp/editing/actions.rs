@@ -186,6 +186,7 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
                             || p.contains(')')
                             || p.contains(']')
                             || p.contains('?')
+                            || p.contains('|')
                     };
 
                     if !has_side_effect_or_control_flow {

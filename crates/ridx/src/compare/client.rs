@@ -276,7 +276,7 @@ pub fn extract_symbol_location(resp: &Value, target: &str) -> Option<(String, u3
                     .get("containerName")
                     .and_then(|c| c.as_str())
                     .unwrap_or("");
-                return container == tc || container.ends_with(tc);
+                return container == tc || container.ends_with(&format!("::{tc}"));
             }
             return true;
         }

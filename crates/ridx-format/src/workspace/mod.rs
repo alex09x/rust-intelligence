@@ -575,6 +575,11 @@ impl WorkspaceIndex {
         self.meta_mtimes.get(idx).copied().flatten()
     }
 
+    /// Returns the source root path for reader at index i, if known.
+    pub fn source_root_at(&self, idx: usize) -> Option<&Path> {
+        self.source_roots.get(idx).and_then(|p| p.as_deref())
+    }
+
     /// Aggregated statistics across all crates in the workspace.
     pub fn stats(&self) -> WorkspaceStats {
         let mut stats = WorkspaceStats {

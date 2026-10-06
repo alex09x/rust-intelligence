@@ -36,11 +36,21 @@ pub fn dispatch_lsp_message<W: Write>(
     cancelled_requests: &Arc<Mutex<HashSet<Value>>>,
     index_path: Option<&PathBuf>,
 ) -> io::Result<bool> {
+    if msg.get("method").is_none() {
+        if let Some((Some(ref cmd_id), resp)) = handle_apply_edit_response(&msg, overlay_mgr) {
+            send_response(
+                writer,
+                &json!({ "jsonrpc": "2.0", "id": cmd_id, "result": resp }),
+            )?;
+        }
+        return Ok(true);
+    }
+
     let method = msg["method"].as_str().unwrap_or("");
-    let id = msg.get("id").cloned();
+    let mut id = msg.get("id").cloned();
 
     if let Some(should_continue) =
-        check_lifecycle_and_cancel(method, &id, lifecycle, cancelled_requests, writer)?
+        lifecycle.check_lifecycle_and_cancel(method, &id, cancelled_requests, writer)?
     {
         return Ok(should_continue);
     }
@@ -294,6 +304,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/codeAction" => handle_code_action(&msg, overlay_mgr),
         "codeAction/resolve" => handle_code_action_resolve(&msg),
         "workspace/executeCommand" => {
+            let pre_snapshots = capture_overlay_snapshots(overlay_mgr);
             let res = handle_execute_command(&msg, overlay_mgr);
             if msg["params"]["command"].as_str() == Some("ridx.applyEdits")
                 && res
@@ -302,13 +313,18 @@ pub fn dispatch_lsp_message<W: Write>(
                     .unwrap_or(false)
             {
                 if let Some(edit) = res.get("edit") {
-                    let apply_req = json!({
-                        "jsonrpc": "2.0",
-                        "id": 9999,
-                        "method": "workspace/applyEdit",
-                        "params": { "label": "Apply refactoring edits", "edit": edit }
-                    });
-                    let _ = send_response(writer, &apply_req);
+                    let apply_req_id = json!(9999);
+                    send_response(
+                        writer,
+                        &json!({
+                            "jsonrpc": "2.0",
+                            "id": apply_req_id,
+                            "method": "workspace/applyEdit",
+                            "params": { "label": "Apply refactoring edits", "edit": edit }
+                        }),
+                    )?;
+                    register_pending_apply(apply_req_id, id.take(), pre_snapshots, res);
+                    return Ok(true);
                 }
             }
             res
@@ -351,41 +367,6 @@ fn doc_ws<'a>(msg: &Value, multi_root: &'a MultiRootWorkspace) -> Option<&'a Wor
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     multi_root.find_workspace_for_path(Path::new(&file))
-}
-
-fn check_lifecycle_and_cancel<W: Write>(
-    method: &str,
-    id: &Option<Value>,
-    lifecycle: &mut LifecycleManager,
-    cancelled_requests: &Arc<Mutex<HashSet<Value>>>,
-    writer: &mut W,
-) -> Result<Option<bool>, io::Error> {
-    if method == "exit" {
-        return lifecycle
-            .handle_exit()
-            .map(|_| Some(false))
-            .map_err(|_| io::Error::other("exit notification received before shutdown"));
-    }
-    let req_id = match id {
-        Some(r) => r,
-        None => return Ok(None),
-    };
-    if lifecycle.is_shutdown() {
-        let resp = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32600, "message": "Server is shutting down" } });
-        send_response(writer, &resp)?;
-        return Ok(Some(true));
-    }
-    if !lifecycle.is_initialized() && method != "initialize" {
-        let resp = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32002, "message": "Server not initialized" } });
-        send_response(writer, &resp)?;
-        return Ok(Some(true));
-    }
-    if cancelled_requests.lock().unwrap().remove(req_id) {
-        let resp = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32800, "message": "Request cancelled" } });
-        let _ = send_response(writer, &resp);
-        return Ok(Some(true));
-    }
-    Ok(None)
 }
 
 fn check_file_provenance(multi_root: &MultiRootWorkspace, file: &str, text: &str) -> bool {

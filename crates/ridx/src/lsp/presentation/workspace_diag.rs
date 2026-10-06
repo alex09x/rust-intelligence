@@ -42,10 +42,11 @@ pub fn handle_workspace_diagnostic(
 
     // 2. Discover closed source files known to the workspace index
     for ws in multi_root.all_workspaces() {
-        let ws_root = ws
-            .workspace_root()
-            .or_else(|| ws.paths().first().and_then(|p| p.parent()));
-        for reader in ws.readers() {
+        for (i, reader) in ws.readers().iter().enumerate() {
+            let origin = ws
+                .source_root_at(i)
+                .or_else(|| ws.workspace_root())
+                .or_else(|| ws.paths().get(i).and_then(|p| p.parent()));
             for fid in 0..reader.files_count() {
                 let rel = reader.get_file(fid);
                 if rel.is_empty() {
@@ -53,7 +54,7 @@ pub fn handle_workspace_diagnostic(
                 }
                 let path = if Path::new(rel).is_absolute() {
                     std::path::PathBuf::from(rel)
-                } else if let Some(root) = ws_root {
+                } else if let Some(root) = origin {
                     root.join(rel)
                 } else {
                     std::path::PathBuf::from(rel)

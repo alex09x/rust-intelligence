@@ -178,6 +178,47 @@ impl LifecycleManager {
             ))
         }
     }
+
+    pub fn check_lifecycle_and_cancel<W: std::io::Write>(
+        &mut self,
+        method: &str,
+        id: &Option<Value>,
+        cancelled_requests: &std::sync::Arc<std::sync::Mutex<std::collections::HashSet<Value>>>,
+        writer: &mut W,
+    ) -> Result<Option<bool>, std::io::Error> {
+        if method == "exit" {
+            return self
+                .handle_exit()
+                .map(|_| Some(false))
+                .map_err(|_| std::io::Error::other("exit notification received before shutdown"));
+        }
+        let req_id = match id {
+            Some(r) => r,
+            None => return Ok(None),
+        };
+        if self.is_shutdown() {
+            super::protocol::send_response(
+                writer,
+                &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32600, "message": "Server is shutting down" } }),
+            )?;
+            return Ok(Some(true));
+        }
+        if !self.is_initialized() && method != "initialize" {
+            super::protocol::send_response(
+                writer,
+                &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32002, "message": "Server not initialized" } }),
+            )?;
+            return Ok(Some(true));
+        }
+        if cancelled_requests.lock().unwrap().remove(req_id) {
+            let _ = super::protocol::send_response(
+                writer,
+                &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32800, "message": "Request cancelled" } }),
+            );
+            return Ok(Some(true));
+        }
+        Ok(None)
+    }
 }
 
 #[cfg(test)]
