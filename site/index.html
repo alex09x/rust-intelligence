@@ -12,98 +12,151 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rust Intelligence (ridx)</title>
-  <meta name="description" content="Ultra-fast, zero-memory code intelligence for Rust.">
+  <title>ridx — Rust Intelligence</title>
+  <meta name="description" content="Compiler-driven code intelligence for Rust: a binary index built by rustc and read in place through mmap.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600;800&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header class="nav">
-  <a class="brand" href="#top"><img id="brand-logo" src="assets/logo.svg" alt="" width="32" height="32"><span>ridx</span></a>
-  <nav>
-    <a href="#benchmarks">Benchmarks</a><a href="#architecture">Architecture</a><a href="#features">Features</a><a href="#quickstart">Quickstart</a>
-    <a href="https://github.com/alex09x/rust-intelligence">GitHub</a>
-  </nav>
+  <a class="lockup" href="#top" style="gap:10px"><img src="assets/logo-minimal.svg" width="32" height="32" alt=""><span class="wm" style="font-size:22px">ridx<span class="rust">.</span></span></a>
+  <nav><a href="#why">Why</a><a href="#bench">Benchmarks</a><a href="#arch">Architecture</a><a href="#lsp">LSP</a><a href="#start">Quickstart</a><a href="https://github.com/alex09x/rust-intelligence">GitHub</a></nav>
 </header>
 
 <main id="top">
-  <section class="hero">
-    <div class="hero-text">
-      <p class="eyebrow">ridx 2.2</p>
-      <h1>Ultra-Fast, <span class="grad">Zero-Memory</span> Code Intelligence for Rust</h1>
-      <p class="lead">Compile-time extraction, a content-addressed index and a zero-copy mmap kernel. Answers in microseconds, with no background heap.</p>
-      <div class="cta">
-        <a class="btn primary" href="#quickstart">Get Started</a>
-        <a class="btn" href="#benchmarks">View Benchmarks</a>
+<section class="bggrid">
+  <div class="wrap hero">
+    <div class="hero-text rise">
+      <div class="lockup"><img src="assets/logo-minimal.svg" width="64" height="64" alt="ridx"><span class="wm" style="font-size:52px">ridx<span class="rust">.</span></span><span class="eye">v2.2</span></div>
+      <h1 class="h1">Rust navigation in <span class="rust">microseconds</span>, straight from the compiler.</h1>
+      <p class="lead">rustc already resolves every definition, reference and type during <span class="mono">cargo check</span>. ridx records that once into a binary index and reads it from the page cache — no second analyzer, no syntax trees held in RAM.</p>
+      <div class="cta"><a class="btnp" href="#start">Get Started</a><a class="btns" href="#bench">View Benchmarks</a></div>
+    </div>
+    <div class="term rise d2">
+      <div class="termbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mono mute" style="font-size:12px;margin-left:8px">~/src/tokio</span></div>
+<pre><span class="mute"># index once — rustc does the analysis</span>
+<span class="rust">$</span> ridx index .
+
+<span class="mute"># go to definition</span>
+<span class="rust">$</span> ridx def . runtime::context::blocking::try_enter_blocking_region
+
+<span class="mute"># every reference in the workspace and its dependencies</span>
+<span class="rust">$</span> ridx refs . runtime::context::blocking::try_enter_blocking_region
+
+<span class="mute"># or run it as your editor's language server</span>
+<span class="rust">$</span> ridx lsp</pre>
+    </div>
+  </div>
+  <div class="wrap stats rise d3">
+    <div class="stat"><span class="big rust">rustc</span>is the source of truth<br>no second analyzer to disagree</div>
+    <div class="stat"><span class="big amber">mmap</span>index read in place<br>nothing parsed into the heap</div>
+    <div class="stat"><span class="big cyan">once</span>each dependency indexed once<br>shared by every project</div>
+    <div class="stat"><span class="big violet">LSP</span>works with VS Code, Neovim,<br>Helix and Zed</div>
+  </div>
+</section>
+
+<section id="why" class="wrap sec">
+  <div class="head"><span class="eye">The problem</span><h2 class="h2">rust-analyzer re-does the compiler's job, and keeps it all in RAM</h2></div>
+  <div class="row-wrap">
+    <div class="card prob"><span class="big rust">GBs</span>of resident heap on large workspaces such as Tokio or rust-analyzer itself.</div>
+    <div class="card prob"><span class="big amber">Trees</span>Much of that memory holds syntax trees and raw text for thousands of files.</div>
+    <div class="card prob"><span class="big cyan">Deps</span>Most of those files are crates.io dependencies and std — code nobody edits.</div>
+    <div class="card prob"><span class="big violet">Twice</span>Parsing, macro expansion and inference run again in a separate database, after cargo already did them.</div>
+  </div>
+</section>
+
+<section id="bench" class="wrap sec">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px">
+    <div class="head"><div style="display:flex;gap:12px;align-items:center"><span class="eye">Benchmarks</span><span class="pre-badge">preliminary</span></div><h2 class="h2">Early numbers from two workspaces</h2></div>
+    <div class="chips" id="ws-tabs"></div>
+  </div>
+  <div class="card bench">
+    <div class="bench-head"><span class="mono" id="ws-meta"></span><span class="mono mute" id="ws-target" style="font-size:12px"></span></div>
+    <div id="ws-rows"></div>
+    <div class="bench-note">
+      <span><b class="amber">What these numbers are:</b> <span class="mute">one target symbol per workspace, a single run, on a 32-core Linux server with a warm page cache. rust-analyzer timings may include work it was still doing after startup. Bars on a log scale.</span></span>
+      <span><b class="cyan">What is coming:</b> <span class="mute">100 open-source Rust projects at pinned commits, hundreds of symbols each, rust-analyzer measured only after indexing finishes — reported as p50 / p95 / p99, answer agreement and peak memory, with the harness and raw data published.</span></span>
+    </div>
+  </div>
+</section>
+
+<section id="arch" class="wrap sec">
+  <div class="head"><span class="eye">Architecture</span><h2 class="h2">What runs where</h2><p class="lead">Two things live in memory: the language server and your unsaved buffers. Everything else is files on disk, mapped on demand. Click any part.</p></div>
+  <div class="arch-wrap">
+    <div class="arch-col">
+      <div class="lane">editor</div>
+      <button class="box" data-arch="editor"><div class="top"><b>LSP client</b><span class="tag proc">your editor</span></div><div class="sub">VS Code · Neovim · Helix · Zed</div></button>
+      <div class="wire"><i></i></div>
+      <div class="lane">ridx process</div>
+      <button class="box" data-arch="lsp"><div class="top"><b>ridx lsp</b><span class="tag proc">stdio JSON-RPC</span></div><div class="sub">dispatcher · lifecycle · cancellation</div></button>
+      <div class="wire"><i></i></div>
+      <div class="grid3">
+        <button class="box" data-arch="overlay"><b>OverlayManager</b><br><span class="tag ram">RAM</span></button>
+        <button class="box" data-arch="index"><b>WorkspaceIndex</b><br><span class="tag disk">mmap</span></button>
+        <button class="box" data-arch="fly"><b>Flycheck</b><br><span class="tag proc">thread</span></button>
       </div>
-      <div class="logo-picker" role="tablist" aria-label="Logo concepts">
-        <span class="muted">Logo concept:</span>
-        <button class="chip active" data-logo="precision">A · Precision</button>
-        <button class="chip" data-logo="minimal">B · Minimal</button>
-        <button class="chip" data-logo="energy">C · Energy</button>
+      <div class="wire"><i></i></div>
+      <div class="lane">disk · page cache</div>
+      <div class="grid2">
+        <button class="box" data-arch="t1"><b>Tier 1 · Global CAS</b><div class="path">~/.cache/ridx/v2/objects/</div><span class="tag disk">shared, immutable</span></button>
+        <button class="box" data-arch="t2"><b>Tier 2 · Workspace variant</b><div class="path">target/ridx/variants/&lt;id&gt;/</div><span class="tag disk">per project</span></button>
       </div>
+      <div class="wire"><i></i></div>
+      <div class="lane">build time</div>
+      <button class="box" data-arch="driver"><div class="top"><b>ridx-driver</b><span class="tag proc">RUSTC_WRAPPER</span></div><div class="sub">runs inside cargo check, writes .ridx shards</div></button>
     </div>
-    <div class="hero-visual">
-      <img id="hero-logo" src="assets/logo-precision.svg" alt="ridx logo concept" width="220" height="220">
-      <div class="vs card">
-        <div class="vs-tabs">
-          <button class="chip active" data-vs="def">Go-to-Definition</button>
-          <button class="chip" data-vs="heap">Background heap</button>
-        </div>
-        <div class="vs-row"><span>ridx</span><div class="bar"><i class="ridx" id="vs-ridx"></i></div><b id="vs-ridx-v">8 µs</b></div>
-        <div class="vs-row"><span>rust-analyzer</span><div class="bar"><i class="ra" id="vs-ra"></i></div><b id="vs-ra-v">330 ms</b></div>
-        <p class="muted small" id="vs-note">Bar length on a log scale.</p>
-      </div>
+    <div class="card detail" id="arch-detail"></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;margin-top:40px">
+    <span class="h3">How an index is built and queried</span>
+    <div class="row-wrap" style="gap:12px">
+      <div class="card step"><span class="num">01</span><b>cargo check</b><span>ridx-driver runs as RUSTC_WRAPPER. rustc resolves everything as it normally would.</span></div>
+      <div class="card step"><span class="num">02</span><b>Write shards</b><span>Definitions, references and types for each crate go into a compact .ridx v2 file.</span></div>
+      <div class="card step"><span class="num">03</span><b>Store by hash</b><span>Dependencies land in the global CAS once; your crates go to the workspace variant.</span></div>
+      <div class="card step"><span class="num">04</span><b>Map and query</b><span>Queries mmap the shards and binary-search sorted tables. No parse, no copy, no daemon.</span></div>
     </div>
-  </section>
+  </div>
 
-  <section id="benchmarks">
-    <h2>Benchmarks on real codebases</h2>
-    <div class="tabs" id="bench-tabs"></div>
-    <div class="metrics" id="bench-metrics"></div>
-  </section>
-
-  <section id="architecture">
-    <h2>Architecture</h2>
-    <p class="muted">Select a stage to see what it does.</p>
-    <div class="arch">
-      <button class="node active" data-arch="driver">ridx-driver<small>RUSTC_WRAPPER</small></button>
-      <span class="arrow">→</span>
-      <button class="node" data-arch="cas">2-Tier CAS<small>~/.cache/ridx/v2/</small></button>
-      <span class="arrow">→</span>
-      <button class="node" data-arch="mmap">mmap kernel<small>zero-copy</small></button>
-      <span class="arrow">→</span>
-      <button class="node" data-arch="overlay">OverlayManager<small>unsaved edits</small></button>
+  <div class="row-wrap" style="gap:24px;margin-top:40px;align-items:flex-start">
+    <div style="flex:1 1 320px;display:flex;flex-direction:column;gap:12px">
+      <span class="h3">The .ridx v2 file</span>
+      <p class="mute" style="margin:0;font-size:14px;line-height:1.65">Little-endian, 8-byte aligned, fixed-size records. Lookups are binary searches over sorted tables in mapped memory — nothing is parsed or copied into the heap.</p>
     </div>
-    <div class="card arch-detail" id="arch-detail"></div>
-  </section>
+    <div class="fmt" id="fmt"></div>
+  </div>
+</section>
 
-  <section id="features">
-    <h2>Features</h2>
-    <div class="grid">
-      <div class="card feat"><b>0.00 MB</b><span>Background heap — the index lives in mapped files, not in RAM.</span></div>
-      <div class="card feat"><b>0.31 ms</b><span>Startup on Tokio: map the index and serve.</span></div>
-      <div class="card feat"><b>Transactional</b><span>WorkspaceEdit applied atomically, with rollback on failure.</span></div>
-      <div class="card feat"><b>Flycheck</b><span>cargo check on save, published as LSP diagnostics.</span></div>
-      <div class="card feat"><b>Auto-Import</b><span>Completion inserts the right <code>use</code> for workspace symbols.</span></div>
-    </div>
-  </section>
+<section id="lsp" class="wrap sec">
+  <div class="head"><span class="eye">LSP 3.18</span><h2 class="h2">One server, every capability your editor asks for</h2></div>
+  <div class="card" style="overflow:hidden"><div class="mtx" id="mtx"><div class="th">CATEGORY</div><div class="th">METHODS</div></div></div>
+</section>
 
-  <section id="quickstart">
-    <h2>Quickstart</h2>
-    <div class="card code"><button class="copy" data-copy="install">Copy</button><pre id="install">git clone https://github.com/alex09x/rust-intelligence
+<section id="start" class="wrap sec">
+  <div class="head"><span class="eye">Quickstart</span><h2 class="h2">Two minutes to first answer</h2></div>
+  <div class="card code"><button class="chip copy" data-copy="install">Copy</button><pre id="install">git clone https://github.com/alex09x/rust-intelligence
 cd rust-intelligence
 cargo install --path crates/ridx
-ridx lsp</pre></div>
-    <h3>Editor configuration</h3>
-    <div class="tabs" id="editor-tabs"></div>
-    <div class="card code"><button class="copy" data-copy="editor-code">Copy</button><pre id="editor-code"></pre></div>
-  </section>
+
+ridx index .                 # build the index
+ridx def . my_crate::run     # go to definition
+ridx refs . src/main.rs:12:15
+ridx compare -c all . my_crate::run   # side-by-side vs rust-analyzer</pre></div>
+  <div class="chips" id="ed-tabs"></div>
+  <div class="card code"><button class="chip copy" data-copy="ed-code">Copy</button><pre id="ed-code"></pre></div>
+</section>
 </main>
 
 <footer>
-  <span>© 2026 Alexander Panasenko · <a href="mailto:alex@prod.codes">alex@prod.codes</a></span>
-  <span>MIT / Apache-2.0 · <a href="https://github.com/alex09x/rust-intelligence">GitHub</a></span>
+  <div class="wrap foot">
+    <div class="lockup" style="gap:12px"><img src="assets/logo-minimal.svg" width="40" height="40" alt=""><span class="wm" style="font-size:28px">ridx<span class="rust">.</span></span></div>
+    <div class="meta">
+      <span>© 2026 Alexander Panasenko · <a href="mailto:alex@prod.codes">alex@prod.codes</a></span>
+      <span>MIT / Apache-2.0 · <a href="https://github.com/alex09x/rust-intelligence">GitHub</a></span>
+    </div>
+  </div>
 </footer>
 <script src="app.js"></script>
 </body>

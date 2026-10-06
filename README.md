@@ -6,7 +6,7 @@ Ultra-fast, zero-memory, compiler-driven code intelligence and Language Server P
 
 ## 1. The Core Problem: Why `rust-analyzer` Consumes Gigabytes
 
-In large Rust workspaces (e.g. Tokio, `rust-analyzer` itself, or BTCR with hundreds of crates), `rust-analyzer` consumes:
+In large Rust workspaces (e.g. Tokio, `rust-analyzer` itself, or large multi-crate monorepos), `rust-analyzer` consumes:
 - **2.5 – 3.7 GB RSS** of active heap memory.
 - **50%+ of memory** is spent holding Rowan green/red syntax trees and raw file text buffers for thousands of files.
 - Over **98% of those files** belong to external registry dependencies (`crates.io`) and the standard library, which developers **never edit**.
@@ -20,7 +20,7 @@ In large Rust workspaces (e.g. Tokio, `rust-analyzer` itself, or BTCR with hundr
 
 Instead of running a heavy persistent daemon that duplicates compiler logic, **Rust Intelligence** introduces a zero-copy, binary on-disk index format (`.ridx` v2):
 
-- **No Idle Daemon for CLI Navigation**: CLI queries (`ridx def`, `ridx refs`, `ridx hover`) execute on-demand without any running background daemon (0.00 MB idle resident memory). Indices are paged directly from the OS page cache via zero-copy `mmap(2)`.
+- **No Idle Daemon for CLI Navigation**: CLI queries (`ridx def`, `ridx refs`, `ridx hover`) execute on-demand without any persistent background daemon. Indices are paged directly from the OS page cache via zero-copy `mmap(2)`.
 - **Lightweight LSP Server**: `ridx lsp` runs with a compact resident memory footprint (~12–15 MB RSS) storing only active editor buffers and lexical overlays, without holding multi-gigabyte compiler syntax trees in RAM.
 - **Zero Open File Descriptors**: Under POSIX, memory mappings persist after file descriptor closure (`close(fd)`). `ridx` maintains zero open file descriptors for index shards, never exhausting `ulimit -n`.
 - **Instant Response Latencies**:
@@ -96,9 +96,10 @@ When combined with `mitts` (distributed compilation and build artifact store):
 
 ---
 
-## 5. Real-World Benchmark Results
+## 5. Preliminary Benchmark Results
 
-Measurements comparing local `ridx` index lookups against a warm, pinned `rust-analyzer 1.97.1` language server instance on a 32-core Linux server with warm OS page caches (detailed methodology, command pins, and reproduction instructions in [LSP_BENCHMARK_COMPARISON_REPORT.md](LSP_BENCHMARK_COMPARISON_REPORT.md)):
+> [!NOTE]
+> The figures below represent preliminary single-symbol latency measurements from early validation runs (see [LSP_BENCHMARK_COMPARISON_REPORT.md](LSP_BENCHMARK_COMPARISON_REPORT.md)). A comprehensive, statistically stratified benchmark across the pinned 100-project corpus ([`bench/corpus/rust-100.tsv`](bench/corpus/rust-100.tsv)) with cold/warm measurement, 300 sampled call-sites per repo, and precision/recall parity analysis against `rust-analyzer` is currently in progress.
 
 ### A. Tokio Workspace (42 Crates, 880 Files, 298k References)
 | Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Speedup | Verified Target |
@@ -108,7 +109,7 @@ Measurements comparing local `ridx` index lookups against a warm, pinned `rust-a
 | **Hover** | `runtime::context::blocking::try_enter_blocking_region` | **42 µs** | 344 ms | **8,189x** | Matching signature & docs |
 | **Callers** | `runtime::context::blocking::try_enter_blocking_region` | **262 µs** | 363 ms | **1,389x** | Matching call hierarchy |
 | **Symbols** | `Runtime` | **16.9 ms** | 323 ms | **19.1x** | Matching symbol list |
-| **Idle Daemon RSS**| Workspace Idle | **0.00 MB (CLI)** / **~12 MB (LSP)** | **1,420 MB** | **> 118x** | Resident set size |
+| **Idle Daemon RSS**| Workspace Idle | **No daemon (CLI)** / **~12 MB (LSP)** | **1,420 MB** | **> 118x** | Resident set size |
 
 ### B. `rust-analyzer` Workspace (261 Crates, 3,050 Files, 2.3M References)
 | Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Speedup | Verified Target |
@@ -117,7 +118,7 @@ Measurements comparing local `ridx` index lookups against a warm, pinned `rust-a
 | **References** | `ide::AnalysisHost` | **4.06 ms** | 1,487 ms | **365x** | Full reference set |
 | **Hover** | `ide::AnalysisHost` | **410 µs** | 381 ms | **931x** | Matching signature & docs |
 | **Callers** | `ide::AnalysisHost` | **1.61 ms** | 382 ms | **236x** | Matching call hierarchy |
-| **Idle Daemon RSS**| Workspace Idle | **0.00 MB (CLI)** / **~15 MB (LSP)** | **3,240 MB** | **> 216x** | Resident set size |
+| **Idle Daemon RSS**| Workspace Idle | **No daemon (CLI)** / **~15 MB (LSP)** | **3,240 MB** | **> 216x** | Resident set size |
 
 ---
 
