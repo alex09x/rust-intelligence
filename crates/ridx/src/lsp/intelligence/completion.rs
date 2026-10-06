@@ -99,20 +99,20 @@ pub fn handle_completion(
     // 2. Workspace symbols
     let mut is_capped = false;
     if let Some(ws) = workspace {
+        let current_crate = ws.crate_name_for_file(&file);
         let ws_symbols = ws.search_symbols(&prefix);
+
         for s in ws_symbols {
             if s.kind == ridx_format::DefKind::Local {
                 continue;
             }
-            // If the symbol is from the current file, the overlay already handled
-            // lexical scope filtering for this buffer.
-            if overlay_opt.is_some() {
-                let resolved = s.resolved_path();
-                let res_str = resolved.to_str().unwrap_or(s.file);
-                if res_str == file || s.file == file {
-                    continue;
-                }
+            let resolved = s.resolved_path();
+            let res_str = resolved.to_str().unwrap_or(s.file);
+            let is_same_file = res_str == file || s.file == file;
+            if overlay_opt.is_some() && is_same_file {
+                continue;
             }
+
             // Filter out synthetic compiler items (closures, blocks)
             if s.path.contains("{closure}") || s.path.contains("{block}") {
                 continue;
@@ -131,12 +131,29 @@ pub fn handle_completion(
                 }
             }
             if seen_names.insert(s.name.to_string()) {
-                let auto_import_edit = overlay_opt
-                    .and_then(|ov| super::auto_import::compute_auto_import_edit(&ov.text, s.path));
+                // Normalize symbol import path for same-crate items (e.g. my_crate::foo -> crate::foo)
+                let import_path = if let Some(cname) = current_crate {
+                    let prefix = format!("{cname}::");
+                    if s.path.starts_with(&prefix) {
+                        format!("crate::{}", &s.path[prefix.len()..])
+                    } else {
+                        s.path.to_string()
+                    }
+                } else {
+                    s.path.to_string()
+                };
 
-                let detail = if auto_import_edit.is_some() {
-                    format!("{} (auto-import)", s.path)
-                } else if let Some(sig) = s.signature {
+                let is_same_module = is_same_file || is_symbol_in_current_module(&file, s.file);
+
+                let auto_import_edit = if is_same_module {
+                    None
+                } else {
+                    overlay_opt.and_then(|ov| {
+                        super::auto_import::compute_auto_import_edit(&ov.text, &import_path)
+                    })
+                };
+
+                let detail = if let Some(sig) = s.signature {
                     sig.to_string()
                 } else {
                     s.path.to_string()
@@ -149,6 +166,9 @@ pub fn handle_completion(
                 });
 
                 if let Some(edit) = auto_import_edit {
+                    item["labelDetails"] = json!({
+                        "description": format!("{import_path} (auto-import)")
+                    });
                     item["additionalTextEdits"] = json!([edit]);
                 }
 
@@ -169,4 +189,22 @@ pub fn handle_completion(
 
 pub fn handle_completion_resolve(msg: &Value) -> Value {
     msg.get("params").cloned().unwrap_or(Value::Null)
+}
+
+fn is_symbol_in_current_module(cur_file: &str, sym_file: &str) -> bool {
+    if cur_file == sym_file {
+        return true;
+    }
+    let p_cur = std::path::Path::new(cur_file);
+    let p_sym = std::path::Path::new(sym_file);
+    if let (Some(cur_parent), Some(sym_parent)) = (p_cur.parent(), p_sym.parent()) {
+        if cur_parent == sym_parent {
+            if let Some(stem) = p_cur.file_stem().and_then(|s| s.to_str()) {
+                if stem == "mod" || stem == "lib" {
+                    return true;
+                }
+            }
+        }
+    }
+    false
 }

@@ -184,3 +184,130 @@ fn test_flycheck_state_cancellation() {
     state.cancel();
     state.cancel();
 }
+
+#[test]
+fn test_auto_import_inserts_after_multiline_use_not_inside() {
+    let doc = "use std::collections::{\n    HashMap,\n    HashSet,\n};\nfn main() {}\n";
+    let line = find_use_insert_line(doc);
+    assert_eq!(line, 4, "Should insert after multiline use, not inside it!");
+
+    let edit = compute_auto_import_edit(doc, "std::sync::Arc").expect("Should produce edit");
+    assert_eq!(edit["range"]["start"]["line"].as_u64().unwrap(), 4);
+    assert_eq!(edit["newText"].as_str().unwrap(), "use std::sync::Arc;\n");
+}
+
+#[test]
+fn test_auto_import_detects_braced_spaces_and_glob_imports() {
+    // Spaced braces
+    let doc1 = "use std::collections::{ HashMap };\nfn main() {}";
+    assert!(is_already_imported(
+        doc1,
+        "std::collections::HashMap",
+        "HashMap"
+    ));
+    assert!(compute_auto_import_edit(doc1, "std::collections::HashMap").is_none());
+
+    // Glob import
+    let doc2 = "use std::collections::*;\nfn main() {}";
+    assert!(is_already_imported(
+        doc2,
+        "std::collections::HashMap",
+        "HashMap"
+    ));
+    assert!(compute_auto_import_edit(doc2, "std::collections::HashMap").is_none());
+
+    // Multiline braced group
+    let doc3 = "use std::collections::{\n    HashMap,\n    HashSet,\n};\nfn main() {}";
+    assert!(is_already_imported(
+        doc3,
+        "std::collections::HashMap",
+        "HashMap"
+    ));
+    assert!(compute_auto_import_edit(doc3, "std::collections::HashMap").is_none());
+}
+
+#[test]
+fn test_prelude_allows_fmt_result_and_requires_hash() {
+    let doc = "fn main() {}";
+    // std::fmt::Result is NOT prelude and must produce an auto-import edit!
+    let edit = compute_auto_import_edit(doc, "std::fmt::Result");
+    assert!(edit.is_some(), "std::fmt::Result should be imported!");
+    assert_eq!(
+        edit.unwrap()["newText"].as_str().unwrap(),
+        "use std::fmt::Result;\n"
+    );
+
+    // core::hash::Hash is NOT in the Rust prelude (only #[derive(Hash)]) and should be imported!
+    let edit_hash = compute_auto_import_edit(doc, "core::hash::Hash");
+    assert!(edit_hash.is_some(), "core::hash::Hash should be imported!");
+    assert_eq!(
+        edit_hash.unwrap()["newText"].as_str().unwrap(),
+        "use core::hash::Hash;\n"
+    );
+}
+
+#[test]
+fn test_parse_compiler_message_includes_children_notes_and_utf16_columns() {
+    let pid = std::process::id();
+    let tmp = std::env::temp_dir().join(format!("test_flycheck_utf16_{pid}"));
+    let src_file = tmp.join("src").join("lib.rs");
+    let _ = fs::create_dir_all(src_file.parent().unwrap());
+    let _ = fs::write(&src_file, "pub fn check() {}\n");
+
+    let raw_msg = json!({
+        "children": [
+            {
+                "level": "help",
+                "message": "try using .as_ref() instead"
+            }
+        ],
+        "code": { "code": "E0308", "explanation": "mismatched types" },
+        "level": "error",
+        "message": "type mismatch",
+        "spans": [
+            {
+                "byte_end": 12,
+                "byte_start": 5,
+                "column_end": 13,
+                "column_start": 6,
+                "file_name": "src/lib.rs",
+                "is_primary": true,
+                "line_end": 1,
+                "line_start": 1,
+                "text": [
+                    {
+                        "highlight_end": 13,
+                        "highlight_start": 6,
+                        "text": "pub fn check() {}"
+                    }
+                ]
+            }
+        ]
+    });
+
+    let res = parse_compiler_message(&raw_msg, &tmp).expect("Should parse");
+    let (_, diag) = res;
+
+    let msg = diag["message"].as_str().unwrap();
+    assert!(
+        msg.contains("type mismatch"),
+        "Must contain primary message"
+    );
+    assert!(
+        msg.contains("help: try using .as_ref() instead"),
+        "Must contain child message"
+    );
+
+    let _ = fs::remove_dir_all(&tmp);
+}
+
+#[test]
+fn test_same_crate_auto_import_produces_crate_prefix() {
+    let doc = "fn main() {}\n";
+    let edit =
+        compute_auto_import_edit(doc, "crate::my_mod::MyStruct").expect("Should produce edit");
+    assert_eq!(
+        edit["newText"].as_str().unwrap(),
+        "use crate::my_mod::MyStruct;\n"
+    );
+}

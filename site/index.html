@@ -1,0 +1,110 @@
+<!doctype html>
+<!--
+  rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+  Copyright (c) 2026 Alexander Panasenko
+
+  Contact: alex@prod.codes
+  Author: https://prod.codes/about/
+  Project: https://github.com/alex09x/rust-intelligence
+  SPDX-License-Identifier: MIT OR Apache-2.0
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rust Intelligence (ridx)</title>
+  <meta name="description" content="Ultra-fast, zero-memory code intelligence for Rust.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="#top"><img id="brand-logo" src="assets/logo.svg" alt="" width="32" height="32"><span>ridx</span></a>
+  <nav>
+    <a href="#benchmarks">Benchmarks</a><a href="#architecture">Architecture</a><a href="#features">Features</a><a href="#quickstart">Quickstart</a>
+    <a href="https://github.com/alex09x/rust-intelligence">GitHub</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">ridx 2.2</p>
+      <h1>Ultra-Fast, <span class="grad">Zero-Memory</span> Code Intelligence for Rust</h1>
+      <p class="lead">Compile-time extraction, a content-addressed index and a zero-copy mmap kernel. Answers in microseconds, with no background heap.</p>
+      <div class="cta">
+        <a class="btn primary" href="#quickstart">Get Started</a>
+        <a class="btn" href="#benchmarks">View Benchmarks</a>
+      </div>
+      <div class="logo-picker" role="tablist" aria-label="Logo concepts">
+        <span class="muted">Logo concept:</span>
+        <button class="chip active" data-logo="precision">A · Precision</button>
+        <button class="chip" data-logo="minimal">B · Minimal</button>
+        <button class="chip" data-logo="energy">C · Energy</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <img id="hero-logo" src="assets/logo-precision.svg" alt="ridx logo concept" width="220" height="220">
+      <div class="vs card">
+        <div class="vs-tabs">
+          <button class="chip active" data-vs="def">Go-to-Definition</button>
+          <button class="chip" data-vs="heap">Background heap</button>
+        </div>
+        <div class="vs-row"><span>ridx</span><div class="bar"><i class="ridx" id="vs-ridx"></i></div><b id="vs-ridx-v">8 µs</b></div>
+        <div class="vs-row"><span>rust-analyzer</span><div class="bar"><i class="ra" id="vs-ra"></i></div><b id="vs-ra-v">330 ms</b></div>
+        <p class="muted small" id="vs-note">Bar length on a log scale.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="benchmarks">
+    <h2>Benchmarks on real codebases</h2>
+    <div class="tabs" id="bench-tabs"></div>
+    <div class="metrics" id="bench-metrics"></div>
+  </section>
+
+  <section id="architecture">
+    <h2>Architecture</h2>
+    <p class="muted">Select a stage to see what it does.</p>
+    <div class="arch">
+      <button class="node active" data-arch="driver">ridx-driver<small>RUSTC_WRAPPER</small></button>
+      <span class="arrow">→</span>
+      <button class="node" data-arch="cas">2-Tier CAS<small>~/.cache/ridx/v2/</small></button>
+      <span class="arrow">→</span>
+      <button class="node" data-arch="mmap">mmap kernel<small>zero-copy</small></button>
+      <span class="arrow">→</span>
+      <button class="node" data-arch="overlay">OverlayManager<small>unsaved edits</small></button>
+    </div>
+    <div class="card arch-detail" id="arch-detail"></div>
+  </section>
+
+  <section id="features">
+    <h2>Features</h2>
+    <div class="grid">
+      <div class="card feat"><b>0.00 MB</b><span>Background heap — the index lives in mapped files, not in RAM.</span></div>
+      <div class="card feat"><b>0.31 ms</b><span>Startup on Tokio: map the index and serve.</span></div>
+      <div class="card feat"><b>Transactional</b><span>WorkspaceEdit applied atomically, with rollback on failure.</span></div>
+      <div class="card feat"><b>Flycheck</b><span>cargo check on save, published as LSP diagnostics.</span></div>
+      <div class="card feat"><b>Auto-Import</b><span>Completion inserts the right <code>use</code> for workspace symbols.</span></div>
+    </div>
+  </section>
+
+  <section id="quickstart">
+    <h2>Quickstart</h2>
+    <div class="card code"><button class="copy" data-copy="install">Copy</button><pre id="install">git clone https://github.com/alex09x/rust-intelligence
+cd rust-intelligence
+cargo install --path crates/ridx
+ridx lsp</pre></div>
+    <h3>Editor configuration</h3>
+    <div class="tabs" id="editor-tabs"></div>
+    <div class="card code"><button class="copy" data-copy="editor-code">Copy</button><pre id="editor-code"></pre></div>
+  </section>
+</main>
+
+<footer>
+  <span>© 2026 Alexander Panasenko · <a href="mailto:alex@prod.codes">alex@prod.codes</a></span>
+  <span>MIT / Apache-2.0 · <a href="https://github.com/alex09x/rust-intelligence">GitHub</a></span>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

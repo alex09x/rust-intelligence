@@ -72,7 +72,23 @@ pub fn run_server_session(
         "params": {
             "processId": null,
             "rootUri": root_uri,
-            "capabilities": {}
+            "capabilities": {
+                "window": { "workDoneProgress": true },
+                "textDocument": {
+                    "hover": { "contentFormat": ["markdown", "plaintext"] },
+                    "definition": { "linkSupport": true },
+                    "references": {},
+                    "completion": {
+                        "completionItem": {
+                            "snippetSupport": true,
+                            "labelDetailsSupport": true
+                        }
+                    }
+                },
+                "workspace": {
+                    "symbol": { "symbolKind": { "valueSet": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] } }
+                }
+            }
         }
     });
     send_lsp_msg(&mut stdin, &init_req).ok()?;
@@ -98,12 +114,37 @@ pub fn run_server_session(
         "params": { "query": warmup_symbol }
     });
     send_lsp_msg(&mut stdin, &warmup_req).ok()?;
-    let _ = read_lsp_response_with_writer(&mut reader, &mut stdin, 99);
+    let warmup_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, 99);
+    let warmup_succeeded = warmup_resp
+        .as_ref()
+        .map(|r| {
+            !r.get("result")
+                .unwrap_or(&serde_json::Value::Null)
+                .is_null()
+        })
+        .unwrap_or(false);
+    let _ = warmup_succeeded;
     let readiness_warmup_micros = t_warmup_start.elapsed().as_micros();
 
     // 3. Run Scenarios
     let mut query_latencies_micros = HashMap::new();
     let mut query_results = HashMap::new();
+
+    let stop_sampler = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let max_rss = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(
+        get_process_rss_bytes(pid).unwrap_or(0),
+    ));
+
+    let stop_clone = std::sync::Arc::clone(&stop_sampler);
+    let max_clone = std::sync::Arc::clone(&max_rss);
+    let sampler_handle = std::thread::spawn(move || {
+        while !stop_clone.load(std::sync::atomic::Ordering::Relaxed) {
+            if let Some(rss) = get_process_rss_bytes(pid) {
+                max_clone.fetch_max(rss, std::sync::atomic::Ordering::Relaxed);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    });
 
     let mut req_id = 100i64;
     for sc in scenarios {
@@ -167,7 +208,9 @@ pub fn run_server_session(
         query_results.insert(sc.name.clone(), lsp_res);
     }
 
-    let peak_rss_bytes = get_process_rss_bytes(pid).unwrap_or(0);
+    stop_sampler.store(true, std::sync::atomic::Ordering::Relaxed);
+    let _ = sampler_handle.join();
+    let peak_rss_bytes = max_rss.load(std::sync::atomic::Ordering::Relaxed);
 
     // 4. Shutdown & Exit
     let t_shutdown_start = Instant::now();
@@ -185,8 +228,21 @@ pub fn run_server_session(
         "params": null
     });
     let _ = send_lsp_msg(&mut stdin, &exit_notif);
-    let _ = child.kill();
-    let _ = child.wait();
+    drop(stdin);
+
+    let deadline = Instant::now() + std::time::Duration::from_millis(500);
+    let mut graceful_exit = false;
+    while Instant::now() < deadline {
+        if let Ok(Some(_)) = child.try_wait() {
+            graceful_exit = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    if !graceful_exit {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
     let shutdown_micros = t_shutdown_start.elapsed().as_micros();
 
     Some(ServerMetrics {

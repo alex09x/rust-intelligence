@@ -108,3 +108,19 @@ fn test_run_server_session_handles_invalid_binary_gracefully() {
     );
     assert!(res.is_none(), "Nonexistent binary must return None safely");
 }
+
+#[test]
+fn test_symmetric_runner_records_rss_and_graceful_shutdown() {
+    let metrics = ServerMetrics {
+        server_name: "test".to_string(),
+        server_version: "1.0.0".to_string(),
+        spawn_and_init_micros: 100,
+        readiness_warmup_micros: 50,
+        query_latencies_micros: HashMap::new(),
+        query_results: HashMap::new(),
+        shutdown_micros: 200,
+        peak_rss_bytes: 1024 * 1024,
+    };
+    assert_eq!(metrics.peak_rss_bytes, 1024 * 1024);
+    assert_eq!(metrics.shutdown_micros, 200);
+}

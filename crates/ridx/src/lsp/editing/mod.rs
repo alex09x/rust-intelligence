@@ -23,8 +23,7 @@ pub mod rename;
 mod tests;
 
 pub use actions::*;
-#[allow(unused_imports)]
-pub use atomic_write::*;
+pub use atomic_write::commit_closed_writes_atomic;
 pub use commands::*;
 pub use format::*;
 pub use ident::*;

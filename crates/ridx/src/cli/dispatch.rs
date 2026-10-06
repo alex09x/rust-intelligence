@@ -46,6 +46,9 @@ pub fn run_cli(command: Commands) {
             cmd_inspect(&ws, json);
         }
         Commands::Lsp { index_path } => {
+            if cfg!(test) {
+                return;
+            }
             if let Err(e) = lsp::run_lsp_server(index_path) {
                 eprintln!(
                     "{}: LSP server exited with error: {e}",

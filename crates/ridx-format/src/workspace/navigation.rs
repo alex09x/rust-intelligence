@@ -92,6 +92,35 @@ impl WorkspaceIndex {
         None
     }
 
+    /// Returns the crate name that contains or owns the specified file path, if known.
+    pub fn crate_name_for_file(&self, file_path: &str) -> Option<&str> {
+        let p = Path::new(file_path);
+        let is_abs = p.is_absolute();
+        for (i, reader) in self.readers.iter().enumerate() {
+            if let Some(Some(root)) = self.source_roots.get(i) {
+                if is_abs && p.starts_with(root) {
+                    return Some(reader.crate_name());
+                }
+            }
+        }
+        for (i, hashes) in self.reader_file_hashes.iter().enumerate() {
+            if hashes.contains_key(file_path) {
+                if let Some(reader) = self.readers.get(i) {
+                    return Some(reader.crate_name());
+                }
+            }
+        }
+        for reader in &self.readers {
+            let cname = reader.crate_name();
+            if file_path.contains(&format!("/{cname}/"))
+                || file_path.contains(&format!("\\{cname}\\"))
+            {
+                return Some(cname);
+            }
+        }
+        None
+    }
+
     /// Resolves a file path for a given crate.
     /// If the path is relative and the crate is an external dependency with a source root,
     /// joins the source root with the relative path.

@@ -85,7 +85,8 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(
     let mut lifecycle = LifecycleManager::new();
     let cancelled_requests: Arc<Mutex<HashSet<Value>>> = Arc::new(Mutex::new(HashSet::new()));
 
-    let (tx, rx) = std::sync::mpsc::sync_channel::<Value>(64);
+    let (tx, rx) = std::sync::mpsc::channel::<Value>();
+    lifecycle.flycheck.set_notifier(tx.clone());
     let cancelled_reader = Arc::clone(&cancelled_requests);
 
     std::thread::Builder::new()

@@ -1,0 +1,89 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+:root {
+  --bg: #090d16; --card: #121826; --border: #1e293b;
+  --text: #e2e8f0; --muted: #94a3b8;
+  --rust: #f74c00; --amber: #ff9900; --cyan: #00d2ff;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+a { color: var(--cyan); text-decoration: none; }
+code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.muted { color: var(--muted); } .small { font-size: 13px; }
+
+.nav { position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  padding: 12px 24px; background: rgba(9,13,22,.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 700; font-size: 18px; }
+.nav nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.nav nav a { color: var(--muted); } .nav nav a:hover { color: var(--text); }
+
+main { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+section { padding: 72px 0 24px; }
+h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.1; margin: 8px 0 16px; letter-spacing: -.02em; }
+h2 { font-size: 30px; margin: 0 0 20px; } h3 { margin: 32px 0 12px; }
+.grad { background: linear-gradient(90deg, var(--rust), var(--amber), var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.eyebrow { color: var(--amber); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; margin: 0; }
+.lead { color: var(--muted); font-size: 18px; max-width: 560px; }
+
+.hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; padding-top: 64px; }
+.hero-visual { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+#hero-logo { filter: drop-shadow(0 0 32px rgba(247,76,0,.35)); transition: opacity .2s; }
+.cta { display: flex; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+.btn { padding: 12px 22px; border-radius: 10px; border: 1px solid var(--border); color: var(--text); font-weight: 600; }
+.btn.primary { background: linear-gradient(90deg, var(--rust), var(--amber)); border: 0; color: #fff; box-shadow: 0 0 24px rgba(247,76,0,.4); }
+.btn:hover { border-color: var(--cyan); }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+.chip { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; font: inherit; font-size: 14px; }
+.chip:hover { color: var(--text); }
+.chip.active { color: var(--text); border-color: var(--rust); box-shadow: 0 0 12px rgba(247,76,0,.3); }
+.logo-picker { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.vs { width: 100%; }
+.vs-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.vs-row { display: grid; grid-template-columns: 110px 1fr 80px; gap: 12px; align-items: center; margin: 10px 0; }
+.vs-row b { text-align: right; font-variant-numeric: tabular-nums; }
+.bar { height: 12px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 6px; transition: width .6s ease; }
+.bar .ridx { background: linear-gradient(90deg, var(--rust), var(--amber)); box-shadow: 0 0 10px var(--rust); }
+.bar .ra { background: #475569; }
+
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.metric b { display: block; font-size: 32px; color: var(--cyan); font-variant-numeric: tabular-nums; }
+.metric span { color: var(--muted); }
+
+.arch { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.node { flex: 1 1 160px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 16px; font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
+.node small { display: block; color: var(--muted); font-weight: 400; font-family: ui-monospace, monospace; font-size: 12px; }
+.node.active { border-color: var(--cyan); box-shadow: 0 0 16px rgba(0,210,255,.25); }
+.arrow { align-self: center; color: var(--rust); font-size: 22px; }
+.arch-detail { min-height: 90px; color: var(--muted); }
+.arch-detail b { color: var(--text); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.feat b { display: block; font-size: 24px; margin-bottom: 6px; background: linear-gradient(90deg, var(--rust), var(--amber)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.feat span { color: var(--muted); font-size: 15px; }
+
+.code { position: relative; padding: 0; overflow: hidden; }
+.code pre { margin: 0; padding: 20px; overflow-x: auto; font-size: 14px; color: #cbd5e1; }
+.copy { position: absolute; top: 10px; right: 10px; background: var(--bg); color: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 13px; }
+.copy:hover { color: var(--text); border-color: var(--cyan); }
+
+footer { max-width: 1120px; margin: 64px auto 0; padding: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 14px; }
+
+@media (max-width: 820px) {
+  .hero { grid-template-columns: 1fr; }
+  .nav nav { display: none; }
+  .arrow { display: none; }
+  main { padding: 0 16px; }
+}
