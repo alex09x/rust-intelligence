@@ -205,14 +205,20 @@ def run_benchmark_for_repo(repo_entry, base_dir, ridx_bin, ra_bin, taskset_cpus=
 
 
 def main():
+    script_dir = Path(__file__).resolve().parent
+    default_corpus = script_dir / "corpus" / "rust-100.tsv"
+    default_results = script_dir / "results" / "pilot_results.jsonl"
+    default_ridx = script_dir.parent / "target" / "release" / "ridx"
+
     parser = argparse.ArgumentParser(description="Pilot and Corpus Benchmark Runner")
-    parser.add_argument("--corpus", default="bench/corpus/rust-100.tsv")
-    parser.add_argument("--results", default="bench/results/pilot_results.jsonl")
-    parser.add_argument("--storage", default="/tmp/bench_repos")
-    parser.add_argument("--ridx", default="target/release/ridx")
+    parser.add_argument("--corpus", default=str(default_corpus))
+    parser.add_argument("--results", default=str(default_results))
+    parser.add_argument("--storage", default="/home/alex09x/prod-code-storage/bench_repos")
+    parser.add_argument("--ridx", default=str(default_ridx))
     parser.add_argument("--ra", default="rust-analyzer")
     parser.add_argument("--taskset", default="24-31")
     parser.add_argument("--samples", type=int, default=30)
+    parser.add_argument("--repo", help="Filter to a single repo (e.g. serde-rs/serde)")
     parser.add_argument("--pilot-only", action="store_true", default=True)
     args = parser.parse_args()
 
@@ -225,7 +231,11 @@ def main():
         "rust-lang/rust-analyzer",
     ]
 
-    target_repos = [r for r in repos if r["repo"] in pilot_repos] if args.pilot_only else repos
+    if args.repo:
+        target_repos = [r for r in repos if r["repo"] == args.repo]
+    else:
+        target_repos = [r for r in repos if r["repo"] in pilot_repos] if args.pilot_only else repos
+
     storage_dir = Path(args.storage)
     storage_dir.mkdir(parents=True, exist_ok=True)
     results_path = Path(args.results)
