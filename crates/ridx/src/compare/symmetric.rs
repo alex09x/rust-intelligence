@@ -11,6 +11,7 @@
 //! Symmetric framed JSON-RPC comparison runner for benchmarking RIDX and rust-analyzer.
 
 use super::client::extract_symbol_location;
+use super::query_runner::{execute_scenario_query, normalize_span};
 use super::system::get_process_rss_bytes;
 use super::transport::*;
 use super::types::{
@@ -257,98 +258,6 @@ pub fn run_server_session(
     })
 }
 
-fn execute_scenario_query<R: std::io::BufRead, W: std::io::Write>(
-    reader: &mut R,
-    writer: &mut W,
-    id: i64,
-    capability: &str,
-    target: &str,
-    resolved_loc: Option<&(String, u32, u32)>,
-) -> Option<serde_json::Value> {
-    match capability {
-        "callers" | "incomingCalls" => {
-            let (uri, line, col) = resolved_loc?;
-            let prep_req = serde_json::json!({
-                "jsonrpc": "2.0",
-                "id": id,
-                "method": "textDocument/prepareCallHierarchy",
-                "params": {
-                    "textDocument": { "uri": uri },
-                    "position": { "line": line, "character": col }
-                }
-            });
-            send_lsp_msg(writer, &prep_req).ok()?;
-            let prep_resp = read_lsp_response_with_writer(reader, writer, id)?;
-            if let Some(items) = prep_resp.get("result").and_then(|r| r.as_array()) {
-                if let Some(first_item) = items.first() {
-                    let inc_req = serde_json::json!({
-                        "jsonrpc": "2.0",
-                        "id": id + 500,
-                        "method": "callHierarchy/incomingCalls",
-                        "params": { "item": first_item }
-                    });
-                    send_lsp_msg(writer, &inc_req).ok()?;
-                    return read_lsp_response_with_writer(reader, writer, id + 500);
-                }
-            }
-            Some(prep_resp)
-        }
-        "refs" | "textDocument/references" => {
-            let (uri, line, col) = resolved_loc?;
-            let ref_req = serde_json::json!({
-                "jsonrpc": "2.0",
-                "id": id,
-                "method": "textDocument/references",
-                "params": {
-                    "textDocument": { "uri": uri },
-                    "position": { "line": line, "character": col },
-                    "context": { "includeDeclaration": true }
-                }
-            });
-            send_lsp_msg(writer, &ref_req).ok()?;
-            read_lsp_response_with_writer(reader, writer, id)
-        }
-        "def" | "textDocument/definition" => {
-            let (uri, line, col) = resolved_loc?;
-            let def_req = serde_json::json!({
-                "jsonrpc": "2.0",
-                "id": id,
-                "method": "textDocument/definition",
-                "params": {
-                    "textDocument": { "uri": uri },
-                    "position": { "line": line, "character": col }
-                }
-            });
-            send_lsp_msg(writer, &def_req).ok()?;
-            read_lsp_response_with_writer(reader, writer, id)
-        }
-        "hover" | "textDocument/hover" => {
-            let (uri, line, col) = resolved_loc?;
-            let hover_req = serde_json::json!({
-                "jsonrpc": "2.0",
-                "id": id,
-                "method": "textDocument/hover",
-                "params": {
-                    "textDocument": { "uri": uri },
-                    "position": { "line": line, "character": col }
-                }
-            });
-            send_lsp_msg(writer, &hover_req).ok()?;
-            read_lsp_response_with_writer(reader, writer, id)
-        }
-        _ => {
-            let sym_req = serde_json::json!({
-                "jsonrpc": "2.0",
-                "id": id,
-                "method": "workspace/symbol",
-                "params": { "query": target }
-            });
-            send_lsp_msg(writer, &sym_req).ok()?;
-            read_lsp_response_with_writer(reader, writer, id)
-        }
-    }
-}
-
 pub fn run_symmetric_comparison(
     root: &Path,
     ridx_cmd: &[String],
@@ -383,15 +292,4 @@ pub fn run_symmetric_comparison(
         rust_analyzer: ra_metrics,
         scenario_matches,
     })
-}
-
-fn normalize_span(span: &str) -> String {
-    let s = span.trim().trim_start_matches("file://");
-    if let Some((path_part, rest)) = s.split_once(':') {
-        let p = Path::new(path_part);
-        let norm_path = p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
-        format!("{}:{rest}", norm_path.display())
-    } else {
-        s.to_string()
-    }
 }

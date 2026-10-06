@@ -135,3 +135,26 @@ fn test_symbol_resolution_chooses_exact_candidate() {
     let none_loc = ridx::compare::client::extract_symbol_location(&resp, "baz");
     assert!(none_loc.is_none(), "Unmatched symbol must return None");
 }
+
+#[test]
+fn test_set_metrics_precision_recall_f1() {
+    use ridx::compare::calculate_set_metrics;
+    use std::collections::HashSet;
+
+    let mut a = HashSet::new();
+    a.insert("file:///src/a.rs:10:5".to_string());
+    a.insert("file:///src/b.rs:20:5".to_string());
+
+    let mut b = HashSet::new();
+    b.insert("file:///src/a.rs:10:5".to_string());
+    b.insert("file:///src/c.rs:30:5".to_string());
+
+    let m = calculate_set_metrics(&a, &b);
+    assert!((m.precision - 0.5).abs() < 1e-6);
+    assert!((m.recall - 0.5).abs() < 1e-6);
+    assert!((m.f1 - 0.5).abs() < 1e-6);
+
+    let empty: HashSet<String> = HashSet::new();
+    let m_empty = calculate_set_metrics(&empty, &empty);
+    assert_eq!(m_empty.f1, 1.0);
+}

@@ -72,7 +72,7 @@ pub fn read_lsp_response_with_writer<R: BufRead, W: Write>(
     w: &mut W,
     expected_id: i64,
 ) -> Option<Value> {
-    for _ in 0..100 {
+    for _ in 0..50_000 {
         let msg = read_lsp_msg(r)?;
         if msg.get("method").is_some() {
             if let Some(srv_id) = msg.get("id") {
