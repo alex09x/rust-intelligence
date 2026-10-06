@@ -102,23 +102,23 @@ When combined with `mitts` (distributed compilation and build artifact store):
 > The figures below represent preliminary single-symbol latency measurements from early validation runs (see [LSP_BENCHMARK_COMPARISON_REPORT.md](LSP_BENCHMARK_COMPARISON_REPORT.md)). A comprehensive, statistically stratified benchmark across the pinned 100-project corpus ([`bench/corpus/rust-100.tsv`](bench/corpus/rust-100.tsv)) with cold/warm measurement, 300 sampled call-sites per repo, and precision/recall parity analysis against `rust-analyzer` is currently in progress.
 
 ### A. Tokio Workspace (42 Crates, 880 Files, 298k References)
-| Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Speedup | Verified Target |
-|---|---|---|---|---|---|
-| **Definition** | `runtime::context::blocking::try_enter_blocking_region` | **24 µs** | 10,554 ms | **439,785x** | Identical definition span |
-| **References** | `runtime::context::blocking::try_enter_blocking_region` | **655 µs** | 1,273 ms | **1,944x** | Full reference set |
-| **Hover** | `runtime::context::blocking::try_enter_blocking_region` | **42 µs** | 344 ms | **8,189x** | Matching signature & docs |
-| **Callers** | `runtime::context::blocking::try_enter_blocking_region` | **262 µs** | 363 ms | **1,389x** | Matching call hierarchy |
-| **Symbols** | `Runtime` | **16.9 ms** | 323 ms | **19.1x** | Matching symbol list |
-| **Idle Daemon RSS**| Workspace Idle | **No daemon (CLI)** / **~12 MB (LSP)** | **1,420 MB** | **> 118x** | Resident set size |
+| Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Verified Target |
+|---|---|---|---|---|
+| **Definition** | `runtime::context::blocking::try_enter_blocking_region` | **24 µs** | 10,554 ms | Identical definition span |
+| **References** | `runtime::context::blocking::try_enter_blocking_region` | **655 µs** | 1,273 ms | Full reference set |
+| **Hover** | `runtime::context::blocking::try_enter_blocking_region` | **42 µs** | 344 ms | Matching signature & docs |
+| **Callers** | `runtime::context::blocking::try_enter_blocking_region` | **262 µs** | 363 ms | Matching call hierarchy |
+| **Symbols** | `Runtime` | **16.9 ms** | 323 ms | Matching symbol list |
+| **Idle Daemon RSS**| Workspace Idle | **No daemon (CLI)** / **~12 MB (LSP)** | **1,420 MB** | Resident set size |
 
 ### B. `rust-analyzer` Workspace (261 Crates, 3,050 Files, 2.3M References)
-| Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Speedup | Verified Target |
-|---|---|---|---|---|---|
-| **Definition** | `ide::AnalysisHost` | **704 µs** | 10,905 ms | **15,490x** | Identical definition span |
-| **References** | `ide::AnalysisHost` | **4.06 ms** | 1,487 ms | **365x** | Full reference set |
-| **Hover** | `ide::AnalysisHost` | **410 µs** | 381 ms | **931x** | Matching signature & docs |
-| **Callers** | `ide::AnalysisHost` | **1.61 ms** | 382 ms | **236x** | Matching call hierarchy |
-| **Idle Daemon RSS**| Workspace Idle | **No daemon (CLI)** / **~15 MB (LSP)** | **3,240 MB** | **> 216x** | Resident set size |
+| Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Verified Target |
+|---|---|---|---|---|
+| **Definition** | `ide::AnalysisHost` | **704 µs** | 10,905 ms | Identical definition span |
+| **References** | `ide::AnalysisHost` | **4.06 ms** | 1,487 ms | Full reference set |
+| **Hover** | `ide::AnalysisHost` | **410 µs** | 381 ms | Matching signature & docs |
+| **Callers** | `ide::AnalysisHost` | **1.61 ms** | 382 ms | Matching call hierarchy |
+| **Idle Daemon RSS**| Workspace Idle | **No daemon (CLI)** / **~15 MB (LSP)** | **3,240 MB** | Resident set size |
 
 ---
 
