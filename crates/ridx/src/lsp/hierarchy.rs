@@ -106,7 +106,6 @@ pub fn handle_call_hierarchy_incoming_calls(
             for r in refs {
                 let r_path = r.resolved_path();
                 let r_str = r_path.to_str().unwrap_or(r.file);
-                let r_uri = path_to_uri(r_str);
                 let span = r.span;
                 let sc = conv.char_col_to_utf16_col(r_str, span.start_line(), span.start_col());
                 let ec = conv.char_col_to_utf16_col(r_str, span.end_line(), span.end_col());
@@ -123,40 +122,34 @@ pub fn handle_call_hierarchy_incoming_calls(
                         && d.span.end_line() >= span.end_line()
                 });
 
-                let caller_item = if let Some(caller) = caller_def {
-                    let c_path = caller.resolved_path();
-                    let c_str = c_path.to_str().unwrap_or(caller.file);
-                    let c_uri = path_to_uri(c_str);
-                    let c_sc = conv.char_col_to_utf16_col(
-                        c_str,
-                        caller.span.start_line(),
-                        caller.span.start_col(),
-                    );
-                    let c_ec = conv.char_col_to_utf16_col(
-                        c_str,
-                        caller.span.end_line(),
-                        caller.span.end_col(),
-                    );
-                    let c_range = json!({
-                        "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
-                        "end": { "line": caller.span.end_line().saturating_sub(1), "character": c_ec }
-                    });
-                    json!({
-                        "name": caller.name,
-                        "kind": lsp_symbol_kind(caller.kind),
-                        "uri": c_uri,
-                        "range": c_range,
-                        "selectionRange": c_range
-                    })
-                } else {
-                    json!({
-                        "name": format!("fn in {}", r.file),
-                        "kind": 12,
-                        "uri": r_uri,
-                        "range": call_range,
-                        "selectionRange": call_range
-                    })
+                let Some(caller) = caller_def else {
+                    continue;
                 };
+
+                let c_path = caller.resolved_path();
+                let c_str = c_path.to_str().unwrap_or(caller.file);
+                let c_uri = path_to_uri(c_str);
+                let c_sc = conv.char_col_to_utf16_col(
+                    c_str,
+                    caller.span.start_line(),
+                    caller.span.start_col(),
+                );
+                let c_ec = conv.char_col_to_utf16_col(
+                    c_str,
+                    caller.span.end_line(),
+                    caller.span.end_col(),
+                );
+                let c_range = json!({
+                    "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
+                    "end": { "line": caller.span.end_line().saturating_sub(1), "character": c_ec }
+                });
+                let caller_item = json!({
+                    "name": caller.name,
+                    "kind": lsp_symbol_kind(caller.kind),
+                    "uri": c_uri,
+                    "range": c_range,
+                    "selectionRange": c_range
+                });
 
                 incoming.push(json!({
                     "from": caller_item,

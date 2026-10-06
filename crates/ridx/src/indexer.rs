@@ -51,17 +51,22 @@ pub fn find_driver_binary_internal(exe: Option<&Path>) -> Option<PathBuf> {
     }
 
     if let Some(exe) = exe {
-        if let Some(dir) = exe.parent() {
-            let candidate = dir.join("ridx-driver");
-            if candidate.is_file() {
-                return candidate.canonicalize().ok();
-            }
-            if let Some(parent) = dir.parent() {
-                let candidate = parent.join("ridx-driver");
+        let mut cur = exe.parent();
+        while let Some(dir) = cur {
+            for sub in [
+                "ridx-driver",
+                "debug/ridx-driver",
+                "release/ridx-driver",
+                "target/debug/ridx-driver",
+                "target/release/ridx-driver",
+                "target/llvm-cov-target/debug/ridx-driver",
+            ] {
+                let candidate = dir.join(sub);
                 if candidate.is_file() {
                     return candidate.canonicalize().ok();
                 }
             }
+            cur = dir.parent();
         }
     }
     for candidate in [
@@ -649,10 +654,14 @@ pub fn run_indexing(opts: IndexOptions) -> PublishedVariant {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
-    static INDEXER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    pub(crate) static INDEXER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    pub(crate) fn lock_indexer_test() -> std::sync::MutexGuard<'static, ()> {
+        INDEXER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
 
     struct TestDir(PathBuf);
     impl Drop for TestDir {
@@ -703,7 +712,7 @@ mod tests {
 
     #[test]
     fn test_resolve_cargo_home() {
-        let _lock = INDEXER_TEST_LOCK.lock().unwrap();
+        let _lock = lock_indexer_test();
         let home = resolve_cargo_home();
         assert!(home.is_some());
     }
@@ -750,7 +759,7 @@ mod tests {
 
     #[test]
     fn test_compute_variant_id_permutations() {
-        let _lock = INDEXER_TEST_LOCK.lock().unwrap();
+        let _lock = lock_indexer_test();
         let test_dir = new_test_dir("ridx_variant_test");
         let root_cargo = test_dir.0.join("Cargo.toml");
         fs::write(
@@ -790,7 +799,7 @@ mod tests {
 
     #[test]
     fn test_compute_variant_id_with_lock_and_env() {
-        let _lock = INDEXER_TEST_LOCK.lock().unwrap();
+        let _lock = lock_indexer_test();
         let test_dir = new_test_dir("ridx_variant_lock");
         let root_cargo = test_dir.0.join("Cargo.toml");
         fs::write(
@@ -830,7 +839,7 @@ mod tests {
 
     #[test]
     fn test_run_indexing_on_sample_crate() {
-        let _lock = INDEXER_TEST_LOCK.lock().unwrap();
+        let _lock = lock_indexer_test();
         let test_dir = new_test_dir("ridx_run_index_test");
         let cargo_toml = test_dir.0.join("Cargo.toml");
         fs::write(
@@ -921,7 +930,7 @@ mod tests {
 
     #[test]
     fn test_try_run_indexing_with_options_and_deps() {
-        let _lock = INDEXER_TEST_LOCK.lock().unwrap();
+        let _lock = lock_indexer_test();
         let test_dir = new_test_dir("ridx_opts_test");
         let cargo_toml = test_dir.0.join("Cargo.toml");
         fs::write(
@@ -1034,7 +1043,7 @@ mod tests {
 
     #[test]
     fn test_indexer_helpers_and_error_paths() {
-        let _lock = INDEXER_TEST_LOCK.lock().unwrap();
+        let _lock = lock_indexer_test();
         // 1. try_run_indexing errors
         let non_existent = PathBuf::from("/nonexistent_path_for_indexer");
         assert!(try_run_indexing(IndexOptions {
@@ -1244,7 +1253,7 @@ mod tests {
 
     #[test]
     fn test_indexer_dependency_shards_and_cargo_config() {
-        let _lock = INDEXER_TEST_LOCK.lock().unwrap();
+        let _lock = lock_indexer_test();
         let temp = new_test_dir("ridx_dep_shards_test");
         let work_dir = temp.0.join("sample_pkg");
         let src_dir = work_dir.join("src");
@@ -1711,7 +1720,7 @@ mod tests {
 
     #[test]
     fn test_indexer_additional_edge_cases() {
-        let _lock = INDEXER_TEST_LOCK.lock().unwrap();
+        let _lock = lock_indexer_test();
 
         let temp = new_test_dir("indexer_add_edges");
         let manifest_file = temp.0.join("Cargo.toml");

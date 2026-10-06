@@ -218,7 +218,10 @@ pub fn run_lsp_server_stream<R: BufRead + Send, W: Write>(
             match method {
                 "initialize" => match lifecycle.handle_initialize(&msg) {
                     Ok((capabilities, folders)) => {
-                        if multi_root.is_empty() {
+                        if !folders.is_empty() {
+                            if index_path.is_none() {
+                                multi_root.clear();
+                            }
                             multi_root.open_from_folders(&folders);
                         }
                         if let Some(ref req_id) = id {

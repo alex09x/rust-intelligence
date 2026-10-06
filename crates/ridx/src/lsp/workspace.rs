@@ -23,6 +23,7 @@ impl MultiRootWorkspace {
         Self { roots: Vec::new() }
     }
 
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.roots.is_empty()
     }
@@ -30,6 +31,10 @@ impl MultiRootWorkspace {
     #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.roots.len()
+    }
+
+    pub fn clear(&mut self) {
+        self.roots.clear();
     }
 
     pub fn open_from_folders(&mut self, paths: &[PathBuf]) {

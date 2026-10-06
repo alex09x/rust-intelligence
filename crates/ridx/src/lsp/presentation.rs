@@ -226,7 +226,7 @@ pub fn handle_code_lens(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
                 lenses.push(json!({
                     "range": range,
                     "command": {
-                        "title": format!("References: 0"),
+                        "title": "References: 0".to_string(),
                         "command": "ridx.showReferences"
                     }
                 }));

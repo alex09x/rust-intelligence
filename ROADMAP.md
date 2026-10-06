@@ -183,22 +183,22 @@ comparison status. An absent handler or placeholder response is not completion.
 | Definition, references, hover, document/workspace symbols | Implemented & verified | 0, 2 |
 | Declaration, type definition, implementation, document highlights | Implemented & verified | 2 |
 | Workspace symbol resolution | Implemented & verified | 2 |
-| Push diagnostics; document/workspace pull diagnostics and refresh | Implemented & verified | 3 |
+| Push diagnostics; document/workspace pull diagnostics and refresh | Prototype | 3 |
 | Completion and resolution; signature help | Implemented & verified | 3 |
-| Document/range/on-type formatting | Implemented & verified | 3 |
-| Semantic tokens full/range/delta and refresh | Implemented & verified | 4 |
-| Inlay hints, resolution and refresh | Implemented & verified | 4 |
+| Document/range/on-type formatting | Implemented & verified (Document) / Planned (Range, On-type) | 3 |
+| Semantic tokens full/range/delta and refresh | Implemented & verified (Full) / Planned (Range, Delta) | 4 |
+| Inlay hints, resolution and refresh | Implemented & verified (Inlay hints) / Planned (Resolution) | 4 |
 | Folding/selection ranges, document links and resolution | Implemented & verified | 4, 7 |
 | Prepare rename, rename, versioned workspace edits and apply-edit flow | Implemented & verified | 5 |
-| Code actions, resolution and commands | Implemented & verified | 5, 6 |
-| Call hierarchy and type hierarchy | Implemented & verified | 6 |
-| CodeLens, resolution and refresh | Implemented & verified | 6 |
+| Code actions, resolution and commands | Prototype | 5, 6 |
+| Call hierarchy and type hierarchy | Implemented & verified (Incoming calls) / Prototype (Outgoing, Type) | 6 |
+| CodeLens, resolution and refresh | Prototype | 6 |
 | Window messages, show-document, configuration requests, tracing and telemetry policy | Implemented & verified | 1, 6 |
-| Linked editing, document colors and color presentations | Implemented & verified | 7 |
-| Monikers for external symbol identity | Implemented & verified | 7 |
-| Notebook synchronization, inline values and inline completion | Implemented & verified | 7 |
-| Workspace document-content requests and refresh | Implemented & verified | 7 |
-| Dynamic registration, partial results and refresh notifications | Implemented & verified | 1–7 |
+| Linked editing, document colors and color presentations | Prototype | 7 |
+| Monikers for external symbol identity | Prototype | 7 |
+| Notebook synchronization, inline values and inline completion | Prototype | 7 |
+| Workspace document-content requests and refresh | Prototype | 7 |
+| Dynamic registration, partial results and refresh notifications | Planned | 1–7 |
 
 The method inventory follows the
 [official LSP specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/).

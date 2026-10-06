@@ -263,8 +263,12 @@ pub fn handle_rename(
                     let decl_ov = overlay_mgr.get(decl_str);
                     let (mapped_line, mapped_col) = if let Some(dov) = decl_ov {
                         if dov.is_dirty() {
-                            dov.map_compiled_to_live(loc_refs.target_line, loc_refs.target_col)
-                                .unwrap_or((loc_refs.target_line, loc_refs.target_col))
+                            match dov
+                                .map_compiled_to_live(loc_refs.target_line, loc_refs.target_col)
+                            {
+                                Some(pos) => pos,
+                                None => return json!({ "changes": {} }),
+                            }
                         } else {
                             (loc_refs.target_line, loc_refs.target_col)
                         }
@@ -274,6 +278,14 @@ pub fn handle_rename(
 
                     let name_len = target_name.chars().count() as u32;
                     let end_col = mapped_col + name_len;
+
+                    // Verify that the text in dov matches target_name
+                    if let Some(dov) = decl_ov {
+                        if dov.get_ident_at(mapped_line, mapped_col).as_deref() != Some(target_name)
+                        {
+                            return json!({ "changes": {} });
+                        }
+                    }
 
                     let sc = if let Some(dov) = decl_ov {
                         dov.char_col_to_utf16_col(mapped_line, mapped_col)
@@ -309,8 +321,11 @@ pub fn handle_rename(
                     let ref_ov = overlay_mgr.get(r_str);
                     let (mapped_line, mapped_col) = if let Some(rov) = ref_ov {
                         if rov.is_dirty() {
-                            rov.map_compiled_to_live(r.span.start_line(), r.span.start_col())
-                                .unwrap_or((r.span.start_line(), r.span.start_col()))
+                            match rov.map_compiled_to_live(r.span.start_line(), r.span.start_col())
+                            {
+                                Some(pos) => pos,
+                                None => return json!({ "changes": {} }),
+                            }
                         } else {
                             (r.span.start_line(), r.span.start_col())
                         }
@@ -320,6 +335,14 @@ pub fn handle_rename(
 
                     let name_len = target_name.chars().count() as u32;
                     let end_col = mapped_col + name_len;
+
+                    // Verify that the text in rov matches target_name
+                    if let Some(rov) = ref_ov {
+                        if rov.get_ident_at(mapped_line, mapped_col).as_deref() != Some(target_name)
+                        {
+                            return json!({ "changes": {} });
+                        }
+                    }
 
                     let sc = if let Some(rov) = ref_ov {
                         rov.char_col_to_utf16_col(mapped_line, mapped_col)
@@ -349,7 +372,51 @@ pub fn handle_rename(
         }
     }
 
-    json!({ "changes": changes_map })
+    // Check for overlapping edits in any document and refuse if conflict detected
+    for edits in changes_map.values() {
+        for i in 0..edits.len() {
+            for j in (i + 1)..edits.len() {
+                let e1 = &edits[i]["range"];
+                let e2 = &edits[j]["range"];
+                let e1_sl = e1["start"]["line"].as_u64().unwrap_or(0);
+                let e1_sc = e1["start"]["character"].as_u64().unwrap_or(0);
+                let e1_el = e1["end"]["line"].as_u64().unwrap_or(0);
+                let e1_ec = e1["end"]["character"].as_u64().unwrap_or(0);
+
+                let e2_sl = e2["start"]["line"].as_u64().unwrap_or(0);
+                let e2_sc = e2["start"]["character"].as_u64().unwrap_or(0);
+                let e2_el = e2["end"]["line"].as_u64().unwrap_or(0);
+                let e2_ec = e2["end"]["character"].as_u64().unwrap_or(0);
+
+                let e1_before_e2 = (e1_el < e2_sl) || (e1_el == e2_sl && e1_ec <= e2_sc);
+                let e2_before_e1 = (e2_el < e1_sl) || (e2_el == e1_sl && e2_ec <= e1_sc);
+                if !e1_before_e2 && !e2_before_e1 {
+                    return json!({ "changes": {} });
+                }
+            }
+        }
+    }
+
+    let mut doc_changes = Vec::new();
+    for (uri_str, edits) in &changes_map {
+        let file_path = uri_to_path(uri_str);
+        let version = overlay_mgr
+            .get(&file_path)
+            .map(|o| json!(o.version))
+            .unwrap_or(Value::Null);
+        doc_changes.push(json!({
+            "textDocument": {
+                "uri": uri_str,
+                "version": version
+            },
+            "edits": edits
+        }));
+    }
+
+    json!({
+        "changes": changes_map,
+        "documentChanges": doc_changes
+    })
 }
 
 fn find_crate_edition(file_path: &str) -> String {

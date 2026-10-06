@@ -1050,7 +1050,9 @@ mod tests {
         }
     }
 
-    static CLI_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    fn lock_cli_test() -> std::sync::MutexGuard<'static, ()> {
+        crate::indexer::tests::lock_indexer_test()
+    }
 
     fn new_test_dir(prefix: &str) -> TestDir {
         static CNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
@@ -1217,6 +1219,7 @@ mod tests {
 
     #[test]
     fn test_cli_inspect_and_queries() {
+        let _lock = lock_cli_test();
         let (test_dir, dir_str) = create_indexed_workspace();
         let path = PathBuf::from(&dir_str);
 
@@ -1447,6 +1450,7 @@ mod tests {
 
     #[test]
     fn test_cli_index_command() {
+        let _lock = lock_cli_test();
         let (test_dir, _) = create_indexed_workspace();
         let cargo_toml = test_dir.0.join("Cargo.toml");
         fs::write(
@@ -1500,7 +1504,7 @@ mod tests {
 
     #[test]
     fn test_cli_single_arg_auto_discover() {
-        let _lock = CLI_TEST_LOCK.lock().unwrap();
+        let _lock = lock_cli_test();
         let (test_dir, dir_str) = create_indexed_workspace();
 
         // Write variant manifest so Inspect prints active variant
@@ -1635,7 +1639,7 @@ mod tests {
 
     #[test]
     fn test_cli_not_found_branches_and_helpers() {
-        let _lock = CLI_TEST_LOCK.lock().unwrap();
+        let _lock = lock_cli_test();
         let (test_dir, _) = create_indexed_workspace();
         let dir_str = test_dir.0.display().to_string();
 
@@ -1822,7 +1826,7 @@ mod tests {
 
     #[test]
     fn test_manifest_discovery_and_auto_reindexing() {
-        let _lock = CLI_TEST_LOCK.lock().unwrap();
+        let _lock = lock_cli_test();
         std::env::remove_var("RIDX_INDEX_DIR");
         let (test_dir, dir_str) = create_indexed_workspace();
         let deep_file = test_dir.0.join("a/b/c/nested_file.rs");

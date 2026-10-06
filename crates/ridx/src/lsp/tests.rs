@@ -2068,7 +2068,8 @@ fn test_lsp_server_stream_initialize_with_empty_multi_root() {
 
 #[test]
 fn test_sync_reloaded_index_advances_compiled_baseline() {
-    let temp_dir = std::env::temp_dir().join(format!("ridx_sync_test_{}", std::process::id()));
+    let temp_dir =
+        std::env::temp_dir().join(format!("ridx_sync_reload_baseline_{}", std::process::id()));
     let _ = std::fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let initial_content = "pub fn original() {}\n";
@@ -2212,12 +2213,7 @@ fn test_lsp_server_stream_cancellation_and_shutdown() {
         }
     })));
 
-    // 5. Cancel request: cancel id 3, then send request with id 3
-    input.extend(make_lsp_msg(&json!({
-        "jsonrpc": "2.0",
-        "method": "$/cancelRequest",
-        "params": { "id": 3 }
-    })));
+    // 5. Cancel request: send request with id 3, followed by $/cancelRequest with id 3
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",
         "id": 3,
@@ -2226,6 +2222,11 @@ fn test_lsp_server_stream_cancellation_and_shutdown() {
             "textDocument": { "uri": src_uri },
             "position": { "line": 0, "character": 7 }
         }
+    })));
+    input.extend(make_lsp_msg(&json!({
+        "jsonrpc": "2.0",
+        "method": "$/cancelRequest",
+        "params": { "id": 3 }
     })));
 
     // 6. workspace/didRenameFiles
