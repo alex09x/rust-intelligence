@@ -12,9 +12,7 @@
 
 use super::args::Commands;
 use super::resolve::*;
-use crate::compare;
 use colored::*;
-use std::path::PathBuf;
 use std::time::Instant;
 
 pub fn execute_query_command(command: super::args::Commands) {
@@ -276,63 +274,22 @@ pub fn execute_query_command(command: super::args::Commands) {
             arg1,
             arg2,
             symbol,
+            scenarios,
+            ridx_cmd,
+            ra_cmd,
             capability,
             json,
         } => {
-            let (ws, target) = match symbol {
-                Some(s) => {
-                    let ws = resolve_workspace(Some(PathBuf::from(arg1)));
-                    (ws, s)
-                }
-                None => resolve_index_and_target(arg1, arg2),
-            };
-
-            let cap = compare::CapabilityKind::parse_str(&capability)
-                .unwrap_or(compare::CapabilityKind::Def);
-            let results = compare::compare_capability(&ws, cap, &target);
-
-            if json {
-                let out = serde_json::json!({
-                    "target": target,
-                    "capability": format!("{:?}", cap),
-                    "comparisons": results.iter().map(|cmp| {
-                        let speedup = if cmp.ridx_latency_micros > 0 {
-                            format!(
-                                "{:.1}x",
-                                (cmp.prodcode_latency_micros as f64) / (cmp.ridx_latency_micros as f64)
-                            )
-                        } else {
-                            "inf".to_string()
-                        };
-                        serde_json::json!({
-                            "capability": format!("{:?}", cmp.capability),
-                            "ridx": {
-                                "found": cmp.ridx_found,
-                                "span": cmp.ridx_span,
-                                "count": cmp.ridx_count,
-                                "latency_us": cmp.ridx_latency_micros,
-                                "rss_bytes": cmp.ridx_rss_bytes,
-                            },
-                            "prodcode": {
-                                "found": cmp.prodcode_found,
-                                "span": cmp.prodcode_span,
-                                "count": cmp.prodcode_count,
-                                "latency_us": cmp.prodcode_latency_micros,
-                                "rss_bytes": cmp.prodcode_rss_bytes,
-                            },
-                            "speedup": speedup,
-                        })
-                    }).collect::<Vec<_>>()
-                });
-                println!("{}", serde_json::to_string_pretty(&out).unwrap());
-                return;
-            }
-
-            if results.len() == 1 {
-                compare::print_comparison(&results[0]);
-            } else {
-                compare::print_comparison_summary(&results);
-            }
+            super::compare_cmd::cmd_compare(super::compare_cmd::CompareArgs {
+                arg1,
+                arg2,
+                symbol,
+                scenarios_path: scenarios,
+                ridx_cmd_str: ridx_cmd,
+                ra_cmd_str: ra_cmd,
+                capability,
+                json,
+            });
         }
 
         _ => {}

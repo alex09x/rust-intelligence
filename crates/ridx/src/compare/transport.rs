@@ -103,6 +103,7 @@ pub fn extract_target_span(item: &Value) -> String {
         .unwrap_or("");
     let range = item
         .get("range")
+        .or_else(|| item.get("targetSelectionRange"))
         .or_else(|| item.get("targetRange"))
         .or_else(|| item.get("location").and_then(|l| l.get("range")));
     let line = range
@@ -128,6 +129,20 @@ pub fn parse_lsp_result(
     latency: u128,
     rss: u64,
 ) -> Option<super::types::ExternalLspResult> {
+    if let Some(err) = resp.get("error") {
+        let msg = err
+            .get("message")
+            .and_then(|m| m.as_str())
+            .unwrap_or("LSP error");
+        return Some(super::types::ExternalLspResult {
+            found: false,
+            span: format!("Error ({msg})"),
+            count: 0,
+            latency_micros: latency,
+            rss_bytes: rss,
+        });
+    }
+
     let val = resp.get("result")?;
     if val.is_null() {
         return Some(super::types::ExternalLspResult {

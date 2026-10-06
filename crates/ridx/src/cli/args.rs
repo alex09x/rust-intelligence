@@ -14,7 +14,11 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "ridx", about = "Ultra-fast code intelligence for Rust")]
+#[command(
+    name = "ridx",
+    version,
+    about = "Ultra-fast code intelligence for Rust"
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -129,13 +133,26 @@ pub enum Commands {
 
     /// Compare accuracy and latency against prod-code (rust-analyzer)
     Compare {
-        /// First argument: index file/dir, or target symbol/location
+        /// First argument: index file/dir, workspace root, or target symbol/location
+        #[arg(default_value = ".")]
         arg1: String,
         /// Second argument: target symbol/location if first argument was index path
         arg2: Option<String>,
         /// Optional explicit symbol flag
         #[arg(long, short)]
         symbol: Option<String>,
+
+        /// Path to JSON file containing symmetric scenarios
+        #[arg(long)]
+        scenarios: Option<PathBuf>,
+
+        /// Command to run ridx LSP (default: auto or "ridx lsp")
+        #[arg(long)]
+        ridx_cmd: Option<String>,
+
+        /// Command to run rust-analyzer (default: "rust-analyzer")
+        #[arg(long, default_value = "rust-analyzer")]
+        ra_cmd: String,
 
         /// Capability to compare: def, refs, hover, symbols, callers, all (default: def)
         #[arg(long, short, default_value = "def")]

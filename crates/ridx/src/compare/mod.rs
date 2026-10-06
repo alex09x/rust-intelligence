@@ -19,6 +19,7 @@ pub mod symmetric;
 pub mod system;
 pub mod transport;
 pub mod types;
+pub mod warmup;
 
 #[cfg(test)]
 mod tests;

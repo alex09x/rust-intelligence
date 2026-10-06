@@ -211,6 +211,9 @@ fn test_cli_single_arg_auto_discover() {
         arg1: "test_crate::test_fn".to_string(),
         arg2: None,
         symbol: None,
+        scenarios: None,
+        ridx_cmd: None,
+        ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: false,
     });
@@ -218,6 +221,9 @@ fn test_cli_single_arg_auto_discover() {
         arg1: "test_crate::test_fn".to_string(),
         arg2: None,
         symbol: None,
+        scenarios: None,
+        ridx_cmd: None,
+        ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: true,
     });

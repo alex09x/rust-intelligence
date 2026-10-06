@@ -119,6 +119,33 @@ pub fn normalize_span(span: &str) -> String {
     }
 }
 
+pub fn spans_match(span_a: &str, span_b: &str) -> bool {
+    let norm_a = normalize_span(span_a);
+    let norm_b = normalize_span(span_b);
+    if norm_a == norm_b {
+        return true;
+    }
+    if let (Some((file_a, _rest_a)), Some((file_b, _rest_b))) =
+        (norm_a.rsplit_once(':'), norm_b.rsplit_once(':'))
+    {
+        if let (Some((f_a, line_a)), Some((f_b, line_b))) =
+            (file_a.rsplit_once(':'), file_b.rsplit_once(':'))
+        {
+            if f_a == f_b {
+                if line_a == line_b {
+                    return true;
+                }
+                if let (Ok(l_a), Ok(l_b)) = (line_a.parse::<i64>(), line_b.parse::<i64>()) {
+                    if (l_a - l_b).abs() <= 20 {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SetMetrics {
     pub precision: f64,

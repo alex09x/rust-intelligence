@@ -95,6 +95,9 @@ fn test_manifest_discovery_and_auto_reindexing() {
         arg1: dir_str.clone(),
         arg2: Some("test_crate::test_fn".to_string()),
         symbol: None,
+        scenarios: None,
+        ridx_cmd: None,
+        ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: false,
     });
@@ -102,6 +105,9 @@ fn test_manifest_discovery_and_auto_reindexing() {
         arg1: dir_str.clone(),
         arg2: Some("test_crate::test_fn".to_string()),
         symbol: None,
+        scenarios: None,
+        ridx_cmd: None,
+        ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: true,
     });

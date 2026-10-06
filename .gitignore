@@ -4,3 +4,6 @@
 *.profraw
 *.profdata
 cov.*
+__pycache__/
+*.pyc
+bench/results/*.jsonl

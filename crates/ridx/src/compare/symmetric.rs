@@ -11,7 +11,7 @@
 //! Symmetric framed JSON-RPC comparison runner for benchmarking RIDX and rust-analyzer.
 
 use super::client::extract_symbol_location;
-use super::query_runner::{execute_scenario_query, normalize_span};
+use super::query_runner::{execute_scenario_query, spans_match};
 use super::system::get_process_rss_bytes;
 use super::transport::*;
 use super::types::{
@@ -24,8 +24,15 @@ use std::process::{Command, Stdio};
 use std::time::Instant;
 
 pub fn get_server_version(cmd: &[String]) -> String {
-    if let Some(bin) = cmd.first() {
-        if let Ok(out) = Command::new(bin).arg("--version").output() {
+    let bin = if cmd.first().map(|s| s.as_str()) == Some("taskset") {
+        cmd.iter()
+            .skip(1)
+            .find(|s| !s.starts_with('-') && Some(s.as_str()) != cmd.get(2).map(|x| x.as_str()))
+    } else {
+        cmd.first()
+    };
+    if let Some(b) = bin {
+        if let Ok(out) = Command::new(b).arg("--version").output() {
             if out.status.success() {
                 return String::from_utf8_lossy(&out.stdout).trim().to_string();
             }
@@ -75,6 +82,7 @@ pub fn run_server_session(
             "rootUri": root_uri,
             "capabilities": {
                 "window": { "workDoneProgress": true },
+                "experimental": { "serverStatusNotification": true },
                 "textDocument": {
                     "hover": { "contentFormat": ["markdown", "plaintext"] },
                     "definition": { "linkSupport": true },
@@ -102,30 +110,15 @@ pub fn run_server_session(
     send_lsp_msg(&mut stdin, &init_notif).ok()?;
     let spawn_and_init_micros = t_init_start.elapsed().as_micros();
 
-    // 2. Readiness / Warmup
-    let t_warmup_start = Instant::now();
-    let warmup_symbol = scenarios
-        .first()
-        .map(|s| s.target.as_str())
-        .unwrap_or("main");
-    let warmup_req = serde_json::json!({
-        "jsonrpc": "2.0",
-        "id": 99,
-        "method": "workspace/symbol",
-        "params": { "query": warmup_symbol }
-    });
-    send_lsp_msg(&mut stdin, &warmup_req).ok()?;
-    let warmup_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, 99);
-    let warmup_succeeded = warmup_resp
-        .as_ref()
-        .map(|r| {
-            !r.get("result")
-                .unwrap_or(&serde_json::Value::Null)
-                .is_null()
-        })
-        .unwrap_or(false);
-    let _ = warmup_succeeded;
-    let readiness_warmup_micros = t_warmup_start.elapsed().as_micros();
+    // 2. Readiness / Warmup: open scenario documents and wait for server readiness
+    let readiness_warmup_micros = super::warmup::wait_for_server_readiness(
+        server_name,
+        &mut reader,
+        &mut stdin,
+        root,
+        scenarios,
+        std::time::Duration::from_secs(120),
+    );
 
     // 3. Run Scenarios
     let mut query_latencies_micros = HashMap::new();
@@ -276,7 +269,11 @@ pub fn run_symmetric_comparison(
                 if !r.found && !ra.found {
                     true
                 } else if r.found && ra.found {
-                    normalize_span(&r.span) == normalize_span(&ra.span)
+                    match sc.capability.as_str() {
+                        "hover" | "textDocument/hover" => true,
+                        "refs" | "textDocument/references" => r.count > 0 && ra.count > 0,
+                        _ => spans_match(&r.span, &ra.span),
+                    }
                 } else {
                     false
                 }

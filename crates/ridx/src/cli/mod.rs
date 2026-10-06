@@ -11,6 +11,7 @@
 //! Command-line interface orchestration and subcommands.
 
 pub mod args;
+pub mod compare_cmd;
 pub mod dispatch;
 pub mod inspect;
 pub mod queries;
@@ -21,6 +22,7 @@ pub mod resolve;
 pub mod tests;
 
 pub use args::*;
+pub use compare_cmd::*;
 pub use dispatch::*;
 pub use inspect::*;
 pub use queries::*;

@@ -151,6 +151,9 @@ fn test_cli_inspect_and_queries() {
         arg1: dir_str.clone(),
         arg2: Some("test_crate::test_fn".to_string()),
         symbol: None,
+        scenarios: None,
+        ridx_cmd: None,
+        ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: false,
     });
@@ -158,6 +161,9 @@ fn test_cli_inspect_and_queries() {
         arg1: dir_str.clone(),
         arg2: Some("test_crate::test_fn".to_string()),
         symbol: None,
+        scenarios: None,
+        ridx_cmd: None,
+        ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: true,
     });
@@ -165,6 +171,9 @@ fn test_cli_inspect_and_queries() {
         arg1: dir_str.clone(),
         arg2: None,
         symbol: Some("test_crate::test_fn".to_string()),
+        scenarios: None,
+        ridx_cmd: None,
+        ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: false,
     });
@@ -172,6 +181,9 @@ fn test_cli_inspect_and_queries() {
         arg1: dir_str.clone(),
         arg2: None,
         symbol: Some("test_crate::test_fn".to_string()),
+        scenarios: None,
+        ridx_cmd: None,
+        ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: true,
     });
