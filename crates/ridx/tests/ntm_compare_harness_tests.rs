@@ -102,3 +102,36 @@ fn test_server_request_with_same_id_is_not_treated_as_response() {
     );
     assert!(out_str.contains("\"result\":null"));
 }
+
+#[test]
+fn test_symbol_resolution_chooses_exact_candidate() {
+    let resp = json!({
+        "jsonrpc": "2.0",
+        "id": 10,
+        "result": [
+            {
+                "name": "foobar",
+                "location": {
+                    "uri": "file:///fixture/wrong.rs",
+                    "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 6 } }
+                }
+            },
+            {
+                "name": "foo",
+                "location": {
+                    "uri": "file:///fixture/lib.rs",
+                    "range": { "start": { "line": 10, "character": 4 }, "end": { "line": 10, "character": 7 } }
+                }
+            }
+        ]
+    });
+
+    let loc = ridx::compare::client::extract_symbol_location(&resp, "foo")
+        .expect("Must resolve exact symbol 'foo'");
+    assert_eq!(loc.0, "file:///fixture/lib.rs");
+    assert_eq!(loc.1, 10);
+    assert_eq!(loc.2, 4);
+
+    let none_loc = ridx::compare::client::extract_symbol_location(&resp, "baz");
+    assert!(none_loc.is_none(), "Unmatched symbol must return None");
+}

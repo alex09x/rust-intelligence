@@ -172,7 +172,7 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
                         }
                     }
 
-                    let has_control_flow = {
+                    let has_side_effect_or_control_flow = {
                         let p = &prefix_text;
                         p.contains("&&")
                             || p.contains("||")
@@ -182,9 +182,13 @@ pub fn handle_code_action(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
                             || p.contains("if")
                             || p.contains("match")
                             || p.contains("loop")
+                            || p.contains(',')
+                            || p.contains(')')
+                            || p.contains(']')
+                            || p.contains('?')
                     };
 
-                    if !has_control_flow {
+                    if !has_side_effect_or_control_flow {
                         let mut var_name = "extracted".to_string();
                         let mut counter = 1;
                         while doc_text.contains(&var_name) {

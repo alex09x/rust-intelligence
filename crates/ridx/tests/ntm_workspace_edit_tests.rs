@@ -132,8 +132,8 @@ fn test_open_document_command_edits_sync_disk_and_return_payload() {
 
     let disk_text = fs::read_to_string(&temp_file).unwrap();
     assert_eq!(
-        disk_text, "fn bar() {}",
-        "Disk file must be updated for open overlay"
+        disk_text, "fn foo() {}",
+        "Disk file must NOT be updated for open overlay, preserving dirty draft on disk"
     );
 
     let _ = fs::remove_file(temp_file);
@@ -322,5 +322,64 @@ fn test_review_v4651_closed_edit_remains_dirty() {
         overlay.is_dirty(),
         "Closed file edited on disk must remain dirty relative to compiled index"
     );
+    let _ = fs::remove_file(temp_file);
+}
+
+#[test]
+fn test_multiple_arguments_preserve_all_edits() {
+    let mut overlay_mgr = OverlayManager::new();
+    let uri = "file:///tmp/multi_arg.rs";
+    let file = "/tmp/multi_arg.rs";
+    overlay_mgr.open_document(uri, file, 1, "xy".to_string());
+
+    let edit_req = json!({
+        "params": {
+            "command": "ridx.applyEdits",
+            "arguments": [
+                { "changes": { uri: [{ "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 1 } }, "newText": "A" }] } },
+                { "changes": { uri: [{ "range": { "start": { "line": 0, "character": 1 }, "end": { "line": 0, "character": 2 } }, "newText": "B" }] } }
+            ]
+        }
+    });
+
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    assert_eq!(res["applied"], true);
+    assert_eq!(res["count"], 2);
+
+    let overlay = overlay_mgr.get(file).unwrap();
+    assert_eq!(
+        overlay.text, "AB",
+        "Multiple arguments must sequentially transform the document to AB"
+    );
+}
+
+#[test]
+fn test_disk_failure_rollback_and_reported_failure() {
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
+    let mut overlay_mgr = OverlayManager::new();
+    let temp_file = std::env::temp_dir().join(format!("test_ro_{}.rs", std::process::id()));
+    let _ = fs::write(&temp_file, "orig");
+    #[cfg(unix)]
+    let _ = fs::set_permissions(&temp_file, fs::Permissions::from_mode(0o444));
+    let uri = format!("file://{}", temp_file.display());
+    let _file = temp_file.to_str().unwrap();
+
+    let edit_req = json!({
+        "params": {
+            "command": "ridx.applyEdits",
+            "arguments": [{ "changes": { &uri: [{ "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 4 } }, "newText": "modified" }] } }]
+        }
+    });
+
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    #[cfg(unix)]
+    {
+        assert_eq!(
+            res["applied"], false,
+            "Disk write failure must report applied: false"
+        );
+        let _ = fs::set_permissions(&temp_file, std::fs::Permissions::from_mode(0o644));
+    }
     let _ = fs::remove_file(temp_file);
 }

@@ -15,9 +15,14 @@ use ridx_format::{IndexWriter, RawDefinition, WorkspaceIndex};
 use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static TEST_DIR_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 fn setup_test_presentation() -> (PathBuf, WorkspaceIndex, OverlayManager, PositionConverter) {
-    let temp_dir = std::env::temp_dir().join(format!("ridx_test_pres_{}", std::process::id()));
+    let id = TEST_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let temp_dir =
+        std::env::temp_dir().join(format!("ridx_test_pres_{}_{}", std::process::id(), id));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let code =
@@ -219,6 +224,39 @@ fn test_presentation_handlers_comprehensive() {
     );
     assert_eq!(handle_folding_range(&missing_req, &overlay_mgr), json!([]));
     assert_eq!(handle_code_lens(&missing_req, &overlay_mgr), json!([]));
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_workspace_diagnostic_discovers_closed_files() {
+    let (temp_dir, _ws, overlay_mgr, _) = setup_test_presentation();
+    let src_file = temp_dir.join("src/lib.rs");
+    fs::write(&src_file, "fn broken( {").unwrap();
+
+    let mut multi_root = crate::lsp::workspace::MultiRootWorkspace::new();
+    let ridx_file = temp_dir.join("index.ridx");
+    multi_root.add_root(ridx_file);
+
+    let req = json!({ "params": {} });
+    let res = handle_workspace_diagnostic(&req, &overlay_mgr, &multi_root);
+    let items = res["items"].as_array().expect("items array");
+    assert!(
+        !items.is_empty(),
+        "Must discover closed file in workspace index"
+    );
+    let err_item = items
+        .iter()
+        .find(|it| it["uri"].as_str().unwrap().contains("lib.rs"));
+    assert!(
+        err_item.is_some(),
+        "Must report diagnostic for closed lib.rs"
+    );
+    let report = err_item.unwrap();
+    assert!(
+        !report["items"].as_array().unwrap().is_empty(),
+        "Must contain syntax error for broken closed file"
+    );
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

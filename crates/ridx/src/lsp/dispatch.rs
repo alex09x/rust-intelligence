@@ -62,23 +62,19 @@ pub fn dispatch_lsp_message<W: Write>(
                     multi_root.open_from_folders(&folders);
                 }
                 if let Some(ref req_id) = id {
-                    let resp = json!({
-                        "jsonrpc": "2.0",
-                        "id": req_id,
-                        "result": capabilities
-                    });
-                    send_response(writer, &resp)?;
+                    send_response(
+                        writer,
+                        &json!({ "jsonrpc": "2.0", "id": req_id, "result": capabilities }),
+                    )?;
                 }
                 return Ok(true);
             }
             Err((code, message)) => {
                 if let Some(ref req_id) = id {
-                    let resp = json!({
-                        "jsonrpc": "2.0",
-                        "id": req_id,
-                        "error": { "code": code, "message": message }
-                    });
-                    let _ = send_response(writer, &resp);
+                    let _ = send_response(
+                        writer,
+                        &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": code, "message": message } }),
+                    );
                 }
                 return Ok(true);
             }
@@ -89,12 +85,10 @@ pub fn dispatch_lsp_message<W: Write>(
         "shutdown" => {
             let _ = lifecycle.handle_shutdown();
             if let Some(ref req_id) = id {
-                let resp = json!({
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "result": Value::Null
-                });
-                send_response(writer, &resp)?;
+                send_response(
+                    writer,
+                    &json!({ "jsonrpc": "2.0", "id": req_id, "result": Value::Null }),
+                )?;
             }
             return Ok(true);
         }
@@ -166,7 +160,9 @@ pub fn dispatch_lsp_message<W: Write>(
                     overlay_mgr.rename(&uri_to_path(old_uri), new_uri, &uri_to_path(new_uri));
                 }
             }
-            sync_all_open_overlays(multi_root, overlay_mgr);
+            for ws in multi_root.all_workspaces_mut() {
+                sync_reloaded_index(ws, overlay_mgr);
+            }
             return Ok(true);
         }
 
@@ -177,7 +173,9 @@ pub fn dispatch_lsp_message<W: Write>(
                     overlay_mgr.close(&uri_to_path(uri));
                 }
             }
-            sync_all_open_overlays(multi_root, overlay_mgr);
+            for ws in multi_root.all_workspaces_mut() {
+                sync_reloaded_index(ws, overlay_mgr);
+            }
             return Ok(true);
         }
 
@@ -234,14 +232,20 @@ pub fn dispatch_lsp_message<W: Write>(
             handle_prepare_call_hierarchy(&msg, ws, overlay_mgr, &mut conv)
         }
         "callHierarchy/incomingCalls" => {
-            let file = uri_to_path(msg["params"]["item"]["uri"].as_str().unwrap_or(""));
-            let ws = multi_root.find_workspace_for_path(Path::new(&file));
-            handle_call_hierarchy_incoming_calls(&msg, ws, &mut conv)
+            let f = uri_to_path(msg["params"]["item"]["uri"].as_str().unwrap_or(""));
+            handle_call_hierarchy_incoming_calls(
+                &msg,
+                multi_root.find_workspace_for_path(Path::new(&f)),
+                &mut conv,
+            )
         }
         "callHierarchy/outgoingCalls" => {
-            let file = uri_to_path(msg["params"]["item"]["uri"].as_str().unwrap_or(""));
-            let ws = multi_root.find_workspace_for_path(Path::new(&file));
-            handle_call_hierarchy_outgoing_calls(&msg, ws, &mut conv)
+            let f = uri_to_path(msg["params"]["item"]["uri"].as_str().unwrap_or(""));
+            handle_call_hierarchy_outgoing_calls(
+                &msg,
+                multi_root.find_workspace_for_path(Path::new(&f)),
+                &mut conv,
+            )
         }
         "textDocument/prepareTypeHierarchy" => {
             let ws = doc_ws(&msg, multi_root);
@@ -265,7 +269,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/codeLens" => handle_code_lens(&msg, overlay_mgr),
         "codeLens/resolve" => handle_code_lens_resolve(&msg),
         "textDocument/diagnostic" => handle_diagnostic(&msg, overlay_mgr),
-        "workspace/diagnostic" => handle_workspace_diagnostic(&msg, overlay_mgr),
+        "workspace/diagnostic" => handle_workspace_diagnostic(&msg, overlay_mgr, multi_root),
         "textDocument/moniker" => {
             let ws = doc_ws(&msg, multi_root);
             handle_moniker(&msg, ws, overlay_mgr, &mut conv)
@@ -289,7 +293,26 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/onTypeFormatting" => handle_on_type_formatting(&msg, overlay_mgr),
         "textDocument/codeAction" => handle_code_action(&msg, overlay_mgr),
         "codeAction/resolve" => handle_code_action_resolve(&msg),
-        "workspace/executeCommand" => handle_execute_command(&msg, overlay_mgr),
+        "workspace/executeCommand" => {
+            let res = handle_execute_command(&msg, overlay_mgr);
+            if msg["params"]["command"].as_str() == Some("ridx.applyEdits")
+                && res
+                    .get("applied")
+                    .and_then(|a| a.as_bool())
+                    .unwrap_or(false)
+            {
+                if let Some(edit) = res.get("edit") {
+                    let apply_req = json!({
+                        "jsonrpc": "2.0",
+                        "id": 9999,
+                        "method": "workspace/applyEdit",
+                        "params": { "label": "Apply refactoring edits", "edit": edit }
+                    });
+                    let _ = send_response(writer, &apply_req);
+                }
+            }
+            res
+        }
 
         _ => {
             if let Some(ref req_id) = id {
@@ -313,12 +336,10 @@ pub fn dispatch_lsp_message<W: Write>(
             });
             send_response(writer, &resp)?;
         } else {
-            let resp = json!({
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": result
-            });
-            send_response(writer, &resp)?;
+            send_response(
+                writer,
+                &json!({ "jsonrpc": "2.0", "id": req_id, "result": result }),
+            )?;
         }
     }
 
@@ -332,15 +353,6 @@ fn doc_ws<'a>(msg: &Value, multi_root: &'a MultiRootWorkspace) -> Option<&'a Wor
     multi_root.find_workspace_for_path(Path::new(&file))
 }
 
-fn sync_all_open_overlays(
-    multi_root: &mut MultiRootWorkspace,
-    overlay_mgr: &mut crate::overlay::OverlayManager,
-) {
-    for ws in multi_root.all_workspaces_mut() {
-        sync_reloaded_index(ws, overlay_mgr);
-    }
-}
-
 fn check_lifecycle_and_cancel<W: Write>(
     method: &str,
     id: &Option<Value>,
@@ -349,34 +361,29 @@ fn check_lifecycle_and_cancel<W: Write>(
     writer: &mut W,
 ) -> Result<Option<bool>, io::Error> {
     if method == "exit" {
-        return if lifecycle.handle_exit().is_ok() {
-            Ok(Some(false))
-        } else {
-            Err(io::Error::other(
-                "exit notification received before shutdown",
-            ))
-        };
+        return lifecycle
+            .handle_exit()
+            .map(|_| Some(false))
+            .map_err(|_| io::Error::other("exit notification received before shutdown"));
     }
+    let req_id = match id {
+        Some(r) => r,
+        None => return Ok(None),
+    };
     if lifecycle.is_shutdown() {
-        if let Some(ref req_id) = id {
-            let resp = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32600, "message": "Server is shutting down" } });
-            send_response(writer, &resp)?;
-        }
+        let resp = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32600, "message": "Server is shutting down" } });
+        send_response(writer, &resp)?;
         return Ok(Some(true));
     }
     if !lifecycle.is_initialized() && method != "initialize" {
-        if let Some(ref req_id) = id {
-            let resp = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32002, "message": "Server not initialized" } });
-            send_response(writer, &resp)?;
-        }
+        let resp = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32002, "message": "Server not initialized" } });
+        send_response(writer, &resp)?;
         return Ok(Some(true));
     }
-    if let Some(ref req_id) = id {
-        if cancelled_requests.lock().unwrap().remove(req_id) {
-            let resp = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32800, "message": "Request cancelled" } });
-            let _ = send_response(writer, &resp);
-            return Ok(Some(true));
-        }
+    if cancelled_requests.lock().unwrap().remove(req_id) {
+        let resp = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32800, "message": "Request cancelled" } });
+        let _ = send_response(writer, &resp);
+        return Ok(Some(true));
     }
     Ok(None)
 }

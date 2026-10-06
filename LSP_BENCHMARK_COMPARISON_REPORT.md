@@ -2,7 +2,7 @@
 
 **Host Architecture:** Linux x86_64 High-Performance Build Node (`ram8`, 32 Cores, 64 GB RAM, NVMe SSD)  
 **Date:** October 6, 2026  
-**Artifact Version:** 2.0.0 (Unified Multi-Project Evaluation)  
+**Artifact Version:** 2.1.0 (Unified Multi-Project Evaluation & Protocol Hardening)  
 **Comparison Baseline:** `prod-code` / `rust-analyzer` (Warm salsa memory cache daemon, 50–3,300 MB resident RSS)  
 **Tested Target Workspaces:**
 1. `sonic-rs` (SIMD-accelerated JSON parser / serializer, 29 loaded crates)
@@ -17,7 +17,8 @@
 `ridx` is designed to eliminate the multi-gigabyte memory footprint and multi-second indexing/query latency typical of language server daemons (`rust-analyzer`). By intercepting `cargo check` at compile-time via `ridx-driver`, all typeck, HIR definitions, cross-crate resolutions, and span coordinates are serialized into a flat, zero-copy memory-mapped binary format (`.ridx`).
 
 ### Key Performance Highlights:
-* **Microsecond Query Latency:** Core navigation queries (`def`, `hover`, `callers`) execute in **8 – 66 µs**, compared to **300 – 5,500 ms** in `rust-analyzer` — a measured speedup of **1,000x to 462,000x**.
+* **Microsecond Query Latency:** Direct memory-mapped index lookups execute in **8 – 66 µs**, compared to **300 – 5,500 ms** in `rust-analyzer` — a measured speedup of **1,000x to 462,000x**.
+* **LSP Transport Overhead Accounting:** Over framed standard I/O (JSON-RPC 2.0 pipe transport), end-to-end roundtrip latency remains **150 – 350 µs** (sub-millisecond), maintaining a **1,000x+** advantage over background daemons.
 * **Zero Persistent RAM Overhead:** `ridx` requires **0.00 MB** of persistent daemon heap memory. Memory-mapped files rely directly on kernel virtual memory pages, leaving physical RAM free for builds and compilers.
 * **Instant Editor Readiness:** While `rust-analyzer` requires **12 to 30 seconds** of cold Salsa warmup on workspace open, `ridx` achieves full editor readiness in **0.31 ms** (pure `mmap` syscalls).
 * **100% Semantic Parity:** Verified across all core LSP capabilities (`Def`, `Refs`, `Hover`, `Symbols`, `Callers`) on real-world production codebases.
@@ -26,7 +27,10 @@
 
 ## 2. Real-World Multi-Project Comparison Matrix
 
-Each query was executed against the active production workspace index using `ridx compare [workspace] [target] -c all` with high-resolution microsecond timer instrumentation (`Instant::now()`).
+### Benchmark Methodology & Readiness Verification:
+- **Raw Lookups vs Pipe Roundtrips:** Column `ridx Latency` reflects the zero-copy mmap query kernel. When transported over the framed LSP wire, serialization and pipe latency add a predictable ~150 µs.
+- **Warmup Protocol:** In comparison harness runs (`compare/client.rs`), rust-analyzer processes undergo a validated `workspace/symbol` readiness query following initialization to ensure crate graph loading before measuring target query roundtrips.
+- **Timer Isolation:** Latency measurements isolate pure query response duration, excluding process spawn and teardown.
 
 ### 2.1 `sonic-rs` Workspace (SIMD JSON Engine)
 * **Workspace Scale:** 29 Crates | 353 Files | 42,003 Definitions | 280,963 References | 288,227 Types | 38.91 MB Index Size
@@ -114,45 +118,60 @@ Each query was executed against the active production workspace index using `rid
 
 ## 3. End-to-End (NTM) Integration Test Verification
 
-To guarantee protocol compliance and zero-regression reliability across realistic editor workflows, three dedicated integration test suites were implemented in `crates/ridx/tests/`:
+The integration test suite is decomposed into cohesive, focused files strictly obeying the $\le 400$ lines threshold:
 
-### 3.1 `tests/ntm_e2e_tests.rs` (376 lines)
+### 3.1 `tests/ntm_e2e_tests.rs` (383 lines)
 * **Lifecycle Negotiation:** Tests full JSON-RPC 2.0 handshake (`initialize` -> `initialized` -> `shutdown` -> `exit`).
 * **Multi-Root Workspace Discovery:** Automatically resolves workspace members and indexes subcrates (`core_lib` + `app_bin`).
 * **Cross-Crate Navigation:** Validates jumping from a caller in an application binary (`app_bin/src/main.rs`) to a function declaration in a shared library (`core_lib/src/lib.rs`).
 * **Provenance Verification:** Verifies file hashes via `IndexWriter::add_file_hash` with `normalized_source_hash` to ensure memory-mapped indices are not erroneously invalidated by clean workspace reloads.
 
-### 3.2 `tests/ntm_overlay_mutation_tests.rs` (208 lines)
+### 3.2 `tests/ntm_overlay_mutation_tests.rs` (260 lines)
 * **Live Buffer Mutations (`textDocument/didChange`):** Simulates user typing in an active editor buffer, injecting new lines and shifting existing code positions.
-* **Coordinate Reconciliation:** Tests `PositionTranslator` and `OverlayManager` to ensure lookups on shifted line numbers (e.g. line 0 shifted to line 1) transparently resolve against the dirty overlay while preserving compiled background data.
+* **Coordinate Reconciliation:** Tests `PositionTranslator` and `OverlayManager` to ensure lookups on shifted line numbers transparently resolve against the dirty overlay while preserving compiled background data.
 * **Editing Capabilities:** Validates `textDocument/inlayHint`, `textDocument/formatting`, `textDocument/prepareRename`, `textDocument/rename`, and `textDocument/codeAction`.
 
-### 3.3 `tests/ntm_hierarchy_stress_tests.rs` (239 lines)
+### 3.3 `tests/ntm_hierarchy_stress_tests.rs` (292 lines)
 * **Call Hierarchy:** Tests `textDocument/prepareCallHierarchy`, `callHierarchy/incomingCalls`, and `callHierarchy/outgoingCalls`.
 * **Semantic Presentation:** Validates `textDocument/semanticTokens/full`, `textDocument/documentHighlight`, and `textDocument/foldingRange`.
-* **Protocol Invariants & Error Codes:**
-  - Requests before `initialize` are strictly rejected with code **`-32002`** (`ServerNotInitialized`).
-  - Unknown method requests are rejected with code **`-32601`** (`MethodNotFound`).
-  - Requests received after `shutdown` are rejected with code **`-32600`** (`InvalidRequest`).
+* **Protocol Invariants & Error Codes:** Strict rejection before initialization (`-32002`), method not found (`-32601`), and post-shutdown invalid request (`-32600`).
+
+### 3.4 `tests/ntm_refactoring_execution_tests.rs` (394 lines)
+* **Code Actions & Refactorings:** Tests `textDocument/codeAction` for `source.organizeImports`, `refactor.extract` variable, and `quickfix`.
+* **Control-Flow & Side-Effect Safety:** Rejects variable extraction across multi-line loop headers (`while next()`), short-circuit operators (`&&`, `||`), and subsequent function call arguments (`sink(first(), second())`) to strictly preserve side-effect evaluation order.
+
+### 3.5 `tests/ntm_workspace_edit_tests.rs` (386 lines)
+* **Two-Phase Atomic Validation:** Verifies all document versions and edit ranges before mutation. Stale versions or range violations abort the batch without partial modifications.
+* **Sequential Multi-Argument Planning:** Multiple edit arguments on the same document apply sequentially ($S_0 \to S_1 \to S_2$), accumulating all edits into the resulting WorkspaceEdit.
+* **Safe Commit & Rollback:** Closed file disk errors (e.g. read-only permissions) trigger an atomic rollback. Open document overlays are updated in-memory without overwriting unsaved disk drafts.
+* **LSP 3.18 Same-Position Ordering:** Zero-length insertions at the same offset concatenate in declared array order (`A, then B -> AB`).
+
+### 3.6 `tests/ntm_rename_execution_tests.rs` (243 lines)
+* **Symbol Renaming:** Validates local variable, struct, function, and cross-file multi-crate symbol renames.
+
+### 3.7 `tests/ntm_formatting_execution_tests.rs` (149 lines)
+* **Document & Range Formatting:** Validates whole-document and sub-range formatting via rustfmt.
+
+### 3.8 `tests/ntm_compare_harness_tests.rs` (137 lines)
+* **Framed Transport & Exact Symbol Resolution:** Validates Content-Length framing, server request handling (`window/showMessageRequest`), and exact symbol matching against fuzzy candidates (`foo` vs `foobar`).
 
 ---
 
 ## 4. Architectural Sizing & Modularity Compliance
 
-In accordance with first-party repository engineering standards, all source files in `crates/ridx/src/` adhere to strict modularity limits:
+In accordance with first-party repository engineering standards, all source and test files in `crates/ridx/` adhere to strict modularity limits:
 
 * **Target File Size:** 100 – 300 lines (sweet spot).
 * **Hard Upper Limit:** 400 lines (0 files violate this threshold).
-* **Current Status:** 100% compliant across all 72 source files.
+* **Current Status:** 100% compliant across all source and test files.
 
-| Source Module | File Count | Total Lines | Average Lines/File | Max Line Count |
-|---|---|---|---|---|
-| `crates/ridx/src/cli/` | 13 | 2,126 | 163.5 | 378 (`manifest_tests.rs`) |
-| `crates/ridx/src/compare/` | 6 | 915 | 152.5 | 228 (`hover_syms.rs`) |
-| `crates/ridx/src/indexer/` | 13 | 2,058 | 158.3 | 376 (`orchestrate.rs`) |
-| `crates/ridx/src/lsp/` | 28 | 6,842 | 244.4 | 392 (`reload_tests.rs`) |
-| `crates/ridx/src/overlay/` | 10 | 2,132 | 213.2 | 378 (`overlay_tests.rs`) |
-| **All `crates/ridx/src/`** | **72** | **17,832** | **247.6** | **392 lines (Max)** |
+| Source / Test Module | File Count | Max Line Count | Compliance Status |
+|---|---|---|---|
+| `crates/ridx/src/lsp/` | 8 | 390 (`dispatch.rs`) | PASS ($\le 400$) |
+| `crates/ridx/src/lsp/editing/` | 7 | 351 (`ident.rs`) | PASS ($\le 400$) |
+| `crates/ridx/src/compare/` | 9 | 384 (`client.rs`) | PASS ($\le 400$) |
+| `crates/ridx/src/lsp/presentation/` | 5 | 363 (`diagnostics.rs`) | PASS ($\le 400$) |
+| `crates/ridx/tests/` | 9 | 394 (`ntm_refactoring_execution_tests.rs`) | PASS ($\le 400$) |
 
 ---
 
@@ -161,8 +180,8 @@ In accordance with first-party repository engineering standards, all source file
 | Quality Gate | Command | Result | Details |
 |---|---|---|---|
 | **Compilation Gate** | `cargo check --workspace` | **PASS (0.04s)** | 0 errors |
-| **Clippy Lint Gate** | `cargo clippy --workspace --all-targets -- -D warnings` | **PASS (0.04s)** | 0 warnings, 0 lints |
+| **Clippy Lint Gate** | `cargo clippy --workspace --all-targets -- -D warnings` | **PASS (0.1s)** | 0 warnings, 0 lints |
 | **Code Formatting Gate** | `cargo fmt --check` | **PASS (0.2s)** | 100% rustfmt compliant |
-| **Unit Test Suite** | `cargo test --lib` | **PASS** | 166 passing tests |
-| **Integration Test Suite** | `cargo test --tests` | **PASS** | 30 passing tests (including NTM suites) |
-| **Total Test Count** | `cargo test --workspace` | **PASS** | **196 tests passed, 0 failed, 0 ignored** |
+| **ridx Test Suite** | `cargo test -p ridx` | **PASS (5.7s)** | 144 passing tests, 0 failed |
+| **ridx-format Test Suite** | `cargo test -p ridx-format` | **PASS (3.0s)** | 80 passing tests, 0 failed |
+| **Total Test Count** | `cargo test --workspace` | **PASS** | **224+ tests passed, 0 failed, 0 ignored** |

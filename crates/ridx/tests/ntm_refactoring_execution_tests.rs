@@ -10,6 +10,7 @@
 
 use ridx::lsp::editing::actions::handle_code_action;
 use ridx::lsp::presentation::workspace_diag::handle_workspace_diagnostic;
+use ridx::lsp::workspace::MultiRootWorkspace;
 use ridx::overlay::OverlayManager;
 use serde_json::json;
 use std::fs;
@@ -306,7 +307,8 @@ fn test_workspace_diagnostics_reports_syntax_errors_in_open_overlays() {
         }
     });
 
-    let res = handle_workspace_diagnostic(&req, &overlay_mgr);
+    let multi_root = MultiRootWorkspace::new();
+    let res = handle_workspace_diagnostic(&req, &overlay_mgr, &multi_root);
     let items = res["items"].as_array().expect("items array");
     assert!(
         !items.is_empty(),
@@ -325,45 +327,47 @@ fn test_workspace_diagnostics_reports_syntax_errors_in_open_overlays() {
         .contains("unclosed delimiter"));
 }
 
+fn assert_extract_rejected(code: &str, line: u64, start: u64, end: u64, msg: &str) {
+    let mut overlay_mgr = OverlayManager::new();
+    overlay_mgr.open_document("file:///tmp/t.rs", "/tmp/t.rs", 1, code.to_string());
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": "file:///tmp/t.rs" },
+            "range": { "start": { "line": line, "character": start }, "end": { "line": line, "character": end } },
+            "context": { "only": ["refactor.extract"], "diagnostics": [] }
+        }
+    });
+    assert!(
+        handle_code_action(&req, &overlay_mgr)
+            .as_array()
+            .unwrap()
+            .is_empty(),
+        "{msg}"
+    );
+}
+
 #[test]
 fn test_extract_variable_multiline_short_circuit_and_loop_rejected() {
-    let mut overlay_mgr = OverlayManager::new();
-    let uri_loop = "file:///tmp/extract_loop.rs";
-    let file_loop = "/tmp/extract_loop.rs";
-    let loop_code = "fn f(){\n    while next() {\n        work();\n    }\n}";
-    overlay_mgr.open_document(uri_loop, file_loop, 1, loop_code.to_string());
-
-    let req_loop = json!({
-        "params": {
-            "textDocument": { "uri": uri_loop },
-            "range": { "start": { "line": 1, "character": 10 }, "end": { "line": 1, "character": 16 } },
-            "context": { "only": ["refactor.extract"], "diagnostics": [] }
-        }
-    });
-    let actions_loop = handle_code_action(&req_loop, &overlay_mgr);
-    let act_loop_arr = actions_loop.as_array().expect("actions");
-    assert!(
-        act_loop_arr.is_empty(),
-        "Extract variable must NOT be proposed inside loop condition (while next())"
+    assert_extract_rejected(
+        "fn f(){\n    while next() {\n        work();\n    }\n}",
+        1,
+        10,
+        16,
+        "Loop condition must not allow extract variable",
     );
-
-    let uri_sc = "file:///tmp/extract_multi_sc.rs";
-    let file_sc = "/tmp/extract_multi_sc.rs";
-    let sc_code = "fn f(){\n    let ok = false &&\n        side_effect();\n}";
-    overlay_mgr.open_document(uri_sc, file_sc, 1, sc_code.to_string());
-
-    let req_sc = json!({
-        "params": {
-            "textDocument": { "uri": uri_sc },
-            "range": { "start": { "line": 2, "character": 8 }, "end": { "line": 2, "character": 21 } },
-            "context": { "only": ["refactor.extract"], "diagnostics": [] }
-        }
-    });
-    let actions_sc = handle_code_action(&req_sc, &overlay_mgr);
-    let act_sc_arr = actions_sc.as_array().expect("actions");
-    assert!(
-        act_sc_arr.is_empty(),
-        "Extract variable must NOT be proposed for multiline short-circuit operand"
+    assert_extract_rejected(
+        "fn f(){\n    let ok = false &&\n        side_effect();\n}",
+        2,
+        8,
+        21,
+        "Short-circuit rhs must not allow extract variable",
+    );
+    assert_extract_rejected(
+        "fn f(){\n    sink(first(), second());\n}",
+        1,
+        18,
+        26,
+        "Extract variable must NOT be proposed for second() when preceded by first()",
     );
 }
 
@@ -386,10 +390,7 @@ fn test_review_v4651_inline_completion_unicode_edit() {
     let items = res["items"].as_array().expect("items array");
     assert!(!items.is_empty());
     let range = &items[0]["range"];
-    assert_eq!(
-        range["start"]["character"], 8,
-        "Must start at start of 'привет', not earlier"
-    );
+    assert_eq!(range["start"]["character"], 8, "start of 'привет'");
     assert_eq!(range["end"]["character"], 14);
     assert_eq!(items[0]["insertText"], "привет");
     let _ = fs::remove_file(temp_file);

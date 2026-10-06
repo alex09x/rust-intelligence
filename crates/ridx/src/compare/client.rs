@@ -74,10 +74,13 @@ pub fn execute_pinned_ra_lsp(
         "jsonrpc": "2.0",
         "id": 99,
         "method": "workspace/symbol",
-        "params": { "query": "" }
+        "params": { "query": target }
     });
-    let _ = send_lsp_msg(&mut stdin, &warmup_req);
-    let _ = read_lsp_response_with_writer(&mut reader, &mut stdin, 99);
+    send_lsp_msg(&mut stdin, &warmup_req).ok()?;
+    let warmup_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, 99)?;
+    if warmup_resp.get("error").is_some() {
+        return None;
+    }
 
     // 3. Resolve target location
     let resolved_loc: Option<(String, u32, u32)> = if let Some((f, l, c)) = loc_opt {
@@ -105,7 +108,7 @@ pub fn execute_pinned_ra_lsp(
         });
         send_lsp_msg(&mut stdin, &sym_req).ok()?;
         let sym_resp = read_lsp_response_with_writer(&mut reader, &mut stdin, 10)?;
-        extract_symbol_location(&sym_resp)
+        extract_symbol_location(&sym_resp, target)
     } else {
         None
     };
@@ -257,15 +260,65 @@ pub fn execute_pinned_ra_lsp(
     parse_lsp_result(&resp, latency, rss)
 }
 
-fn extract_symbol_location(resp: &Value) -> Option<(String, u32, u32)> {
+pub fn extract_symbol_location(resp: &Value, target: &str) -> Option<(String, u32, u32)> {
     let arr = resp.get("result")?.as_array()?;
-    let first = arr.first()?;
-    let loc = first.get("location").unwrap_or(first);
+    let target_name = target.rsplit("::").next().unwrap_or(target);
+    let target_container = target.strip_suffix(&format!("::{target_name}"));
+
+    let exact_match = arr.iter().find(|item| {
+        let name = item.get("name").and_then(|n| n.as_str()).unwrap_or("");
+        if name == target {
+            return true;
+        }
+        if name == target_name {
+            if let Some(tc) = target_container {
+                let container = item
+                    .get("containerName")
+                    .and_then(|c| c.as_str())
+                    .unwrap_or("");
+                return container == tc || container.ends_with(tc);
+            }
+            return true;
+        }
+        false
+    });
+
+    let item = exact_match?;
+    let loc = item.get("location").unwrap_or(item);
     let uri = loc.get("uri")?.as_str()?.to_string();
     let range = loc.get("range")?;
     let line = range.get("start")?.get("line")?.as_u64()? as u32;
     let col = range.get("start")?.get("character")?.as_u64()? as u32;
     Some((uri, line, col))
+}
+
+fn extract_target_span(item: &Value) -> String {
+    let uri = item
+        .get("uri")
+        .or_else(|| item.get("targetUri"))
+        .or_else(|| item.get("location").and_then(|l| l.get("uri")))
+        .and_then(|u| u.as_str())
+        .unwrap_or("");
+    let range = item
+        .get("range")
+        .or_else(|| item.get("targetRange"))
+        .or_else(|| item.get("location").and_then(|l| l.get("range")));
+    let line = range
+        .and_then(|r| r.get("start"))
+        .and_then(|s| s.get("line"))
+        .and_then(|l| l.as_u64())
+        .unwrap_or(0);
+    let col = range
+        .and_then(|r| r.get("start"))
+        .and_then(|s| s.get("character"))
+        .and_then(|c| c.as_u64())
+        .unwrap_or(0);
+    format!(
+        "{}:{}:{}",
+        uri.trim_start_matches("file://"),
+        line + 1,
+        col + 1
+    )
 }
 
 fn parse_lsp_result(resp: &Value, latency: u128, rss: u64) -> Option<ExternalLspResult> {
@@ -292,32 +345,7 @@ fn parse_lsp_result(resp: &Value, latency: u128, rss: u64) -> Option<ExternalLsp
         } else {
             let first = &arr[0];
             let item = first.get("from").unwrap_or(first);
-            let uri = item
-                .get("uri")
-                .or_else(|| item.get("targetUri"))
-                .or_else(|| item.get("location").and_then(|l| l.get("uri")))
-                .and_then(|u| u.as_str())
-                .unwrap_or("");
-            let range = item
-                .get("range")
-                .or_else(|| item.get("targetRange"))
-                .or_else(|| item.get("location").and_then(|l| l.get("range")));
-            let line = range
-                .and_then(|r| r.get("start"))
-                .and_then(|s| s.get("line"))
-                .and_then(|l| l.as_u64())
-                .unwrap_or(0);
-            let col = range
-                .and_then(|r| r.get("start"))
-                .and_then(|s| s.get("character"))
-                .and_then(|c| c.as_u64())
-                .unwrap_or(0);
-            let span = format!(
-                "{}:{}:{}",
-                uri.trim_start_matches("file://"),
-                line + 1,
-                col + 1
-            );
+            let span = extract_target_span(item);
             Some(ExternalLspResult {
                 found: true,
                 span,
@@ -343,32 +371,7 @@ fn parse_lsp_result(resp: &Value, latency: u128, rss: u64) -> Option<ExternalLsp
                 rss_bytes: rss,
             })
         } else {
-            let uri = obj
-                .get("uri")
-                .or_else(|| obj.get("targetUri"))
-                .or_else(|| obj.get("location").and_then(|l| l.get("uri")))
-                .and_then(|u| u.as_str())
-                .unwrap_or("");
-            let range = obj
-                .get("range")
-                .or_else(|| obj.get("targetRange"))
-                .or_else(|| obj.get("location").and_then(|l| l.get("range")));
-            let line = range
-                .and_then(|r| r.get("start"))
-                .and_then(|s| s.get("line"))
-                .and_then(|l| l.as_u64())
-                .unwrap_or(0);
-            let col = range
-                .and_then(|r| r.get("start"))
-                .and_then(|s| s.get("character"))
-                .and_then(|c| c.as_u64())
-                .unwrap_or(0);
-            let span = format!(
-                "{}:{}:{}",
-                uri.trim_start_matches("file://"),
-                line + 1,
-                col + 1
-            );
+            let span = extract_target_span(val);
             Some(ExternalLspResult {
                 found: true,
                 span,
