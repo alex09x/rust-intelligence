@@ -12,7 +12,6 @@
 
 use super::WorkspaceCrateEntry;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::path::PathBuf;
 
 /// Builds direct dependency and reverse-dependency (rdep) graphs among workspace crates.
 pub fn build_workspace_dependency_graphs(

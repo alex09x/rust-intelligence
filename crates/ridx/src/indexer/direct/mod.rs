@@ -125,7 +125,7 @@ pub fn try_direct_crate_indexing(
     }
 
     // Verify build configuration (Cargo.toml, Cargo.lock, build.rs, options) is unchanged
-    verify_build_config_unchanged(work_dir, base_out_dir, opts, &workspace_crates)?;
+    verify_build_config_unchanged(work_dir, base_out_dir, opts)?;
 
     // Identify all modified files and tracked files in the workspace
     let mut modified_files = HashSet::new();
@@ -149,11 +149,22 @@ pub fn try_direct_crate_indexing(
         }
     }
 
-    // Check for untracked .rs files in crate source directories
+    // Also include tracked workspace configuration files (Cargo.toml, build.rs, Cargo.lock, etc.) in all_checked_files
+    let config_hashes = config::compute_workspace_config_hashes(work_dir);
+    for rel_path in config_hashes.keys() {
+        all_checked_files.insert(rel_path.clone());
+        let full = work_dir.join(rel_path);
+        all_checked_files.insert(full.display().to_string());
+        if let Ok(canon) = full.canonicalize() {
+            all_checked_files.insert(canon.display().to_string());
+        }
+    }
+
+    // Check for untracked .rs files in crate target directories (src, tests, benches, examples, build.rs)
     for (_, _, env_vars, _, _) in &workspace_crates {
         if let Some(mdir_str) = env_vars.get("CARGO_MANIFEST_DIR") {
-            let src_dir = Path::new(mdir_str).join("src");
-            if has_untracked_rs_files(&src_dir, &all_checked_files) {
+            let crate_dir = Path::new(mdir_str);
+            if has_untracked_rs_files(crate_dir, &all_checked_files) {
                 return None;
             }
         }
@@ -189,13 +200,45 @@ pub fn try_direct_crate_indexing(
         }
     }
 
-    // If more than 3 distinct workspace crates changed, let Cargo orchestrate
-    if affected_crate_names.len() > 3 {
+    // Proc-macro crates produce dynamic libraries needed at compile time by downstream crates.
+    // Direct indexing compiles with --emit=metadata which only produces .rmeta, causing downstream
+    // compilation to fail if a proc-macro was modified or recompiled.
+    for (crate_name, args, _, _, _) in &workspace_crates {
+        let is_affected = affected_crate_names.contains(crate_name)
+            || affected_crate_names
+                .iter()
+                .any(|a| a.replace('-', "_") == crate_name.replace('-', "_"));
+        if is_affected {
+            let is_proc_macro = args
+                .windows(2)
+                .any(|w| w[0] == "--crate-type" && w[1] == "proc-macro")
+                || args.iter().any(|a| a == "--crate-type=proc-macro");
+            if is_proc_macro {
+                eprintln!(
+                    "[ridx-direct] fallback to Cargo: affected crate '{crate_name}' is a proc-macro"
+                );
+                return None;
+            }
+        }
+    }
+
+    // If more than 10 distinct workspace crates changed, let Cargo orchestrate
+    if affected_crate_names.len() > 10 {
+        eprintln!(
+            "[ridx-direct] fallback to Cargo: too many affected crates ({} > 10)",
+            affected_crate_names.len()
+        );
         return None;
     }
 
     // Topological sort of affected crates (dependencies before dependents)
-    let sorted_names = topo_sort_crates(&affected_crate_names, &dependencies_of)?;
+    let sorted_names = match topo_sort_crates(&affected_crate_names, &dependencies_of) {
+        Some(s) => s,
+        None => {
+            eprintln!("[ridx-direct] fallback to Cargo: cyclic or unresolvable dependencies among affected crates");
+            return None;
+        }
+    };
 
     // Map sorted names back to workspace crate data
     let crate_map: HashMap<String, _> = workspace_crates
@@ -215,7 +258,12 @@ pub fn try_direct_crate_indexing(
     // Execute direct indexing on changed crates in topological order
     for crate_name in &sorted_names {
         let (args, env_vars, _, _) = crate_map.get(crate_name)?;
-        let sanitized_args = sanitize_compiler_args_for_direct(args, &direct_deps, &direct_incr);
+        let sanitized_args = sanitize_compiler_args_for_direct(
+            args,
+            &direct_deps,
+            &direct_incr,
+            &affected_crate_names,
+        );
 
         let mut cmd = Command::new(driver_bin);
         if sanitized_args.is_empty() {

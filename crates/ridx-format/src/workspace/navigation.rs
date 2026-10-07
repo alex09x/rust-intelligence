@@ -23,7 +23,11 @@ impl WorkspaceIndex {
         for (i, reader) in self.readers.iter().enumerate() {
             let prefix = format!("{}::", reader.crate_name());
             if path.starts_with(&prefix) {
-                if let Some(def) = reader.find_definition_by_path(path) {
+                let sub = &path[prefix.len()..];
+                if let Some(def) = reader
+                    .find_definition_by_path(path)
+                    .or_else(|| reader.find_definition_by_path(sub))
+                {
                     let span = def.span();
                     return Some(ResolvedDefinition {
                         name: reader.get_str(def.name_offset()),
@@ -53,7 +57,12 @@ impl WorkspaceIndex {
 
         // General search across all crates
         for (i, reader) in self.readers.iter().enumerate() {
-            if let Some(def) = reader.find_definition_by_path(path) {
+            let prefix = format!("{}::", reader.crate_name());
+            let sub = path.strip_prefix(&prefix).unwrap_or(path);
+            if let Some(def) = reader
+                .find_definition_by_path(path)
+                .or_else(|| reader.find_definition_by_path(sub))
+            {
                 let span = def.span();
                 return Some(ResolvedDefinition {
                     name: reader.get_str(def.name_offset()),

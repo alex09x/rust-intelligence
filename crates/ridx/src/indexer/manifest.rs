@@ -32,6 +32,9 @@ pub struct ManifestParams<'a> {
 }
 
 pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
+    let config_hashes =
+        crate::indexer::direct::config::compute_workspace_config_hashes(params.work_dir);
+
     let manifest_data = serde_json::json!({
         "version": "2.0",
         "format_version": ridx_format::CURRENT_FORMAT_VERSION,
@@ -47,6 +50,7 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
         "no_default_features": params.no_default_features,
         "all_features": params.all_features,
         "package_filter": params.package,
+        "config_hashes": config_hashes,
         "timestamp_epoch_secs": std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())

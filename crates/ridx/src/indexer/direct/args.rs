@@ -10,6 +10,7 @@
 
 //! Compiler argument sanitization and output directory isolation for direct indexing.
 
+use std::collections::HashSet;
 use std::path::Path;
 
 /// Rewrites compiler arguments to prevent mutating Cargo's build directory:
@@ -18,10 +19,12 @@ use std::path::Path;
 /// - Replaces `-C incremental=...` with `direct_incr_dir`
 /// - Replaces `--emit=...` with `--emit=metadata`
 /// - Prepends `-L dependency=<direct_deps_dir>` so rustc discovers newly emitted workspace .rmeta
+/// - Rewrites `--extern <crate>=<path>` for crates in `recompiled_crates` to point to `<direct_deps_dir>/<file_name>`
 pub fn sanitize_compiler_args_for_direct(
     args: &[String],
     direct_deps_dir: &Path,
     direct_incr_dir: &Path,
+    recompiled_crates: &HashSet<String>,
 ) -> Vec<String> {
     let mut new_args = Vec::with_capacity(args.len() + 4);
     let mut emit_replaced = false;
@@ -84,6 +87,20 @@ pub fn sanitize_compiler_args_for_direct(
             continue;
         }
 
+        if arg == "--extern" && i + 1 < args.len() {
+            let next_arg = &args[i + 1];
+            let rewritten = rewrite_extern_arg(next_arg, direct_deps_dir, recompiled_crates);
+            new_args.push("--extern".to_string());
+            new_args.push(rewritten);
+            i += 2;
+            continue;
+        } else if let Some(rest) = arg.strip_prefix("--extern=") {
+            let rewritten = rewrite_extern_arg(rest, direct_deps_dir, recompiled_crates);
+            new_args.push(format!("--extern={rewritten}"));
+            i += 1;
+            continue;
+        }
+
         new_args.push(arg.clone());
         i += 1;
     }
@@ -98,6 +115,42 @@ pub fn sanitize_compiler_args_for_direct(
     }
 
     new_args
+}
+
+fn rewrite_extern_arg(
+    extern_spec: &str,
+    direct_deps_dir: &Path,
+    recompiled_crates: &HashSet<String>,
+) -> String {
+    if let Some((prefix, cpath)) = extern_spec.split_once('=') {
+        let cname = prefix.rsplit(':').next().unwrap_or(prefix);
+        let cname_norm = cname.replace('-', "_");
+        let p = Path::new(cpath);
+        if let Some(file_name_os) = p.file_name() {
+            let file_name = file_name_os.to_string_lossy();
+            let direct_candidate = direct_deps_dir.join(&*file_name);
+
+            let is_recompiled = recompiled_crates.contains(cname)
+                || recompiled_crates.contains(prefix)
+                || recompiled_crates
+                    .iter()
+                    .any(|r| r.replace('-', "_") == cname_norm);
+
+            let should_rewrite = is_recompiled || direct_candidate.is_file();
+
+            if should_rewrite {
+                let target_path = if direct_candidate.is_file() {
+                    direct_candidate
+                } else if let Some(base) = file_name.strip_suffix(".rlib") {
+                    direct_deps_dir.join(format!("{base}.rmeta"))
+                } else {
+                    direct_candidate
+                };
+                return format!("{prefix}={}", target_path.display());
+            }
+        }
+    }
+    extern_spec.to_string()
 }
 
 #[cfg(test)]
@@ -117,8 +170,9 @@ mod tests {
         ];
         let deps = Path::new("/target/ridx-direct/deps");
         let incr = Path::new("/target/ridx-direct/incremental");
+        let recompiled = HashSet::new();
 
-        let sanitized = sanitize_compiler_args_for_direct(&original, deps, incr);
+        let sanitized = sanitize_compiler_args_for_direct(&original, deps, incr, &recompiled);
 
         assert_eq!(sanitized[0], "-L");
         assert_eq!(sanitized[1], "dependency=/target/ridx-direct/deps");
@@ -129,5 +183,54 @@ mod tests {
         assert!(!sanitized.contains(&"incremental=/target/debug/incremental".to_string()));
         assert!(sanitized.contains(&"--emit=metadata".to_string()));
         assert!(!sanitized.contains(&"--emit=dep-info,link".to_string()));
+    }
+
+    #[test]
+    fn test_sanitize_compiler_args_rewrites_recompiled_externs() {
+        let original = vec![
+            "rustc".to_string(),
+            "src/main.rs".to_string(),
+            "--extern".to_string(),
+            "serde=/old/target/debug/deps/libserde-123.rmeta".to_string(),
+            "--extern=syn=/old/target/debug/deps/libsyn-456.rmeta".to_string(),
+            "--extern".to_string(),
+            "noprelude:serde_core=/old/target/debug/deps/libserde_core-789.rmeta".to_string(),
+        ];
+        let deps = Path::new("/target/ridx-direct/deps");
+        let incr = Path::new("/target/ridx-direct/incremental");
+        let mut recompiled = HashSet::new();
+        recompiled.insert("serde".to_string());
+        recompiled.insert("serde_core".to_string());
+
+        let sanitized = sanitize_compiler_args_for_direct(&original, deps, incr, &recompiled);
+
+        assert!(
+            sanitized.contains(&"serde=/target/ridx-direct/deps/libserde-123.rmeta".to_string())
+        );
+        assert!(
+            sanitized.contains(&"--extern=syn=/old/target/debug/deps/libsyn-456.rmeta".to_string())
+        );
+        assert!(sanitized.contains(
+            &"noprelude:serde_core=/target/ridx-direct/deps/libserde_core-789.rmeta".to_string()
+        ));
+    }
+
+    #[test]
+    fn test_sanitize_compiler_args_rewrites_rlib_to_rmeta_and_handles_dashes() {
+        let original = vec![
+            "rustc".to_string(),
+            "src/main.rs".to_string(),
+            "--extern".to_string(),
+            "my_crate=/old/target/debug/deps/libmy_crate-abc.rlib".to_string(),
+        ];
+        let deps = Path::new("/target/ridx-direct/deps");
+        let incr = Path::new("/target/ridx-direct/incremental");
+        let mut recompiled = HashSet::new();
+        recompiled.insert("my-crate".to_string());
+
+        let sanitized = sanitize_compiler_args_for_direct(&original, deps, incr, &recompiled);
+
+        assert!(sanitized
+            .contains(&"my_crate=/target/ridx-direct/deps/libmy_crate-abc.rmeta".to_string()));
     }
 }
