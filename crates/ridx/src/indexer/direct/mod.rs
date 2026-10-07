@@ -269,11 +269,17 @@ pub fn try_direct_crate_indexing(
 
     let mut recompiled_crates = HashSet::new();
     for tid in &affected_target_ids {
-        recompiled_crates.insert(tid.clone());
-        if let Some((name, _, env, ..)) = crate_map.get(tid) {
-            recompiled_crates.insert(name.clone());
-            if let Some(pkg) = env.get("CARGO_PKG_NAME") {
-                recompiled_crates.insert(pkg.clone());
+        if let Some((name, args, env, ..)) = crate_map.get(tid) {
+            let is_lib = !args.contains(&"--test".to_string());
+            if is_lib {
+                recompiled_crates.insert(tid.clone());
+                recompiled_crates.insert(name.clone());
+                let norm = name.replace('-', "_");
+                recompiled_crates.insert(norm);
+                if let Some(pkg) = env.get("CARGO_PKG_NAME") {
+                    recompiled_crates.insert(pkg.clone());
+                    recompiled_crates.insert(pkg.replace('-', "_"));
+                }
             }
         }
     }
