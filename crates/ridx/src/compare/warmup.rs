@@ -89,7 +89,7 @@ pub fn wait_for_server_readiness<R: BufRead, W: Write>(
     t_warmup_start.elapsed().as_micros()
 }
 
-fn wait_for_rust_analyzer_quiescent<R: BufRead, W: Write>(
+pub fn wait_for_rust_analyzer_quiescent<R: BufRead, W: Write>(
     reader: &mut R,
     writer: &mut W,
     timeout: Duration,

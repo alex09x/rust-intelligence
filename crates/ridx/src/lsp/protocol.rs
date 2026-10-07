@@ -134,7 +134,7 @@ pub fn path_to_uri(file: &str) -> String {
 /// and drops all buffers when the request completes to maintain near-zero resident memory.
 #[derive(Default)]
 pub struct PositionConverter {
-    pub(crate) cache: HashMap<String, Vec<String>>,
+    pub(crate) cache: HashMap<String, (String, Vec<usize>)>,
 }
 
 impl PositionConverter {
@@ -144,19 +144,33 @@ impl PositionConverter {
         }
     }
 
-    fn get_line(&mut self, file: &str, line_1based: u32) -> Option<&str> {
-        let lines = self.cache.entry(file.to_string()).or_insert_with(|| {
-            if let Ok(content) = std::fs::read_to_string(file) {
-                content.lines().map(|s| s.to_string()).collect()
+    pub fn get_line(&mut self, file: &str, line_1based: u32) -> Option<&str> {
+        let (content, line_starts) = self.cache.entry(file.to_string()).or_insert_with(|| {
+            if let Ok(c) = std::fs::read_to_string(file) {
+                let mut starts = Vec::with_capacity(c.lines().count() + 1);
+                starts.push(0);
+                for (idx, b) in c.bytes().enumerate() {
+                    if b == b'\n' {
+                        starts.push(idx + 1);
+                    }
+                }
+                (c, starts)
             } else {
-                Vec::new()
+                (String::new(), Vec::new())
             }
         });
 
-        if line_1based == 0 || (line_1based as usize) > lines.len() {
+        let line_idx = line_1based.saturating_sub(1) as usize;
+        if line_idx >= line_starts.len() || content.is_empty() {
             None
         } else {
-            Some(&lines[(line_1based - 1) as usize])
+            let start = line_starts[line_idx];
+            let end = if line_idx + 1 < line_starts.len() {
+                line_starts[line_idx + 1]
+            } else {
+                content.len()
+            };
+            Some(&content[start..end])
         }
     }
 
@@ -171,6 +185,9 @@ impl PositionConverter {
             return 0;
         }
         if let Some(line) = self.get_line(file, line_1based) {
+            if line.is_ascii() {
+                return char_col_1based.saturating_sub(1);
+            }
             let mut utf16_count = 0u32;
             for (char_idx, ch) in line.chars().enumerate() {
                 if (char_idx as u32) + 1 >= char_col_1based {
@@ -195,6 +212,9 @@ impl PositionConverter {
             return 1;
         }
         if let Some(line) = self.get_line(file, line_1based) {
+            if line.is_ascii() {
+                return utf16_col_0based + 1;
+            }
             let mut current_utf16 = 0u32;
             for (char_idx, ch) in line.chars().enumerate() {
                 if current_utf16 >= utf16_col_0based {

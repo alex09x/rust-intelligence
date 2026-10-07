@@ -25,6 +25,7 @@ pub enum ServerState {
 pub struct LifecycleManager {
     state: ServerState,
     pub flycheck: Arc<FlycheckState>,
+    pub last_reload_check: std::time::Instant,
 }
 
 impl Default for LifecycleManager {
@@ -38,6 +39,16 @@ impl LifecycleManager {
         Self {
             state: ServerState::Uninitialized,
             flycheck: Arc::new(FlycheckState::new()),
+            last_reload_check: std::time::Instant::now(),
+        }
+    }
+
+    pub fn should_reload(&mut self, is_mutation: bool) -> bool {
+        if is_mutation || self.last_reload_check.elapsed() >= std::time::Duration::from_millis(500) {
+            self.last_reload_check = std::time::Instant::now();
+            true
+        } else {
+            false
         }
     }
 

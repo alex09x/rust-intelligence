@@ -101,3 +101,27 @@ pub fn collect_all_workspace_manifests(dir: &Path, manifests: &mut Vec<PathBuf>)
         }
     }
 }
+
+pub fn compute_sysroot_ld_path() -> Option<String> {
+    let out = std::process::Command::new("rustc").args(["--print", "sysroot"]).output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let sysroot = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    let lib_dir = std::path::PathBuf::from(&sysroot).join("lib");
+    let mut ld = lib_dir.to_string_lossy().to_string();
+    if let Some(parent) = std::path::PathBuf::from(&sysroot).parent() {
+        if let Ok(entries) = std::fs::read_dir(parent) {
+            for entry in entries.flatten() {
+                let cand_lib = entry.path().join("lib");
+                if cand_lib.is_dir() {
+                    ld = format!("{}:{}", ld, cand_lib.to_string_lossy());
+                }
+            }
+        }
+    }
+    if let Ok(existing) = std::env::var("LD_LIBRARY_PATH") {
+        ld = format!("{}:{}", ld, existing);
+    }
+    Some(ld)
+}

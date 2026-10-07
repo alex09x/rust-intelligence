@@ -10,6 +10,7 @@
 
 //! Execution and orchestration of Cargo indexing with compiler driver wrapping.
 
+use super::direct::try_direct_crate_indexing;
 use super::cargo::{extract_config_target, find_cargo_configs};
 use super::driver::find_driver_binary;
 use super::manifest::{publish_manifest, ManifestParams};
@@ -23,14 +24,14 @@ use std::process::Command;
 use std::time::Instant;
 
 pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> {
-    let path = opts.path;
-    let out_dir_opt = opts.out_dir_opt;
-    let package = opts.package;
+    let path = opts.path.clone();
+    let out_dir_opt = opts.out_dir_opt.clone();
+    let package = opts.package.clone();
     let release = opts.release;
-    let features = opts.features;
+    let features = opts.features.clone();
     let no_default_features = opts.no_default_features;
     let all_features = opts.all_features;
-    let target = opts.target;
+    let target = opts.target.clone();
 
     let (work_dir, manifest_path) = if path.is_file() {
         if path.file_name().and_then(|s| s.to_str()) != Some("Cargo.toml") {
@@ -152,12 +153,39 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     if let Some(ref tgt) = target {
         eprintln!("  Target Triple  : {}", tgt.cyan());
     }
+    let cache_dir = ridx_format::resolve_cache_dir();
+    let _ = fs::create_dir_all(cache_dir.join("objects"));
+
+    let ld_path = super::cargo::compute_sysroot_ld_path();
+
+    let deps_dir = variant_out_dir.join(".deps");
+    if deps_dir.is_dir() {
+        if let Some(res) = try_direct_crate_indexing(
+            &deps_dir,
+            &variant_out_dir,
+            &base_out_dir,
+            &work_dir,
+            &manifest_path,
+            &driver_bin,
+            &cache_dir,
+            ld_path.as_deref(),
+            &variant_id,
+            &variant_rel_dir,
+            profile_name,
+            &opts,
+            start,
+        ) {
+            return Ok(res);
+        }
+    }
+
     eprintln!("  Action         : cargo check with RUSTC_WRAPPER...");
 
     let mut cmd = Command::new("cargo");
     cmd.current_dir(&work_dir);
     cmd.arg("check");
     cmd.arg("--manifest-path").arg(&manifest_path);
+    cmd.arg("--all-targets");
     if let Some(ref p) = package {
         cmd.arg("-p").arg(p);
     } else {
@@ -179,9 +207,6 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         cmd.arg("--target").arg(tgt);
     }
 
-    let cache_dir = ridx_format::resolve_cache_dir();
-    let _ = fs::create_dir_all(cache_dir.join("objects"));
-
     cmd.env("RIDX_OUT_DIR", &variant_out_dir);
     cmd.env("RIDX_CACHE_DIR", &cache_dir);
     cmd.env("RIDX_WORKSPACE_ROOT", &work_dir);
@@ -195,28 +220,9 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         cmd.env("RUSTC_WRAPPER", "");
     }
 
-    // Ensure librustc_driver shared library can be located by dynamic linker
-    if let Ok(out) = Command::new("rustc").args(["--print", "sysroot"]).output() {
-        if out.status.success() {
-            let sysroot = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            let lib_dir = PathBuf::from(&sysroot).join("lib");
-            let mut ld_path = lib_dir.to_string_lossy().to_string();
-            if let Some(parent) = PathBuf::from(&sysroot).parent() {
-                if let Ok(entries) = std::fs::read_dir(parent) {
-                    for entry in entries.flatten() {
-                        let cand_lib = entry.path().join("lib");
-                        if cand_lib.is_dir() {
-                            ld_path = format!("{}:{}", ld_path, cand_lib.to_string_lossy());
-                        }
-                    }
-                }
-            }
-            if let Ok(existing) = std::env::var("LD_LIBRARY_PATH") {
-                ld_path = format!("{}:{}", ld_path, existing);
-            }
-            cmd.env("LD_LIBRARY_PATH", &ld_path);
-            cmd.env("DYLD_FALLBACK_LIBRARY_PATH", &ld_path);
-        }
+    if let Some(ref ld) = ld_path {
+        cmd.env("LD_LIBRARY_PATH", ld);
+        cmd.env("DYLD_FALLBACK_LIBRARY_PATH", ld);
     }
 
     let status = match cmd.status() {

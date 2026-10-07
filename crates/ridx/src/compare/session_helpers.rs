@@ -54,3 +54,64 @@ pub fn check_results_match(
         _ => false,
     }
 }
+
+pub fn check_results_match_line_level(
+    res_a: Option<&ExternalLspResult>,
+    res_b: Option<&ExternalLspResult>,
+    capability: &str,
+) -> bool {
+    match (res_a, res_b) {
+        (Some(a), Some(b)) => {
+            if !a.found && !b.found {
+                true
+            } else if a.found && b.found {
+                match capability {
+                    "hover" | "textDocument/hover" => true,
+                    "refs" | "textDocument/references" => a.count > 0 && b.count > 0,
+                    _ => super::query_runner::spans_match_line_level(&a.span, &b.span),
+                }
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+pub fn shutdown_lsp_server<R: std::io::BufRead, W: std::io::Write>(
+    reader: &mut R,
+    mut stdin: W,
+    mut child: std::process::Child,
+) -> u128 {
+    let t_start = std::time::Instant::now();
+    let shutdown_req = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 999,
+        "method": "shutdown",
+        "params": null
+    });
+    let _ = super::transport::send_lsp_msg(&mut stdin, &shutdown_req);
+    let _ = super::transport::read_lsp_response_with_writer(reader, &mut stdin, 999);
+    let exit_notif = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "exit",
+        "params": null
+    });
+    let _ = super::transport::send_lsp_msg(&mut stdin, &exit_notif);
+    drop(stdin);
+
+    let deadline = std::time::Instant::now() + std::time::Duration::from_millis(500);
+    let mut graceful_exit = false;
+    while std::time::Instant::now() < deadline {
+        if let Ok(Some(_)) = child.try_wait() {
+            graceful_exit = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    if !graceful_exit {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+    t_start.elapsed().as_micros()
+}

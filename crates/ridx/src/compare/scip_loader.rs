@@ -275,5 +275,7 @@ pub fn run_scip_session(
         cargo_spawned: false,
         peak_open_fds: super::system::get_process_fd_count(std::process::id()),
         peak_threads: super::system::get_process_thread_count(std::process::id()),
+        peak_ridx_open_fds: 0,
+        peak_ridx_mapped_regions: 0,
     })
 }

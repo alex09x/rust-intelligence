@@ -10,8 +10,6 @@
 
 //! System resource tracking, process memory inspection, and report formatting.
 
-use super::types::ComparisonResult;
-use colored::*;
 use std::process::Command;
 
 pub fn get_process_rss_bytes_fallback_ps(pid: u32) -> Option<u64> {
@@ -118,6 +116,34 @@ pub fn get_process_fd_count(pid: u32) -> u64 {
     0
 }
 
+pub fn get_process_ridx_fd_count(pid: u32) -> u64 {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(entries) = std::fs::read_dir(format!("/proc/{pid}/fd")) {
+            let mut count = 0u64;
+            for entry in entries.flatten() {
+                if let Ok(target) = std::fs::read_link(entry.path()) {
+                    if target.to_string_lossy().ends_with(".ridx") {
+                        count += 1;
+                    }
+                }
+            }
+            return count;
+        }
+    }
+    0
+}
+
+pub fn get_process_ridx_maps_count(pid: u32) -> u64 {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(maps) = std::fs::read_to_string(format!("/proc/{pid}/maps")) {
+            return maps.lines().filter(|l| l.contains(".ridx")).count() as u64;
+        }
+    }
+    0
+}
+
 pub fn get_process_thread_count(pid: u32) -> u64 {
     #[cfg(target_os = "linux")]
     {
@@ -137,26 +163,41 @@ pub fn get_process_thread_count(pid: u32) -> u64 {
 pub fn has_cargo_or_rustc_children(pid: u32) -> bool {
     #[cfg(target_os = "linux")]
     {
-        if let Ok(entries) = std::fs::read_dir("/proc") {
-            for entry in entries.flatten() {
-                if let Ok(name) = entry.file_name().into_string() {
-                    if let Ok(cpid) = name.parse::<u32>() {
-                        if let Ok(stat) = std::fs::read_to_string(format!("/proc/{cpid}/stat")) {
-                            if let (Some(open), Some(close)) = (stat.find('('), stat.rfind(')')) {
-                                let comm = &stat[open + 1..close];
-                                let rest = stat[close + 1..].trim();
-                                if let Some(ppid_str) = rest.split_whitespace().nth(1) {
-                                    if let Ok(ppid) = ppid_str.parse::<u32>() {
-                                        if ppid == pid
-                                            && (comm.contains("cargo") || comm.contains("rustc"))
-                                        {
-                                            return true;
-                                        }
-                                    }
-                                }
+        let mut queue = vec![pid];
+        let mut visited = std::collections::HashSet::new();
+        visited.insert(pid);
+
+        while let Some(current_pid) = queue.pop() {
+            let mut children = Vec::new();
+            let direct_children = format!("/proc/{current_pid}/task/{current_pid}/children");
+            if let Ok(c_str) = std::fs::read_to_string(direct_children) {
+                for part in c_str.split_whitespace() {
+                    if let Ok(cpid) = part.parse::<u32>() {
+                        children.push(cpid);
+                    }
+                }
+            } else if let Ok(tasks) = std::fs::read_dir(format!("/proc/{current_pid}/task")) {
+                for task in tasks.flatten() {
+                    let task_children = task.path().join("children");
+                    if let Ok(c_str) = std::fs::read_to_string(task_children) {
+                        for part in c_str.split_whitespace() {
+                            if let Ok(cpid) = part.parse::<u32>() {
+                                children.push(cpid);
                             }
                         }
                     }
+                }
+            }
+
+            for cpid in children {
+                if visited.insert(cpid) {
+                    if let Ok(comm) = std::fs::read_to_string(format!("/proc/{cpid}/comm")) {
+                        let comm_trimmed = comm.trim();
+                        if comm_trimmed.contains("cargo") || comm_trimmed.contains("rustc") {
+                            return true;
+                        }
+                    }
+                    queue.push(cpid);
                 }
             }
         }
@@ -220,140 +261,4 @@ pub fn get_rust_analyzer_rss_bytes() -> u64 {
     0
 }
 
-pub fn print_comparison(cmp: &ComparisonResult) {
-    println!(
-        "{}",
-        "═══════════════════════════════════════════════════════════════════════".dimmed()
-    );
-    println!(
-        "  {} {} [{:?}]",
-        "Comparison Target:".bold(),
-        cmp.symbol.cyan(),
-        cmp.capability
-    );
-    println!(
-        "{}",
-        "═══════════════════════════════════════════════════════════════════════".dimmed()
-    );
-
-    println!(
-        "{:<20} | {:<24} | {:<24}",
-        "Metric", "RIDX (Zero-Copy Mmap)", "prod-code (rust-analyzer)"
-    );
-    println!("{:-<20}-+-{:-<24}-+-{:-<24}", "", "", "");
-
-    let ridx_status = if cmp.ridx_found {
-        format!("FOUND ({})", cmp.ridx_count).green()
-    } else {
-        "NOT FOUND".red()
-    };
-    let pc_status = if cmp.prodcode_found {
-        format!("FOUND ({})", cmp.prodcode_count).green()
-    } else {
-        "NOT FOUND".yellow()
-    };
-    println!("{:<20} | {:<24} | {:<24}", "Status", ridx_status, pc_status);
-
-    println!(
-        "{:<20} | {:<24} | {:<24}",
-        "Target Location/Span", cmp.ridx_span, cmp.prodcode_span
-    );
-
-    let speedup = if cmp.ridx_latency_micros > 0 {
-        format!("{:.0}x faster", cmp.speedup_ratio())
-    } else {
-        "instant".to_string()
-    };
-
-    println!(
-        "{:<20} | {:<24} | {:<24}",
-        "Query Latency",
-        format!("{} µs ({})", cmp.ridx_latency_micros, speedup)
-            .green()
-            .bold(),
-        format!(
-            "{} µs ({:.1} ms)",
-            cmp.prodcode_latency_micros,
-            (cmp.prodcode_latency_micros as f64) / 1000.0
-        )
-        .dimmed()
-    );
-
-    let ridx_rss_str = format!(
-        "{:.2} MB (transient CLI)",
-        (cmp.ridx_rss_bytes as f64) / 1_048_576.0
-    );
-    let ra_rss_str = if cmp.prodcode_rss_bytes > 0 {
-        format!(
-            "{:.2} MB (persistent daemon)",
-            (cmp.prodcode_rss_bytes as f64) / 1_048_576.0
-        )
-    } else {
-        "unknown (N/A)".to_string()
-    };
-
-    println!(
-        "{:<20} | {:<24} | {:<24}",
-        "Daemon Memory RSS",
-        ridx_rss_str.green().bold(),
-        ra_rss_str.yellow()
-    );
-
-    println!(
-        "{}",
-        "═══════════════════════════════════════════════════════════════════════".dimmed()
-    );
-}
-
-pub fn print_comparison_summary(results: &[ComparisonResult]) {
-    println!(
-        "{}",
-        "┌──────────────────────────────────────────────────────────────────────────────────────────────┐".cyan()
-    );
-    println!(
-        "│ {:<20} │ {:<6} │ {:<8} │ {:<14} │ {:<14} │ {:<12} │",
-        "Target", "Cap", "Parity", "RIDX Latency", "RA Latency", "Speedup"
-    );
-    println!(
-        "{}",
-        "├──────────────────────┼────────┼──────────┼────────────────┼────────────────┼──────────────┤".cyan()
-    );
-
-    for r in results {
-        let parity_str = if r.ridx_found && r.prodcode_found {
-            "MATCH".green()
-        } else if r.ridx_found && !r.prodcode_found {
-            "RIDX+".cyan()
-        } else if !r.ridx_found && r.prodcode_found {
-            "RA+".yellow()
-        } else {
-            "NONE".dimmed()
-        };
-
-        let speedup_str = if r.speedup_ratio().is_infinite() {
-            "∞".to_string()
-        } else {
-            format!("{:.1}x", r.speedup_ratio())
-        };
-
-        let target_truncated = if r.symbol.len() > 20 {
-            format!("{}…", &r.symbol[..19])
-        } else {
-            r.symbol.clone()
-        };
-
-        println!(
-            "│ {:<20} │ {:<6?} │ {:<8} │ {:<14} │ {:<14} │ {:<12} │",
-            target_truncated,
-            r.capability,
-            parity_str,
-            format!("{} µs", r.ridx_latency_micros).green(),
-            format!("{:.1} ms", (r.prodcode_latency_micros as f64) / 1000.0).dimmed(),
-            speedup_str.bold()
-        );
-    }
-    println!(
-        "{}",
-        "└──────────────────────────────────────────────────────────────────────────────────────────────┘".cyan()
-    );
-}
+pub use super::printer::*;

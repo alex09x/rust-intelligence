@@ -11,6 +11,7 @@
 //! Cargo indexing orchestration, variant hashing, driver invocation, and manifest publishing.
 
 pub mod cargo;
+pub mod direct;
 pub mod driver;
 pub mod manifest;
 pub mod orchestrate;
@@ -21,6 +22,7 @@ pub mod variant;
 pub mod tests;
 
 pub use cargo::*;
+pub use direct::*;
 pub use driver::*;
 pub use manifest::*;
 pub use orchestrate::*;

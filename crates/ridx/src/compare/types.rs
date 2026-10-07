@@ -121,6 +121,10 @@ pub struct ServerMetrics {
     pub peak_open_fds: u64,
     #[serde(default)]
     pub peak_threads: u64,
+    #[serde(default)]
+    pub peak_ridx_open_fds: u64,
+    #[serde(default)]
+    pub peak_ridx_mapped_regions: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -131,6 +135,8 @@ pub struct SymmetricComparisonSummary {
     #[serde(default)]
     pub rust_analyzer_scip: Option<ServerMetrics>,
     pub scenario_matches: HashMap<String, bool>,
+    #[serde(default)]
+    pub scenario_matches_line_level: HashMap<String, bool>,
     #[serde(default)]
     pub scip_matches: HashMap<String, bool>,
     #[serde(default)]

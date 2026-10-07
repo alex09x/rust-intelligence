@@ -15,6 +15,7 @@ pub mod def_refs;
 pub mod harness;
 pub mod hover_syms;
 pub mod mutation;
+pub mod printer;
 pub mod query_runner;
 pub mod scip_loader;
 pub mod session_helpers;
@@ -27,6 +28,8 @@ pub mod warmup;
 #[cfg(test)]
 mod tests;
 
+#[allow(unused_imports)]
+pub use printer::*;
 pub use query_runner::*;
 pub use symmetric::*;
 pub use transport::*;

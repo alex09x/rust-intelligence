@@ -60,47 +60,140 @@ pub fn handle_definition(
     if let Some(ws) = workspace {
         let (query_line, query_col) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
             if overlay.has_modified_imports() {
-                return Value::Null;
-            }
-            if let Some((cl, cc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
+                (0, 0)
+            } else if let Some((cl, cc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
                 (cl, cc)
             } else {
-                return Value::Null;
+                (0, 0)
             }
         } else {
             (line_1based, col_1based)
         };
 
-        if let Some(def) = ws.find_definition_at(&file, query_line, query_col) {
-            let resolved_path = def.resolved_path();
-            let path_str = resolved_path.to_str().unwrap_or(def.file);
-            let uri = path_to_uri(path_str);
-            let (start_line, start_col, end_line, end_col) =
-                if let Some(target_ov) = overlay_mgr.get(path_str).filter(|o| o.is_dirty()) {
-                    let sl = target_ov
-                        .map_compiled_to_live(def.start_line, def.start_col)
-                        .unwrap_or((def.start_line, def.start_col));
-                    let el = target_ov
-                        .map_compiled_to_live(def.end_line, def.end_col)
-                        .unwrap_or((def.end_line, def.end_col));
-                    (sl.0, sl.1, el.0, el.1)
-                } else {
-                    (def.start_line, def.start_col, def.end_line, def.end_col)
-                };
+        if query_line > 0 {
+            if let Some(def) = ws.find_definition_at(&file, query_line, query_col) {
+                let resolved_path = def.resolved_path();
+                let path_str = resolved_path.to_str().unwrap_or(def.file);
+                let uri = path_to_uri(path_str);
+                                let (start_line, end_line, start_char, end_char) =
+                    if let Some(target_ov) = overlay_mgr.get(path_str).filter(|o| o.is_dirty()) {
+                        let sl = target_ov.map_compiled_to_live(def.start_line, def.start_col);
+                        let el = target_ov.map_compiled_to_live(def.end_line, def.end_col);
+                        match (sl, el) {
+                            (Some(s), Some(e)) => {
+                                if !is_def_valid_in_overlay(target_ov, def.name, s.0, e.0) {
+                                    (0, 0, 0, 0)
+                                } else {
+                                    let sc = target_ov.char_col_to_utf16_col(s.0, s.1);
+                                    let ec = target_ov.char_col_to_utf16_col(e.0, e.1);
+                                    (s.0, e.0, sc, ec)
+                                }
+                            }
+                            _ => (0, 0, 0, 0),
+                        }
+                    } else {
+                        let sc = conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col);
+                        let ec = conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col);
+                        (def.start_line, def.end_line, sc, ec)
+                    };
 
-            let start_char = conv.char_col_to_utf16_col(path_str, start_line, start_col);
-            let end_char = conv.char_col_to_utf16_col(path_str, end_line, end_col);
+                if start_line > 0 {
+                    return json!({
+                        "uri": uri,
+                        "range": {
+                            "start": { "line": start_line.saturating_sub(1), "character": start_char },
+                            "end": { "line": end_line.saturating_sub(1), "character": end_char }
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    // 3. Fallback: cross-file or live overlay definition lookup
+    let ident = overlay_opt.and_then(|ov| ov.get_ident_at(line_1based, col_1based));
+    let path_prefix = overlay_opt.and_then(|ov| ov.get_path_prefix_at(line_1based, col_1based));
+    if let Some(ident_str) = ident {
+        if let Some(def) =
+            overlay_mgr.find_global_symbol_definition(&file, &ident_str, path_prefix.as_deref())
+        {
+            let path_str = &def.file;
+            let uri = path_to_uri(path_str);
+            let (start_char, end_char) = if let Some(target_ov) = overlay_mgr.get(path_str) {
+                (target_ov.char_col_to_utf16_col(def.start_line, def.start_col),
+                 target_ov.char_col_to_utf16_col(def.end_line, def.end_col))
+            } else {
+                (conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col),
+                 conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col))
+            };
             return json!({
                 "uri": uri,
                 "range": {
-                    "start": { "line": start_line.saturating_sub(1), "character": start_char },
-                    "end": { "line": end_line.saturating_sub(1), "character": end_char }
+                    "start": { "line": def.start_line.saturating_sub(1), "character": start_char },
+                    "end": { "line": def.end_line.saturating_sub(1), "character": end_char }
                 }
             });
         }
     }
 
     Value::Null
+}
+
+fn is_ident_on_line(text: &str, line_starts: &[usize], line_1based: u32, name: &str) -> bool {
+    let line_idx = line_1based.saturating_sub(1) as usize;
+    if line_idx >= line_starts.len() {
+        return false;
+    }
+    let start_byte = line_starts[line_idx];
+    if start_byte > text.len() {
+        return false;
+    }
+    let end_byte = if line_idx + 1 < line_starts.len() {
+        line_starts[line_idx + 1].min(text.len())
+    } else {
+        text.len()
+    };
+    if start_byte > end_byte {
+        return false;
+    }
+    let line_str = &text[start_byte..end_byte];
+    for (idx, _) in line_str.match_indices(name) {
+        let before_ok = if idx == 0 {
+            true
+        } else {
+            let c = line_str[..idx].chars().next_back().unwrap();
+            !c.is_alphanumeric() && c != '_'
+        };
+        let after_idx = idx + name.len();
+        let after_ok = if after_idx >= line_str.len() {
+            true
+        } else {
+            let c = line_str[after_idx..].chars().next().unwrap();
+            !c.is_alphanumeric() && c != '_'
+        };
+        if before_ok && after_ok {
+            return true;
+        }
+    }
+    false
+}
+
+fn is_def_valid_in_overlay(
+    target_ov: &crate::overlay::DocumentOverlay,
+    name: &str,
+    start_line: u32,
+    end_line: u32,
+) -> bool {
+    if is_ident_on_line(&target_ov.text, &target_ov.line_starts, start_line, name) {
+        return true;
+    }
+    let max_check = std::cmp::min(start_line + 3, end_line.max(start_line));
+    for line in (start_line + 1)..=max_check {
+        if is_ident_on_line(&target_ov.text, &target_ov.line_starts, line, name) {
+            return true;
+        }
+    }
+    false
 }
 
 pub fn handle_declaration(

@@ -35,6 +35,9 @@ def run_benchmark_for_repo(
     ra_bin,
     taskset_cpus=None,
     sample_count=300,
+    w1_steps=100,
+    w2_iterations=10,
+    w3_counts=(1, 2, 5, 10),
     seed=42,
     discrepancies_path=None,
     prom_collector=None,
@@ -55,10 +58,11 @@ def run_benchmark_for_repo(
         result["error"] = err
         return result
 
-    # 1. Cargo Check: compile build scripts and proc-macros
-    check_cmd = ["cargo", "check"]
+    # 1. Cold Cargo Check & Cold Ridx Index (from scratch)
+    run_cmd(["cargo", "clean"], cwd=repo_dir)
+    check_cmd = ["cargo", "check", "--workspace"]
     code, _, err_out, check_dur, chk_rss, chk_anon, chk_file, chk_fds, chk_ths = run_cmd_with_rss(check_cmd, cwd=repo_dir, timeout=600)
-    result["cargo_check_sec"] = check_dur
+    result["cold_cargo_check_sec"] = check_dur
     result["cargo_check_peak_rss_mb"] = chk_rss / (1024 * 1024)
     result["cargo_check_peak_fds"] = chk_fds
     result["cargo_check_peak_threads"] = chk_ths
@@ -67,10 +71,10 @@ def run_benchmark_for_repo(
         result["error"] = err_out[:500]
         return result
 
-    # 2. Ridx Index: build CAS flat index in target/ridx
+    # 2. Cold Ridx Index: build CAS flat index in target/ridx
     index_cmd = [str(ridx_bin), "index", "."]
     code, _, err_out, index_dur, idx_rss, idx_anon, idx_file, idx_fds, idx_ths = run_cmd_with_rss(index_cmd, cwd=repo_dir, timeout=600)
-    result["ridx_index_sec"] = index_dur
+    result["cold_ridx_index_sec"] = index_dur
     result["ridx_index_peak_rss_mb"] = idx_rss / (1024 * 1024)
     result["ridx_index_peak_fds"] = idx_fds
     result["ridx_index_peak_threads"] = idx_ths
@@ -81,7 +85,12 @@ def run_benchmark_for_repo(
         result["error"] = err_out[:500]
         return result
 
-    # 3. Build rust-analyzer SCIP index (static precomputed index)
+    # 2b. Warm incremental Ridx Index
+    t_warm0 = time.perf_counter()
+    run_cmd([str(ridx_bin), "index", "."], cwd=repo_dir, timeout=600)
+    result["warm_ridx_index_sec"] = time.perf_counter() - t_warm0
+
+    # 3. Build rust-analyzer SCIP index (static precomputed index from scratch)
     scip_file = repo_dir / "index.scip"
     scip_cmd = [str(ra_bin), "scip", str(repo_dir), "--output", str(scip_file), "--exclude-vendored-libraries"]
     if taskset_cpus:
@@ -194,9 +203,20 @@ def run_benchmark_for_repo(
             else:
                 metrics[f"scip_{cap}_{mode}_p50_us"] = "N/A"
 
+    matches_line = summary.get("scenario_matches_line_level", {})
+    matched_scenarios_strict = sum(1 for m in matches.values() if m)
+    matched_scenarios_line = sum(1 for m in matches_line.values() if m)
+    matched_scenarios = matched_scenarios_strict
     total_scenarios = len(matches)
-    matched_scenarios = sum(1 for m in matches.values() if m)
-    match_rate = (matched_scenarios / max(1, total_scenarios)) * 100.0
+    match_rate_strict = (matched_scenarios_strict / max(1, total_scenarios)) * 100.0
+    match_rate_line = (matched_scenarios_line / max(1, total_scenarios)) * 100.0
+
+    mut_names = set(summary.get("mutation_verifications", {}).keys())
+    ro_strict = sum(1 for k, m in matches.items() if k not in mut_names and m)
+    ro_line = sum(1 for k, m in matches_line.items() if k not in mut_names and m)
+    ro_total = max(1, len([k for k in matches if k not in mut_names]))
+    ro_strict_pct = (ro_strict / ro_total) * 100.0
+    ro_line_pct = (ro_line / ro_total) * 100.0
 
     t_end = time.time()
     collector = prom_collector or PrometheusCollector()
@@ -213,6 +233,8 @@ def run_benchmark_for_repo(
         "ridx_peak_rss_file_mb": ridx_metrics.get("peak_rss_file_bytes", 0) / (1024 * 1024),
         "ridx_peak_open_fds": ridx_metrics.get("peak_open_fds", 0),
         "ridx_peak_threads": ridx_metrics.get("peak_threads", 0),
+        "ridx_peak_ridx_open_fds": ridx_metrics.get("peak_ridx_open_fds", 0),
+        "ridx_peak_ridx_mapped_regions": ridx_metrics.get("peak_ridx_mapped_regions", 0),
         "ra_init_ms": ra_metrics.get("spawn_and_init_micros", 0) / 1000.0,
         "ra_warmup_ms": ra_metrics.get("readiness_warmup_micros", 0) / 1000.0,
         "ra_peak_rss_mb": ra_metrics.get("peak_rss_bytes", 0) / (1024 * 1024),
@@ -221,13 +243,33 @@ def run_benchmark_for_repo(
         "ra_peak_open_fds": ra_metrics.get("peak_open_fds", 0),
         "ra_peak_threads": ra_metrics.get("peak_threads", 0),
         "cargo_spawned_during_queries": ridx_metrics.get("cargo_spawned", False) or ra_metrics.get("cargo_spawned", False),
-        "matched_scenarios": matched_scenarios,
+        "ridx_cargo_spawned": ridx_metrics.get("cargo_spawned", False),
+        "ra_cargo_spawned": ra_metrics.get("cargo_spawned", False),
+        "readonly_total": ro_total,
+        "readonly_matched_strict": ro_strict,
+        "readonly_match_rate_strict_pct": ro_strict_pct,
+        "readonly_matched_line_level": ro_line,
+        "readonly_match_rate_line_level_pct": ro_line_pct,
+        "matched_scenarios_strict": matched_scenarios_strict,
+        "match_rate_strict_pct": match_rate_strict,
+        "matched_scenarios_line_level": matched_scenarios_line,
+        "match_rate_line_level_pct": match_rate_line,
+        "matched_scenarios": matched_scenarios_strict,
         "total_scenarios": total_scenarios,
-        "match_rate_pct": match_rate,
+        "match_rate_pct": match_rate_strict,
         "metrics": metrics,
         "machine_metrics": machine_metrics,
         "mutation_verifications": summary.get("mutation_verifications", {}),
     })
+
+    # 6. Run Worktree Scenarios (W1, W2, W3)
+    try:
+        from worktree_bench import run_scenario_w1_commit_walk, run_scenario_w2_large_jumps, run_scenario_w3_multi_worktree
+        result["w1_commit_walk"] = run_scenario_w1_commit_walk(repo_dir, ridx_bin, ra_bin, steps=w1_steps)
+        result["w2_large_jumps"] = run_scenario_w2_large_jumps(repo_dir, ridx_bin, iterations=w2_iterations)
+        result["w3_multi_worktree"] = run_scenario_w3_multi_worktree(repo_dir, ridx_bin, ra_bin=ra_bin, worktree_counts=w3_counts)
+    except Exception as e:
+        result["worktree_scenarios_error"] = str(e)
 
     if scip_metrics:
         scip_total = len(scip_matches)
@@ -281,6 +323,9 @@ def main():
     parser.add_argument("--ra", default="rust-analyzer")
     parser.add_argument("--taskset", default="24-31")
     parser.add_argument("--samples", type=int, default=300)
+    parser.add_argument("--w1-steps", type=int, default=100)
+    parser.add_argument("--w2-iterations", type=int, default=10)
+    parser.add_argument("--w3-counts", nargs="+", type=int, default=[1, 2, 5, 10])
     parser.add_argument("--repo", help="Filter to a single repo (e.g. serde-rs/serde)")
     parser.add_argument("--pilot-only", action="store_true", default=True)
     parser.add_argument("--prometheus-url", help="Prometheus HTTP API URL")
@@ -309,6 +354,10 @@ def main():
     discrepancies_path.parent.mkdir(parents=True, exist_ok=True)
 
     ridx_bin = Path(args.ridx).resolve()
+    driver_bin = ridx_bin.parent / "ridx-driver"
+    if driver_bin.exists():
+        import os
+        os.environ["RIDX_DRIVER_BIN"] = str(driver_bin)
     prom_collector = PrometheusCollector(
         endpoint=args.prometheus_url,
         instance=args.prometheus_instance,
@@ -320,16 +369,25 @@ def main():
     with open(results_path, "a", encoding="utf-8") as out_f:
         for r in target_repos:
             print(f"\n---> Starting: {r['repo']} (sha: {r['commit'][:8]})")
-            res = run_benchmark_for_repo(
-                r,
-                storage_dir,
-                ridx_bin,
-                args.ra,
-                taskset_cpus=args.taskset,
-                sample_count=args.samples,
-                discrepancies_path=discrepancies_path,
-                prom_collector=prom_collector,
-            )
+            res = None
+            for attempt in range(1, 4):
+                res = run_benchmark_for_repo(
+                    r,
+                    storage_dir,
+                    ridx_bin,
+                    args.ra,
+                    taskset_cpus=args.taskset,
+                    sample_count=args.samples,
+                    w1_steps=args.w1_steps,
+                    w2_iterations=args.w2_iterations,
+                    w3_counts=tuple(args.w3_counts),
+                    discrepancies_path=discrepancies_path,
+                    prom_collector=prom_collector,
+                )
+                if res.get("status") != "NOISE_REJECTED" or attempt == 3:
+                    break
+                print(f"    [Noise Rejected: {res.get('noise_reason')}] Waiting 15s before retry {attempt + 1}/3...")
+                time.sleep(15)
             print(f"---> Finished {r['repo']}: status={res.get('status')}")
             out_f.write(json.dumps(res) + "\n")
             out_f.flush()

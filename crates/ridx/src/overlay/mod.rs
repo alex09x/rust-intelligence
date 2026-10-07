@@ -21,6 +21,7 @@ pub mod mapping;
 pub mod parser;
 pub mod position;
 pub mod query;
+pub mod scan;
 
 #[allow(unused_imports)]
 pub use imports::*;
@@ -34,6 +35,8 @@ pub use parser::*;
 pub use position::*;
 #[allow(unused_imports)]
 pub use query::*;
+#[allow(unused_imports)]
+pub use scan::*;
 
 use parser::{OverlayParser, Scope};
 use ridx_format::{normalized_source_hash, DefKind};
@@ -52,6 +55,21 @@ pub struct OverlaySymbol {
     pub decl_start_byte: usize,
     pub decl_end_byte: usize,
     pub scope_start_byte: usize,
+}
+
+impl OverlaySymbol {
+    pub fn to_definition(&self, file: &str) -> OverlayDefinition {
+        OverlayDefinition {
+            name: self.name.clone(),
+            kind: self.kind,
+            signature: self.signature.clone(),
+            file: file.to_string(),
+            start_line: self.start_line,
+            start_col: self.start_col,
+            end_line: self.end_line,
+            end_col: self.end_col,
+        }
+    }
 }
 
 /// Representation of a resolved definition within the live buffer overlay.

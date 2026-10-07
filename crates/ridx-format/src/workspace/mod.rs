@@ -45,6 +45,8 @@ pub struct WorkspaceIndex {
     pub(crate) workspace_root: Option<PathBuf>,
     pub(crate) manifest_path: Option<PathBuf>,
     pub(crate) manifest_mtime: Option<std::time::SystemTime>,
+    pub(crate) manifest_len: Option<u64>,
+    pub(crate) manifest_hash: Option<u64>,
     pub(crate) active_variant_id: Option<String>,
 }
 
@@ -113,6 +115,8 @@ impl WorkspaceIndex {
                 workspace_root: ws_root,
                 manifest_path: None,
                 manifest_mtime: None,
+                manifest_len: None,
+                manifest_hash: None,
                 active_variant_id: None,
             });
         }
@@ -511,6 +515,8 @@ impl WorkspaceIndex {
             workspace_root,
             manifest_path,
             manifest_mtime,
+            manifest_len: None,
+            manifest_hash: None,
             active_variant_id,
         })
     }

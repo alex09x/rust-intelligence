@@ -65,6 +65,8 @@ fn test_symmetric_summary_serialization_roundtrip() {
         cargo_spawned: false,
         peak_open_fds: 0,
         peak_threads: 0,
+        peak_ridx_open_fds: 0,
+        peak_ridx_mapped_regions: 0,
     };
 
     let ra_metrics = ServerMetrics {
@@ -82,6 +84,8 @@ fn test_symmetric_summary_serialization_roundtrip() {
         cargo_spawned: false,
         peak_open_fds: 0,
         peak_threads: 0,
+        peak_ridx_open_fds: 0,
+        peak_ridx_mapped_regions: 0,
     };
 
     let mut matches = HashMap::new();
@@ -92,7 +96,8 @@ fn test_symmetric_summary_serialization_roundtrip() {
         ridx: ridx_metrics,
         rust_analyzer: ra_metrics,
         rust_analyzer_scip: None,
-        scenario_matches: matches,
+        scenario_matches: matches.clone(),
+        scenario_matches_line_level: matches,
         scip_matches: HashMap::new(),
         mutation_verifications: HashMap::new(),
     };
@@ -143,6 +148,8 @@ fn test_symmetric_runner_records_rss_and_graceful_shutdown() {
         cargo_spawned: false,
         peak_open_fds: 10,
         peak_threads: 4,
+        peak_ridx_open_fds: 0,
+        peak_ridx_mapped_regions: 0,
     };
     assert_eq!(metrics.peak_rss_bytes, 1024 * 1024);
     assert_eq!(metrics.shutdown_micros, 200);

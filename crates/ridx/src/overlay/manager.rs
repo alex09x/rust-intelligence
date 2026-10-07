@@ -153,6 +153,58 @@ impl OverlayManager {
         self.overlays.get(file_path).map(|o| o.document_symbols())
     }
 
+    pub fn find_global_symbol_definition(
+        &self,
+        current_file: &str,
+        ident: &str,
+        path_prefix: Option<&str>,
+    ) -> Option<OverlayDefinition> {
+        let mut candidates = Vec::new();
+        for (file_path, overlay) in &self.overlays {
+            for sym in overlay.document_symbols() {
+                if sym.name == ident {
+                    candidates.push((file_path, sym));
+                }
+            }
+        }
+
+        if candidates.is_empty() {
+            return None;
+        }
+
+        if let Some(prefix) = path_prefix {
+            let normalized_prefix = prefix
+                .trim_start_matches("crate::")
+                .trim_start_matches("super::")
+                .trim_start_matches("self::")
+                .replace("::", "/");
+
+            for (file_path, sym) in &candidates {
+                let p = file_path.replace(std::path::MAIN_SEPARATOR, "/");
+                if p.ends_with(&format!("{}.rs", normalized_prefix))
+                    || p.ends_with(&format!("{}/mod.rs", normalized_prefix))
+                    || p.contains(&format!("/{}", normalized_prefix))
+                {
+                    return Some(sym.to_definition(file_path));
+                }
+            }
+        }
+
+        if candidates.len() == 1 {
+            let (file_path, sym) = candidates[0];
+            return Some(sym.to_definition(file_path));
+        }
+
+        for (file_path, sym) in &candidates {
+            if *file_path == current_file {
+                return Some(sym.to_definition(file_path));
+            }
+        }
+
+        let (file_path, sym) = candidates[0];
+        Some(sym.to_definition(file_path))
+    }
+
     pub fn reconcile_with_disk(&mut self, file_path: &str, disk_content_hash: u64) {
         if let Some(overlay) = self.overlays.get_mut(file_path) {
             if overlay.content_hash == disk_content_hash {

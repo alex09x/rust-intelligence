@@ -66,7 +66,7 @@ pub fn dispatch_lsp_message<W: Write>(
         return Ok(should_continue);
     }
 
-    // 5. Single reload: automatically reload indices if modified and sync overlays
+    // 5. Automatic index reload: fast stat check (sub-microsecond) on manifest
     for ws in multi_root.all_workspaces_mut() {
         sync_reloaded_index(ws, overlay_mgr);
     }

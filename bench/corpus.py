@@ -47,18 +47,101 @@ def run_cmd(cmd, cwd=None, timeout=600):
         return -2, "", str(e), time.perf_counter() - t0
 
 
+
+def get_process_tree_pids(root_pid):
+    """Recursively collects all child PIDs belonging to root_pid."""
+    pids = [root_pid]
+    try:
+        task_dir = Path(f"/proc/{root_pid}/task")
+        if task_dir.exists():
+            for tid_dir in task_dir.iterdir():
+                children_file = tid_dir / "children"
+                if children_file.exists():
+                    try:
+                        with open(children_file, "r") as f:
+                            for child_str in f.read().split():
+                                child_pid = int(child_str)
+                                pids.extend(get_process_tree_pids(child_pid))
+                    except (IOError, OSError):
+                        pass
+    except (IOError, OSError):
+        pass
+    return pids
+
+
+def audit_process_ridx_maps(pid):
+    """Counts open .ridx FDs and active .ridx mmap regions in /proc."""
+    open_ridx_fds = 0
+    mapped_ridx_regions = 0
+    fd_dir = Path(f"/proc/{pid}/fd")
+    if fd_dir.exists():
+        try:
+            for item in fd_dir.iterdir():
+                try:
+                    target = os.readlink(item)
+                    if target.endswith(".ridx"):
+                        open_ridx_fds += 1
+                except (IOError, OSError):
+                    pass
+        except (IOError, OSError):
+            pass
+    maps_file = Path(f"/proc/{pid}/maps")
+    if maps_file.exists():
+        try:
+            with open(maps_file, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if ".ridx" in line:
+                        mapped_ridx_regions += 1
+        except (IOError, OSError):
+            pass
+    return open_ridx_fds, mapped_ridx_regions
+
+
+def get_process_smaps_rollup(pid):
+    """Parses /proc/{pid}/smaps_rollup returning (pss_bytes, anon_bytes, file_bytes)."""
+    pss = 0
+    anon = 0
+    file_bytes = 0
+    rollup = Path(f"/proc/{pid}/smaps_rollup")
+    if rollup.exists():
+        try:
+            with open(rollup, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if line.startswith("Pss:"):
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            pss = int(parts[1]) * 1024
+                    elif line.startswith("Anonymous:"):
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            anon = int(parts[1]) * 1024
+                    elif line.startswith("Pss_File:"):
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            file_bytes = int(parts[1]) * 1024
+        except (IOError, OSError):
+            pass
+    return pss, anon, file_bytes
+
+
 def run_cmd_with_rss(cmd, cwd=None, timeout=600):
+    import tempfile
+
     t0 = time.perf_counter()
+    stdout_f = tempfile.TemporaryFile(mode="w+t", encoding="utf-8", errors="replace")
+    stderr_f = tempfile.TemporaryFile(mode="w+t", encoding="utf-8", errors="replace")
     try:
         proc = subprocess.Popen(
             cmd,
             cwd=cwd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=stdout_f,
+            stderr=stderr_f,
             text=True,
         )
     except Exception as e:
-        return -2, "", str(e), time.perf_counter() - t0, 0, 0, 0
+        stdout_f.close()
+        stderr_f.close()
+        return -2, "", str(e), time.perf_counter() - t0, 0, 0, 0, 0, 0
 
     peak_rss = 0
     peak_anon = 0
@@ -67,44 +150,70 @@ def run_cmd_with_rss(cmd, cwd=None, timeout=600):
     peak_threads = 0
 
     pid = proc.pid
-    status_path = Path(f"/proc/{pid}/status")
-    fd_path = Path(f"/proc/{pid}/fd")
 
     while proc.poll() is None:
-        if status_path.exists():
+        tree_pids = get_process_tree_pids(pid)
+        cur_rss = 0
+        cur_anon = 0
+        cur_file = 0
+        cur_threads = 0
+        cur_fds = 0
+
+        for c_pid in tree_pids:
             try:
+                status_path = Path(f"/proc/{c_pid}/status")
                 with open(status_path, "r", encoding="utf-8") as f:
                     for line in f:
-                        if line.startswith("VmHWM:"):
+                        if line.startswith("VmRSS:"):
                             parts = line.split()
                             if len(parts) >= 2:
-                                peak_rss = max(peak_rss, int(parts[1]) * 1024)
+                                cur_rss += int(parts[1]) * 1024
                         elif line.startswith("RssAnon:"):
                             parts = line.split()
                             if len(parts) >= 2:
-                                peak_anon = max(peak_anon, int(parts[1]) * 1024)
+                                cur_anon += int(parts[1]) * 1024
                         elif line.startswith("RssFile:"):
                             parts = line.split()
                             if len(parts) >= 2:
-                                peak_file = max(peak_file, int(parts[1]) * 1024)
+                                cur_file += int(parts[1]) * 1024
                         elif line.startswith("Threads:"):
                             parts = line.split()
                             if len(parts) >= 2:
-                                peak_threads = max(peak_threads, int(parts[1]))
+                                cur_threads += int(parts[1])
             except (IOError, OSError):
                 pass
-        if fd_path.exists():
+
             try:
-                peak_fds = max(peak_fds, len(os.listdir(fd_path)))
+                fd_path = Path(f"/proc/{c_pid}/fd")
+                cur_fds += len(os.listdir(fd_path))
             except (IOError, OSError):
                 pass
+
+        peak_rss = max(peak_rss, cur_rss)
+        peak_anon = max(peak_anon, cur_anon)
+        peak_file = max(peak_file, cur_file)
+        peak_threads = max(peak_threads, cur_threads)
+        peak_fds = max(peak_fds, cur_fds)
+
         time.sleep(0.01)
         if time.perf_counter() - t0 > timeout:
             proc.kill()
-            stdout, stderr = proc.communicate()
+            proc.wait()
+            stdout_f.seek(0)
+            stderr_f.seek(0)
+            stdout = stdout_f.read()
+            stderr = stderr_f.read()
+            stdout_f.close()
+            stderr_f.close()
             return -1, stdout, "Timeout expired", time.perf_counter() - t0, peak_rss, peak_anon, peak_file, peak_fds, peak_threads
 
-    stdout, stderr = proc.communicate()
+    proc.wait()
+    stdout_f.seek(0)
+    stderr_f.seek(0)
+    stdout = stdout_f.read()
+    stderr = stderr_f.read()
+    stdout_f.close()
+    stderr_f.close()
     elapsed = time.perf_counter() - t0
 
     if peak_rss == 0:

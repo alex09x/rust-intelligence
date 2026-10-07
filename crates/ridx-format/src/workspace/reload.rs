@@ -39,10 +39,20 @@ impl WorkspaceIndex {
         }
 
         if let Some(ref mf) = self.manifest_path {
-            let current_manifest_mtime = fs::metadata(mf).and_then(|m| m.modified()).ok();
-            if current_manifest_mtime != self.manifest_mtime {
+            let meta = fs::metadata(mf).ok();
+            let current_manifest_mtime = meta.as_ref().and_then(|m| m.modified().ok());
+            let current_manifest_len = meta.as_ref().map(|m| m.len());
+            if current_manifest_mtime == self.manifest_mtime && current_manifest_len == self.manifest_len {
+                return Ok(false);
+            }
+            if let Ok(content) = fs::read(mf) {
+                let content_hash = crate::format::normalized_source_hash(&content);
+                if current_manifest_mtime == self.manifest_mtime && Some(content_hash) == self.manifest_hash {
+                    return Ok(false);
+                }
                 self.manifest_mtime = current_manifest_mtime;
-                if let Ok(content) = fs::read(mf) {
+                self.manifest_len = current_manifest_len;
+                self.manifest_hash = Some(content_hash);
                     if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
                         if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
                             return Err(io::Error::new(
@@ -309,7 +319,6 @@ impl WorkspaceIndex {
                             }
                         }
                     }
-                }
             }
         }
 
@@ -457,10 +466,11 @@ impl WorkspaceIndex {
 
         // 2. If loaded from directory, check for new .ridx files
         if let Some(dir) = self.root_dir.clone() {
-            let mut existing_set = std::collections::HashSet::new();
-            for p in &self.paths {
-                existing_set.insert(p.clone());
-            }
+            let existing_set: std::collections::HashSet<PathBuf> = self
+                .paths
+                .iter()
+                .map(|p| fs::canonicalize(p).unwrap_or_else(|_| p.clone()))
+                .collect();
 
             let mut all_files = Vec::new();
             if dir.is_dir() {
@@ -469,10 +479,7 @@ impl WorkspaceIndex {
 
             for file_path in all_files {
                 let canon_fp = fs::canonicalize(&file_path).unwrap_or_else(|_| file_path.clone());
-                let already_present = self.paths.iter().any(|existing| {
-                    fs::canonicalize(existing).unwrap_or_else(|_| existing.clone()) == canon_fp
-                });
-                if !existing_set.contains(&file_path) && !already_present {
+                if !existing_set.contains(&canon_fp) {
                     if let Ok(reader) = IndexReader::open(&file_path) {
                         let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
                         let embedded = reader.embedded_file_hashes();

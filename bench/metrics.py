@@ -12,6 +12,7 @@ Metrics collection, Prometheus queries, and discrepancy logging for benchmarks.
 """
 
 import json
+import math
 import os
 import urllib.parse
 import urllib.request
@@ -94,15 +95,62 @@ class PrometheusCollector:
         }
 
 
-def is_noise_rejected(machine_metrics, max_load=4.0):
+def is_noise_rejected(machine_metrics, max_load=None):
     """
     Validates machine load against isolation threshold (Point 9).
     Returns (rejected: bool, reason: str).
     """
+    if max_load is None:
+        cpus = os.cpu_count() or 4
+        max_load = max(4.0, cpus * 0.5)
     load1 = machine_metrics.get("loadavg_1m")
     if load1 is not None and load1 > max_load:
         return True, f"High load average ({load1} > {max_load})"
     return False, ""
+
+
+def classify_discrepancy(r_res, ra_res):
+    """
+    Classifies discrepancy between RIDX and rust-analyzer:
+    - 'missing_in_ra': RIDX found target, RA returned null / Not found
+    - 'missing_in_ridx': RA found target, RIDX returned null / Not found
+    - 'core_vs_std_reexport': One points to canonical definition in core/alloc, the other to std or local re-export (core is authoritative)
+    - 'line_level_match': Same file, within 2 lines tolerance
+    - 'divergent_target': Different symbols/files
+    """
+    r_found = bool(r_res and r_res.get("found"))
+    ra_found = bool(ra_res and ra_res.get("found"))
+    if r_found and not ra_found:
+        return "missing_in_ra"
+    if not r_found and ra_found:
+        return "missing_in_ridx"
+    if not r_found and not ra_found:
+        return "both_not_found"
+
+    r_span = (r_res.get("span") or "").strip()
+    ra_span = (ra_res.get("span") or "").strip()
+
+    is_r_core = "/library/core/" in r_span or "/library/alloc/" in r_span
+    is_ra_std_or_local = not is_r_core and ("/library/std/" in ra_span or not ra_span.startswith("/home/alex09x/.rustup/"))
+    is_ra_core = "/library/core/" in ra_span or "/library/alloc/" in ra_span
+    is_r_std_or_local = not is_ra_core and ("/library/std/" in r_span or not r_span.startswith("/home/alex09x/.rustup/"))
+
+    if (is_r_core and is_ra_std_or_local) or (is_ra_core and is_r_std_or_local):
+        return "core_vs_std_reexport"
+
+    if ":" in r_span and ":" in ra_span:
+        r_parts = r_span.rsplit(":", 2)
+        ra_parts = ra_span.rsplit(":", 2)
+        if len(r_parts) >= 2 and len(ra_parts) >= 2 and r_parts[0] == ra_parts[0]:
+            try:
+                r_line = int(r_parts[1])
+                ra_line = int(ra_parts[1])
+                if abs(r_line - ra_line) <= 2:
+                    return "line_level_match"
+            except ValueError:
+                pass
+
+    return "divergent_target"
 
 
 def record_discrepancies(discrepancies_path, repo_slug, scenarios, matches, ridx_metrics, ra_metrics):
@@ -115,6 +163,8 @@ def record_discrepancies(discrepancies_path, repo_slug, scenarios, matches, ridx
         for sc in scenarios:
             s_name = sc["name"]
             if not matches.get(s_name, False):
+                r_res = r_results.get(s_name)
+                ra_res = ra_results.get(s_name)
                 df.write(
                     json.dumps({
                         "repo": repo_slug,
@@ -122,8 +172,36 @@ def record_discrepancies(discrepancies_path, repo_slug, scenarios, matches, ridx
                         "capability": sc["capability"],
                         "target": sc["target"],
                         "location": sc.get("location"),
-                        "ridx": r_results.get(s_name),
-                        "ra": ra_results.get(s_name),
+                        "classification": classify_discrepancy(r_res, ra_res),
+                        "ridx": r_res,
+                        "ra": ra_res,
                     })
                     + "\n"
                 )
+
+
+def wilson_score_interval(successes, total, z=1.96):
+    """
+    Computes Wilson score confidence interval for a binomial proportion.
+    Default z=1.96 corresponds to a 95% confidence level.
+    Returns (center_pct, lower_pct, upper_pct).
+    """
+    if total <= 0:
+        return 0.0, 0.0, 0.0
+    p = successes / total
+    denom = 1.0 + (z * z) / total
+    center = (p + (z * z) / (2.0 * total)) / denom
+    margin = (z / denom) * math.sqrt((p * (1.0 - p)) / total + (z * z) / (4.0 * total * total))
+    lower = max(0.0, center - margin)
+    upper = min(1.0, center + margin)
+    return center * 100.0, lower * 100.0, upper * 100.0
+
+
+def format_ratio_with_ci(successes, total, z=1.96):
+    """Formats ratio with percentage and 95% Wilson confidence interval."""
+    if total <= 0:
+        return "0 / 0 (N/A)"
+    pct = (successes / total) * 100.0
+    _, lower, upper = wilson_score_interval(successes, total, z=z)
+    return f"{successes} / {total} ({pct:.1f}%, 95% CI [{lower:.1f}%, {upper:.1f}%])"
+

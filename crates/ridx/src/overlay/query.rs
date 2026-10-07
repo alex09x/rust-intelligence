@@ -124,6 +124,33 @@ impl DocumentOverlay {
         self.get_ident_and_span_at(line, col).map(|(s, _, _)| s)
     }
 
+    /// Returns the module path prefix before an identifier (e.g. "foo::bar" before "baz").
+    pub fn get_path_prefix_at(&self, line: u32, col: u32) -> Option<String> {
+        let (_, start_b, _) = self.get_ident_and_span_at(line, col)?;
+        let line_idx = line.saturating_sub(1) as usize;
+        let line_start = *self.line_starts.get(line_idx)?;
+        let ident_start = line_start + start_b;
+        let prefix = strip_trailing_whitespace_and_comments(&self.text[..ident_start]);
+        if let Some(pos) = prefix.rfind("::") {
+            let path_part = prefix[..pos].trim_end();
+            let mut start_pos = path_part.len();
+            let bytes = path_part.as_bytes();
+            while start_pos > 0 {
+                let b = bytes[start_pos - 1];
+                if b == b"_"[0] || b.is_ascii_alphanumeric() || (start_pos >= 2 && &bytes[start_pos - 2..start_pos] == b"::") {
+                    start_pos -= 1;
+                } else {
+                    break;
+                }
+            }
+            let res = &path_part[start_pos..];
+            if !res.is_empty() {
+                return Some(res.to_string());
+            }
+        }
+        None
+    }
+
     /// Returns the identifier and its byte start and end offset within the line.
     pub fn get_ident_and_span_at(&self, line: u32, col: u32) -> Option<(String, usize, usize)> {
         let byte_pos = self.line_char_col_to_byte(line, col);
@@ -233,161 +260,4 @@ impl DocumentOverlay {
     }
 }
 
-/// Scans the full document text in lexer order and returns (line_1based, char_col_1based)
-/// for all identifier occurrences matching `target_name` that are real code tokens
-/// (ignoring comments, block comments with nesting, string literals, raw string literals, and char literals).
-pub fn find_document_matching_identifiers(text: &str, target_name: &str) -> Vec<(u32, u32)> {
-    let mut matches = Vec::new();
-    let bytes = text.as_bytes();
-    let n = bytes.len();
-    let mut i = 0;
-
-    let mut line = 1u32;
-    let mut line_start_byte = 0;
-
-    while i < n {
-        while i < n && !text.is_char_boundary(i) {
-            i += 1;
-        }
-        if i >= n {
-            break;
-        }
-        let b = bytes[i];
-
-        if b == b'\n' {
-            line += 1;
-            i += 1;
-            line_start_byte = i;
-            continue;
-        }
-
-        if b == b'/' && i + 1 < n && bytes[i + 1] == b'/' {
-            i += 2;
-            while i < n && bytes[i] != b'\n' {
-                i += 1;
-            }
-            continue;
-        }
-
-        if b == b'/' && i + 1 < n && bytes[i + 1] == b'*' {
-            i += 2;
-            let mut depth = 1;
-            while i + 1 < n && depth > 0 {
-                if bytes[i] == b'\n' {
-                    line += 1;
-                    line_start_byte = i + 1;
-                }
-                if bytes[i] == b'/' && bytes[i + 1] == b'*' {
-                    depth += 1;
-                    i += 2;
-                } else if bytes[i] == b'*' && bytes[i + 1] == b'/' {
-                    depth -= 1;
-                    i += 2;
-                } else {
-                    i += 1;
-                }
-            }
-            if depth > 0 {
-                i = n;
-            }
-            continue;
-        }
-
-        if b == b'r' && i + 1 < n && (bytes[i + 1] == b'"' || bytes[i + 1] == b'#') {
-            let mut h_idx = i + 1;
-            let mut hashes = 0;
-            while h_idx < n && bytes[h_idx] == b'#' {
-                hashes += 1;
-                h_idx += 1;
-            }
-            if h_idx < n && bytes[h_idx] == b'"' {
-                i = h_idx + 1;
-                while i < n {
-                    if bytes[i] == b'\n' {
-                        line += 1;
-                        line_start_byte = i + 1;
-                    }
-                    if bytes[i] == b'"'
-                        && i + hashes < n
-                        && (0..hashes).all(|k| bytes[i + 1 + k] == b'#')
-                    {
-                        i += 1 + hashes;
-                        break;
-                    }
-                    i += 1;
-                }
-                continue;
-            }
-        }
-
-        if b == b'"' {
-            i += 1;
-            let mut closed = false;
-            while i < n {
-                if bytes[i] == b'\n' {
-                    line += 1;
-                    line_start_byte = i + 1;
-                }
-                if bytes[i] == b'\\' && i + 1 < n {
-                    i += 2;
-                    continue;
-                }
-                if bytes[i] == b'"' {
-                    i += 1;
-                    closed = true;
-                    break;
-                }
-                i += 1;
-            }
-            if !closed {
-                i = n;
-            }
-            continue;
-        }
-
-        if b == b'\'' {
-            let mut j = i + 1;
-            if j < n && bytes[j] == b'\\' {
-                j += 2;
-                while j < n && bytes[j] != b'\'' && bytes[j] != b'\n' {
-                    j += 1;
-                }
-                if j < n && bytes[j] == b'\'' {
-                    i = j + 1;
-                    continue;
-                }
-            } else if j + 1 < n && bytes[j + 1] == b'\'' {
-                i = j + 2;
-                continue;
-            }
-        }
-
-        let ch = text[i..].chars().next().unwrap();
-        if is_rust_ident_start(ch) {
-            let start_byte = i;
-            let ident_line = line;
-            let line_slice_before = &text[line_start_byte..start_byte];
-            let char_col = line_slice_before.chars().count() as u32 + 1;
-
-            let mut ident_len = 0;
-            for c in text[start_byte..].chars() {
-                if is_rust_ident_continue(c) {
-                    ident_len += c.len_utf8();
-                } else {
-                    break;
-                }
-            }
-
-            let ident = &text[start_byte..start_byte + ident_len];
-            if ident == target_name {
-                matches.push((ident_line, char_col));
-            }
-            i += ident_len;
-            continue;
-        }
-
-        i += ch.len_utf8();
-    }
-
-    matches
-}
+pub use super::scan::find_document_matching_identifiers;

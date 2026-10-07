@@ -32,7 +32,7 @@ use rustc_hir::{
     intravisit::{self, Visitor},
     HirId,
 };
-use rustc_middle::ty::{TyCtxt, TypeckResults};
+use rustc_middle::ty::{TyCtxt, TypeVisitableExt, TypeckResults};
 use rustc_span::Span;
 
 struct IndexCallbacks {
@@ -247,8 +247,52 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
     }
 
     fn visit_path(&mut self, path: &hir::Path<'tcx>, _: HirId) {
-        self.add_ref_from_res(path.span, path.res);
+        let span = if let Some(last_seg) = path.segments.last() {
+            last_seg.ident.span
+        } else {
+            path.span
+        };
+        self.add_ref_from_res(span, path.res);
+
+        if path.segments.len() >= 2 {
+            let pen_seg = &path.segments[path.segments.len() - 2];
+            match path.res {
+                Res::Def(hir::def::DefKind::Ctor(hir::def::CtorOf::Variant, _), ctor_did) => {
+                    let var_did = self.tcx.parent(ctor_did);
+                    let enum_did = self.tcx.parent(var_did);
+                    self.add_ref_from_res(pen_seg.ident.span, Res::Def(hir::def::DefKind::Enum, enum_did));
+                }
+                Res::Def(hir::def::DefKind::Variant, var_did) => {
+                    let enum_did = self.tcx.parent(var_did);
+                    self.add_ref_from_res(pen_seg.ident.span, Res::Def(hir::def::DefKind::Enum, enum_did));
+                }
+                Res::Def(hir::def::DefKind::AssocFn, fn_did) | Res::Def(hir::def::DefKind::AssocConst { .. }, fn_did) => {
+                    let parent_did = self.tcx.parent(fn_did);
+                    self.add_ref_from_res(pen_seg.ident.span, Res::Def(self.tcx.def_kind(parent_did), parent_did));
+                }
+                _ => {}
+            }
+        }
+
         intravisit::walk_path(self, path);
+    }
+
+    fn visit_ty(&mut self, ty: &'tcx hir::Ty<'tcx, hir::AmbigArg>) {
+        if let Some(typeck) = self.typeck {
+            match ty.kind {
+                hir::TyKind::Path(hir::QPath::TypeRelative(qself, segment)) => {
+                    let res = typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id);
+                    self.add_ref_from_res(segment.ident.span, res);
+                }
+                hir::TyKind::Path(hir::QPath::Resolved(_, path)) => {
+                    if let Some(seg) = path.segments.last() {
+                        self.add_ref_from_res(seg.ident.span, path.res);
+                    }
+                }
+                _ => {}
+            }
+        }
+        intravisit::walk_ty(self, ty);
     }
 
     fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
@@ -256,9 +300,43 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
             match expr.kind {
                 hir::ExprKind::MethodCall(segment, ..) => {
                     if let Some(def_id) = typeck.type_dependent_def_id(expr.hir_id) {
+                        let is_trait_item = self
+                            .tcx
+                            .opt_associated_item(def_id)
+                            .map(|a| matches!(a.container, rustc_middle::ty::AssocContainer::Trait))
+                            .unwrap_or(false);
+                        let final_def_id = if is_trait_item {
+                            let args = typeck.node_args(expr.hir_id);
+                            if !args.has_param()
+                                && !args.has_infer()
+                                && !args.has_escaping_bound_vars()
+                                && !args.references_error()
+                            {
+                                let body_owner = self.tcx.hir_enclosing_body_owner(expr.hir_id).to_def_id();
+                                let env = rustc_middle::ty::TypingEnv::post_analysis(self.tcx, body_owner);
+                                let norm_args = self
+                                    .tcx
+                                    .try_normalize_erasing_regions(
+                                        env,
+                                        rustc_middle::ty::Unnormalized::new(args),
+                                    )
+                                    .unwrap_or(args);
+                                if let Ok(Some(inst)) =
+                                    rustc_middle::ty::Instance::try_resolve(self.tcx, env, def_id, norm_args)
+                                {
+                                    inst.def_id()
+                                } else {
+                                    def_id
+                                }
+                            } else {
+                                def_id
+                            }
+                        } else {
+                            def_id
+                        };
                         self.add_ref_from_res(
                             segment.ident.span,
-                            Res::Def(self.tcx.def_kind(def_id), def_id),
+                            Res::Def(self.tcx.def_kind(final_def_id), final_def_id),
                         );
                     }
                 }
@@ -753,6 +831,7 @@ fn build_crate_index(
                 "dependencies": dep_keys_or_names,
                 "extern_units": extern_units,
                 "file_hashes": file_hashes,
+                "compiler_args": compiler_args,
             });
             let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
             let _ = fs::write(
@@ -828,6 +907,7 @@ fn build_crate_index(
                             "dependencies": dep_keys_or_names,
                             "extern_units": extern_units,
                             "file_hashes": file_hashes,
+                            "compiler_args": compiler_args,
                         });
                         let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
                         let _ = fs::write(
@@ -911,6 +991,12 @@ fn build_crate_index(
                     let _ = fs::remove_file(&tmp_file_path);
                 } else {
                     // Publish sidecar metadata only after .ridx file is published
+                    let mut env_map = std::collections::HashMap::new();
+                    for var in ["OUT_DIR", "CARGO_MANIFEST_DIR", "CARGO_PKG_NAME", "CARGO_PKG_VERSION", "CARGO_CRATE_NAME"] {
+                        if let Ok(val) = std::env::var(var) {
+                            env_map.insert(var.to_string(), val);
+                        }
+                    }
                     let dep_info = serde_json::json!({
                         "name": crate_name,
                         "version": crate_version,
@@ -922,6 +1008,8 @@ fn build_crate_index(
                         "dependencies": dep_keys_or_names,
                         "extern_units": extern_units,
                         "file_hashes": file_hashes,
+                        "compiler_args": compiler_args,
+                        "env": env_map,
                     });
                     let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
                     let _ = fs::write(

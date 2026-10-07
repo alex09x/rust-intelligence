@@ -12,6 +12,7 @@ Neutral source-level scenario sampling for symmetric LSP benchmarks.
 Extracts usage sites and declaration sites directly from Rust source files.
 """
 
+import collections
 import random
 import re
 from pathlib import Path
@@ -25,10 +26,9 @@ DECL_RE = re.compile(
 )
 
 KEYWORDS_BLACK_LIST = {
-    "fn", "let", "mut", "pub", "async", "await", "match", "if", "else", "loop",
-    "while", "for", "in", "return", "break", "continue", "use", "mod", "super",
-    "self", "Self", "crate", "true", "false", "where", "impl", "trait", "struct",
-    "enum", "type", "const", "static", "move", "ref", "unsafe", "dyn"
+    "fn", "let", "mut", "pub", "async", "await", "match", "if", "else", "loop", "while", "for",
+    "in", "return", "break", "continue", "use", "mod", "super", "self", "Self", "crate", "true",
+    "false", "where", "impl", "trait", "struct", "enum", "type", "const", "static", "move", "ref", "unsafe", "dyn"
 }
 
 
@@ -48,9 +48,21 @@ def scan_source_positions(repo_dir):
 
         try:
             with open(p, "r", encoding="utf-8", errors="replace") as f:
+                in_macro_block = False
+                macro_brace_depth = 0
                 for line_idx, line in enumerate(f, 1):
                     trimmed = line.strip()
                     if not trimmed or trimmed.startswith("//") or trimmed.startswith("/*") or trimmed.startswith("*"):
+                        continue
+
+                    # Filter out macro template bodies (quote!, quote_spanned!, quote_block!, macro_rules!)
+                    if any(m in line for m in ("quote!", "quote_spanned!", "quote_block!", "macro_rules!")):
+                        in_macro_block = True
+                    if in_macro_block:
+                        macro_brace_depth += line.count("{") - line.count("}")
+                        if macro_brace_depth <= 0:
+                            in_macro_block = False
+                            macro_brace_depth = 0
                         continue
 
                     # 1. Declaration sites
@@ -59,40 +71,22 @@ def scan_source_positions(repo_dir):
                         name = m_decl.group(2)
                         if name not in KEYWORDS_BLACK_LIST and len(name) > 1:
                             col = line.find(name) + 1
-                            key = (p_str, line_idx, col)
-                            if key not in seen_decls:
-                                seen_decls.add(key)
-                                declarations.append((p_str, line_idx, col, name, m_decl.group(1)))
+                            if not (col > 1 and line[col - 2] == "#"):
+                                key = (p_str, line_idx, col)
+                                if key not in seen_decls:
+                                    seen_decls.add(key)
+                                    declarations.append((p_str, line_idx, col, name, m_decl.group(1)))
 
-                    # 2. Usage sites: method calls (obj.method())
-                    for m in METHOD_CALL_RE.finditer(line):
-                        name = m.group(1)
-                        if name not in KEYWORDS_BLACK_LIST and len(name) > 1:
-                            col = m.start(1) + 1
-                            key = (p_str, line_idx, col)
-                            if key not in seen_usages:
-                                seen_usages.add(key)
-                                usages.append((p_str, line_idx, col, name, "method_call"))
-
-                    # 3. Usage sites: path identifiers (Module::item or Type::assoc)
-                    for m in PATH_IDENT_RE.finditer(line):
-                        name = m.group(1)
-                        if name not in KEYWORDS_BLACK_LIST and len(name) > 1:
-                            col = m.start(1) + 1
-                            key = (p_str, line_idx, col)
-                            if key not in seen_usages:
-                                seen_usages.add(key)
-                                usages.append((p_str, line_idx, col, name, "path_ident"))
-
-                    # 4. Usage sites: explicit type usage (: TypeName)
-                    for m in TYPE_USAGE_RE.finditer(line):
-                        name = m.group(1)
-                        if name not in KEYWORDS_BLACK_LIST and len(name) > 1:
-                            col = m.start(1) + 1
-                            key = (p_str, line_idx, col)
-                            if key not in seen_usages:
-                                seen_usages.add(key)
-                                usages.append((p_str, line_idx, col, name, "type_usage"))
+                    for regex, u_kind in ((METHOD_CALL_RE, "method_call"), (PATH_IDENT_RE, "path_ident"), (TYPE_USAGE_RE, "type_usage")):
+                        for m in regex.finditer(line):
+                            name = m.group(1)
+                            if name not in KEYWORDS_BLACK_LIST and len(name) > 1:
+                                col = m.start(1) + 1
+                                if not (col > 1 and line[col - 2] == "#"):
+                                    key = (p_str, line_idx, col)
+                                    if key not in seen_usages:
+                                        seen_usages.add(key)
+                                        usages.append((p_str, line_idx, col, name, u_kind))
         except Exception:
             continue
 
@@ -151,6 +145,8 @@ def find_crate_visible_pairs(repo_dir):
                         )
                         if m_fn:
                             fn_header = m_fn.group(1)
+                            if "#" in fn_header:
+                                continue
                             for def_file, prefix in visible_defs:
                                 if def_file != rs_str:
                                     pairs.append({
@@ -187,13 +183,7 @@ def sample_scenarios(repo_dir, count=300, seed=42):
     def_candidates = usages if usages else declarations
     sampled_defs = random.sample(def_candidates, min(len(def_candidates), target_per_cap))
     for idx, (f, line, col, name, kind) in enumerate(sampled_defs):
-        scenarios.append({
-            "name": f"def_{idx}_{name}",
-            "capability": "def",
-            "target": name,
-            "location": [f, line, col],
-            "kind": kind,
-        })
+        scenarios.append({"name": f"def_{idx}_{name}", "capability": "def", "target": name, "location": [f, line, col], "kind": kind})
 
     # 2. Hover scenarios: 70% usages, 30% declarations
     hover_usage_count = int(target_per_cap * 0.7)
@@ -202,13 +192,7 @@ def sample_scenarios(repo_dir, count=300, seed=42):
     sampled_hover_decls = random.sample(declarations, min(len(declarations), hover_decl_count)) if declarations else []
 
     for idx, (f, line, col, name, kind) in enumerate(sampled_hover_usages + sampled_hover_decls):
-        scenarios.append({
-            "name": f"hover_{idx}_{name}",
-            "capability": "hover",
-            "target": name,
-            "location": [f, line, col],
-            "kind": kind,
-        })
+        scenarios.append({"name": f"hover_{idx}_{name}", "capability": "hover", "target": name, "location": [f, line, col], "kind": kind})
 
     # 3. Refs scenarios: 50% usages, 50% declarations
     refs_usage_count = target_per_cap // 2
@@ -217,23 +201,51 @@ def sample_scenarios(repo_dir, count=300, seed=42):
     sampled_refs_decls = random.sample(declarations, min(len(declarations), refs_decl_count)) if declarations else []
 
     for idx, (f, line, col, name, kind) in enumerate(sampled_refs_usages + sampled_refs_decls):
-        scenarios.append({
-            "name": f"refs_{idx}_{name}",
-            "capability": "refs",
-            "target": name,
-            "location": [f, line, col],
-            "kind": kind,
-        })
+        scenarios.append({"name": f"refs_{idx}_{name}", "capability": "refs", "target": name, "location": [f, line, col], "kind": kind})
 
     # 4. Semantic and line-shift cross-file mutations (Point 8 & Review #4751)
-    decl_by_name = {d[3]: d for d in declarations}
+    UBIQUITOUS_NAMES = {
+        "new", "default", "from", "into", "as_ref", "clone", "fmt", "write", "Result", "Option",
+        "Error", "Ok", "Err", "Some", "None", "Value", "Tuple", "Item", "Output", "Target", "Deref",
+        "deref", "Serialize", "Deserialize", "Serializer", "Deserializer", "Visitor", "Seed", "len",
+        "is_empty", "iter", "next", "map", "and_then", "unwrap", "expect", "is_none", "is_some",
+    }
+    ubiquitous_lower = {n.lower() for n in UBIQUITOUS_NAMES}
+    decl_counts = collections.Counter(d[3] for d in declarations)
+    unique_decls = {
+        d[3]: d for d in declarations
+        if decl_counts[d[3]] == 1 and d[3].lower() not in ubiquitous_lower and len(d[3]) >= 4
+    }
+    crate_id_cache = {}
+    def _find_crate_id(fp):
+        if fp not in crate_id_cache:
+            p = Path(fp).resolve()
+            cid = None
+            for parent in p.parents:
+                if (parent / "Cargo.toml").exists():
+                    rel = p.relative_to(parent)
+                    parts = rel.parts
+                    if len(parts) >= 2 and parts[0] == "tests":
+                        cid = (str(parent), "test", parts[1].removesuffix(".rs"))
+                    elif len(parts) >= 2 and parts[0] == "benches":
+                        cid = (str(parent), "bench", parts[1].removesuffix(".rs"))
+                    elif parts[0] == "src":
+                        cid = (str(parent), "src")
+                    else:
+                        cid = (str(parent), parts[0])
+                    break
+            crate_id_cache[fp] = cid
+        return crate_id_cache[fp]
+
     cross_file_pairs = []
     for u in usages:
         u_file, u_line, u_col, u_name, u_kind = u
-        if u_name in decl_by_name:
-            d = decl_by_name[u_name]
+        if u_name in unique_decls:
+            d = unique_decls[u_name]
             d_file, d_line, d_col, _, d_kind = d
-            if d_file != u_file:
+            d_cid = _find_crate_id(d_file)
+            u_cid = _find_crate_id(u_file)
+            if d_file != u_file and d_cid is not None and d_cid == u_cid:
                 cross_file_pairs.append((d, u))
 
     if cross_file_pairs:
@@ -245,7 +257,7 @@ def sample_scenarios(repo_dir, count=300, seed=42):
         visible_pairs = find_crate_visible_pairs(repo_dir)
         if visible_pairs:
             random.shuffle(visible_pairs)
-            n_new = min(len(visible_pairs), 7)
+            n_new = min(len(visible_pairs), 30)
             for idx, p in enumerate(visible_pairs[:n_new]):
                 d_file = p["d_file"]
                 u_file = p["u_file"]
@@ -309,11 +321,24 @@ def sample_scenarios(repo_dir, count=300, seed=42):
                 })
 
         # 4b. Case B: rename in File A, call in File B untouched -> stale overlay detector
-        pairs_rename = cross_file_pairs[n_new : n_new * 2]
+        pairs_rename = cross_file_pairs[n_new : n_new + 30]
         for idx, (d, u) in enumerate(pairs_rename):
             d_file, d_line, d_col, name, d_kind = d
             u_file, u_line, u_col, _, _ = u
             renamed = f"{name}_renamed_stale_{idx}"
+            mut_target = name
+            mut_replace = renamed
+            try:
+                with open(d_file, "r", encoding="utf-8", errors="replace") as f_in:
+                    d_lines = f_in.readlines()
+                if 1 <= d_line <= len(d_lines):
+                    exact_line = d_lines[d_line - 1]
+                    if name in exact_line:
+                        mut_target = exact_line
+                        mut_replace = exact_line.replace(name, renamed, 1)
+            except Exception:
+                pass
+
             scenarios.append({
                 "name": f"mutation_rename_stale_{idx}_{name}",
                 "capability": "def",
@@ -325,8 +350,8 @@ def sample_scenarios(repo_dir, count=300, seed=42):
                     "file_mutations": [
                         {
                             "file": d_file,
-                            "replace_target": name,
-                            "replace_with": renamed,
+                            "replace_target": mut_target,
+                            "replace_with": mut_replace,
                         }
                     ],
                     "expect_not_found": True,
@@ -334,7 +359,7 @@ def sample_scenarios(repo_dir, count=300, seed=42):
             })
 
         # 4c. Case C: 10 empty lines prepended in File A -> line displacement
-        pairs_shift = cross_file_pairs[n_new * 2 : n_new * 3]
+        pairs_shift = cross_file_pairs[n_new + 30 : n_new + 60]
         for idx, (d, u) in enumerate(pairs_shift):
             d_file, d_line, d_col, name, d_kind = d
             u_file, u_line, u_col, _, _ = u

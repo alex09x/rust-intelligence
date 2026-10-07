@@ -124,6 +124,10 @@ pub fn run_server_session(
     ));
     let max_fds = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_fds));
     let max_threads = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_threads));
+    let initial_ridx_fds = super::system::get_process_ridx_fd_count(pid);
+    let initial_ridx_maps = super::system::get_process_ridx_maps_count(pid);
+    let max_ridx_fds = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_ridx_fds));
+    let max_ridx_maps = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_ridx_maps));
 
     let stop_clone = std::sync::Arc::clone(&stop_sampler);
     let cargo_spawned_clone = std::sync::Arc::clone(&cargo_spawned);
@@ -132,6 +136,8 @@ pub fn run_server_session(
     let max_file_clone = std::sync::Arc::clone(&max_file);
     let max_fds_clone = std::sync::Arc::clone(&max_fds);
     let max_threads_clone = std::sync::Arc::clone(&max_threads);
+    let max_ridx_fds_clone = std::sync::Arc::clone(&max_ridx_fds);
+    let max_ridx_maps_clone = std::sync::Arc::clone(&max_ridx_maps);
     let sampler_handle = std::thread::spawn(move || {
         while !stop_clone.load(std::sync::atomic::Ordering::Relaxed) {
             let mem = super::system::get_process_memory_details(pid);
@@ -142,10 +148,14 @@ pub fn run_server_session(
             max_fds_clone.fetch_max(fds, std::sync::atomic::Ordering::Relaxed);
             let ths = super::system::get_process_thread_count(pid);
             max_threads_clone.fetch_max(ths, std::sync::atomic::Ordering::Relaxed);
+            let r_fds = super::system::get_process_ridx_fd_count(pid);
+            max_ridx_fds_clone.fetch_max(r_fds, std::sync::atomic::Ordering::Relaxed);
+            let r_maps = super::system::get_process_ridx_maps_count(pid);
+            max_ridx_maps_clone.fetch_max(r_maps, std::sync::atomic::Ordering::Relaxed);
             if super::system::has_cargo_or_rustc_children(pid) {
                 cargo_spawned_clone.store(true, std::sync::atomic::Ordering::Relaxed);
             }
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            std::thread::sleep(std::time::Duration::from_millis(25));
         }
     });
 
@@ -196,7 +206,7 @@ pub fn run_server_session(
 
         for iter in 0..3 {
             let t_query_start = Instant::now();
-            let resp = execute_scenario_query(
+            let mut resp = execute_scenario_query(
                 &mut reader,
                 &mut stdin,
                 req_id,
@@ -204,9 +214,30 @@ pub fn run_server_session(
                 &sc.target,
                 resolved_loc.as_ref(),
             );
+            let is_cancelled = resp
+                .as_ref()
+                .and_then(|r| r.get("error"))
+                .and_then(|e| e.get("code"))
+                .and_then(|c| c.as_i64())
+                == Some(-32801);
+            if is_cancelled {
+                std::thread::sleep(std::time::Duration::from_millis(25));
+                req_id += 1;
+                resp = execute_scenario_query(
+                    &mut reader,
+                    &mut stdin,
+                    req_id,
+                    &sc.capability,
+                    &sc.target,
+                    resolved_loc.as_ref(),
+                );
+            }
             let lat = t_query_start.elapsed().as_micros();
             iteration_latencies.push(lat);
-            if iter == 0 {
+            let has_err = last_resp
+                .as_ref()
+                .map_or(true, |r: &serde_json::Value| r.get("error").is_some());
+            if iter == 0 || has_err {
                 last_resp = resp;
             }
             req_id += 1;
@@ -248,39 +279,11 @@ pub fn run_server_session(
     let cargo_spawned_val = cargo_spawned.load(std::sync::atomic::Ordering::Relaxed);
 
     // 4. Shutdown & Exit
-    let t_shutdown_start = Instant::now();
-    let shutdown_req = serde_json::json!({
-        "jsonrpc": "2.0",
-        "id": 999,
-        "method": "shutdown",
-        "params": null
-    });
-    let _ = send_lsp_msg(&mut stdin, &shutdown_req);
-    let _ = read_lsp_response_with_writer(&mut reader, &mut stdin, 999);
-    let exit_notif = serde_json::json!({
-        "jsonrpc": "2.0",
-        "method": "exit",
-        "params": null
-    });
-    let _ = send_lsp_msg(&mut stdin, &exit_notif);
-    drop(stdin);
-
-    let deadline = Instant::now() + std::time::Duration::from_millis(500);
-    let mut graceful_exit = false;
-    while Instant::now() < deadline {
-        if let Ok(Some(_)) = child.try_wait() {
-            graceful_exit = true;
-            break;
-        }
-        std::thread::sleep(std::time::Duration::from_millis(5));
-    }
-    if !graceful_exit {
-        let _ = child.kill();
-        let _ = child.wait();
-    }
-    let shutdown_micros = t_shutdown_start.elapsed().as_micros();
+    let shutdown_micros = super::session_helpers::shutdown_lsp_server(&mut reader, stdin, child);
     let peak_open_fds = max_fds.load(std::sync::atomic::Ordering::Relaxed);
     let peak_threads = max_threads.load(std::sync::atomic::Ordering::Relaxed);
+    let peak_ridx_open_fds = max_ridx_fds.load(std::sync::atomic::Ordering::Relaxed);
+    let peak_ridx_mapped_regions = max_ridx_maps.load(std::sync::atomic::Ordering::Relaxed);
 
     Some(ServerMetrics {
         server_name: server_name.to_string(),
@@ -297,6 +300,8 @@ pub fn run_server_session(
         cargo_spawned: cargo_spawned_val,
         peak_open_fds,
         peak_threads,
+        peak_ridx_open_fds,
+        peak_ridx_mapped_regions,
     })
 }
 
@@ -313,6 +318,7 @@ pub fn run_symmetric_comparison(
         scip_path.and_then(|p| super::scip_loader::run_scip_session(p, root, scenarios));
 
     let mut scenario_matches = HashMap::new();
+    let mut scenario_matches_line_level = HashMap::new();
     let mut scip_matches = HashMap::new();
     let mut mutation_verifications = HashMap::new();
     for sc in scenarios {
@@ -351,6 +357,10 @@ pub fn run_symmetric_comparison(
             sc.name.clone(),
             check_results_match(r_res, ra_res, &sc.capability),
         );
+        scenario_matches_line_level.insert(
+            sc.name.clone(),
+            super::session_helpers::check_results_match_line_level(r_res, ra_res, &sc.capability),
+        );
         if let Some(scip_r) = s_res {
             scip_matches.insert(
                 sc.name.clone(),
@@ -365,6 +375,7 @@ pub fn run_symmetric_comparison(
         rust_analyzer: ra_metrics,
         rust_analyzer_scip: scip_metrics,
         scenario_matches,
+        scenario_matches_line_level,
         scip_matches,
         mutation_verifications,
     })
