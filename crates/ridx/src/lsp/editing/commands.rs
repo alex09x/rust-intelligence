@@ -343,3 +343,43 @@ pub fn handle_apply_edit_response(msg: &Value) -> Option<(Option<Value>, Value)>
         ))
     }
 }
+
+pub fn try_dispatch_apply_edits_command<W: std::io::Write>(
+    msg: &Value,
+    overlay_mgr: &mut OverlayManager,
+    writer: &mut W,
+    id: &mut Option<Value>,
+) -> std::io::Result<Option<bool>> {
+    if msg["params"]["command"].as_str() != Some("ridx.applyEdits") {
+        return Ok(None);
+    }
+    let args = msg["params"]["arguments"]
+        .as_array()
+        .map(|a| a.as_slice())
+        .unwrap_or(&[]);
+    match plan_apply_edits(args, overlay_mgr) {
+        Ok(plan) => {
+            let apply_req_id = get_next_apply_id();
+            crate::lsp::protocol::send_response(
+                writer,
+                &json!({
+                    "jsonrpc": "2.0",
+                    "id": apply_req_id,
+                    "method": "workspace/applyEdit",
+                    "params": { "label": "Apply refactoring edits", "edit": plan.combined_edit }
+                }),
+            )?;
+            register_pending_apply(apply_req_id, id.take(), plan);
+            Ok(Some(true))
+        }
+        Err(err) => {
+            if let Some(ref req_id) = id {
+                crate::lsp::protocol::send_response(
+                    writer,
+                    &json!({ "jsonrpc": "2.0", "id": req_id, "result": err }),
+                )?;
+            }
+            Ok(Some(true))
+        }
+    }
+}

@@ -175,7 +175,13 @@ pub fn dispatch_lsp_message<W: Write>(
             return Ok(true);
         }
 
-        "textDocument/publishDiagnostics" => return Ok(true),
+        "textDocument/publishDiagnostics" | "textDocument/willSave" => return Ok(true),
+        "textDocument/willSaveWaitUntil" => json!([]),
+
+        "workspace/didChangeConfiguration" | "$/setTrace" | "window/workDoneProgress/cancel" => {
+            return Ok(true)
+        }
+        "workspace/configuration" => json!([]),
 
         "workspace/didChangeWorkspaceFolders" => {
             multi_root.handle_did_change_workspace_folders(&msg);
@@ -185,6 +191,17 @@ pub fn dispatch_lsp_message<W: Write>(
         "workspace/didChangeWatchedFiles" => {
             multi_root.reload_all_if_modified();
             return Ok(true);
+        }
+
+        "workspace/didCreateFiles" => {
+            for ws in multi_root.all_workspaces_mut() {
+                sync_reloaded_index(ws, overlay_mgr);
+            }
+            return Ok(true);
+        }
+
+        "workspace/willCreateFiles" | "workspace/willRenameFiles" | "workspace/willDeleteFiles" => {
+            json!({})
         }
 
         "workspace/didRenameFiles" => {
@@ -246,6 +263,7 @@ pub fn dispatch_lsp_message<W: Write>(
             handle_signature_help(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
         }
         "textDocument/inlayHint" => handle_inlay_hint(&msg, multi_root.doc_ws(&msg), overlay_mgr),
+        "inlayHint/resolve" => handle_inlay_hint_resolve(&msg),
         "textDocument/inlineValue" => handle_inline_value(&msg, Some(overlay_mgr)),
         "textDocument/inlineCompletion" => handle_inline_completion(&msg, Some(overlay_mgr)),
         "textDocument/prepareCallHierarchy" => {
@@ -285,6 +303,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/semanticTokens/full" | "textDocument/semanticTokens/full/delta" => {
             handle_semantic_tokens_full(&msg, overlay_mgr)
         }
+        "textDocument/semanticTokens/range" => handle_semantic_tokens_range(&msg, overlay_mgr),
         "textDocument/foldingRange" => handle_folding_range(&msg, overlay_mgr),
         "textDocument/codeLens" => handle_code_lens(&msg, overlay_mgr),
         "codeLens/resolve" => handle_code_lens_resolve(&msg),
@@ -294,6 +313,7 @@ pub fn dispatch_lsp_message<W: Write>(
             let ws = multi_root.doc_ws(&msg);
             handle_moniker(&msg, ws, overlay_mgr, &mut conv)
         }
+        "moniker/resolve" => handle_moniker_resolve(&msg),
         "textDocument/content" | "workspace/textDocumentContent" => {
             handle_text_document_content(&msg, overlay_mgr)
         }
@@ -314,36 +334,9 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/codeAction" => handle_code_action(&msg, overlay_mgr),
         "codeAction/resolve" => handle_code_action_resolve(&msg),
         "workspace/executeCommand" => {
-            if msg["params"]["command"].as_str() == Some("ridx.applyEdits") {
-                let args = msg["params"]["arguments"]
-                    .as_array()
-                    .map(|a| a.as_slice())
-                    .unwrap_or(&[]);
-                match plan_apply_edits(args, overlay_mgr) {
-                    Ok(plan) => {
-                        let apply_req_id = get_next_apply_id();
-                        send_response(
-                            writer,
-                            &json!({
-                                "jsonrpc": "2.0",
-                                "id": apply_req_id,
-                                "method": "workspace/applyEdit",
-                                "params": { "label": "Apply refactoring edits", "edit": plan.combined_edit }
-                            }),
-                        )?;
-                        register_pending_apply(apply_req_id, id.take(), plan);
-                        return Ok(true);
-                    }
-                    Err(err) => {
-                        if let Some(ref req_id) = id {
-                            send_response(
-                                writer,
-                                &json!({ "jsonrpc": "2.0", "id": req_id, "result": err }),
-                            )?;
-                        }
-                        return Ok(true);
-                    }
-                }
+            if let Some(res) = try_dispatch_apply_edits_command(&msg, overlay_mgr, writer, &mut id)?
+            {
+                return Ok(res);
             }
             handle_execute_command(&msg, overlay_mgr)
         }

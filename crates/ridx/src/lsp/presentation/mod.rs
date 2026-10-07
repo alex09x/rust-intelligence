@@ -157,6 +157,10 @@ pub fn handle_moniker(
     json!([])
 }
 
+pub fn handle_moniker_resolve(msg: &Value) -> Value {
+    msg.get("params").cloned().unwrap_or(Value::Null)
+}
+
 pub fn handle_text_document_content(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     let uri = msg["params"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);

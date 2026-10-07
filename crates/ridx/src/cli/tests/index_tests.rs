@@ -235,6 +235,7 @@ fn test_cli_single_arg_auto_discover() {
 
 #[test]
 fn test_cli_parser_and_resolve_errors() {
+    let _lock = lock_cli_test();
     use crate::cli::args::Cli;
     use clap::Parser;
 

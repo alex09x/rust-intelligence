@@ -10,7 +10,7 @@
 
 //! Workspace discovery, path resolution, and index opening helpers.
 
-use crate::indexer::{run_indexing, IndexOptions};
+use crate::indexer::{try_run_indexing, IndexOptions};
 use colored::*;
 use ridx_format::WorkspaceIndex;
 use std::fs;
@@ -196,7 +196,7 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                         }
                     };
 
-                    let published = run_indexing(IndexOptions {
+                    let published = match try_run_indexing(IndexOptions {
                         path: work_dir,
                         out_dir_opt,
                         package,
@@ -205,7 +205,10 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                         no_default_features,
                         all_features,
                         target,
-                    });
+                    }) {
+                        Ok(p) => p,
+                        Err(e) => return Err(format!("Automatic indexing failed: {e}")),
+                    };
 
                     // Reopen the rebuilt variant or shard rather than failing on an obsolete artifact path:
                     let mut cand_paths = Vec::new();
@@ -280,7 +283,7 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                     "{} No valid RIDX index found for current workspace (expected format v{}). Automatically indexing...",
                     "Notice:".yellow().bold(), ridx_format::CURRENT_FORMAT_VERSION
                 );
-                run_indexing(IndexOptions {
+                if let Err(err) = try_run_indexing(IndexOptions {
                     path: work_dir,
                     out_dir_opt,
                     package,
@@ -289,7 +292,9 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                     no_default_features,
                     all_features,
                     target,
-                });
+                }) {
+                    return Err(format!("Automatic indexing failed: {err}"));
+                }
                 match WorkspaceIndex::auto_discover() {
                     Ok(ws) => Ok(ws),
                     Err(e2) => Err(format!("Failed to auto-discover reindexed workspace: {e2}")),

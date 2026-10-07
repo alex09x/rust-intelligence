@@ -221,6 +221,30 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 54, "method": "textDocument/onTypeFormatting", "params": { "textDocument": { "uri": doc_uri }, "position": { "line": 0, "character": 0 }, "ch": ";", "options": { "tabSize": 4, "insertSpaces": true } } })));
 
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 56, "method": "textDocument/semanticTokens/range", "params": { "textDocument": { "uri": doc_uri }, "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 5, "character": 0 } } } })));
+
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 57, "method": "inlayHint/resolve", "params": { "position": { "line": 0, "character": 0 }, "label": ": i32" } })));
+
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 58, "method": "moniker/resolve", "params": { "scheme": "ridx", "identifier": "calc" } })));
+
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "textDocument/willSave", "params": { "textDocument": { "uri": doc_uri }, "reason": 1 } })));
+
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 59, "method": "textDocument/willSaveWaitUntil", "params": { "textDocument": { "uri": doc_uri }, "reason": 1 } })));
+
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 60, "method": "workspace/configuration", "params": { "items": [{ "section": "rust-analyzer" }] } })));
+
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "workspace/didCreateFiles", "params": { "files": [{ "uri": doc_uri }] } })));
+
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 61, "method": "workspace/willCreateFiles", "params": { "files": [{ "uri": doc_uri }] } })));
+
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 62, "method": "workspace/willRenameFiles", "params": { "files": [{ "oldUri": doc_uri, "newUri": doc_uri }] } })));
+
+    input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "id": 63, "method": "workspace/willDeleteFiles", "params": { "files": [{ "uri": doc_uri }] } })));
+
+    input.extend(make_lsp_msg(
+        &json!({ "jsonrpc": "2.0", "method": "$/setTrace", "params": { "value": "verbose" } }),
+    ));
+
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "workspace/didChangeConfiguration", "params": { "settings": {} } })));
 
     input.extend(make_lsp_msg(&json!({ "jsonrpc": "2.0", "method": "workspace/didRenameFiles", "params": { "files": [{ "oldUri": doc_uri, "newUri": doc_uri }] } })));
@@ -265,6 +289,30 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
     let cancel_resp = responses.iter().find(|r| r["id"] == 55);
     assert!(cancel_resp.is_some());
     assert_eq!(cancel_resp.unwrap()["error"]["code"], -32800);
+
+    let sem_range = responses.iter().find(|r| r["id"] == 56);
+    assert!(sem_range.is_some() && sem_range.unwrap()["result"]["data"].is_array());
+
+    let inlay_res = responses.iter().find(|r| r["id"] == 57);
+    assert!(inlay_res.is_some() && inlay_res.unwrap()["result"]["tooltip"].is_string());
+
+    let moniker_res = responses.iter().find(|r| r["id"] == 58);
+    assert!(moniker_res.is_some() && moniker_res.unwrap()["result"]["scheme"] == "ridx");
+
+    let will_save_wait = responses.iter().find(|r| r["id"] == 59);
+    assert!(will_save_wait.is_some() && will_save_wait.unwrap()["result"].is_array());
+
+    let ws_config = responses.iter().find(|r| r["id"] == 60);
+    assert!(ws_config.is_some() && ws_config.unwrap()["result"].is_array());
+
+    let will_create = responses.iter().find(|r| r["id"] == 61);
+    assert!(will_create.is_some() && will_create.unwrap()["result"].is_object());
+
+    let will_rename = responses.iter().find(|r| r["id"] == 62);
+    assert!(will_rename.is_some() && will_rename.unwrap()["result"].is_object());
+
+    let will_delete = responses.iter().find(|r| r["id"] == 63);
+    assert!(will_delete.is_some() && will_delete.unwrap()["result"].is_object());
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }

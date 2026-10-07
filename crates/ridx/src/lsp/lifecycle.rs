@@ -95,79 +95,87 @@ impl LifecycleManager {
             }
         }
 
-        let capabilities = json!({
-            "capabilities": {
-                "textDocumentSync": {
-                    "openClose": true,
-                    "change": 2, // Incremental
-                    "save": { "includeText": false }
-                },
-                "definitionProvider": true,
-                "declarationProvider": true,
-                "typeDefinitionProvider": true,
-                "implementationProvider": true,
-                "referencesProvider": true,
-                "documentHighlightProvider": true,
-                "documentSymbolProvider": true,
-                "workspaceSymbolProvider": {
-                    "resolveProvider": true
-                },
-                "hoverProvider": true,
-                "completionProvider": {
-                    "triggerCharacters": [".", ":"],
-                    "resolveProvider": true
-                },
-                "signatureHelpProvider": {
-                    "triggerCharacters": ["(", ","]
-                },
-                "documentFormattingProvider": true,
-                "renameProvider": {
-                    "prepareProvider": true
-                },
-                "callHierarchyProvider": true,
-                "typeHierarchyProvider": true,
-                "semanticTokensProvider": {
-                    "legend": {
-                        "tokenTypes": [
-                            "namespace", "type", "class", "enum", "interface",
-                            "struct", "typeParameter", "parameter", "variable",
-                            "property", "enumMember", "function", "method",
-                            "macro", "keyword", "comment", "string", "number"
-                        ],
-                        "tokenModifiers": ["declaration", "definition", "readonly", "static"]
-                    },
-                    "full": true
-                },
-                "documentLinkProvider": {
-                    "resolveProvider": true
-                },
-                "selectionRangeProvider": true,
-                "foldingRangeProvider": true,
-                "codeActionProvider": {
-                    "codeActionKinds": ["quickfix", "refactor", "source.organizeImports"],
-                    "resolveProvider": true
-                },
-                "codeLensProvider": {
-                    "resolveProvider": true
-                },
-                "inlayHintProvider": {
-                    "resolveProvider": false
-                },
-                "workspace": {
-                    "workspaceFolders": {
-                        "supported": true,
-                        "changeNotifications": true
-                    },
-                    "fileOperations": {
-                        "didRename": {
-                            "filters": [{ "pattern": { "glob": "**/*.rs" } }]
-                        },
-                        "didDelete": {
-                            "filters": [{ "pattern": { "glob": "**/*.rs" } }]
-                        }
-                    }
-                }
+        let rs_filter = json!([{ "pattern": { "glob": "**/*.rs" } }]);
+        let file_operations = json!({
+            "didCreate": { "filters": rs_filter },
+            "willCreate": { "filters": rs_filter },
+            "didRename": { "filters": rs_filter },
+            "willRename": { "filters": rs_filter },
+            "didDelete": { "filters": rs_filter },
+            "willDelete": { "filters": rs_filter }
+        });
+
+        let mut caps = json!({
+            "textDocumentSync": {
+                "openClose": true,
+                "change": 2, // Incremental
+                "willSave": true,
+                "willSaveWaitUntil": true,
+                "save": { "includeText": false }
             },
+            "definitionProvider": true,
+            "declarationProvider": true,
+            "typeDefinitionProvider": true,
+            "implementationProvider": true,
+            "referencesProvider": true,
+            "documentHighlightProvider": true,
+            "documentSymbolProvider": true,
+            "workspaceSymbolProvider": { "resolveProvider": true },
+            "hoverProvider": true,
+            "completionProvider": {
+                "triggerCharacters": [".", ":"],
+                "resolveProvider": true
+            },
+            "signatureHelpProvider": {
+                "triggerCharacters": ["(", ","]
+            },
+            "documentFormattingProvider": true,
+            "documentRangeFormattingProvider": true,
+            "documentOnTypeFormattingProvider": {
+                "firstTriggerCharacter": ";",
+                "moreTriggerCharacter": ["}"]
+            },
+            "renameProvider": { "prepareProvider": true },
+            "linkedEditingRangeProvider": true,
+            "callHierarchyProvider": true,
+            "typeHierarchyProvider": true,
+            "documentLinkProvider": { "resolveProvider": true },
+            "documentColorProvider": true,
+            "selectionRangeProvider": true,
+            "foldingRangeProvider": true,
+            "codeActionProvider": {
+                "codeActionKinds": ["quickfix", "refactor", "source.organizeImports"],
+                "resolveProvider": true
+            },
+            "codeLensProvider": { "resolveProvider": true },
+            "inlayHintProvider": { "resolveProvider": true },
+            "inlineValueProvider": true,
+            "monikerProvider": true,
+            "workspace": {
+                "workspaceFolders": {
+                    "supported": true,
+                    "changeNotifications": true
+                },
+                "fileOperations": file_operations
+            }
+        });
+
+        caps["semanticTokensProvider"] = json!({
+            "legend": {
+                "tokenTypes": [
+                    "namespace", "type", "class", "enum", "interface",
+                    "struct", "typeParameter", "parameter", "variable",
+                    "property", "enumMember", "function", "method",
+                    "macro", "keyword", "comment", "string", "number"
+                ],
+                "tokenModifiers": ["declaration", "definition", "readonly", "static"]
+            },
+            "range": true,
+            "full": { "delta": true }
+        });
+
+        let capabilities = json!({
+            "capabilities": caps,
             "serverInfo": {
                 "name": "ridx",
                 "version": "0.1.0"

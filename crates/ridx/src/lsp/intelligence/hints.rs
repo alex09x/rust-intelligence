@@ -213,3 +213,11 @@ pub fn handle_inline_completion(
     }
     json!({ "items": items })
 }
+
+pub fn handle_inlay_hint_resolve(msg: &Value) -> Value {
+    let mut hint = msg.get("params").cloned().unwrap_or(Value::Null);
+    if hint.is_object() && hint.get("tooltip").is_none() {
+        hint["tooltip"] = json!("Inferred type by ridx");
+    }
+    hint
+}

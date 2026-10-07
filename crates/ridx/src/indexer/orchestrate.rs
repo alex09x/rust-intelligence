@@ -376,7 +376,10 @@ pub fn run_indexing(opts: IndexOptions) -> PublishedVariant {
         Ok(pv) => pv,
         Err(e) => {
             eprintln!("{}: {e}", "Error".red().bold());
+            #[cfg(not(test))]
             std::process::exit(1);
+            #[cfg(test)]
+            panic!("{e}");
         }
     }
 }
