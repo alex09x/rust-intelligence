@@ -272,6 +272,24 @@ impl WorkspaceIndex {
                         &target_path[extern_alias.len() + 2..]
                     );
                     r.find_definition_by_path(&mapped_path)
+                } else if res.file != "external" && !res.file.is_empty() {
+                    let file_id_opt = (0..r.header().files_count).find(|&fid| {
+                        let f_name = r.get_file(fid);
+                        f_name == res.file
+                            || res.file.ends_with(f_name)
+                            || f_name.ends_with(res.file)
+                    });
+                    if let Some(fid) = file_id_opt {
+                        r.definitions()
+                            .iter()
+                            .find(|d| {
+                                d.span().file_id() == fid
+                                    && r.get_str(d.name_offset()) == res.name
+                            })
+                            .copied()
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 };
@@ -322,9 +340,6 @@ impl WorkspaceIndex {
                     }
                 }
                 return Some(resolved_candidates.remove(0));
-            }
-            if target_unit.is_some() {
-                return None;
             }
         }
 
