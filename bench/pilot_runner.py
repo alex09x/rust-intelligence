@@ -181,6 +181,7 @@ def run_benchmark_for_repo(
         "match_rate_pct": match_rate,
         "metrics": metrics,
         "machine_metrics": machine_metrics,
+        "mutation_verifications": summary.get("mutation_verifications", {}),
     })
 
     if discrepancies_path and matched_scenarios < total_scenarios:

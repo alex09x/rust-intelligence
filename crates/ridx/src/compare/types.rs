@@ -47,11 +47,46 @@ pub struct ExternalLspResult {
     pub rss_bytes: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ScenarioMutation {
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct FileMutation {
     pub file: String,
-    pub insert_lines: u32,
+    #[serde(default)]
     pub text: String,
+    #[serde(default)]
+    pub is_append: bool,
+    #[serde(default)]
+    pub replace_target: Option<String>,
+    #[serde(default)]
+    pub replace_with: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ScenarioMutation {
+    #[serde(default)]
+    pub kind: String,
+    #[serde(default)]
+    pub file: String,
+    #[serde(default)]
+    pub insert_lines: u32,
+    #[serde(default)]
+    pub text: String,
+    #[serde(default)]
+    pub file_mutations: Vec<FileMutation>,
+    #[serde(default)]
+    pub expect_not_found: bool,
+    #[serde(default)]
+    pub expected_target_file: Option<String>,
+    #[serde(default)]
+    pub expected_target_line_delta: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MutationVerification {
+    pub kind: String,
+    pub ridx_correct: bool,
+    pub ra_correct: bool,
+    pub ridx_latency_micros: u128,
+    pub ra_latency_micros: u128,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -90,6 +125,8 @@ pub struct SymmetricComparisonSummary {
     pub ridx: ServerMetrics,
     pub rust_analyzer: ServerMetrics,
     pub scenario_matches: HashMap<String, bool>,
+    #[serde(default)]
+    pub mutation_verifications: HashMap<String, MutationVerification>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

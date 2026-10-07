@@ -157,7 +157,7 @@ def sample_scenarios(repo_dir, count=300, seed=42):
             "kind": kind,
         })
 
-    # 4. Mutation scenarios (Point 8): cross-file edit in File A shifts lines, query in File B
+    # 4. Semantic and line-shift cross-file mutations (Point 8 & Review #4751)
     decl_by_name = {d[3]: d for d in declarations}
     cross_file_pairs = []
     for u in usages:
@@ -169,25 +169,88 @@ def sample_scenarios(repo_dir, count=300, seed=42):
                 cross_file_pairs.append((d, u))
 
     if cross_file_pairs:
-        mutation_count = min(len(cross_file_pairs), 20)
-        sampled_mutations = random.sample(cross_file_pairs, mutation_count)
-        for idx, (d, u) in enumerate(sampled_mutations):
+        random.shuffle(cross_file_pairs)
+        n_pairs = len(cross_file_pairs)
+
+        # 4a. Case A: new function in File A, call in File B (didChange in both without saving)
+        n_new = min(max(2, n_pairs // 3), 7)
+        for idx, (d, u) in enumerate(cross_file_pairs[:n_new]):
+            d_file, d_line, d_col, name, d_kind = d
+            u_file, u_line, u_col, _, _ = u
+            probe_name = f"bench_probe_{idx}"
+            scenarios.append({
+                "name": f"mutation_new_symbol_{idx}_{probe_name}",
+                "capability": "def",
+                "target": probe_name,
+                "location": [u_file, u_line, u_col],
+                "kind": "new_symbol",
+                "mutation": {
+                    "kind": "new_symbol",
+                    "file_mutations": [
+                        {
+                            "file": d_file,
+                            "text": f"\npub fn {probe_name}() -> usize {{ 42 }}\n",
+                            "is_append": True,
+                        },
+                        {
+                            "file": u_file,
+                            "replace_target": name,
+                            "replace_with": probe_name,
+                        },
+                    ],
+                    "expected_target_file": d_file,
+                },
+            })
+
+        # 4b. Case B: rename in File A, call in File B untouched -> stale overlay detector
+        pairs_rename = cross_file_pairs[n_new : n_new * 2]
+        for idx, (d, u) in enumerate(pairs_rename):
+            d_file, d_line, d_col, name, d_kind = d
+            u_file, u_line, u_col, _, _ = u
+            renamed = f"{name}_renamed_stale_{idx}"
+            scenarios.append({
+                "name": f"mutation_rename_stale_{idx}_{name}",
+                "capability": "def",
+                "target": name,
+                "location": [u_file, u_line, u_col],
+                "kind": "rename_stale",
+                "mutation": {
+                    "kind": "rename_stale",
+                    "file_mutations": [
+                        {
+                            "file": d_file,
+                            "replace_target": name,
+                            "replace_with": renamed,
+                        }
+                    ],
+                    "expect_not_found": True,
+                },
+            })
+
+        # 4c. Case C: 10 empty lines prepended in File A -> line displacement
+        pairs_shift = cross_file_pairs[n_new * 2 : n_new * 3]
+        for idx, (d, u) in enumerate(pairs_shift):
             d_file, d_line, d_col, name, d_kind = d
             u_file, u_line, u_col, _, _ = u
             insert_lines = 10
             scenarios.append({
-                "name": f"mutation_cross_file_{idx}_{name}",
+                "name": f"mutation_line_shift_{idx}_{name}",
                 "capability": "def",
                 "target": name,
                 "location": [u_file, u_line, u_col],
-                "kind": "cross_file_mutation",
+                "kind": "line_shift",
                 "mutation": {
-                    "file": d_file,
-                    "insert_lines": insert_lines,
-                    "text": "\n" * insert_lines,
+                    "kind": "line_shift",
+                    "file_mutations": [
+                        {
+                            "file": d_file,
+                            "text": "\n" * insert_lines,
+                            "is_append": False,
+                        }
+                    ],
+                    "expected_target_file": d_file,
+                    "expected_target_line_delta": insert_lines,
                 },
-                "expected_target_file": d_file,
-                "expected_target_line_delta": insert_lines,
             })
 
     return scenarios

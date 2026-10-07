@@ -88,6 +88,7 @@ fn test_symmetric_summary_serialization_roundtrip() {
         ridx: ridx_metrics,
         rust_analyzer: ra_metrics,
         scenario_matches: matches,
+        mutation_verifications: HashMap::new(),
     };
 
     let json_str = serde_json::to_string(&summary).unwrap();

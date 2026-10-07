@@ -219,8 +219,8 @@ pub fn run_server_session(
             req_id += 1;
         }
 
-        if let Some(mut_spec) = &sc.mutation {
-            let _ = mutation_mgr.revert(&mut stdin, mut_spec, root);
+        if sc.mutation.is_some() {
+            let _ = mutation_mgr.revert(&mut stdin);
         }
 
         let cold_latency = iteration_latencies[0];
@@ -313,9 +313,36 @@ pub fn run_symmetric_comparison(
     let ra_metrics = run_server_session("rust-analyzer", ra_cmd, root, scenarios)?;
 
     let mut scenario_matches = HashMap::new();
+    let mut mutation_verifications = HashMap::new();
     for sc in scenarios {
         let r_res = ridx_metrics.query_results.get(&sc.name);
         let ra_res = ra_metrics.query_results.get(&sc.name);
+
+        if let Some(mut_spec) = &sc.mutation {
+            let r_corr = super::mutation::verify_mutation(r_res, mut_spec);
+            let ra_corr = super::mutation::verify_mutation(ra_res, mut_spec);
+            let r_lat = ridx_metrics
+                .query_latencies_micros
+                .get(&sc.name)
+                .copied()
+                .unwrap_or(0);
+            let ra_lat = ra_metrics
+                .query_latencies_micros
+                .get(&sc.name)
+                .copied()
+                .unwrap_or(0);
+            mutation_verifications.insert(
+                sc.name.clone(),
+                super::types::MutationVerification {
+                    kind: mut_spec.kind.clone(),
+                    ridx_correct: r_corr,
+                    ra_correct: ra_corr,
+                    ridx_latency_micros: r_lat,
+                    ra_latency_micros: ra_lat,
+                },
+            );
+        }
+
         let is_match = match (r_res, ra_res) {
             (Some(r), Some(ra)) => {
                 if !r.found && !ra.found {
@@ -340,5 +367,6 @@ pub fn run_symmetric_comparison(
         ridx: ridx_metrics,
         rust_analyzer: ra_metrics,
         scenario_matches,
+        mutation_verifications,
     })
 }
