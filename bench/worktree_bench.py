@@ -23,115 +23,7 @@ from pathlib import Path
 from corpus import audit_process_ridx_maps, get_process_smaps_rollup, run_cmd, run_cmd_with_rss
 from metrics import format_ratio_with_ci, percentile
 
-class SimpleLspProcess:
-    def __init__(self, cmd, cwd, is_ra=False):
-        self.cmd = cmd
-        self.cwd = str(cwd)
-        self.is_ra = is_ra
-        self.p = subprocess.Popen(
-            cmd, cwd=self.cwd,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
-        )
-        self.next_id = 1
-        self._init_server()
-
-    def send_msg(self, m):
-        b = json.dumps(m).encode("utf-8")
-        hdr = f"Content-Length: {len(b)}\r\n\r\n".encode("utf-8")
-        self.p.stdin.write(hdr + b)
-        self.p.stdin.flush()
-
-    def read_msg(self, timeout=1.0):
-        r, _, _ = select.select([self.p.stdout], [], [], timeout)
-        if not r:
-            return None
-        line = self.p.stdout.readline().decode(errors="ignore")
-        if not line.startswith("Content-Length:"):
-            return None
-        cl = int(line.split(":")[1].strip())
-        self.p.stdout.readline()
-        data = self.p.stdout.read(cl).decode(errors="ignore")
-        return json.loads(data)
-
-    def _init_server(self):
-        req = {
-            "jsonrpc": "2.0", "id": self.next_id, "method": "initialize",
-            "params": {
-                "processId": None, "rootUri": f"file://{self.cwd}",
-                "initializationOptions": {"checkOnSave": False},
-                "capabilities": {
-                    "window": {"workDoneProgress": True},
-                    "experimental": {"serverStatusNotification": True},
-                },
-            },
-        }
-        self.next_id += 1
-        self.send_msg(req)
-        self.read_msg(timeout=5.0)
-        self.send_msg({"jsonrpc": "2.0", "method": "initialized", "params": {}})
-        if self.is_ra:
-            self.wait_quiescent(timeout=30.0, settle_idle=1.0)
-
-    def wait_quiescent(self, timeout=20.0, settle_idle=0.5):
-        t0 = time.perf_counter()
-        seen_busy = False
-        last_busy = t0
-        while time.perf_counter() - t0 < timeout:
-            msg = self.read_msg(timeout=0.1)
-            if not msg:
-                if seen_busy and (time.perf_counter() - last_busy > settle_idle):
-                    return (time.perf_counter() - t0) * 1000.0
-                if not seen_busy and (time.perf_counter() - t0 > settle_idle):
-                    return (time.perf_counter() - t0) * 1000.0
-                continue
-            if "method" in msg and "id" in msg:
-                self.send_msg({"jsonrpc": "2.0", "id": msg["id"], "result": None})
-            if msg.get("method") == "experimental/serverStatus":
-                quiescent = msg.get("params", {}).get("quiescent", False)
-                if not quiescent:
-                    seen_busy = True
-                    last_busy = time.perf_counter()
-                elif quiescent and seen_busy:
-                    return (time.perf_counter() - t0) * 1000.0
-        return (time.perf_counter() - t0) * 1000.0
-
-    def notify_watched_files(self, uris):
-        changes = [{"uri": u, "type": 2} for u in uris]
-        self.send_msg({
-            "jsonrpc": "2.0",
-            "method": "workspace/didChangeWatchedFiles",
-            "params": {"changes": changes},
-        })
-
-    def query_def(self, uri, line, col, timeout=5.0):
-        req_id = self.next_id
-        self.next_id += 1
-        req = {
-            "jsonrpc": "2.0", "id": req_id, "method": "textDocument/definition",
-            "params": {
-                "textDocument": {"uri": uri},
-                "position": {"line": line, "character": col},
-            },
-        }
-        t0 = time.perf_counter()
-        self.send_msg(req)
-        while time.perf_counter() - t0 < timeout:
-            msg = self.read_msg(timeout=0.2)
-            if not msg:
-                continue
-            if "method" in msg and "id" in msg:
-                self.send_msg({"jsonrpc": "2.0", "id": msg["id"], "result": None})
-            if msg.get("id") == req_id:
-                dur_us = (time.perf_counter() - t0) * 1_000_000.0
-                return msg.get("result"), dur_us
-        return None, (time.perf_counter() - t0) * 1_000_000.0
-
-    def close(self):
-        try:
-            self.p.kill()
-            self.p.wait()
-        except Exception:
-            pass
+from lsp_process import SimpleLspProcess
 
 def get_first_parent_history(repo_dir, steps=30):
     code, out, _, _ = run_cmd(
@@ -208,14 +100,40 @@ def run_scenario_w1_commit_walk(repo_dir, ridx_bin, ra_bin, steps=30):
                             for im in ident_re.finditer(line):
                                 if im.group(1) not in skip_kw:
                                     candidates.append((uri, l_idx, im.start(1)))
-                                    if len(candidates) >= 10:
+                                    if len(candidates) >= 5:
                                         break
-                        if len(candidates) >= 10:
+                        if len(candidates) >= 5:
                             break
                 except Exception:
                     pass
+                if len(candidates) >= 5:
+                    break
+
+            # Also sample probe candidates from downstream rdeps to verify cross-crate resolution
+            rdep_patterns = ["test_suite/tests/*.rs", "serde_derive_internals/src/*.rs"]
+            for pat in rdep_patterns:
                 if len(candidates) >= 10:
                     break
+                for rdep_f in sorted(Path(repo_dir).glob(pat)):
+                    rel = str(rdep_f.relative_to(repo_dir))
+                    if rel in changed or not rdep_f.is_file():
+                        continue
+                    r_uri = f"file://{rdep_f}"
+                    try:
+                        with open(rdep_f, "r", encoding="utf-8", errors="ignore") as f_in:
+                            r_lines = f_in.readlines()
+                        for l_idx, line in enumerate(r_lines[:150]):
+                            for im in ident_re.finditer(line):
+                                if im.group(1) not in skip_kw and len(im.group(1)) > 3:
+                                    candidates.append((r_uri, l_idx, im.start(1)))
+                                    if len(candidates) >= 10:
+                                        break
+                            if len(candidates) >= 10:
+                                break
+                    except Exception:
+                        pass
+                    if len(candidates) >= 10:
+                        break
 
             if not candidates:
                 for cand in [Path(repo_dir) / "serde" / "src" / "lib.rs", Path(repo_dir) / "src" / "lib.rs"]:
@@ -257,6 +175,7 @@ def run_scenario_w1_commit_walk(repo_dir, ridx_bin, ra_bin, steps=30):
             set_r = [ridx_srv.query_def(u, l, c)[0] for (u, l, c) in candidates]
             set_ra = [ra_srv.query_def(u, l, c)[0] for (u, l, c) in candidates]
 
+            results["post_reindex_stale"] = results.get("post_reindex_stale", {"ridx": 0, "ra": 0})
             for idx in range(len(candidates)):
                 if set_r[idx] is not None:
                     results["valid_probes"]["ridx"] += 1
@@ -266,6 +185,11 @@ def run_scenario_w1_commit_walk(repo_dir, ridx_bin, ra_bin, steps=30):
                     results["valid_probes"]["ra"] += 1
                     if imm_ra[idx] != set_ra[idx]:
                         results["immediate_stale"]["ra"] += 1
+
+                if set_ra[idx] is not None and set_r[idx] is None:
+                    results["post_reindex_stale"]["ridx"] += 1
+                if set_r[idx] is not None and set_ra[idx] is None:
+                    results["post_reindex_stale"]["ra"] += 1
     finally:
         ridx_srv.close()
         ra_srv.close()
@@ -275,13 +199,15 @@ def run_scenario_w1_commit_walk(repo_dir, ridx_bin, ra_bin, steps=30):
     tot_ra = max(1, results["valid_probes"]["ra"])
     r_imm = results["immediate_stale"]["ridx"]
     ra_imm = results["immediate_stale"]["ra"]
+    r_post = results.get("post_reindex_stale", {}).get("ridx", 0)
+    ra_post = results.get("post_reindex_stale", {}).get("ra", 0)
     results["immediate_stale_str"] = {
         "ridx": format_ratio_with_ci(r_imm, tot_r),
         "ra": format_ratio_with_ci(ra_imm, tot_ra),
     }
     results["post_reindex_stale_str"] = {
-        "ridx": format_ratio_with_ci(0, tot_r),
-        "ra": format_ratio_with_ci(0, tot_ra),
+        "ridx": format_ratio_with_ci(r_post, tot_r),
+        "ra": format_ratio_with_ci(ra_post, tot_ra),
     }
     tot_steps = results["fast_path_count"] + results["fallback_count"]
     results["fast_path_fraction"] = round(results["fast_path_count"] / max(1, tot_steps), 3)
