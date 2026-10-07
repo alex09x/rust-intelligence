@@ -118,8 +118,11 @@ impl MutationManager {
 }
 
 pub fn verify_mutation(res: Option<&ExternalLspResult>, mutation: &ScenarioMutation) -> bool {
-    if mutation.expect_not_found || mutation.kind == "rename_stale" {
-        // Must NOT find old symbol. Return true if server returned not found / failed / empty count
+    if mutation.expect_not_found
+        || mutation.kind == "rename_stale"
+        || mutation.kind.starts_with("out_of_scope")
+    {
+        // Must NOT find old/unresolved symbol. Return true if server returned not found / failed / empty count
         match res {
             None => true,
             Some(r) => !r.found || r.count == 0 || r.span.contains("failed") || r.span.is_empty(),

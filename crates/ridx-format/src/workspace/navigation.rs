@@ -466,6 +466,7 @@ impl WorkspaceIndex {
         target_unit_key: Option<&str>,
     ) -> Vec<WorkspaceReference<'a>> {
         let mut all_refs = Vec::new();
+        let mut seen_refs = std::collections::HashSet::new();
         let target_crate = target_path.split("::").next().unwrap_or(target_path);
 
         // If target_unit_key is given, locate the definition in target_unit to get its line and file
@@ -684,6 +685,16 @@ impl WorkspaceIndex {
 
                             let span = r.span();
                             let file = reader.get_file(span.file_id());
+                            let ref_key = (
+                                file,
+                                span.start_line(),
+                                span.start_col(),
+                                span.end_line(),
+                                span.end_col(),
+                            );
+                            if !seen_refs.insert(ref_key) {
+                                continue;
+                            }
                             all_refs.push(WorkspaceReference {
                                 crate_name: reader_crate,
                                 file,
@@ -749,6 +760,7 @@ impl WorkspaceIndex {
     /// Substring symbol search across all definitions in the workspace.
     pub fn search_symbols<'a>(&'a self, query: &str) -> Vec<WorkspaceSymbol<'a>> {
         let mut matches = Vec::new();
+        let mut seen = std::collections::HashSet::new();
 
         for (i, reader) in self.readers.iter().enumerate() {
             let crate_name = reader.crate_name();
@@ -765,6 +777,10 @@ impl WorkspaceIndex {
                 let path = reader.get_str(def.path_offset());
                 let span = def.span();
                 let file = reader.get_file(span.file_id());
+                let sym_key = (path, file, span.start_line(), span.start_col());
+                if !seen.insert(sym_key) {
+                    continue;
+                }
                 let signature = if def.sig_offset() != 0 {
                     Some(reader.get_str(def.sig_offset()))
                 } else {
