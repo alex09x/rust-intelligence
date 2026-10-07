@@ -162,8 +162,13 @@ pub fn verify_build_config_unchanged(
 }
 
 /// Recursively checks if any `.rs` file in crate root (src, tests, benches, examples, build.rs) is not in `tracked`.
+/// Distinguishes existing platform/feature-conditional files (whose mtime <= manifest_mtime) from newly added untracked files.
 /// Returns true if an untracked `.rs` file was found (triggering fallback to Cargo).
-pub fn has_untracked_rs_files(crate_dir: &Path, tracked: &HashSet<String>) -> bool {
+pub fn has_untracked_rs_files(
+    crate_dir: &Path,
+    tracked: &HashSet<String>,
+    manifest_mtime: SystemTime,
+) -> bool {
     let subdirs = ["src", "tests", "benches", "examples"];
     for sub in &subdirs {
         let dir = crate_dir.join(sub);
@@ -194,6 +199,16 @@ pub fn has_untracked_rs_files(crate_dir: &Path, tracked: &HashSet<String>) -> bo
                                 .map(|r| tracked.contains(r))
                                 .unwrap_or(false)
                         {
+                            // If file existed on disk before the current manifest was generated,
+                            // it was present during the last Cargo run and excluded via cfg (e.g. #[cfg(windows)] or #[cfg(feature = "...")]).
+                            // Only treat files created or modified after the manifest was generated as new untracked files.
+                            if let Ok(meta) = fs::metadata(&p) {
+                                if let Ok(mtime) = meta.modified() {
+                                    if mtime <= manifest_mtime {
+                                        continue;
+                                    }
+                                }
+                            }
                             eprintln!(
                                 "[ridx-direct] fallback to Cargo: untracked .rs file found: {}",
                                 p.display()
@@ -224,6 +239,13 @@ pub fn has_untracked_rs_files(crate_dir: &Path, tracked: &HashSet<String>) -> bo
                 .map(|r| tracked.contains(r))
                 .unwrap_or(false)
         {
+            if let Ok(meta) = fs::metadata(&build_rs) {
+                if let Ok(mtime) = meta.modified() {
+                    if mtime <= manifest_mtime {
+                        return false;
+                    }
+                }
+            }
             eprintln!(
                 "[ridx-direct] fallback to Cargo: untracked build.rs found: {}",
                 build_rs.display()
@@ -302,19 +324,29 @@ mod tests {
         tracked.insert(bench_rs.display().to_string());
         tracked.insert(build_rs.display().to_string());
 
-        // When all files are tracked, returns false
-        assert!(!has_untracked_rs_files(&tmp, &tracked));
+        let manifest_mtime = SystemTime::now();
 
-        // Untracked file in tests/ triggers fallback
+        // When all files are tracked, returns false
+        assert!(!has_untracked_rs_files(&tmp, &tracked, manifest_mtime));
+
+        // Untracked file created before manifest_mtime is treated as cfg-conditional
+        let cfg_file = tmp.join("src/cfg_excluded.rs");
+        fs::write(&cfg_file, "fn cfg_only() {}\n").unwrap();
+        // If mtime <= manifest_mtime, it does not trigger fallback
+        assert!(!has_untracked_rs_files(&tmp, &tracked, SystemTime::now()));
+        fs::remove_file(&cfg_file).unwrap();
+
+        // Untracked file created after manifest_mtime triggers fallback
+        std::thread::sleep(std::time::Duration::from_millis(20));
         let untracked_test = tmp.join("tests/new_test.rs");
         fs::write(&untracked_test, "fn new() {}\n").unwrap();
-        assert!(has_untracked_rs_files(&tmp, &tracked));
+        assert!(has_untracked_rs_files(&tmp, &tracked, manifest_mtime));
         fs::remove_file(&untracked_test).unwrap();
 
         // Untracked file in examples/ triggers fallback
         let untracked_ex = tmp.join("examples/new_ex.rs");
         fs::write(&untracked_ex, "fn new_ex() {}\n").unwrap();
-        assert!(has_untracked_rs_files(&tmp, &tracked));
+        assert!(has_untracked_rs_files(&tmp, &tracked, manifest_mtime));
         fs::remove_file(&untracked_ex).unwrap();
 
         let _ = fs::remove_dir_all(&tmp);

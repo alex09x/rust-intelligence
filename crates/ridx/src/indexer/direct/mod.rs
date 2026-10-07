@@ -125,7 +125,7 @@ pub fn try_direct_crate_indexing(
     }
 
     // Verify build configuration (Cargo.toml, Cargo.lock, build.rs, options) is unchanged
-    verify_build_config_unchanged(work_dir, base_out_dir, opts)?;
+    let manifest_mtime = verify_build_config_unchanged(work_dir, base_out_dir, opts)?;
 
     // Identify all modified files and tracked files in the workspace
     let mut modified_files = HashSet::new();
@@ -164,7 +164,7 @@ pub fn try_direct_crate_indexing(
     for (_, _, env_vars, _, _) in &workspace_crates {
         if let Some(mdir_str) = env_vars.get("CARGO_MANIFEST_DIR") {
             let crate_dir = Path::new(mdir_str);
-            if has_untracked_rs_files(crate_dir, &all_checked_files) {
+            if has_untracked_rs_files(crate_dir, &all_checked_files, manifest_mtime) {
                 return None;
             }
         }
