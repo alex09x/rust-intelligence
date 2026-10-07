@@ -6,4 +6,11 @@
 cov.*
 __pycache__/
 *.pyc
-bench/results/*.jsonl
+bench/results/
+bench/storage/
+bench_repos/
+bench_scenarios.json
+*.scip
+index.scip
+*.jsonl
+bench/BENCHMARK_METHODOLOGY.md
