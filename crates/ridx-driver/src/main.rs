@@ -606,12 +606,29 @@ fn collect_file_hashes<'tcx>(
     manifest_dir: Option<&Path>,
 ) -> std::collections::HashMap<String, u64> {
     let mut hashes = std::collections::HashMap::new();
+    let root_scope = package_root.or(manifest_dir);
     let source_map = tcx.sess.source_map();
 
     for file in source_map.files().iter() {
         let name_str = source_map.filename_for_diagnostics(&file.name).to_string();
         if name_str.starts_with('<') {
             continue;
+        }
+
+        if let Some(root) = root_scope {
+            let p = Path::new(&name_str);
+            let abs_p = if p.is_absolute() {
+                p.to_path_buf()
+            } else if let Ok(cwd) = std::env::current_dir() {
+                cwd.join(p)
+            } else {
+                p.to_path_buf()
+            };
+            let abs_canon = abs_p.canonicalize().unwrap_or(abs_p);
+            let root_canon = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+            if !abs_canon.starts_with(&root_canon) {
+                continue;
+            }
         }
 
         let hash_opt = if let Some(ref src) = file.src {

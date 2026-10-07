@@ -355,6 +355,59 @@ impl WorkspaceIndex {
             }
         }
 
+        if candidates.is_empty() && res.file != "external" && !res.file.is_empty() {
+            let target_p = Path::new(res.file);
+            for (j, r) in self.readers.iter().enumerate() {
+                let file_id_opt = (0..r.header().files_count).find(|&fid| {
+                    let f_name = r.get_file(fid);
+                    if target_p.is_absolute() {
+                        let cand_p = if let Some(root) = self
+                            .source_roots
+                            .get(j)
+                            .and_then(|s| s.as_deref())
+                            .or(self.workspace_root.as_deref())
+                        {
+                            crate::format::join_resolving_overlap(root, Path::new(f_name))
+                        } else {
+                            PathBuf::from(f_name)
+                        };
+                        cand_p == target_p || target_p.ends_with(f_name)
+                    } else {
+                        f_name == res.file || f_name.ends_with(res.file)
+                    }
+                });
+                if let Some(fid) = file_id_opt {
+                    for def in r.definitions() {
+                        let d_span = def.span();
+                        if d_span.file_id() == fid {
+                            let d_name = r.get_str(def.name_offset());
+                            if d_name == res.name {
+                                candidates.push(ResolvedDefinition {
+                                    name: d_name,
+                                    path: r.get_str(def.path_offset()),
+                                    kind: DefKind::from(def.kind),
+                                    signature: (def.sig_offset() != 0)
+                                        .then(|| r.get_str(def.sig_offset())),
+                                    file: r.get_file(fid),
+                                    start_line: d_span.start_line(),
+                                    start_col: d_span.start_col(),
+                                    end_line: d_span.end_line(),
+                                    end_col: d_span.end_col(),
+                                    is_macro_expansion: def.is_macro_expansion(),
+                                    source_root: self
+                                        .source_roots
+                                        .get(j)
+                                        .and_then(|s| s.as_deref())
+                                        .or(self.workspace_root.as_deref()),
+                                    unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if candidates.is_empty() {
             return None;
         }

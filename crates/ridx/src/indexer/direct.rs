@@ -128,31 +128,8 @@ pub fn try_direct_crate_indexing(
     let mut changed_crate_names = HashSet::new();
 
     if !modified_files.is_empty() {
-        for (crate_name, args, env_vars, _, json_path) in &workspace_crates {
-            // Find root source file in args to determine crate directory
-            let root_rs = args.iter().find(|a| a.ends_with(".rs"));
-            let crate_dir_prefix = if let Some(rs) = root_rs {
-                let p = Path::new(rs);
-                if let Some(parent) = p.parent() {
-                    if let Some(crate_dir) = parent.parent() {
-                        crate_dir.to_string_lossy().to_string()
-                    } else {
-                        parent.to_string_lossy().to_string()
-                    }
-                } else {
-                    String::new()
-                }
-            } else {
-                String::new()
-            };
-
-            let owns_modified = modified_files.iter().any(|f| {
-                if crate_dir_prefix.is_empty() {
-                    true
-                } else {
-                    f.contains(&crate_dir_prefix)
-                }
-            });
+        for (crate_name, args, env_vars, file_hashes, json_path) in &workspace_crates {
+            let owns_modified = file_hashes.keys().any(|f| modified_files.contains(f));
 
             if owns_modified {
                 changed_crates.push((crate_name, args, env_vars, json_path));
