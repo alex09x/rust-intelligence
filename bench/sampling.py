@@ -99,6 +99,74 @@ def scan_source_positions(repo_dir):
     return usages, declarations
 
 
+def find_crate_visible_pairs(repo_dir):
+    """
+    Finds cross-file pairs (d_file, u_file, mod_prefix, u_line, fn_header)
+    where d_file is either crate root (src/lib.rs) or a pub mod,
+    and u_file is another file in the same crate with a function body to inject probe call.
+    """
+    pairs = []
+    repo_path = Path(repo_dir)
+
+    for cargo_toml in repo_path.rglob("Cargo.toml"):
+        parts = cargo_toml.parts
+        if any(ignored in parts for ignored in ("target", ".git", ".prod")):
+            continue
+        crate_dir = cargo_toml.parent
+        src_dir = crate_dir / "src"
+        if not src_dir.exists():
+            continue
+
+        lib_rs = src_dir / "lib.rs"
+        main_rs = src_dir / "main.rs"
+        root_file = lib_rs if lib_rs.exists() else (main_rs if main_rs.exists() else None)
+        if not root_file:
+            continue
+
+        visible_defs = [(str(root_file.resolve()), "crate")]
+
+        # Also find any pub mod in root_file
+        try:
+            with open(root_file, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+            for m in re.finditer(r"\bpub\s+mod\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*;", content):
+                mod_name = m.group(1)
+                mod_file = src_dir / f"{mod_name}.rs"
+                mod_dir_file = src_dir / mod_name / "mod.rs"
+                target_f = mod_file if mod_file.exists() else (mod_dir_file if mod_dir_file.exists() else None)
+                if target_f:
+                    visible_defs.append((str(target_f.resolve()), f"crate::{mod_name}"))
+        except Exception:
+            pass
+
+        # Scan other .rs files in the crate for function declarations to call probe
+        for rs_file in src_dir.rglob("*.rs"):
+            rs_str = str(rs_file.resolve())
+            try:
+                with open(rs_file, "r", encoding="utf-8", errors="replace") as f:
+                    for line_idx, line in enumerate(f, 1):
+                        m_fn = re.search(
+                            r"(\b(?:pub(?:\([^\)]+\))?\s+)?(?:async\s+)?fn\s+[a-zA-Z_][a-zA-Z0-9_]*\s*(?:<[^>]+>)?\s*\([^\)]*\)[^{]*\{)",
+                            line,
+                        )
+                        if m_fn:
+                            fn_header = m_fn.group(1)
+                            for def_file, prefix in visible_defs:
+                                if def_file != rs_str:
+                                    pairs.append({
+                                        "d_file": def_file,
+                                        "u_file": rs_str,
+                                        "mod_prefix": prefix,
+                                        "u_line": line_idx,
+                                        "fn_header": fn_header,
+                                    })
+                            break
+            except Exception:
+                continue
+
+    return pairs
+
+
 def sample_scenarios(repo_dir, count=300, seed=42):
     """
     Builds a neutral benchmark suite across first-party files:
@@ -173,34 +241,72 @@ def sample_scenarios(repo_dir, count=300, seed=42):
         n_pairs = len(cross_file_pairs)
 
         # 4a. Case A: new function in File A, call in File B (didChange in both without saving)
-        n_new = min(max(2, n_pairs // 3), 7)
-        for idx, (d, u) in enumerate(cross_file_pairs[:n_new]):
-            d_file, d_line, d_col, name, d_kind = d
-            u_file, u_line, u_col, _, _ = u
-            probe_name = f"bench_probe_{idx}"
-            scenarios.append({
-                "name": f"mutation_new_symbol_{idx}_{probe_name}",
-                "capability": "def",
-                "target": probe_name,
-                "location": [u_file, u_line, u_col],
-                "kind": "new_symbol",
-                "mutation": {
+        # Guarantees full path resolution (crate::<mod_path>::bench_probe_<n>()) and public visibility
+        visible_pairs = find_crate_visible_pairs(repo_dir)
+        if visible_pairs:
+            random.shuffle(visible_pairs)
+            n_new = min(len(visible_pairs), 7)
+            for idx, p in enumerate(visible_pairs[:n_new]):
+                d_file = p["d_file"]
+                u_file = p["u_file"]
+                mod_prefix = p["mod_prefix"]
+                u_line = p["u_line"]
+                fn_header = p["fn_header"]
+                probe_name = f"bench_probe_{idx}"
+                target_line = u_line + 1
+                target_col = len(f"    let _probe = {mod_prefix}::") + 1
+                scenarios.append({
+                    "name": f"mutation_new_symbol_{idx}_{probe_name}",
+                    "capability": "def",
+                    "target": probe_name,
+                    "location": [u_file, target_line, target_col],
                     "kind": "new_symbol",
-                    "file_mutations": [
-                        {
-                            "file": d_file,
-                            "text": f"\npub fn {probe_name}() -> usize {{ 42 }}\n",
-                            "is_append": True,
-                        },
-                        {
-                            "file": u_file,
-                            "replace_target": name,
-                            "replace_with": probe_name,
-                        },
-                    ],
-                    "expected_target_file": d_file,
-                },
-            })
+                    "mutation": {
+                        "kind": "new_symbol",
+                        "file_mutations": [
+                            {
+                                "file": d_file,
+                                "text": f"\npub fn {probe_name}() -> usize {{ 42 }}\n",
+                                "is_append": True,
+                            },
+                            {
+                                "file": u_file,
+                                "replace_target": fn_header,
+                                "replace_with": f"{fn_header}\n    let _probe = {mod_prefix}::{probe_name}();",
+                            },
+                        ],
+                        "expected_target_file": d_file,
+                    },
+                })
+        else:
+            n_new = min(max(2, n_pairs // 3), 7)
+            for idx, (d, u) in enumerate(cross_file_pairs[:n_new]):
+                d_file, d_line, d_col, name, d_kind = d
+                u_file, u_line, u_col, _, _ = u
+                probe_name = f"bench_probe_{idx}"
+                scenarios.append({
+                    "name": f"mutation_new_symbol_{idx}_{probe_name}",
+                    "capability": "def",
+                    "target": probe_name,
+                    "location": [u_file, u_line, u_col],
+                    "kind": "new_symbol",
+                    "mutation": {
+                        "kind": "new_symbol",
+                        "file_mutations": [
+                            {
+                                "file": d_file,
+                                "text": f"\npub fn {probe_name}() -> usize {{ 42 }}\n",
+                                "is_append": True,
+                            },
+                            {
+                                "file": u_file,
+                                "replace_target": name,
+                                "replace_with": probe_name,
+                            },
+                        ],
+                        "expected_target_file": d_file,
+                    },
+                })
 
         # 4b. Case B: rename in File A, call in File B untouched -> stale overlay detector
         pairs_rename = cross_file_pairs[n_new : n_new * 2]
