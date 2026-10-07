@@ -44,7 +44,8 @@ impl LifecycleManager {
     }
 
     pub fn should_reload(&mut self, is_mutation: bool) -> bool {
-        if is_mutation || self.last_reload_check.elapsed() >= std::time::Duration::from_millis(500) {
+        if is_mutation || self.last_reload_check.elapsed() >= std::time::Duration::from_millis(500)
+        {
             self.last_reload_check = std::time::Instant::now();
             true
         } else {

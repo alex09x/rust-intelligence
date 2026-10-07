@@ -53,7 +53,9 @@ fn test_scip_loader_and_queries() {
     assert_eq!(scip.workspace_root, temp_dir);
 
     // Test definition query at reference location (line 10, col 8) -> line 5, col 4
-    let def_loc = scip.goto_definition("src/main.rs", 10, 8).expect("def found");
+    let def_loc = scip
+        .goto_definition("src/main.rs", 10, 8)
+        .expect("def found");
     assert_eq!(def_loc.file, "src/main.rs");
     assert_eq!(def_loc.line, 5);
     assert_eq!(def_loc.col, 4);

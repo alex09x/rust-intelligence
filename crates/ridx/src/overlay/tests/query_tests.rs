@@ -100,3 +100,52 @@ fn test_overlay_definition_kinds() {
     let refs = ov_local.find_local_binding_references(2, 9);
     assert_eq!(refs.len(), 3);
 }
+
+#[test]
+fn test_find_global_symbol_definition_scope_and_items() {
+    use crate::overlay::OverlayManager;
+
+    let mut mgr = OverlayManager::new();
+
+    let file_a = "/workspace/src/main.rs";
+    let code_a = "fn main() {\n    let config = 42;\n    config.x;\n}\n";
+    mgr.open_or_update(
+        "file:///workspace/src/main.rs",
+        file_a,
+        1,
+        code_a.to_string(),
+    );
+
+    let file_b = "/workspace/src/utils.rs";
+    let code_b = "pub fn config() {}\npub fn helper() {}\n";
+    mgr.open_or_update(
+        "file:///workspace/src/utils.rs",
+        file_b,
+        1,
+        code_b.to_string(),
+    );
+
+    // 1. Local variable `config` in main.rs must NOT jump to `fn config()` in utils.rs
+    assert_eq!(
+        mgr.find_global_symbol_definition(file_a, "config", None),
+        None
+    );
+
+    // 2. Unqualified `helper` without module prefix must NOT jump across files
+    assert_eq!(
+        mgr.find_global_symbol_definition(file_a, "helper", None),
+        None
+    );
+
+    // 3. Qualified `utils::helper` MUST resolve to utils.rs
+    let def_helper = mgr.find_global_symbol_definition(file_a, "helper", Some("utils"));
+    assert!(def_helper.is_some());
+    let def = def_helper.unwrap();
+    assert_eq!(def.file, file_b);
+    assert_eq!(def.name, "helper");
+
+    // 4. Same-file unqualified lookup in utils.rs should resolve
+    let def_local = mgr.find_global_symbol_definition(file_b, "helper", None);
+    assert!(def_local.is_some());
+    assert_eq!(def_local.unwrap().file, file_b);
+}

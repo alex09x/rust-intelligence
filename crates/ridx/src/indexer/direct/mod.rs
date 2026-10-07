@@ -10,16 +10,32 @@
 
 //! Fast-path direct crate invocation bypassing Cargo orchestration on incremental edits.
 
+pub mod args;
+pub mod config;
+pub mod graph;
+
 use super::manifest::{publish_manifest, ManifestParams};
 use super::types::{IndexOptions, PublishedVariant};
+use args::sanitize_compiler_args_for_direct;
 use colored::*;
+use config::{has_untracked_rs_files, verify_build_config_unchanged};
+use graph::{build_workspace_dependency_graphs, topo_sort_crates};
 use ridx_format::WorkspaceIndex;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Instant;
 
+pub type WorkspaceCrateEntry = (
+    String,
+    Vec<String>,
+    HashMap<String, String>,
+    HashMap<String, u64>,
+    PathBuf,
+);
+
+#[allow(clippy::too_many_arguments)]
 pub fn try_direct_crate_indexing(
     deps_dir: &Path,
     variant_out_dir: &Path,
@@ -40,7 +56,7 @@ pub fn try_direct_crate_indexing(
     }
 
     let mut dep_shards = Vec::new();
-    let mut workspace_crates: Vec<(String, Vec<String>, HashMap<String, String>, HashMap<String, u64>, PathBuf)> = Vec::new();
+    let mut workspace_crates: Vec<WorkspaceCrateEntry> = Vec::new();
 
     let entries = fs::read_dir(deps_dir).ok()?;
     for entry in entries.flatten() {
@@ -52,13 +68,20 @@ pub fn try_direct_crate_indexing(
         let content = fs::read(&path).ok()?;
         let val: serde_json::Value = serde_json::from_slice(&content).ok()?;
 
-        let is_dep = val.get("is_dependency").and_then(|v| v.as_bool()).unwrap_or(false);
+        let is_dep = val
+            .get("is_dependency")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
         if is_dep {
             if let Ok(info) = serde_json::from_value::<ridx_format::DependencyShardInfo>(val) {
                 dep_shards.push(info);
             }
         } else {
-            let crate_name = val.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let crate_name = val
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
             let args: Vec<String> = val
                 .get("compiler_args")
                 .and_then(|v| v.as_array())
@@ -101,7 +124,10 @@ pub fn try_direct_crate_indexing(
         return None;
     }
 
-    // Identify all modified files in the workspace
+    // Verify build configuration (Cargo.toml, Cargo.lock, build.rs, options) is unchanged
+    verify_build_config_unchanged(work_dir, base_out_dir, opts, &workspace_crates)?;
+
+    // Identify all modified files and tracked files in the workspace
     let mut modified_files = HashSet::new();
     let mut all_checked_files = HashSet::new();
     for (_, _, _, file_hashes, _) in &workspace_crates {
@@ -123,40 +149,85 @@ pub fn try_direct_crate_indexing(
         }
     }
 
-    // Determine which crates own the modified files
-    let mut changed_crates = Vec::new();
-    let mut changed_crate_names = HashSet::new();
-
-    if !modified_files.is_empty() {
-        for (crate_name, args, env_vars, file_hashes, json_path) in &workspace_crates {
-            let owns_modified = file_hashes.keys().any(|f| modified_files.contains(f));
-
-            if owns_modified {
-                changed_crates.push((crate_name, args, env_vars, json_path));
-                changed_crate_names.insert(crate_name.clone());
+    // Check for untracked .rs files in crate source directories
+    for (_, _, env_vars, _, _) in &workspace_crates {
+        if let Some(mdir_str) = env_vars.get("CARGO_MANIFEST_DIR") {
+            let src_dir = Path::new(mdir_str).join("src");
+            if has_untracked_rs_files(&src_dir, &all_checked_files) {
+                return None;
             }
         }
     }
 
-    // If more than 2 distinct workspace crates changed, let Cargo orchestrate
-    if changed_crate_names.len() > 2 {
+    // Build dependency and reverse-dependency graphs among workspace crates
+    let (dependencies_of, rdeps_of) = build_workspace_dependency_graphs(&workspace_crates);
+
+    // Determine directly modified crates
+    let mut initial_changed = HashSet::new();
+    if !modified_files.is_empty() {
+        for (crate_name, _, _, file_hashes, _) in &workspace_crates {
+            if file_hashes.keys().any(|f| modified_files.contains(f)) {
+                initial_changed.insert(crate_name.clone());
+            }
+        }
+    }
+
+    if initial_changed.is_empty() {
         return None;
     }
 
-    // Execute direct indexing on changed crates
-    for (_, args, env_vars, _) in &changed_crates {
+    // Expand with reverse dependencies (crates that depend on modified crates)
+    let mut affected_crate_names = initial_changed.clone();
+    let mut queue: VecDeque<String> = initial_changed.into_iter().collect();
+    while let Some(cname) = queue.pop_front() {
+        if let Some(rdeps) = rdeps_of.get(&cname) {
+            for rdep in rdeps {
+                if affected_crate_names.insert(rdep.clone()) {
+                    queue.push_back(rdep.clone());
+                }
+            }
+        }
+    }
+
+    // If more than 3 distinct workspace crates changed, let Cargo orchestrate
+    if affected_crate_names.len() > 3 {
+        return None;
+    }
+
+    // Topological sort of affected crates (dependencies before dependents)
+    let sorted_names = topo_sort_crates(&affected_crate_names, &dependencies_of)?;
+
+    // Map sorted names back to workspace crate data
+    let crate_map: HashMap<String, _> = workspace_crates
+        .into_iter()
+        .map(|(name, args, env_vars, file_hashes, path)| {
+            (name, (args, env_vars, file_hashes, path))
+        })
+        .collect();
+
+    // Prepare private isolated directories for direct build artifacts and incremental cache
+    let direct_dir = work_dir.join("target/ridx-direct");
+    let direct_deps = direct_dir.join("deps");
+    let direct_incr = direct_dir.join("incremental");
+    fs::create_dir_all(&direct_deps).ok()?;
+    fs::create_dir_all(&direct_incr).ok()?;
+
+    // Execute direct indexing on changed crates in topological order
+    for crate_name in &sorted_names {
+        let (args, env_vars, _, _) = crate_map.get(crate_name)?;
+        let sanitized_args = sanitize_compiler_args_for_direct(args, &direct_deps, &direct_incr);
+
         let mut cmd = Command::new(driver_bin);
-        if args.len() > 1 {
-            cmd.args(&args[1..]);
-        } else {
+        if sanitized_args.is_empty() {
             return None;
         }
+        cmd.args(&sanitized_args);
         cmd.current_dir(work_dir);
         cmd.env("RIDX_OUT_DIR", variant_out_dir);
         cmd.env("RIDX_CACHE_DIR", cache_dir);
         cmd.env("RIDX_WORKSPACE_ROOT", work_dir);
         cmd.env("RUSTC_BOOTSTRAP", "1");
-        for (k, v) in *env_vars {
+        for (k, v) in env_vars {
             cmd.env(k, v);
         }
         if let Some(ld) = ld_path {
@@ -199,7 +270,7 @@ pub fn try_direct_crate_indexing(
         "  {} Direct fast-path indexing finished in {:.1} ms ({} changed crates)",
         "RIDX Success:".green().bold(),
         dur,
-        changed_crate_names.len()
+        sorted_names.len()
     );
 
     Some(PublishedVariant {

@@ -170,7 +170,8 @@ impl PositionConverter {
             } else {
                 content.len()
             };
-            Some(&content[start..end])
+            let slice = &content[start..end];
+            Some(slice.trim_end_matches(['\r', '\n']))
         }
     }
 

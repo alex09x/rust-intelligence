@@ -280,12 +280,9 @@ impl WorkspaceIndex {
                             || f_name.ends_with(res.file)
                     });
                     if let Some(fid) = file_id_opt {
-                        r.definitions()
-                            .iter()
-                            .find(|d| {
-                                d.span().file_id() == fid
-                                    && r.get_str(d.name_offset()) == res.name
-                            })
+                        r.definitions().iter().find(|d| {
+                            d.span().file_id() == fid && r.get_str(d.name_offset()) == res.name
+                        })
                     } else {
                         None
                     }
@@ -442,7 +439,9 @@ impl WorkspaceIndex {
                 && (c_def.file == res.file
                     || res.file.ends_with(c_def.file)
                     || c_def.file.ends_with(res.file)
-                    || res.file.ends_with(&*c_def.resolved_path().to_string_lossy())
+                    || res
+                        .file
+                        .ends_with(&*c_def.resolved_path().to_string_lossy())
                     || c_def.resolved_path().to_string_lossy().ends_with(res.file));
             if line_matches && file_matches {
                 return Some(c_def.clone());
@@ -456,7 +455,8 @@ impl WorkspaceIndex {
             return Some(cand);
         }
 
-        Some(candidates.remove(0))
+        // Ambiguous candidates with no exact unit or file/line match: do not guess!
+        None
     }
 
     /// Finds all references to a symbol, optionally scoped to a target dependency unit.

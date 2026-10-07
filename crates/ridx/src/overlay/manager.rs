@@ -10,7 +10,7 @@
 
 //! Document overlay session management across open editor buffers.
 
-use super::{DocumentOverlay, OverlayDefinition, OverlaySymbol};
+use super::{DefKind, DocumentOverlay, OverlayDefinition, OverlaySymbol};
 use std::collections::HashMap;
 
 /// Thread-safe manager for all open document overlays in an active LSP session.
@@ -159,11 +159,36 @@ impl OverlayManager {
         ident: &str,
         path_prefix: Option<&str>,
     ) -> Option<OverlayDefinition> {
+        // If the current file has a local declaration for this ident, it must not jump elsewhere.
+        if let Some(current_ov) = self.overlays.get(current_file) {
+            let has_local_binding = current_ov
+                .symbols
+                .iter()
+                .any(|s| s.name == ident && matches!(s.kind, DefKind::Local | DefKind::Field));
+            if has_local_binding {
+                return None;
+            }
+        }
+
         let mut candidates = Vec::new();
         for (file_path, overlay) in &self.overlays {
             for sym in overlay.document_symbols() {
                 if sym.name == ident {
-                    candidates.push((file_path, sym));
+                    let is_item_level = matches!(
+                        sym.kind,
+                        DefKind::Fn
+                            | DefKind::Struct
+                            | DefKind::Enum
+                            | DefKind::Trait
+                            | DefKind::TyAlias
+                            | DefKind::Const
+                            | DefKind::Static
+                            | DefKind::Mod
+                            | DefKind::Macro
+                    );
+                    if is_item_level {
+                        candidates.push((file_path, sym));
+                    }
                 }
             }
         }
@@ -179,6 +204,10 @@ impl OverlayManager {
                 .trim_start_matches("self::")
                 .replace("::", "/");
 
+            if normalized_prefix.is_empty() {
+                return None;
+            }
+
             for (file_path, sym) in &candidates {
                 let p = file_path.replace(std::path::MAIN_SEPARATOR, "/");
                 if p.ends_with(&format!("{}.rs", normalized_prefix))
@@ -188,21 +217,18 @@ impl OverlayManager {
                     return Some(sym.to_definition(file_path));
                 }
             }
+            // If path prefix was specified but no candidate matched the module path, do not fall back.
+            return None;
         }
 
-        if candidates.len() == 1 {
-            let (file_path, sym) = candidates[0];
-            return Some(sym.to_definition(file_path));
-        }
-
+        // Without a module path prefix, an unqualified identifier can only resolve within the same file.
         for (file_path, sym) in &candidates {
             if *file_path == current_file {
                 return Some(sym.to_definition(file_path));
             }
         }
 
-        let (file_path, sym) = candidates[0];
-        Some(sym.to_definition(file_path))
+        None
     }
 
     pub fn reconcile_with_disk(&mut self, file_path: &str, disk_content_hash: u64) {

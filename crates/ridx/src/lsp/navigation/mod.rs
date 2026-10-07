@@ -75,27 +75,28 @@ pub fn handle_definition(
                 let resolved_path = def.resolved_path();
                 let path_str = resolved_path.to_str().unwrap_or(def.file);
                 let uri = path_to_uri(path_str);
-                                let (start_line, end_line, start_char, end_char) =
-                    if let Some(target_ov) = overlay_mgr.get(path_str).filter(|o| o.is_dirty()) {
-                        let sl = target_ov.map_compiled_to_live(def.start_line, def.start_col);
-                        let el = target_ov.map_compiled_to_live(def.end_line, def.end_col);
-                        match (sl, el) {
-                            (Some(s), Some(e)) => {
-                                if !is_def_valid_in_overlay(target_ov, def.name, s.0, e.0) {
-                                    (0, 0, 0, 0)
-                                } else {
-                                    let sc = target_ov.char_col_to_utf16_col(s.0, s.1);
-                                    let ec = target_ov.char_col_to_utf16_col(e.0, e.1);
-                                    (s.0, e.0, sc, ec)
-                                }
+                let (start_line, end_line, start_char, end_char) = if let Some(target_ov) =
+                    overlay_mgr.get(path_str).filter(|o| o.is_dirty())
+                {
+                    let sl = target_ov.map_compiled_to_live(def.start_line, def.start_col);
+                    let el = target_ov.map_compiled_to_live(def.end_line, def.end_col);
+                    match (sl, el) {
+                        (Some(s), Some(e)) => {
+                            if !is_def_valid_in_overlay(target_ov, def.name, s.0, e.0) {
+                                (0, 0, 0, 0)
+                            } else {
+                                let sc = target_ov.char_col_to_utf16_col(s.0, s.1);
+                                let ec = target_ov.char_col_to_utf16_col(e.0, e.1);
+                                (s.0, e.0, sc, ec)
                             }
-                            _ => (0, 0, 0, 0),
                         }
-                    } else {
-                        let sc = conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col);
-                        let ec = conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col);
-                        (def.start_line, def.end_line, sc, ec)
-                    };
+                        _ => (0, 0, 0, 0),
+                    }
+                } else {
+                    let sc = conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col);
+                    let ec = conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col);
+                    (def.start_line, def.end_line, sc, ec)
+                };
 
                 if start_line > 0 {
                     return json!({
@@ -120,11 +121,15 @@ pub fn handle_definition(
             let path_str = &def.file;
             let uri = path_to_uri(path_str);
             let (start_char, end_char) = if let Some(target_ov) = overlay_mgr.get(path_str) {
-                (target_ov.char_col_to_utf16_col(def.start_line, def.start_col),
-                 target_ov.char_col_to_utf16_col(def.end_line, def.end_col))
+                (
+                    target_ov.char_col_to_utf16_col(def.start_line, def.start_col),
+                    target_ov.char_col_to_utf16_col(def.end_line, def.end_col),
+                )
             } else {
-                (conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col),
-                 conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col))
+                (
+                    conv.char_col_to_utf16_col(path_str, def.start_line, def.start_col),
+                    conv.char_col_to_utf16_col(path_str, def.end_line, def.end_col),
+                )
             };
             return json!({
                 "uri": uri,

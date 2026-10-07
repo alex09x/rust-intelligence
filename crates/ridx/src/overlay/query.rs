@@ -137,7 +137,10 @@ impl DocumentOverlay {
             let bytes = path_part.as_bytes();
             while start_pos > 0 {
                 let b = bytes[start_pos - 1];
-                if b == b"_"[0] || b.is_ascii_alphanumeric() || (start_pos >= 2 && &bytes[start_pos - 2..start_pos] == b"::") {
+                if b == b"_"[0]
+                    || b.is_ascii_alphanumeric()
+                    || (start_pos >= 2 && &bytes[start_pos - 2..start_pos] == b"::")
+                {
                     start_pos -= 1;
                 } else {
                     break;

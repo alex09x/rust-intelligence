@@ -83,7 +83,6 @@ fn map_def_kind(kind: hir::def::DefKind) -> RDefKind {
         hir::def::DefKind::Use => RDefKind::Use,
         hir::def::DefKind::ForeignMod => RDefKind::ForeignMod,
         hir::def::DefKind::AnonConst => RDefKind::AnonConst,
-        hir::def::DefKind::InlineConst => RDefKind::InlineConst,
         hir::def::DefKind::OpaqueTy => RDefKind::OpaqueTy,
         hir::def::DefKind::Field => RDefKind::Field,
         hir::def::DefKind::LifetimeParam => RDefKind::LifetimeParam,
@@ -146,6 +145,7 @@ struct HirVisitor<'tcx> {
     package_root: Option<PathBuf>,
     writer: IndexWriter,
     krate_to_unit: std::collections::HashMap<rustc_span::def_id::CrateNum, String>,
+    seen_refs: std::collections::HashSet<(String, u32, u32, String)>,
 }
 
 impl<'tcx> HirVisitor<'tcx> {
@@ -159,6 +159,12 @@ impl<'tcx> HirVisitor<'tcx> {
         match res {
             Res::Def(kind, def_id) => {
                 let target_path = self.tcx.def_path_str(def_id);
+                if !self
+                    .seen_refs
+                    .insert((file.clone(), s_line, s_col, target_path.clone()))
+                {
+                    return;
+                }
                 let target_coords = resolve_span_coords(
                     self.tcx,
                     self.tcx.def_span(def_id),
@@ -196,6 +202,12 @@ impl<'tcx> HirVisitor<'tcx> {
             }
             Res::Local(hir_id) => {
                 let name = self.tcx.hir_name(hir_id).to_string();
+                if !self
+                    .seen_refs
+                    .insert((file.clone(), s_line, s_col, name.clone()))
+                {
+                    return;
+                }
                 let target_coords = resolve_span_coords(
                     self.tcx,
                     self.tcx.hir_span(hir_id),
@@ -260,15 +272,34 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                 Res::Def(hir::def::DefKind::Ctor(hir::def::CtorOf::Variant, _), ctor_did) => {
                     let var_did = self.tcx.parent(ctor_did);
                     let enum_did = self.tcx.parent(var_did);
-                    self.add_ref_from_res(pen_seg.ident.span, Res::Def(hir::def::DefKind::Enum, enum_did));
+                    self.add_ref_from_res(
+                        pen_seg.ident.span,
+                        Res::Def(hir::def::DefKind::Enum, enum_did),
+                    );
                 }
                 Res::Def(hir::def::DefKind::Variant, var_did) => {
                     let enum_did = self.tcx.parent(var_did);
-                    self.add_ref_from_res(pen_seg.ident.span, Res::Def(hir::def::DefKind::Enum, enum_did));
+                    self.add_ref_from_res(
+                        pen_seg.ident.span,
+                        Res::Def(hir::def::DefKind::Enum, enum_did),
+                    );
                 }
-                Res::Def(hir::def::DefKind::AssocFn, fn_did) | Res::Def(hir::def::DefKind::AssocConst { .. }, fn_did) => {
+                Res::Def(hir::def::DefKind::AssocFn, fn_did)
+                | Res::Def(hir::def::DefKind::AssocConst { .. }, fn_did) => {
                     let parent_did = self.tcx.parent(fn_did);
-                    self.add_ref_from_res(pen_seg.ident.span, Res::Def(self.tcx.def_kind(parent_did), parent_did));
+                    let parent_kind = self.tcx.def_kind(parent_did);
+                    let target_res = if matches!(parent_kind, hir::def::DefKind::Impl { .. }) {
+                        let self_ty = self.tcx.type_of(parent_did).skip_binder();
+                        if let Some(adt) = self_ty.ty_adt_def() {
+                            let adt_did = adt.did();
+                            Res::Def(self.tcx.def_kind(adt_did), adt_did)
+                        } else {
+                            Res::Def(parent_kind, parent_did)
+                        }
+                    } else {
+                        Res::Def(parent_kind, parent_did)
+                    };
+                    self.add_ref_from_res(pen_seg.ident.span, target_res);
                 }
                 _ => {}
             }
@@ -281,13 +312,9 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
         if let Some(typeck) = self.typeck {
             match ty.kind {
                 hir::TyKind::Path(hir::QPath::TypeRelative(qself, segment)) => {
-                    let res = typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id);
+                    let res =
+                        typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id);
                     self.add_ref_from_res(segment.ident.span, res);
-                }
-                hir::TyKind::Path(hir::QPath::Resolved(_, path)) => {
-                    if let Some(seg) = path.segments.last() {
-                        self.add_ref_from_res(seg.ident.span, path.res);
-                    }
                 }
                 _ => {}
             }
@@ -312,8 +339,11 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                                 && !args.has_escaping_bound_vars()
                                 && !args.references_error()
                             {
-                                let body_owner = self.tcx.hir_enclosing_body_owner(expr.hir_id).to_def_id();
-                                let env = rustc_middle::ty::TypingEnv::post_analysis(self.tcx, body_owner);
+                                let body_owner =
+                                    self.tcx.hir_enclosing_body_owner(expr.hir_id).to_def_id();
+                                let env = rustc_middle::ty::TypingEnv::post_analysis(
+                                    self.tcx, body_owner,
+                                );
                                 let norm_args = self
                                     .tcx
                                     .try_normalize_erasing_regions(
@@ -321,9 +351,9 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                                         rustc_middle::ty::Unnormalized::new(args),
                                     )
                                     .unwrap_or(args);
-                                if let Ok(Some(inst)) =
-                                    rustc_middle::ty::Instance::try_resolve(self.tcx, env, def_id, norm_args)
-                                {
+                                if let Ok(Some(inst)) = rustc_middle::ty::Instance::try_resolve(
+                                    self.tcx, env, def_id, norm_args,
+                                ) {
                                     inst.def_id()
                                 } else {
                                     def_id
@@ -875,6 +905,7 @@ fn build_crate_index(
             package_root: manifest_dir.clone(),
             writer: IndexWriter::new(&crate_name, &crate_version),
             krate_to_unit: krate_to_unit.clone(),
+            seen_refs: std::collections::HashSet::new(),
         };
         visitor.writer.set_unit_key(&unit_key);
 
@@ -971,6 +1002,7 @@ fn build_crate_index(
         package_root: None,
         writer: IndexWriter::new(&crate_name, &crate_version),
         krate_to_unit,
+        seen_refs: std::collections::HashSet::new(),
     };
     visitor.writer.set_unit_key(&unit_key);
 
@@ -1009,9 +1041,34 @@ fn build_crate_index(
                 } else {
                     // Publish sidecar metadata only after .ridx file is published
                     let mut env_map = std::collections::HashMap::new();
-                    for var in ["OUT_DIR", "CARGO_MANIFEST_DIR", "CARGO_PKG_NAME", "CARGO_PKG_VERSION", "CARGO_CRATE_NAME"] {
-                        if let Ok(val) = std::env::var(var) {
-                            env_map.insert(var.to_string(), val);
+                    for (k, v) in std::env::vars() {
+                        if k.starts_with("CARGO_") || k == "OUT_DIR" || k == "TARGET" || k == "HOST"
+                        {
+                            env_map.insert(k, v);
+                        }
+                    }
+                    if let Ok(out_dir_val) = std::env::var("OUT_DIR") {
+                        let out_path = Path::new(&out_dir_val);
+                        if let Some(build_dir) = out_path.parent() {
+                            for cand in ["output", "root-output"] {
+                                let cand_file = build_dir.join(cand);
+                                if let Ok(contents) = fs::read_to_string(&cand_file) {
+                                    for line in contents.lines() {
+                                        let trimmed = line.trim();
+                                        let env_payload = trimmed
+                                            .strip_prefix("cargo:rustc-env=")
+                                            .or_else(|| trimmed.strip_prefix("cargo::rustc-env="));
+                                        if let Some(payload) = env_payload {
+                                            if let Some((k, v)) = payload.split_once('=') {
+                                                env_map.insert(
+                                                    k.trim().to_string(),
+                                                    v.trim().to_string(),
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     let dep_info = serde_json::json!({

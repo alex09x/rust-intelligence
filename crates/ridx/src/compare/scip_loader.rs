@@ -191,7 +191,12 @@ pub fn run_scip_session(
                         let full_path = workspace_root.join(&loc.file);
                         ExternalLspResult {
                             found: true,
-                            span: format!("{}:{}:{}", full_path.display(), loc.line + 1, loc.col + 1),
+                            span: format!(
+                                "{}:{}:{}",
+                                full_path.display(),
+                                loc.line + 1,
+                                loc.col + 1
+                            ),
                             count: 1,
                             latency_micros: 0,
                             rss_bytes: 0,
@@ -213,7 +218,14 @@ pub fn run_scip_session(
                         found: count > 0,
                         span: refs
                             .first()
-                            .map(|loc| format!("{}:{}:{}", workspace_root.join(&loc.file).display(), loc.line + 1, loc.col + 1))
+                            .map(|loc| {
+                                format!(
+                                    "{}:{}:{}",
+                                    workspace_root.join(&loc.file).display(),
+                                    loc.line + 1,
+                                    loc.col + 1
+                                )
+                            })
                             .unwrap_or_else(|| "Not found".to_string()),
                         count,
                         latency_micros: 0,

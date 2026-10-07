@@ -42,17 +42,15 @@ impl WorkspaceIndex {
             let meta = fs::metadata(mf).ok();
             let current_manifest_mtime = meta.as_ref().and_then(|m| m.modified().ok());
             let current_manifest_len = meta.as_ref().map(|m| m.len());
-            if current_manifest_mtime == self.manifest_mtime && current_manifest_len == self.manifest_len {
-                return Ok(false);
-            }
             if let Ok(content) = fs::read(mf) {
                 let content_hash = crate::format::normalized_source_hash(&content);
-                if current_manifest_mtime == self.manifest_mtime && Some(content_hash) == self.manifest_hash {
-                    return Ok(false);
-                }
-                self.manifest_mtime = current_manifest_mtime;
-                self.manifest_len = current_manifest_len;
-                self.manifest_hash = Some(content_hash);
+                let manifest_unchanged = current_manifest_mtime == self.manifest_mtime
+                    && current_manifest_len == self.manifest_len
+                    && Some(content_hash) == self.manifest_hash;
+                if !manifest_unchanged {
+                    self.manifest_mtime = current_manifest_mtime;
+                    self.manifest_len = current_manifest_len;
+                    self.manifest_hash = Some(content_hash);
                     if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
                         if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
                             return Err(io::Error::new(
@@ -319,6 +317,7 @@ impl WorkspaceIndex {
                             }
                         }
                     }
+                }
             }
         }
 

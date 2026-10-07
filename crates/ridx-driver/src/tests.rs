@@ -89,10 +89,6 @@ fn test_map_def_kind() {
         RDefKind::AnonConst
     );
     assert_eq!(
-        map_def_kind(hir::def::DefKind::InlineConst),
-        RDefKind::InlineConst
-    );
-    assert_eq!(
         map_def_kind(hir::def::DefKind::OpaqueTy),
         RDefKind::OpaqueTy
     );

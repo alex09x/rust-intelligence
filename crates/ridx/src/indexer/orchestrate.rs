@@ -10,8 +10,8 @@
 
 //! Execution and orchestration of Cargo indexing with compiler driver wrapping.
 
-use super::direct::try_direct_crate_indexing;
 use super::cargo::{extract_config_target, find_cargo_configs};
+use super::direct::try_direct_crate_indexing;
 use super::driver::find_driver_binary;
 use super::manifest::{publish_manifest, ManifestParams};
 use super::types::{IndexOptions, PublishedVariant};
