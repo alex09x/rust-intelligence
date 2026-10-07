@@ -39,25 +39,20 @@ fn normalize_path(path: &Path) -> PathBuf {
     components.into_iter().collect()
 }
 
-/// Checks whether a path contains a `ParentDir` (`..`) following a symlink component,
-/// meaning lexical normalization would pop across a symlink boundary and diverge from
-/// the true filesystem target.
+/// Checks whether a path contains a `ParentDir` (`..`) that pops across a symlink component,
+/// meaning lexical normalization would diverge from the true filesystem target.
 fn path_traverses_symlink_parent(path: &Path) -> bool {
     let mut current = PathBuf::new();
-    let mut saw_symlink = false;
     for c in path.components() {
         match c {
             std::path::Component::Normal(seg) => {
                 current.push(seg);
-                if let Ok(meta) = fs::symlink_metadata(&current) {
-                    if meta.file_type().is_symlink() {
-                        saw_symlink = true;
-                    }
-                }
             }
             std::path::Component::ParentDir => {
-                if saw_symlink {
-                    return true;
+                if let Ok(meta) = fs::symlink_metadata(&current) {
+                    if meta.file_type().is_symlink() {
+                        return true;
+                    }
                 }
                 current.pop();
             }
@@ -725,6 +720,7 @@ mod tests {
         // 2. Symlink parent traversal
         let temp_dir = std::env::temp_dir().join(format!("ridx_prov_edge_{}", std::process::id()));
         let _ = fs::create_dir_all(&temp_dir);
+        let temp_dir = temp_dir.canonicalize().unwrap_or(temp_dir);
 
         let real_dir = temp_dir.join("real");
         let _ = fs::create_dir_all(&real_dir);
@@ -805,6 +801,7 @@ mod tests {
         // 6. Secondary candidate matching in shard_mtime_for_file and source_hash_for_file (lines 267-271, 389-393)
         let temp2 = std::env::temp_dir().join(format!("ridx_prov_sec_{}", std::process::id()));
         let _ = fs::create_dir_all(&temp2);
+        let temp2 = temp2.canonicalize().unwrap_or(temp2);
         let test_idx2 = temp2.join("test2.ridx");
         let mut writer2 = crate::writer::IndexWriter::new("prov_crate2", "0.1.0");
         let mut f2 = fs::File::create(&test_idx2).unwrap();
