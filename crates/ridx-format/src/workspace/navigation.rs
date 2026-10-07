@@ -286,7 +286,6 @@ impl WorkspaceIndex {
                                 d.span().file_id() == fid
                                     && r.get_str(d.name_offset()) == res.name
                             })
-                            .copied()
                     } else {
                         None
                     }
