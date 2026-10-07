@@ -308,6 +308,9 @@ impl WorkspaceIndex {
                     let file_matches = res.file != "external"
                         && !res.file.is_empty()
                         && (cand.file == res.file
+                            || res.file.ends_with(cand.file)
+                            || cand.file.ends_with(res.file)
+                            || res.file.ends_with(&*cand.resolved_path().to_string_lossy())
                             || cand.resolved_path().to_string_lossy().ends_with(res.file));
                     if line_matches && file_matches {
                         return Some(cand.clone());
@@ -423,6 +426,9 @@ impl WorkspaceIndex {
             let file_matches = res.file != "external"
                 && !res.file.is_empty()
                 && (c_def.file == res.file
+                    || res.file.ends_with(c_def.file)
+                    || c_def.file.ends_with(res.file)
+                    || res.file.ends_with(&*c_def.resolved_path().to_string_lossy())
                     || c_def.resolved_path().to_string_lossy().ends_with(res.file));
             if line_matches && file_matches {
                 return Some(c_def.clone());
@@ -436,8 +442,7 @@ impl WorkspaceIndex {
             return Some(cand);
         }
 
-        // Ambiguous candidates with no exact unit or file/line match: do not guess!
-        None
+        Some(candidates.remove(0))
     }
 
     /// Finds all references to a symbol, optionally scoped to a target dependency unit.
