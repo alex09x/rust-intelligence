@@ -29,6 +29,7 @@ use std::time::Instant;
 
 pub type WorkspaceCrateEntry = (
     String,
+    String,
     Vec<String>,
     HashMap<String, String>,
     HashMap<String, u64>,
@@ -52,6 +53,7 @@ pub fn try_direct_crate_indexing(
     start: Instant,
 ) -> Option<PublishedVariant> {
     if !deps_dir.is_dir() {
+        eprintln!("[ridx-direct] fallback to Cargo: deps directory missing (cold index)");
         return None;
     }
 
@@ -93,6 +95,7 @@ pub fn try_direct_crate_indexing(
                 .unwrap_or_default();
 
             if args.is_empty() {
+                eprintln!("[ridx-direct] fallback to Cargo: compiler args missing for crate '{crate_name}'");
                 return None;
             }
 
@@ -116,11 +119,17 @@ pub fn try_direct_crate_indexing(
                 })
                 .unwrap_or_default();
 
-            workspace_crates.push((crate_name, args, env_vars, file_hashes, path));
+            let target_id = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or(&crate_name)
+                .to_string();
+            workspace_crates.push((target_id, crate_name, args, env_vars, file_hashes, path));
         }
     }
 
     if workspace_crates.is_empty() {
+        eprintln!("[ridx-direct] fallback to Cargo: no workspace crates found in .deps");
         return None;
     }
 
@@ -130,7 +139,7 @@ pub fn try_direct_crate_indexing(
     // Identify all modified files and tracked files in the workspace
     let mut modified_files = HashSet::new();
     let mut all_checked_files = HashSet::new();
-    for (_, _, _, file_hashes, _) in &workspace_crates {
+    for (_, _, _, _, file_hashes, _) in &workspace_crates {
         for (file_str, &recorded_hash) in file_hashes {
             if !all_checked_files.insert(file_str.clone()) {
                 continue;
@@ -161,7 +170,7 @@ pub fn try_direct_crate_indexing(
     }
 
     // Check for untracked .rs files in crate target directories (src, tests, benches, examples, build.rs)
-    for (_, _, env_vars, _, _) in &workspace_crates {
+    for (_, _, _, env_vars, _, _) in &workspace_crates {
         if let Some(mdir_str) = env_vars.get("CARGO_MANIFEST_DIR") {
             let crate_dir = Path::new(mdir_str);
             if has_untracked_rs_files(crate_dir, &all_checked_files, manifest_mtime) {
@@ -170,45 +179,56 @@ pub fn try_direct_crate_indexing(
         }
     }
 
-    // Build dependency and reverse-dependency graphs among workspace crates
+    // Build dependency and reverse-dependency graphs among workspace targets
     let (dependencies_of, rdeps_of) = build_workspace_dependency_graphs(&workspace_crates);
 
-    // Determine directly modified crates
+    // Map target_ids back to workspace crate data
+    let crate_map: HashMap<String, _> = workspace_crates
+        .into_iter()
+        .map(|(tid, name, args, env_vars, file_hashes, path)| {
+            (tid, (name, args, env_vars, file_hashes, path))
+        })
+        .collect();
+
+    // Determine directly modified target_ids
     let mut initial_changed = HashSet::new();
     if !modified_files.is_empty() {
-        for (crate_name, _, _, file_hashes, _) in &workspace_crates {
+        for (target_id, (_, _, _, file_hashes, _)) in &crate_map {
             if file_hashes.keys().any(|f| modified_files.contains(f)) {
-                initial_changed.insert(crate_name.clone());
+                initial_changed.insert(target_id.clone());
             }
         }
     }
 
     if initial_changed.is_empty() {
+        eprintln!("[ridx-direct] fallback to Cargo: no workspace crate files modified");
         return None;
     }
 
-    // Expand with reverse dependencies (crates that depend on modified crates)
-    let mut affected_crate_names = initial_changed.clone();
+    // Expand with reverse dependencies
+    let mut affected_target_ids = initial_changed.clone();
     let mut queue: VecDeque<String> = initial_changed.into_iter().collect();
-    while let Some(cname) = queue.pop_front() {
-        if let Some(rdeps) = rdeps_of.get(&cname) {
+    while let Some(tid) = queue.pop_front() {
+        if let Some(rdeps) = rdeps_of.get(&tid) {
             for rdep in rdeps {
-                if affected_crate_names.insert(rdep.clone()) {
+                if affected_target_ids.insert(rdep.clone()) {
                     queue.push_back(rdep.clone());
                 }
             }
         }
     }
 
+    // Collect distinct affected crate names
+    let affected_crate_names: HashSet<String> = affected_target_ids
+        .iter()
+        .filter_map(|tid| crate_map.get(tid).map(|(name, ..)| name.clone()))
+        .collect();
+
     // Proc-macro crates produce dynamic libraries needed at compile time by downstream crates.
     // Direct indexing compiles with --emit=metadata which only produces .rmeta, causing downstream
     // compilation to fail if a proc-macro was modified or recompiled.
-    for (crate_name, args, _, _, _) in &workspace_crates {
-        let is_affected = affected_crate_names.contains(crate_name)
-            || affected_crate_names
-                .iter()
-                .any(|a| a.replace('-', "_") == crate_name.replace('-', "_"));
-        if is_affected {
+    for tid in &affected_target_ids {
+        if let Some((crate_name, args, ..)) = crate_map.get(tid) {
             let is_proc_macro = args
                 .windows(2)
                 .any(|w| w[0] == "--crate-type" && w[1] == "proc-macro")
@@ -231,22 +251,14 @@ pub fn try_direct_crate_indexing(
         return None;
     }
 
-    // Topological sort of affected crates (dependencies before dependents)
-    let sorted_names = match topo_sort_crates(&affected_crate_names, &dependencies_of) {
+    // Topological sort of affected targets (dependencies before dependents)
+    let sorted_target_ids = match topo_sort_crates(&affected_target_ids, &dependencies_of) {
         Some(s) => s,
         None => {
-            eprintln!("[ridx-direct] fallback to Cargo: cyclic or unresolvable dependencies among affected crates");
+            eprintln!("[ridx-direct] fallback to Cargo: cyclic or unresolvable dependencies among affected targets");
             return None;
         }
     };
-
-    // Map sorted names back to workspace crate data
-    let crate_map: HashMap<String, _> = workspace_crates
-        .into_iter()
-        .map(|(name, args, env_vars, file_hashes, path)| {
-            (name, (args, env_vars, file_hashes, path))
-        })
-        .collect();
 
     // Prepare private isolated directories for direct build artifacts and incremental cache
     let direct_dir = work_dir.join("target/ridx-direct");
@@ -255,9 +267,9 @@ pub fn try_direct_crate_indexing(
     fs::create_dir_all(&direct_deps).ok()?;
     fs::create_dir_all(&direct_incr).ok()?;
 
-    // Execute direct indexing on changed crates in topological order
-    for crate_name in &sorted_names {
-        let (args, env_vars, _, _) = crate_map.get(crate_name)?;
+    // Execute direct indexing on changed targets in topological order
+    for target_id in &sorted_target_ids {
+        let (crate_name, args, env_vars, _, _) = crate_map.get(target_id)?;
         let sanitized_args = sanitize_compiler_args_for_direct(
             args,
             &direct_deps,
@@ -267,6 +279,7 @@ pub fn try_direct_crate_indexing(
 
         let mut cmd = Command::new(driver_bin);
         if sanitized_args.is_empty() {
+            eprintln!("[ridx-direct] fallback to Cargo: empty sanitized args for '{crate_name}'");
             return None;
         }
         cmd.args(&sanitized_args);
@@ -285,6 +298,9 @@ pub fn try_direct_crate_indexing(
 
         let status = cmd.status().ok()?;
         if !status.success() {
+            eprintln!(
+                "[ridx-direct] fallback to Cargo: direct rustc execution failed for '{crate_name}'"
+            );
             return None;
         }
     }
@@ -318,7 +334,7 @@ pub fn try_direct_crate_indexing(
         "  {} Direct fast-path indexing finished in {:.1} ms ({} changed crates)",
         "RIDX Success:".green().bold(),
         dur,
-        sorted_names.len()
+        sorted_target_ids.len()
     );
 
     Some(PublishedVariant {

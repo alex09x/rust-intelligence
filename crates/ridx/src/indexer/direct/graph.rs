@@ -13,19 +13,34 @@
 use super::WorkspaceCrateEntry;
 use std::collections::{HashMap, HashSet, VecDeque};
 
-/// Builds direct dependency and reverse-dependency (rdep) graphs among workspace crates.
+/// Builds direct dependency and reverse-dependency (rdep) graphs among workspace targets.
 pub fn build_workspace_dependency_graphs(
     workspace_crates: &[WorkspaceCrateEntry],
 ) -> (
     HashMap<String, HashSet<String>>,
     HashMap<String, HashSet<String>>,
 ) {
-    let ws_crate_names: HashSet<String> =
-        workspace_crates.iter().map(|(n, ..)| n.clone()).collect();
+    // Map exported crate names to their providing library target_ids
+    let mut providers_by_name: HashMap<String, HashSet<String>> = HashMap::new();
+    for (target_id, crate_name, args, ..) in workspace_crates {
+        let is_lib = !args.contains(&"--test".to_string());
+        if is_lib {
+            providers_by_name
+                .entry(crate_name.clone())
+                .or_default()
+                .insert(target_id.clone());
+            let norm = crate_name.replace('-', "_");
+            providers_by_name
+                .entry(norm)
+                .or_default()
+                .insert(target_id.clone());
+        }
+    }
+
     let mut dependencies_of: HashMap<String, HashSet<String>> = HashMap::new();
     let mut rdeps_of: HashMap<String, HashSet<String>> = HashMap::new();
 
-    for (cname, args, ..) in workspace_crates {
+    for (target_id, _cname, args, ..) in workspace_crates {
         let mut deps = HashSet::new();
         for i in 0..args.len() {
             let ext_val = if args[i] == "--extern" && i + 1 < args.len() {
@@ -36,16 +51,22 @@ pub fn build_workspace_dependency_graphs(
             if let Some(val) = ext_val {
                 let dep_name = val.split(['=', ':']).next().unwrap_or(val).trim();
                 let clean_name = dep_name.rsplit(':').next().unwrap_or(dep_name);
-                if ws_crate_names.contains(clean_name) && clean_name != cname {
-                    deps.insert(clean_name.to_string());
-                    rdeps_of
-                        .entry(clean_name.to_string())
-                        .or_default()
-                        .insert(cname.clone());
+                let clean_norm = clean_name.replace('-', "_");
+
+                if let Some(provider_ids) = providers_by_name.get(&clean_norm) {
+                    for pid in provider_ids {
+                        if pid != target_id {
+                            deps.insert(pid.clone());
+                            rdeps_of
+                                .entry(pid.clone())
+                                .or_default()
+                                .insert(target_id.clone());
+                        }
+                    }
                 }
             }
         }
-        dependencies_of.insert(cname.clone(), deps);
+        dependencies_of.insert(target_id.clone(), deps);
     }
 
     (dependencies_of, rdeps_of)

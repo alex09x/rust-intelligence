@@ -51,17 +51,15 @@ pub fn sanitize_compiler_args_for_direct(
             continue;
         }
 
-        if arg == "-o" {
-            if i + 1 < args.len() {
-                let file_name = Path::new(&args[i + 1])
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("output");
-                new_args.push("-o".to_string());
-                new_args.push(direct_deps_dir.join(file_name).display().to_string());
-                i += 2;
-                continue;
-            }
+        if arg == "-o" && i + 1 < args.len() {
+            let file_name = Path::new(&args[i + 1])
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("output");
+            new_args.push("-o".to_string());
+            new_args.push(direct_deps_dir.join(file_name).display().to_string());
+            i += 2;
+            continue;
         }
 
         if arg == "-C" && i + 1 < args.len() && args[i + 1].starts_with("incremental=") {

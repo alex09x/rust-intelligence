@@ -236,7 +236,7 @@ pub fn run_server_session(
             iteration_latencies.push(lat);
             let has_err = last_resp
                 .as_ref()
-                .map_or(true, |r: &serde_json::Value| r.get("error").is_some());
+                .is_none_or(|r: &serde_json::Value| r.get("error").is_some());
             if iter == 0 || has_err {
                 last_resp = resp;
             }
