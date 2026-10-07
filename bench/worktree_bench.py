@@ -58,8 +58,10 @@ def run_scenario_w1_commit_walk(repo_dir, ridx_bin, ra_bin, steps=30):
         "step_latencies_ms": {"ridx": [], "ra": []},
         "fast_path_count": 0,
         "fallback_count": 0,
+        "no_op_count": 0,
         "fast_path_latencies_ms": [],
         "fallback_latencies_ms": [],
+        "no_op_latencies_ms": [],
         "fallback_reasons": {},
     }
 
@@ -160,6 +162,9 @@ def run_scenario_w1_commit_walk(repo_dir, ridx_bin, ra_bin, steps=30):
             if "Direct fast-path indexing finished" in combined_out:
                 results["fast_path_count"] += 1
                 results["fast_path_latencies_ms"].append(round(t_r, 1))
+            elif "[ridx-direct] fallback to Cargo: no workspace crate files modified" in combined_out:
+                results["no_op_count"] += 1
+                results["no_op_latencies_ms"].append(round(t_r, 1))
             else:
                 results["fallback_count"] += 1
                 results["fallback_latencies_ms"].append(round(t_r, 1))
@@ -206,13 +211,15 @@ def run_scenario_w1_commit_walk(repo_dir, ridx_bin, ra_bin, steps=30):
         "ridx": format_ratio_with_ci(r_post, tot_r),
         "ra": format_ratio_with_ci(ra_post, tot_ra),
     }
-    tot_steps = results["fast_path_count"] + results["fallback_count"]
+    tot_steps = results["fast_path_count"] + results["fallback_count"] + results["no_op_count"]
     results["fast_path_fraction"] = round(results["fast_path_count"] / max(1, tot_steps), 3)
     results["fallback_fraction"] = round(results["fallback_count"] / max(1, tot_steps), 3)
+    results["no_op_fraction"] = round(results["no_op_count"] / max(1, tot_steps), 3)
     results["time_to_freshness_p50_ms"] = {
         "overall": percentile(results["step_latencies_ms"]["ridx"], 50),
         "fast_path": percentile(results["fast_path_latencies_ms"], 50) if results["fast_path_latencies_ms"] else None,
         "fallback": percentile(results["fallback_latencies_ms"], 50) if results["fallback_latencies_ms"] else None,
+        "no_op": percentile(results["no_op_latencies_ms"], 50) if results["no_op_latencies_ms"] else None,
         "ra": percentile(results["step_latencies_ms"]["ra"], 50),
     }
     return results
