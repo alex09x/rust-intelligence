@@ -218,10 +218,16 @@ pub fn try_direct_crate_indexing(
         }
     }
 
-    // Collect distinct affected crate names
-    let affected_crate_names: HashSet<String> = affected_target_ids
+    // Collect distinct affected package names
+    let affected_packages: HashSet<String> = affected_target_ids
         .iter()
-        .filter_map(|tid| crate_map.get(tid).map(|(name, ..)| name.clone()))
+        .filter_map(|tid| {
+            crate_map.get(tid).map(|(name, _, env, ..)| {
+                env.get("CARGO_PKG_NAME")
+                    .cloned()
+                    .unwrap_or_else(|| name.clone())
+            })
+        })
         .collect();
 
     // Proc-macro crates produce dynamic libraries needed at compile time by downstream crates.
@@ -242,11 +248,12 @@ pub fn try_direct_crate_indexing(
         }
     }
 
-    // If more than 10 distinct workspace crates changed, let Cargo orchestrate
-    if affected_crate_names.len() > 10 {
+    // If more than 10 distinct workspace packages changed, let Cargo orchestrate
+    if affected_packages.len() > 10 {
         eprintln!(
-            "[ridx-direct] fallback to Cargo: too many affected crates ({} > 10)",
-            affected_crate_names.len()
+            "[ridx-direct] fallback to Cargo: too many affected packages ({} > 10: {:?})",
+            affected_packages.len(),
+            affected_packages
         );
         return None;
     }
@@ -260,6 +267,17 @@ pub fn try_direct_crate_indexing(
         }
     };
 
+    let mut recompiled_crates = HashSet::new();
+    for tid in &affected_target_ids {
+        recompiled_crates.insert(tid.clone());
+        if let Some((name, _, env, ..)) = crate_map.get(tid) {
+            recompiled_crates.insert(name.clone());
+            if let Some(pkg) = env.get("CARGO_PKG_NAME") {
+                recompiled_crates.insert(pkg.clone());
+            }
+        }
+    }
+
     // Prepare private isolated directories for direct build artifacts and incremental cache
     let direct_dir = work_dir.join("target/ridx-direct");
     let direct_deps = direct_dir.join("deps");
@@ -270,12 +288,8 @@ pub fn try_direct_crate_indexing(
     // Execute direct indexing on changed targets in topological order
     for target_id in &sorted_target_ids {
         let (crate_name, args, env_vars, _, _) = crate_map.get(target_id)?;
-        let sanitized_args = sanitize_compiler_args_for_direct(
-            args,
-            &direct_deps,
-            &direct_incr,
-            &affected_crate_names,
-        );
+        let sanitized_args =
+            sanitize_compiler_args_for_direct(args, &direct_deps, &direct_incr, &recompiled_crates);
 
         let mut cmd = Command::new(driver_bin);
         if sanitized_args.is_empty() {
