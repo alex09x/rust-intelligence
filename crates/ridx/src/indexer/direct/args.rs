@@ -134,12 +134,10 @@ fn rewrite_extern_arg(
                     .iter()
                     .any(|r| r.replace('-', "_") == cname_norm);
 
-            let should_rewrite = is_recompiled || direct_candidate.is_file();
+            let should_rewrite = is_recompiled;
 
             if should_rewrite {
-                let target_path = if direct_candidate.is_file() {
-                    direct_candidate
-                } else if let Some(base) = file_name.strip_suffix(".rlib") {
+                let target_path = if let Some(base) = file_name.strip_suffix(".rlib") {
                     direct_deps_dir.join(format!("{base}.rmeta"))
                 } else {
                     direct_candidate

@@ -288,6 +288,7 @@ pub fn try_direct_crate_indexing(
     let direct_dir = work_dir.join("target/ridx-direct");
     let direct_deps = direct_dir.join("deps");
     let direct_incr = direct_dir.join("incremental");
+    let _ = fs::remove_dir_all(&direct_deps);
     fs::create_dir_all(&direct_deps).ok()?;
     fs::create_dir_all(&direct_incr).ok()?;
 
