@@ -8,124 +8,186 @@ Author: https://prod.codes/about/
 Project: https://github.com/alex09x/rust-intelligence
 SPDX-License-Identifier: MIT OR Apache-2.0
 
-Scenario sampling and call-site cursor resolution for symmetric LSP benchmarks.
+Neutral source-level scenario sampling for symmetric LSP benchmarks.
+Extracts usage sites and declaration sites directly from Rust source files.
 """
 
-import json
 import random
+import re
 from pathlib import Path
-from corpus import run_cmd
 
-SUPPORTED_KINDS = [
-    "Function",
-    "Struct",
-    "Enum",
-    "Trait",
-    "Method",
-    "AssocFn",
-    "TypeAlias",
-]
+# Neutral AST / Lexer regexes for Rust source tokens
+METHOD_CALL_RE = re.compile(r"\.([a-zA-Z_][a-zA-Z0-9_]*)\s*\(")
+PATH_IDENT_RE = re.compile(r"::([a-zA-Z_][a-zA-Z0-9_]*)")
+TYPE_USAGE_RE = re.compile(r":\s*([A-Z][a-zA-Z0-9_]*)")
+DECL_RE = re.compile(
+    r"^\s*(?:pub(?:\([^\)]+\))?\s+)?(?:async\s+)?(fn|struct|enum|trait|type)\s+([a-zA-Z_][a-zA-Z0-9_]*)"
+)
 
-
-def resolve_identifier_col(file_path, line_1based, def_name, fallback_col=1):
-    try:
-        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-            for idx, text in enumerate(f, 1):
-                if idx == line_1based:
-                    pos = text.find(def_name)
-                    if pos >= 0:
-                        return pos + 1
-                    break
-    except Exception:
-        pass
-    return fallback_col
+KEYWORDS_BLACK_LIST = {
+    "fn", "let", "mut", "pub", "async", "await", "match", "if", "else", "loop",
+    "while", "for", "in", "return", "break", "continue", "use", "mod", "super",
+    "self", "Self", "crate", "true", "false", "where", "impl", "trait", "struct",
+    "enum", "type", "const", "static", "move", "ref", "unsafe", "dyn"
+}
 
 
-def sample_scenarios(repo_dir, ridx_bin, count=30, seed=42):
-    random.seed(seed)
-    all_defs = []
-    seen_defs = set()
-    target_ridx = repo_dir / "target" / "ridx"
+def scan_source_positions(repo_dir):
+    """Scans all first-party .rs files and extracts usage and declaration sites neutrally."""
+    usages = []
+    declarations = []
+    seen_usages = set()
+    seen_decls = set()
 
-    for q in ["a", "e", "i", "s", "t", "r"]:
-        code, out, _, _ = run_cmd(
-            [str(ridx_bin), "symbols", "--json", str(target_ridx), q],
-            cwd=repo_dir,
-        )
-        if code != 0 or not out:
+    for p in Path(repo_dir).rglob("*.rs"):
+        # Ignore build artifacts and hidden directories
+        parts = p.parts
+        if any(ignored in parts for ignored in ("target", ".git", ".prod", "node_modules")):
             continue
+        p_str = str(p.resolve())
+
         try:
-            data = json.loads(out)
-            for s in data.get("symbols", []):
-                f = s.get("file", "")
-                k = s.get("kind", "")
-                if not f.startswith(str(repo_dir)):
-                    continue
-                if k not in SUPPORTED_KINDS:
-                    continue
-                loc_key = (f, s.get("start_line", 1), s.get("start_col", 1))
-                if loc_key not in seen_defs:
-                    seen_defs.add(loc_key)
-                    all_defs.append(s)
+            with open(p, "r", encoding="utf-8", errors="replace") as f:
+                for line_idx, line in enumerate(f, 1):
+                    trimmed = line.strip()
+                    if not trimmed or trimmed.startswith("//") or trimmed.startswith("/*") or trimmed.startswith("*"):
+                        continue
+
+                    # 1. Declaration sites
+                    m_decl = DECL_RE.search(line)
+                    if m_decl:
+                        name = m_decl.group(2)
+                        if name not in KEYWORDS_BLACK_LIST and len(name) > 1:
+                            col = line.find(name) + 1
+                            key = (p_str, line_idx, col)
+                            if key not in seen_decls:
+                                seen_decls.add(key)
+                                declarations.append((p_str, line_idx, col, name, m_decl.group(1)))
+
+                    # 2. Usage sites: method calls (obj.method())
+                    for m in METHOD_CALL_RE.finditer(line):
+                        name = m.group(1)
+                        if name not in KEYWORDS_BLACK_LIST and len(name) > 1:
+                            col = m.start(1) + 1
+                            key = (p_str, line_idx, col)
+                            if key not in seen_usages:
+                                seen_usages.add(key)
+                                usages.append((p_str, line_idx, col, name, "method_call"))
+
+                    # 3. Usage sites: path identifiers (Module::item or Type::assoc)
+                    for m in PATH_IDENT_RE.finditer(line):
+                        name = m.group(1)
+                        if name not in KEYWORDS_BLACK_LIST and len(name) > 1:
+                            col = m.start(1) + 1
+                            key = (p_str, line_idx, col)
+                            if key not in seen_usages:
+                                seen_usages.add(key)
+                                usages.append((p_str, line_idx, col, name, "path_ident"))
+
+                    # 4. Usage sites: explicit type usage (: TypeName)
+                    for m in TYPE_USAGE_RE.finditer(line):
+                        name = m.group(1)
+                        if name not in KEYWORDS_BLACK_LIST and len(name) > 1:
+                            col = m.start(1) + 1
+                            key = (p_str, line_idx, col)
+                            if key not in seen_usages:
+                                seen_usages.add(key)
+                                usages.append((p_str, line_idx, col, name, "type_usage"))
         except Exception:
             continue
 
-    if not all_defs:
+    return usages, declarations
+
+
+def sample_scenarios(repo_dir, count=300, seed=42):
+    """
+    Builds a neutral benchmark suite across first-party files:
+    - def: strictly on usage sites (call-sites, path identifiers, type annotations)
+    - hover: 70% usage sites, 30% declaration sites
+    - refs: 50% usage sites, 50% declaration sites
+    """
+    random.seed(seed)
+    usages, declarations = scan_source_positions(repo_dir)
+
+    if not usages and not declarations:
         return []
 
-    grouped = {}
-    for d in all_defs:
-        k = d.get("kind", "Other")
-        grouped.setdefault(k, []).append(d)
-
-    sampled_defs = []
-    per_group = max(1, count // max(1, len(grouped)))
-    for k, items in grouped.items():
-        sampled_defs.extend(random.sample(items, min(len(items), per_group)))
-
-    if len(sampled_defs) < count:
-        remaining = [d for d in all_defs if d not in sampled_defs]
-        needed = count - len(sampled_defs)
-        sampled_defs.extend(random.sample(remaining, min(len(remaining), needed)))
-
+    target_per_cap = max(10, count // 3)
     scenarios = []
-    for idx, d in enumerate(sampled_defs):
-        name = d.get("name", "")
-        f = d.get("file", "")
-        line = d.get("start_line", 1)
-        col = d.get("start_col", 1)
 
-        # Attempt to find authentic first-party reference call-site
-        call_loc = None
-        code, out, _, _ = run_cmd(
-            [str(ridx_bin), "refs", "--json", str(target_ridx), f"{f}:{line}:{col}"],
-            cwd=repo_dir,
-        )
-        if code == 0 and out:
-            try:
-                ref_data = json.loads(out)
-                refs = ref_data.get("references", [])
-                fp_refs = [r for r in refs if r.get("file", "").startswith(str(repo_dir))]
-                if fp_refs:
-                    chosen = fp_refs[0]
-                    call_loc = [
-                        chosen.get("file", f),
-                        chosen.get("start_line", line),
-                        chosen.get("start_col", col),
-                    ]
-            except Exception:
-                pass
+    # 1. Def scenarios: strictly sampled from USAGE sites (call-sites / paths)
+    def_candidates = usages if usages else declarations
+    sampled_defs = random.sample(def_candidates, min(len(def_candidates), target_per_cap))
+    for idx, (f, line, col, name, kind) in enumerate(sampled_defs):
+        scenarios.append({
+            "name": f"def_{idx}_{name}",
+            "capability": "def",
+            "target": name,
+            "location": [f, line, col],
+            "kind": kind,
+        })
 
-        if not call_loc:
-            exact_col = resolve_identifier_col(f, line, name, fallback_col=col)
-            call_loc = [f, line, exact_col]
+    # 2. Hover scenarios: 70% usages, 30% declarations
+    hover_usage_count = int(target_per_cap * 0.7)
+    hover_decl_count = target_per_cap - hover_usage_count
+    sampled_hover_usages = random.sample(usages, min(len(usages), hover_usage_count)) if usages else []
+    sampled_hover_decls = random.sample(declarations, min(len(declarations), hover_decl_count)) if declarations else []
 
-        for cap in ["def", "hover", "refs"]:
+    for idx, (f, line, col, name, kind) in enumerate(sampled_hover_usages + sampled_hover_decls):
+        scenarios.append({
+            "name": f"hover_{idx}_{name}",
+            "capability": "hover",
+            "target": name,
+            "location": [f, line, col],
+            "kind": kind,
+        })
+
+    # 3. Refs scenarios: 50% usages, 50% declarations
+    refs_usage_count = target_per_cap // 2
+    refs_decl_count = target_per_cap - refs_usage_count
+    sampled_refs_usages = random.sample(usages, min(len(usages), refs_usage_count)) if usages else []
+    sampled_refs_decls = random.sample(declarations, min(len(declarations), refs_decl_count)) if declarations else []
+
+    for idx, (f, line, col, name, kind) in enumerate(sampled_refs_usages + sampled_refs_decls):
+        scenarios.append({
+            "name": f"refs_{idx}_{name}",
+            "capability": "refs",
+            "target": name,
+            "location": [f, line, col],
+            "kind": kind,
+        })
+
+    # 4. Mutation scenarios (Point 8): cross-file edit in File A shifts lines, query in File B
+    decl_by_name = {d[3]: d for d in declarations}
+    cross_file_pairs = []
+    for u in usages:
+        u_file, u_line, u_col, u_name, u_kind = u
+        if u_name in decl_by_name:
+            d = decl_by_name[u_name]
+            d_file, d_line, d_col, _, d_kind = d
+            if d_file != u_file:
+                cross_file_pairs.append((d, u))
+
+    if cross_file_pairs:
+        mutation_count = min(len(cross_file_pairs), 20)
+        sampled_mutations = random.sample(cross_file_pairs, mutation_count)
+        for idx, (d, u) in enumerate(sampled_mutations):
+            d_file, d_line, d_col, name, d_kind = d
+            u_file, u_line, u_col, _, _ = u
+            insert_lines = 10
             scenarios.append({
-                "name": f"{cap}_{idx}_{name}",
-                "capability": cap,
+                "name": f"mutation_cross_file_{idx}_{name}",
+                "capability": "def",
                 "target": name,
-                "location": call_loc,
+                "location": [u_file, u_line, u_col],
+                "kind": "cross_file_mutation",
+                "mutation": {
+                    "file": d_file,
+                    "insert_lines": insert_lines,
+                    "text": "\n" * insert_lines,
+                },
+                "expected_target_file": d_file,
+                "expected_target_line_delta": insert_lines,
             })
 
     return scenarios

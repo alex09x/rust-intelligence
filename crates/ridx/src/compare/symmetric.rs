@@ -12,7 +12,6 @@
 
 use super::client::extract_symbol_location;
 use super::query_runner::{execute_scenario_query, spans_match};
-use super::system::get_process_rss_bytes;
 use super::transport::*;
 use super::types::{
     ExternalLspResult, ServerMetrics, SymmetricComparisonSummary, SymmetricScenario,
@@ -97,6 +96,9 @@ pub fn run_server_session(
                 "workspace": {
                     "symbol": { "symbolKind": { "valueSet": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] } }
                 }
+            },
+            "initializationOptions": {
+                "checkOnSave": false
             }
         }
     });
@@ -122,19 +124,33 @@ pub fn run_server_session(
 
     // 3. Run Scenarios
     let mut query_latencies_micros = HashMap::new();
+    let mut query_cold_latencies_micros = HashMap::new();
     let mut query_results = HashMap::new();
 
+    let initial_mem = super::system::get_process_memory_details(pid);
     let stop_sampler = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let max_rss = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(
-        get_process_rss_bytes(pid).unwrap_or(0),
+    let cargo_spawned = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let max_rss = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_mem.rss_bytes));
+    let max_anon = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(
+        initial_mem.rss_anon_bytes,
+    ));
+    let max_file = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(
+        initial_mem.rss_file_bytes,
     ));
 
     let stop_clone = std::sync::Arc::clone(&stop_sampler);
-    let max_clone = std::sync::Arc::clone(&max_rss);
+    let cargo_spawned_clone = std::sync::Arc::clone(&cargo_spawned);
+    let max_rss_clone = std::sync::Arc::clone(&max_rss);
+    let max_anon_clone = std::sync::Arc::clone(&max_anon);
+    let max_file_clone = std::sync::Arc::clone(&max_file);
     let sampler_handle = std::thread::spawn(move || {
         while !stop_clone.load(std::sync::atomic::Ordering::Relaxed) {
-            if let Some(rss) = get_process_rss_bytes(pid) {
-                max_clone.fetch_max(rss, std::sync::atomic::Ordering::Relaxed);
+            let mem = super::system::get_process_memory_details(pid);
+            max_rss_clone.fetch_max(mem.rss_bytes, std::sync::atomic::Ordering::Relaxed);
+            max_anon_clone.fetch_max(mem.rss_anon_bytes, std::sync::atomic::Ordering::Relaxed);
+            max_file_clone.fetch_max(mem.rss_file_bytes, std::sync::atomic::Ordering::Relaxed);
+            if super::system::has_cargo_or_rustc_children(pid) {
+                cargo_spawned_clone.store(true, std::sync::atomic::Ordering::Relaxed);
             }
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
@@ -177,34 +193,66 @@ pub fn run_server_session(
             None
         };
 
-        let t_query_start = Instant::now();
-        let resp = execute_scenario_query(
-            &mut reader,
-            &mut stdin,
-            req_id,
-            &sc.capability,
-            &sc.target,
-            resolved_loc.as_ref(),
-        );
-        let query_latency = t_query_start.elapsed().as_micros();
+        let mut mutation_mgr = super::mutation::MutationManager::new();
+        if let Some(mut_spec) = &sc.mutation {
+            let _ = mutation_mgr.apply(&mut stdin, mut_spec, root);
+        }
 
-        let lsp_res = resp
-            .and_then(|r| parse_lsp_result(&r, query_latency, 0))
+        let mut iteration_latencies = Vec::with_capacity(3);
+        let mut last_resp = None;
+
+        for iter in 0..3 {
+            let t_query_start = Instant::now();
+            let resp = execute_scenario_query(
+                &mut reader,
+                &mut stdin,
+                req_id,
+                &sc.capability,
+                &sc.target,
+                resolved_loc.as_ref(),
+            );
+            let lat = t_query_start.elapsed().as_micros();
+            iteration_latencies.push(lat);
+            if iter == 0 {
+                last_resp = resp;
+            }
+            req_id += 1;
+        }
+
+        if let Some(mut_spec) = &sc.mutation {
+            let _ = mutation_mgr.revert(&mut stdin, mut_spec, root);
+        }
+
+        let cold_latency = iteration_latencies[0];
+        let warm_latency = if iteration_latencies.len() > 1 {
+            let mut warm_lats = iteration_latencies[1..].to_vec();
+            warm_lats.sort_unstable();
+            warm_lats[warm_lats.len() / 2]
+        } else {
+            cold_latency
+        };
+
+        let lsp_res = last_resp
+            .and_then(|r| parse_lsp_result(&r, warm_latency, 0))
             .unwrap_or_else(|| ExternalLspResult {
                 found: false,
                 span: "Query failed or timed out".to_string(),
                 count: 0,
-                latency_micros: query_latency,
+                latency_micros: warm_latency,
                 rss_bytes: 0,
             });
 
-        query_latencies_micros.insert(sc.name.clone(), query_latency);
+        query_cold_latencies_micros.insert(sc.name.clone(), cold_latency);
+        query_latencies_micros.insert(sc.name.clone(), warm_latency);
         query_results.insert(sc.name.clone(), lsp_res);
     }
 
     stop_sampler.store(true, std::sync::atomic::Ordering::Relaxed);
     let _ = sampler_handle.join();
     let peak_rss_bytes = max_rss.load(std::sync::atomic::Ordering::Relaxed);
+    let peak_rss_anon_bytes = max_anon.load(std::sync::atomic::Ordering::Relaxed);
+    let peak_rss_file_bytes = max_file.load(std::sync::atomic::Ordering::Relaxed);
+    let cargo_spawned_val = cargo_spawned.load(std::sync::atomic::Ordering::Relaxed);
 
     // 4. Shutdown & Exit
     let t_shutdown_start = Instant::now();
@@ -245,9 +293,13 @@ pub fn run_server_session(
         spawn_and_init_micros,
         readiness_warmup_micros,
         query_latencies_micros,
+        query_cold_latencies_micros,
         query_results,
         shutdown_micros,
         peak_rss_bytes,
+        peak_rss_anon_bytes,
+        peak_rss_file_bytes,
+        cargo_spawned: cargo_spawned_val,
     })
 }
 

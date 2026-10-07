@@ -94,6 +94,17 @@ class PrometheusCollector:
         }
 
 
+def is_noise_rejected(machine_metrics, max_load=4.0):
+    """
+    Validates machine load against isolation threshold (Point 9).
+    Returns (rejected: bool, reason: str).
+    """
+    load1 = machine_metrics.get("loadavg_1m")
+    if load1 is not None and load1 > max_load:
+        return True, f"High load average ({load1} > {max_load})"
+    return False, ""
+
+
 def record_discrepancies(discrepancies_path, repo_slug, scenarios, matches, ridx_metrics, ra_metrics):
     """Appends discrepancy records to JSONL when ridx and rust-analyzer results diverge."""
     if not discrepancies_path:

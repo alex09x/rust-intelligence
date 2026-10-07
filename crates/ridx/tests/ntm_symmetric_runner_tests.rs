@@ -24,6 +24,7 @@ fn test_symmetric_scenario_initialization() {
         capability: "def".to_string(),
         target: "tokio::task::JoinHandle".to_string(),
         location: None,
+        mutation: None,
     };
 
     assert_eq!(scenario.name, "tokio_join_handle_def");
@@ -55,9 +56,13 @@ fn test_symmetric_summary_serialization_roundtrip() {
         spawn_and_init_micros: 310,
         readiness_warmup_micros: 120,
         query_latencies_micros: ridx_latencies,
+        query_cold_latencies_micros: HashMap::new(),
         query_results: ridx_results,
         shutdown_micros: 50,
         peak_rss_bytes: 0,
+        peak_rss_anon_bytes: 0,
+        peak_rss_file_bytes: 0,
+        cargo_spawned: false,
     };
 
     let ra_metrics = ServerMetrics {
@@ -66,9 +71,13 @@ fn test_symmetric_summary_serialization_roundtrip() {
         spawn_and_init_micros: 1850000,
         readiness_warmup_micros: 3200000,
         query_latencies_micros: HashMap::new(),
+        query_cold_latencies_micros: HashMap::new(),
         query_results: HashMap::new(),
         shutdown_micros: 120000,
         peak_rss_bytes: 350000000,
+        peak_rss_anon_bytes: 300000000,
+        peak_rss_file_bytes: 50000000,
+        cargo_spawned: false,
     };
 
     let mut matches = HashMap::new();
@@ -98,6 +107,7 @@ fn test_run_server_session_handles_invalid_binary_gracefully() {
         capability: "def".to_string(),
         target: "foo".to_string(),
         location: None,
+        mutation: None,
     }];
 
     let res = run_server_session(
@@ -117,9 +127,13 @@ fn test_symmetric_runner_records_rss_and_graceful_shutdown() {
         spawn_and_init_micros: 100,
         readiness_warmup_micros: 50,
         query_latencies_micros: HashMap::new(),
+        query_cold_latencies_micros: HashMap::new(),
         query_results: HashMap::new(),
         shutdown_micros: 200,
         peak_rss_bytes: 1024 * 1024,
+        peak_rss_anon_bytes: 512 * 1024,
+        peak_rss_file_bytes: 512 * 1024,
+        cargo_spawned: false,
     };
     assert_eq!(metrics.peak_rss_bytes, 1024 * 1024);
     assert_eq!(metrics.shutdown_micros, 200);

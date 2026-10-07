@@ -48,11 +48,20 @@ pub struct ExternalLspResult {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScenarioMutation {
+    pub file: String,
+    pub insert_lines: u32,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SymmetricScenario {
     pub name: String,
     pub capability: String,
     pub target: String,
     pub location: Option<(String, u32, u32)>,
+    #[serde(default)]
+    pub mutation: Option<ScenarioMutation>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,9 +71,17 @@ pub struct ServerMetrics {
     pub spawn_and_init_micros: u128,
     pub readiness_warmup_micros: u128,
     pub query_latencies_micros: HashMap<String, u128>,
+    #[serde(default)]
+    pub query_cold_latencies_micros: HashMap<String, u128>,
     pub query_results: HashMap<String, ExternalLspResult>,
     pub shutdown_micros: u128,
     pub peak_rss_bytes: u64,
+    #[serde(default)]
+    pub peak_rss_anon_bytes: u64,
+    #[serde(default)]
+    pub peak_rss_file_bytes: u64,
+    #[serde(default)]
+    pub cargo_spawned: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

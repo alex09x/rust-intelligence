@@ -45,8 +45,125 @@ pub fn get_process_rss_bytes(pid: u32) -> Option<u64> {
     get_process_rss_bytes_fallback_ps(pid)
 }
 
+#[derive(Debug, Clone, Copy, Default, serde::Serialize, serde::Deserialize)]
+pub struct ProcessMemoryDetails {
+    pub rss_bytes: u64,
+    pub rss_anon_bytes: u64,
+    pub rss_file_bytes: u64,
+}
+
+pub fn get_process_memory_details(pid: u32) -> ProcessMemoryDetails {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(status) = std::fs::read_to_string(format!("/proc/{pid}/status")) {
+            let mut rss = 0u64;
+            let mut anon = 0u64;
+            let mut file = 0u64;
+            for line in status.lines() {
+                if let Some(rest) = line.strip_prefix("VmRSS:") {
+                    if let Some(val) = rest
+                        .split_whitespace()
+                        .next()
+                        .and_then(|v| v.parse::<u64>().ok())
+                    {
+                        rss = val * 1024;
+                    }
+                } else if let Some(rest) = line.strip_prefix("RssAnon:") {
+                    if let Some(val) = rest
+                        .split_whitespace()
+                        .next()
+                        .and_then(|v| v.parse::<u64>().ok())
+                    {
+                        anon = val * 1024;
+                    }
+                } else if let Some(rest) = line.strip_prefix("RssFile:") {
+                    if let Some(val) = rest
+                        .split_whitespace()
+                        .next()
+                        .and_then(|v| v.parse::<u64>().ok())
+                    {
+                        file = val * 1024;
+                    }
+                }
+            }
+            if rss > 0 || anon > 0 || file > 0 {
+                return ProcessMemoryDetails {
+                    rss_bytes: if rss > 0 { rss } else { anon + file },
+                    rss_anon_bytes: anon,
+                    rss_file_bytes: file,
+                };
+            }
+        }
+    }
+
+    let rss = get_process_rss_bytes(pid).unwrap_or(0);
+    ProcessMemoryDetails {
+        rss_bytes: rss,
+        rss_anon_bytes: rss,
+        rss_file_bytes: 0,
+    }
+}
+
 pub fn get_current_process_rss_bytes() -> u64 {
     get_process_rss_bytes(std::process::id()).unwrap_or(0)
+}
+
+pub fn has_cargo_or_rustc_children(pid: u32) -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(entries) = std::fs::read_dir("/proc") {
+            for entry in entries.flatten() {
+                if let Ok(name) = entry.file_name().into_string() {
+                    if let Ok(cpid) = name.parse::<u32>() {
+                        if let Ok(stat) = std::fs::read_to_string(format!("/proc/{cpid}/stat")) {
+                            if let (Some(open), Some(close)) = (stat.find('('), stat.rfind(')')) {
+                                let comm = &stat[open + 1..close];
+                                let rest = stat[close + 1..].trim();
+                                if let Some(ppid_str) = rest.split_whitespace().nth(1) {
+                                    if let Ok(ppid) = ppid_str.parse::<u32>() {
+                                        if ppid == pid
+                                            && (comm.contains("cargo") || comm.contains("rustc"))
+                                        {
+                                            return true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        if let Ok(output) = Command::new("pgrep")
+            .args(["-P", &pid.to_string()])
+            .output()
+        {
+            if !output.stdout.is_empty() {
+                let child_pids = String::from_utf8_lossy(&output.stdout);
+                for cpid in child_pids
+                    .lines()
+                    .filter_map(|p| p.trim().parse::<u32>().ok())
+                {
+                    if let Ok(out) = Command::new("ps")
+                        .args(["-p", &cpid.to_string(), "-o", "comm="])
+                        .output()
+                    {
+                        let comm = String::from_utf8_lossy(&out.stdout);
+                        if comm.contains("cargo") || comm.contains("rustc") {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let _ = pid;
+    false
 }
 
 pub fn get_rust_analyzer_rss_bytes() -> u64 {

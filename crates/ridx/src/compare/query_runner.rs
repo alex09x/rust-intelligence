@@ -125,18 +125,16 @@ pub fn spans_match(span_a: &str, span_b: &str) -> bool {
     if norm_a == norm_b {
         return true;
     }
-    if let (Some((file_a, _rest_a)), Some((file_b, _rest_b))) =
+    if let (Some((file_a, col_a)), Some((file_b, col_b))) =
         (norm_a.rsplit_once(':'), norm_b.rsplit_once(':'))
     {
         if let (Some((f_a, line_a)), Some((f_b, line_b))) =
             (file_a.rsplit_once(':'), file_b.rsplit_once(':'))
         {
-            if f_a == f_b {
-                if line_a == line_b {
-                    return true;
-                }
-                if let (Ok(l_a), Ok(l_b)) = (line_a.parse::<i64>(), line_b.parse::<i64>()) {
-                    if (l_a - l_b).abs() <= 20 {
+            if f_a == f_b && line_a == line_b {
+                // Exact file and line; allow at most 1-col offset for 0- vs 1-based indexing
+                if let (Ok(c_a), Ok(c_b)) = (col_a.parse::<i64>(), col_b.parse::<i64>()) {
+                    if (c_a - c_b).abs() <= 1 {
                         return true;
                     }
                 }
