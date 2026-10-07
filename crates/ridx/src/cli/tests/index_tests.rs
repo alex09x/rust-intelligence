@@ -216,6 +216,7 @@ fn test_cli_single_arg_auto_discover() {
         ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: false,
+        scip_file: None,
     });
     run_cli(Commands::Compare {
         arg1: "test_crate::test_fn".to_string(),
@@ -226,6 +227,7 @@ fn test_cli_single_arg_auto_discover() {
         ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: true,
+        scip_file: None,
     });
 
     std::env::remove_var("RIDX_INDEX_DIR");

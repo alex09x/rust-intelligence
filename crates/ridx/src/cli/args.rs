@@ -161,6 +161,10 @@ pub enum Commands {
         /// Output result as JSON
         #[arg(long)]
         json: bool,
+
+        /// Optional path to index.scip for 3-way comparison against rust-analyzer scip
+        #[arg(long)]
+        scip_file: Option<PathBuf>,
     },
 
     /// Run as a Language Server Protocol (LSP) server over stdio

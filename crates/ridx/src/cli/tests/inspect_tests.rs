@@ -156,6 +156,7 @@ fn test_cli_inspect_and_queries() {
         ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: false,
+        scip_file: None,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
@@ -166,6 +167,7 @@ fn test_cli_inspect_and_queries() {
         ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: true,
+        scip_file: None,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
@@ -176,6 +178,7 @@ fn test_cli_inspect_and_queries() {
         ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: false,
+        scip_file: None,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
@@ -186,6 +189,7 @@ fn test_cli_inspect_and_queries() {
         ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: true,
+        scip_file: None,
     });
 
     // Def by path (text and json)

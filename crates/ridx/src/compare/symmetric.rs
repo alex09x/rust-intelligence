@@ -11,7 +11,8 @@
 //! Symmetric framed JSON-RPC comparison runner for benchmarking RIDX and rust-analyzer.
 
 use super::client::extract_symbol_location;
-use super::query_runner::{execute_scenario_query, spans_match};
+use super::query_runner::execute_scenario_query;
+use super::session_helpers::{check_results_match, get_server_version};
 use super::transport::*;
 use super::types::{
     ExternalLspResult, ServerMetrics, SymmetricComparisonSummary, SymmetricScenario,
@@ -21,24 +22,6 @@ use std::io::BufReader;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Instant;
-
-pub fn get_server_version(cmd: &[String]) -> String {
-    let bin = if cmd.first().map(|s| s.as_str()) == Some("taskset") {
-        cmd.iter()
-            .skip(1)
-            .find(|s| !s.starts_with('-') && Some(s.as_str()) != cmd.get(2).map(|x| x.as_str()))
-    } else {
-        cmd.first()
-    };
-    if let Some(b) = bin {
-        if let Ok(out) = Command::new(b).arg("--version").output() {
-            if out.status.success() {
-                return String::from_utf8_lossy(&out.stdout).trim().to_string();
-            }
-        }
-    }
-    "unknown".to_string()
-}
 
 pub fn run_server_session(
     server_name: &str,
@@ -307,16 +290,23 @@ pub fn run_symmetric_comparison(
     root: &Path,
     ridx_cmd: &[String],
     ra_cmd: &[String],
+    scip_path: Option<&Path>,
     scenarios: &[SymmetricScenario],
 ) -> Option<SymmetricComparisonSummary> {
     let ridx_metrics = run_server_session("ridx", ridx_cmd, root, scenarios)?;
     let ra_metrics = run_server_session("rust-analyzer", ra_cmd, root, scenarios)?;
+    let scip_metrics =
+        scip_path.and_then(|p| super::scip_loader::run_scip_session(p, root, scenarios));
 
     let mut scenario_matches = HashMap::new();
+    let mut scip_matches = HashMap::new();
     let mut mutation_verifications = HashMap::new();
     for sc in scenarios {
         let r_res = ridx_metrics.query_results.get(&sc.name);
         let ra_res = ra_metrics.query_results.get(&sc.name);
+        let s_res = scip_metrics
+            .as_ref()
+            .and_then(|m| m.query_results.get(&sc.name));
 
         if let Some(mut_spec) = &sc.mutation {
             let r_corr = super::mutation::verify_mutation(r_res, mut_spec);
@@ -343,30 +333,25 @@ pub fn run_symmetric_comparison(
             );
         }
 
-        let is_match = match (r_res, ra_res) {
-            (Some(r), Some(ra)) => {
-                if !r.found && !ra.found {
-                    true
-                } else if r.found && ra.found {
-                    match sc.capability.as_str() {
-                        "hover" | "textDocument/hover" => true,
-                        "refs" | "textDocument/references" => r.count > 0 && ra.count > 0,
-                        _ => spans_match(&r.span, &ra.span),
-                    }
-                } else {
-                    false
-                }
-            }
-            _ => false,
-        };
-        scenario_matches.insert(sc.name.clone(), is_match);
+        scenario_matches.insert(
+            sc.name.clone(),
+            check_results_match(r_res, ra_res, &sc.capability),
+        );
+        if let Some(scip_r) = s_res {
+            scip_matches.insert(
+                sc.name.clone(),
+                check_results_match(Some(scip_r), ra_res, &sc.capability),
+            );
+        }
     }
 
     Some(SymmetricComparisonSummary {
         workspace_root: root.display().to_string(),
         ridx: ridx_metrics,
         rust_analyzer: ra_metrics,
+        rust_analyzer_scip: scip_metrics,
         scenario_matches,
+        scip_matches,
         mutation_verifications,
     })
 }

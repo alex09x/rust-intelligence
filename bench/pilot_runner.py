@@ -23,7 +23,7 @@ bench_dir = Path(__file__).resolve().parent
 if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
 
-from corpus import load_corpus, run_cmd, setup_repo
+from corpus import load_corpus, run_cmd, run_cmd_with_rss, setup_repo
 from metrics import PrometheusCollector, is_noise_rejected, percentile, record_discrepancies
 from sampling import sample_scenarios
 
@@ -57,8 +57,9 @@ def run_benchmark_for_repo(
 
     # 1. Cargo Check: compile build scripts and proc-macros
     check_cmd = ["cargo", "check"]
-    code, _, err_out, check_dur = run_cmd(check_cmd, cwd=repo_dir, timeout=600)
+    code, _, err_out, check_dur, chk_rss, chk_anon, chk_file = run_cmd_with_rss(check_cmd, cwd=repo_dir, timeout=600)
     result["cargo_check_sec"] = check_dur
+    result["cargo_check_peak_rss_mb"] = chk_rss / (1024 * 1024)
     if code != 0:
         result["status"] = "CARGO_CHECK_FAILED"
         result["error"] = err_out[:500]
@@ -66,14 +67,31 @@ def run_benchmark_for_repo(
 
     # 2. Ridx Index: build CAS flat index in target/ridx
     index_cmd = [str(ridx_bin), "index", "."]
-    code, _, err_out, index_dur = run_cmd(index_cmd, cwd=repo_dir, timeout=600)
+    code, _, err_out, index_dur, idx_rss, idx_anon, idx_file = run_cmd_with_rss(index_cmd, cwd=repo_dir, timeout=600)
     result["ridx_index_sec"] = index_dur
+    result["ridx_index_peak_rss_mb"] = idx_rss / (1024 * 1024)
+    ridx_size = sum(f.stat().st_size for f in repo_dir.glob("target/**/*.ridx") if f.is_file())
+    result["ridx_index_size_bytes"] = ridx_size
     if code != 0:
         result["status"] = "RIDX_INDEX_FAILED"
         result["error"] = err_out[:500]
         return result
 
-    # 3. Sample Scenarios
+    # 3. Build rust-analyzer SCIP index (static precomputed index)
+    scip_file = repo_dir / "index.scip"
+    scip_cmd = [str(ra_bin), "scip", str(repo_dir), "--output", str(scip_file), "--exclude-vendored-libraries"]
+    if taskset_cpus:
+        scip_cmd = ["taskset", "-c", str(taskset_cpus)] + scip_cmd
+    code, _, err_out, scip_dur, scip_rss, scip_anon, scip_file_rss = run_cmd_with_rss(scip_cmd, cwd=repo_dir, timeout=600)
+    result["ra_scip_build_sec"] = scip_dur
+    result["ra_scip_peak_rss_mb"] = scip_rss / (1024 * 1024)
+    result["ra_scip_peak_rss_anon_mb"] = scip_anon / (1024 * 1024)
+    result["ra_scip_peak_rss_file_mb"] = scip_file_rss / (1024 * 1024)
+    result["ra_scip_size_bytes"] = scip_file.stat().st_size if scip_file.exists() else 0
+    if code != 0:
+        result["ra_scip_error"] = err_out[:500] if err_out else "SCIP generation failed"
+
+    # 4. Sample Scenarios
     scenarios = sample_scenarios(repo_dir, count=sample_count, seed=seed)
     result["scenarios_count"] = len(scenarios)
     if not scenarios:
@@ -84,7 +102,7 @@ def run_benchmark_for_repo(
     with open(scenarios_file, "w", encoding="utf-8") as f:
         json.dump(scenarios, f)
 
-    # 4. Run Symmetric Comparison via ridx compare
+    # 5. Run Symmetric Comparison via ridx compare
     cmp_cmd = [
         str(ridx_bin),
         "compare",
@@ -92,6 +110,8 @@ def run_benchmark_for_repo(
         str(scenarios_file),
         "--json",
     ]
+    if scip_file.exists():
+        cmp_cmd.extend(["--scip-file", str(scip_file)])
     if taskset_cpus:
         cmp_cmd.extend(["--ridx-cmd", f"taskset -c {taskset_cpus} {ridx_bin} lsp"])
         cmp_cmd.extend(["--ra-cmd", f"taskset -c {taskset_cpus} {ra_bin}"])
@@ -114,18 +134,22 @@ def run_benchmark_for_repo(
 
     ridx_metrics = summary.get("ridx", {})
     ra_metrics = summary.get("rust_analyzer", {})
+    scip_metrics = summary.get("rust_analyzer_scip")
     matches = summary.get("scenario_matches", {})
+    scip_matches = summary.get("scip_matches", {})
 
     ridx_lats = ridx_metrics.get("query_latencies_micros", {})
     ridx_cold_lats = ridx_metrics.get("query_cold_latencies_micros", {})
     ra_lats = ra_metrics.get("query_latencies_micros", {})
     ra_cold_lats = ra_metrics.get("query_cold_latencies_micros", {})
+    scip_lats = scip_metrics.get("query_latencies_micros", {}) if scip_metrics else {}
+    scip_cold_lats = scip_metrics.get("query_cold_latencies_micros", {}) if scip_metrics else {}
 
     cap_latencies = {
-        "def": {"warm": ([], []), "cold": ([], [])},
-        "hover": {"warm": ([], []), "cold": ([], [])},
-        "refs": {"warm": ([], []), "cold": ([], [])},
-        "mutation": {"warm": ([], []), "cold": ([], [])},
+        "def": {"warm": ([], [], []), "cold": ([], [], [])},
+        "hover": {"warm": ([], [], []), "cold": ([], [], [])},
+        "refs": {"warm": ([], [], []), "cold": ([], [], [])},
+        "mutation": {"warm": ([], [], []), "cold": ([], [], [])},
     }
     for sc in scenarios:
         s_name = sc["name"]
@@ -135,15 +159,19 @@ def run_benchmark_for_repo(
                 cap_latencies[cap]["warm"][0].append(ridx_lats[s_name])
             if s_name in ra_lats:
                 cap_latencies[cap]["warm"][1].append(ra_lats[s_name])
+            if scip_metrics and s_name in scip_lats:
+                cap_latencies[cap]["warm"][2].append(scip_lats[s_name])
             if s_name in ridx_cold_lats:
                 cap_latencies[cap]["cold"][0].append(ridx_cold_lats[s_name])
             if s_name in ra_cold_lats:
                 cap_latencies[cap]["cold"][1].append(ra_cold_lats[s_name])
+            if scip_metrics and s_name in scip_cold_lats:
+                cap_latencies[cap]["cold"][2].append(scip_cold_lats[s_name])
 
     metrics = {}
     for cap, mode_dict in cap_latencies.items():
         for mode in ["warm", "cold"]:
-            r_list, ra_list = mode_dict[mode]
+            r_list, ra_list, scip_list = mode_dict[mode]
             metrics[f"ridx_{cap}_{mode}_p50_us"] = percentile(r_list, 50)
             metrics[f"ridx_{cap}_{mode}_p90_us"] = percentile(r_list, 90)
             metrics[f"ridx_{cap}_{mode}_p95_us"] = percentile(r_list, 95)
@@ -152,6 +180,13 @@ def run_benchmark_for_repo(
             metrics[f"ra_{cap}_{mode}_p90_us"] = percentile(ra_list, 90)
             metrics[f"ra_{cap}_{mode}_p95_us"] = percentile(ra_list, 95)
             metrics[f"ra_{cap}_{mode}_p99_us"] = percentile(ra_list, 99)
+            if cap != "mutation":
+                metrics[f"scip_{cap}_{mode}_p50_us"] = percentile(scip_list, 50)
+                metrics[f"scip_{cap}_{mode}_p90_us"] = percentile(scip_list, 90)
+                metrics[f"scip_{cap}_{mode}_p95_us"] = percentile(scip_list, 95)
+                metrics[f"scip_{cap}_{mode}_p99_us"] = percentile(scip_list, 99)
+            else:
+                metrics[f"scip_{cap}_{mode}_p50_us"] = "N/A"
 
     total_scenarios = len(matches)
     matched_scenarios = sum(1 for m in matches.values() if m)
@@ -184,6 +219,17 @@ def run_benchmark_for_repo(
         "mutation_verifications": summary.get("mutation_verifications", {}),
     })
 
+    if scip_metrics:
+        scip_total = len(scip_matches)
+        scip_matched = sum(1 for m in scip_matches.values() if m)
+        result.update({
+            "scip_load_ms": scip_metrics.get("readiness_warmup_micros", 0) / 1000.0,
+            "scip_peak_rss_mb": scip_metrics.get("peak_rss_bytes", 0) / (1024 * 1024),
+            "scip_matched_scenarios": scip_matched,
+            "scip_total_scenarios": scip_total,
+            "scip_match_rate_pct": (scip_matched / max(1, scip_total)) * 100.0 if scip_total > 0 else 0.0,
+        })
+
     if discrepancies_path and matched_scenarios < total_scenarios:
         record_discrepancies(
             discrepancies_path,
@@ -194,10 +240,15 @@ def run_benchmark_for_repo(
             ra_metrics,
         )
 
-    # Clean target directory after both sessions complete to preserve storage
+    # Clean target directory and scip file after both sessions complete to preserve storage
     target_dir = repo_dir / "target"
     if target_dir.exists():
         shutil.rmtree(target_dir, ignore_errors=True)
+    if scip_file.exists():
+        try:
+            scip_file.unlink()
+        except OSError:
+            pass
 
     return result
 

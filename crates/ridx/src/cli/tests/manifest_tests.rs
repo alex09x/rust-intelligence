@@ -100,6 +100,7 @@ fn test_manifest_discovery_and_auto_reindexing() {
         ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: false,
+        scip_file: None,
     });
     run_cli(Commands::Compare {
         arg1: dir_str.clone(),
@@ -110,6 +111,7 @@ fn test_manifest_discovery_and_auto_reindexing() {
         ra_cmd: "rust-analyzer".to_string(),
         capability: "def".to_string(),
         json: true,
+        scip_file: None,
     });
 
     // 4. try_resolve_workspace variant_manifest error cases (lines 281-286, 289-305)

@@ -16,6 +16,8 @@ pub mod harness;
 pub mod hover_syms;
 pub mod mutation;
 pub mod query_runner;
+pub mod scip_loader;
+pub mod session_helpers;
 pub mod symmetric;
 pub mod system;
 pub mod transport;

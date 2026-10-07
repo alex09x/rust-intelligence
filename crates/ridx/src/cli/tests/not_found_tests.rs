@@ -77,6 +77,7 @@ fn test_cli_not_found_branches_and_helpers() {
         scenarios: None,
         ridx_cmd: None,
         ra_cmd: "rust-analyzer".to_string(),
+        scip_file: None,
         capability: "def".to_string(),
         json: false,
     });
@@ -87,6 +88,7 @@ fn test_cli_not_found_branches_and_helpers() {
         scenarios: None,
         ridx_cmd: None,
         ra_cmd: "rust-analyzer".to_string(),
+        scip_file: None,
         capability: "def".to_string(),
         json: true,
     });
@@ -97,6 +99,7 @@ fn test_cli_not_found_branches_and_helpers() {
         scenarios: None,
         ridx_cmd: None,
         ra_cmd: "rust-analyzer".to_string(),
+        scip_file: None,
         capability: "def".to_string(),
         json: true,
     });
@@ -107,6 +110,7 @@ fn test_cli_not_found_branches_and_helpers() {
         scenarios: None,
         ridx_cmd: None,
         ra_cmd: "rust-analyzer".to_string(),
+        scip_file: None,
         capability: "def".to_string(),
         json: false,
     });

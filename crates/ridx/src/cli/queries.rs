@@ -279,6 +279,7 @@ pub fn execute_query_command(command: super::args::Commands) {
             ra_cmd,
             capability,
             json,
+            scip_file,
         } => {
             super::compare_cmd::cmd_compare(super::compare_cmd::CompareArgs {
                 arg1,
@@ -289,6 +290,7 @@ pub fn execute_query_command(command: super::args::Commands) {
                 ra_cmd_str: ra_cmd,
                 capability,
                 json,
+                scip_path: scip_file,
             });
         }
 

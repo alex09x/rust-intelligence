@@ -25,6 +25,7 @@ pub struct CompareArgs {
     pub ra_cmd_str: String,
     pub capability: String,
     pub json: bool,
+    pub scip_path: Option<PathBuf>,
 }
 
 pub fn cmd_compare(args: CompareArgs) {
@@ -37,6 +38,7 @@ pub fn cmd_compare(args: CompareArgs) {
         ra_cmd_str,
         capability,
         json,
+        scip_path,
     } = args;
     if let Some(scenarios_file) = scenarios_path {
         let Ok(data) = std::fs::read_to_string(&scenarios_file) else {
@@ -74,7 +76,8 @@ pub fn cmd_compare(args: CompareArgs) {
             .map(|s| s.to_string())
             .collect();
 
-        let summary = run_symmetric_comparison(root, &ridx_cmd, &ra_cmd, &scenarios);
+        let summary =
+            run_symmetric_comparison(root, &ridx_cmd, &ra_cmd, scip_path.as_deref(), &scenarios);
         match summary {
             Some(sum) => {
                 if json {

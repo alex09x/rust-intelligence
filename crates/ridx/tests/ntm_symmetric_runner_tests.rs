@@ -87,7 +87,9 @@ fn test_symmetric_summary_serialization_roundtrip() {
         workspace_root: "/path/to/corpus".to_string(),
         ridx: ridx_metrics,
         rust_analyzer: ra_metrics,
+        rust_analyzer_scip: None,
         scenario_matches: matches,
+        scip_matches: HashMap::new(),
         mutation_verifications: HashMap::new(),
     };
 

@@ -13,7 +13,9 @@ Corpus loading and repository setup utilities for benchmarking.
 
 import json
 import os
+import resource
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -43,6 +45,66 @@ def run_cmd(cmd, cwd=None, timeout=600):
         return -1, "", "Timeout expired", time.perf_counter() - t0
     except Exception as e:
         return -2, "", str(e), time.perf_counter() - t0
+
+
+def run_cmd_with_rss(cmd, cwd=None, timeout=600):
+    t0 = time.perf_counter()
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except Exception as e:
+        return -2, "", str(e), time.perf_counter() - t0, 0, 0, 0
+
+    peak_rss = 0
+    peak_anon = 0
+    peak_file = 0
+
+    pid = proc.pid
+    status_path = Path(f"/proc/{pid}/status")
+
+    while proc.poll() is None:
+        if status_path.exists():
+            try:
+                with open(status_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.startswith("VmHWM:"):
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                peak_rss = max(peak_rss, int(parts[1]) * 1024)
+                        elif line.startswith("RssAnon:"):
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                peak_anon = max(peak_anon, int(parts[1]) * 1024)
+                        elif line.startswith("RssFile:"):
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                peak_file = max(peak_file, int(parts[1]) * 1024)
+            except (IOError, OSError):
+                pass
+        time.sleep(0.01)
+        if time.perf_counter() - t0 > timeout:
+            proc.kill()
+            stdout, stderr = proc.communicate()
+            return -1, stdout, "Timeout expired", time.perf_counter() - t0, peak_rss, peak_anon, peak_file
+
+    stdout, stderr = proc.communicate()
+    elapsed = time.perf_counter() - t0
+
+    if peak_rss == 0:
+        try:
+            ru = resource.getrusage(resource.RUSAGE_CHILDREN)
+            mult = 1024 if sys.platform.startswith("linux") else 1
+            peak_rss = ru.ru_maxrss * mult
+            peak_anon = peak_rss
+        except Exception:
+            pass
+
+    return proc.returncode, stdout, stderr, elapsed, peak_rss, peak_anon, peak_file
 
 
 def load_corpus(corpus_path):

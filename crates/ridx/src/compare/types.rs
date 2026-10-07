@@ -124,7 +124,11 @@ pub struct SymmetricComparisonSummary {
     pub workspace_root: String,
     pub ridx: ServerMetrics,
     pub rust_analyzer: ServerMetrics,
+    #[serde(default)]
+    pub rust_analyzer_scip: Option<ServerMetrics>,
     pub scenario_matches: HashMap<String, bool>,
+    #[serde(default)]
+    pub scip_matches: HashMap<String, bool>,
     #[serde(default)]
     pub mutation_verifications: HashMap<String, MutationVerification>,
 }
