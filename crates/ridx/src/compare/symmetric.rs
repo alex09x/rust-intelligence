@@ -111,6 +111,8 @@ pub fn run_server_session(
     let mut query_results = HashMap::new();
 
     let initial_mem = super::system::get_process_memory_details(pid);
+    let initial_fds = super::system::get_process_fd_count(pid);
+    let initial_threads = super::system::get_process_thread_count(pid);
     let stop_sampler = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let cargo_spawned = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let max_rss = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_mem.rss_bytes));
@@ -120,18 +122,26 @@ pub fn run_server_session(
     let max_file = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(
         initial_mem.rss_file_bytes,
     ));
+    let max_fds = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_fds));
+    let max_threads = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_threads));
 
     let stop_clone = std::sync::Arc::clone(&stop_sampler);
     let cargo_spawned_clone = std::sync::Arc::clone(&cargo_spawned);
     let max_rss_clone = std::sync::Arc::clone(&max_rss);
     let max_anon_clone = std::sync::Arc::clone(&max_anon);
     let max_file_clone = std::sync::Arc::clone(&max_file);
+    let max_fds_clone = std::sync::Arc::clone(&max_fds);
+    let max_threads_clone = std::sync::Arc::clone(&max_threads);
     let sampler_handle = std::thread::spawn(move || {
         while !stop_clone.load(std::sync::atomic::Ordering::Relaxed) {
             let mem = super::system::get_process_memory_details(pid);
             max_rss_clone.fetch_max(mem.rss_bytes, std::sync::atomic::Ordering::Relaxed);
             max_anon_clone.fetch_max(mem.rss_anon_bytes, std::sync::atomic::Ordering::Relaxed);
             max_file_clone.fetch_max(mem.rss_file_bytes, std::sync::atomic::Ordering::Relaxed);
+            let fds = super::system::get_process_fd_count(pid);
+            max_fds_clone.fetch_max(fds, std::sync::atomic::Ordering::Relaxed);
+            let ths = super::system::get_process_thread_count(pid);
+            max_threads_clone.fetch_max(ths, std::sync::atomic::Ordering::Relaxed);
             if super::system::has_cargo_or_rustc_children(pid) {
                 cargo_spawned_clone.store(true, std::sync::atomic::Ordering::Relaxed);
             }
@@ -269,6 +279,8 @@ pub fn run_server_session(
         let _ = child.wait();
     }
     let shutdown_micros = t_shutdown_start.elapsed().as_micros();
+    let peak_open_fds = max_fds.load(std::sync::atomic::Ordering::Relaxed);
+    let peak_threads = max_threads.load(std::sync::atomic::Ordering::Relaxed);
 
     Some(ServerMetrics {
         server_name: server_name.to_string(),
@@ -283,6 +295,8 @@ pub fn run_server_session(
         peak_rss_anon_bytes,
         peak_rss_file_bytes,
         cargo_spawned: cargo_spawned_val,
+        peak_open_fds,
+        peak_threads,
     })
 }
 

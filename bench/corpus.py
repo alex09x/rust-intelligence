@@ -63,9 +63,12 @@ def run_cmd_with_rss(cmd, cwd=None, timeout=600):
     peak_rss = 0
     peak_anon = 0
     peak_file = 0
+    peak_fds = 0
+    peak_threads = 0
 
     pid = proc.pid
     status_path = Path(f"/proc/{pid}/status")
+    fd_path = Path(f"/proc/{pid}/fd")
 
     while proc.poll() is None:
         if status_path.exists():
@@ -84,13 +87,22 @@ def run_cmd_with_rss(cmd, cwd=None, timeout=600):
                             parts = line.split()
                             if len(parts) >= 2:
                                 peak_file = max(peak_file, int(parts[1]) * 1024)
+                        elif line.startswith("Threads:"):
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                peak_threads = max(peak_threads, int(parts[1]))
+            except (IOError, OSError):
+                pass
+        if fd_path.exists():
+            try:
+                peak_fds = max(peak_fds, len(os.listdir(fd_path)))
             except (IOError, OSError):
                 pass
         time.sleep(0.01)
         if time.perf_counter() - t0 > timeout:
             proc.kill()
             stdout, stderr = proc.communicate()
-            return -1, stdout, "Timeout expired", time.perf_counter() - t0, peak_rss, peak_anon, peak_file
+            return -1, stdout, "Timeout expired", time.perf_counter() - t0, peak_rss, peak_anon, peak_file, peak_fds, peak_threads
 
     stdout, stderr = proc.communicate()
     elapsed = time.perf_counter() - t0
@@ -104,7 +116,7 @@ def run_cmd_with_rss(cmd, cwd=None, timeout=600):
         except Exception:
             pass
 
-    return proc.returncode, stdout, stderr, elapsed, peak_rss, peak_anon, peak_file
+    return proc.returncode, stdout, stderr, elapsed, peak_rss, peak_anon, peak_file, peak_fds, peak_threads
 
 
 def load_corpus(corpus_path):

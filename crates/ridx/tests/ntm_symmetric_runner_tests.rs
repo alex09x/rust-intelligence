@@ -63,6 +63,8 @@ fn test_symmetric_summary_serialization_roundtrip() {
         peak_rss_anon_bytes: 0,
         peak_rss_file_bytes: 0,
         cargo_spawned: false,
+        peak_open_fds: 0,
+        peak_threads: 0,
     };
 
     let ra_metrics = ServerMetrics {
@@ -78,6 +80,8 @@ fn test_symmetric_summary_serialization_roundtrip() {
         peak_rss_anon_bytes: 300000000,
         peak_rss_file_bytes: 50000000,
         cargo_spawned: false,
+        peak_open_fds: 0,
+        peak_threads: 0,
     };
 
     let mut matches = HashMap::new();
@@ -137,6 +141,8 @@ fn test_symmetric_runner_records_rss_and_graceful_shutdown() {
         peak_rss_anon_bytes: 512 * 1024,
         peak_rss_file_bytes: 512 * 1024,
         cargo_spawned: false,
+        peak_open_fds: 10,
+        peak_threads: 4,
     };
     assert_eq!(metrics.peak_rss_bytes, 1024 * 1024);
     assert_eq!(metrics.shutdown_micros, 200);

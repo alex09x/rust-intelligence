@@ -57,9 +57,11 @@ def run_benchmark_for_repo(
 
     # 1. Cargo Check: compile build scripts and proc-macros
     check_cmd = ["cargo", "check"]
-    code, _, err_out, check_dur, chk_rss, chk_anon, chk_file = run_cmd_with_rss(check_cmd, cwd=repo_dir, timeout=600)
+    code, _, err_out, check_dur, chk_rss, chk_anon, chk_file, chk_fds, chk_ths = run_cmd_with_rss(check_cmd, cwd=repo_dir, timeout=600)
     result["cargo_check_sec"] = check_dur
     result["cargo_check_peak_rss_mb"] = chk_rss / (1024 * 1024)
+    result["cargo_check_peak_fds"] = chk_fds
+    result["cargo_check_peak_threads"] = chk_ths
     if code != 0:
         result["status"] = "CARGO_CHECK_FAILED"
         result["error"] = err_out[:500]
@@ -67,9 +69,11 @@ def run_benchmark_for_repo(
 
     # 2. Ridx Index: build CAS flat index in target/ridx
     index_cmd = [str(ridx_bin), "index", "."]
-    code, _, err_out, index_dur, idx_rss, idx_anon, idx_file = run_cmd_with_rss(index_cmd, cwd=repo_dir, timeout=600)
+    code, _, err_out, index_dur, idx_rss, idx_anon, idx_file, idx_fds, idx_ths = run_cmd_with_rss(index_cmd, cwd=repo_dir, timeout=600)
     result["ridx_index_sec"] = index_dur
     result["ridx_index_peak_rss_mb"] = idx_rss / (1024 * 1024)
+    result["ridx_index_peak_fds"] = idx_fds
+    result["ridx_index_peak_threads"] = idx_ths
     ridx_size = sum(f.stat().st_size for f in repo_dir.glob("target/**/*.ridx") if f.is_file())
     result["ridx_index_size_bytes"] = ridx_size
     if code != 0:
@@ -82,11 +86,13 @@ def run_benchmark_for_repo(
     scip_cmd = [str(ra_bin), "scip", str(repo_dir), "--output", str(scip_file), "--exclude-vendored-libraries"]
     if taskset_cpus:
         scip_cmd = ["taskset", "-c", str(taskset_cpus)] + scip_cmd
-    code, _, err_out, scip_dur, scip_rss, scip_anon, scip_file_rss = run_cmd_with_rss(scip_cmd, cwd=repo_dir, timeout=600)
+    code, _, err_out, scip_dur, scip_rss, scip_anon, scip_file_rss, scip_fds, scip_ths = run_cmd_with_rss(scip_cmd, cwd=repo_dir, timeout=600)
     result["ra_scip_build_sec"] = scip_dur
     result["ra_scip_peak_rss_mb"] = scip_rss / (1024 * 1024)
     result["ra_scip_peak_rss_anon_mb"] = scip_anon / (1024 * 1024)
     result["ra_scip_peak_rss_file_mb"] = scip_file_rss / (1024 * 1024)
+    result["ra_scip_peak_fds"] = scip_fds
+    result["ra_scip_peak_threads"] = scip_ths
     result["ra_scip_size_bytes"] = scip_file.stat().st_size if scip_file.exists() else 0
     if code != 0:
         result["ra_scip_error"] = err_out[:500] if err_out else "SCIP generation failed"
@@ -205,11 +211,15 @@ def run_benchmark_for_repo(
         "ridx_peak_rss_mb": ridx_metrics.get("peak_rss_bytes", 0) / (1024 * 1024),
         "ridx_peak_rss_anon_mb": ridx_metrics.get("peak_rss_anon_bytes", 0) / (1024 * 1024),
         "ridx_peak_rss_file_mb": ridx_metrics.get("peak_rss_file_bytes", 0) / (1024 * 1024),
+        "ridx_peak_open_fds": ridx_metrics.get("peak_open_fds", 0),
+        "ridx_peak_threads": ridx_metrics.get("peak_threads", 0),
         "ra_init_ms": ra_metrics.get("spawn_and_init_micros", 0) / 1000.0,
         "ra_warmup_ms": ra_metrics.get("readiness_warmup_micros", 0) / 1000.0,
         "ra_peak_rss_mb": ra_metrics.get("peak_rss_bytes", 0) / (1024 * 1024),
         "ra_peak_rss_anon_mb": ra_metrics.get("peak_rss_anon_bytes", 0) / (1024 * 1024),
         "ra_peak_rss_file_mb": ra_metrics.get("peak_rss_file_bytes", 0) / (1024 * 1024),
+        "ra_peak_open_fds": ra_metrics.get("peak_open_fds", 0),
+        "ra_peak_threads": ra_metrics.get("peak_threads", 0),
         "cargo_spawned_during_queries": ridx_metrics.get("cargo_spawned", False) or ra_metrics.get("cargo_spawned", False),
         "matched_scenarios": matched_scenarios,
         "total_scenarios": total_scenarios,
@@ -225,6 +235,8 @@ def run_benchmark_for_repo(
         result.update({
             "scip_load_ms": scip_metrics.get("readiness_warmup_micros", 0) / 1000.0,
             "scip_peak_rss_mb": scip_metrics.get("peak_rss_bytes", 0) / (1024 * 1024),
+            "scip_peak_open_fds": scip_metrics.get("peak_open_fds", 0),
+            "scip_peak_threads": scip_metrics.get("peak_threads", 0),
             "scip_matched_scenarios": scip_matched,
             "scip_total_scenarios": scip_total,
             "scip_match_rate_pct": (scip_matched / max(1, scip_total)) * 100.0 if scip_total > 0 else 0.0,

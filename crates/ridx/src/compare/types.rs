@@ -117,6 +117,10 @@ pub struct ServerMetrics {
     pub peak_rss_file_bytes: u64,
     #[serde(default)]
     pub cargo_spawned: bool,
+    #[serde(default)]
+    pub peak_open_fds: u64,
+    #[serde(default)]
+    pub peak_threads: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

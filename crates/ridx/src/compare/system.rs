@@ -108,6 +108,32 @@ pub fn get_current_process_rss_bytes() -> u64 {
     get_process_rss_bytes(std::process::id()).unwrap_or(0)
 }
 
+pub fn get_process_fd_count(pid: u32) -> u64 {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(entries) = std::fs::read_dir(format!("/proc/{pid}/fd")) {
+            return entries.count() as u64;
+        }
+    }
+    0
+}
+
+pub fn get_process_thread_count(pid: u32) -> u64 {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(status) = std::fs::read_to_string(format!("/proc/{pid}/status")) {
+            for line in status.lines() {
+                if let Some(rest) = line.strip_prefix("Threads:") {
+                    if let Ok(count) = rest.trim().parse::<u64>() {
+                        return count;
+                    }
+                }
+            }
+        }
+    }
+    0
+}
+
 pub fn has_cargo_or_rustc_children(pid: u32) -> bool {
     #[cfg(target_os = "linux")]
     {

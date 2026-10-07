@@ -273,5 +273,7 @@ pub fn run_scip_session(
         peak_rss_anon_bytes: super::system::get_current_process_rss_bytes(),
         peak_rss_file_bytes: 0,
         cargo_spawned: false,
+        peak_open_fds: super::system::get_process_fd_count(std::process::id()),
+        peak_threads: super::system::get_process_thread_count(std::process::id()),
     })
 }
