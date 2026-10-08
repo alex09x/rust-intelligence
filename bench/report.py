@@ -118,7 +118,7 @@ def generate_repo_report(entry, source_file):
     r_anon10 = w3_10.get("ridx", {}).get("total_anon_mb", 7.8)
     ra_pss10 = w3_10.get("ra", {}).get("total_pss_mb", 9177.0)
     ra_anon10 = w3_10.get("ra", {}).get("total_anon_mb", 9147.1)
-    pss_adv = f"{ra_pss10 / max(0.1, r_pss10):.1f}x lower PSS / {ra_anon10 / max(0.1, r_anon10):.1f}x lower Anon Heap"
+    pss_adv = f"{ra_pss10 / max(0.1, r_pss10):.1f}x lower PSS"
 
     lines.append("On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), "
                  "warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: "
@@ -135,7 +135,8 @@ def generate_repo_report(entry, source_file):
                  f"whereas rust-analyzer scales to {ra_ths} threads and {ra_fds} file descriptors.\n"
                  f"4. **Memory Footprint**: RIDX uses **{heap_adv}** (Anon Heap {r_anon:.1f} MB vs {ra_anon:.1f} MB).\n"
                  f"5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **{r_pss10:.1f} MB PSS** total "
-                 f"({r_anon10:.1f} MB Anon) vs rust-analyzer's **{ra_pss10:.1f} MB PSS** ({ra_anon10:.1f} MB Anon) — a **{pss_adv}** footprint.\n"
+                 f"({r_anon10:.1f} MB Anon) vs rust-analyzer's **{ra_pss10:.1f} MB PSS** ({ra_anon10:.1f} MB Anon) — a **{pss_adv}** footprint "
+                 f"(workload: 50 def queries per process vs 300 queries + mutations in single-process main run).\n"
                  f"6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **{w1_ra_p50:.1f} ms**, "
                  f"which is **{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x faster** than RIDX (**{w1_r_p50:.1f} ms**); "
                  "RA 1.98.1 в ~17 раз быстрее 1.97.1 на этом зонде, причина не исследовалась.\n")
@@ -194,6 +195,10 @@ def generate_repo_report(entry, source_file):
 
     if w3:
         lines.append("**Scenario W3: Multi-Worktree Concurrency & PSS Scaling**\n")
+        lines.append("> [!NOTE]\n"
+                     "> Workload caveat: Each live server process was actively probed with 50 sequential definition requests "
+                     "(compared to 300 queries + live mutations in the single-process main run). "
+                     "Headlines and scaling comparisons use PSS multipliers (proportional share of physical RAM).\n")
         lines.append("| Worktrees | `ridx` PSS (MB) | `ridx` Anon (MB) | RA PSS (MB) | RA Anon (MB) | CAS Delta (MB) | Cargo Check (ms) | CAS Index (ms) |")
         lines.append("|---|---|---|---|---|---|---|---|")
         live_scaling = w3.get("live_server_scaling", {})

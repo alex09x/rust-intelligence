@@ -18,6 +18,40 @@ pub const CURRENT_VERSION: u32 = 2;
 pub const CURRENT_FORMAT_VERSION: u32 = 2;
 pub const EXTRACTOR_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Returns the 64-bit fingerprint of the active `ridx-driver` binary and runtime environment.
+///
+/// Precedence:
+/// 1. `$RIDX_DRIVER_HASH`: explicit hex or string override (for tests and deterministic builds).
+/// 2. `$RIDX_DRIVER_BIN`: path to driver binary if provided; hashes binary contents.
+/// 3. Current executable binary: hashes `/proc/self/exe` or `current_exe()`.
+/// 4. Fallback: hash of `CARGO_PKG_VERSION` + format version.
+pub fn get_driver_hash() -> u64 {
+    if let Ok(override_val) = std::env::var("RIDX_DRIVER_HASH") {
+        let trimmed = override_val.trim();
+        if let Ok(val) = u64::from_str_radix(trimmed.trim_start_matches("0x"), 16) {
+            return val;
+        }
+        return fnv1a_64(trimmed.as_bytes());
+    }
+    if let Ok(driver_bin) = std::env::var("RIDX_DRIVER_BIN") {
+        let p = std::path::Path::new(driver_bin.trim());
+        if p.is_file() {
+            if let Ok(bytes) = std::fs::read(p) {
+                return fnv1a_64(&bytes);
+            }
+        }
+    }
+    if let Ok(exe_path) = std::env::current_exe() {
+        if exe_path.is_file() {
+            if let Ok(bytes) = std::fs::read(&exe_path) {
+                return fnv1a_64(&bytes);
+            }
+        }
+    }
+    let fallback = format!("{}:{}", CURRENT_FORMAT_VERSION, EXTRACTOR_VERSION);
+    fnv1a_64(fallback.as_bytes())
+}
+
 /// Resolves the global RIDX shared cache directory for external crate dependencies.
 /// Uses `$RIDX_CACHE_DIR` if set, or platform default:
 /// - Unix: `$XDG_CACHE_HOME/ridx/v{CURRENT_VERSION}` or `$HOME/.cache/ridx/v{CURRENT_VERSION}`

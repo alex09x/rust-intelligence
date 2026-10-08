@@ -491,12 +491,13 @@ fn compute_dependency_unit_key(
     compiler_args: &[String],
 ) -> String {
     let mut key_str = format!(
-        "{}:{}:{}:v{}:ext{}",
+        "{}:{}:{}:v{}:ext{}:drv={:016x}",
         crate_name,
         crate_version,
         disambiguator.unwrap_or(""),
         ridx_format::CURRENT_FORMAT_VERSION,
         ridx_format::EXTRACTOR_VERSION,
+        ridx_format::get_driver_hash(),
     );
     if let Some(m) = manifest_dir {
         key_str.push(':');
@@ -847,10 +848,20 @@ fn build_crate_index(
         let cache_dir = ridx_format::resolve_cache_dir();
         let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
 
-        if obj_path.is_file() {
-            let (generation, file_hashes) = if let Ok(reader) =
-                ridx_format::IndexReader::open(&obj_path)
-            {
+        let is_valid_cache = if obj_path.is_file() {
+            if let Ok(reader) = ridx_format::IndexReader::open(&obj_path) {
+                reader.header().version == ridx_format::CURRENT_FORMAT_VERSION
+                    && reader.unit_key() == unit_key
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        if is_valid_cache {
+            let (generation, file_hashes) = {
+                let reader = ridx_format::IndexReader::open(&obj_path).unwrap();
                 let gen = reader.generation().to_string();
                 let embedded = reader.embedded_file_hashes();
                 let mut hashes =
@@ -861,16 +872,13 @@ fn build_crate_index(
                     manifest_dir.as_deref(),
                 );
                 (gen, hashes)
-            } else {
-                let fh = collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref());
-
-                let digest = ridx_format::compute_source_snapshot_digest(&fh);
-                (format!("{:016x}", digest), fh)
             };
             let dep_info = serde_json::json!({
                 "name": crate_name,
                 "version": crate_version,
                 "unit_key": unit_key,
+                "driver_hash": format!("{:016x}", ridx_format::get_driver_hash()),
+                "format_version": ridx_format::CURRENT_FORMAT_VERSION,
                 "generation": generation,
                 "object_path": obj_path.display().to_string(),
                 "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
@@ -896,6 +904,8 @@ fn build_crate_index(
                 start.elapsed().as_secs_f64() * 1000.0
             );
             return;
+        } else if obj_path.is_file() {
+            let _ = fs::remove_file(&obj_path);
         }
 
         // Cache miss: extract index with package_root set for relative source paths
@@ -948,6 +958,8 @@ fn build_crate_index(
                             "name": crate_name,
                             "version": crate_version,
                             "unit_key": unit_key,
+                            "driver_hash": format!("{:016x}", ridx_format::get_driver_hash()),
+                            "format_version": ridx_format::CURRENT_FORMAT_VERSION,
                             "generation": generation,
                             "object_path": obj_path.display().to_string(),
                             "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
