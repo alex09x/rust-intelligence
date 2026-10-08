@@ -12,8 +12,11 @@ Pilot and Corpus Benchmark Runner for RIDX vs rust-analyzer.
 """
 
 import argparse
+import hashlib
 import json
+import os
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -50,6 +53,8 @@ def run_benchmark_for_repo(
         "commit": commit_sha,
         "status": "PENDING",
         "timestamp": t_start,
+        "driver_sha256": os.environ.get("RIDX_DRIVER_SHA", ""),
+        "ra_version": subprocess.run([str(ra_bin), "--version"], capture_output=True, text=True, check=False).stdout.strip(),
     }
 
     repo_dir, err = setup_repo(repo_entry, base_dir)
@@ -320,7 +325,9 @@ def main():
     parser.add_argument("--discrepancies", default=str(default_discrepancies))
     parser.add_argument("--storage", default="/home/alex09x/prod-code-storage/bench_repos")
     parser.add_argument("--ridx", default=str(default_ridx))
-    parser.add_argument("--ra", default="rust-analyzer")
+    ra_198 = Path("/home/alex09x/.rustup/toolchains/1.98.1-x86_64-unknown-linux-gnu/bin/rust-analyzer")
+    default_ra = str(ra_198) if ra_198.exists() else "rust-analyzer"
+    parser.add_argument("--ra", default=default_ra)
     parser.add_argument("--taskset", default="24-31")
     parser.add_argument("--samples", type=int, default=300)
     parser.add_argument("--w1-steps", type=int, default=100)
@@ -356,15 +363,11 @@ def main():
     ridx_bin = Path(args.ridx).resolve()
     driver_bin = ridx_bin.parent / "ridx-driver"
     if driver_bin.exists():
-        import os
         os.environ["RIDX_DRIVER_BIN"] = str(driver_bin)
-    prom_collector = PrometheusCollector(
-        endpoint=args.prometheus_url,
-        instance=args.prometheus_instance,
-    )
+        os.environ["RIDX_DRIVER_SHA"] = hashlib.sha256(driver_bin.read_bytes()).hexdigest()
+    prom_collector = PrometheusCollector(endpoint=args.prometheus_url, instance=args.prometheus_instance)
 
-    print(f"Running benchmark on {len(target_repos)} repos on node...")
-    print(f"Storage: {storage_dir}, Results: {results_path}")
+    print(f"Running benchmark on {len(target_repos)} repos on node...\nStorage: {storage_dir}, Results: {results_path}")
 
     with open(results_path, "a", encoding="utf-8") as out_f:
         for r in target_repos:
@@ -372,17 +375,11 @@ def main():
             res = None
             for attempt in range(1, 4):
                 res = run_benchmark_for_repo(
-                    r,
-                    storage_dir,
-                    ridx_bin,
-                    args.ra,
-                    taskset_cpus=args.taskset,
-                    sample_count=args.samples,
-                    w1_steps=args.w1_steps,
-                    w2_iterations=args.w2_iterations,
+                    r, storage_dir, ridx_bin, args.ra,
+                    taskset_cpus=args.taskset, sample_count=args.samples,
+                    w1_steps=args.w1_steps, w2_iterations=args.w2_iterations,
                     w3_counts=tuple(args.w3_counts),
-                    discrepancies_path=discrepancies_path,
-                    prom_collector=prom_collector,
+                    discrepancies_path=discrepancies_path, prom_collector=prom_collector,
                 )
                 if res.get("status") != "NOISE_REJECTED" or attempt == 3:
                     break

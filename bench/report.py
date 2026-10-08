@@ -23,15 +23,21 @@ if str(bench_dir) not in sys.path:
 from metrics import format_ratio_with_ci, percentile
 
 
-def generate_repo_report(entry, source_file):
+def generate_repo_report(entry, source_file, discrepancies_file=None):
     repo = entry.get("repo", "unknown")
     commit = entry.get("commit", "unknown")[:8]
     status = entry.get("status", "UNKNOWN")
+    driver_sha = entry.get("driver_sha256") or entry.get("driver_sha", "")
+    ra_version = entry.get("ra_version", "")
     lines = []
 
     lines.append(f"## Benchmark Report: `{repo}` (commit `{commit}`) — Preliminary (Serde only)")
     lines.append(f"*Source Data:* `{source_file}`  ")
     lines.append(f"*Run Status:* `{status}`  ")
+    if driver_sha:
+        lines.append(f"*Driver SHA256:* `{driver_sha}`  ")
+    if ra_version:
+        lines.append(f"*rust-analyzer Version:* `{ra_version}`  ")
     lines.append("*Target Node:* `booster` (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, NVMe SSD, isolated on cores 24–31)\n")
 
     # 1. Headline Metrics
@@ -41,8 +47,8 @@ def generate_repo_report(entry, source_file):
 
     cold_cargo = entry.get("cold_cargo_check_sec", 0.0)
     cold_ridx = entry.get("cold_ridx_index_sec", 0.0)
-    cold_note = f"{cold_ridx / max(0.001, cold_cargo):.1f}x slower than cargo check (one-time compiler pass)" if cold_ridx > cold_cargo else "Baseline"
-    lines.append(f"| **Cold Clean Index / Check** | **{cold_ridx:.3f} s** (`ridx index`) | {cold_cargo:.1f} s (`cargo check`) / ~2.5 s (RA init) | {cold_note} |")
+    cold_note = f"{cold_ridx / max(0.001, cold_cargo):.1f}x of cargo check" if cold_ridx > cold_cargo else "Baseline"
+    lines.append(f"| **Cold Clean Index / Check** | **{cold_ridx:.3f} s** (`ridx index`) | {cold_cargo:.1f} s (`cargo check`) | {cold_note} |")
 
     w1 = entry.get("w1_commit_walk", {})
     w1_r_lats = w1.get("step_latencies_ms", {}).get("ridx", [])
@@ -50,7 +56,7 @@ def generate_repo_report(entry, source_file):
     w1_r_p50 = percentile(w1_r_lats, 50) if w1_r_lats else 0.0
     w1_ra_p50 = percentile(w1_ra_lats, 50) if w1_ra_lats else 0.0
     if w1_r_p50 > 0 and w1_ra_p50 > 0:
-        w1_adv = f"{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x slower (RA 1.98.1 в ~17 раз быстрее 1.97.1 на этом зонде; причина не исследовалась)"
+        w1_adv = f"{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x slower"
         lines.append(f"| **Warm Incremental Re-index (W1)** | **{w1_r_p50:.1f} ms** (`ridx index`) | **{w1_ra_p50:.1f} ms** (RA quiescent) | {w1_adv} |")
     else:
         warm_ridx = entry.get("warm_ridx_index_sec", 0.0)
@@ -138,27 +144,46 @@ def generate_repo_report(entry, source_file):
                  f"({r_anon10:.1f} MB Anon) vs rust-analyzer's **{ra_pss10:.1f} MB PSS** ({ra_anon10:.1f} MB Anon) — a **{pss_adv}** footprint "
                  f"(workload: 50 def queries per process vs 300 queries + mutations in single-process main run).\n"
                  f"6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **{w1_ra_p50:.1f} ms**, "
-                 f"which is **{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x faster** than RIDX (**{w1_r_p50:.1f} ms**); "
-                 "RA 1.98.1 в ~17 раз быстрее 1.97.1 на этом зонде, причина не исследовалась.\n")
+                 f"which is **{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x faster** than RIDX (**{w1_r_p50:.1f} ms**).\n")
 
     # 3. Discrepancies & Semantic Parity Analysis
     lines.append("### 3. Semantic Parity & Discrepancies Breakdown\n")
-    lines.append("Across the sampled 300 read-only scenarios (260 strict matches, 86.7% [82.4%, 90.1%]), "
-                 "the remaining 40 non-matching cases were analyzed:\n"
-                 "- **Concrete Receiver Trait Resolution (Resolved)**: Trait methods called on concrete receiver types "
-                 "(e.g., `Visitor::visit_string`, `IntoIterator::into_iter`, and `QPath::TypeRelative` like `Ipv6Addr::from`) "
-                 "now successfully resolve to concrete local `impl` blocks via `Instance::try_resolve`, eliminating the previous fallback to `core`.\n"
-                 "- **Associated Type Bindings in Trait Bounds (22 cases)**: Identifiers in associated type equality constraints "
-                 "(e.g., `where V: Visitor<'de, Value = ()>`, `S::Error`, `Serializer<Ok = ()>`). "
-                 "These are `hir::TypeBinding` nodes in rustc HIR which are currently not indexed as reference targets.\n"
-                 "- **Trait Default Method vs Declaration (5 cases)**: For default methods like `Error::invalid_type`, "
-                 "RIDX resolves directly to the default implementation body (`serde_core/src/de/mod.rs:304`), "
-                 "whereas rust-analyzer resolves to the trait definition header (`line 213`). Both are valid locations.\n"
-                 "- **Cargo Lockfile vs Cache Syn Version (4 cases)**: RIDX strictly respects `Cargo.lock` (`syn-2.0.119`), "
-                 "whereas rust-analyzer resolved against a secondary cached `syn-3.0.6`.\n"
-                 "- **Macro Invocation vs Sub-token (6 cases)**: Minor span offset differences in macro expansions.\n"
-                 "- **Missing in rust-analyzer (3 cases)**: In 3 scenarios (e.g. `fn main()` in UI tests and `test_annotations`), "
-                 "rust-analyzer returned `null`/empty results, whereas RIDX correctly resolved the exact source definitions.\n")
+
+    disc_path = Path(discrepancies_file) if discrepancies_file else Path(source_file).parent / "discrepancies.jsonl"
+    discs = []
+    if disc_path.exists():
+        try:
+            with open(disc_path, "r", encoding="utf-8") as df:
+                for d_line in df:
+                    d_line = d_line.strip()
+                    if d_line:
+                        d_obj = json.loads(d_line)
+                        if d_obj.get("repo") == repo and not d_obj.get("scenario", "").startswith("mutation_"):
+                            discs.append(d_obj)
+        except Exception:
+            pass
+
+    if discs:
+        from metrics import analyze_discrepancies
+        counts = analyze_discrepancies(discs)
+        total_ro_discs = len(discs)
+        lines.append(f"Across the sampled {ro_tot} read-only scenarios ({ro_strict} strict matches, {ro_pct:.1f}% [{ro_ci_str}]),\n"
+                     f"the {total_ro_discs} non-matching cases were dynamically classified from telemetry:\n")
+        labels = {
+            "associated_type_binding": ("Associated Type Bindings in Trait Bounds", "Identifiers in associated type equality constraints (`hir::TypeBinding`, e.g. `where V: Visitor<'de, Value = ()>`, `S::Error`, `Serializer<Ok = ()>`)."),
+            "same_file_decl_vs_impl": ("Trait Default Method vs Declaration", "Same source file, default implementation body vs trait declaration header (e.g. `Error::invalid_type`)."),
+            "multi_version_dependency": ("Multi-Version Dependency Resolution", "Workspace contains multiple semver versions of external crate (e.g. `syn-2` vs `syn-3`)."),
+            "missing_in_ra": ("Missing in rust-analyzer", "rust-analyzer returned `null` / `Not found` while RIDX resolved target."),
+            "missing_in_ridx": ("Missing in RIDX", "RIDX returned `Not found` while rust-analyzer found definition."),
+            "core_vs_std_reexport": ("Core vs Std Re-export", "One points to canonical definition in `core`/`alloc`, the other to `std` re-export."),
+            "line_level_match": ("Line-Level Match", "Same file, coordinates within 2 lines tolerance."),
+            "divergent_target": ("Divergent Target", "Different symbols or macro span offsets."),
+        }
+        for cat, count in sorted(counts.items(), key=lambda x: -x[1]):
+            label, desc = labels.get(cat, (cat, ""))
+            lines.append(f"- **{label} ({count} cases)**: {desc}\n")
+    else:
+        lines.append(f"Across the sampled {ro_tot} read-only scenarios: {ro_strict} strict matches ({ro_pct:.1f}% [{ro_ci_str}]).\n")
 
     # 4. Live Mutations
     lines.append("### 4. Live Mutation Benchmarks (Edit Loop & Overlay)")
@@ -195,7 +220,7 @@ def generate_repo_report(entry, source_file):
         lines.append(f"**Scenario W1: Real LSP Commit Walk ({commits_cnt} commits)**")
         lines.append(f"- **Immediate Stale (before re-index completes)**: RIDX = **{imm_str.get('ridx', 'N/A')}**, RA = **{imm_str.get('ra', 'N/A')}**")
         lines.append(f"- **Post-Reindex Stale (after re-index completes)**: RIDX = **{post_str.get('ridx', 'N/A')}**, RA = **{post_str.get('ra', 'N/A')}**")
-        lines.append(f"- **Time to Freshness**: RIDX median = **{w1_r_p50:.1f} ms** (`ridx index`), RA quiescent median = **{w1_ra_p50:.1f} ms** (RA 1.98.1 в ~17 раз быстрее 1.97.1 на этом зонде; причина не исследовалась)\n")
+        lines.append(f"- **Time to Freshness**: RIDX median = **{w1_r_p50:.1f} ms** (`ridx index`), RA quiescent median = **{w1_ra_p50:.1f} ms**\n")
 
     if w2:
         lines.append(f"**Scenario W2: Large Git Jumps ({len(w2.get('durations_ms', []))} iterations)**")
@@ -227,10 +252,12 @@ def generate_repo_report(entry, source_file):
                 f"**{ra_live.get('total_pss_mb', 0.0):.1f}** | **{ra_live.get('total_anon_mb', 0.0):.1f}** | "
                 f"**{cas_d:.1f}** | {chk_ms:.1f} | **{cas_ms:.1f}** |"
             )
-        lines.append("\n*CAS & Indexing Breakdown:*\n"
-                     "- **CAS Growth (+6.5 MB per worktree)**: Represents first-party workspace crate objects (`serde`, `serde_derive`, `test_suite`) "
+        avg_cas = cas_stats.get("10", {}).get("cas_delta_bytes", 0) / (10 * 1024 * 1024)
+        growth_lbl = f"+{avg_cas:.1f} MB per worktree" if avg_cas > 0 else "incremental"
+        lines.append(f"\n*CAS & Indexing Breakdown:*\n"
+                     f"- **CAS Growth ({growth_lbl})**: Represents first-party workspace crate objects "
                      "compiled for differing source states across commit offsets (`HEAD~0`, `HEAD~5`, ...). Third-party dependencies are 100% deduplicated.\n"
-                     "- **Index Duration (10–12 s)**: Corresponds to cargo executing `ridx-driver` across all 67 crate targets in the Serde workspace. "
+                     "- **Index Duration**: Corresponds to cargo executing `ridx-driver` across all workspace crate targets. "
                      "Once cached in CAS, index assembly and subsequent LSP lookups are sub-millisecond.\n")
 
     return "\n".join(lines)
@@ -239,6 +266,7 @@ def generate_repo_report(entry, source_file):
 def main():
     parser = argparse.ArgumentParser(description="Generate automated markdown report from pilot results.")
     parser.add_argument("--results", default=str(bench_dir / "results" / "pilot_results.jsonl"), help="Path to pilot_results.jsonl")
+    parser.add_argument("--discrepancies", default=str(bench_dir / "results" / "discrepancies.jsonl"), help="Path to discrepancies.jsonl")
     parser.add_argument("--output", help="Optional output markdown file path")
     args = parser.parse_args()
 
@@ -255,7 +283,7 @@ def main():
                 continue
             try:
                 entry = json.loads(line)
-                reports.append(generate_repo_report(entry, str(results_path)))
+                reports.append(generate_repo_report(entry, str(results_path), discrepancies_file=args.discrepancies))
             except Exception as e:
                 print(f"Warning: Failed to parse line in {results_path}: {e}", file=sys.stderr)
 

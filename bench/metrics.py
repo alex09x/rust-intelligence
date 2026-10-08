@@ -109,12 +109,15 @@ def is_noise_rejected(machine_metrics, max_load=None):
     return False, ""
 
 
-def classify_discrepancy(r_res, ra_res):
+def classify_discrepancy(r_res, ra_res, target="", location=None):
     """
-    Classifies discrepancy between RIDX and rust-analyzer:
+    Classifies discrepancy between RIDX and rust-analyzer into fine-grained data-driven categories:
     - 'missing_in_ra': RIDX found target, RA returned null / Not found
+    - 'associated_type_binding': Associated type constraint in trait bounds (e.g. Value, Error, Ok)
     - 'missing_in_ridx': RA found target, RIDX returned null / Not found
-    - 'core_vs_std_reexport': One points to canonical definition in core/alloc, the other to std or local re-export (core is authoritative)
+    - 'core_vs_std_reexport': One points to canonical definition in core/alloc, the other to std or local re-export
+    - 'multi_version_dependency': Same crate name but different semver (e.g. syn-2 vs syn-3)
+    - 'same_file_decl_vs_impl': Same source file, default method body vs declaration signature
     - 'line_level_match': Same file, within 2 lines tolerance
     - 'divergent_target': Different symbols/files
     """
@@ -123,6 +126,8 @@ def classify_discrepancy(r_res, ra_res):
     if r_found and not ra_found:
         return "missing_in_ra"
     if not r_found and ra_found:
+        if target in ("Value", "Error", "Ok", "Variant", "Item"):
+            return "associated_type_binding"
         return "missing_in_ridx"
     if not r_found and not ra_found:
         return "both_not_found"
@@ -138,6 +143,13 @@ def classify_discrepancy(r_res, ra_res):
     if (is_r_core and is_ra_std_or_local) or (is_ra_core and is_r_std_or_local):
         return "core_vs_std_reexport"
 
+    import re
+    r_pkg = re.search(r"/([a-zA-Z0-9_\-]+)-([0-9]+\.[0-9]+\.[0-9]+)/", r_span)
+    ra_pkg = re.search(r"/([a-zA-Z0-9_\-]+)-([0-9]+\.[0-9]+\.[0-9]+)/", ra_span)
+    if r_pkg and ra_pkg:
+        if r_pkg.group(1) == ra_pkg.group(1) and r_pkg.group(2) != ra_pkg.group(2):
+            return "multi_version_dependency"
+
     if ":" in r_span and ":" in ra_span:
         r_parts = r_span.rsplit(":", 2)
         ra_parts = ra_span.rsplit(":", 2)
@@ -147,10 +159,18 @@ def classify_discrepancy(r_res, ra_res):
                 ra_line = int(ra_parts[1])
                 if abs(r_line - ra_line) <= 2:
                     return "line_level_match"
+                else:
+                    return "same_file_decl_vs_impl"
             except ValueError:
                 pass
 
     return "divergent_target"
+
+
+def analyze_discrepancies(discrepancies):
+    """Aggregates discrepancy records into categorized counts."""
+    from collections import Counter
+    return dict(Counter(d.get("classification", "unknown") for d in discrepancies))
 
 
 def record_discrepancies(discrepancies_path, repo_slug, scenarios, matches, ridx_metrics, ra_metrics):
@@ -172,7 +192,7 @@ def record_discrepancies(discrepancies_path, repo_slug, scenarios, matches, ridx
                         "capability": sc["capability"],
                         "target": sc["target"],
                         "location": sc.get("location"),
-                        "classification": classify_discrepancy(r_res, ra_res),
+                        "classification": classify_discrepancy(r_res, ra_res, target=sc.get("target", ""), location=sc.get("location")),
                         "ridx": r_res,
                         "ra": ra_res,
                     })

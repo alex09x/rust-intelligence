@@ -33,7 +33,7 @@ use rustc_hir::{
     HirId,
 };
 use rustc_middle::ty::{TyCtxt, TypeVisitableExt, TypeckResults};
-use rustc_span::Span;
+use rustc_span::{def_id::DefId, Span};
 
 struct IndexCallbacks {
     out_dir: PathBuf,
@@ -244,6 +244,36 @@ impl<'tcx> HirVisitor<'tcx> {
             _ => {}
         }
     }
+
+    fn resolve_trait_instance(&self, expr_hir_id: hir::HirId, def_id: DefId) -> Option<DefId> {
+        let is_trait_item = self
+            .tcx
+            .opt_associated_item(def_id)
+            .map(|a| matches!(a.container, rustc_middle::ty::AssocContainer::Trait))
+            .unwrap_or(false);
+        if !is_trait_item {
+            return None;
+        }
+        let typeck = self.typeck?;
+        let args = typeck.node_args(expr_hir_id);
+        if args.has_infer() || args.has_escaping_bound_vars() || args.references_error() {
+            return None;
+        }
+        let body_owner = self.tcx.hir_enclosing_body_owner(expr_hir_id).to_def_id();
+        let env = rustc_middle::ty::TypingEnv::post_analysis(self.tcx, body_owner);
+        let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let norm_args = self
+                .tcx
+                .try_normalize_erasing_regions(env, rustc_middle::ty::Unnormalized::new(args))
+                .unwrap_or(args);
+            rustc_middle::ty::Instance::try_resolve(self.tcx, env, def_id, norm_args)
+        }));
+        if let Ok(Ok(Some(inst))) = res {
+            Some(inst.def_id())
+        } else {
+            None
+        }
+    }
 }
 
 impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
@@ -324,42 +354,9 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
             match expr.kind {
                 hir::ExprKind::MethodCall(segment, ..) => {
                     if let Some(def_id) = typeck.type_dependent_def_id(expr.hir_id) {
-                        let is_trait_item = self
-                            .tcx
-                            .opt_associated_item(def_id)
-                            .map(|a| matches!(a.container, rustc_middle::ty::AssocContainer::Trait))
-                            .unwrap_or(false);
-                        let final_def_id = if is_trait_item {
-                            let args = typeck.node_args(expr.hir_id);
-                            if !args.has_infer()
-                                && !args.has_escaping_bound_vars()
-                                && !args.references_error()
-                            {
-                                let body_owner =
-                                    self.tcx.hir_enclosing_body_owner(expr.hir_id).to_def_id();
-                                let env = rustc_middle::ty::TypingEnv::post_analysis(
-                                    self.tcx, body_owner,
-                                );
-                                let norm_args = self
-                                    .tcx
-                                    .try_normalize_erasing_regions(
-                                        env,
-                                        rustc_middle::ty::Unnormalized::new(args),
-                                    )
-                                    .unwrap_or(args);
-                                if let Ok(Some(inst)) = rustc_middle::ty::Instance::try_resolve(
-                                    self.tcx, env, def_id, norm_args,
-                                ) {
-                                    inst.def_id()
-                                } else {
-                                    def_id
-                                }
-                            } else {
-                                def_id
-                            }
-                        } else {
-                            def_id
-                        };
+                        let final_def_id = self
+                            .resolve_trait_instance(expr.hir_id, def_id)
+                            .unwrap_or(def_id);
                         self.add_ref_from_res(
                             segment.ident.span,
                             Res::Def(self.tcx.def_kind(final_def_id), final_def_id),
@@ -370,39 +367,13 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                     if let hir::ExprKind::Path(ref qpath) = expr.kind {
                         let mut res = typeck.qpath_res(qpath, expr.hir_id);
                         if let Res::Def(hir::def::DefKind::AssocFn, def_id) = res {
-                            let is_trait_item = self
-                                .tcx
-                                .opt_associated_item(def_id)
-                                .map(|a| matches!(a.container, rustc_middle::ty::AssocContainer::Trait))
-                                .unwrap_or(false);
-                            if is_trait_item {
-                                let args = typeck.node_args(expr.hir_id);
-                                if !args.has_infer()
-                                    && !args.has_escaping_bound_vars()
-                                    && !args.references_error()
-                                {
-                                    let body_owner =
-                                        self.tcx.hir_enclosing_body_owner(expr.hir_id).to_def_id();
-                                    let env = rustc_middle::ty::TypingEnv::post_analysis(
-                                        self.tcx, body_owner,
-                                    );
-                                    let norm_args = self
-                                        .tcx
-                                        .try_normalize_erasing_regions(
-                                            env,
-                                            rustc_middle::ty::Unnormalized::new(args),
-                                        )
-                                        .unwrap_or(args);
-                                    if let Ok(Some(inst)) = rustc_middle::ty::Instance::try_resolve(
-                                        self.tcx, env, def_id, norm_args,
-                                    ) {
-                                        let resolved_did = inst.def_id();
-                                        res = Res::Def(
-                                            self.tcx.def_kind(resolved_did),
-                                            resolved_did,
-                                        );
-                                    }
-                                }
+                            if let Some(resolved_did) =
+                                self.resolve_trait_instance(expr.hir_id, def_id)
+                            {
+                                res = Res::Def(
+                                    self.tcx.def_kind(resolved_did),
+                                    resolved_did,
+                                );
                             }
                         }
                         self.add_ref_from_res(segment.ident.span, res);
