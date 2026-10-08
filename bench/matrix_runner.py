@@ -216,7 +216,8 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
 
     try:
         query_specs = [s for s in LSP_SPECS if s[4] != "lifecycle"]
-        for mid, key, rpc_method, domain, rpc_type in query_specs:
+        for idx, (mid, key, rpc_method, domain, rpc_type) in enumerate(query_specs):
+            print(f"  [{idx+1}/{len(query_specs)}] {rpc_method} ({DOMAIN_NAMES.get(domain, 'Other')})...", flush=True)
             method_scenarios = scenarios.get(key, [])[:sample_count]
             latencies_cold = []
             latencies_warm = []
