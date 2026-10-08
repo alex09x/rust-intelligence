@@ -267,6 +267,18 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                 else:
                     # Cold query (iteration 1)
                     res1, dur1, err1 = srv.request(rpc_method, params, timeout=2.0)
+                    if err1 and isinstance(err1, dict) and err1.get("code") == -32601:
+                        results[key] = {
+                            "id": mid,
+                            "domain": DOMAIN_NAMES.get(domain, "Other"),
+                            "rpc_method": rpc_method,
+                            "status": "UNSUPPORTED",
+                            "tests_run": len(method_scenarios),
+                            "errors": 0,
+                            "cold_p50_us": "N/A", "cold_p90_us": "N/A", "cold_p95_us": "N/A", "cold_p99_us": "N/A",
+                            "warm_p50_us": "N/A", "warm_p90_us": "N/A", "warm_p95_us": "N/A", "warm_p99_us": "N/A",
+                        }
+                        break
                     if err1:
                         errors += 1
                     latencies_cold.append(dur1)
@@ -278,6 +290,9 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                         errors += 1
                     warm_med = (dur2 + dur3) / 2.0
                     latencies_warm.append(warm_med)
+
+            if key in results:
+                continue
 
             m = get_proc_metrics(pid)
             peak_rss = max(peak_rss, m["rss_bytes"])

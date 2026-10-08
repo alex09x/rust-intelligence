@@ -125,14 +125,13 @@ class SimpleLspProcess:
                     elif "id" in msg:
                         req_id = msg["id"]
                         with self.lock:
-                            self.responses[req_id] = msg
                             ev = self.events.get(req_id)
                             if ev is not None:
+                                self.responses[req_id] = msg
                                 ev.set()
                     elif "method" in msg:
                         if msg.get("method") == "experimental/serverStatus":
-                            if msg.get("params", {}).get("quiescent", False):
-                                self.is_quiescent = True
+                            self.is_quiescent = msg.get("params", {}).get("quiescent", False)
             except Exception:
                 break
 
@@ -291,5 +290,9 @@ class SimpleLspProcess:
             try:
                 self.p.kill()
                 self.p.wait(timeout=0.5)
+            except Exception:
+                pass
+            try:
+                self.reader_thread.join(timeout=0.5)
             except Exception:
                 pass
