@@ -27,9 +27,9 @@
 
 ### 2. Latency Analysis & Measured Architectural Differences
 
-On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: rust-analyzer achieves **131.0 µs** (def) and **103.5 µs** (hover), while RIDX achieves **43.0 µs** (def) and **68.0 µs** (hover).
+On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), warmed in-memory query latencies for single-token lookups at median (p50) are: rust-analyzer achieves **131.0 µs** (def) and **103.5 µs** (hover), while RIDX achieves **43.0 µs** (def, 3.0x faster) and **68.0 µs** (hover, 1.5x faster).
 *Latency Shift Explanation (148 µs → 43 µs in commit `f40e6d9`):*
-In previous revisions, cross-crate reference lookups lacked exact `target_unit` binding for external crates when sidecars used raw cargo hashes, causing `find_cross_definition` to fall through into an unconstrained search across all 65 readers in the workspace. With `f40e6d9` introducing `{cname}_{stable_crate_id:016x}.json` sidecar indexing and scoping fallback readers strictly to the matching `target_unit`/`target_crate`, the linear 65-reader scan was eliminated. Concrete evidence: on scenario `def_15_Struct` (`test_enum_untagged.rs:471:20`), latency dropped from **819 µs** (which misresolved to `syn-3.0.6`) to **40 µs** (resolving accurately to `serde_test-1.0.177`). Despite this internal optimization, we maintain the conservative headline of **parity on median single-token lookups** (sub-millisecond tier) rather than claiming a 3x advantage, while highlighting RIDX's true structural strengths: tail latency (p90), reference search, and zero-heap scaling.
+In previous revisions, cross-crate reference lookups lacked exact `target_unit` binding for external crates when sidecars used raw cargo hashes, causing `find_cross_definition` to fall through into an unconstrained search across all 65 readers in the workspace. With `f40e6d9` introducing `{cname}_{stable_crate_id:016x}.json` sidecar indexing and scoping fallback readers strictly to the matching `target_unit`/`target_crate`, the linear 65-reader scan was eliminated. Concrete evidence: on scenario `def_15_Struct` (`test_enum_untagged.rs:471:20`), latency dropped from **819 µs** (which misresolved to `syn-3.0.6`) to **40 µs** (resolving accurately to `serde_test-1.0.177`). Prior to `f40e6d9`, 'parity' was the accurate characterization (~148 µs vs ~145 µs); post-`f40e6d9`, RIDX's p50 definition latency is measured at **43.0 µs** (3.0x faster than rust-analyzer's 131.0 µs) with verified root cause, alongside RIDX's primary architectural strengths: tail latency (p90), reference search, and zero-heap scaling.
 
 Measured architectural differences from the test run:
 1. **Tail Latency**: `textDocument/definition` p90 is **26.7x faster** (204.3 µs vs 5449.9 µs / 5.45 ms).
@@ -39,24 +39,26 @@ Measured architectural differences from the test run:
 5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **20.5 MB PSS** total (8.5 MB Anon) vs rust-analyzer's **9211.5 MB PSS** (9181.6 MB Anon) — a **449.3x lower PSS** footprint.
 6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **150.2 ms**, which is **21.0x faster** than RIDX (**3160.3 ms**).
 
-### 2.1 Compiler Stability & Panic Telemetry (11 Heavy Generic Repositories, Clean CAS)
+### 2.1 Compiler Stability & Panic Telemetry (Heavy Generic Repositories, Clean CAS)
 
-To verify compiler stability and validate that `catch_unwind` does not silently swallow errors, `ridx-driver` was evaluated with a completely empty CAS cache across 11 heavy generic repositories on `booster` (isolated cores 24–31). Stderr was monitored for `internal compiler error`, and `caught_panics` telemetry was aggregated across all produced sidecars:
+To verify compiler stability and validate that `catch_unwind` does not silently swallow errors, `ridx-driver` was evaluated with a completely empty CAS cache across 11 heavy generic repositories on `booster` (isolated cores 24–31). Stderr was monitored for `internal compiler error`, and `caught_panics` telemetry was aggregated across all produced sidecars.
 
-| Repository | Units / Sidecars | Indexed Crates | Definitions | References | Types | ICE Detected | Caught Panics |
-|---|---|---|---|---|---|---|---|
-| **serde** | 33 | 32 | 31,783 | 163,698 | 460,332 | **0 ICE** | **0** |
-| **axum** | 198 | 11 | 14,756 | 108,091 | 303,851 | **0 ICE** | **0** |
-| **diesel** | 823 | 0 (build err) | — | — | — | **0 ICE** | **0** |
-| **tantivy** | 921 | 74 | 56,763 | 499,035 | 907,960 | **0 ICE** | **0** |
-| **gitoxide** | 1,707 | 270 | 128,534 | 1,337,365 | 2,378,313 | **0 ICE** | **0** |
-| **sqlx** | 1,471 | 0 (build err) | — | — | — | **0 ICE** | **0** |
-| **wasmtime** | 1,404 | 0 (build err) | — | — | — | **0 ICE** | **0** |
-| **burn** | 3,906 | 275 | 213,148 | 1,591,201 | 3,666,785 | **0 ICE** | **0** |
-| **datafusion** | 2,397 | 283 | 274,712 | 2,898,340 | 5,444,895 | **0 ICE** | **0** |
-| **polars** | 2,009 | 50 | 54,625 | 514,835 | 912,341 | **0 ICE** | **0** |
-| **bevy** | 871 | 616 | 430,865 | 1,883,927 | 4,060,358 | **0 ICE** | **0** |
-| **TOTAL** | **15,740** | **1,611** | **1,205,186** | **8,996,492** | **18,124,835** | **0 ICE** | **0** |
+Eight repositories completed full indexing without errors. Three repositories (`diesel`, `sqlx`, `wasmtime`) halted during `cargo check` due to external build-time requirements (database dev headers, online query macro database credentials, and wasm32 compilation target) before reaching index completion; these are reported below as unindexed with causes identified, and excluded from the completed totals:
+
+| Repository | Units / Sidecars | Indexed Crates | Definitions | References | Types | ICE Detected | Caught Panics | Status |
+|---|---|---|---|---|---|---|---|---|
+| **serde** | 33 | 32 | 31,783 | 163,698 | 460,332 | **0 ICE** | **0** | Complete |
+| **axum** | 198 | 11 | 14,756 | 108,091 | 303,851 | **0 ICE** | **0** | Complete |
+| **tantivy** | 921 | 74 | 56,763 | 499,035 | 907,960 | **0 ICE** | **0** | Complete |
+| **gitoxide** | 1,707 | 270 | 128,534 | 1,337,365 | 2,378,313 | **0 ICE** | **0** | Complete |
+| **burn** | 3,906 | 275 | 213,148 | 1,591,201 | 3,666,785 | **0 ICE** | **0** | Complete |
+| **datafusion** | 2,397 | 283 | 274,712 | 2,898,340 | 5,444,895 | **0 ICE** | **0** | Complete |
+| **polars** | 2,009 | 50 | 54,625 | 514,835 | 912,341 | **0 ICE** | **0** | Complete |
+| **bevy** | 871 | 616 | 430,865 | 1,883,927 | 4,060,358 | **0 ICE** | **0** | Complete |
+| **TOTAL (8 complete)** | **12,042** | **1,611** | **1,205,186** | **8,996,492** | **18,124,835** | **0 ICE** | **0** | **100% Success** |
+| *diesel* | 823 | — | — | — | — | — | — | *Не проиндексирован: integration_tests требуют libpq/libmysqlclient/sqlite3-dev* |
+| *sqlx* | 1,471 | — | — | — | — | — | — | *Не проиндексирован: examples требуют DATABASE_URL (query!)* |
+| *wasmtime* | 1,404 | — | — | — | — | — | — | *Не проиндексирован: build.rs требует wasm32-unknown-unknown target* |
 
 
 ### 3. Semantic Parity & Discrepancies Breakdown
