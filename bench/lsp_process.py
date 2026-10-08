@@ -6,14 +6,15 @@
 # Project: https://github.com/alex09x/rust-intelligence
 # SPDX-License-Identifier: MIT OR Apache-2.0
 """
-Lightweight, robust LSP process client for benchmark queries and synchronization.
-Uses non-blocking streaming I/O with explicit framing buffers to eliminate pipe deadlocks.
+Lightweight, thread-safe LSP process client for benchmark queries and synchronization.
+Uses an asynchronous background reader thread to continuously drain stdout, eliminating
+OS pipe buffer deadlocks caused by unconsumed server notifications (e.g. publishDiagnostics).
 """
 
 import json
 import os
-import select
 import subprocess
+import threading
 import time
 
 
@@ -26,14 +27,15 @@ class SimpleLspProcess:
             cmd, cwd=self.cwd,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        self.buffer = bytearray()
         self.next_id = 1
         self.exited = False
-        # Set stdout pipe to non-blocking to prevent read deadlocks
-        try:
-            os.set_blocking(self.p.stdout.fileno(), False)
-        except Exception:
-            pass
+        self.lock = threading.Lock()
+        self.events = {}
+        self.responses = {}
+        self.is_quiescent = False
+
+        self.reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
+        self.reader_thread.start()
         self._init_server()
 
     def send_msg(self, m):
@@ -43,8 +45,11 @@ class SimpleLspProcess:
         try:
             b = json.dumps(m).encode("utf-8")
             hdr = f"Content-Length: {len(b)}\r\n\r\n".encode("utf-8")
-            self.p.stdin.write(hdr + b)
-            self.p.stdin.flush()
+            with self.lock:
+                if self.exited or self.p.stdin.closed:
+                    return False
+                self.p.stdin.write(hdr + b)
+                self.p.stdin.flush()
             return True
         except (BrokenPipeError, OSError):
             self.exited = True
@@ -67,80 +72,74 @@ class SimpleLspProcess:
         else:
             self.send_response(req_id, None)
 
-    def _parse_message_from_buffer(self):
-        """Attempts to extract one framed JSON-RPC message from self.buffer."""
+    def _reader_loop(self):
+        """Continuously drains stdout into framed JSON-RPC messages."""
+        buf = bytearray()
         sep = b"\r\n\r\n"
-        idx = self.buffer.find(sep)
-        sep_len = 4
-        if idx == -1:
-            sep = b"\n\n"
-            idx = self.buffer.find(sep)
-            sep_len = 2
-        if idx == -1:
-            return None
+        alt_sep = b"\n\n"
 
-        header_bytes = bytes(self.buffer[:idx])
-        content_length = None
-        for line in header_bytes.decode("latin1", errors="ignore").splitlines():
-            line = line.strip()
-            if line.lower().startswith("content-length:"):
-                try:
-                    content_length = int(line.split(":", 1)[1].strip())
-                except ValueError:
-                    pass
+        while not self.exited and self.p.poll() is None:
+            try:
+                chunk = os.read(self.p.stdout.fileno(), 65536)
+                if not chunk:
+                    break
+                buf.extend(chunk)
 
-        if content_length is None:
-            del self.buffer[:idx + sep_len]
-            return None
+                while True:
+                    idx = buf.find(sep)
+                    sep_len = 4
+                    if idx == -1:
+                        idx = buf.find(alt_sep)
+                        sep_len = 2
+                    if idx == -1:
+                        break
 
-        body_start = idx + sep_len
-        body_end = body_start + content_length
-        if len(self.buffer) < body_end:
-            return None  # Partial payload, await more bytes
+                    header_bytes = bytes(buf[:idx])
+                    cl = None
+                    for line in header_bytes.decode("latin1", errors="ignore").splitlines():
+                        if line.lower().startswith("content-length:"):
+                            try:
+                                cl = int(line.split(":", 1)[1].strip())
+                            except ValueError:
+                                pass
+                            break
 
-        payload = bytes(self.buffer[body_start:body_end])
-        del self.buffer[:body_end]
-        try:
-            return json.loads(payload.decode("utf-8", errors="ignore"))
-        except Exception:
-            return None
+                    if cl is None:
+                        del buf[:idx + sep_len]
+                        continue
 
-    def read_msg(self, timeout=1.0):
-        """Reads one JSON-RPC message with timeout, avoiding peek deadlocks."""
-        if self.exited or self.p.poll() is not None:
-            self.exited = True
-            return None
+                    body_end = idx + sep_len + cl
+                    if len(buf) < body_end:
+                        break  # Await more payload bytes
 
-        # 1. Check existing buffer
-        msg = self._parse_message_from_buffer()
-        if msg is not None:
-            return msg
+                    payload = bytes(buf[idx + sep_len:body_end])
+                    del buf[:body_end]
 
-        # 2. Wait for data on non-blocking pipe
-        deadline = time.perf_counter() + timeout
-        while time.perf_counter() < deadline:
-            if self.p.poll() is not None:
-                self.exited = True
-                return None
+                    try:
+                        msg = json.loads(payload.decode("utf-8", errors="ignore"))
+                    except Exception:
+                        continue
 
-            remaining = max(0.001, deadline - time.perf_counter())
-            r, _, _ = select.select([self.p.stdout], [], [], min(0.1, remaining))
-            if r:
-                try:
-                    chunk = os.read(self.p.stdout.fileno(), 65536)
-                    if not chunk:
-                        self.exited = True
-                        return None  # EOF
-                    self.buffer.extend(chunk)
-                    msg = self._parse_message_from_buffer()
-                    if msg is not None:
-                        return msg
-                except (BlockingIOError, InterruptedError):
-                    pass
-                except Exception:
-                    self.exited = True
-                    return None
-        return None
+                    if "method" in msg and "id" in msg:
+                        self.handle_server_request(msg)
+                    elif "id" in msg:
+                        req_id = msg["id"]
+                        with self.lock:
+                            self.responses[req_id] = msg
+                            ev = self.events.get(req_id)
+                            if ev is not None:
+                                ev.set()
+                    elif "method" in msg:
+                        if msg.get("method") == "experimental/serverStatus":
+                            if msg.get("params", {}).get("quiescent", False):
+                                self.is_quiescent = True
+            except Exception:
+                break
+
+        self.exited = True
+        with self.lock:
+            for ev in self.events.values():
+                ev.set()
 
     def _init_server(self):
         init_id = self.next_id
@@ -188,78 +187,70 @@ class SimpleLspProcess:
                 },
             },
         }
-        self.send_msg(req)
-        t0 = time.perf_counter()
-        while time.perf_counter() - t0 < 30.0:
-            if self.exited or self.p.poll() is not None:
-                self.exited = True
-                break
-            msg = self.read_msg(timeout=0.5)
-            if not msg:
-                continue
-            if "method" in msg and "id" in msg:
-                self.handle_server_request(msg)
-                continue
-            if msg.get("id") == init_id:
-                break
+
+        ev = threading.Event()
+        with self.lock:
+            self.events[init_id] = ev
+
+        if not self.send_msg(req):
+            return
+
+        ev.wait(timeout=30.0)
+        with self.lock:
+            self.events.pop(init_id, None)
+            self.responses.pop(init_id, None)
 
         if not self.exited:
             self.send_msg({"jsonrpc": "2.0", "method": "initialized", "params": {}})
             if self.is_ra:
-                self.wait_quiescent(timeout=30.0, settle_idle=1.0)
+                self.wait_quiescent(timeout=20.0, settle_idle=0.5)
 
     def wait_quiescent(self, timeout=20.0, settle_idle=0.5):
         t0 = time.perf_counter()
-        seen_busy = False
-        last_busy = t0
         while time.perf_counter() - t0 < timeout:
             if self.exited or self.p.poll() is not None:
                 self.exited = True
-                return (time.perf_counter() - t0) * 1000.0
-            msg = self.read_msg(timeout=0.1)
-            if not msg:
-                if seen_busy and (time.perf_counter() - last_busy > settle_idle):
-                    return (time.perf_counter() - t0) * 1000.0
-                if not seen_busy and (time.perf_counter() - t0 > settle_idle):
-                    return (time.perf_counter() - t0) * 1000.0
-                continue
-            if "method" in msg and "id" in msg:
-                self.handle_server_request(msg)
-            if msg.get("method") == "experimental/serverStatus":
-                quiescent = msg.get("params", {}).get("quiescent", False)
-                if not quiescent:
-                    seen_busy = True
-                    last_busy = time.perf_counter()
-                elif quiescent and seen_busy:
-                    return (time.perf_counter() - t0) * 1000.0
+                break
+            if self.is_quiescent:
+                break
+            time.sleep(0.05)
         return (time.perf_counter() - t0) * 1000.0
 
     def request(self, method, params, timeout=5.0):
         if self.exited or self.p.poll() is not None:
             self.exited = True
             return None, 0.0, "PROCESS_EXITED"
+
         req_id = self.next_id
         self.next_id += 1
+        ev = threading.Event()
+
+        with self.lock:
+            self.events[req_id] = ev
+
         req = {"jsonrpc": "2.0", "id": req_id, "method": method, "params": params}
         t0 = time.perf_counter()
+
         if not self.send_msg(req):
+            with self.lock:
+                self.events.pop(req_id, None)
             return None, 0.0, "BROKEN_PIPE"
-        while time.perf_counter() - t0 < timeout:
-            if self.exited or self.p.poll() is not None:
-                self.exited = True
-                dur_us = (time.perf_counter() - t0) * 1_000_000.0
-                return None, dur_us, "PROCESS_EXITED"
-            msg = self.read_msg(timeout=0.2)
-            if not msg:
-                continue
-            if "method" in msg and "id" in msg:
-                self.handle_server_request(msg)
-                continue
-            if msg.get("id") == req_id:
-                dur_us = (time.perf_counter() - t0) * 1_000_000.0
-                return msg.get("result"), dur_us, msg.get("error")
+
+        signaled = ev.wait(timeout=timeout)
         dur_us = (time.perf_counter() - t0) * 1_000_000.0
-        return None, dur_us, "TIMEOUT"
+
+        with self.lock:
+            self.events.pop(req_id, None)
+            msg = self.responses.pop(req_id, None)
+
+        if self.exited or self.p.poll() is not None:
+            self.exited = True
+            return None, dur_us, "PROCESS_EXITED"
+
+        if not signaled or msg is None:
+            return None, dur_us, "TIMEOUT"
+
+        return msg.get("result"), dur_us, msg.get("error")
 
     def notify(self, method, params):
         return self.send_msg({"jsonrpc": "2.0", "method": method, "params": params})
@@ -281,21 +272,24 @@ class SimpleLspProcess:
             if not self.exited and self.p.poll() is None:
                 req_id = self.next_id
                 self.next_id += 1
+                ev = threading.Event()
+                with self.lock:
+                    self.events[req_id] = ev
                 self.send_msg({"jsonrpc": "2.0", "id": req_id, "method": "shutdown", "params": None})
-                t0 = time.perf_counter()
-                while time.perf_counter() - t0 < 1.0:
-                    msg = self.read_msg(timeout=0.2)
-                    if msg and msg.get("id") == req_id:
-                        break
+                ev.wait(timeout=1.0)
+                with self.lock:
+                    self.events.pop(req_id, None)
+                    self.responses.pop(req_id, None)
                 self.send_msg({"jsonrpc": "2.0", "method": "exit", "params": None})
-                self.p.stdin.close()
+                with self.lock:
+                    self.p.stdin.close()
                 self.p.wait(timeout=1.0)
         except Exception:
             pass
         finally:
+            self.exited = True
             try:
                 self.p.kill()
                 self.p.wait(timeout=0.5)
             except Exception:
                 pass
-            self.exited = True
