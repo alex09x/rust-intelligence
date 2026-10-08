@@ -331,8 +331,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                             .unwrap_or(false);
                         let final_def_id = if is_trait_item {
                             let args = typeck.node_args(expr.hir_id);
-                            if !args.has_param()
-                                && !args.has_infer()
+                            if !args.has_infer()
                                 && !args.has_escaping_bound_vars()
                                 && !args.references_error()
                             {
@@ -369,10 +368,44 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                 }
                 hir::ExprKind::Path(hir::QPath::TypeRelative(_, segment)) => {
                     if let hir::ExprKind::Path(ref qpath) = expr.kind {
-                        self.add_ref_from_res(
-                            segment.ident.span,
-                            typeck.qpath_res(qpath, expr.hir_id),
-                        );
+                        let mut res = typeck.qpath_res(qpath, expr.hir_id);
+                        if let Res::Def(hir::def::DefKind::AssocFn, def_id) = res {
+                            let is_trait_item = self
+                                .tcx
+                                .opt_associated_item(def_id)
+                                .map(|a| matches!(a.container, rustc_middle::ty::AssocContainer::Trait))
+                                .unwrap_or(false);
+                            if is_trait_item {
+                                let args = typeck.node_args(expr.hir_id);
+                                if !args.has_infer()
+                                    && !args.has_escaping_bound_vars()
+                                    && !args.references_error()
+                                {
+                                    let body_owner =
+                                        self.tcx.hir_enclosing_body_owner(expr.hir_id).to_def_id();
+                                    let env = rustc_middle::ty::TypingEnv::post_analysis(
+                                        self.tcx, body_owner,
+                                    );
+                                    let norm_args = self
+                                        .tcx
+                                        .try_normalize_erasing_regions(
+                                            env,
+                                            rustc_middle::ty::Unnormalized::new(args),
+                                        )
+                                        .unwrap_or(args);
+                                    if let Ok(Some(inst)) = rustc_middle::ty::Instance::try_resolve(
+                                        self.tcx, env, def_id, norm_args,
+                                    ) {
+                                        let resolved_did = inst.def_id();
+                                        res = Res::Def(
+                                            self.tcx.def_kind(resolved_did),
+                                            resolved_did,
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        self.add_ref_from_res(segment.ident.span, res);
                     }
                 }
                 hir::ExprKind::Field(base, field) => {

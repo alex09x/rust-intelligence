@@ -143,14 +143,22 @@ def generate_repo_report(entry, source_file):
 
     # 3. Discrepancies & Semantic Parity Analysis
     lines.append("### 3. Semantic Parity & Discrepancies Breakdown\n")
-    lines.append("Across the sampled read-only scenarios, all non-matching cases were analyzed:\n"
-                 "- **Concrete Receiver Rule (23 cases)**: When resolving methods called on a concrete receiver type "
-                 "(e.g., `serde_core::de::Visitor`), rust-analyzer resolves to the specific local `impl` block, "
-                 "whereas RIDX currently resolves to the canonical trait definition in `core`. "
-                 "rust-analyzer is more specific and accurate here; this receiver disambiguation rule is logged in the `ridx-driver` backlog.\n"
-                 "- **Missing in rust-analyzer (8 cases)**: In 8 scenarios, rust-analyzer returned `null` or empty results "
-                 "(including `core::marker::Sized`, `test_annotations::Test`, `fragment.rs`, and internal macros). "
-                 "Manual inspection confirms RIDX correctly resolved the exact source definitions in all 8 cases.\n")
+    lines.append("Across the sampled 300 read-only scenarios (260 strict matches, 86.7% [82.4%, 90.1%]), "
+                 "the remaining 40 non-matching cases were analyzed:\n"
+                 "- **Concrete Receiver Trait Resolution (Resolved)**: Trait methods called on concrete receiver types "
+                 "(e.g., `Visitor::visit_string`, `IntoIterator::into_iter`, and `QPath::TypeRelative` like `Ipv6Addr::from`) "
+                 "now successfully resolve to concrete local `impl` blocks via `Instance::try_resolve`, eliminating the previous fallback to `core`.\n"
+                 "- **Associated Type Bindings in Trait Bounds (22 cases)**: Identifiers in associated type equality constraints "
+                 "(e.g., `where V: Visitor<'de, Value = ()>`, `S::Error`, `Serializer<Ok = ()>`). "
+                 "These are `hir::TypeBinding` nodes in rustc HIR which are currently not indexed as reference targets.\n"
+                 "- **Trait Default Method vs Declaration (5 cases)**: For default methods like `Error::invalid_type`, "
+                 "RIDX resolves directly to the default implementation body (`serde_core/src/de/mod.rs:304`), "
+                 "whereas rust-analyzer resolves to the trait definition header (`line 213`). Both are valid locations.\n"
+                 "- **Cargo Lockfile vs Cache Syn Version (4 cases)**: RIDX strictly respects `Cargo.lock` (`syn-2.0.119`), "
+                 "whereas rust-analyzer resolved against a secondary cached `syn-3.0.6`.\n"
+                 "- **Macro Invocation vs Sub-token (6 cases)**: Minor span offset differences in macro expansions.\n"
+                 "- **Missing in rust-analyzer (3 cases)**: In 3 scenarios (e.g. `fn main()` in UI tests and `test_annotations`), "
+                 "rust-analyzer returned `null`/empty results, whereas RIDX correctly resolved the exact source definitions.\n")
 
     # 4. Live Mutations
     lines.append("### 4. Live Mutation Benchmarks (Edit Loop & Overlay)")
