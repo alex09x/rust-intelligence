@@ -165,11 +165,12 @@ impl<'tcx> HirVisitor<'tcx> {
                 {
                     return;
                 }
-                let target_coords = resolve_span_coords(
-                    self.tcx,
-                    self.tcx.def_span(def_id),
-                    self.package_root.as_deref(),
-                );
+                let target_span = self
+                    .tcx
+                    .def_ident_span(def_id)
+                    .unwrap_or_else(|| self.tcx.def_span(def_id));
+                let target_coords =
+                    resolve_span_coords(self.tcx, target_span, self.package_root.as_deref());
                 let (target_file, target_line, target_col) = match target_coords {
                     Some((f, l, c, _, _, _)) => (Some(f), l, c),
                     None => (None, 0, 0),
@@ -311,8 +312,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
     fn visit_ty(&mut self, ty: &'tcx hir::Ty<'tcx, hir::AmbigArg>) {
         if let Some(typeck) = self.typeck {
             if let hir::TyKind::Path(hir::QPath::TypeRelative(qself, segment)) = ty.kind {
-                let res =
-                    typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id);
+                let res = typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id);
                 self.add_ref_from_res(segment.ident.span, res);
             }
         }
@@ -575,8 +575,11 @@ fn extract_crate_items<'tcx>(
 ) {
     // Extract all crate item definitions
     for def_id in tcx.hir_crate_items(()).definitions() {
+        let item_span = tcx
+            .def_ident_span(def_id)
+            .unwrap_or_else(|| tcx.def_span(def_id));
         let Some((file, s_line, s_col, e_line, e_col, is_macro)) =
-            resolve_span_coords(tcx, tcx.def_span(def_id), package_root)
+            resolve_span_coords(tcx, item_span, package_root)
         else {
             continue;
         };

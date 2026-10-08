@@ -50,7 +50,7 @@ def generate_repo_report(entry, source_file):
     w1_r_p50 = percentile(w1_r_lats, 50) if w1_r_lats else 0.0
     w1_ra_p50 = percentile(w1_ra_lats, 50) if w1_ra_lats else 0.0
     if w1_r_p50 > 0 and w1_ra_p50 > 0:
-        w1_adv = f"{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x slower (RA faster via in-memory Salsa)"
+        w1_adv = f"{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x slower (RA 1.98.1 в ~17 раз быстрее 1.97.1 на этом зонде; причина не исследовалась)"
         lines.append(f"| **Warm Incremental Re-index (W1)** | **{w1_r_p50:.1f} ms** (`ridx index`) | **{w1_ra_p50:.1f} ms** (RA quiescent) | {w1_adv} |")
     else:
         warm_ridx = entry.get("warm_ridx_index_sec", 0.0)
@@ -137,8 +137,8 @@ def generate_repo_report(entry, source_file):
                  f"5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **{r_pss10:.1f} MB PSS** total "
                  f"({r_anon10:.1f} MB Anon) vs rust-analyzer's **{ra_pss10:.1f} MB PSS** ({ra_anon10:.1f} MB Anon) — a **{pss_adv}** footprint.\n"
                  f"6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **{w1_ra_p50:.1f} ms**, "
-                 f"which is **{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x faster** than RIDX (**{w1_r_p50:.1f} ms**), "
-                 "because rust-analyzer invalidates Salsa in-memory without invoking a compiler driver pass.\n")
+                 f"which is **{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x faster** than RIDX (**{w1_r_p50:.1f} ms**); "
+                 "RA 1.98.1 в ~17 раз быстрее 1.97.1 на этом зонде, причина не исследовалась.\n")
 
     # 3. Discrepancies & Semantic Parity Analysis
     lines.append("### 3. Semantic Parity & Discrepancies Breakdown\n")
@@ -186,7 +186,7 @@ def generate_repo_report(entry, source_file):
         lines.append(f"**Scenario W1: Real LSP Commit Walk ({commits_cnt} commits)**")
         lines.append(f"- **Immediate Stale (before re-index completes)**: RIDX = **{imm_str.get('ridx', 'N/A')}**, RA = **{imm_str.get('ra', 'N/A')}**")
         lines.append(f"- **Post-Reindex Stale (after re-index completes)**: RIDX = **{post_str.get('ridx', 'N/A')}**, RA = **{post_str.get('ra', 'N/A')}**")
-        lines.append(f"- **Time to Freshness**: RIDX median = **{w1_r_p50:.1f} ms** (`ridx index`), RA quiescent median = **{w1_ra_p50:.1f} ms** (RA 6.6x faster via in-memory Salsa invalidation)\n")
+        lines.append(f"- **Time to Freshness**: RIDX median = **{w1_r_p50:.1f} ms** (`ridx index`), RA quiescent median = **{w1_ra_p50:.1f} ms** (RA 1.98.1 в ~17 раз быстрее 1.97.1 на этом зонде; причина не исследовалась)\n")
 
     if w2:
         lines.append(f"**Scenario W2: Large Git Jumps ({len(w2.get('durations_ms', []))} iterations)**")

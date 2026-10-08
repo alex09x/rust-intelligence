@@ -337,9 +337,7 @@ pub fn dispatch_lsp_message<W: Write>(
             let ws = multi_root.doc_ws(&msg);
             handle_rename(&msg, ws, overlay_mgr, conv)
         }
-        "textDocument/linkedEditingRange" => {
-            handle_linked_editing_range(&msg, overlay_mgr, conv)
-        }
+        "textDocument/linkedEditingRange" => handle_linked_editing_range(&msg, overlay_mgr, conv),
         "textDocument/formatting" => handle_formatting(&msg, overlay_mgr),
         "textDocument/rangeFormatting" => handle_range_formatting(&msg, overlay_mgr),
         "textDocument/onTypeFormatting" => handle_on_type_formatting(&msg, overlay_mgr),

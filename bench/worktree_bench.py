@@ -253,20 +253,37 @@ def run_scenario_w2_large_jumps(repo_dir, ridx_bin, iterations=10):
 
 def measure_live_servers_smaps(bin_args, worktree_dirs, is_ra=False):
     servers = []
+    answers_per_process = []
     try:
         for wt in worktree_dirs:
             srv = SimpleLspProcess(bin_args, wt, is_ra=is_ra)
             if is_ra:
                 srv.wait_quiescent(timeout=30.0, settle_idle=1.0)
             target_file = None
-            for cand in [Path(wt) / "serde" / "src" / "lib.rs", Path(wt) / "serde_core" / "src" / "lib.rs", Path(wt) / "src" / "lib.rs"]:
+            probe_line, probe_col = 12, 20
+            for cand in [
+                Path(wt) / "test_suite" / "tests" / "test_de.rs",
+                Path(wt) / "serde_core" / "src" / "ser" / "impls.rs",
+                Path(wt) / "serde" / "src" / "lib.rs",
+                Path(wt) / "src" / "lib.rs",
+            ]:
                 if cand.is_file():
                     target_file = cand
+                    if "test_de.rs" in str(cand):
+                        probe_line, probe_col = 12, 20
+                    elif "impls.rs" in str(cand):
+                        probe_line, probe_col = 269, 63
+                    else:
+                        probe_line, probe_col = 150, 10
                     break
+            proc_answers = 0
             if target_file:
                 uri = f"file://{target_file}"
                 for q_i in range(50):
-                    srv.query_def(uri, 20, 5, timeout=2.0)
+                    res, _ = srv.query_def(uri, probe_line, probe_col, timeout=2.0)
+                    if res:
+                        proc_answers += 1
+            answers_per_process.append(proc_answers)
             servers.append(srv)
 
         for s in servers:
@@ -279,6 +296,7 @@ def measure_live_servers_smaps(bin_args, worktree_dirs, is_ra=False):
 
         return {
             "live_processes": len(servers),
+            "answers_per_process": answers_per_process,
             "total_pss_mb": round(tot_pss / (1024 * 1024), 2),
             "total_anon_mb": round(tot_anon / (1024 * 1024), 2),
             "total_file_mb": round(tot_file / (1024 * 1024), 2),
