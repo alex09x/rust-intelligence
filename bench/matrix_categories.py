@@ -148,7 +148,7 @@ def build_params(key, sc, repo_dir):
     elif key in ("completion", "signature_help", "on_type_formatting"):
         return {
             "textDocument": {"uri": uri}, "position": pos,
-            **({"ch": ";"} if key == "on_type_formatting" else {})
+            **({"ch": ";", "options": {"tabSize": 4, "insertSpaces": True}} if key == "on_type_formatting" else {})
         }
     elif key in ("document_symbol", "folding_range", "code_lens", "document_diagnostic",
                  "document_link", "document_color", "text_document_content"):
@@ -162,7 +162,7 @@ def build_params(key, sc, repo_dir):
     elif key == "inlay_hint_resolve":
         return sc.get("item", {"position": pos, "label": ": i32", "kind": 1})
     elif key in ("code_lens_resolve", "code_action_resolve", "document_link_resolve", "moniker_resolve"):
-        return sc.get("item", {"range": rng, "command": {"title": "resolve", "command": "noop"}})
+        return sc.get("item", {"title": "resolve", "range": rng, "command": {"title": "resolve", "command": "noop"}})
     elif key in ("incoming_calls", "outgoing_calls"):
         return {"item": {"name": sc.get("target", "fn_call"), "kind": 12, "uri": uri, "range": rng, "selectionRange": rng}}
     elif key in ("supertypes", "subtypes"):
@@ -178,17 +178,17 @@ def build_params(key, sc, repo_dir):
     elif key == "semantic_tokens_delta":
         return {"textDocument": {"uri": uri}, "previousResultId": sc.get("prev_id", "0")}
     elif key == "semantic_tokens_range":
-        return {"textDocument": {"uri": uri}, "range": {"start": {"line": 0, "character": 0}, "end": {"line": 50, "character": 0}}}
+        return {"textDocument": {"uri": uri}, "range": {"start": {"line": 0, "character": 0}, "end": {"line": 2, "character": 0}}}
     elif key == "formatting":
         return {"textDocument": {"uri": uri}, "options": {"tabSize": 4, "insertSpaces": True}}
     elif key == "range_formatting":
-        return {"textDocument": {"uri": uri}, "range": {"start": {"line": 0, "character": 0}, "end": {"line": 30, "character": 0}}, "options": {"tabSize": 4, "insertSpaces": True}}
+        return {"textDocument": {"uri": uri}, "range": {"start": {"line": 0, "character": 0}, "end": {"line": 2, "character": 0}}, "options": {"tabSize": 4, "insertSpaces": True}}
     elif key == "rename":
         return {"textDocument": {"uri": uri}, "position": pos, "newName": sc.get("new_name", "renamed_sym")}
     elif key == "code_action":
         return {"textDocument": {"uri": uri}, "range": rng, "context": {"diagnostics": []}}
     elif key == "inlay_hint":
-        return {"textDocument": {"uri": uri}, "range": {"start": {"line": 0, "character": 0}, "end": {"line": 100, "character": 0}}}
+        return {"textDocument": {"uri": uri}, "range": {"start": {"line": 0, "character": 0}, "end": {"line": 2, "character": 0}}}
     elif key == "selection_range":
         return {"textDocument": {"uri": uri}, "positions": [pos]}
     elif key == "execute_command":
