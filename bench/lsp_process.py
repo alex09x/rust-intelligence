@@ -25,7 +25,7 @@ class SimpleLspProcess:
         self.is_ra = is_ra
         self.p = subprocess.Popen(
             cmd, cwd=self.cwd,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
         )
         self.next_id = 1
         self.exited = False

@@ -150,7 +150,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         lats = []
         errs = 0
         if key == "initialize":
-            raw_p = subprocess.Popen(cmd, cwd=str(repo_dir), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            raw_p = subprocess.Popen(cmd, cwd=str(repo_dir), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             try:
                 init_req = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"processId": None, "rootUri": f"file://{repo_dir}", "capabilities": {}}}
                 b = json.dumps(init_req).encode("utf-8")
