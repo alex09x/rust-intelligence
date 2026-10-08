@@ -144,8 +144,19 @@ impl PositionConverter {
         }
     }
 
+    pub fn invalidate(&mut self, file: &str) {
+        self.cache.remove(file);
+    }
+
+    pub fn clear(&mut self) {
+        self.cache.clear();
+    }
+
     pub fn get_line(&mut self, file: &str, line_1based: u32) -> Option<&str> {
-        let (content, line_starts) = self.cache.entry(file.to_string()).or_insert_with(|| {
+        if !self.cache.contains_key(file) {
+            if self.cache.len() >= 128 {
+                self.cache.clear();
+            }
             if let Ok(c) = std::fs::read_to_string(file) {
                 let mut starts = Vec::with_capacity(c.lines().count() + 1);
                 starts.push(0);
@@ -154,12 +165,13 @@ impl PositionConverter {
                         starts.push(idx + 1);
                     }
                 }
-                (c, starts)
+                self.cache.insert(file.to_string(), (c, starts));
             } else {
-                (String::new(), Vec::new())
+                return None;
             }
-        });
+        }
 
+        let (content, line_starts) = self.cache.get(file)?;
         let line_idx = line_1based.saturating_sub(1) as usize;
         if line_idx >= line_starts.len() || content.is_empty() {
             None

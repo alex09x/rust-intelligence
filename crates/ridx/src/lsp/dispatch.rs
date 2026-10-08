@@ -16,7 +16,7 @@ use super::intelligence::*;
 use super::lifecycle::{LifecycleManager, ServerState};
 use super::navigation::*;
 use super::presentation::*;
-use super::protocol::{send_response, uri_to_path, PositionConverter};
+use super::protocol::{send_response, uri_to_path};
 use super::symbols::*;
 use super::sync_reloaded_index;
 use super::workspace::*;
@@ -67,11 +67,17 @@ pub fn dispatch_lsp_message<W: Write>(
     }
 
     // 5. Automatic index reload: fast stat check (sub-microsecond) on manifest
+    let mut any_reloaded = false;
     for ws in multi_root.all_workspaces_mut() {
-        sync_reloaded_index(ws, overlay_mgr);
+        if sync_reloaded_index(ws, overlay_mgr) {
+            any_reloaded = true;
+        }
+    }
+    if any_reloaded {
+        lifecycle.conv.clear();
     }
 
-    let mut conv = PositionConverter::new();
+    let conv = &mut lifecycle.conv;
 
     let result = match method {
         "initialize" => match lifecycle.handle_initialize(&msg) {
@@ -123,6 +129,7 @@ pub fn dispatch_lsp_message<W: Write>(
             let file = uri_to_path(uri);
             let has_provenance = multi_root.check_file_provenance(&file, text);
             overlay_mgr.open_with_provenance(uri, &file, version, text.to_string(), has_provenance);
+            conv.invalidate(&file);
             return Ok(true);
         }
 
@@ -146,6 +153,7 @@ pub fn dispatch_lsp_message<W: Write>(
                     let _ = overlay_mgr.apply_content_changes(&file, version, changes);
                 }
             }
+            conv.invalidate(&file);
             return Ok(true);
         }
 
@@ -153,6 +161,7 @@ pub fn dispatch_lsp_message<W: Write>(
             let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
             let file = uri_to_path(uri);
             overlay_mgr.close_document(&file);
+            conv.invalidate(&file);
             return Ok(true);
         }
 
@@ -160,6 +169,7 @@ pub fn dispatch_lsp_message<W: Write>(
             let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
             let file = uri_to_path(uri);
             overlay_mgr.save_document(&file);
+            conv.invalidate(&file);
             let p = Path::new(&file);
             let ws_root = multi_root
                 .find_workspace_for_path(p)
@@ -190,6 +200,7 @@ pub fn dispatch_lsp_message<W: Write>(
 
         "workspace/didChangeWatchedFiles" => {
             multi_root.reload_all_if_modified();
+            conv.clear();
             return Ok(true);
         }
 
@@ -197,6 +208,7 @@ pub fn dispatch_lsp_message<W: Write>(
             for ws in multi_root.all_workspaces_mut() {
                 sync_reloaded_index(ws, overlay_mgr);
             }
+            conv.clear();
             return Ok(true);
         }
 
@@ -232,49 +244,49 @@ pub fn dispatch_lsp_message<W: Write>(
         }
 
         "textDocument/definition" => {
-            handle_definition(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
+            handle_definition(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
         "textDocument/references" => {
-            handle_references(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
+            handle_references(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
         "textDocument/typeDefinition" => {
-            handle_type_definition(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
+            handle_type_definition(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
         "textDocument/implementation" => {
-            handle_implementation(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
+            handle_implementation(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
         "textDocument/declaration" => {
-            handle_declaration(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
+            handle_declaration(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
-        "textDocument/documentSymbol" => handle_document_symbol(&msg, overlay_mgr, &mut conv),
-        "workspace/symbol" => handle_workspace_symbol(&msg, multi_root.all_workspaces(), &mut conv),
+        "textDocument/documentSymbol" => handle_document_symbol(&msg, overlay_mgr, conv),
+        "workspace/symbol" => handle_workspace_symbol(&msg, multi_root.all_workspaces(), conv),
         "workspaceSymbol/resolve" | "workspace/symbol/resolve" => {
-            handle_workspace_symbol_resolve(&msg, multi_root.all_workspaces(), &mut conv)
+            handle_workspace_symbol_resolve(&msg, multi_root.all_workspaces(), conv)
         }
         "textDocument/documentHighlight" => {
-            handle_document_highlight(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
+            handle_document_highlight(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
-        "textDocument/hover" => handle_hover(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv),
+        "textDocument/hover" => handle_hover(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv),
         "textDocument/completion" => {
-            handle_completion(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
+            handle_completion(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
         "completionItem/resolve" => handle_completion_resolve(&msg),
         "textDocument/signatureHelp" => {
-            handle_signature_help(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
+            handle_signature_help(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
         "textDocument/inlayHint" => handle_inlay_hint(&msg, multi_root.doc_ws(&msg), overlay_mgr),
         "inlayHint/resolve" => handle_inlay_hint_resolve(&msg),
         "textDocument/inlineValue" => handle_inline_value(&msg, Some(overlay_mgr)),
         "textDocument/inlineCompletion" => handle_inline_completion(&msg, Some(overlay_mgr)),
         "textDocument/prepareCallHierarchy" => {
-            handle_prepare_call_hierarchy(&msg, multi_root.doc_ws(&msg), overlay_mgr, &mut conv)
+            handle_prepare_call_hierarchy(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
         "callHierarchy/incomingCalls" => {
             let f = uri_to_path(msg["params"]["item"]["uri"].as_str().unwrap_or(""));
             handle_call_hierarchy_incoming_calls(
                 &msg,
                 multi_root.find_workspace_for_path(Path::new(&f)),
-                &mut conv,
+                conv,
             )
         }
         "callHierarchy/outgoingCalls" => {
@@ -282,12 +294,12 @@ pub fn dispatch_lsp_message<W: Write>(
             handle_call_hierarchy_outgoing_calls(
                 &msg,
                 multi_root.find_workspace_for_path(Path::new(&f)),
-                &mut conv,
+                conv,
             )
         }
         "textDocument/prepareTypeHierarchy" => {
             let ws = multi_root.doc_ws(&msg);
-            handle_prepare_type_hierarchy(&msg, ws, overlay_mgr, &mut conv)
+            handle_prepare_type_hierarchy(&msg, ws, overlay_mgr, conv)
         }
         "typeHierarchy/supertypes" => {
             handle_type_hierarchy_supertypes(&msg, multi_root.first_workspace())
@@ -311,7 +323,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "workspace/diagnostic" => handle_workspace_diagnostic(&msg, overlay_mgr, multi_root),
         "textDocument/moniker" => {
             let ws = multi_root.doc_ws(&msg);
-            handle_moniker(&msg, ws, overlay_mgr, &mut conv)
+            handle_moniker(&msg, ws, overlay_mgr, conv)
         }
         "moniker/resolve" => handle_moniker_resolve(&msg),
         "textDocument/content" | "workspace/textDocumentContent" => {
@@ -319,14 +331,14 @@ pub fn dispatch_lsp_message<W: Write>(
         }
         "textDocument/prepareRename" => {
             let ws = multi_root.doc_ws(&msg);
-            handle_prepare_rename(&msg, ws, overlay_mgr, &mut conv)
+            handle_prepare_rename(&msg, ws, overlay_mgr, conv)
         }
         "textDocument/rename" => {
             let ws = multi_root.doc_ws(&msg);
-            handle_rename(&msg, ws, overlay_mgr, &mut conv)
+            handle_rename(&msg, ws, overlay_mgr, conv)
         }
         "textDocument/linkedEditingRange" => {
-            handle_linked_editing_range(&msg, overlay_mgr, &mut conv)
+            handle_linked_editing_range(&msg, overlay_mgr, conv)
         }
         "textDocument/formatting" => handle_formatting(&msg, overlay_mgr),
         "textDocument/rangeFormatting" => handle_range_formatting(&msg, overlay_mgr),

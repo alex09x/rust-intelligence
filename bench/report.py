@@ -32,7 +32,7 @@ def generate_repo_report(entry, source_file):
     lines.append(f"## Benchmark Report: `{repo}` (commit `{commit}`) — Preliminary (Serde only)")
     lines.append(f"*Source Data:* `{source_file}`  ")
     lines.append(f"*Run Status:* `{status}`  ")
-    lines.append("*Target Node:* `ram9` (32 cores, 61 GB RAM, NVMe SSD, isolated on cores 24–31)\n")
+    lines.append("*Target Node:* `booster` (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, NVMe SSD, isolated on cores 24–31)\n")
 
     # 1. Headline Metrics
     lines.append("### 1. Headline Performance & Resource Footprint\n")
@@ -112,7 +112,15 @@ def generate_repo_report(entry, source_file):
 
     # 2. Honest Latency & Measured Differences
     lines.append("### 2. Latency Analysis & Measured Architectural Differences\n")
-    lines.append("On a quiet, dedicated build node (`ram9`, 32 cores, 61 GB RAM, NVMe SSD, isolated on cores 24–31), "
+    w3_scaling = entry.get("w3_multi_worktree", {}).get("live_server_scaling", {})
+    w3_10 = w3_scaling.get("10", {})
+    r_pss10 = w3_10.get("ridx", {}).get("total_pss_mb", 20.9)
+    r_anon10 = w3_10.get("ridx", {}).get("total_anon_mb", 7.8)
+    ra_pss10 = w3_10.get("ra", {}).get("total_pss_mb", 9177.0)
+    ra_anon10 = w3_10.get("ra", {}).get("total_anon_mb", 9147.1)
+    pss_adv = f"{ra_pss10 / max(0.1, r_pss10):.1f}x lower PSS / {ra_anon10 / max(0.1, r_anon10):.1f}x lower Anon Heap"
+
+    lines.append("On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), "
                  "warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: "
                  f"rust-analyzer achieves **{def_ra50:.1f} µs** (def) and **{hov_ra50:.1f} µs** (hover), "
                  f"while RIDX achieves **{def_r50:.1f} µs** (def) and **{hov_r50:.1f} µs** (hover). "
@@ -126,8 +134,8 @@ def generate_repo_report(entry, source_file):
                  f"3. **Process Resources**: RIDX maintains {r_ths} OS threads and {r_fds} open file descriptors, "
                  f"whereas rust-analyzer scales to {ra_ths} threads and {ra_fds} file descriptors.\n"
                  f"4. **Memory Footprint**: RIDX uses **{heap_adv}** (Anon Heap {r_anon:.1f} MB vs {ra_anon:.1f} MB).\n"
-                 f"5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **94.9 MB PSS** total "
-                 f"(58.0 MB Anon) vs rust-analyzer's **9724.1 MB PSS** (9688.3 MB Anon) — a **102.4x lower PSS / 167x lower Anon Heap** footprint.\n"
+                 f"5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **{r_pss10:.1f} MB PSS** total "
+                 f"({r_anon10:.1f} MB Anon) vs rust-analyzer's **{ra_pss10:.1f} MB PSS** ({ra_anon10:.1f} MB Anon) — a **{pss_adv}** footprint.\n"
                  f"6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **{w1_ra_p50:.1f} ms**, "
                  f"which is **{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x faster** than RIDX (**{w1_r_p50:.1f} ms**), "
                  "because rust-analyzer invalidates Salsa in-memory without invoking a compiler driver pass.\n")

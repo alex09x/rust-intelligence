@@ -46,8 +46,8 @@ use std::sync::{Arc, Mutex};
 pub(crate) fn sync_reloaded_index(
     ws: &mut WorkspaceIndex,
     overlay_mgr: &mut crate::overlay::OverlayManager,
-) {
-    if let Ok(true) = ws.reload_if_modified() {
+) -> bool {
+    if let Ok(true) = ws.reload_manifest_if_modified() {
         for file in overlay_mgr.open_file_paths() {
             if let Ok(content) = std::fs::read_to_string(&file) {
                 let disk_hash = ridx_format::normalized_source_hash(content.as_bytes());
@@ -56,6 +56,9 @@ pub(crate) fn sync_reloaded_index(
                 }
             }
         }
+        true
+    } else {
+        false
     }
 }
 

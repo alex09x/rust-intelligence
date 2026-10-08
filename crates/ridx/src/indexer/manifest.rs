@@ -35,9 +35,21 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
     let config_hashes =
         crate::indexer::direct::config::compute_workspace_config_hashes(params.work_dir);
 
+    let prev_gen = if params.manifest_file.exists() {
+        fs::read(params.manifest_file)
+            .ok()
+            .and_then(|bytes| serde_json::from_slice::<ridx_format::VariantManifest>(&bytes).ok())
+            .map(|m| m.generation)
+            .unwrap_or(0)
+    } else {
+        0
+    };
+    let next_gen = prev_gen + 1;
+
     let manifest_data = serde_json::json!({
         "version": "2.0",
         "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+        "generation": next_gen,
         "extractor_version": ridx_format::EXTRACTOR_VERSION,
         "active_variant_id": params.variant_id,
         "variant_dir": params.variant_rel_dir,

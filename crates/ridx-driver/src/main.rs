@@ -310,13 +310,10 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
 
     fn visit_ty(&mut self, ty: &'tcx hir::Ty<'tcx, hir::AmbigArg>) {
         if let Some(typeck) = self.typeck {
-            match ty.kind {
-                hir::TyKind::Path(hir::QPath::TypeRelative(qself, segment)) => {
-                    let res =
-                        typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id);
-                    self.add_ref_from_res(segment.ident.span, res);
-                }
-                _ => {}
+            if let hir::TyKind::Path(hir::QPath::TypeRelative(qself, segment)) = ty.kind {
+                let res =
+                    typeck.qpath_res(&hir::QPath::TypeRelative(qself, segment), ty.hir_id);
+                self.add_ref_from_res(segment.ident.span, res);
             }
         }
         intravisit::walk_ty(self, ty);

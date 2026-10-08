@@ -159,6 +159,17 @@ impl WorkspaceIndex {
     ) -> Option<ResolvedDefinition<'a>> {
         let p = Path::new(file);
         let is_abs = p.is_absolute();
+        let belongs_to_dep = if is_abs {
+            self.source_roots.iter().any(|r| {
+                if let Some(r) = r.as_ref() {
+                    p.starts_with(r)
+                } else {
+                    false
+                }
+            })
+        } else {
+            false
+        };
 
         for (i, reader) in self.readers.iter().enumerate() {
             let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
@@ -174,18 +185,8 @@ impl WorkspaceIndex {
                     file
                 }
             } else {
-                if is_abs {
-                    // Workspace member reader: skip if file belongs to any external dependency's source_root
-                    let belongs_to_dep = self.source_roots.iter().any(|r| {
-                        if let Some(r) = r.as_ref() {
-                            p.starts_with(r)
-                        } else {
-                            false
-                        }
-                    });
-                    if belongs_to_dep {
-                        continue;
-                    }
+                if belongs_to_dep {
+                    continue;
                 }
                 file
             };

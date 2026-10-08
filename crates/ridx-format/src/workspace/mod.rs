@@ -47,6 +47,8 @@ pub struct WorkspaceIndex {
     pub(crate) manifest_mtime: Option<std::time::SystemTime>,
     pub(crate) manifest_len: Option<u64>,
     pub(crate) manifest_hash: Option<u64>,
+    pub(crate) manifest_generation: Option<u64>,
+    pub(crate) manifest_ino: Option<u64>,
     pub(crate) active_variant_id: Option<String>,
 }
 
@@ -117,6 +119,8 @@ impl WorkspaceIndex {
                 manifest_mtime: None,
                 manifest_len: None,
                 manifest_hash: None,
+                manifest_generation: None,
+                manifest_ino: None,
                 active_variant_id: None,
             });
         }
@@ -517,6 +521,8 @@ impl WorkspaceIndex {
             manifest_mtime,
             manifest_len: None,
             manifest_hash: None,
+            manifest_generation: None,
+            manifest_ino: None,
             active_variant_id,
         })
     }

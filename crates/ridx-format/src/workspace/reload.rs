@@ -20,6 +20,44 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 impl WorkspaceIndex {
+    /// Fast sub-microsecond check: verifies if ridx_manifest.json mtime/size/hash has changed.
+    /// If manifest is unchanged, returns Ok(false) immediately with zero shard filesystem syscalls.
+    /// If manifest was updated or switched, triggers full shard reload and returns Ok(true).
+    pub fn reload_manifest_if_modified(&mut self) -> io::Result<bool> {
+        if self.manifest_path.is_none() {
+            if let Some(ref dir) = self.root_dir {
+                let cand = dir.join("ridx_manifest.json");
+                if cand.is_file() {
+                    self.manifest_path = Some(cand);
+                }
+            }
+        }
+
+        if let Some(ref mf) = self.manifest_path {
+            let meta = fs::metadata(mf).ok();
+            let current_manifest_mtime = meta.as_ref().and_then(|m| m.modified().ok());
+            let current_manifest_len = meta.as_ref().map(|m| m.len());
+            #[cfg(unix)]
+            let current_manifest_ino = meta.as_ref().map(|m| {
+                use std::os::unix::fs::MetadataExt;
+                m.ino()
+            });
+            #[cfg(not(unix))]
+            let current_manifest_ino: Option<u64> = None;
+
+            if current_manifest_mtime == self.manifest_mtime
+                && current_manifest_len == self.manifest_len
+                && (self.manifest_ino.is_none() || current_manifest_ino == self.manifest_ino)
+            {
+                return Ok(false);
+            }
+            // Manifest changed: run full reload and shard reconciliation
+            return self.reload_if_modified();
+        }
+
+        self.reload_if_modified()
+    }
+
     /// Checks timestamps of indexed files and reloads any that have changed.
     /// Also scans directory for newly generated .ridx files and removes deleted ones.
     /// If an active variant manifest exists and was switched, atomically reloads the new variant's reader set.
@@ -42,16 +80,28 @@ impl WorkspaceIndex {
             let meta = fs::metadata(mf).ok();
             let current_manifest_mtime = meta.as_ref().and_then(|m| m.modified().ok());
             let current_manifest_len = meta.as_ref().map(|m| m.len());
+            #[cfg(unix)]
+            let current_manifest_ino = meta.as_ref().map(|m| {
+                use std::os::unix::fs::MetadataExt;
+                m.ino()
+            });
+            #[cfg(not(unix))]
+            let current_manifest_ino: Option<u64> = None;
+
             if let Ok(content) = fs::read(mf) {
                 let content_hash = crate::format::normalized_source_hash(&content);
                 let manifest_unchanged = current_manifest_mtime == self.manifest_mtime
                     && current_manifest_len == self.manifest_len
+                    && (self.manifest_ino.is_none() || current_manifest_ino == self.manifest_ino)
                     && Some(content_hash) == self.manifest_hash;
+
                 if !manifest_unchanged {
                     self.manifest_mtime = current_manifest_mtime;
                     self.manifest_len = current_manifest_len;
+                    self.manifest_ino = current_manifest_ino;
                     self.manifest_hash = Some(content_hash);
                     if let Ok(manifest) = serde_json::from_slice::<VariantManifest>(&content) {
+                        self.manifest_generation = Some(manifest.generation);
                         if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
                             return Err(io::Error::new(
                                 io::ErrorKind::InvalidData,

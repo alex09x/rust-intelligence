@@ -167,6 +167,8 @@ pub struct VariantManifest {
     #[serde(default = "default_format_version")]
     pub format_version: u32,
     #[serde(default)]
+    pub generation: u64,
+    #[serde(default)]
     pub extractor_version: Option<String>,
     #[serde(default)]
     pub active_variant_id: String,
