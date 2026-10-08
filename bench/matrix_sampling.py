@@ -118,7 +118,7 @@ def sample_full_lsp_matrix(repo_dir, per_method=300, seed=42):
                      for i, f in enumerate(pool)]
 
         elif key in ("prepare_rename", "rename", "linked_editing_range", "code_action"):
-            pool = _sample(usages + declarations, per_method)
+            pool = _sample(declarations, per_method)
             items = [{"name": f"{key}_{i}_{n}", "location": [f, l, c], "target": n, "new_name": f"{n}_renamed_{i}", "file": f}
                      for i, (f, l, c, n, k) in enumerate(pool)]
 

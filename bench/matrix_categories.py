@@ -133,8 +133,8 @@ def build_params(key, sc, repo_dir):
     """Constructs strictly valid LSP 3.17 params conforming to spec schemas."""
     f = sc.get("file") or (sc.get("location") and sc["location"][0])
     uri = f"file://{f}" if f and not str(f).startswith("file://") else (f or f"file://{repo_dir}")
-    line = sc.get("location")[1] if sc.get("location") and len(sc["location"]) > 1 else 0
-    col = sc.get("location")[2] if sc.get("location") and len(sc["location"]) > 2 else 0
+    line = max(0, sc.get("location")[1] - 1) if sc.get("location") and len(sc["location"]) > 1 else 0
+    col = max(0, sc.get("location")[2] - 1) if sc.get("location") and len(sc["location"]) > 2 else 0
     pos = {"line": line, "character": col}
     rng = {"start": pos, "end": pos}
 
