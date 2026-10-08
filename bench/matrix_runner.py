@@ -203,19 +203,19 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                 continue
 
             for sc in method_scenarios:
-                params = build_params(key, sc, repo_dir)
+                params = build_params(key, sc, repo_dir, is_ra=is_ra)
 
                 if rpc_type == "notification":
                     t0 = time.perf_counter()
-                    srv.notify(rpc_method, params)
-                    if sc.get("file") or sc.get("location"):
-                        srv.request("textDocument/documentHighlight", build_params("document_highlight", sc, repo_dir), timeout=2.0)
+                    ok = srv.notify(rpc_method, params)
+                    dur_us = (time.perf_counter() - t0) * 1_000_000.0
+                    if ok:
+                        a_count += 1
+                        latencies_cold.append(dur_us)
+                        latencies_warm.append(dur_us)
                     else:
-                        srv.request("workspace/symbol", {"query": "test"}, timeout=2.0)
-                    total_dur = (time.perf_counter() - t0) * 1_000_000.0
-                    latencies_cold.append(total_dur)
-                    latencies_warm.append(total_dur)
-                    a_count += 1
+                        errors += 1
+                        c_count += 1
 
                 elif rpc_type == "mutation":
                     dur_mut, err_mut = execute_mutation_scenario(srv, key, sc, repo_dir)

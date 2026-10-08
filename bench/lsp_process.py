@@ -34,6 +34,8 @@ class SimpleLspProcess:
         self.lock = threading.Lock()
         self.events = {}
         self.responses = {}
+        self.t_sends = {}
+        self.t_recvs = {}
         self.is_quiescent = False
 
         self.reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
@@ -52,6 +54,8 @@ class SimpleLspProcess:
                     return False
                 self.p.stdin.write(hdr + b)
                 self.p.stdin.flush()
+                if "id" in m:
+                    self.t_sends[m["id"]] = time.perf_counter()
             return True
         except (BrokenPipeError, OSError):
             self.exited = True
@@ -118,6 +122,7 @@ class SimpleLspProcess:
                     if len(buf) < body_end:
                         break  # Await more payload bytes
 
+                    t_recv = time.perf_counter()
                     payload = bytes(buf[idx + sep_len:body_end])
                     del buf[:body_end]
 
@@ -131,6 +136,7 @@ class SimpleLspProcess:
                     elif "id" in msg:
                         req_id = msg["id"]
                         with self.lock:
+                            self.t_recvs[req_id] = t_recv
                             ev = self.events.get(req_id)
                             if ev is not None:
                                 self.responses[req_id] = msg
@@ -242,11 +248,17 @@ class SimpleLspProcess:
             return None, 0.0, "BROKEN_PIPE"
 
         signaled = ev.wait(timeout=timeout)
-        dur_us = (time.perf_counter() - t0) * 1_000_000.0
 
         with self.lock:
             self.events.pop(req_id, None)
             msg = self.responses.pop(req_id, None)
+            t_send = self.t_sends.pop(req_id, None)
+            t_recv = self.t_recvs.pop(req_id, None)
+
+        if t_send is not None and t_recv is not None:
+            dur_us = (t_recv - t_send) * 1_000_000.0
+        else:
+            dur_us = (time.perf_counter() - t0) * 1_000_000.0
 
         if self.exited or self.p.poll() is not None:
             self.exited = True

@@ -129,7 +129,7 @@ LSP_SPECS = [
 ]
 
 
-def build_params(key, sc, repo_dir):
+def build_params(key, sc, repo_dir, is_ra=False):
     """Constructs strictly valid LSP 3.17 params conforming to spec schemas."""
     f = sc.get("file") or (sc.get("location") and sc["location"][0])
     uri = f"file://{f}" if f and not str(f).startswith("file://") else (f or f"file://{repo_dir}")
@@ -192,7 +192,9 @@ def build_params(key, sc, repo_dir):
     elif key == "selection_range":
         return {"textDocument": {"uri": uri}, "positions": [pos]}
     elif key == "execute_command":
-        return {"command": "rust-analyzer.reloadWorkspace", "arguments": []}
+        if is_ra:
+            return {"command": "rust-analyzer.reloadWorkspace", "arguments": []}
+        return {"command": "ridx.resolveWorkspace", "arguments": []}
     elif key == "workspace_diagnostic":
         return {"identifier": "workspace"}
     elif key == "cancel_request":
