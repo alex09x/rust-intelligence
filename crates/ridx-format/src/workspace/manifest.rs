@@ -120,7 +120,7 @@ pub struct WorkspaceStats {
 }
 
 /// Metadata describing an immutable external dependency shard in the global cache.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct DependencyShardInfo {
     pub name: String,
     #[serde(default)]
@@ -140,6 +140,10 @@ pub struct DependencyShardInfo {
     pub extern_units: HashMap<String, String>,
     #[serde(default)]
     pub file_hashes: HashMap<String, u64>,
+    #[serde(default)]
+    pub stable_crate_id: Option<String>,
+    #[serde(default)]
+    pub caught_panics: Option<usize>,
 }
 
 pub(crate) fn default_format_version() -> u32 {

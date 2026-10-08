@@ -40,6 +40,22 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
         lines.append(f"*rust-analyzer Version:* `{ra_version}`  ")
     lines.append("*Target Node:* `booster` (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, NVMe SSD, isolated on cores 24–31)\n")
 
+    disc_path = Path(discrepancies_file) if discrepancies_file else Path(source_file).parent / "discrepancies.jsonl"
+    discs = []
+    if disc_path.exists():
+        try:
+            with open(disc_path, "r", encoding="utf-8") as df:
+                for d_line in df:
+                    d_line = d_line.strip()
+                    if d_line:
+                        d_obj = json.loads(d_line)
+                        if d_obj.get("repo") == repo and not d_obj.get("scenario", "").startswith("mutation_"):
+                            discs.append(d_obj)
+        except Exception:
+            pass
+    from metrics import analyze_discrepancies
+    counts = analyze_discrepancies(discs) if discs else {}
+
     # 1. Headline Metrics
     lines.append("### 1. Headline Performance & Resource Footprint\n")
     lines.append("| Metric | `ridx lsp` | `rust-analyzer` (Live) | Comparison / Notes |")
@@ -108,8 +124,19 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
     ro_ln_pct = entry.get("readonly_match_rate_line_level_pct", entry.get("match_rate_line_level_pct", 0.0))
     ro_ln_ci_str = format_ratio_with_ci(ro_ln_matched, ro_tot)
 
-    lines.append(f"| **Read-Only Strict Match Rate** | **{ro_ci_str} ({ro_pct:.2f}%)** | Baseline | Wilson 95% CI |")
-    lines.append(f"| **Read-Only Line Diagnostic Match** | **{ro_ln_ci_str} ({ro_ln_pct:.2f}%)** | Baseline | Same-line resolution |")
+    class_c_cases = counts.get("same_file_decl_vs_impl", 0)
+    ro_class_c = ro_strict + class_c_cases
+    ro_class_c_pct = (ro_class_c / max(1, ro_tot)) * 100.0
+    ro_class_c_ci_str = format_ratio_with_ci(ro_class_c, ro_tot)
+
+    lines.append(f"| **Read-Only Strict Match Rate (Class A)** | **{ro_ci_str} ({ro_pct:.2f}%)** | Baseline | Wilson 95% CI |")
+    lines.append(f"| **Read-Only Line Diagnostic Match (Class B)** | **{ro_ln_ci_str} ({ro_ln_pct:.2f}%)** | Baseline | Same-line resolution |")
+    lines.append(f"| **Semantic Parity (Class A + Class C)** | **{ro_class_c_ci_str} ({ro_class_c_pct:.2f}%)** | Baseline | Strict + Class C default method equiv |")
+
+    caught_panics = entry.get("caught_panics", 0)
+    ice_detected = entry.get("ice_detected", False)
+    panic_str = f"0 ICE, {caught_panics} caught panics" if not ice_detected and caught_panics == 0 else f"{'ICE DETECTED' if ice_detected else '0 ICE'}, {caught_panics} caught panics"
+    lines.append(f"| **Compiler ICE & Caught Panics** | **{panic_str}** | 0 ICE | Driver telemetry verified |")
 
     r_cg = entry.get("ridx_cargo_spawned", entry.get("cargo_spawned_during_queries", False))
     ra_cg = entry.get("ra_cargo_spawned", False)
@@ -149,35 +176,47 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
     # 3. Discrepancies & Semantic Parity Analysis
     lines.append("### 3. Semantic Parity & Discrepancies Breakdown\n")
 
-    disc_path = Path(discrepancies_file) if discrepancies_file else Path(source_file).parent / "discrepancies.jsonl"
-    discs = []
-    if disc_path.exists():
-        try:
-            with open(disc_path, "r", encoding="utf-8") as df:
-                for d_line in df:
-                    d_line = d_line.strip()
-                    if d_line:
-                        d_obj = json.loads(d_line)
-                        if d_obj.get("repo") == repo and not d_obj.get("scenario", "").startswith("mutation_"):
-                            discs.append(d_obj)
-        except Exception:
-            pass
+
 
     if discs:
-        from metrics import analyze_discrepancies
-        counts = analyze_discrepancies(discs)
         total_ro_discs = len(discs)
-        lines.append(f"Across the sampled {ro_tot} read-only scenarios ({ro_strict} strict matches, {ro_pct:.1f}% [{ro_ci_str}]),\n"
-                     f"the {total_ro_discs} non-matching cases were dynamically classified from telemetry:\n")
+        lines.append(f"Across the sampled {ro_tot} read-only scenarios:\n"
+                     f"- **Class A Strict Matches**: {ro_strict}/{ro_tot} ({ro_pct:.1f}% [{ro_ci_str}])\n"
+                     f"- **Class A + Class C Semantic Parity**: {ro_class_c}/{ro_tot} ({ro_class_c_pct:.1f}% [{ro_class_c_ci_str}])\n\n"
+                     f"The {total_ro_discs} non-matching cases were dynamically classified from telemetry:\n")
         labels = {
-            "associated_type_binding": ("Associated Type Bindings in Trait Bounds", "Identifiers in associated type equality constraints (`hir::TypeBinding`, e.g. `where V: Visitor<'de, Value = ()>`, `S::Error`, `Serializer<Ok = ()>`)."),
-            "same_file_decl_vs_impl": ("Trait Default Method vs Declaration", "Same source file, default implementation body vs trait declaration header (e.g. `Error::invalid_type`)."),
-            "multi_version_dependency": ("Multi-Version Dependency Resolution", "Workspace contains multiple semver versions of external crate (e.g. `syn-2` vs `syn-3`)."),
-            "missing_in_ra": ("Missing in rust-analyzer", "rust-analyzer returned `null` / `Not found` while RIDX resolved target."),
-            "missing_in_ridx": ("Missing in RIDX", "RIDX returned `Not found` while rust-analyzer found definition."),
-            "core_vs_std_reexport": ("Core vs Std Re-export", "One points to canonical definition in `core`/`alloc`, the other to `std` re-export."),
-            "line_level_match": ("Line-Level Match", "Same file, coordinates within 2 lines tolerance."),
-            "divergent_target": ("Divergent Target", "Different symbols or macro span offsets."),
+            "same_file_decl_vs_impl": (
+                "Class C: Trait Default Method vs Declaration (Semantically Equivalent)",
+                "Same source file, default implementation body vs trait declaration header (e.g. `Error::invalid_type`). Valid location ('points to where defined'), NOT an error.",
+            ),
+            "core_vs_std_reexport": (
+                "Class D: Core vs Std/Alloc Re-export (Canonical vs Facade)",
+                "One points to canonical definition in `core`/`alloc`, the other to `std` re-export.",
+            ),
+            "associated_type_binding": (
+                "Associated Type Bindings in Trait Bounds",
+                "Identifiers in associated type equality constraints (`hir::TypeBinding`, e.g. `where V: Visitor<'de, Value = ()>`, `S::Error`, `Serializer<Ok = ()>`).",
+            ),
+            "multi_version_dependency": (
+                "Multi-Version Dependency Resolution",
+                "Workspace contains multiple semver versions of external crate (e.g. `syn-2` vs `syn-3`).",
+            ),
+            "missing_in_ra": (
+                "Missing in rust-analyzer",
+                "rust-analyzer returned `null` / `Not found` while RIDX resolved target.",
+            ),
+            "missing_in_ridx": (
+                "Missing in RIDX",
+                "RIDX returned `Not found` while rust-analyzer found definition.",
+            ),
+            "line_level_match": (
+                "Class B: Line-Level Match",
+                "Same file, coordinates within 2 lines tolerance.",
+            ),
+            "divergent_target": (
+                "Divergent Target",
+                "Different symbols or macro span offsets.",
+            ),
         }
         for cat, count in sorted(counts.items(), key=lambda x: -x[1]):
             label, desc = labels.get(cat, (cat, ""))

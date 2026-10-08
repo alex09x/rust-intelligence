@@ -300,7 +300,9 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
                                         );
                                     }
                                 }
-                                dep_shards.push(info);
+                                if !dep_shards.iter().any(|d| d.unit_key == info.unit_key) {
+                                    dep_shards.push(info);
+                                }
                             }
                         }
                     }

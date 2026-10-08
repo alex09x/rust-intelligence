@@ -382,6 +382,13 @@ impl WorkspaceIndex {
         if candidates.is_empty() && res.file != "external" && !res.file.is_empty() {
             let target_p = Path::new(res.file);
             for (j, r) in self.readers.iter().enumerate() {
+                if let Some(target_uk) = target_unit {
+                    if self.unit_keys.get(j).and_then(|u| u.as_deref()) != Some(target_uk) {
+                        continue;
+                    }
+                } else if !target_crate.is_empty() && r.crate_name() != target_crate {
+                    continue;
+                }
                 let file_id_opt = (0..r.header().files_count).find(|&fid| {
                     let f_name = r.get_file(fid);
                     if target_p.is_absolute() {

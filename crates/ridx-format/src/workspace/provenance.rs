@@ -897,6 +897,8 @@ mod tests {
             dependencies: vec![],
             extern_units: HashMap::new(),
             file_hashes: fhashes,
+            stable_crate_id: None,
+            caught_panics: None,
         };
         fs::write(
             deps_dir.join("computed_crate.json"),
@@ -1060,6 +1062,8 @@ mod tests {
             dependencies: vec![],
             extern_units: HashMap::new(),
             file_hashes: fh,
+            stable_crate_id: None,
+            caught_panics: None,
         };
         fs::write(
             deps_dir.join("sample.json"),

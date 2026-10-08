@@ -115,10 +115,10 @@ def classify_discrepancy(r_res, ra_res, target="", location=None):
     - 'missing_in_ra': RIDX found target, RA returned null / Not found
     - 'associated_type_binding': Associated type constraint in trait bounds (e.g. Value, Error, Ok)
     - 'missing_in_ridx': RA found target, RIDX returned null / Not found
-    - 'core_vs_std_reexport': One points to canonical definition in core/alloc, the other to std or local re-export
-    - 'multi_version_dependency': Same crate name but different semver (e.g. syn-2 vs syn-3)
-    - 'same_file_decl_vs_impl': Same source file, default method body vs declaration signature
-    - 'line_level_match': Same file, within 2 lines tolerance
+    - 'core_vs_std_reexport': Class D: Canonical definition in core/alloc vs std/local facade re-export
+    - 'multi_version_dependency': Multi-version dependency resolution (e.g. syn-2 vs syn-3)
+    - 'same_file_decl_vs_impl': Class C: Trait Default Method vs Declaration (semantically equivalent, valid location according to "points to where defined", NOT an error)
+    - 'line_level_match': Class B: Same file, within 2 lines tolerance
     - 'divergent_target': Different symbols/files
     """
     r_found = bool(r_res and r_res.get("found"))

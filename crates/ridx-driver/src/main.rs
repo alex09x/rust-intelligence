@@ -35,6 +35,8 @@ use rustc_hir::{
 use rustc_middle::ty::{TyCtxt, TypeVisitableExt, TypeckResults};
 use rustc_span::{def_id::DefId, Span};
 
+static CAUGHT_PANICS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
 struct IndexCallbacks {
     out_dir: PathBuf,
     disambiguator: Option<String>,
@@ -268,10 +270,25 @@ impl<'tcx> HirVisitor<'tcx> {
                 .unwrap_or(args);
             rustc_middle::ty::Instance::try_resolve(self.tcx, env, def_id, norm_args)
         }));
-        if let Ok(Ok(Some(inst))) = res {
-            Some(inst.def_id())
-        } else {
-            None
+        match res {
+            Ok(Ok(Some(inst))) => Some(inst.def_id()),
+            Ok(_) => None,
+            Err(payload) => {
+                let cnt = CAUGHT_PANICS.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                let panic_msg = if let Some(s) = payload.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = payload.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "unknown panic payload".to_string()
+                };
+                let span = self.tcx.hir_span(expr_hir_id);
+                eprintln!(
+                    "[ridx-driver] WARNING: caught panic #{cnt} in resolve_trait_instance: hir_id={:?}, def_id={:?}, span={:?}, msg={}",
+                    expr_hir_id, def_id, span, panic_msg
+                );
+                None
+            }
         }
     }
 }
@@ -697,6 +714,25 @@ fn collect_file_hashes<'tcx>(
     hashes
 }
 
+fn write_sidecar_metadata(
+    deps_dir: &Path,
+    crate_name: &str,
+    suffix: &str,
+    stable_crate_id: u64,
+    dep_info: &serde_json::Value,
+) {
+    let content = serde_json::to_string_pretty(dep_info).unwrap_or_default();
+    // 1. By crate name + suffix (e.g. syn-3d995041387dd824.json or serde.json)
+    let _ = fs::write(deps_dir.join(format!("{crate_name}{suffix}.json")), &content);
+    // 2. By crate name + stable crate id (e.g. syn_a1b2c3d4e5f60718.json)
+    let _ = fs::write(deps_dir.join(format!("{crate_name}_{stable_crate_id:016x}.json")), &content);
+    // 3. By bare crate name (only if it does not exist yet)
+    let bare = deps_dir.join(format!("{crate_name}.json"));
+    if !bare.is_file() {
+        let _ = fs::write(bare, &content);
+    }
+}
+
 fn build_crate_index(
     tcx: TyCtxt<'_>,
     out_dir: &Path,
@@ -704,6 +740,8 @@ fn build_crate_index(
     compiler_args: &[String],
 ) {
     let start = Instant::now();
+    let local_stable_crate_id = tcx.stable_crate_id(rustc_span::def_id::LOCAL_CRATE).as_u64();
+    let caught_panics = CAUGHT_PANICS.load(std::sync::atomic::Ordering::Relaxed);
     let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
     let crate_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
 
@@ -798,6 +836,13 @@ fn build_crate_index(
 
             if let Some(uk) = resolved_unit {
                 extern_units.insert(clean_alias.to_string(), uk.clone());
+                if let Some(p_str) = path_opt {
+                    let p = Path::new(p_str);
+                    if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+                        let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
+                        extern_units.insert(stem_without_lib.to_string(), uk.clone());
+                    }
+                }
                 if !dep_keys_or_names.contains(&uk) {
                     dep_keys_or_names.push(uk);
                 }
@@ -810,6 +855,8 @@ fn build_crate_index(
     krate_to_unit.insert(rustc_span::def_id::LOCAL_CRATE, unit_key.clone());
 
     for &cnum in tcx.crates(()) {
+        let stable_id = tcx.stable_crate_id(cnum).as_u64();
+        let cname = tcx.crate_name(cnum).to_string();
         let csource = tcx.used_crate_source(cnum);
         let cand_path = csource
             .rmeta
@@ -817,28 +864,45 @@ fn build_crate_index(
             .or_else(|| csource.rlib.as_deref())
             .or_else(|| csource.dylib.as_deref());
         let mut found_unit = None;
-        if let Some(p) = cand_path {
-            let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-            let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
-            let cand_files = [
-                deps_dir.join(format!("{stem_without_lib}.json")),
-                deps_dir.join(format!("{stem}.json")),
-            ];
-            for c in &cand_files {
-                if c.is_file() {
-                    if let Ok(content) = fs::read(c) {
-                        if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
-                            if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
-                                found_unit = Some(uk.to_string());
-                                break;
+
+        // 1. Check stable crate ID first (exact disambiguation for duplicate crate versions e.g. syn 2 vs 3)
+        let stable_id_file = deps_dir.join(format!("{cname}_{stable_id:016x}.json"));
+        if stable_id_file.is_file() {
+            if let Ok(content) = fs::read(&stable_id_file) {
+                if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
+                    if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
+                        found_unit = Some(uk.to_string());
+                    }
+                }
+            }
+        }
+
+        // 2. Check stem from csource (rmeta/rlib/dylib)
+        if found_unit.is_none() {
+            if let Some(p) = cand_path {
+                let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
+                let cand_files = [
+                    deps_dir.join(format!("{stem_without_lib}.json")),
+                    deps_dir.join(format!("{stem}.json")),
+                ];
+                for c in &cand_files {
+                    if c.is_file() {
+                        if let Ok(content) = fs::read(c) {
+                            if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
+                                if let Some(uk) = val.get("unit_key").and_then(|v| v.as_str()) {
+                                    found_unit = Some(uk.to_string());
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
+        // 3. Fallback to extern_units
         if found_unit.is_none() {
-            let cname = tcx.crate_name(cnum).to_string();
             if let Some(uk) = extern_units.get(&cname) {
                 found_unit = Some(uk.clone());
             }
@@ -891,12 +955,10 @@ fn build_crate_index(
                 "extern_units": extern_units,
                 "file_hashes": file_hashes,
                 "compiler_args": compiler_args,
+                "stable_crate_id": format!("{:016x}", local_stable_crate_id),
+                "caught_panics": caught_panics,
             });
-            let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
-            let _ = fs::write(
-                &dep_file,
-                serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
-            );
+            write_sidecar_metadata(&deps_dir, &crate_name, &suffix, local_stable_crate_id, &dep_info);
 
             let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
             eprintln!(
@@ -972,25 +1034,38 @@ fn build_crate_index(
                             "extern_units": extern_units,
                             "file_hashes": file_hashes,
                             "compiler_args": compiler_args,
+                            "stable_crate_id": format!("{:016x}", local_stable_crate_id),
+                            "caught_panics": caught_panics,
                         });
-                        let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
-                        let _ = fs::write(
-                            &dep_file,
-                            serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
-                        );
+                        write_sidecar_metadata(&deps_dir, &crate_name, &suffix, local_stable_crate_id, &dep_info);
 
                         let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
-                        eprintln!(
-                            "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {})",
-                            crate_name,
-                            crate_version,
-                            def_count,
-                            ref_count,
-                            type_count,
-                            file_size / 1024,
-                            start.elapsed().as_secs_f64() * 1000.0,
-                            &unit_key[..unit_key.len().min(8)]
-                        );
+                        if caught_panics > 0 {
+                            eprintln!(
+                                "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {}, CAUGHT PANICS: {})",
+                                crate_name,
+                                crate_version,
+                                def_count,
+                                ref_count,
+                                type_count,
+                                file_size / 1024,
+                                start.elapsed().as_secs_f64() * 1000.0,
+                                &unit_key[..unit_key.len().min(8)],
+                                caught_panics
+                            );
+                        } else {
+                            eprintln!(
+                                "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {})",
+                                crate_name,
+                                crate_version,
+                                def_count,
+                                ref_count,
+                                type_count,
+                                file_size / 1024,
+                                start.elapsed().as_secs_f64() * 1000.0,
+                                &unit_key[..unit_key.len().min(8)]
+                            );
+                        }
                     }
                 }
             }
@@ -1100,23 +1175,34 @@ fn build_crate_index(
                         "file_hashes": file_hashes,
                         "compiler_args": compiler_args,
                         "env": env_map,
+                        "stable_crate_id": format!("{:016x}", local_stable_crate_id),
+                        "caught_panics": caught_panics,
                     });
-                    let dep_file = deps_dir.join(format!("{crate_name}{suffix}.json"));
-                    let _ = fs::write(
-                        &dep_file,
-                        serde_json::to_string_pretty(&dep_info).unwrap_or_default(),
-                    );
+                    write_sidecar_metadata(&deps_dir, &crate_name, &suffix, local_stable_crate_id, &dep_info);
 
                     let file_size = fs::metadata(&out_file_path).map(|m| m.len()).unwrap_or(0);
-                    eprintln!(
-                        "ridx: indexed {} ({} defs, {} refs, {} types, {} KB in {:.1} ms)",
-                        crate_name,
-                        def_count,
-                        ref_count,
-                        type_count,
-                        file_size / 1024,
-                        start.elapsed().as_secs_f64() * 1000.0
-                    );
+                    if caught_panics > 0 {
+                        eprintln!(
+                            "ridx: indexed {} ({} defs, {} refs, {} types, {} KB in {:.1} ms, CAUGHT PANICS: {})",
+                            crate_name,
+                            def_count,
+                            ref_count,
+                            type_count,
+                            file_size / 1024,
+                            start.elapsed().as_secs_f64() * 1000.0,
+                            caught_panics
+                        );
+                    } else {
+                        eprintln!(
+                            "ridx: indexed {} ({} defs, {} refs, {} types, {} KB in {:.1} ms)",
+                            crate_name,
+                            def_count,
+                            ref_count,
+                            type_count,
+                            file_size / 1024,
+                            start.elapsed().as_secs_f64() * 1000.0
+                        );
+                    }
                 }
             }
         }

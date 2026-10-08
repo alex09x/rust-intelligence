@@ -87,6 +87,8 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
+        stable_crate_id: None,
+        caught_panics: None,
     };
     fs::write(
         deps_dir.join("dep_crate.json"),
@@ -106,6 +108,8 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         dependencies: vec!["some_dep".to_string()],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
+        stable_crate_id: None,
+        caught_panics: None,
     };
     fs::write(
         deps_dir.join("dep_mismatch.json"),
@@ -125,6 +129,8 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
+        stable_crate_id: None,
+        caught_panics: None,
     };
     fs::write(
         deps_dir.join("dep_empty_h.json"),
@@ -157,6 +163,8 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: f_hashes.clone(),
+        stable_crate_id: None,
+        caught_panics: None,
     };
     fs::write(
         deps_dir.join("dep_matching.json"),
@@ -184,6 +192,8 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         dependencies: vec!["some_dep".to_string()],
         extern_units: std::collections::HashMap::new(),
         file_hashes: f_hashes.clone(),
+        stable_crate_id: None,
+        caught_panics: None,
     };
     fs::write(
         deps_dir.join("dep_mismatch_gen.json"),
@@ -203,6 +213,8 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
+        stable_crate_id: None,
+        caught_panics: None,
     };
     fs::write(
         deps_dir.join("dep_not_dep.json"),
@@ -222,6 +234,8 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
+        stable_crate_id: None,
+        caught_panics: None,
     };
     fs::write(
         deps_dir.join("dep_missing_obj.json"),

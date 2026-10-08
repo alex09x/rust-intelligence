@@ -85,9 +85,27 @@ def run_benchmark_for_repo(
     result["ridx_index_peak_threads"] = idx_ths
     ridx_size = sum(f.stat().st_size for f in repo_dir.glob("target/**/*.ridx") if f.is_file())
     result["ridx_index_size_bytes"] = ridx_size
+
+    # Check for ICE and caught panics
+    has_ice = "internal compiler error" in err_out.lower()
+    caught_panics = 0
+    for dep_json in repo_dir.glob("target/**/.deps/*.json"):
+        try:
+            with open(dep_json, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                caught_panics += d.get("caught_panics", 0)
+        except Exception:
+            pass
+    result["ice_detected"] = has_ice
+    result["caught_panics"] = caught_panics
+
     if code != 0:
         result["status"] = "RIDX_INDEX_FAILED"
         result["error"] = err_out[:500]
+        return result
+    if has_ice:
+        result["status"] = "ICE_DETECTED"
+        result["error"] = "Internal compiler error detected in driver stderr"
         return result
 
     # 2b. Warm incremental Ridx Index
@@ -192,20 +210,12 @@ def run_benchmark_for_repo(
     for cap, mode_dict in cap_latencies.items():
         for mode in ["warm", "cold"]:
             r_list, ra_list, scip_list = mode_dict[mode]
-            metrics[f"ridx_{cap}_{mode}_p50_us"] = percentile(r_list, 50)
-            metrics[f"ridx_{cap}_{mode}_p90_us"] = percentile(r_list, 90)
-            metrics[f"ridx_{cap}_{mode}_p95_us"] = percentile(r_list, 95)
-            metrics[f"ridx_{cap}_{mode}_p99_us"] = percentile(r_list, 99)
-            metrics[f"ra_{cap}_{mode}_p50_us"] = percentile(ra_list, 50)
-            metrics[f"ra_{cap}_{mode}_p90_us"] = percentile(ra_list, 90)
-            metrics[f"ra_{cap}_{mode}_p95_us"] = percentile(ra_list, 95)
-            metrics[f"ra_{cap}_{mode}_p99_us"] = percentile(ra_list, 99)
-            if cap != "mutation":
-                metrics[f"scip_{cap}_{mode}_p50_us"] = percentile(scip_list, 50)
-                metrics[f"scip_{cap}_{mode}_p90_us"] = percentile(scip_list, 90)
-                metrics[f"scip_{cap}_{mode}_p95_us"] = percentile(scip_list, 95)
-                metrics[f"scip_{cap}_{mode}_p99_us"] = percentile(scip_list, 99)
-            else:
+            for p in (50, 90, 95, 99):
+                metrics[f"ridx_{cap}_{mode}_p{p}_us"] = percentile(r_list, p)
+                metrics[f"ra_{cap}_{mode}_p{p}_us"] = percentile(ra_list, p)
+                if cap != "mutation":
+                    metrics[f"scip_{cap}_{mode}_p{p}_us"] = percentile(scip_list, p)
+            if cap == "mutation":
                 metrics[f"scip_{cap}_{mode}_p50_us"] = "N/A"
 
     matches_line = summary.get("scenario_matches_line_level", {})
@@ -248,22 +258,13 @@ def run_benchmark_for_repo(
         "ra_peak_open_fds": ra_metrics.get("peak_open_fds", 0),
         "ra_peak_threads": ra_metrics.get("peak_threads", 0),
         "cargo_spawned_during_queries": ridx_metrics.get("cargo_spawned", False) or ra_metrics.get("cargo_spawned", False),
-        "ridx_cargo_spawned": ridx_metrics.get("cargo_spawned", False),
-        "ra_cargo_spawned": ra_metrics.get("cargo_spawned", False),
-        "readonly_total": ro_total,
-        "readonly_matched_strict": ro_strict,
-        "readonly_match_rate_strict_pct": ro_strict_pct,
-        "readonly_matched_line_level": ro_line,
-        "readonly_match_rate_line_level_pct": ro_line_pct,
-        "matched_scenarios_strict": matched_scenarios_strict,
-        "match_rate_strict_pct": match_rate_strict,
-        "matched_scenarios_line_level": matched_scenarios_line,
-        "match_rate_line_level_pct": match_rate_line,
-        "matched_scenarios": matched_scenarios_strict,
-        "total_scenarios": total_scenarios,
-        "match_rate_pct": match_rate_strict,
-        "metrics": metrics,
-        "machine_metrics": machine_metrics,
+        "ridx_cargo_spawned": ridx_metrics.get("cargo_spawned", False), "ra_cargo_spawned": ra_metrics.get("cargo_spawned", False),
+        "readonly_total": ro_total, "readonly_matched_strict": ro_strict, "readonly_match_rate_strict_pct": ro_strict_pct,
+        "readonly_matched_line_level": ro_line, "readonly_match_rate_line_level_pct": ro_line_pct,
+        "matched_scenarios_strict": matched_scenarios_strict, "match_rate_strict_pct": match_rate_strict,
+        "matched_scenarios_line_level": matched_scenarios_line, "match_rate_line_level_pct": match_rate_line,
+        "matched_scenarios": matched_scenarios_strict, "total_scenarios": total_scenarios, "match_rate_pct": match_rate_strict,
+        "metrics": metrics, "machine_metrics": machine_metrics,
         "mutation_verifications": summary.get("mutation_verifications", {}),
     })
 
