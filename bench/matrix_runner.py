@@ -14,6 +14,7 @@ memory (Anon/File RSS), FDs, and match fidelity across both Linux and macOS.
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -351,7 +352,7 @@ def main():
     results = run_full_matrix_benchmark(
         repo_dir=Path(args.repo).resolve(),
         ridx_bin=Path(args.ridx_bin).resolve(),
-        ra_bin=Path(args.ra_bin).resolve() if Path(args.ra_bin).is_file() else args.ra_bin,
+        ra_bin=shutil.which(str(args.ra_bin)) or (Path(args.ra_bin).resolve() if Path(args.ra_bin).is_file() else args.ra_bin),
         sample_count=args.sample_count,
     )
 
