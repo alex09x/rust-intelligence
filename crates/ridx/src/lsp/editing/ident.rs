@@ -98,6 +98,10 @@ pub fn find_declaration_ident_col(
     target_name: &str,
     target_kind: DefKind,
 ) -> Option<u32> {
+    if target_name.is_empty() {
+        return None;
+    }
+
     let kw = match target_kind {
         DefKind::Fn => "fn",
         DefKind::Struct => "struct",
@@ -144,7 +148,7 @@ pub fn find_declaration_ident_col(
                 first_match = Some(col);
             }
         }
-        search_from = end_pos;
+        search_from = end_pos.max(search_from + 1);
     }
 
     first_match

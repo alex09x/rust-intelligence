@@ -63,6 +63,9 @@ pub fn handle_prepare_rename(
                     .rsplit("::")
                     .next()
                     .unwrap_or(loc_refs.target_symbol);
+                if target_name.is_empty() {
+                    return Value::Null;
+                }
 
                 let line_str = if let Some(ov) = overlay_opt {
                     let idx = line_0based as usize;
@@ -170,6 +173,9 @@ pub fn handle_rename(
                     .rsplit("::")
                     .next()
                     .unwrap_or(loc_refs.target_symbol);
+                if target_name.is_empty() {
+                    return json!({ "changes": {} });
+                }
 
                 let decl_path = loc_refs.target_resolved_path();
                 let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);

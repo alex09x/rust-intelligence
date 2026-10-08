@@ -106,20 +106,20 @@ pub fn get_current_process_rss_bytes() -> u64 {
     get_process_rss_bytes(std::process::id()).unwrap_or(0)
 }
 
-pub fn get_process_fd_count(pid: u32) -> u64 {
+pub fn get_process_fd_count(_pid: u32) -> u64 {
     #[cfg(target_os = "linux")]
     {
-        if let Ok(entries) = std::fs::read_dir(format!("/proc/{pid}/fd")) {
+        if let Ok(entries) = std::fs::read_dir(format!("/proc/{_pid}/fd")) {
             return entries.count() as u64;
         }
     }
     0
 }
 
-pub fn get_process_ridx_fd_count(pid: u32) -> u64 {
+pub fn get_process_ridx_fd_count(_pid: u32) -> u64 {
     #[cfg(target_os = "linux")]
     {
-        if let Ok(entries) = std::fs::read_dir(format!("/proc/{pid}/fd")) {
+        if let Ok(entries) = std::fs::read_dir(format!("/proc/{_pid}/fd")) {
             let mut count = 0u64;
             for entry in entries.flatten() {
                 if let Ok(target) = std::fs::read_link(entry.path()) {
@@ -134,20 +134,20 @@ pub fn get_process_ridx_fd_count(pid: u32) -> u64 {
     0
 }
 
-pub fn get_process_ridx_maps_count(pid: u32) -> u64 {
+pub fn get_process_ridx_maps_count(_pid: u32) -> u64 {
     #[cfg(target_os = "linux")]
     {
-        if let Ok(maps) = std::fs::read_to_string(format!("/proc/{pid}/maps")) {
+        if let Ok(maps) = std::fs::read_to_string(format!("/proc/{_pid}/maps")) {
             return maps.lines().filter(|l| l.contains(".ridx")).count() as u64;
         }
     }
     0
 }
 
-pub fn get_process_thread_count(pid: u32) -> u64 {
+pub fn get_process_thread_count(_pid: u32) -> u64 {
     #[cfg(target_os = "linux")]
     {
-        if let Ok(status) = std::fs::read_to_string(format!("/proc/{pid}/status")) {
+        if let Ok(status) = std::fs::read_to_string(format!("/proc/{_pid}/status")) {
             for line in status.lines() {
                 if let Some(rest) = line.strip_prefix("Threads:") {
                     if let Ok(count) = rest.trim().parse::<u64>() {

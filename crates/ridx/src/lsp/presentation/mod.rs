@@ -112,7 +112,7 @@ pub fn handle_document_link(msg: &Value, overlay_mgr: &OverlayManager) -> Value 
                 "target": url
             }));
 
-            start_idx = end_pos;
+            start_idx = end_pos.max(start_idx + 1);
         }
     }
 

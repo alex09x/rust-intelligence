@@ -316,3 +316,17 @@ fn test_lsp_server_stream_stage8_full_workspace_dispatch() {
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_find_declaration_ident_col_empty_target_and_lifetimes() {
+    use crate::lsp::editing::ident::find_declaration_ident_col;
+    use ridx_format::DefKind;
+
+    // Must not infinite loop on empty target_name
+    assert_eq!(find_declaration_ident_col("pub fn foo() {}", "", DefKind::Fn), None);
+
+    // Test with lifetime in signature
+    let line = "pub fn bar<'a, T: 'a>(val: &'a T) -> &'a T";
+    assert_eq!(find_declaration_ident_col(line, "bar", DefKind::Fn), Some(8));
+    assert_eq!(find_declaration_ident_col(line, "nonexistent", DefKind::Fn), None);
+}

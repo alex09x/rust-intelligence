@@ -131,6 +131,23 @@ pub fn is_byte_in_string_or_comment(line_str: &str, target_byte: usize) -> bool 
             }
             continue;
         }
+        if b == b'\'' {
+            // Distinguish lifetime (e.g. 'a, 'static) from char literal (e.g. 'c', '\n')
+            let mut is_lifetime = false;
+            if i + 1 < len && (bytes[i + 1] == b'_' || bytes[i + 1].is_ascii_alphabetic()) {
+                let mut scan = i + 1;
+                while scan < len && (bytes[scan] == b'_' || bytes[scan].is_ascii_alphanumeric()) {
+                    scan += 1;
+                }
+                if scan >= len || bytes[scan] != b'\'' {
+                    is_lifetime = true;
+                }
+            }
+            if is_lifetime {
+                i += 1;
+                continue;
+            }
+        }
         if b == b'"' || b == b'\'' {
             let quote = b;
             let start = i;
@@ -138,7 +155,7 @@ pub fn is_byte_in_string_or_comment(line_str: &str, target_byte: usize) -> bool 
             let mut closed = false;
             while i < len {
                 if bytes[i] == b'\\' {
-                    i += 2;
+                    i = (i + 2).min(len);
                     continue;
                 }
                 if bytes[i] == quote {
