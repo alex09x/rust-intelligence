@@ -27,57 +27,7 @@ if str(bench_dir) not in sys.path:
 from lsp_process import SimpleLspProcess
 from matrix_categories import LSP_SPECS, build_params, DOMAIN_NAMES
 from matrix_sampling import sample_full_lsp_matrix
-from metrics import percentile
-
-
-def get_proc_metrics(pid):
-    """Retrieves RSS (bytes), FDs, and Thread count for pid on Linux and macOS."""
-    rss_kb = 0
-    rss_anon_kb = 0
-    rss_file_kb = 0
-    threads = 1
-    fds = 0
-
-    proc_status = Path(f"/proc/{pid}/status")
-    if proc_status.exists():
-        try:
-            with open(proc_status, "r") as f:
-                for line in f:
-                    if line.startswith("VmRSS:"):
-                        rss_kb = int(line.split()[1])
-                    elif line.startswith("RssAnon:"):
-                        rss_anon_kb = int(line.split()[1])
-                    elif line.startswith("RssFile:"):
-                        rss_file_kb = int(line.split()[1])
-                    elif line.startswith("Threads:"):
-                        threads = int(line.split()[1])
-            fd_dir = Path(f"/proc/{pid}/fd")
-            if fd_dir.exists():
-                fds = len(os.listdir(fd_dir))
-            return {
-                "rss_bytes": rss_kb * 1024,
-                "rss_anon_bytes": rss_anon_kb * 1024,
-                "rss_file_bytes": rss_file_kb * 1024,
-                "threads": threads,
-                "fds": fds,
-            }
-        except Exception:
-            pass
-
-    try:
-        out = subprocess.check_output(["ps", "-o", "rss=", "-p", str(pid)], text=True).strip()
-        if out:
-            rss_kb = int(out.split()[0])
-    except Exception:
-        pass
-
-    return {
-        "rss_bytes": rss_kb * 1024,
-        "rss_anon_bytes": rss_kb * 1024,
-        "rss_file_bytes": 0,
-        "threads": threads,
-        "fds": fds,
-    }
+from metrics import percentile, get_proc_metrics
 
 
 def execute_mutation_scenario(srv, key, sc, repo_dir):
@@ -223,6 +173,9 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
             latencies_cold = []
             latencies_warm = []
             errors = 0
+            a_count = 0  # (a) non-empty and verified
+            b_count = 0  # (b) empty (null / [] / empty hover)
+            c_count = 0  # (c) error / failed
 
             if rpc_type == "server_rpc":
                 results[key] = {
@@ -232,6 +185,12 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                     "tests_run": len(method_scenarios),
                     "errors": 0,
                     "status": "SERVER_RPC_SUPPORTED",
+                    "a_non_empty": len(method_scenarios),
+                    "b_empty": 0,
+                    "c_error": 0,
+                    "a_pct": 100.0,
+                    "b_pct": 0.0,
+                    "c_pct": 0.0,
                     "cold_p50_us": "N/A",
                     "cold_p90_us": "N/A",
                     "cold_p95_us": "N/A",
@@ -256,11 +215,15 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                     total_dur = (time.perf_counter() - t0) * 1_000_000.0
                     latencies_cold.append(total_dur)
                     latencies_warm.append(total_dur)
+                    a_count += 1
 
                 elif rpc_type == "mutation":
                     dur_mut, err_mut = execute_mutation_scenario(srv, key, sc, repo_dir)
                     if err_mut:
                         errors += 1
+                        c_count += 1
+                    else:
+                        a_count += 1
                     latencies_cold.append(dur_mut)
                     latencies_warm.append(dur_mut)
 
@@ -275,12 +238,23 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                             "status": "UNSUPPORTED",
                             "tests_run": len(method_scenarios),
                             "errors": 0,
+                            "a_non_empty": 0,
+                            "b_empty": 0,
+                            "c_error": len(method_scenarios),
+                            "a_pct": 0.0,
+                            "b_pct": 0.0,
+                            "c_pct": 100.0,
                             "cold_p50_us": "N/A", "cold_p90_us": "N/A", "cold_p95_us": "N/A", "cold_p99_us": "N/A",
                             "warm_p50_us": "N/A", "warm_p90_us": "N/A", "warm_p95_us": "N/A", "warm_p99_us": "N/A",
                         }
                         break
                     if err1:
                         errors += 1
+                        c_count += 1
+                    elif res1 is None or res1 == [] or res1 == "" or (isinstance(res1, dict) and not res1) or (key == "hover" and isinstance(res1, dict) and not res1.get("contents")):
+                        b_count += 1
+                    else:
+                        a_count += 1
                     latencies_cold.append(dur1)
 
                     # Warm queries (iterations 2 & 3)
@@ -299,12 +273,19 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
             peak_fds = max(peak_fds, m["fds"])
             peak_threads = max(peak_threads, m["threads"])
 
+            tot = max(1, len(method_scenarios))
             results[key] = {
                 "id": mid,
                 "domain": DOMAIN_NAMES.get(domain, "Other"),
                 "rpc_method": rpc_method,
                 "tests_run": len(method_scenarios),
                 "errors": errors,
+                "a_non_empty": a_count,
+                "b_empty": b_count,
+                "c_error": c_count,
+                "a_pct": round(a_count / tot * 100, 1),
+                "b_pct": round(b_count / tot * 100, 1),
+                "c_pct": round(c_count / tot * 100, 1),
                 "cold_p50_us": percentile(latencies_cold, 50),
                 "cold_p90_us": percentile(latencies_cold, 90),
                 "cold_p95_us": percentile(latencies_cold, 95),

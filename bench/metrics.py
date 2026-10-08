@@ -205,3 +205,54 @@ def format_ratio_with_ci(successes, total, z=1.96):
     _, lower, upper = wilson_score_interval(successes, total, z=z)
     return f"{successes} / {total} ({pct:.1f}%, 95% CI [{lower:.1f}%, {upper:.1f}%])"
 
+
+def get_proc_metrics(pid):
+    """Retrieves RSS (bytes), FDs, and Thread count for pid on Linux and macOS."""
+    rss_kb = 0
+    rss_anon_kb = 0
+    rss_file_kb = 0
+    threads = 1
+    fds = 0
+
+    proc_status = os.path.join(f"/proc/{pid}/status")
+    if os.path.exists(proc_status):
+        try:
+            with open(proc_status, "r") as f:
+                for line in f:
+                    if line.startswith("VmRSS:"):
+                        rss_kb = int(line.split()[1])
+                    elif line.startswith("RssAnon:"):
+                        rss_anon_kb = int(line.split()[1])
+                    elif line.startswith("RssFile:"):
+                        rss_file_kb = int(line.split()[1])
+                    elif line.startswith("Threads:"):
+                        threads = int(line.split()[1])
+            fd_dir = f"/proc/{pid}/fd"
+            if os.path.exists(fd_dir):
+                fds = len(os.listdir(fd_dir))
+            return {
+                "rss_bytes": rss_kb * 1024,
+                "rss_anon_bytes": rss_anon_kb * 1024,
+                "rss_file_bytes": rss_file_kb * 1024,
+                "threads": threads,
+                "fds": fds,
+            }
+        except Exception:
+            pass
+
+    import subprocess
+    try:
+        out = subprocess.check_output(["ps", "-o", "rss=", "-p", str(pid)], text=True).strip()
+        if out:
+            rss_kb = int(out.split()[0])
+    except Exception:
+        pass
+
+    return {
+        "rss_bytes": rss_kb * 1024,
+        "rss_anon_bytes": rss_kb * 1024,
+        "rss_file_bytes": 0,
+        "threads": threads,
+        "fds": fds,
+    }
+

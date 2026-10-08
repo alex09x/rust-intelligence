@@ -23,9 +23,11 @@ class SimpleLspProcess:
         self.cmd = cmd
         self.cwd = str(cwd)
         self.is_ra = is_ra
+        self.stderr_path = f"/tmp/lsp_{'ra' if is_ra else 'ridx'}_{os.getpid()}_{id(self)}.stderr"
+        self.stderr_file = open(self.stderr_path, "w", encoding="utf-8", errors="replace")
         self.p = subprocess.Popen(
             cmd, cwd=self.cwd,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.stderr_file
         )
         self.next_id = 1
         self.exited = False
@@ -69,6 +71,10 @@ class SimpleLspProcess:
             self.send_response(req_id, [{"uri": f"file://{self.cwd}", "name": "root"}])
         elif method == "workspace/applyEdit":
             self.send_response(req_id, {"applied": True})
+        elif method == "window/workDoneProgress/create":
+            self.send_response(req_id, None)
+        elif method in ("client/registerCapability", "client/unregisterCapability"):
+            self.send_response(req_id, None)
         else:
             self.send_response(req_id, None)
 
@@ -294,5 +300,10 @@ class SimpleLspProcess:
                 pass
             try:
                 self.reader_thread.join(timeout=0.5)
+            except Exception:
+                pass
+            try:
+                if hasattr(self, "stderr_file") and not self.stderr_file.closed:
+                    self.stderr_file.close()
             except Exception:
                 pass
