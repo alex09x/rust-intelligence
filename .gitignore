@@ -13,4 +13,3 @@ bench_scenarios.json
 *.scip
 index.scip
 *.jsonl
-bench/BENCHMARK_METHODOLOGY.md

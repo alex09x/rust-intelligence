@@ -15,7 +15,12 @@ Extracts usage sites, declaration sites, and cross-file mutation scenarios.
 import collections
 import random
 from pathlib import Path
-from scan import find_crate_visible_pairs, scan_source_positions
+try:
+    from matrix_sampling import sample_full_lsp_matrix
+    from scan import find_crate_visible_pairs, scan_source_positions
+except ImportError:
+    from bench.matrix_sampling import sample_full_lsp_matrix
+    from bench.scan import find_crate_visible_pairs, scan_source_positions
 
 UBIQUITOUS_NAMES = {
     "new", "default", "from", "into", "as_ref", "clone", "fmt", "write", "Result", "Option",
