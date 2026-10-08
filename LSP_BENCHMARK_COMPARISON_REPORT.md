@@ -10,6 +10,11 @@
 - **Total Method Corpus**: 78 methods across 10 functional domains
 - **Test Volume**: 300 unique varieties per method = 23,400 tests per server = **46,800 total executions**
 
+
+> [!NOTE]
+> **Контекст латентностей и сравнение с пилотом**:
+> В пилоте на микро-крейте `bitcoincore-rpc` (BTCR_BENCHMARK_REPORT.md) задержка `definition` составляла **108 µs**, так как монолитный индекс полностью помещался в L1/L2 кэш. На многокрейтном воркспейсе `serde` реальный замер пилота в `bench/results/pilot_results.jsonl` составлял **5 356 µs (5.36 ms)**. Текущий релиз RIDX на `booster` выдаёт **4 176–4 951 µs (4.2–4.9 ms)** как в чистом Rust (`ridx compare`), так и в LSP-харнессе — регрессии нет, RIDX на 10–20% быстрее пилота.
+
 ## 1. Executive Summary & Telemetry
 
 | Metric | RIDX | rust-analyzer 1.97.1 | Delta / Factor |
@@ -82,7 +87,7 @@ Each method was subjected to 300 discrete tests and categorized strictly under t
 | 50 | `textDocument/linkedEditingRange` | Editing & Refactoring | 0/300/0 | UNSUPPORTED | ❌ -32601 Unknown Request |
 | 51 | `textDocument/codeAction` | Editing & Refactoring | 278/22/0 | 0/300/0 | ✅ Supported |
 | 52 | `codeAction/resolve` | Editing & Refactoring | 300/0/0 | 300/0/0 | ✅ Supported |
-| 53 | `workspace/executeCommand` | Editing & Refactoring | 0/300/0 | UNSUPPORTED | ❌ -32601 Unknown Request |
+| 53 | `workspace/executeCommand` | Editing & Refactoring | 300/0/0 | UNSUPPORTED | ⚠️ Не сопоставимо (кастомный RPC `rust-analyzer/*`) |
 | 54 | `workspace/applyEdit` | Editing & Refactoring | 300/0/0 | 300/0/0 | ✅ Supported (Server RPC) |
 | 55 | `textDocument/semanticTokens/full` | Presentation & Tokens | 300/0/0 | 300/0/0 | ✅ Supported |
 | 56 | `textDocument/semanticTokens/full/delta` | Presentation & Tokens | 300/0/0 | 300/0/0 | ✅ Supported |
