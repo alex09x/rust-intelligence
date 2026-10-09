@@ -179,6 +179,8 @@ ridx compare -c all . my_crate::run
 ridx lsp
 ```
 
+> **Note on updates**: After updating `ridx` (or modifying compiler driver flags), run `ridx index .` (or `ridx index . --all-features`) to re-generate workspace indices with updated canonical symbol definitions and paths.
+
 ---
 
 ## 8. Development & Verification

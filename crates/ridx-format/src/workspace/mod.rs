@@ -16,6 +16,7 @@ pub mod manifest;
 pub mod navigation;
 pub mod provenance;
 pub mod reload;
+pub mod std_map;
 
 pub use manifest::*;
 

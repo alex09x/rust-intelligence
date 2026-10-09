@@ -63,29 +63,33 @@ impl WorkspaceIndex {
             res
         };
 
-        // Fast path: if path starts with `<crate_name>::`, check that crate first
-        for (i, reader) in self.readers.iter().enumerate() {
-            let prefix = format!("{}::", reader.crate_name());
-            if path.starts_with(&prefix) {
-                let sub = &path[prefix.len()..];
+        for candidate in super::std_map::std_path_candidates(path) {
+            let candidate_str = candidate.as_str();
+
+            // Fast path: if path starts with `<crate_name>::`, check that crate first
+            for (i, reader) in self.readers.iter().enumerate() {
+                let prefix = format!("{}::", reader.crate_name());
+                if candidate_str.starts_with(&prefix) {
+                    let sub = &candidate_str[prefix.len()..];
+                    if let Some(def) = reader
+                        .find_definition_by_path(candidate_str)
+                        .or_else(|| reader.find_definition_by_path(sub))
+                    {
+                        return Some(resolve_def(self.make_resolved_definition(i, def)));
+                    }
+                }
+            }
+
+            // General search across all crates
+            for (i, reader) in self.readers.iter().enumerate() {
+                let prefix = format!("{}::", reader.crate_name());
+                let sub = candidate_str.strip_prefix(&prefix).unwrap_or(candidate_str);
                 if let Some(def) = reader
-                    .find_definition_by_path(path)
+                    .find_definition_by_path(candidate_str)
                     .or_else(|| reader.find_definition_by_path(sub))
                 {
                     return Some(resolve_def(self.make_resolved_definition(i, def)));
                 }
-            }
-        }
-
-        // General search across all crates
-        for (i, reader) in self.readers.iter().enumerate() {
-            let prefix = format!("{}::", reader.crate_name());
-            let sub = path.strip_prefix(&prefix).unwrap_or(path);
-            if let Some(def) = reader
-                .find_definition_by_path(path)
-                .or_else(|| reader.find_definition_by_path(sub))
-            {
-                return Some(resolve_def(self.make_resolved_definition(i, def)));
             }
         }
 
@@ -944,15 +948,17 @@ impl WorkspaceIndex {
         let mut matches = Vec::new();
         let mut seen = std::collections::HashSet::new();
 
-        for (i, reader) in self.readers.iter().enumerate() {
-            let crate_name = reader.crate_name();
-            let defs = reader.search_symbols(query);
-            let source_root = self
-                .source_roots
-                .get(i)
-                .and_then(|r| r.as_deref())
-                .or(self.workspace_root.as_deref());
-            let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+        let queries = super::std_map::std_path_candidates(query);
+        for q in &queries {
+            for (i, reader) in self.readers.iter().enumerate() {
+                let crate_name = reader.crate_name();
+                let defs = reader.search_symbols(q);
+                let source_root = self
+                    .source_roots
+                    .get(i)
+                    .and_then(|r| r.as_deref())
+                    .or(self.workspace_root.as_deref());
+                let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
 
             for def in defs {
                 let name = reader.get_str(def.name_offset());
@@ -983,6 +989,7 @@ impl WorkspaceIndex {
                 });
             }
         }
+    }
 
         matches
     }
