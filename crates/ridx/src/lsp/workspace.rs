@@ -63,7 +63,11 @@ impl MultiRootWorkspace {
                     let mut dir = norm_path.parent().unwrap_or(&norm_path);
                     while let Some(parent) = dir.parent() {
                         let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                        if name == ".ridx" || name == "ridx" || name == "target" || name == "variants" {
+                        if name == ".ridx"
+                            || name == "ridx"
+                            || name == "target"
+                            || name == "variants"
+                        {
                             dir = parent;
                         } else {
                             break;
@@ -85,7 +89,19 @@ impl MultiRootWorkspace {
     pub fn remove_root(&mut self, path: &Path) -> bool {
         let norm_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
         let before_len = self.roots.len();
-        self.roots.retain(|(p, _)| p != &norm_path && p != path);
+        self.roots.retain(|(p, ws)| {
+            if p == &norm_path || p == path {
+                return false;
+            }
+            if ws.paths().iter().any(|ip| {
+                ip == path
+                    || ip == &norm_path
+                    || ip.canonicalize().map(|c| c == norm_path).unwrap_or(false)
+            }) {
+                return false;
+            }
+            true
+        });
         self.roots.len() < before_len
     }
 

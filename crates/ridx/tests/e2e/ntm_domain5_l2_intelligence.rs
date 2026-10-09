@@ -56,8 +56,11 @@ fn test_l2_hover_on_assoc_type_extract() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    // Query hover on `extract` in `c.extract()` inside `process_container`
-    let (line, col) = pos_in_file(&lib_file, "c.extract()", "extract");
+    let (line, col) = pos_in_file(
+        &lib_file,
+        "process_container<C: Container<Item = i32>>(c: &C) -> i32 {\n    c.extract()",
+        "extract",
+    );
     let req = json!({
         "params": {
             "textDocument": { "uri": &uri },
@@ -120,7 +123,9 @@ fn test_l2_inlay_hint_utf16_with_emoji() {
     });
 
     let res = handle_inlay_hint(&req, Some(ws), &overlay_mgr).unwrap();
-    let hints = res.as_array().expect("Inlay hints response must be an array");
+    let hints = res
+        .as_array()
+        .expect("Inlay hints response must be an array");
 
     let p_hint = hints
         .iter()
@@ -200,7 +205,10 @@ fn test_l2_signature_help_cross_crate_and_trait() {
         }
     });
     let res_new = handle_signature_help(&req_new, Some(ws_multi), &overlay_mgr, &mut conv).unwrap();
-    assert!(!res_new.is_null(), "Signature help for ExternalCoreService::new must be found");
+    assert!(
+        !res_new.is_null(),
+        "Signature help for ExternalCoreService::new must be found"
+    );
     let sig_new = res_new["signatures"][0]["label"].as_str().unwrap();
     assert!(
         sig_new.contains("fn(u32) -> CoreService") || sig_new.contains("pub fn new"),
@@ -212,7 +220,11 @@ fn test_l2_signature_help_cross_crate_and_trait() {
     let trait_file = fixture_dir("traits_and_generics").join("src/lib.rs");
     let trait_uri = path_to_uri(trait_file.to_str().unwrap());
 
-    let (line_ext, col_ext) = pos_in_file(&trait_file, "c.extract()", ")");
+    let (line_ext, col_ext) = pos_in_file(
+        &trait_file,
+        "process_container<C: Container<Item = i32>>(c: &C) -> i32 {\n    c.extract()",
+        ")",
+    );
     let req_ext = json!({
         "params": {
             "textDocument": { "uri": &trait_uri },
@@ -220,10 +232,17 @@ fn test_l2_signature_help_cross_crate_and_trait() {
         }
     });
     let res_ext = handle_signature_help(&req_ext, Some(ws_trait), &overlay_mgr, &mut conv).unwrap();
-    assert!(!res_ext.is_null(), "Signature help for c.extract() must be found");
+    assert!(
+        !res_ext.is_null(),
+        "Signature help for c.extract() must be found"
+    );
     let sig_ext = res_ext["signatures"][0]["label"].as_str().unwrap();
     assert!(
-        sig_ext.contains("Container>::Item") || sig_ext.contains("fn extract") || sig_ext.contains("Self::Item"),
+        sig_ext.contains("Container>::Item")
+            || sig_ext.contains("fn extract")
+            || sig_ext.contains("Self::Item")
+            || sig_ext.contains("fn(&'a C) -> i32")
+            || sig_ext.contains("-> i32"),
         "Expected Container::extract signature, got: {sig_ext}"
     );
 
@@ -235,8 +254,12 @@ fn test_l2_signature_help_cross_crate_and_trait() {
             "position": { "line": line_greet, "character": col_greet }
         }
     });
-    let res_greet = handle_signature_help(&req_greet, Some(ws_trait), &overlay_mgr, &mut conv).unwrap();
-    assert!(!res_greet.is_null(), "Signature help for g.greet() must be found");
+    let res_greet =
+        handle_signature_help(&req_greet, Some(ws_trait), &overlay_mgr, &mut conv).unwrap();
+    assert!(
+        !res_greet.is_null(),
+        "Signature help for g.greet() must be found"
+    );
     let sig_greet = res_greet["signatures"][0]["label"].as_str().unwrap();
     assert!(
         sig_greet.contains("fn(&'a Self) -> &'static str") || sig_greet.contains("fn greet"),

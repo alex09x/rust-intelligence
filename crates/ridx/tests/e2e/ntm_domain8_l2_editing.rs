@@ -53,7 +53,10 @@ fn test_l2_formatting_full_and_idempotence() {
 
     let edits = handle_formatting(&req, &overlay_mgr);
     let edits_arr = edits.as_array().expect("edits array");
-    assert!(!edits_arr.is_empty(), "Unformatted code must produce formatting edits");
+    assert!(
+        !edits_arr.is_empty(),
+        "Unformatted code must produce formatting edits"
+    );
 
     let formatted = apply_text_edits(unformatted, edits_arr);
     assert_ne!(formatted, unformatted);
@@ -103,7 +106,10 @@ fn test_l2_range_formatting_scoped() {
 
     let edits = handle_range_formatting(&req, &overlay_mgr);
     let edits_arr = edits.as_array().expect("range edits array");
-    assert!(!edits_arr.is_empty(), "Range formatting must format target function");
+    assert!(
+        !edits_arr.is_empty(),
+        "Range formatting must format target function"
+    );
 
     let result = apply_text_edits(code, edits_arr);
     assert!(
@@ -141,7 +147,10 @@ fn test_l2_on_type_formatting_delegation() {
     let edits = handle_on_type_formatting(&req, &overlay_mgr);
     assert!(edits.is_array(), "onTypeFormatting returns edit array");
     let edits_arr = edits.as_array().unwrap();
-    assert!(!edits_arr.is_empty(), "Must produce edits on trigger character");
+    assert!(
+        !edits_arr.is_empty(),
+        "Must produce edits on trigger character"
+    );
 }
 
 #[test]
@@ -214,8 +223,18 @@ fn test_l2_cross_crate_reexport_references_and_rename() {
     let overlay_mgr = OverlayManager::new();
     let mut conv = PositionConverter::new();
 
-    // 1. References on definition of `Thing` in core_lib must include app_crate usage
-    let (def_line, def_col) = pos_in_file(&core_file, "pub struct Thing {", "Thing");
+    // 1. References on definition of `inner::Thing` in core_lib must include app_crate usage
+    let (def_line, def_col) = pos_in_file(
+        &core_file,
+        "pub mod inner {\n    pub struct Thing {",
+        "Thing",
+    );
+    let (other_line, _) = pos_in_file(
+        &core_file,
+        "pub mod other {\n    pub struct Thing {",
+        "Thing",
+    );
+
     let ref_req = json!({
         "params": {
             "textDocument": { "uri": &core_uri },
@@ -237,7 +256,16 @@ fn test_l2_cross_crate_reexport_references_and_rename() {
         "References across pub use must include app_crate usage: {arr:?}"
     );
 
-    // 2. Rename on `Thing` must edit both core_lib and app_crate
+    // References must NOT conflate with other::Thing
+    let has_other_ref = arr.iter().any(|r| {
+        r["uri"] == core_uri && r["range"]["start"]["line"].as_u64() == Some(other_line as u64)
+    });
+    assert!(
+        !has_other_ref,
+        "References on inner::Thing must not match unrelated other::Thing: {arr:?}"
+    );
+
+    // 2. Rename on `inner::Thing` must edit both core_lib and app_crate, but NEVER other::Thing
     let rename_req = json!({
         "params": {
             "textDocument": { "uri": &core_uri },
@@ -256,16 +284,104 @@ fn test_l2_cross_crate_reexport_references_and_rename() {
         changes.contains_key(&app_uri),
         "Rename across pub use must edit app_crate: {changes:?}"
     );
+
+    // Ensure edits in core_lib do NOT touch other::Thing
+    let core_edits = changes[&core_uri].as_array().expect("core_lib edits");
+    let edits_other = core_edits
+        .iter()
+        .any(|edit| edit["range"]["start"]["line"].as_u64() == Some(other_line as u64));
+    assert!(
+        !edits_other,
+        "Rename of inner::Thing must not edit other::Thing: {core_edits:?}"
+    );
 }
 
 #[test]
 fn test_l2_reexport_unmerged_safety_refusal() {
-    let ws = get_or_index_l2_fixture("multi_crate");
-    // Verify that has_unmerged_reexport_references detects missing cross-crate references
+    use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference, WorkspaceIndex};
+
+    let dir = tempfile::tempdir().unwrap();
+    let def_file = dir.path().join("lib.rs");
+    std::fs::write(
+        &def_file,
+        "pub mod inner { pub struct Thing; }\npub use inner::Thing;\n",
+    )
+    .unwrap();
+    let consumer_file = dir.path().join("main.rs");
+    std::fs::write(
+        &consumer_file,
+        "use my_lib::Thing;\nfn main() { let _ = Thing; }\n",
+    )
+    .unwrap();
+
+    let def_file_str = def_file.to_str().unwrap().to_string();
+    let consumer_file_str = consumer_file.to_str().unwrap().to_string();
+
+    let mut writer_lib = IndexWriter::new("my_lib", "0.1.0");
+    writer_lib.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: def_file_str.clone(),
+        name: "Thing".to_string(),
+        start_line: 1,
+        start_col: 16,
+        end_line: 1,
+        end_col: 21,
+        path: "my_lib::inner::Thing".to_string(),
+        signature: None,
+    });
+    let lib_path = dir.path().join("my_lib.ridx");
+    let mut f_lib = std::fs::File::create(&lib_path).unwrap();
+    writer_lib.write_to(&mut f_lib).unwrap();
+
+    let mut writer_consumer = IndexWriter::new("consumer", "0.1.0");
+    writer_consumer.add_reference(RawReference {
+        file: consumer_file_str,
+        start_line: 1,
+        start_col: 12,
+        end_line: 1,
+        end_col: 17,
+        target_def_id: None,
+        target_path: "my_lib::Thing".to_string(),
+        target_unit: None,
+        target_file: Some(def_file_str),
+        target_line: 1,
+        target_col: 16,
+        kind: DefKind::Struct,
+        is_write: false,
+        is_macro_expansion: false,
+    });
+    let consumer_path = dir.path().join("consumer.ridx");
+    let mut f_consumer = std::fs::File::create(&consumer_path).unwrap();
+    writer_consumer.write_to(&mut f_consumer).unwrap();
+
+    let ws = WorkspaceIndex::open(dir.path()).expect("open WorkspaceIndex");
+
+    // 1. Incomplete references: has_unmerged_reexport_references must detect the unmerged reference to my_lib::Thing
     let incomplete_refs = Vec::new();
     assert!(
-        ws.has_unmerged_reexport_references("core_lib::inner::Thing", &incomplete_refs),
-        "has_unmerged_reexport_references must report true when cross-crate references are missing"
+        ws.has_unmerged_reexport_references("my_lib::inner::Thing", &incomplete_refs),
+        "has_unmerged_reexport_references must report true when cross-crate references to alias exist but are missing"
+    );
+
+    // 2. Merged references: when the reference is provided in found_refs, it should return false
+    let all_refs = ws.find_references("my_lib::Thing");
+    assert_eq!(all_refs.len(), 1);
+    assert!(
+        !ws.has_unmerged_reexport_references("my_lib::inner::Thing", &all_refs),
+        "has_unmerged_reexport_references must report false when all alias references are accounted for"
     );
 }
 
+#[test]
+fn test_l2_reexport_definition_resolution() {
+    let ws = get_or_index_l2_fixture("multi_crate");
+    let def = ws
+        .find_definition_by_path("core_lib::Thing")
+        .expect("core_lib::Thing should resolve to definition");
+    assert_eq!(def.name, "Thing");
+    assert_eq!(def.path, "inner::Thing");
+    assert_eq!(def.kind, ridx_format::DefKind::Struct);
+}

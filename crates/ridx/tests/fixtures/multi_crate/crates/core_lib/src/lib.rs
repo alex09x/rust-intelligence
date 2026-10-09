@@ -46,3 +46,19 @@ pub mod inner {
 
 pub use inner::Thing;
 
+pub mod other {
+    pub struct Thing {
+        pub count: usize,
+    }
+
+    impl Thing {
+        pub fn other_fn(&self) -> usize {
+            self.count
+        }
+    }
+}
+
+pub fn use_other_thing() -> usize {
+    let t = other::Thing { count: 5 };
+    t.other_fn()
+}
