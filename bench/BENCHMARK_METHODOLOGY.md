@@ -262,10 +262,27 @@ To validate behavior on unsaved editor buffers via `textDocument/didChange`:
 
 1. **Discrepancy Logging**:
    - All response discrepancies (one server found a target, the other returned null, or differing ranges) are recorded in `bench/results/discrepancies.jsonl` with full JSON-RPC payloads.
+
 2. **Attribution Categories**:
-   - `RA_CORRECT`: Baseline correct, RIDX missed.
-   - `RIDX_CORRECT`: RIDX correct, baseline missed.
-   - `BOTH_FAILED`: Neither server resolved target.
-   - `BENIGN_DIFFERENCE`: Permissible span variation (e.g. identifier token span vs. full declaration header).
-3. **Structured Results**:
+   - `missing_in_ra`: Baseline returned `null` / `Not found` while RIDX resolved target (RIDX advantage).
+   - `missing_in_ridx`: RIDX returned `null` / `Not found` while baseline located definition (e.g. proc-macros without Salsa expansion or unindexed crates).
+   - `associated_type_binding`: Identifiers in associated type equality constraints (`hir::TypeBinding`, e.g. `where V: Visitor<'de, Value = ()>`, `S::Error`, `Serializer<Ok = ()>`).
+   - `same_file_decl_vs_impl` (Class C): Trait default method body vs declaration header (semantically equivalent locations, both valid).
+   - `line_level_match` (Class B): Coordinates within 2 lines tolerance in the same file.
+   - `divergent_target`: Different symbols, files, or macro expansion span offsets.
+
+3. **Standard Library (Sysroot) Discrepancy Accounting & Expected Impact**:
+   - **Distinction between Discrepancy Share and Strict-Match Percentage Points**:
+     When analyzing non-matching queries targeting standard library items (`std`/`core`/`alloc`), the proportion of *discrepancies* targeting sysroot must not be conflated with percentage points ($\text{pp}$) of overall accuracy.
+     The mathematical formula for projected improvement is:
+     $$\Delta_{\text{strict-match}} = \frac{N_{\text{sysroot\_discrepancies}}}{N_{\text{total\_scenarios}}} \times 100\%$$
+     In the 5-repository pilot benchmark:
+     - Out of 426 recorded discrepancy lines (386 unique scenarios across 2,100 evaluated scenarios), **113 records (26.5% of recorded discrepancies; 99 unique scenarios or 25.6%)** target items residing in the standard library sysroot (`std`/`core`/`alloc`).
+     - Across all 2,100 evaluated scenarios, the expected impact of standard library sysroot indexing is up to **+4.71 percentage points** (raising aggregate strict match from 81.62% to 86.33%).
+     - Across the 1,500 read-only queries (300 per repository), 73 of the 182 non-matching queries target sysroot (40.1% of read-only discrepancies). The expected impact on read-only strict match is up to **+4.87 percentage points** (raising read-only strict match from 87.87% to 92.73%).
+   - **Architectural Behavior for Standard Library References**:
+     In the standard library (`std`/`core`/`alloc`), go-to-definition (`textDocument/definition`) on method calls and field accesses (e.g. `iter.next()`, `atomic.fetch_sub()`) succeeds even without a pre-indexed sysroot shard because `rustc` preserves the `target_file` path pointing into `rustlib/src` within the `RawReference` payload.
+     However, operations that require index definition shards—including hover signatures and documentation (`textDocument/hover`), find references (`textDocument/references`), and workspace symbol searches (`workspace/symbol`)—do not resolve for standard library items until sysroot crates are pre-indexed into CAS shards.
+
+4. **Structured Results**:
    - Each entry in `bench/results/pilot_results.jsonl` contains complete percentiles, RSS breakdown (Anon/File), open file descriptors (FDs), thread counts, build durations, and Prometheus node status.

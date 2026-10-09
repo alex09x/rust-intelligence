@@ -42,6 +42,7 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
 
     disc_path = Path(discrepancies_file) if discrepancies_file else Path(source_file).parent / "discrepancies.jsonl"
     discs = []
+    seen_scenarios = set()
     if disc_path.exists():
         try:
             with open(disc_path, "r", encoding="utf-8") as df:
@@ -49,7 +50,9 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
                     d_line = d_line.strip()
                     if d_line:
                         d_obj = json.loads(d_line)
-                        if d_obj.get("repo") == repo and not d_obj.get("scenario", "").startswith("mutation_"):
+                        sc_name = d_obj.get("scenario", "")
+                        if d_obj.get("repo") == repo and not sc_name.startswith("mutation_") and sc_name not in seen_scenarios:
+                            seen_scenarios.add(sc_name)
                             discs.append(d_obj)
         except Exception:
             pass
@@ -180,9 +183,14 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
 
     if discs:
         total_ro_discs = len(discs)
+        sys_c = sum(1 for d in discs if any(k in d.get("ra", {}).get("span", "") for k in ["rustlib", "rust/src", "alloc", "core", "std"]))
+        sys_pct = (sys_c / max(1, total_ro_discs)) * 100.0
+        delta_pp = (sys_c / max(1, ro_tot)) * 100.0
         lines.append(f"Across the sampled {ro_tot} read-only scenarios:\n"
                      f"- **Class A Strict Matches**: {ro_strict}/{ro_tot} ({ro_pct:.1f}% [{ro_ci_str}])\n"
-                     f"- **Class A + Class C Semantic Parity**: {ro_class_c}/{ro_tot} ({ro_class_c_pct:.1f}% [{ro_class_c_ci_str}])\n\n"
+                     f"- **Class A + Class C Semantic Parity**: {ro_class_c}/{ro_tot} ({ro_class_c_pct:.1f}% [{ro_class_c_ci_str}])\n"
+                     f"- **Standard Library Sysroot Impact**: {sys_c} of {total_ro_discs} non-matching cases ({sys_pct:.1f}%) target items in `std`/`core`/`alloc`. "
+                     f"Expected effect of sysroot indexing: up to +{delta_pp:.2f} percentage points strict-match (raising {ro_pct:.1f}% to {ro_pct + delta_pp:.1f}%).\n\n"
                      f"The {total_ro_discs} non-matching cases were dynamically classified from telemetry:\n")
         labels = {
             "same_file_decl_vs_impl": (
@@ -302,6 +310,54 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
     return "\n".join(lines)
 
 
+def generate_executive_summary(entries, discrepancies_file=None):
+    if not entries:
+        return ""
+    tot_scen = sum(e.get("total_scenarios", 420) for e in entries)
+    tot_scen_m = sum(e.get("matched_scenarios_strict", 0) for e in entries)
+    tot_ro = sum(e.get("readonly_total", 300) for e in entries)
+    tot_ro_m = sum(e.get("readonly_matched_strict", 0) for e in entries)
+
+    all_discs, seen, raw_c, raw_sys = [], set(), 0, 0
+    p = Path(discrepancies_file) if discrepancies_file else None
+    if p and p.exists():
+        try:
+            with open(p, "r", encoding="utf-8") as df:
+                for line in df:
+                    line = line.strip()
+                    if line:
+                        raw_c += 1
+                        d = json.loads(line)
+                        is_sys = any(k in d.get("ra", {}).get("span", "") for k in ["rustlib", "rust/src", "alloc", "core", "std"])
+                        if is_sys:
+                            raw_sys += 1
+                        key = (d.get("repo"), d.get("scenario"))
+                        if key not in seen:
+                            seen.add(key)
+                            all_discs.append((d, is_sys))
+        except Exception:
+            pass
+
+    uniq_c = len(all_discs)
+    uniq_sys = sum(1 for _, is_sys in all_discs if is_sys)
+    delta_scen = (uniq_sys / max(1, tot_scen)) * 100.0
+
+    ro_discs = [d for d, _ in all_discs if not d.get("scenario", "").startswith("mutation_")]
+    ro_sys = sum(1 for d in ro_discs if any(k in d.get("ra", {}).get("span", "") for k in ["rustlib", "rust/src", "alloc", "core", "std"]))
+    delta_ro = (ro_sys / max(1, tot_ro)) * 100.0
+
+    return "\n".join([
+        "# Executive Summary: Pilot Benchmark (RIDX vs rust-analyzer)\n",
+        f"- **Evaluated Corpus**: {len(entries)} repos ({tot_scen} scenarios, {tot_ro} read-only queries)",
+        f"- **Overall Strict Match Rate**: **{tot_scen_m}/{tot_scen} ({tot_scen_m/max(1, tot_scen)*100:.2f}%)** | **Read-Only**: **{tot_ro_m}/{tot_ro} ({tot_ro_m/max(1, tot_ro)*100:.2f}%)**",
+        f"- **Recorded Discrepancies**: {raw_c} lines ({uniq_c} unique non-matching scenarios across all repositories)",
+        f"- **Standard Library Sysroot Impact**: {raw_sys} of {raw_c} recorded lines ({raw_sys/max(1, raw_c)*100:.1f}%), {uniq_sys} of {uniq_c} unique scenarios ({uniq_sys/max(1, uniq_c)*100:.1f}%) target items in `std`/`core`/`alloc`",
+        f"  - **Overall Scenarios**: expected effect of sysroot indexing is up to **+{delta_scen:.2f} percentage points** ({tot_scen_m/max(1, tot_scen)*100:.2f}% → {(tot_scen_m/max(1, tot_scen)*100)+delta_scen:.2f}%)",
+        f"  - **Read-Only Queries**: expected effect of sysroot indexing is up to **+{delta_ro:.2f} percentage points** ({tot_ro_m/max(1, tot_ro)*100:.2f}% → {(tot_ro_m/max(1, tot_ro)*100)+delta_ro:.2f}%)",
+        "- **Standard Library Reference Resolution Note**: In `std`/`core`/`alloc`, go-to-definition succeeds on method calls/references (e.g. `iter.next()`, `atomic.fetch_sub()`) because `rustc` preserves target span in `rustlib/src` within `RawReference`. However, hover signatures, find-references, and workspace symbol searches require sysroot indexing.",
+    ])
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate automated markdown report from pilot results.")
     parser.add_argument("--results", default=str(bench_dir / "results" / "pilot_results.jsonl"), help="Path to pilot_results.jsonl")
@@ -314,6 +370,7 @@ def main():
         print(f"Error: {results_path} does not exist", file=sys.stderr)
         sys.exit(1)
 
+    entries = []
     reports = []
     with open(results_path, "r", encoding="utf-8") as f:
         for line in f:
@@ -322,11 +379,13 @@ def main():
                 continue
             try:
                 entry = json.loads(line)
+                entries.append(entry)
                 reports.append(generate_repo_report(entry, str(results_path), discrepancies_file=args.discrepancies))
             except Exception as e:
                 print(f"Warning: Failed to parse line in {results_path}: {e}", file=sys.stderr)
 
-    full_report = "\n\n---\n\n".join(reports)
+    summary = generate_executive_summary(entries, discrepancies_file=args.discrepancies) if len(reports) > 1 else ""
+    full_report = (summary + "\n\n---\n\n" + "\n\n---\n\n".join(reports)) if summary else "\n\n---\n\n".join(reports)
     if args.output:
         with open(args.output, "w", encoding="utf-8") as out_f:
             out_f.write(full_report)
