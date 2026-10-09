@@ -154,7 +154,9 @@ def main():
 
     ra_ver, tc_ver = f"rust-analyzer {tc_target}", f"rustc {tc_target}"
     if not curr_data:
-        curr_bin = Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")
+        curr_bin = (
+            Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")
+        ).resolve()
         ra_custom = Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
         ra_bin = args.ra_bin if args.ra_bin else (str(ra_custom) if ra_custom.is_file() else "rust-analyzer")
         rustc_custom = Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rustc"
