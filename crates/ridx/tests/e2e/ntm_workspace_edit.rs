@@ -75,7 +75,7 @@ fn test_partial_workspace_edit_rejected_atomically() {
         }
     });
 
-    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(
         res["applied"], false,
         "Multi-doc edit with one stale version must fail completely"
@@ -119,7 +119,7 @@ fn test_open_document_command_edits_sync_disk_and_return_payload() {
         }
     });
 
-    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], true);
     assert_eq!(res["count"], 1);
     assert!(
@@ -164,7 +164,7 @@ fn test_apply_workspace_edit_with_newtext() {
         }
     });
 
-    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], true);
     assert_eq!(res["count"], 1);
     let overlay = overlay_mgr.get(file).unwrap();
@@ -201,7 +201,7 @@ fn test_review_v4651_edits_use_original_coordinates() {
         }
     });
 
-    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], true);
     let overlay = overlay_mgr.get(file).unwrap();
     assert_eq!(overlay.text, "a b");
@@ -243,7 +243,7 @@ fn test_review_v4651_dual_edit_representation_applied_once() {
         }
     });
 
-    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], true);
     assert_eq!(
         res["count"], 1,
@@ -281,7 +281,7 @@ fn test_review_v4651_stale_version_rejected() {
         }
     });
 
-    let res = handle_execute_command(&stale_req, &mut overlay_mgr);
+    let res = handle_execute_command(&stale_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], false, "Stale version edit must be rejected");
     let overlay = overlay_mgr.get(file).unwrap();
     assert_eq!(overlay.text, "fn foo() {}");
@@ -314,7 +314,7 @@ fn test_review_v4651_closed_edit_remains_dirty() {
         }
     });
 
-    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], true);
     let overlay = overlay_mgr.get(file).unwrap();
     assert_eq!(overlay.text, "fn bar() {}");
@@ -342,7 +342,7 @@ fn test_multiple_arguments_preserve_all_edits() {
         }
     });
 
-    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], true);
     assert_eq!(res["count"], 2);
 
@@ -372,7 +372,7 @@ fn test_disk_failure_rollback_and_reported_failure() {
         }
     });
 
-    let res = handle_execute_command(&edit_req, &mut overlay_mgr);
+    let res = handle_execute_command(&edit_req, &mut overlay_mgr).expect("command succeeds");
     #[cfg(unix)]
     {
         assert_eq!(

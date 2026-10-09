@@ -12,6 +12,7 @@
 
 pub use super::atomic_write::commit_closed_writes_atomic;
 use super::ident::apply_workspace_text_edits_to_content;
+use crate::lsp::error::{LspError, LspResult};
 use crate::lsp::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
@@ -19,7 +20,10 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 
-pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
+pub fn handle_execute_command(
+    msg: &Value,
+    overlay_mgr: &mut OverlayManager,
+) -> LspResult<Value> {
     let cmd = msg["params"]["command"].as_str().unwrap_or("");
     match cmd {
         "ridx.resolveWorkspace" => {
@@ -27,17 +31,17 @@ pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> 
                 .as_str()
                 .or_else(|| msg["params"]["rootPath"].as_str())
                 .unwrap_or("");
-            json!({ "resolved": true, "workspaceRoot": root, "status": "ready" })
+            Ok(json!({ "resolved": true, "workspaceRoot": root, "status": "ready" }))
         }
         "ridx.showReferences" => {
             let locs = msg["params"]["locations"]
                 .as_array()
                 .cloned()
                 .unwrap_or_default();
-            json!({ "success": true, "uri": msg["params"]["uri"].as_str().unwrap_or(""), "position": &msg["params"]["position"], "count": locs.len(), "locations": locs })
+            Ok(json!({ "success": true, "uri": msg["params"]["uri"].as_str().unwrap_or(""), "position": &msg["params"]["position"], "count": locs.len(), "locations": locs }))
         }
-        "ridx.applyEdits" => execute_apply_edits(msg, overlay_mgr),
-        _ => Value::Null,
+        "ridx.applyEdits" => Ok(execute_apply_edits(msg, overlay_mgr)),
+        _ => Err(LspError::invalid_params(format!("Unknown command: '{cmd}'"))),
     }
 }
 

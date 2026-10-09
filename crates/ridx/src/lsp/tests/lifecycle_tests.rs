@@ -281,5 +281,66 @@ fn test_lifecycle_default_and_double_shutdown() {
     assert!(lm.is_shutdown());
     let s2 = lm.handle_shutdown();
     assert!(s2.is_err());
-    assert_eq!(s2.unwrap_err().0, -32600);
+    assert_eq!(s2.unwrap_err().code, -32600);
+}
+
+#[test]
+fn test_lsp_server_stream_error_dispatch_rename_and_unknown_command() {
+    let mut input = Vec::new();
+    input.extend(make_lsp_msg(&json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": { "capabilities": {} }
+    })));
+    input.extend(make_lsp_msg(&json!({
+        "jsonrpc": "2.0",
+        "method": "initialized",
+        "params": {}
+    })));
+
+    // 1. Prepare rename at non-existent / empty document -> RequestFailed (-32803)
+    input.extend(make_lsp_msg(&json!({
+        "jsonrpc": "2.0",
+        "id": 10,
+        "method": "textDocument/prepareRename",
+        "params": {
+            "textDocument": { "uri": "file:///tmp/nonexistent.rs" },
+            "position": { "line": 0, "character": 0 }
+        }
+    })));
+
+    // 2. Unknown command in executeCommand -> InvalidParams (-32602)
+    input.extend(make_lsp_msg(&json!({
+        "jsonrpc": "2.0",
+        "id": 20,
+        "method": "workspace/executeCommand",
+        "params": {
+            "command": "nonexistent.command"
+        }
+    })));
+
+    input.extend(make_lsp_msg(&json!({
+        "jsonrpc": "2.0",
+        "id": 99,
+        "method": "shutdown",
+        "params": null
+    })));
+    input.extend(make_lsp_msg(&json!({
+        "jsonrpc": "2.0",
+        "method": "exit"
+    })));
+
+    let mut output = Vec::new();
+    let res = run_lsp_server_stream(Cursor::new(input), &mut output, None);
+    assert!(res.is_ok());
+
+    let responses = parse_lsp_responses(&output);
+    let rename_err = responses.iter().find(|r| r["id"] == 10).expect("resp 10");
+    assert_eq!(rename_err["error"]["code"], -32803);
+    assert!(rename_err["error"]["message"].as_str().unwrap().contains("rename"));
+
+    let cmd_err = responses.iter().find(|r| r["id"] == 20).expect("resp 20");
+    assert_eq!(cmd_err["error"]["code"], -32602);
+    assert!(cmd_err["error"]["message"].as_str().unwrap().contains("Unknown command"));
 }

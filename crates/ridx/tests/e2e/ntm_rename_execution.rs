@@ -45,7 +45,7 @@ fn test_refactor_rename_local_variable_execution() {
         }
     });
 
-    let res = handle_rename(&rename_req, None, &overlay_mgr, &mut conv);
+    let res = handle_rename(&rename_req, None, &overlay_mgr, &mut conv).expect("rename succeeds");
     let edits = res["changes"][uri].as_array().expect("edits array");
     assert!(!edits.is_empty(), "rename must return edits");
 
@@ -144,7 +144,7 @@ fn test_refactor_cross_file_workspace_rename_execution() {
         }
     });
 
-    let res = handle_rename(&rename_req, Some(&ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&rename_req, Some(&ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let changes = res["changes"].as_object().expect("changes object");
 
     let def_edits = changes

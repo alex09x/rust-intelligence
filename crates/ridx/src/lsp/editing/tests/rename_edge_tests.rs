@@ -84,7 +84,7 @@ fn test_workspace_rename_ignores_ref_with_mismatched_text() {
         }
     });
 
-    let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     assert!(res["changes"].get(&lib_uri).is_some());
     assert!(res["changes"].get(&caller_uri).is_some());
 
@@ -119,7 +119,6 @@ fn test_workspace_rename_rejects_external_symbol() {
     fs::create_dir_all(ext_dep.parent().unwrap()).unwrap();
     fs::write(&ext_dep, "pub trait Serialize {}\n").unwrap();
     let ext_dep_str = ext_dep.to_str().unwrap();
-    let ext_uri = path_to_uri(ext_dep_str);
 
     let mut builder = FixtureIndexBuilder::new("app", "0.1.0");
     let fixture = "use serde::«$0Serialize»;\npub struct Item;\n";
@@ -155,14 +154,8 @@ fn test_workspace_rename_rejects_external_symbol() {
     });
 
     let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv);
-    assert_eq!(res, json!({ "changes": {} }));
-    let changes = res["changes"].as_object().unwrap();
-    assert!(
-        changes.is_empty(),
-        "Must produce zero changes for external dependency"
-    );
-    assert!(!changes.contains_key(&uri));
-    assert!(!changes.contains_key(&ext_uri));
+    assert!(res.is_err(), "Must reject rename for external dependency");
+    assert_eq!(res.unwrap_err().code, -32803);
 }
 
 #[test]
@@ -209,7 +202,7 @@ fn test_workspace_rename_in_local_registry_directory() {
         }
     });
 
-    let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     assert!(res["changes"].get(&reg_uri).is_some());
     assert!(res["changes"].get(&main_uri).is_some());
 
@@ -252,7 +245,7 @@ fn test_rename_local_raw_identifier() {
         }
     });
 
-    let res = handle_rename(&req, None, &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, None, &overlay_mgr, &mut conv).expect("rename succeeds");
     let mut files = HashMap::new();
     files.insert(uri.clone(), parsed.clean_text);
 
@@ -286,7 +279,7 @@ fn test_rename_local_with_broken_syntax() {
         }
     });
 
-    let res = handle_rename(&req, None, &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, None, &overlay_mgr, &mut conv).expect("rename succeeds");
     assert!(res["changes"].get(&uri).is_some());
 
     let mut files = HashMap::new();

@@ -81,9 +81,11 @@ impl LifecycleManager {
     pub fn handle_initialize(
         &mut self,
         msg: &Value,
-    ) -> Result<(Value, Vec<PathBuf>), (i32, String)> {
+    ) -> Result<(Value, Vec<PathBuf>), super::error::LspError> {
         if self.state != ServerState::Uninitialized {
-            return Err((-32600, "Server is already initialized".to_string()));
+            return Err(super::error::LspError::invalid_request(
+                "Server is already initialized",
+            ));
         }
 
         self.state = ServerState::Initialized;
@@ -208,9 +210,11 @@ impl LifecycleManager {
         Ok((capabilities, folder_paths))
     }
 
-    pub fn handle_shutdown(&mut self) -> Result<Value, (i32, String)> {
+    pub fn handle_shutdown(&mut self) -> Result<Value, super::error::LspError> {
         if self.state == ServerState::ShutDown {
-            return Err((-32600, "Server is already shut down".to_string()));
+            return Err(super::error::LspError::invalid_request(
+                "Server is already shut down",
+            ));
         }
         self.state = ServerState::ShutDown;
         self.flycheck.shutdown();
@@ -318,7 +322,7 @@ mod tests {
         // Repeated initialize is rejected
         let second_init = lm.handle_initialize(&init_msg);
         assert!(second_init.is_err());
-        assert_eq!(second_init.unwrap_err().0, -32600);
+        assert_eq!(second_init.unwrap_err().code, -32600);
 
         // Exit before shutdown errors
         assert!(lm.handle_exit().is_err());

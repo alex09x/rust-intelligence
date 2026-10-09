@@ -135,7 +135,7 @@ fn test_sequential_workspace_edit_client_snapshot_consistency() {
         }
     });
 
-    let res = handle_execute_command(&req, &mut overlay_mgr);
+    let res = handle_execute_command(&req, &mut overlay_mgr).expect("command succeeds");
     assert_eq!(res["applied"], true);
     assert_eq!(res["count"], 2);
 

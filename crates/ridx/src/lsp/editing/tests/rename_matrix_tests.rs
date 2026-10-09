@@ -106,7 +106,7 @@ fn test_workspace_rename_fn_across_files() {
         }
     });
 
-    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     assert!(res["changes"].get(&fix.lib_uri).is_some());
     assert!(res["changes"].get(&fix.caller_uri).is_some());
 
@@ -144,7 +144,7 @@ fn test_workspace_rename_from_caller_site() {
         }
     });
 
-    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     assert!(res["changes"].get(&fix.lib_uri).is_some());
     assert!(res["changes"].get(&fix.caller_uri).is_some());
 
@@ -182,7 +182,7 @@ fn test_workspace_rename_struct() {
         }
     });
 
-    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let updated = apply_workspace_edit(&fix.files, &res);
 
     assert_eq!(
@@ -218,7 +218,7 @@ fn test_workspace_rename_enum() {
         }
     });
 
-    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let updated = apply_workspace_edit(&fix.files, &res);
 
     assert_eq!(
@@ -254,7 +254,7 @@ fn test_workspace_rename_type_alias() {
         }
     });
 
-    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let updated = apply_workspace_edit(&fix.files, &res);
 
     assert_eq!(updated[&fix.lib_uri], "pub type SizeInBytes = usize;\n");
@@ -287,7 +287,7 @@ fn test_workspace_rename_const() {
         }
     });
 
-    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     let updated = apply_workspace_edit(&fix.files, &res);
 
     assert_eq!(
@@ -332,7 +332,7 @@ fn test_workspace_rename_with_dirty_overlay_line_shift() {
         }
     });
 
-    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, Some(&fix.ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     assert!(res["changes"].get(&fix.lib_uri).is_some());
     assert!(res["changes"].get(&fix.caller_uri).is_some());
 

@@ -27,7 +27,7 @@ fn prepare_rename_at(
     ws: Option<&ridx_format::WorkspaceIndex>,
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
-) -> Value {
+) -> crate::lsp::error::LspResult<Value> {
     let req = json!({
         "params": {
             "textDocument": { "uri": uri },
@@ -51,7 +51,8 @@ fn test_prepare_rename_local_binding_declaration() {
     let mut conv = PositionConverter::new();
 
     let cur = parsed.cursor.unwrap();
-    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv);
+    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv)
+        .expect("prepare rename succeeds");
     assert!(!res.is_null());
     assert_eq!(res["placeholder"], "value");
     assert_eq!(res["range"]["start"]["line"], 1);
@@ -73,7 +74,8 @@ fn test_prepare_rename_local_binding_reference() {
     let mut conv = PositionConverter::new();
 
     let cur = parsed.cursor.unwrap();
-    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv);
+    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv)
+        .expect("prepare rename succeeds");
     assert!(!res.is_null());
     assert_eq!(res["placeholder"], "value");
     assert_eq!(res["range"]["start"]["line"], 2);
@@ -96,7 +98,8 @@ fn test_prepare_rename_at_identifier_boundary() {
     let mut conv = PositionConverter::new();
 
     let cur = parsed.cursor.unwrap();
-    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv);
+    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv)
+        .expect("prepare rename succeeds");
     assert!(!res.is_null());
     assert_eq!(res["placeholder"], "value");
     assert_eq!(res["range"]["start"]["character"], 8);
@@ -117,7 +120,8 @@ fn test_prepare_rename_fn_parameter() {
     let mut conv = PositionConverter::new();
 
     let cur = parsed.cursor.unwrap();
-    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv);
+    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv)
+        .expect("prepare rename succeeds");
     assert!(!res.is_null());
     assert_eq!(res["placeholder"], "x");
 }
@@ -149,7 +153,8 @@ fn test_prepare_rename_compiled_symbol() {
         Some(&ws),
         &overlay_mgr,
         &mut conv,
-    );
+    )
+    .expect("prepare rename succeeds");
     assert!(!res.is_null());
     assert_eq!(res["placeholder"], "calculate");
     assert_eq!(res["range"]["start"]["character"], 7); // 0-based col
@@ -203,7 +208,7 @@ fn test_prepare_rename_rejects_external_symbol() {
         &overlay_mgr,
         &mut conv,
     );
-    assert_eq!(res, Value::Null);
+    assert_eq!(res.unwrap_err().code, -32803);
 }
 
 #[test]
@@ -220,7 +225,8 @@ fn test_prepare_rename_with_syntax_errors() {
     let mut conv = PositionConverter::new();
 
     let cur = parsed.cursor.unwrap();
-    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv);
+    let res = prepare_rename_at(&uri, cur.line, cur.col_utf16, None, &overlay_mgr, &mut conv)
+        .expect("prepare rename succeeds");
     assert!(!res.is_null());
     assert_eq!(res["placeholder"], "value");
 }
@@ -239,11 +245,11 @@ fn test_prepare_rename_rejects_keywords() {
 
     // Cursor on 'fn' keyword (col 0)
     let res_fn = prepare_rename_at(&uri, 0, 0, None, &overlay_mgr, &mut conv);
-    assert_eq!(res_fn, Value::Null);
+    assert_eq!(res_fn.unwrap_err().code, -32803);
 
     // Cursor on 'let' keyword (col 15)
     let res_let = prepare_rename_at(&uri, 0, 15, None, &overlay_mgr, &mut conv);
-    assert_eq!(res_let, Value::Null);
+    assert_eq!(res_let.unwrap_err().code, -32803);
 }
 
 #[test]
@@ -260,11 +266,11 @@ fn test_prepare_rename_rejects_comments_and_strings() {
 
     // Cursor on comment
     let res_comment = prepare_rename_at(&uri, 0, 5, None, &overlay_mgr, &mut conv);
-    assert_eq!(res_comment, Value::Null);
+    assert_eq!(res_comment.unwrap_err().code, -32803);
 
     // Cursor inside string literal
     let res_str = prepare_rename_at(&uri, 1, 12, None, &overlay_mgr, &mut conv);
-    assert_eq!(res_str, Value::Null);
+    assert_eq!(res_str.unwrap_err().code, -32803);
 }
 
 #[test]
@@ -281,25 +287,33 @@ fn test_prepare_rename_rejects_whitespace_and_punctuation() {
 
     // Whitespace between fn and add (col 2)
     assert_eq!(
-        prepare_rename_at(&uri, 0, 2, None, &overlay_mgr, &mut conv),
-        Value::Null
+        prepare_rename_at(&uri, 0, 2, None, &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
+        -32803
     );
 
     // Open brace '{' (col 22)
     assert_eq!(
-        prepare_rename_at(&uri, 0, 22, None, &overlay_mgr, &mut conv),
-        Value::Null
+        prepare_rename_at(&uri, 0, 22, None, &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
+        -32803
     );
 
     // Arrow '->' (col 15)
     assert_eq!(
-        prepare_rename_at(&uri, 0, 15, None, &overlay_mgr, &mut conv),
-        Value::Null
+        prepare_rename_at(&uri, 0, 15, None, &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
+        -32803
     );
 
     // Semicolon ';' (col 27)
     assert_eq!(
-        prepare_rename_at(&uri, 0, 27, None, &overlay_mgr, &mut conv),
-        Value::Null
+        prepare_rename_at(&uri, 0, 27, None, &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
+        -32803
     );
 }

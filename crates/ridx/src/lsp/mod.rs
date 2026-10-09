@@ -15,6 +15,7 @@
 
 pub mod dispatch;
 pub mod editing;
+pub mod error;
 pub mod handlers;
 pub mod hierarchy;
 pub mod intelligence;
@@ -32,7 +33,7 @@ pub mod tests;
 
 #[allow(unused_imports)]
 pub use {
-    dispatch::*, editing::*, handlers::*, hierarchy::*, intelligence::*, lifecycle::*,
+    dispatch::*, editing::*, error::*, handlers::*, hierarchy::*, intelligence::*, lifecycle::*,
     navigation::*, presentation::*, protocol::*, symbols::*, workspace::*,
 };
 

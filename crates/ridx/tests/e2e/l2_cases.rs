@@ -290,9 +290,10 @@ fn test_case_8_external_dependency_rename_safety() {
     });
     let prep_res = handle_prepare_rename(&prep_req, Some(ws), &overlay_mgr, &mut conv);
     assert!(
-        prep_res.is_null(),
+        prep_res.is_err(),
         "prepareRename on external dependency must be rejected"
     );
+    assert_eq!(prep_res.unwrap_err().code, -32803);
 
     let ren_req = json!({
         "params": {
@@ -303,9 +304,10 @@ fn test_case_8_external_dependency_rename_safety() {
     });
     let ren_res = handle_rename(&ren_req, Some(ws), &overlay_mgr, &mut conv);
     assert!(
-        ren_res.is_null() || ren_res["changes"].as_object().is_some_and(|m| m.is_empty()),
-        "rename on external dependency must be rejected (null or empty changes)"
+        ren_res.is_err(),
+        "rename on external dependency must be rejected"
     );
+    assert_eq!(ren_res.unwrap_err().code, -32803);
 
     let original = std::fs::read_to_string(&app_file).unwrap();
     assert!(original.contains("ext_service::external_compute()"));

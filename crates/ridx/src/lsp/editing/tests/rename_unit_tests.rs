@@ -21,7 +21,10 @@ use ridx_test_support::{apply_workspace_edit, parse_fixture};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-fn run_local_rename(fixture: &str, new_name: &str) -> (Value, String, HashMap<String, String>) {
+fn run_local_rename_result(
+    fixture: &str,
+    new_name: &str,
+) -> Result<(Value, String, HashMap<String, String>), crate::lsp::error::LspError> {
     let parsed = parse_fixture(fixture);
     let temp = tempfile::tempdir().unwrap();
     let file = temp.path().join("lib.rs");
@@ -41,12 +44,16 @@ fn run_local_rename(fixture: &str, new_name: &str) -> (Value, String, HashMap<St
         }
     });
 
-    let res = handle_rename(&req, None, &overlay_mgr, &mut conv);
+    let res = handle_rename(&req, None, &overlay_mgr, &mut conv)?;
     let mut files = HashMap::new();
     files.insert(uri.clone(), parsed.clean_text);
 
     let updated = apply_workspace_edit(&files, &res);
-    (res, uri, updated)
+    Ok((res, uri, updated))
+}
+
+fn run_local_rename(fixture: &str, new_name: &str) -> (Value, String, HashMap<String, String>) {
+    run_local_rename_result(fixture, new_name).expect("rename succeeds")
 }
 
 #[test]
@@ -195,23 +202,17 @@ fn test_rename_at_identifier_boundary() {
 #[test]
 fn test_rename_invalid_name_rejected() {
     let fixture = "fn test() {\n    let $0x = 1;\n    let _ = x;\n}\n";
-    let (res, uri, updated) = run_local_rename(fixture, "123invalid");
-    assert_eq!(res, json!({ "changes": {} }));
-    assert_eq!(
-        updated[&uri],
-        "fn test() {\n    let x = 1;\n    let _ = x;\n}\n"
-    );
+    let res = run_local_rename_result(fixture, "123invalid");
+    assert!(res.is_err());
+    assert_eq!(res.unwrap_err().code, -32803);
 }
 
 #[test]
 fn test_rename_keyword_rejected() {
     let fixture = "fn test() {\n    let $0x = 1;\n    let _ = x;\n}\n";
-    let (res, uri, updated) = run_local_rename(fixture, "match");
-    assert_eq!(res, json!({ "changes": {} }));
-    assert_eq!(
-        updated[&uri],
-        "fn test() {\n    let x = 1;\n    let _ = x;\n}\n"
-    );
+    let res = run_local_rename_result(fixture, "match");
+    assert!(res.is_err());
+    assert_eq!(res.unwrap_err().code, -32803);
 }
 
 #[test]

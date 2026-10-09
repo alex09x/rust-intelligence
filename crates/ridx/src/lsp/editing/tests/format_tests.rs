@@ -91,10 +91,10 @@ fn test_format_and_actions() {
     assert_eq!(act_res.as_array().unwrap().len(), 1);
 
     // 3. Execute command
-    assert!(handle_execute_command(&action_req, &mut overlay_mgr).is_null());
+    assert!(handle_execute_command(&action_req, &mut overlay_mgr).is_err());
     let cmd_resolve = json!({ "params": { "command": "ridx.resolveWorkspace" } });
     assert_eq!(
-        handle_execute_command(&cmd_resolve, &mut overlay_mgr)["resolved"],
+        handle_execute_command(&cmd_resolve, &mut overlay_mgr).unwrap()["resolved"],
         true
     );
 

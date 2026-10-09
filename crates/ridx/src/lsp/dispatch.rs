@@ -84,7 +84,7 @@ pub fn dispatch_lsp_message<W: Write>(
 
     let conv = &mut lifecycle.conv;
 
-    let result = match method {
+    let result: super::error::LspResult<Value> = match method {
         "initialize" => match lifecycle.handle_initialize(&msg) {
             Ok((capabilities, folders)) => {
                 if !folders.is_empty() {
@@ -93,37 +93,14 @@ pub fn dispatch_lsp_message<W: Write>(
                     }
                     multi_root.open_from_folders(&folders);
                 }
-                if let Some(ref req_id) = id {
-                    send_response(
-                        writer,
-                        &json!({ "jsonrpc": "2.0", "id": req_id, "result": capabilities }),
-                    )?;
-                }
-                return Ok(true);
+                Ok(capabilities)
             }
-            Err((code, message)) => {
-                if let Some(ref req_id) = id {
-                    let _ = send_response(
-                        writer,
-                        &json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": code, "message": message } }),
-                    );
-                }
-                return Ok(true);
-            }
+            Err(err) => Err(err),
         },
 
         "initialized" => return Ok(true),
 
-        "shutdown" => {
-            let _ = lifecycle.handle_shutdown();
-            if let Some(ref req_id) = id {
-                send_response(
-                    writer,
-                    &json!({ "jsonrpc": "2.0", "id": req_id, "result": Value::Null }),
-                )?;
-            }
-            return Ok(true);
-        }
+        "shutdown" => lifecycle.handle_shutdown(),
 
         "textDocument/didOpen" => {
             let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
@@ -200,12 +177,12 @@ pub fn dispatch_lsp_message<W: Write>(
         }
 
         "textDocument/publishDiagnostics" | "textDocument/willSave" => return Ok(true),
-        "textDocument/willSaveWaitUntil" => json!([]),
+        "textDocument/willSaveWaitUntil" => Ok(json!([])),
 
         "workspace/didChangeConfiguration" | "$/setTrace" | "window/workDoneProgress/cancel" => {
             return Ok(true)
         }
-        "workspace/configuration" => json!([]),
+        "workspace/configuration" => Ok(json!([])),
 
         "workspace/didChangeWorkspaceFolders" => {
             multi_root.handle_did_change_workspace_folders(&msg);
@@ -219,7 +196,7 @@ pub fn dispatch_lsp_message<W: Write>(
         }
 
         "workspace/willCreateFiles" | "workspace/willRenameFiles" | "workspace/willDeleteFiles" => {
-            json!({})
+            Ok(json!({}))
         }
 
         "workspace/didCreateFiles" | "workspace/didRenameFiles" | "workspace/didDeleteFiles" => {
@@ -228,97 +205,97 @@ pub fn dispatch_lsp_message<W: Write>(
         }
 
         "textDocument/definition" => {
-            handle_definition(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
+            Ok(handle_definition(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
         "textDocument/references" => {
-            handle_references(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
+            Ok(handle_references(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
         "textDocument/typeDefinition" => {
-            handle_type_definition(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
+            Ok(handle_type_definition(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
         "textDocument/implementation" => {
-            handle_implementation(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
+            Ok(handle_implementation(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
         "textDocument/declaration" => {
-            handle_declaration(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
+            Ok(handle_declaration(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
-        "textDocument/documentSymbol" => handle_document_symbol(&msg, overlay_mgr, conv),
-        "workspace/symbol" => handle_workspace_symbol(&msg, multi_root.all_workspaces(), conv),
+        "textDocument/documentSymbol" => Ok(handle_document_symbol(&msg, overlay_mgr, conv)),
+        "workspace/symbol" => Ok(handle_workspace_symbol(&msg, multi_root.all_workspaces(), conv)),
         "workspaceSymbol/resolve" | "workspace/symbol/resolve" => {
-            handle_workspace_symbol_resolve(&msg, multi_root.all_workspaces(), conv)
+            Ok(handle_workspace_symbol_resolve(&msg, multi_root.all_workspaces(), conv))
         }
         "textDocument/documentHighlight" => {
-            handle_document_highlight(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
+            Ok(handle_document_highlight(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
-        "textDocument/hover" => handle_hover(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv),
+        "textDocument/hover" => Ok(handle_hover(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)),
         "textDocument/completion" => {
-            handle_completion(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
+            Ok(handle_completion(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
-        "completionItem/resolve" => handle_completion_resolve(&msg),
+        "completionItem/resolve" => Ok(handle_completion_resolve(&msg)),
         "textDocument/signatureHelp" => {
-            handle_signature_help(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
+            Ok(handle_signature_help(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
-        "textDocument/inlayHint" => handle_inlay_hint(&msg, multi_root.doc_ws(&msg), overlay_mgr),
-        "inlayHint/resolve" => handle_inlay_hint_resolve(&msg),
-        "textDocument/inlineValue" => handle_inline_value(&msg, Some(overlay_mgr)),
-        "textDocument/inlineCompletion" => handle_inline_completion(&msg, Some(overlay_mgr)),
+        "textDocument/inlayHint" => Ok(handle_inlay_hint(&msg, multi_root.doc_ws(&msg), overlay_mgr)),
+        "inlayHint/resolve" => Ok(handle_inlay_hint_resolve(&msg)),
+        "textDocument/inlineValue" => Ok(handle_inline_value(&msg, Some(overlay_mgr))),
+        "textDocument/inlineCompletion" => Ok(handle_inline_completion(&msg, Some(overlay_mgr))),
         "textDocument/prepareCallHierarchy" => {
-            handle_prepare_call_hierarchy(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
+            Ok(handle_prepare_call_hierarchy(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
         "callHierarchy/incomingCalls" => {
             let f = uri_to_path(msg["params"]["item"]["uri"].as_str().unwrap_or(""));
-            handle_call_hierarchy_incoming_calls(
+            Ok(handle_call_hierarchy_incoming_calls(
                 &msg,
                 multi_root.find_workspace_for_path(Path::new(&f)),
                 conv,
-            )
+            ))
         }
         "callHierarchy/outgoingCalls" => {
             let f = uri_to_path(msg["params"]["item"]["uri"].as_str().unwrap_or(""));
-            handle_call_hierarchy_outgoing_calls(
+            Ok(handle_call_hierarchy_outgoing_calls(
                 &msg,
                 multi_root.find_workspace_for_path(Path::new(&f)),
                 conv,
-            )
+            ))
         }
         "textDocument/prepareTypeHierarchy" => {
             let ws = multi_root.doc_ws(&msg);
-            handle_prepare_type_hierarchy(&msg, ws, overlay_mgr, conv)
+            Ok(handle_prepare_type_hierarchy(&msg, ws, overlay_mgr, conv))
         }
         "typeHierarchy/supertypes" => {
-            handle_type_hierarchy_supertypes(&msg, multi_root.first_workspace())
+            Ok(handle_type_hierarchy_supertypes(&msg, multi_root.first_workspace()))
         }
         "typeHierarchy/subtypes" => {
-            handle_type_hierarchy_subtypes(&msg, multi_root.first_workspace())
+            Ok(handle_type_hierarchy_subtypes(&msg, multi_root.first_workspace()))
         }
-        "textDocument/selectionRange" => handle_selection_range(&msg, overlay_mgr),
-        "textDocument/documentLink" => handle_document_link(&msg, overlay_mgr),
-        "documentLink/resolve" => handle_document_link_resolve(&msg),
-        "textDocument/documentColor" => handle_document_color(&msg),
-        "textDocument/colorPresentation" => handle_color_presentation(&msg),
+        "textDocument/selectionRange" => Ok(handle_selection_range(&msg, overlay_mgr)),
+        "textDocument/documentLink" => Ok(handle_document_link(&msg, overlay_mgr)),
+        "documentLink/resolve" => Ok(handle_document_link_resolve(&msg)),
+        "textDocument/documentColor" => Ok(handle_document_color(&msg)),
+        "textDocument/colorPresentation" => Ok(handle_color_presentation(&msg)),
         "textDocument/semanticTokens/full" | "textDocument/semanticTokens/full/delta" => {
-            handle_semantic_tokens_full(&msg, overlay_mgr)
+            Ok(handle_semantic_tokens_full(&msg, overlay_mgr))
         }
-        "textDocument/semanticTokens/range" => handle_semantic_tokens_range(&msg, overlay_mgr),
-        "textDocument/foldingRange" => handle_folding_range(&msg, overlay_mgr),
-        "textDocument/codeLens" => handle_code_lens(&msg, overlay_mgr),
-        "codeLens/resolve" => handle_code_lens_resolve(&msg),
+        "textDocument/semanticTokens/range" => Ok(handle_semantic_tokens_range(&msg, overlay_mgr)),
+        "textDocument/foldingRange" => Ok(handle_folding_range(&msg, overlay_mgr)),
+        "textDocument/codeLens" => Ok(handle_code_lens(&msg, overlay_mgr)),
+        "codeLens/resolve" => Ok(handle_code_lens_resolve(&msg)),
         "textDocument/diagnostic" => {
-            handle_diagnostic_with_flycheck(&msg, overlay_mgr, Some(&lifecycle.flycheck))
+            Ok(handle_diagnostic_with_flycheck(&msg, overlay_mgr, Some(&lifecycle.flycheck)))
         }
-        "workspace/diagnostic" => handle_workspace_diagnostic_with_flycheck(
+        "workspace/diagnostic" => Ok(handle_workspace_diagnostic_with_flycheck(
             &msg,
             overlay_mgr,
             multi_root,
             Some(&lifecycle.flycheck),
-        ),
+        )),
         "textDocument/moniker" => {
             let ws = multi_root.doc_ws(&msg);
-            handle_moniker(&msg, ws, overlay_mgr, conv)
+            Ok(handle_moniker(&msg, ws, overlay_mgr, conv))
         }
-        "moniker/resolve" => handle_moniker_resolve(&msg),
+        "moniker/resolve" => Ok(handle_moniker_resolve(&msg)),
         "textDocument/content" | "workspace/textDocumentContent" => {
-            handle_text_document_content(&msg, overlay_mgr)
+            Ok(handle_text_document_content(&msg, overlay_mgr))
         }
         "textDocument/prepareRename" => {
             let ws = multi_root.doc_ws(&msg);
@@ -328,12 +305,12 @@ pub fn dispatch_lsp_message<W: Write>(
             let ws = multi_root.doc_ws(&msg);
             handle_rename(&msg, ws, overlay_mgr, conv)
         }
-        "textDocument/linkedEditingRange" => handle_linked_editing_range(&msg, overlay_mgr, conv),
-        "textDocument/formatting" => handle_formatting(&msg, overlay_mgr),
-        "textDocument/rangeFormatting" => handle_range_formatting(&msg, overlay_mgr),
-        "textDocument/onTypeFormatting" => handle_on_type_formatting(&msg, overlay_mgr),
-        "textDocument/codeAction" => handle_code_action(&msg, overlay_mgr),
-        "codeAction/resolve" => handle_code_action_resolve(&msg),
+        "textDocument/linkedEditingRange" => Ok(handle_linked_editing_range(&msg, overlay_mgr, conv)),
+        "textDocument/formatting" => Ok(handle_formatting(&msg, overlay_mgr)),
+        "textDocument/rangeFormatting" => Ok(handle_range_formatting(&msg, overlay_mgr)),
+        "textDocument/onTypeFormatting" => Ok(handle_on_type_formatting(&msg, overlay_mgr)),
+        "textDocument/codeAction" => Ok(handle_code_action(&msg, overlay_mgr)),
+        "codeAction/resolve" => Ok(handle_code_action_resolve(&msg)),
         "workspace/executeCommand" => {
             if let Some(res) = try_dispatch_apply_edits_command(&msg, overlay_mgr, writer, &mut id)?
             {
@@ -342,17 +319,9 @@ pub fn dispatch_lsp_message<W: Write>(
             handle_execute_command(&msg, overlay_mgr)
         }
 
-        _ => {
-            if let Some(ref req_id) = id {
-                let resp = json!({
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "error": { "code": -32601, "message": format!("Method not found: {method}") }
-                });
-                send_response(writer, &resp)?;
-            }
-            return Ok(true);
-        }
+        _ => Err(super::error::LspError::method_not_found(format!(
+            "Method not found: {method}"
+        ))),
     };
 
     if let Some(ref req_id) = id {
@@ -364,10 +333,20 @@ pub fn dispatch_lsp_message<W: Write>(
             });
             send_response(writer, &resp)?;
         } else {
-            send_response(
-                writer,
-                &json!({ "jsonrpc": "2.0", "id": req_id, "result": result }),
-            )?;
+            match result {
+                Ok(val) => {
+                    send_response(
+                        writer,
+                        &json!({ "jsonrpc": "2.0", "id": req_id, "result": val }),
+                    )?;
+                }
+                Err(err) => {
+                    send_response(
+                        writer,
+                        &json!({ "jsonrpc": "2.0", "id": req_id, "error": err.to_json() }),
+                    )?;
+                }
+            }
         }
     }
 
