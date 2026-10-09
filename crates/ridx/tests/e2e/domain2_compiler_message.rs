@@ -139,19 +139,20 @@ fn test_parse_utf16_columns_with_astral_emojis() {
             "file_name": "src/lib.rs",
             "line_start": 1,
             "line_end": 1,
-            "column_start": 14, // 1-based char column
-            "column_end": 15,
+            "column_start": 13, // 1-based char column of `x`
+            "column_end": 14,
             "is_primary": true,
             "text": [{
                 "text": line_text,
-                "highlight_start": 14,
-                "highlight_end": 15
+                "highlight_start": 13,
+                "highlight_end": 14
             }]
         }]
     });
 
     let (_, diag) = parse_compiler_message(&raw, &root).unwrap();
-    assert_eq!(diag["range"]["start"]["character"], 14); // UTF-16 converted (+1 unit for 🦀)
+    assert_eq!(diag["range"]["start"]["character"], 13); // UTF-16 converted (+1 unit for 🦀 surrogate)
+    assert_eq!(diag["range"]["end"]["character"], 14);
     let _ = fs::remove_dir_all(&root);
 }
 

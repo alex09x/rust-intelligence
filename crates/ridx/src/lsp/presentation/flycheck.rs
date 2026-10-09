@@ -10,7 +10,9 @@
 
 //! Asynchronous background flycheck and compiler diagnostics publisher.
 
-pub use super::compiler_message::{find_ridx_driver, parse_compiler_message};
+pub use super::compiler_message::{
+    find_ridx_driver, find_ridx_driver_with, parse_compiler_message,
+};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};

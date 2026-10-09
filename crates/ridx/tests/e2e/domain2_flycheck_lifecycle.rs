@@ -11,7 +11,7 @@
 //! Domain 2: Flycheck lifecycle integration tests, stream message processing,
 //! driver resolution, diagnostic accumulation across files, and stale generation filtering.
 
-use ridx::lsp::presentation::compiler_message::{find_ridx_driver, parse_compiler_message};
+use ridx::lsp::presentation::compiler_message::{find_ridx_driver_with, parse_compiler_message};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -192,10 +192,7 @@ fn test_find_ridx_driver_custom_env_var() {
     let fake_bin = root.join("custom_driver");
     let _ = fs::write(&fake_bin, "#!/bin/sh\nexit 0\n");
 
-    std::env::set_var("RIDX_DRIVER_BIN", fake_bin.to_str().unwrap());
-    let found = find_ridx_driver(&root);
-    std::env::remove_var("RIDX_DRIVER_BIN");
-
+    let found = find_ridx_driver_with(&root, Some(&fake_bin));
     assert_eq!(found, Some(fake_bin));
     let _ = fs::remove_dir_all(&root);
 }
@@ -207,10 +204,7 @@ fn test_find_ridx_driver_fallback_candidate_search() {
     let _ = fs::create_dir_all(debug_bin.parent().unwrap());
     let _ = fs::write(&debug_bin, "fake");
 
-    // Ensure RIDX_DRIVER_BIN does not interfere
-    std::env::remove_var("RIDX_DRIVER_BIN");
-
-    let found = find_ridx_driver(&root);
+    let found = find_ridx_driver_with(&root, None);
     assert_eq!(found, Some(debug_bin));
     let _ = fs::remove_dir_all(&root);
 }
@@ -218,8 +212,7 @@ fn test_find_ridx_driver_fallback_candidate_search() {
 #[test]
 fn test_find_ridx_driver_non_existent_returns_none() {
     let (root, _, _) = setup_temp_workspace();
-    std::env::remove_var("RIDX_DRIVER_BIN");
-    let found = find_ridx_driver(&root);
+    let found = find_ridx_driver_with(&root, None);
     assert_eq!(found, None);
     let _ = fs::remove_dir_all(&root);
 }

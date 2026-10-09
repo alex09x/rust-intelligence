@@ -13,11 +13,40 @@
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
+fn resolve_effective_span<'a>(span: &'a Value, root: &Path) -> &'a Value {
+    let file_name = span.get("file_name").and_then(|f| f.as_str()).unwrap_or("");
+    let is_virtual = file_name.starts_with('<') || !root.join(file_name).exists();
+    if is_virtual {
+        let mut cur = span;
+        while let Some(exp_span) = cur.get("expansion").and_then(|e| e.get("span")) {
+            let exp_file = exp_span
+                .get("file_name")
+                .and_then(|f| f.as_str())
+                .unwrap_or("");
+            if !exp_file.starts_with('<') && root.join(exp_file).exists() {
+                return exp_span;
+            }
+            cur = exp_span;
+        }
+    }
+    span
+}
+
 pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value)> {
-    let spans = msg.get("spans")?.as_array()?;
-    let primary_span = spans
+    let actual_msg = if let Some(reason) = msg.get("reason").and_then(|r| r.as_str()) {
+        if reason != "compiler-message" {
+            return None;
+        }
+        msg.get("message")?
+    } else {
+        msg
+    };
+
+    let spans = actual_msg.get("spans")?.as_array()?;
+    let raw_primary = spans
         .iter()
         .find(|s| s.get("is_primary") == Some(&Value::Bool(true)))?;
+    let primary_span = resolve_effective_span(raw_primary, root);
 
     let file_name = primary_span.get("file_name")?.as_str()?;
     let abs_file = if Path::new(file_name).is_absolute() {
@@ -58,7 +87,7 @@ pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value
             (col_start_char, col_end_char)
         };
 
-    let level_str = msg.get("level")?.as_str().unwrap_or("error");
+    let level_str = actual_msg.get("level")?.as_str().unwrap_or("error");
     let severity = match level_str {
         "error" => 1,
         "warning" => 2,
@@ -67,10 +96,10 @@ pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value
         _ => 1,
     };
 
-    let mut message_text = msg.get("message")?.as_str()?.to_string();
+    let mut message_text = actual_msg.get("message")?.as_str()?.to_string();
 
     // Capture child notes and help messages
-    if let Some(children) = msg.get("children").and_then(|c| c.as_array()) {
+    if let Some(children) = actual_msg.get("children").and_then(|c| c.as_array()) {
         for child in children {
             if let Some(ch_msg) = child.get("message").and_then(|m| m.as_str()) {
                 if !ch_msg.is_empty() {
@@ -84,7 +113,7 @@ pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value
         }
     }
 
-    let code_val = msg
+    let code_val = actual_msg
         .get("code")
         .and_then(|c| c.get("code"))
         .cloned()
@@ -165,10 +194,14 @@ pub fn char_col_to_utf16(line_str: &str, char_col: u64) -> u64 {
 }
 
 pub fn find_ridx_driver(root: &Path) -> Option<PathBuf> {
-    if let Ok(driver_env) = std::env::var("RIDX_DRIVER_BIN") {
-        let p = PathBuf::from(driver_env);
+    let env_driver = std::env::var("RIDX_DRIVER_BIN").ok();
+    find_ridx_driver_with(root, env_driver.as_deref().map(Path::new))
+}
+
+pub fn find_ridx_driver_with(root: &Path, env_override: Option<&Path>) -> Option<PathBuf> {
+    if let Some(p) = env_override {
         if p.exists() {
-            return Some(p);
+            return Some(p.to_path_buf());
         }
     }
 

@@ -12,7 +12,7 @@
 //! raw string scanning, comment escaping, and let-binding type mismatch detection.
 
 use ridx::lsp::presentation::diagnostics::{
-    handle_document_diagnostic_text, publish_syntax_diagnostics,
+    handle_document_diagnostic_text, publish_syntax_diagnostics, reconcile_diagnostics,
 };
 use ridx::overlay::OverlayManager;
 use serde_json::json;
@@ -303,4 +303,67 @@ fn test_syntax_unclosed_block_comment_at_eof() {
                 .iter()
                 .all(|i| i["severity"].as_u64().unwrap_or(0) >= 1)
     );
+}
+
+#[test]
+fn test_syntax_and_flycheck_diagnostics_coexistence_and_deduplication() {
+    let code = "fn test() {\n    let len: usize = true;\n    let y = 1;\n}\n";
+    let syntax_res = handle_document_diagnostic_text(code);
+    let heuristic_items = syntax_res["items"].as_array().unwrap();
+    assert_eq!(heuristic_items.len(), 1);
+    assert_eq!(heuristic_items[0]["source"], "ridx");
+    assert_eq!(heuristic_items[0]["code"], "E0308");
+    assert_eq!(heuristic_items[0]["range"]["start"]["line"], 1);
+
+    // Simulated flycheck diagnostics from rustc on the same error (line 1, E0308)
+    let authoritative_items = vec![
+        json!({
+            "range": {
+                "start": { "line": 1, "character": 21 },
+                "end": { "line": 1, "character": 25 }
+            },
+            "severity": 1,
+            "code": "E0308",
+            "source": "rustc",
+            "message": "mismatched types\nexpected `usize`, found `bool`"
+        }),
+        json!({
+            "range": {
+                "start": { "line": 2, "character": 8 },
+                "end": { "line": 2, "character": 9 }
+            },
+            "severity": 2,
+            "code": "unused_variables",
+            "source": "rustc",
+            "message": "unused variable: `y`"
+        }),
+    ];
+
+    // Reconcile: heuristic E0308 on line 1 is suppressed because rustc authoritative E0308 is present
+    let reconciled = reconcile_diagnostics(heuristic_items, &authoritative_items);
+
+    // Exactly 2 diagnostics: both authoritative rustc diagnostics, 0 duplicated E0308 from ridx
+    assert_eq!(reconciled.len(), 2);
+    assert!(reconciled.iter().all(|d| d["source"] == "rustc"));
+    let codes: Vec<&str> = reconciled
+        .iter()
+        .map(|d| d["code"].as_str().unwrap())
+        .collect();
+    assert_eq!(codes, vec!["E0308", "unused_variables"]);
+
+    // If flycheck has no E0308 (e.g. only unused warning on line 2), heuristic E0308 is retained
+    let flycheck_only_unused = vec![json!({
+        "range": {
+            "start": { "line": 2, "character": 8 },
+            "end": { "line": 2, "character": 9 }
+        },
+        "severity": 2,
+        "code": "unused_variables",
+        "source": "rustc",
+        "message": "unused variable: `y`"
+    })];
+    let reconciled_with_heuristic = reconcile_diagnostics(heuristic_items, &flycheck_only_unused);
+    assert_eq!(reconciled_with_heuristic.len(), 2);
+    assert_eq!(reconciled_with_heuristic[0]["source"], "rustc");
+    assert_eq!(reconciled_with_heuristic[1]["source"], "ridx");
 }

@@ -14,6 +14,7 @@ bench_scenarios.json
 *.scip
 index.scip
 *.jsonl
+!crates/ridx/tests/fixtures/diagnostics/*.jsonl
 /report.html
 bench/*.html
 bench/generate_full_html.py

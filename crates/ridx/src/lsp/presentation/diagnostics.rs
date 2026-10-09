@@ -361,3 +361,26 @@ fn check_let_type_mismatch(
     }
     None
 }
+
+/// Reconciles heuristic in-memory diagnostics with authoritative flycheck diagnostics.
+///
+/// If an authoritative `rustc` diagnostic covers the same line with the same error code,
+/// the heuristic `ridx` entry is suppressed to prevent duplicated error highlights in the editor.
+pub fn reconcile_diagnostics(heuristic: &[Value], authoritative: &[Value]) -> Vec<Value> {
+    let mut result = authoritative.to_vec();
+    for h in heuristic {
+        let h_line = h["range"]["start"]["line"].as_u64();
+        let h_code = h.get("code").and_then(|c| c.as_str());
+
+        let is_shadowed = authoritative.iter().any(|a| {
+            let a_line = a["range"]["start"]["line"].as_u64();
+            let a_code = a.get("code").and_then(|c| c.as_str());
+            a_line == h_line && a_code == h_code
+        });
+
+        if !is_shadowed {
+            result.push(h.clone());
+        }
+    }
+    result
+}
