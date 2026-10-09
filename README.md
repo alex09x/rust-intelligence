@@ -180,6 +180,8 @@ ridx lsp
 ```
 
 > **Note on updates**: After updating `ridx` (or modifying compiler driver flags), run `ridx index .` (or `ridx index . --all-features`) to re-generate workspace indices with updated canonical symbol definitions and paths.
+>
+> **Standard library indexing limitation**: Go to definition, hover signatures, and find-references for items defined in `std`/`core`/`alloc` are not available yet: sysroot crates are precompiled and are not indexed. Navigation into crates.io and git dependencies works.
 
 ---
 

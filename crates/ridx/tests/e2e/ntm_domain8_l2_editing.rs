@@ -385,3 +385,14 @@ fn test_l2_reexport_definition_resolution() {
     assert_eq!(def.path, "inner::Thing");
     assert_eq!(def.kind, ridx_format::DefKind::Struct);
 }
+
+#[test]
+#[ignore = "sysroot crates are not indexed yet (see backlog: sysroot indexing)"]
+fn test_l2_std_collections_hashmap_lookup() {
+    let ws = get_or_index_l2_fixture("multi_crate");
+    let def = ws
+        .find_definition_by_path("std::collections::HashMap")
+        .expect("std::collections::HashMap should resolve to struct definition");
+    assert_eq!(def.name, "HashMap");
+    assert!(!ws.search_symbols("HashMap").is_empty());
+}

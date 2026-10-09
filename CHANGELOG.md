@@ -5,7 +5,7 @@ All notable changes to `rust-intelligence` (`ridx`) are documented in this file.
 ## [Unreleased]
 
 ### Added
-- **Standard Library Path Mapping**: Queries starting with `std::` (such as `std::vec::Vec` or `std::option::Option`) are automatically mapped to underlying canonical crates `core::` and `alloc::` in `find_definition_by_path` and `search_symbols`.
+- **Preparation for Sysroot Indexing**: Foundation for standard library path mapping (`std_path_candidates` mapping `std::` queries to canonical `core::` and `alloc::` paths in `find_definition_by_path` and `search_symbols`).
 - **Rename Correctness Oracle**: Automated oracle verification against real-world crates (e.g. Tokio), validating that generated `WorkspaceEdit`s compile cleanly with zero errors. Published results stored in `bench/published/rename_oracle.json`.
 
 ### Changed
