@@ -97,6 +97,15 @@ impl<'a> LocationReferences<'a> {
             p.to_path_buf()
         }
     }
+
+    /// Returns true if this target represents an external dependency or is outside the workspace.
+    pub fn is_external(&self, ws: &super::WorkspaceIndex) -> bool {
+        ws.is_external_target(
+            self.target_file,
+            &self.target_resolved_path(),
+            self.target_unit_key,
+        )
+    }
 }
 
 /// Detailed hover information for a source location.

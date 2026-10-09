@@ -43,6 +43,8 @@ fn test_run_indexing_on_sample_crate() {
             no_default_features: false,
             all_features: false,
             target: None,
+            cache_dir: None,
+            driver_bin: None,
         });
         assert!(out.variant_out_dir.exists());
 
@@ -56,6 +58,8 @@ fn test_run_indexing_on_sample_crate() {
             no_default_features: false,
             all_features: false,
             target: None,
+            cache_dir: None,
+            driver_bin: None,
         });
         assert!(out_file.variant_out_dir.exists());
     }
@@ -74,6 +78,8 @@ fn test_try_run_indexing_error_cases() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     assert!(res_missing.is_err());
 
@@ -88,6 +94,8 @@ fn test_try_run_indexing_error_cases() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     assert!(res_not_cargo.is_err());
 
@@ -102,6 +110,8 @@ fn test_try_run_indexing_error_cases() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     assert!(res_empty.is_err());
 }
@@ -134,6 +144,8 @@ fn test_try_run_indexing_with_options_and_deps() {
             no_default_features: true,
             all_features: true,
             target: None,
+            cache_dir: None,
+            driver_bin: None,
         });
         assert!(res.is_ok());
 
@@ -223,6 +235,8 @@ fn test_try_run_indexing_with_options_and_deps() {
             no_default_features: true,
             all_features: true,
             target: None,
+            cache_dir: None,
+            driver_bin: None,
         });
         assert!(res2.is_ok());
     }
@@ -256,6 +270,8 @@ fn test_try_run_indexing_syntax_error() {
             no_default_features: false,
             all_features: false,
             target: None,
+            cache_dir: None,
+            driver_bin: None,
         });
         assert!(res.is_err());
         let err_msg = res.unwrap_err();

@@ -12,7 +12,7 @@
 
 use std::path::PathBuf;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct IndexOptions {
     pub path: PathBuf,
     pub out_dir_opt: Option<PathBuf>,
@@ -22,6 +22,8 @@ pub struct IndexOptions {
     pub no_default_features: bool,
     pub all_features: bool,
     pub target: Option<String>,
+    pub cache_dir: Option<PathBuf>,
+    pub driver_bin: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone)]

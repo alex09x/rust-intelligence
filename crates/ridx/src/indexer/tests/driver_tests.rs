@@ -209,6 +209,8 @@ fn test_indexer_cargo_config_and_driver() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     assert!(err_file
         .unwrap_err()
@@ -224,6 +226,8 @@ fn test_indexer_cargo_config_and_driver() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     assert!(err_dir
         .unwrap_err()
@@ -238,6 +242,8 @@ fn test_indexer_cargo_config_and_driver() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     assert!(err_nonexist.unwrap_err().contains("does not exist"));
 }

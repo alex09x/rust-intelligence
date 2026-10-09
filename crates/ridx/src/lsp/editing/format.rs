@@ -27,12 +27,16 @@ pub fn find_crate_edition(file_path: &str) -> String {
             if let Ok(content) = std::fs::read_to_string(&cargo_toml) {
                 let mut in_package = false;
                 let mut in_workspace_package = false;
+                let mut found_package = false;
 
                 for line in content.lines() {
                     let trimmed = line.trim();
                     if trimmed.starts_with('[') && trimmed.ends_with(']') {
                         let sec = trimmed[1..trimmed.len() - 1].trim();
                         in_package = sec == "package";
+                        if in_package {
+                            found_package = true;
+                        }
                         in_workspace_package = sec == "workspace.package";
                         continue;
                     }
@@ -55,8 +59,18 @@ pub fn find_crate_edition(file_path: &str) -> String {
                         }
                     }
                 }
+
+                if found_package && !is_workspace_inherited {
+                    return "2021".to_string();
+                }
             }
         }
+
+        // Stop ascending if repository boundary is reached
+        if dir.join(".git").exists() {
+            break;
+        }
+
         cur = dir.parent();
     }
 

@@ -31,6 +31,8 @@ fn test_indexer_helpers_and_error_paths() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     })
     .is_err());
 
@@ -46,6 +48,8 @@ fn test_indexer_helpers_and_error_paths() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     })
     .is_err());
 
@@ -60,6 +64,8 @@ fn test_indexer_helpers_and_error_paths() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     })
     .is_err());
 
@@ -173,6 +179,8 @@ fn test_indexer_helpers_and_error_paths() {
         no_default_features: false,
         all_features: false,
         target: Some("x86_64-unknown-linux-gnu".to_string()),
+        cache_dir: None,
+        driver_bin: None,
     });
     std::env::remove_var("RIDX_NO_DEPS");
     let _ = fs::remove_dir_all(&expected_rel_dir);
@@ -190,6 +198,8 @@ fn test_indexer_helpers_and_error_paths() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     assert!(err_out.is_err());
     assert!(err_out
@@ -209,6 +219,8 @@ fn test_indexer_helpers_and_error_paths() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     if let Some(p) = orig_path {
         std::env::set_var("PATH", p);
@@ -252,6 +264,8 @@ fn test_indexer_helpers_and_error_paths() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     if let Some(p) = orig_path3 {
         std::env::set_var("PATH", p);
@@ -274,6 +288,8 @@ fn test_indexer_helpers_and_error_paths() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     std::env::remove_var("RIDX_DRIVER_BIN");
     std::env::remove_var("RIDX_NO_DEPS");

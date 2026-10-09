@@ -78,7 +78,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     }
     let base_out_dir = base_out_dir.canonicalize().unwrap_or(base_out_dir);
 
-    let driver_bin = match find_driver_binary() {
+    let driver_bin = match opts.driver_bin.clone().or_else(find_driver_binary) {
         Some(b) => b,
         None => {
             return Err("could not find ridx-driver binary. Please build ridx-driver first (e.g. cargo build -p ridx-driver) or place it in PATH.".to_string());
@@ -153,7 +153,10 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     if let Some(ref tgt) = target {
         eprintln!("  Target Triple  : {}", tgt.cyan());
     }
-    let cache_dir = ridx_format::resolve_cache_dir();
+    let cache_dir = opts
+        .cache_dir
+        .clone()
+        .unwrap_or_else(ridx_format::resolve_cache_dir);
     let _ = fs::create_dir_all(cache_dir.join("objects"));
 
     let ld_path = super::cargo::compute_sysroot_ld_path();

@@ -484,13 +484,14 @@ impl WorkspaceIndex {
     ) -> Vec<WorkspaceReference<'a>> {
         let mut all_refs = Vec::new();
         let mut seen_refs = std::collections::HashSet::new();
-        let target_crate = target_path.split("::").next().unwrap_or(target_path);
+        let mut target_crate = target_path.split("::").next().unwrap_or(target_path);
 
         // If target_unit_key is given, locate the definition in target_unit to get its line and file
         let target_def_coords = if let Some(target_unit) = target_unit_key {
             let mut coords = None;
             for (j, r) in self.readers.iter().enumerate() {
                 if self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(target_unit) {
+                    target_crate = r.crate_name();
                     if let Some(def) = r.find_definition_by_path(target_path) {
                         let span = def.span();
                         let file = r.get_file(span.file_id());
@@ -535,6 +536,25 @@ impl WorkspaceIndex {
         } else {
             None
         };
+
+        let prefix = target_path.split("::").next().unwrap_or(target_path);
+        let is_alias_for_target = if let Some(target_unit) = target_unit_key {
+            self.reader_extern_units
+                .iter()
+                .any(|m| m.get(prefix).is_some_and(|uk| uk == target_unit))
+        } else {
+            false
+        };
+
+        let local_path = if target_path.starts_with(&format!("{target_crate}::")) {
+            &target_path[target_crate.len() + 2..]
+        } else if is_alias_for_target && target_path.contains("::") {
+            &target_path[prefix.len() + 2..]
+        } else {
+            target_path
+        };
+        let global_path_buf = format!("{target_crate}::{local_path}");
+        let global_path = global_path_buf.as_str();
 
         for (i, reader) in self.readers.iter().enumerate() {
             let reader_unit = self.unit_keys.get(i).and_then(|u| u.as_deref());
@@ -591,81 +611,98 @@ impl WorkspaceIndex {
                 }
             }
 
-            // References with canonical target_path
-            let refs = reader.find_references(target_path);
+            // References with canonical target_path (querying both local and global path representations)
             let source_root = self
                 .source_roots
                 .get(i)
                 .and_then(|r| r.as_deref())
                 .or(self.workspace_root.as_deref());
 
-            for r in refs {
-                let r_target_unit = reader.target_unit(r);
-                if let Some(target_unit) = target_unit_key {
-                    if !r_target_unit.is_empty() {
-                        if r_target_unit != target_unit {
-                            continue;
-                        }
-                    } else if reader_crate == target_crate {
-                        if let Some(ru) = reader_unit {
-                            if ru != target_unit {
+            let query_paths: &[&str] = if local_path == global_path {
+                &[target_path]
+            } else if is_target_unit {
+                &[local_path, global_path]
+            } else {
+                &[global_path]
+            };
+
+            for &q_path in query_paths {
+                let refs = reader.find_references(q_path);
+                for r in refs {
+                    let r_target_unit = reader.target_unit(r);
+                    if let Some(target_unit) = target_unit_key {
+                        if !r_target_unit.is_empty() {
+                            if r_target_unit != target_unit {
                                 continue;
                             }
-                        }
-                    } else if let Some((
-                        ref target_def_file,
-                        ref target_def_full,
-                        target_def_line,
-                    )) = target_def_coords
-                    {
-                        if r.target_line() != 0 && r.target_line() != target_def_line {
-                            continue;
-                        }
-                        if r.target_file_offset() != 0 {
-                            let ref_file = reader.get_str(r.target_file_offset());
-                            if !ref_file.is_empty() && !target_def_file.is_empty() {
-                                let r_p = Path::new(ref_file);
-                                let t_p = Path::new(target_def_file);
-                                let t_full_p = Path::new(target_def_full);
-                                if r_p != t_p
-                                    && r_p != t_full_p
-                                    && !ref_file.ends_with(target_def_file)
-                                    && !target_def_file.ends_with(ref_file)
-                                {
+                        } else if reader_crate == target_crate {
+                            if let Some(ru) = reader_unit {
+                                if ru != target_unit {
                                     continue;
+                                }
+                            }
+                        } else if let Some((
+                            ref target_def_file,
+                            ref target_def_full,
+                            target_def_line,
+                        )) = target_def_coords
+                        {
+                            if r.target_line() != 0 && r.target_line() != target_def_line {
+                                continue;
+                            }
+                            if r.target_file_offset() != 0 {
+                                let ref_file = reader.get_str(r.target_file_offset());
+                                if !ref_file.is_empty() && !target_def_file.is_empty() {
+                                    let r_p = Path::new(ref_file);
+                                    let t_p = Path::new(target_def_file);
+                                    let t_full_p = Path::new(target_def_full);
+                                    if r_p != t_p
+                                        && r_p != t_full_p
+                                        && !ref_file.ends_with(target_def_file)
+                                        && !target_def_file.ends_with(ref_file)
+                                    {
+                                        continue;
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                let span = r.span();
-                let file = reader.get_file(span.file_id());
-                all_refs.push(WorkspaceReference {
-                    crate_name: reader_crate,
-                    file,
-                    span,
-                    kind: DefKind::from(r.kind),
-                    is_write: r.is_write != 0,
-                    is_macro_expansion: r.is_macro_expansion(),
-                    source_root,
-                    unit_key: reader_unit,
-                });
+                    let span = r.span();
+                    let file = reader.get_file(span.file_id());
+                    let ref_key = (
+                        file,
+                        span.start_line(),
+                        span.start_col(),
+                        span.end_line(),
+                        span.end_col(),
+                    );
+                    if !seen_refs.insert(ref_key) {
+                        continue;
+                    }
+                    all_refs.push(WorkspaceReference {
+                        crate_name: reader_crate,
+                        file,
+                        span,
+                        kind: DefKind::from(r.kind),
+                        is_write: r.is_write != 0,
+                        is_macro_expansion: r.is_macro_expansion(),
+                        source_root,
+                        unit_key: reader_unit,
+                    });
+                }
             }
 
             // Also check if reader refers to target_path via an extern alias (e.g. `a1::foo` instead of `a::foo`)
             if let Some(extern_map) = self.reader_extern_units.get(i) {
                 for (alias, uk) in extern_map {
-                    if alias != target_crate
-                        && target_path.starts_with(&format!("{target_crate}::"))
-                    {
+                    if alias != target_crate {
                         if let Some(target_unit) = target_unit_key {
                             if uk != target_unit {
                                 continue;
                             }
                         }
-                        let aliased_path =
-                            format!("{alias}::{}", &target_path[target_crate.len() + 2..]);
+                        let aliased_path = format!("{alias}::{local_path}");
                         for r in reader.find_references(&aliased_path) {
                             let r_target_unit = reader.target_unit(r);
                             if let Some(target_unit) = target_unit_key {

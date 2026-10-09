@@ -205,6 +205,8 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                         no_default_features,
                         all_features,
                         target,
+                        cache_dir: None,
+                        driver_bin: None,
                     }) {
                         Ok(p) => p,
                         Err(e) => return Err(format!("Automatic indexing failed: {e}")),
@@ -292,6 +294,8 @@ pub(crate) fn try_resolve_workspace(path_opt: Option<PathBuf>) -> Result<Workspa
                     no_default_features,
                     all_features,
                     target,
+                    cache_dir: None,
+                    driver_bin: None,
                 }) {
                     return Err(format!("Automatic indexing failed: {err}"));
                 }

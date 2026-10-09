@@ -63,7 +63,7 @@ pub fn handle_prepare_rename(
                     .rsplit("::")
                     .next()
                     .unwrap_or(loc_refs.target_symbol);
-                if target_name.is_empty() {
+                if target_name.is_empty() || loc_refs.is_external(ws) {
                     return Value::Null;
                 }
 
@@ -173,7 +173,7 @@ pub fn handle_rename(
                     .rsplit("::")
                     .next()
                     .unwrap_or(loc_refs.target_symbol);
-                if target_name.is_empty() {
+                if target_name.is_empty() || loc_refs.is_external(ws) {
                     return json!({ "changes": {} });
                 }
 
@@ -265,6 +265,9 @@ pub fn handle_rename(
                 // Add references edits with live buffer remapping and safety checks
                 for r in loc_refs.references {
                     let r_path = r.resolved_path();
+                    if ws.is_external_path(&r_path) {
+                        continue;
+                    }
                     let r_str = r_path.to_str().unwrap_or(r.file);
                     let r_uri = path_to_uri(r_str);
 

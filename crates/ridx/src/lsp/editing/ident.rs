@@ -23,7 +23,18 @@ pub fn is_ident_continue(c: char) -> bool {
 }
 
 pub fn is_valid_rust_ident(s: &str) -> bool {
-    let mut chars = s.chars();
+    let unescaped = if let Some(rest) = s.strip_prefix("r#") {
+        if matches!(rest, "crate" | "self" | "super" | "Self") {
+            return false;
+        }
+        rest
+    } else {
+        if is_rust_keyword(s) {
+            return false;
+        }
+        s
+    };
+    let mut chars = unescaped.chars();
     match chars.next() {
         Some(c) if is_ident_start(c) => {}
         _ => return false,
@@ -33,7 +44,7 @@ pub fn is_valid_rust_ident(s: &str) -> bool {
             return false;
         }
     }
-    !is_rust_keyword(s)
+    true
 }
 
 pub fn is_rust_keyword(s: &str) -> bool {

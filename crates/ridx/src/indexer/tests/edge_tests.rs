@@ -67,6 +67,8 @@ fn test_indexer_additional_edge_cases() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     assert!(err_mkdir
         .unwrap_err()
@@ -83,6 +85,8 @@ fn test_indexer_additional_edge_cases() {
         no_default_features: false,
         all_features: false,
         target: None,
+        cache_dir: None,
+        driver_bin: None,
     });
     assert!(err_no_driver
         .unwrap_err()

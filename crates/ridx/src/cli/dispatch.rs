@@ -39,6 +39,8 @@ pub fn run_cli(command: Commands) {
                 no_default_features,
                 all_features,
                 target,
+                cache_dir: None,
+                driver_bin: None,
             });
         }
         Commands::Inspect { index_path, json } => {

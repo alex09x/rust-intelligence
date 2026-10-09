@@ -640,6 +640,93 @@ impl WorkspaceIndex {
     pub fn set_workspace_root(&mut self, root: Option<PathBuf>) {
         self.workspace_root = root;
     }
+
+    /// Checks whether a target file, path, or unit key belongs to an external dependency or outside the workspace.
+    pub fn is_external_target(
+        &self,
+        target_file: &str,
+        target_path: &Path,
+        target_unit_key: Option<&str>,
+    ) -> bool {
+        // 1. Explicit sentinel for external reference
+        if target_file == "external" {
+            return true;
+        }
+
+        // 2. Unit-based check: if unit_key is known in the workspace and marked as dependency
+        if let Some(unit_key) = target_unit_key {
+            for (i, key_opt) in self.unit_keys.iter().enumerate() {
+                if key_opt.as_deref() == Some(unit_key) {
+                    if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
+                        return true;
+                    } else {
+                        // Known local unit (workspace member or local path dependency)
+                        return false;
+                    }
+                }
+            }
+            if self.manifest_path.is_some() {
+                let is_ws_member = self.unit_keys.iter().enumerate().any(|(i, key_opt)| {
+                    key_opt.as_deref() == Some(unit_key)
+                        && !self.reader_is_dependency.get(i).copied().unwrap_or(false)
+                });
+                if !is_ws_member {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Path-based check
+        if target_file.is_empty() {
+            return false;
+        }
+
+        if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
+            let ch = Path::new(&cargo_home);
+            if target_path.starts_with(ch.join("registry"))
+                || target_path.starts_with(ch.join("git"))
+            {
+                return true;
+            }
+        }
+
+        let path_str = target_path.to_string_lossy();
+        if path_str.contains("/.cargo/registry/")
+            || path_str.contains("\\.cargo\\registry\\")
+            || path_str.contains("/.cargo/git/")
+            || path_str.contains("\\.cargo\\git\\")
+            || path_str.contains("/.rustup/toolchains/")
+            || path_str.contains("\\.rustup\\toolchains\\")
+            || path_str.contains("/lib/rustlib/")
+            || path_str.contains("\\lib\\rustlib\\")
+            || path_str.contains("/target/ridx/dependencies/")
+        {
+            return true;
+        }
+
+        let effective_root = self.workspace_root().or(self.root_dir.as_deref());
+
+        if let Some(ws_root) = effective_root {
+            if target_path.is_absolute() {
+                let in_ws = target_path.starts_with(ws_root)
+                    || match (target_path.canonicalize(), ws_root.canonicalize()) {
+                        (Ok(tp), Ok(wp)) => tp.starts_with(&wp),
+                        _ => false,
+                    };
+                if !in_ws {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    /// Checks whether an arbitrary path belongs to an external dependency or outside the workspace.
+    pub fn is_external_path(&self, path: &Path) -> bool {
+        let s = path.to_str().unwrap_or("");
+        self.is_external_target(s, path, None)
+    }
 }
 
 pub(crate) fn collect_ridx_files(dir: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
