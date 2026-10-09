@@ -1,0 +1,43 @@
+{
+  "repo": "tokio-rs/tokio",
+  "commit": "b2636752",
+  "driver_commit": "353e2a7",
+  "node": "rama (Linux aarch64, 32 cores)",
+  "scenario": "rename_correctness_oracle",
+  "target_symbol": "tokio::task::spawn::spawn",
+  "new_name": "spawn_renamed",
+  "definition_location": "tokio/src/task/spawn.rs:174:12",
+  "references_count": 250,
+  "workspace_edit": {
+    "files_count": 79,
+    "edits_count": 250
+  },
+  "isolated_symbols": [
+    "JoinSet::spawn",
+    "Handle::spawn",
+    "Runtime::spawn"
+  ],
+  "verification": {
+    "default_features": {
+      "command": "cargo check --workspace --all-targets",
+      "exit_code": 0,
+      "errors": 0,
+      "duration_seconds": 22.91
+    },
+    "all_features": {
+      "command": "cargo check --workspace --all-targets --all-features",
+      "exit_code": 101,
+      "errors": 1,
+      "failing_location": "tokio/tests/tcp_accept.rs:29:24",
+      "failure_cause": "unexpanded macro_rules! definition body (span attributed to call site lines 43-52, definition token not replaced by AST-based rename)",
+      "with_macro_def_updated": {
+        "exit_code": 0,
+        "errors": 0
+      }
+    }
+  },
+  "limitations": [
+    "Rename covers compiled configurations (code behind disabled #[cfg] flags is not indexed or renamed)",
+    "Identifiers inside macro_rules! definition bodies whose spans point to macro call sites are protected from corruption but require manual definition rename"
+  ]
+}
