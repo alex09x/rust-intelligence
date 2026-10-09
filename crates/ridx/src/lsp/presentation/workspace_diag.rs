@@ -22,15 +22,38 @@ pub fn handle_workspace_diagnostic(
     overlay_mgr: &OverlayManager,
     multi_root: &MultiRootWorkspace,
 ) -> Value {
+    handle_workspace_diagnostic_with_flycheck(msg, overlay_mgr, multi_root, None)
+}
+
+pub fn handle_workspace_diagnostic_with_flycheck(
+    msg: &Value,
+    overlay_mgr: &OverlayManager,
+    multi_root: &MultiRootWorkspace,
+    flycheck: Option<&super::flycheck::FlycheckState>,
+) -> Value {
     let mut reports = Vec::new();
     let mut seen_uris = std::collections::HashSet::new();
+
+    let build_items = |uri: &str, text: &str| -> Vec<Value> {
+        let diag_resp = handle_document_diagnostic_text(text);
+        let h_items = diag_resp
+            .get("items")
+            .and_then(|i| i.as_array())
+            .map(|a| a.as_slice())
+            .unwrap_or(&[]);
+        if let Some(fc) = flycheck {
+            let auth = fc.get_latest_diagnostics(uri);
+            super::reconcile::reconcile_diagnostics(h_items, &auth)
+        } else {
+            h_items.to_vec()
+        }
+    };
 
     // 1. Diagnostics for open document overlays
     for file_path in overlay_mgr.open_file_paths() {
         if let Some(overlay) = overlay_mgr.get(&file_path) {
             seen_uris.insert(overlay.uri.clone());
-            let diag_resp = handle_document_diagnostic_text(&overlay.text);
-            let items = diag_resp.get("items").cloned().unwrap_or_else(|| json!([]));
+            let items = build_items(&overlay.uri, &overlay.text);
             reports.push(json!({
                 "uri": overlay.uri,
                 "version": overlay.version,
@@ -63,8 +86,7 @@ pub fn handle_workspace_diagnostic(
                 let uri = path_to_uri(&path_str);
                 if seen_uris.insert(uri.clone()) {
                     if let Ok(text) = std::fs::read_to_string(&path) {
-                        let diag_resp = handle_document_diagnostic_text(&text);
-                        let items = diag_resp.get("items").cloned().unwrap_or_else(|| json!([]));
+                        let items = build_items(&uri, &text);
                         reports.push(json!({
                             "uri": uri,
                             "version": Value::Null,
@@ -88,8 +110,7 @@ pub fn handle_workspace_diagnostic(
                 if seen_uris.insert(uri.to_string()) {
                     let file = uri_to_path(uri);
                     if let Ok(text) = std::fs::read_to_string(&file) {
-                        let diag_resp = handle_document_diagnostic_text(&text);
-                        let items = diag_resp.get("items").cloned().unwrap_or_else(|| json!([]));
+                        let items = build_items(uri, &text);
                         reports.push(json!({
                             "uri": uri,
                             "version": Value::Null,

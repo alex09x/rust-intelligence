@@ -13,23 +13,39 @@
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-fn resolve_effective_span<'a>(span: &'a Value, root: &Path) -> &'a Value {
-    let file_name = span.get("file_name").and_then(|f| f.as_str()).unwrap_or("");
-    let is_virtual = file_name.starts_with('<') || !root.join(file_name).exists();
-    if is_virtual {
-        let mut cur = span;
-        while let Some(exp_span) = cur.get("expansion").and_then(|e| e.get("span")) {
-            let exp_file = exp_span
-                .get("file_name")
-                .and_then(|f| f.as_str())
-                .unwrap_or("");
-            if !exp_file.starts_with('<') && root.join(exp_file).exists() {
-                return exp_span;
-            }
-            cur = exp_span;
-        }
+pub fn is_external_or_virtual(file_name: &str, root: &Path) -> bool {
+    if file_name.starts_with('<') {
+        return true;
     }
-    span
+    let p = Path::new(file_name);
+    if p.is_absolute() {
+        !p.starts_with(root)
+    } else {
+        file_name.contains(".cargo/registry") || file_name.contains(".cargo/git")
+    }
+}
+
+pub fn resolve_effective_span<'a>(span: &'a Value, root: &Path) -> &'a Value {
+    let mut cur = span;
+    let mut best = span;
+    let file_name = span.get("file_name").and_then(|f| f.as_str()).unwrap_or("");
+
+    while let Some(exp_span) = cur.get("expansion").and_then(|e| e.get("span")) {
+        let exp_file = exp_span
+            .get("file_name")
+            .and_then(|f| f.as_str())
+            .unwrap_or("");
+        if !is_external_or_virtual(exp_file, root) {
+            best = exp_span;
+        }
+        cur = exp_span;
+    }
+
+    if is_external_or_virtual(file_name, root) || (cur != span && best != span) {
+        best
+    } else {
+        span
+    }
 }
 
 pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value)> {
@@ -164,6 +180,51 @@ pub fn parse_compiler_message(msg: &Value, root: &Path) -> Option<(String, Value
                     "message": label
                 }));
             }
+        }
+    }
+
+    if primary_span != raw_primary {
+        if let (Some(rel_file), Some(label)) = (
+            raw_primary.get("file_name").and_then(|f| f.as_str()),
+            raw_primary.get("label").and_then(|l| l.as_str()),
+        ) {
+            let rel_abs = if Path::new(rel_file).is_absolute() {
+                PathBuf::from(rel_file)
+            } else {
+                root.join(rel_file)
+            };
+            let rel_canon = rel_abs.canonicalize().unwrap_or(rel_abs);
+            let r_lstart = raw_primary
+                .get("line_start")
+                .and_then(|l| l.as_u64())
+                .unwrap_or(1)
+                .saturating_sub(1);
+            let r_cstart = raw_primary
+                .get("column_start")
+                .and_then(|c| c.as_u64())
+                .unwrap_or(1)
+                .saturating_sub(1);
+            let r_lend = raw_primary
+                .get("line_end")
+                .and_then(|l| l.as_u64())
+                .unwrap_or(1)
+                .saturating_sub(1);
+            let r_cend = raw_primary
+                .get("column_end")
+                .and_then(|c| c.as_u64())
+                .unwrap_or(1)
+                .saturating_sub(1);
+
+            related.push(json!({
+                "location": {
+                    "uri": format!("file://{}", rel_canon.display()),
+                    "range": {
+                        "start": { "line": r_lstart, "character": r_cstart },
+                        "end": { "line": r_lend, "character": r_cend }
+                    }
+                },
+                "message": format!("in macro definition: {label}")
+            }));
         }
     }
 

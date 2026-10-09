@@ -149,6 +149,39 @@ impl MultiRootWorkspace {
             .and_then(|ws| ws.source_hash_for_file(file))
             == Some(text_hash)
     }
+
+    pub fn handle_file_event(
+        &mut self,
+        method: &str,
+        msg: &Value,
+        overlay_mgr: &mut crate::overlay::OverlayManager,
+        conv: &mut super::protocol::PositionConverter,
+    ) {
+        if method == "workspace/didRenameFiles" {
+            if let Some(files) = msg["params"]["files"].as_array() {
+                for op in files {
+                    let old_uri = op["oldUri"].as_str().unwrap_or("");
+                    let new_uri = op["newUri"].as_str().unwrap_or("");
+                    overlay_mgr.rename(
+                        &super::protocol::uri_to_path(old_uri),
+                        new_uri,
+                        &super::protocol::uri_to_path(new_uri),
+                    );
+                }
+            }
+        } else if method == "workspace/didDeleteFiles" {
+            if let Some(files) = msg["params"]["files"].as_array() {
+                for op in files {
+                    let uri = op["uri"].as_str().unwrap_or("");
+                    overlay_mgr.close(&super::protocol::uri_to_path(uri));
+                }
+            }
+        }
+        for ws in self.all_workspaces_mut() {
+            super::sync_reloaded_index(ws, overlay_mgr);
+        }
+        conv.clear();
+    }
 }
 
 #[cfg(test)]

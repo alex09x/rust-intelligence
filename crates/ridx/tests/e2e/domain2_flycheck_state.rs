@@ -11,10 +11,16 @@
 //! Domain 2: Unit tests for FlycheckState concurrency, generation counter monotonicity,
 //! cancellation safety, and thread-safe notifier registration.
 
+use ridx::lsp::dispatch::dispatch_lsp_message;
+use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::presentation::flycheck::FlycheckState;
+use ridx::lsp::protocol::LspMessage;
+use ridx::lsp::workspace::MultiRootWorkspace;
+use ridx::overlay::OverlayManager;
 use serde_json::json;
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 #[test]
@@ -189,4 +195,148 @@ fn test_flycheck_arc_clone_shares_atomic_generation() {
 
     state2.cancel();
     assert_eq!(state1.current_generation(), 2);
+}
+
+#[test]
+fn test_flycheck_state_latest_diagnostics_cache() {
+    let state = FlycheckState::new();
+    let uri = "file:///tmp/workspace/src/lib.rs";
+
+    assert!(state.get_latest_diagnostics(uri).is_empty());
+
+    let diags = vec![json!({
+        "code": "E0425",
+        "message": "cannot find value",
+        "severity": 1
+    })];
+    state.set_latest_diagnostics(uri, diags.clone());
+
+    let fetched = state.get_latest_diagnostics(uri);
+    assert_eq!(fetched.len(), 1);
+    assert_eq!(fetched[0]["code"], "E0425");
+
+    // Setting empty clears cache for URI
+    state.set_latest_diagnostics(uri, vec![]);
+    assert!(state.get_latest_diagnostics(uri).is_empty());
+}
+
+#[test]
+fn test_e2e_flycheck_e0425_preserved_after_did_change() {
+    let mut multi_root = MultiRootWorkspace::new();
+    let mut overlay_mgr = OverlayManager::new();
+    let mut lifecycle = LifecycleManager::new();
+    let cancelled = Arc::new(Mutex::new(HashSet::new()));
+
+    // 1. Initialize
+    let init_req = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "rootUri": "file:///tmp/dummy_workspace",
+            "capabilities": {}
+        }
+    });
+    let mut out = Vec::new();
+    dispatch_lsp_message(
+        LspMessage::Client(init_req),
+        &mut out,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    )
+    .unwrap();
+
+    let uri = "file:///tmp/dummy_workspace/src/lib.rs";
+
+    // 2. Open document
+    let open_msg = json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": uri,
+                "version": 1,
+                "text": "fn foo() {\n    unknown_var;\n}\n"
+            }
+        }
+    });
+    out.clear();
+    dispatch_lsp_message(
+        LspMessage::Client(open_msg),
+        &mut out,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    )
+    .unwrap();
+
+    // 3. Flycheck publishes E0425 via InternalDiagnostic
+    let gen = lifecycle.flycheck.current_generation();
+    let flycheck_diag = json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/publishDiagnostics",
+        "params": {
+            "uri": uri,
+            "diagnostics": [
+                {
+                    "range": { "start": { "line": 1, "character": 4 }, "end": { "line": 1, "character": 15 } },
+                    "severity": 1,
+                    "code": "E0425",
+                    "source": "rustc",
+                    "message": "cannot find value `unknown_var` in this scope"
+                }
+            ]
+        }
+    });
+    out.clear();
+    dispatch_lsp_message(
+        LspMessage::InternalDiagnostic(gen, flycheck_diag),
+        &mut out,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    )
+    .unwrap();
+
+    let pub_str = String::from_utf8_lossy(&out);
+    assert!(pub_str.contains("E0425"));
+
+    // 4. User types in another part of the document (line 3 didChange)
+    let change_msg = json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didChange",
+        "params": {
+            "textDocument": { "uri": uri, "version": 2 },
+            "contentChanges": [
+                { "text": "fn foo() {\n    unknown_var;\n}\nfn bar() {}\n" }
+            ]
+        }
+    });
+    out.clear();
+    dispatch_lsp_message(
+        LspMessage::Client(change_msg),
+        &mut out,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    )
+    .unwrap();
+
+    // 5. Verify E0425 is STILL in the latest publishDiagnostics notification
+    let change_out_str = String::from_utf8_lossy(&out);
+    assert!(change_out_str.contains("textDocument/publishDiagnostics"));
+    assert!(
+        change_out_str.contains("E0425"),
+        "E0425 must be preserved across didChange edits"
+    );
+    assert!(change_out_str.contains("cannot find value `unknown_var`"));
 }

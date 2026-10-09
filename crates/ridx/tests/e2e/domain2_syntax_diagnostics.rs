@@ -367,3 +367,27 @@ fn test_syntax_and_flycheck_diagnostics_coexistence_and_deduplication() {
     assert_eq!(reconciled_with_heuristic[0]["source"], "rustc");
     assert_eq!(reconciled_with_heuristic[1]["source"], "ridx");
 }
+
+#[test]
+fn test_reconcile_diagnostics_preserves_non_overlapping_errors_on_same_line() {
+    let heuristic = vec![
+        json!({
+            "range": { "start": { "line": 5, "character": 12 }, "end": { "line": 5, "character": 15 } },
+            "code": "E0308", "source": "ridx"
+        }),
+        json!({
+            "range": { "start": { "line": 5, "character": 30 }, "end": { "line": 5, "character": 31 } },
+            "code": "E0308", "source": "ridx"
+        }),
+    ];
+    let authoritative = vec![json!({
+        "range": { "start": { "line": 5, "character": 12 }, "end": { "line": 5, "character": 15 } },
+        "code": "E0308", "source": "rustc"
+    })];
+    let merged = reconcile_diagnostics(&heuristic, &authoritative);
+    assert_eq!(merged.len(), 2);
+    assert_eq!(merged[0]["source"], "rustc");
+    assert_eq!(merged[0]["range"]["start"]["character"], 12);
+    assert_eq!(merged[1]["source"], "ridx");
+    assert_eq!(merged[1]["range"]["start"]["character"], 30);
+}

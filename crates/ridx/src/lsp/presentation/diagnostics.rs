@@ -14,7 +14,31 @@ use super::super::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 
-pub use publish_syntax_diagnostics as handle_diagnostic;
+pub use super::reconcile::reconcile_diagnostics;
+
+pub fn handle_diagnostic(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
+    handle_diagnostic_with_flycheck(msg, overlay_mgr, None)
+}
+
+pub fn handle_diagnostic_with_flycheck(
+    msg: &Value,
+    overlay_mgr: &OverlayManager,
+    flycheck: Option<&super::flycheck::FlycheckState>,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let syntax_res = publish_syntax_diagnostics(msg, overlay_mgr);
+    let h_items = syntax_res["items"]
+        .as_array()
+        .map(|a| a.as_slice())
+        .unwrap_or(&[]);
+    if let Some(fc) = flycheck {
+        let auth_items = fc.get_latest_diagnostics(uri);
+        let merged = super::reconcile::reconcile_diagnostics(h_items, &auth_items);
+        json!({ "kind": "full", "items": merged })
+    } else {
+        syntax_res
+    }
+}
 
 pub fn publish_syntax_diagnostics(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
@@ -360,27 +384,4 @@ fn check_let_type_mismatch(
         }
     }
     None
-}
-
-/// Reconciles heuristic in-memory diagnostics with authoritative flycheck diagnostics.
-///
-/// If an authoritative `rustc` diagnostic covers the same line with the same error code,
-/// the heuristic `ridx` entry is suppressed to prevent duplicated error highlights in the editor.
-pub fn reconcile_diagnostics(heuristic: &[Value], authoritative: &[Value]) -> Vec<Value> {
-    let mut result = authoritative.to_vec();
-    for h in heuristic {
-        let h_line = h["range"]["start"]["line"].as_u64();
-        let h_code = h.get("code").and_then(|c| c.as_str());
-
-        let is_shadowed = authoritative.iter().any(|a| {
-            let a_line = a["range"]["start"]["line"].as_u64();
-            let a_code = a.get("code").and_then(|c| c.as_str());
-            a_line == h_line && a_code == h_code
-        });
-
-        if !is_shadowed {
-            result.push(h.clone());
-        }
-    }
-    result
 }

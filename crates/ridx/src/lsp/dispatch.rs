@@ -40,7 +40,19 @@ pub fn dispatch_lsp_message<W: Write>(
             if lifecycle.state() != ServerState::ShutDown
                 && gen == lifecycle.flycheck.current_generation()
             {
-                send_response(writer, &diag)?;
+                let uri = diag["params"]["uri"].as_str().unwrap_or("");
+                let diags = diag["params"]["diagnostics"]
+                    .as_array()
+                    .cloned()
+                    .unwrap_or_default();
+                lifecycle.flycheck.set_latest_diagnostics(uri, diags);
+                publish_reconciled_diagnostics(
+                    uri,
+                    None,
+                    overlay_mgr,
+                    &lifecycle.flycheck,
+                    writer,
+                )?;
             }
             return Ok(true);
         }
@@ -154,6 +166,13 @@ pub fn dispatch_lsp_message<W: Write>(
                 }
             }
             conv.invalidate(&file);
+            publish_reconciled_diagnostics(
+                uri,
+                Some(version),
+                overlay_mgr,
+                &lifecycle.flycheck,
+                writer,
+            )?;
             return Ok(true);
         }
 
@@ -204,42 +223,12 @@ pub fn dispatch_lsp_message<W: Write>(
             return Ok(true);
         }
 
-        "workspace/didCreateFiles" => {
-            for ws in multi_root.all_workspaces_mut() {
-                sync_reloaded_index(ws, overlay_mgr);
-            }
-            conv.clear();
-            return Ok(true);
-        }
-
         "workspace/willCreateFiles" | "workspace/willRenameFiles" | "workspace/willDeleteFiles" => {
             json!({})
         }
 
-        "workspace/didRenameFiles" => {
-            if let Some(files) = msg["params"]["files"].as_array() {
-                for op in files {
-                    let old_uri = op["oldUri"].as_str().unwrap_or("");
-                    let new_uri = op["newUri"].as_str().unwrap_or("");
-                    overlay_mgr.rename(&uri_to_path(old_uri), new_uri, &uri_to_path(new_uri));
-                }
-            }
-            for ws in multi_root.all_workspaces_mut() {
-                sync_reloaded_index(ws, overlay_mgr);
-            }
-            return Ok(true);
-        }
-
-        "workspace/didDeleteFiles" => {
-            if let Some(files) = msg["params"]["files"].as_array() {
-                for op in files {
-                    let uri = op["uri"].as_str().unwrap_or("");
-                    overlay_mgr.close(&uri_to_path(uri));
-                }
-            }
-            for ws in multi_root.all_workspaces_mut() {
-                sync_reloaded_index(ws, overlay_mgr);
-            }
+        "workspace/didCreateFiles" | "workspace/didRenameFiles" | "workspace/didDeleteFiles" => {
+            multi_root.handle_file_event(method, &msg, overlay_mgr, conv);
             return Ok(true);
         }
 
@@ -319,8 +308,15 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/foldingRange" => handle_folding_range(&msg, overlay_mgr),
         "textDocument/codeLens" => handle_code_lens(&msg, overlay_mgr),
         "codeLens/resolve" => handle_code_lens_resolve(&msg),
-        "textDocument/diagnostic" => handle_diagnostic(&msg, overlay_mgr),
-        "workspace/diagnostic" => handle_workspace_diagnostic(&msg, overlay_mgr, multi_root),
+        "textDocument/diagnostic" => {
+            handle_diagnostic_with_flycheck(&msg, overlay_mgr, Some(&lifecycle.flycheck))
+        }
+        "workspace/diagnostic" => handle_workspace_diagnostic_with_flycheck(
+            &msg,
+            overlay_mgr,
+            multi_root,
+            Some(&lifecycle.flycheck),
+        ),
         "textDocument/moniker" => {
             let ws = multi_root.doc_ws(&msg);
             handle_moniker(&msg, ws, overlay_mgr, conv)

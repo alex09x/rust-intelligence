@@ -13,6 +13,7 @@
 pub mod compiler_message;
 pub mod diagnostics;
 pub mod flycheck;
+pub mod reconcile;
 pub mod tokens;
 pub mod workspace_diag;
 
@@ -22,6 +23,7 @@ pub mod tests;
 pub use compiler_message::*;
 pub use diagnostics::*;
 pub use flycheck::*;
+pub use reconcile::*;
 pub use tokens::*;
 pub use workspace_diag::*;
 

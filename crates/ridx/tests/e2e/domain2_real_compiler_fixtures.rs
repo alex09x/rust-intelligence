@@ -103,7 +103,7 @@ fn test_parse_real_macro_expansion_callsite_fixture() {
     let lines = read_fixture_lines("macro_expansion_callsite.jsonl");
     let dummy_root = Path::new("/tmp/test_workspace");
 
-    // Line 1: compiler-message inside my_calc! macro with E0308
+    // Line 1: compiler-message inside gen_err! macro with E0308 unwound to call site
     let res1 = parse_compiler_message(&lines[0], dummy_root);
     assert!(
         res1.is_some(),
@@ -114,22 +114,27 @@ fn test_parse_real_macro_expansion_callsite_fixture() {
     assert_eq!(diag["severity"], 1);
     assert_eq!(diag["code"], "E0308");
     assert_eq!(diag["range"]["start"]["line"], 6); // Line 7 in file (0-based 6)
-    assert_eq!(diag["range"]["start"]["character"], 13);
-    assert_eq!(diag["range"]["end"]["character"], 16);
+    assert_eq!(diag["range"]["start"]["character"], 4); // Column 5 (0-based 4)
+    assert_eq!(diag["range"]["end"]["character"], 14); // Column 15 (0-based 14)
 
     // Non-primary definition span is captured in relatedInformation
     let related = diag["relatedInformation"]
         .as_array()
         .expect("Must have related info");
     assert!(
-        !related.is_empty(),
-        "Secondary definition span must be captured"
+        related.len() >= 2,
+        "Both secondary note and macro definition must be in relatedInformation"
     );
     assert!(related[0]["message"]
         .as_str()
         .unwrap()
         .contains("expected due to this"));
     assert_eq!(related[0]["location"]["range"]["start"]["line"], 2); // Line 3 in file (0-based 2)
+    assert!(related[1]["message"]
+        .as_str()
+        .unwrap()
+        .contains("in macro definition"));
+    assert_eq!(related[1]["location"]["range"]["start"]["line"], 2);
 }
 
 #[test]

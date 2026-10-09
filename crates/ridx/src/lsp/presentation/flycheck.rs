@@ -45,6 +45,8 @@ pub struct FlycheckState {
     running_child: Arc<Mutex<Option<(u64, Child)>>>,
     generation: Arc<AtomicU64>,
     published_uris: Arc<Mutex<HashMap<PathBuf, HashSet<String>>>>,
+    latest_diagnostics: Arc<Mutex<HashMap<String, Vec<Value>>>>,
+    active_diagnostic_uris: Arc<Mutex<HashSet<String>>>,
     worker_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
     notifier: Arc<Mutex<Option<FlycheckCallback>>>,
 }
@@ -55,6 +57,8 @@ impl Default for FlycheckState {
             running_child: Arc::new(Mutex::new(None)),
             generation: Arc::new(AtomicU64::new(0)),
             published_uris: Arc::new(Mutex::new(HashMap::new())),
+            latest_diagnostics: Arc::new(Mutex::new(HashMap::new())),
+            active_diagnostic_uris: Arc::new(Mutex::new(HashSet::new())),
             worker_handle: Arc::new(Mutex::new(None)),
             notifier: Arc::new(Mutex::new(None)),
         }
@@ -68,6 +72,39 @@ impl FlycheckState {
 
     pub fn current_generation(&self) -> u64 {
         self.generation.load(Ordering::SeqCst)
+    }
+
+    pub fn get_latest_diagnostics(&self, uri: &str) -> Vec<Value> {
+        self.latest_diagnostics
+            .lock()
+            .unwrap()
+            .get(uri)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    pub fn set_latest_diagnostics(&self, uri: &str, diags: Vec<Value>) {
+        let mut guard = self.latest_diagnostics.lock().unwrap();
+        if diags.is_empty() {
+            guard.remove(uri);
+        } else {
+            guard.insert(uri.to_string(), diags);
+        }
+    }
+
+    pub fn mark_published(&self, uri: &str) {
+        self.active_diagnostic_uris
+            .lock()
+            .unwrap()
+            .insert(uri.to_string());
+    }
+
+    pub fn clear_published(&self, uri: &str) -> bool {
+        self.active_diagnostic_uris.lock().unwrap().remove(uri)
+    }
+
+    pub fn has_active_diagnostics(&self, uri: &str) -> bool {
+        self.active_diagnostic_uris.lock().unwrap().contains(uri)
     }
 
     pub fn set_notifier<F: Fn(u64, Value) + Send + Sync + 'static>(&self, notifier: F) {
@@ -100,6 +137,7 @@ impl FlycheckState {
         let root = workspace_root.to_path_buf();
         let running_child = Arc::clone(&self.running_child);
         let published_uris = Arc::clone(&self.published_uris);
+        let latest_diagnostics = Arc::clone(&self.latest_diagnostics);
         let notifier = Arc::clone(&self.notifier);
         let generation = Arc::clone(&self.generation);
 
@@ -112,6 +150,7 @@ impl FlycheckState {
                     &generation,
                     &running_child,
                     &published_uris,
+                    &latest_diagnostics,
                     |gen, notif| {
                         if let Some(ref cb) = *notifier.lock().unwrap() {
                             cb(gen, notif);
@@ -145,6 +184,7 @@ impl FlycheckState {
             &generation,
             &running_child,
             &published_uris,
+            &self.latest_diagnostics,
             |_gen, notif| super::super::protocol::send_response(writer, &notif),
         )
     }
@@ -156,6 +196,7 @@ fn run_check_internal<F>(
     generation: &Arc<AtomicU64>,
     running_child: &Arc<Mutex<Option<(u64, Child)>>>,
     published_uris: &Arc<Mutex<HashMap<PathBuf, HashSet<String>>>>,
+    latest_diagnostics: &Arc<Mutex<HashMap<String, Vec<Value>>>>,
     mut emit_notif: F,
 ) -> std::io::Result<usize>
 where
@@ -306,7 +347,16 @@ where
     }
 
     if generation.load(Ordering::SeqCst) == my_gen {
-        published_guard.insert(workspace_root.to_path_buf(), current_uris);
+        published_guard.insert(workspace_root.to_path_buf(), current_uris.clone());
+        let mut latest_guard = latest_diagnostics.lock().unwrap();
+        for (uri, diags) in &file_diagnostics {
+            latest_guard.insert(uri.clone(), diags.clone());
+        }
+        for old_uri in &prev_published {
+            if !current_uris.contains(old_uri) {
+                latest_guard.remove(old_uri);
+            }
+        }
     }
     let total_diags = file_diagnostics.values().map(|d| d.len()).sum();
     Ok(total_diags)
