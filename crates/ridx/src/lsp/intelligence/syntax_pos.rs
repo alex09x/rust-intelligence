@@ -48,10 +48,10 @@ pub fn is_def_allowed_in_position(kind: DefKind, pos: SyntaxPosition) -> bool {
                 | DefKind::Mod
                 | DefKind::ForeignMod
         ),
-        SyntaxPosition::ExprOrPat => !matches!(
-            kind,
-            DefKind::AssocTy | DefKind::Trait | DefKind::TraitAlias | DefKind::Field
-        ),
+        // In expressions and patterns, traits and associated types can be referenced
+        // as path qualifiers (e.g. `iter::Iterator::...` or `IntoSystem::System::...`).
+        // Only fields are excluded because fields are accessed via `.` rather than `::`.
+        SyntaxPosition::ExprOrPat => kind != DefKind::Field,
         SyntaxPosition::Any => true,
     }
 }
@@ -71,7 +71,7 @@ pub fn classify_colon_position(trimmed_before: &str) -> SyntaxPosition {
         before_colon
     };
 
-    // 1. Unclosed angle brackets in prefix (ignoring arrows ->, =>, operators <<, >>, <=, >=)
+    // 1. Unclosed angle brackets in prefix (ignoring arrows ->, =>, operators <<, >>, <=, >=, and comparison <)
     let mut angle_depth = 0i32;
     let bytes = prefix.as_bytes();
     let p_len = bytes.len();
@@ -91,7 +91,27 @@ pub fn classify_colon_position(trimmed_before: &str) -> SyntaxPosition {
                 i += 2;
                 continue;
             }
-            angle_depth += 1;
+            // Distinguish generic opening bracket from comparison operator `<`.
+            // Generic `<` is attached to an identifier (Option<), turbofish (::<),
+            // or at the start of a type expression (<T as Trait>).
+            // A comparison operator `<` has whitespace before it in expressions (a < b).
+            let is_generic = if i == 0
+                || bytes[i - 1].is_ascii_alphanumeric()
+                || bytes[i - 1] == b'_'
+                || (i >= 2 && &bytes[i - 2..i] == b"::")
+            {
+                true
+            } else {
+                let before = prefix[..i].trim_end();
+                (before.ends_with(':') && !before.ends_with("::"))
+                    || before.ends_with("->")
+                    || before.ends_with("as")
+                    || before.ends_with("where")
+            };
+
+            if is_generic {
+                angle_depth += 1;
+            }
         } else if b == b'>' {
             if i + 1 < p_len && (bytes[i + 1] == b'>' || bytes[i + 1] == b'=') {
                 i += 2;
@@ -122,13 +142,23 @@ pub fn classify_colon_position(trimmed_before: &str) -> SyntaxPosition {
         }
     }
 
-    // 4. Reference with or without mut preceded by `:` or `->`
+    // 4. Reference with or without mut
     let trimmed_p = prefix.trim();
     if trimmed_p.ends_with('&') || trimmed_p.ends_with("&mut") {
-        if trimmed_p.contains(':') || trimmed_p.contains("->") {
+        let amp_idx = if trimmed_p.ends_with("&mut") {
+            trimmed_p.len() - 4
+        } else {
+            trimmed_p.len() - 1
+        };
+        let before_amp = trimmed_p[..amp_idx].trim_end();
+        if (before_amp.ends_with(':') && !before_amp.ends_with("::")) || before_amp.ends_with("->") {
             return SyntaxPosition::Type;
         }
-        if trimmed_p.contains('=') {
+        if before_amp.ends_with('=')
+            || before_amp.ends_with('(')
+            || before_amp.ends_with('[')
+            || before_amp.ends_with(',')
+        {
             return SyntaxPosition::ExprOrPat;
         }
     }
@@ -187,6 +217,13 @@ pub fn classify_colon_position(trimmed_before: &str) -> SyntaxPosition {
         || trimmed_p.ends_with('(')
         || trimmed_p.ends_with('[')
         || trimmed_p.ends_with(',')
+        || trimmed_p.ends_with('<')
+        || trimmed_p.ends_with('>')
+        || trimmed_p.ends_with('+')
+        || trimmed_p.ends_with('*')
+        || trimmed_p.ends_with('/')
+        || trimmed_p.ends_with('%')
+        || trimmed_p.ends_with('!')
     {
         return SyntaxPosition::ExprOrPat;
     }
@@ -246,6 +283,11 @@ mod tests {
         // Expression / Pattern positions
         assert_eq!(classify_colon_position("let x = Self::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("let x = &Self::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("let v = foo::bar(&Self::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("call(&Foo::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("if a < Self::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("while i < Self::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("x < Foo::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("unsafe { UniqueEntityEquivalentSlice::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("match x { Some(v) => Foo::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("foo(1, 2, Bar::"), SyntaxPosition::ExprOrPat);
@@ -268,7 +310,8 @@ mod tests {
         assert!(is_def_allowed_in_position(DefKind::AssocFn, SyntaxPosition::ExprOrPat));
         assert!(is_def_allowed_in_position(DefKind::Const, SyntaxPosition::ExprOrPat));
         assert!(is_def_allowed_in_position(DefKind::Variant, SyntaxPosition::ExprOrPat));
-        assert!(!is_def_allowed_in_position(DefKind::AssocTy, SyntaxPosition::ExprOrPat));
-        assert!(!is_def_allowed_in_position(DefKind::Trait, SyntaxPosition::ExprOrPat));
+        assert!(is_def_allowed_in_position(DefKind::AssocTy, SyntaxPosition::ExprOrPat));
+        assert!(is_def_allowed_in_position(DefKind::Trait, SyntaxPosition::ExprOrPat));
+        assert!(!is_def_allowed_in_position(DefKind::Field, SyntaxPosition::ExprOrPat));
     }
 }

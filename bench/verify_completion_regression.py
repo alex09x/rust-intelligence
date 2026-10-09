@@ -241,7 +241,7 @@ def main():
                 recs_b.append(sc_b["recall_pct"])
                 recs_c.append(rec_c)
                 diff_rec = sc_b["recall_pct"] - rec_c
-                if diff_rec > 5.0:
+                if diff_rec > 0.05:
                     reg_entry = {
                         "name": sc_b["name"], "base_recall_pct": sc_b["recall_pct"],
                         "curr_recall_pct": round(rec_c, 1), "diff_pp": round(diff_rec, 1),
@@ -322,7 +322,8 @@ def main():
                 base_commit: avg_prec_b, f"{base_commit}_n": len(precs_b),
                 curr_commit: avg_prec_c, f"{curr_commit}_n": len(precs_c),
             },
-            "recall_regressions_gt_5pp": recall_regs,
+            "recall_regressions": recall_regs,
+            "recall_regressions_gt_5pp": [r for r in recall_regs if r["diff_pp"] > 5.0],
             "routes": {
                 "owner_count": len(owner_scs), "fallback_count": len(fallback_scs),
                 "migrated_from_fallback_to_owner": migrated_to_owner,
@@ -347,7 +348,9 @@ def main():
         print(f"  Avg precision (cnt>0, ra>0): {base_commit}: {avg_prec_b}% (n={len(precs_b)}) -> {curr_commit}: {avg_prec_c}% (n={len(precs_c)})")
         print(f"  Owner accuracy:        recall {o_rec_b}% -> {o_rec_c}% | precision {o_prec_b}% -> {o_prec_c}% (n={len(owner_scs)})")
         print(f"  Fallback accuracy:     recall {f_rec_b}% -> {f_rec_c}% | precision {f_prec_b}% -> {f_prec_c}% (n={len(fallback_scs)})")
-        print(f"  Recall regressions:    {len(recall_regs)} scenarios > 5pp")
+        print(f"  Recall regressions:    {len(recall_regs)} scenarios with recall drop")
+        for r in recall_regs:
+            print(f"    - {r['name']}: {r['base_recall_pct']}% -> {r['curr_recall_pct']}% (-{r['diff_pp']}pp) [ridx {r['curr_count']} vs ra {r['ra_count']}]")
         print(f"  Owner:    p50 {o_c_p50:.0f}µs RIDX vs {o_ra_p50:.0f}µs RA ({o_speedup}x) | p95 {o_c_p95:.0f}µs vs {o_ra_p95:.0f}µs")
         print(f"  Fallback: p50 {f_c_p50:.0f}µs RIDX vs {f_ra_p50:.0f}µs RA ({f_speedup}x) | p95 {f_c_p95:.0f}µs vs {f_ra_p95:.0f}µs")
         print(f"  Overall:  p50 {all_c_p50:.0f}µs RIDX vs {all_ra_p50:.0f}µs RA ({tot_speedup}x) | p95 {all_c_p95:.0f}µs vs {all_ra_p95:.0f}µs")
