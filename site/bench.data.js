@@ -18,7 +18,7 @@ window.RIDX_BENCH = {
   "limitations": [
     "Standard library (std/core/alloc) definition shards are not indexed yet; expected effect when indexed is +4.71 pp overall (+4.87 pp read-only).",
     "textDocument/completion is non-speculative and resolves in tens of ms pending trie index caching.",
-    "Hover latency scales linearly on massive workspaces (bevy 3.96 ms vs RA 0.22 ms) due to linear Types table scanning; binary search index optimization is prioritized in backlog."
+    "Hover latency on very large workspaces (bevy) is ~1.5x slower than rust-analyzer (354 \u00b5s vs 231 \u00b5s at warm p50, re-measured post-844eac0 down from 18.4x / 3.96 ms prior to binary search optimization); on small to medium workspaces (tokio, serde, ripgrep) it is faster than or on par with rust-analyzer."
   ],
   "workspaces": {
     "serde": {
@@ -190,6 +190,20 @@ window.RIDX_BENCH = {
           "1.50 ms",
           0.00037319999999999996,
           "373 \u00b5s"
+        ],
+        [
+          "Hover (warm p50 \u00b7 post-844eac0, n=100)",
+          1.6e-05,
+          "16 \u00b5s",
+          0.0001615,
+          "162 \u00b5s"
+        ],
+        [
+          "Hover (tail p95 \u00b7 post-844eac0, n=100)",
+          1.8e-05,
+          "18 \u00b5s",
+          0.00036904999999999994,
+          "369 \u00b5s"
         ]
       ],
       "accuracy": {
@@ -252,6 +266,20 @@ window.RIDX_BENCH = {
           "11.21 ms",
           0.0005449999999999999,
           "545 \u00b5s"
+        ],
+        [
+          "Hover (warm p50 \u00b7 post-844eac0, n=100)",
+          0.0003535,
+          "354 \u00b5s",
+          0.0002305,
+          "230 \u00b5s"
+        ],
+        [
+          "Hover (tail p95 \u00b7 post-844eac0, n=100)",
+          0.0006221,
+          "622 \u00b5s",
+          0.0005745999999999997,
+          "575 \u00b5s"
         ]
       ],
       "accuracy": {

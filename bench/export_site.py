@@ -61,6 +61,15 @@ def export_site_bench(results_path, discrepancies_path, out_path):
         },
     }
 
+    reruns = {}
+    rerun_file = bench_dir / "published" / "rerun_hover_844eac0.jsonl"
+    if rerun_file.exists():
+        with open(rerun_file, "r", encoding="utf-8") as rf:
+            for rline in rf:
+                if rline.strip():
+                    rentry = json.loads(rline)
+                    reruns[rentry.get("repo", "")] = rentry
+
     for r in repos_data:
         slug = r.get("repo", "")
         info = repo_meta.get(slug, {"label": slug.split("/")[-1], "meta": slug})
@@ -111,6 +120,23 @@ def export_site_bench(results_path, discrepancies_path, out_path):
                 fmt_lat(m.get("ra_hover_warm_p95_us", 0)),
             ],
         ]
+
+        if slug in reruns:
+            rm = reruns[slug]["metrics"]
+            rows.append([
+                "Hover (warm p50 · post-844eac0, n=100)",
+                rm.get("ridx_hover_warm_p50_us", 0) * 1e-6,
+                fmt_lat(rm.get("ridx_hover_warm_p50_us", 0)),
+                rm.get("ra_hover_warm_p50_us", 0) * 1e-6,
+                fmt_lat(rm.get("ra_hover_warm_p50_us", 0)),
+            ])
+            rows.append([
+                "Hover (tail p95 · post-844eac0, n=100)",
+                rm.get("ridx_hover_warm_p95_us", 0) * 1e-6,
+                fmt_lat(rm.get("ridx_hover_warm_p95_us", 0)),
+                rm.get("ra_hover_warm_p95_us", 0) * 1e-6,
+                fmt_lat(rm.get("ra_hover_warm_p95_us", 0)),
+            ])
 
         w3_10 = (
             r.get("w3_multi_worktree", {})
@@ -171,9 +197,11 @@ def export_site_bench(results_path, discrepancies_path, out_path):
                 " of ms pending trie index caching."
             ),
             (
-                "Hover latency scales linearly on massive workspaces (bevy"
-                " 3.96 ms vs RA 0.22 ms) due to linear Types table scanning;"
-                " binary search index optimization is prioritized in backlog."
+                "Hover latency on very large workspaces (bevy) is ~1.5x slower"
+                " than rust-analyzer (354 µs vs 231 µs at warm p50, re-measured"
+                " post-844eac0 down from 18.4x / 3.96 ms prior to binary search"
+                " optimization); on small to medium workspaces (tokio, serde,"
+                " ripgrep) it is faster than or on par with rust-analyzer."
             ),
         ],
         "workspaces": workspaces,

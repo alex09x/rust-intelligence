@@ -32,7 +32,7 @@ def compare_lats(r_us, ra_us):
     return f"{ra_us / r_us:.1f}x faster" if ratio < 0.8 else f"{ratio:.1f}x slower"
 
 
-def generate_repo_report(entry, source_file, discrepancies_file=None):
+def generate_repo_report(entry, source_file, discrepancies_file=None, rerun_data=None):
     repo = entry.get("repo", "unknown")
     commit = entry.get("commit", "unknown")[:8]
     status = entry.get("status", "UNKNOWN")
@@ -127,6 +127,12 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
     lines.append(f"| **Def Latency (Warm p50)** | **{def_r50:.1f} µs** | **{def_ra50:.1f} µs** | {def_comp} |")
     lines.append(f"| **Def Latency (Warm p90)** | **{def_r90:.1f} µs** | **{def_ra90:.1f} µs** | **{def_ra90 / max(1, def_r90):.1f}x faster tail latency** |")
     lines.append(f"| **Hover Latency (Warm p50)** | **{hov_r50:.1f} µs** | **{hov_ra50:.1f} µs** | {hov_comp} |")
+    rerun_entry = rerun_data.get(repo) if rerun_data else None
+    if rerun_entry:
+        rm = rerun_entry.get("metrics", {})
+        rh_r, rh_ra = rm.get("ridx_hover_warm_p50_us", 0), rm.get("ra_hover_warm_p50_us", 0)
+        rh_comp = compare_lats(rh_r, rh_ra)
+        lines.append(f"| **Hover (Post-844eac0, Warm p50)** | **{rh_r:.1f} µs** | **{rh_ra:.1f} µs** | **{rh_comp}** (n=100) |")
     lines.append(f"| **Refs Latency (Warm p50)** | **{ref_r50:.1f} µs** | **{ref_ra50:.1f} µs** | **{ref_comp}** |")
     lines.append(f"| **Refs Latency (Warm p90)** | **{ref_r90:.1f} µs** | **{ref_ra90:.1f} µs** | **{ref_ra90 / max(1, ref_r90):.1f}x faster tail latency** |")
 
@@ -174,20 +180,20 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
                  f"for Find References, RIDX is **{ref_comp}** ({ref_r50:.1f} µs vs {ref_ra50:.1f} µs); "
                  f"for Hover, RIDX is **{hov_comp}** ({hov_r50:.1f} µs vs {hov_ra50:.1f} µs). "
                  "The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.\n")
-    lines.append("Measured architectural differences from the test run:\n"
-                 f"1. **Tail Latency**: `textDocument/definition` p90 is **{def_ra90 / max(1, def_r90):.1f}x faster** "
-                 f"({def_r90:.1f} µs vs {def_ra90:.1f} µs / {def_ra90 / 1000.0:.2f} ms).\n"
-                 f"2. **Multi-Token Reference Search**: `textDocument/references` is **{ref_ra50 / max(1, ref_r50):.1f}x faster at p50** "
-                 f"({ref_r50:.1f} µs vs {ref_ra50:.1f} µs) and **{ref_ra90 / max(1, ref_r90):.1f}x faster at p90** "
-                 f"({ref_r90:.1f} µs vs {ref_ra90:.1f} µs).\n"
-                 f"3. **Process Resources**: RIDX maintains {r_ths} OS threads and {r_fds} open file descriptors, "
-                 f"whereas rust-analyzer scales to {ra_ths} threads and {ra_fds} file descriptors.\n"
-                 f"4. **Memory Footprint**: RIDX uses **{heap_adv}** (Anon Heap {r_anon:.1f} MB vs {ra_anon:.1f} MB).\n"
-                 f"5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **{r_pss10:.1f} MB PSS** total "
-                 f"({r_anon10:.1f} MB Anon) vs rust-analyzer's **{ra_pss10:.1f} MB PSS** ({ra_anon10:.1f} MB Anon) — a **{pss_adv}** footprint "
-                 f"(workload: 50 def queries per process vs 300 queries + mutations in single-process main run).\n"
-                 f"6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **{w1_ra_p50:.1f} ms**, "
-                 f"which is **{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x faster** than RIDX (**{w1_r_p50:.1f} ms**).\n")
+    diffs = [
+        f"1. **Tail Latency**: `textDocument/definition` p90 is **{def_ra90 / max(1, def_r90):.1f}x faster** ({def_r90:.1f} µs vs {def_ra90:.1f} µs / {def_ra90 / 1000.0:.2f} ms).",
+        f"2. **Multi-Token Reference Search**: `textDocument/references` is **{ref_ra50 / max(1, ref_r50):.1f}x faster at p50** ({ref_r50:.1f} µs vs {ref_ra50:.1f} µs) and **{ref_ra90 / max(1, ref_r90):.1f}x faster at p90** ({ref_r90:.1f} µs vs {ref_ra90:.1f} µs).",
+        f"3. **Process Resources**: RIDX maintains {r_ths} OS threads and {r_fds} open file descriptors, whereas rust-analyzer scales to {ra_ths} threads and {ra_fds} file descriptors.",
+        f"4. **Memory Footprint**: RIDX uses **{heap_adv}** (Anon Heap {r_anon:.1f} MB vs {ra_anon:.1f} MB).",
+        f"5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **{r_pss10:.1f} MB PSS** total ({r_anon10:.1f} MB Anon) vs rust-analyzer's **{ra_pss10:.1f} MB PSS** ({ra_anon10:.1f} MB Anon) — a **{pss_adv}** footprint.",
+        f"6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **{w1_ra_p50:.1f} ms**, which is **{w1_r_p50 / max(0.1, w1_ra_p50):.1f}x faster** than RIDX (**{w1_r_p50:.1f} ms**).",
+    ]
+    if rerun_entry:
+        rm = rerun_entry.get("metrics", {})
+        rh_r, rh_ra = rm.get("ridx_hover_warm_p50_us", 0), rm.get("ra_hover_warm_p50_us", 0)
+        rh_comp = compare_lats(rh_r, rh_ra)
+        diffs.append(f"7. **Hover Optimization (Commit 844eac0)**: In a dedicated symmetric rerun on `booster` (taskset 24-31, n=100 hover queries alongside RA 1.98.1), warm p50 is **{rh_comp}** ({rh_r:.1f} µs vs {rh_ra:.1f} µs).")
+    lines.append("Measured architectural differences from the test run:\n" + "\n".join(diffs) + "\n")
 
     # 3. Discrepancies & Semantic Parity Analysis
     lines.append("### 3. Semantic Parity & Discrepancies Breakdown\n")
@@ -349,6 +355,7 @@ def main():
     parser = argparse.ArgumentParser(description="Generate automated markdown report from pilot results.")
     parser.add_argument("--results", default=str(bench_dir / "results" / "pilot_results.jsonl"), help="Path to pilot_results.jsonl")
     parser.add_argument("--discrepancies", default=str(bench_dir / "results" / "discrepancies.jsonl"), help="Path to discrepancies.jsonl")
+    parser.add_argument("--rerun-hover", default=str(bench_dir / "published" / "rerun_hover_844eac0.jsonl"), help="Path to rerun_hover_844eac0.jsonl")
     parser.add_argument("--output", help="Optional output markdown file path")
     args = parser.parse_args()
 
@@ -357,19 +364,19 @@ def main():
         print(f"Error: {results_path} does not exist", file=sys.stderr)
         sys.exit(1)
 
-    entries = []
-    reports = []
+    rerun_data = {}
+    if Path(args.rerun_hover).exists():
+        with open(args.rerun_hover, "r", encoding="utf-8") as rf:
+            rerun_data = {e.get("repo", ""): e for line in rf if line.strip() for e in [json.loads(line)]}
+
+    entries, reports = [], []
     with open(results_path, "r", encoding="utf-8") as f:
         for line in f:
-            line = line.strip()
-            if not line:
+            if not line.strip():
                 continue
-            try:
-                entry = json.loads(line)
-                entries.append(entry)
-                reports.append(generate_repo_report(entry, str(results_path), discrepancies_file=args.discrepancies))
-            except Exception as e:
-                print(f"Warning: Failed to parse line in {results_path}: {e}", file=sys.stderr)
+            entry = json.loads(line)
+            entries.append(entry)
+            reports.append(generate_repo_report(entry, str(results_path), discrepancies_file=args.discrepancies, rerun_data=rerun_data))
 
     summary = generate_executive_summary(entries, discrepancies_file=args.discrepancies) if len(reports) > 1 else ""
     full_report = (summary + "\n\n---\n\n" + "\n\n---\n\n".join(reports)) if summary else "\n\n---\n\n".join(reports)

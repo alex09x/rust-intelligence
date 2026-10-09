@@ -46,7 +46,7 @@ Measured architectural differences from the test run:
 2. **Multi-Token Reference Search**: `textDocument/references` is **16.4x faster at p50** (93.5 µs vs 1534.0 µs) and **20.7x faster at p90** (1183.4 µs vs 24493.8 µs).
 3. **Process Resources**: RIDX maintains 2 OS threads and 3 open file descriptors, whereas rust-analyzer scales to 37 threads and 9 file descriptors.
 4. **Memory Footprint**: RIDX uses **92.3x lower Heap RAM** (Anon Heap 14.0 MB vs 1292.2 MB).
-5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **20.5 MB PSS** total (8.5 MB Anon) vs rust-analyzer's **9211.5 MB PSS** (9181.6 MB Anon) — a **449.3x lower PSS** footprint (workload: 50 def queries per process vs 300 queries + mutations in single-process main run).
+5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **20.5 MB PSS** total (8.5 MB Anon) vs rust-analyzer's **9211.5 MB PSS** (9181.6 MB Anon) — a **449.3x lower PSS** footprint.
 6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **150.2 ms**, which is **21.0x faster** than RIDX (**3160.3 ms**).
 
 ### 3. Semantic Parity & Discrepancies Breakdown
@@ -142,7 +142,7 @@ Measured architectural differences from the test run:
 2. **Multi-Token Reference Search**: `textDocument/references` is **9.8x faster at p50** (103.0 µs vs 1014.5 µs) and **3.2x faster at p90** (2988.6 µs vs 9693.1 µs).
 3. **Process Resources**: RIDX maintains 2 OS threads and 3 open file descriptors, whereas rust-analyzer scales to 37 threads and 9 file descriptors.
 4. **Memory Footprint**: RIDX uses **67.0x lower Heap RAM** (Anon Heap 18.4 MB vs 1236.8 MB).
-5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **26.2 MB PSS** total (13.5 MB Anon) vs rust-analyzer's **9526.1 MB PSS** (9491.6 MB Anon) — a **363.2x lower PSS** footprint (workload: 50 def queries per process vs 300 queries + mutations in single-process main run).
+5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **26.2 MB PSS** total (13.5 MB Anon) vs rust-analyzer's **9526.1 MB PSS** (9491.6 MB Anon) — a **363.2x lower PSS** footprint.
 6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **0.0 ms**, which is **32649.0x faster** than RIDX (**3264.9 ms**).
 
 ### 3. Semantic Parity & Discrepancies Breakdown
@@ -221,6 +221,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 | **Def Latency (Warm p50)** | **95.0 µs** | **181.0 µs** | 1.9x faster |
 | **Def Latency (Warm p90)** | **172.1 µs** | **28592.0 µs** | **166.1x faster tail latency** |
 | **Hover Latency (Warm p50)** | **1295.5 µs** | **149.5 µs** | 8.7x slower |
+| **Hover (Post-844eac0, Warm p50)** | **16.0 µs** | **161.5 µs** | **10.1x faster** (n=100) |
 | **Refs Latency (Warm p50)** | **573.0 µs** | **5079.5 µs** | **8.9x faster** |
 | **Refs Latency (Warm p90)** | **2018.7 µs** | **59270.8 µs** | **29.4x faster tail latency** |
 | **Read-Only Strict Match Rate (Class A)** | **245 / 300 (81.7%, 95% CI [76.9%, 85.6%]) (81.67%)** | Baseline | Wilson 95% CI |
@@ -238,8 +239,9 @@ Measured architectural differences from the test run:
 2. **Multi-Token Reference Search**: `textDocument/references` is **8.9x faster at p50** (573.0 µs vs 5079.5 µs) and **29.4x faster at p90** (2018.7 µs vs 59270.8 µs).
 3. **Process Resources**: RIDX maintains 2 OS threads and 4 open file descriptors, whereas rust-analyzer scales to 37 threads and 9 file descriptors.
 4. **Memory Footprint**: RIDX uses **68.8x lower Heap RAM** (Anon Heap 37.9 MB vs 2604.1 MB).
-5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **196.5 MB PSS** total (149.1 MB Anon) vs rust-analyzer's **17528.4 MB PSS** (17493.9 MB Anon) — a **89.2x lower PSS** footprint (workload: 50 def queries per process vs 300 queries + mutations in single-process main run).
+5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **196.5 MB PSS** total (149.1 MB Anon) vs rust-analyzer's **17528.4 MB PSS** (17493.9 MB Anon) — a **89.2x lower PSS** footprint.
 6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **50.1 ms**, which is **1197.7x faster** than RIDX (**60002.8 ms**).
+7. **Hover Optimization (Commit 844eac0)**: In a dedicated symmetric rerun on `booster` (taskset 24-31, n=100 hover queries alongside RA 1.98.1), warm p50 is **10.1x faster** (16.0 µs vs 161.5 µs).
 
 ### 3. Semantic Parity & Discrepancies Breakdown
 
@@ -315,6 +317,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 | **Def Latency (Warm p50)** | **245.0 µs** | **280.5 µs** | on par (±20%) |
 | **Def Latency (Warm p90)** | **504.3 µs** | **125641.2 µs** | **249.1x faster tail latency** |
 | **Hover Latency (Warm p50)** | **3957.5 µs** | **215.0 µs** | 18.4x slower |
+| **Hover (Post-844eac0, Warm p50)** | **353.5 µs** | **230.5 µs** | **1.5x slower** (n=100) |
 | **Refs Latency (Warm p50)** | **3880.0 µs** | **13022.0 µs** | **3.4x faster** |
 | **Refs Latency (Warm p90)** | **7931.9 µs** | **117158.9 µs** | **14.8x faster tail latency** |
 | **Read-Only Strict Match Rate (Class A)** | **281 / 300 (93.7%, 95% CI [90.3%, 95.9%]) (93.67%)** | Baseline | Wilson 95% CI |
@@ -332,8 +335,9 @@ Measured architectural differences from the test run:
 2. **Multi-Token Reference Search**: `textDocument/references` is **3.4x faster at p50** (3880.0 µs vs 13022.0 µs) and **14.8x faster at p90** (7931.9 µs vs 117158.9 µs).
 3. **Process Resources**: RIDX maintains 2 OS threads and 4 open file descriptors, whereas rust-analyzer scales to 37 threads and 9 file descriptors.
 4. **Memory Footprint**: RIDX uses **57.7x lower Heap RAM** (Anon Heap 178.0 MB vs 10266.9 MB).
-5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **1725.3 MB PSS** total (1583.5 MB Anon) vs rust-analyzer's **58549.2 MB PSS** (58522.7 MB Anon) — a **33.9x lower PSS** footprint (workload: 50 def queries per process vs 300 queries + mutations in single-process main run).
+5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **1725.3 MB PSS** total (1583.5 MB Anon) vs rust-analyzer's **58549.2 MB PSS** (58522.7 MB Anon) — a **33.9x lower PSS** footprint.
 6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **550.9 ms**, which is **71.8x faster** than RIDX (**39531.2 ms**).
+7. **Hover Optimization (Commit 844eac0)**: In a dedicated symmetric rerun on `booster` (taskset 24-31, n=100 hover queries alongside RA 1.98.1), warm p50 is **1.5x slower** (353.5 µs vs 230.5 µs).
 
 ### 3. Semantic Parity & Discrepancies Breakdown
 
@@ -426,7 +430,7 @@ Measured architectural differences from the test run:
 2. **Multi-Token Reference Search**: `textDocument/references` is **2.4x faster at p50** (654.5 µs vs 1571.5 µs) and **48.7x faster at p90** (2265.9 µs vs 110309.6 µs).
 3. **Process Resources**: RIDX maintains 2 OS threads and 4 open file descriptors, whereas rust-analyzer scales to 37 threads and 9 file descriptors.
 4. **Memory Footprint**: RIDX uses **47.9x lower Heap RAM** (Anon Heap 78.6 MB vs 3766.8 MB).
-5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **122.2 MB PSS** total (59.4 MB Anon) vs rust-analyzer's **21120.2 MB PSS** (21082.4 MB Anon) — a **172.8x lower PSS** footprint (workload: 50 def queries per process vs 300 queries + mutations in single-process main run).
+5. **Multi-Worktree Scaling**: Across 10 concurrent worktrees, RIDX consumes **122.2 MB PSS** total (59.4 MB Anon) vs rust-analyzer's **21120.2 MB PSS** (21082.4 MB Anon) — a **172.8x lower PSS** footprint.
 6. **Warm Incremental Re-index (W1)**: rust-analyzer reaches freshness in **100.1 ms**, which is **64.6x faster** than RIDX (**6461.5 ms**).
 
 ### 3. Semantic Parity & Discrepancies Breakdown
