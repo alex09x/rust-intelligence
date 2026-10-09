@@ -11,6 +11,7 @@
 //! LSP call hierarchy and type hierarchy navigation handlers.
 
 pub mod call;
+pub mod scan;
 pub mod types;
 
 #[cfg(test)]

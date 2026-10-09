@@ -10,10 +10,13 @@
 
 //! LSP type hierarchy navigation handlers.
 
+use super::scan::{get_impl_line, parse_impl_line};
+use crate::lsp::params::text_document_position;
 use crate::lsp::protocol::{lsp_symbol_kind, path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
+use std::collections::HashSet;
 
 pub fn handle_prepare_type_hierarchy(
     msg: &Value,
@@ -21,10 +24,11 @@ pub fn handle_prepare_type_hierarchy(
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
 ) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let (uri, line_0based, utf16_col_0based) = match text_document_position(msg) {
+        Ok(t) => t,
+        Err(_) => return Value::Array(vec![]),
+    };
     let file = uri_to_path(uri);
-    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
     let line_1based = line_0based + 1;
 
     let overlay_opt = overlay_mgr.get(&file);
@@ -94,76 +98,211 @@ pub fn handle_prepare_type_hierarchy(
     json!(items)
 }
 
+fn parse_fallback_impl_path(path: &str) -> (Option<String>, Option<String>) {
+    if let Some(inner) = path.strip_prefix('<').and_then(|s| s.strip_suffix('>')) {
+        if let Some((target, tr)) = inner.split_once(" as ") {
+            let target_clean = target.rsplit("::").next().unwrap_or(target);
+            let tr_clean = tr.rsplit("::").next().unwrap_or(tr);
+            return (Some(tr_clean.to_string()), Some(target_clean.to_string()));
+        }
+    }
+    (None, None)
+}
+
+struct ImplCandidateQuery<'a> {
+    ws: &'a WorkspaceIndex,
+    query_name: &'a str,
+    is_supertype: bool,
+    seen: &'a mut HashSet<String>,
+    results: &'a mut Vec<Value>,
+}
+
+fn process_impl_candidate(
+    q: &mut ImplCandidateQuery<'_>,
+    file_path: &str,
+    start_line_1based: u32,
+    fallback: (Option<String>, Option<String>),
+) {
+    let (trait_opt, target_opt) = std::fs::read_to_string(file_path)
+        .ok()
+        .and_then(|c| {
+            let lines: Vec<&str> = c.lines().collect();
+            let l_idx = start_line_1based.saturating_sub(1) as usize;
+            get_impl_line(&lines, l_idx).map(|l| parse_impl_line(&l))
+        })
+        .unwrap_or(fallback);
+
+    let (Some(trait_name), Some(target_name)) = (trait_opt, target_opt) else {
+        return;
+    };
+
+    let trait_base = trait_name.split('<').next().unwrap_or(&trait_name).trim();
+    let target_base = target_name.split('<').next().unwrap_or(&target_name).trim();
+    let name_base = q.query_name.split('<').next().unwrap_or(q.query_name).trim();
+
+    if q.is_supertype {
+        if target_base == name_base || target_base.ends_with(&format!("::{name_base}")) {
+            if !q.seen.insert(trait_base.to_string()) {
+                return;
+            }
+            let (item_uri, item_range) = if let Some(t_def) = q
+                .ws
+                .search_symbols(trait_base)
+                .into_iter()
+                .find(|d| d.name == trait_base && d.kind == DefKind::Trait)
+            {
+                let p = t_def.resolved_path();
+                let s = p.to_str().unwrap_or(t_def.file);
+                let r = json!({
+                    "start": { "line": t_def.span.start_line().saturating_sub(1), "character": t_def.span.start_col().saturating_sub(1) },
+                    "end": { "line": t_def.span.end_line().saturating_sub(1), "character": t_def.span.end_col().saturating_sub(1) }
+                });
+                (path_to_uri(s), r)
+            } else {
+                let uri = path_to_uri(file_path);
+                let r = json!({
+                    "start": { "line": start_line_1based.saturating_sub(1), "character": 0 },
+                    "end": { "line": start_line_1based.saturating_sub(1), "character": 0 }
+                });
+                (uri, r)
+            };
+            q.results.push(json!({
+                "name": trait_base,
+                "kind": 11,
+                "uri": item_uri,
+                "range": item_range,
+                "selectionRange": item_range
+            }));
+        }
+    } else if trait_base == name_base || trait_base.ends_with(&format!("::{name_base}")) {
+        if !q.seen.insert(target_base.to_string()) {
+            return;
+        }
+        let (item_uri, item_range, kind) = if let Some(t_def) = q
+            .ws
+            .search_symbols(target_base)
+            .into_iter()
+            .find(|d| d.name == target_base && matches!(d.kind, DefKind::Struct | DefKind::Enum))
+        {
+            let p = t_def.resolved_path();
+            let s = p.to_str().unwrap_or(t_def.file);
+            let r = json!({
+                "start": { "line": t_def.span.start_line().saturating_sub(1), "character": t_def.span.start_col().saturating_sub(1) },
+                "end": { "line": t_def.span.end_line().saturating_sub(1), "character": t_def.span.end_col().saturating_sub(1) }
+            });
+            (path_to_uri(s), r, lsp_symbol_kind(t_def.kind))
+        } else {
+            let uri = path_to_uri(file_path);
+            let r = json!({
+                "start": { "line": start_line_1based.saturating_sub(1), "character": 0 },
+                "end": { "line": start_line_1based.saturating_sub(1), "character": 0 }
+            });
+            (uri, r, 23)
+        };
+        q.results.push(json!({
+            "name": target_base,
+            "kind": kind,
+            "uri": item_uri,
+            "range": item_range,
+            "selectionRange": item_range
+        }));
+    }
+}
+
 pub fn handle_type_hierarchy_supertypes(msg: &Value, workspace: Option<&WorkspaceIndex>) -> Value {
     let item = &msg["params"]["item"];
     let name = item["name"].as_str().unwrap_or("");
-
     let Some(ws) = workspace else {
         return json!([]);
     };
 
     let mut supertypes = Vec::new();
-    let symbols = ws.search_symbols(name);
-    for sym in symbols {
+    let mut seen = HashSet::new();
+    let mut query = ImplCandidateQuery {
+        ws,
+        query_name: name,
+        is_supertype: true,
+        seen: &mut seen,
+        results: &mut supertypes,
+    };
+
+    // 1. DefKind::Impl definitions (compiler index)
+    for sym in ws.search_symbols("").into_iter().filter(|s| s.kind == DefKind::Impl) {
+        let sym_path = sym.resolved_path();
+        let sym_file = sym_path.to_str().unwrap_or(sym.file);
+        let fallback = parse_fallback_impl_path(sym.path);
+        process_impl_candidate(
+            &mut query,
+            sym_file,
+            sym.span.start_line(),
+            fallback,
+        );
+    }
+
+    // 2. References to matching struct/enum (mock/reference index)
+    for sym in ws.search_symbols(name) {
         if sym.name == name && matches!(sym.kind, DefKind::Struct | DefKind::Enum) {
-            let refs = ws.find_references(sym.path);
-            for r in refs {
-                if r.kind == DefKind::Impl {
-                    let r_path = r.resolved_path();
-                    let r_str = r_path.to_str().unwrap_or(r.file);
-                    let uri = path_to_uri(r_str);
-                    let range = json!({
-                        "start": { "line": r.span.start_line().saturating_sub(1), "character": r.span.start_col().saturating_sub(1) },
-                        "end": { "line": r.span.end_line().saturating_sub(1), "character": r.span.end_col().saturating_sub(1) }
-                    });
-                    supertypes.push(json!({
-                        "name": format!("impl for {}", name),
-                        "kind": 11,
-                        "uri": uri,
-                        "range": range,
-                        "selectionRange": range
-                    }));
-                }
+            for r in ws.find_references(sym.path) {
+                let r_path = r.resolved_path();
+                let r_file = r_path.to_str().unwrap_or(r.file);
+                process_impl_candidate(
+                    &mut query,
+                    r_file,
+                    r.span.start_line(),
+                    (None, None),
+                );
             }
         }
     }
 
-    json!(supertypes)
+    supertypes.into()
 }
 
 pub fn handle_type_hierarchy_subtypes(msg: &Value, workspace: Option<&WorkspaceIndex>) -> Value {
     let item = &msg["params"]["item"];
     let name = item["name"].as_str().unwrap_or("");
-
     let Some(ws) = workspace else {
         return json!([]);
     };
 
     let mut subtypes = Vec::new();
-    let symbols = ws.search_symbols(name);
-    for sym in symbols {
+    let mut seen = HashSet::new();
+    let mut query = ImplCandidateQuery {
+        ws,
+        query_name: name,
+        is_supertype: false,
+        seen: &mut seen,
+        results: &mut subtypes,
+    };
+
+    // 1. DefKind::Impl definitions (compiler index)
+    for sym in ws.search_symbols("").into_iter().filter(|s| s.kind == DefKind::Impl) {
+        let sym_path = sym.resolved_path();
+        let sym_file = sym_path.to_str().unwrap_or(sym.file);
+        let fallback = parse_fallback_impl_path(sym.path);
+        process_impl_candidate(
+            &mut query,
+            sym_file,
+            sym.span.start_line(),
+            fallback,
+        );
+    }
+
+    // 2. References to matching trait (mock/reference index)
+    for sym in ws.search_symbols(name) {
         if sym.name == name && sym.kind == DefKind::Trait {
-            let refs = ws.find_references(sym.path);
-            for r in refs {
-                if r.kind == DefKind::Impl {
-                    let r_path = r.resolved_path();
-                    let r_str = r_path.to_str().unwrap_or(r.file);
-                    let uri = path_to_uri(r_str);
-                    let range = json!({
-                        "start": { "line": r.span.start_line().saturating_sub(1), "character": r.span.start_col().saturating_sub(1) },
-                        "end": { "line": r.span.end_line().saturating_sub(1), "character": r.span.end_col().saturating_sub(1) }
-                    });
-                    subtypes.push(json!({
-                        "name": format!("impl of {}", name),
-                        "kind": 23,
-                        "uri": uri,
-                        "range": range,
-                        "selectionRange": range
-                    }));
-                }
+            for r in ws.find_references(sym.path) {
+                let r_path = r.resolved_path();
+                let r_file = r_path.to_str().unwrap_or(r.file);
+                process_impl_candidate(
+                    &mut query,
+                    r_file,
+                    r.span.start_line(),
+                    (None, None),
+                );
             }
         }
     }
 
-    json!(subtypes)
+    subtypes.into()
 }

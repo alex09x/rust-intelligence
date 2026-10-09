@@ -78,7 +78,7 @@ fn format_hover(hover: &ridx_format::WorkspaceHover) -> Value {
     let mut parts = Vec::new();
     if let Some(ref d) = hover.definition {
         if let Some(sig) = d.signature {
-            parts.push(sig.to_string());
+            parts.push(format_signature(d.name, sig));
         } else {
             parts.push(format!("{} {}", d.kind.as_str(), d.name));
         }
@@ -96,3 +96,29 @@ fn format_hover(hover: &ridx_format::WorkspaceHover) -> Value {
         }
     })
 }
+
+fn format_signature(name: &str, sig: &str) -> String {
+    let s = if let Some(stripped) = sig.strip_prefix("for<") {
+        if let Some(idx) = stripped.find("> ") {
+            &stripped[idx + 2..]
+        } else {
+            sig
+        }
+    } else {
+        sig
+    };
+
+    if let Some(rest) = s.strip_prefix("fn(") {
+        let mut decl = format!("fn {name}(");
+        let normalized = rest
+            .replacen("&'a mut Self", "&mut self", 1)
+            .replacen("&mut Self", "&mut self", 1)
+            .replacen("&'a Self", "&self", 1)
+            .replacen("&Self", "&self", 1);
+        decl.push_str(&normalized);
+        decl
+    } else {
+        sig.to_string()
+    }
+}
+

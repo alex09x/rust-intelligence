@@ -11,48 +11,16 @@
 //! LSP call hierarchy navigation handlers.
 
 use crate::lsp::editing::is_rust_keyword;
+use crate::lsp::params::text_document_position;
 use crate::lsp::protocol::{lsp_symbol_kind, path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::path::Path;
 
-pub(crate) fn is_call_site(file: &str, span_end_line: u32, span_end_col: u32) -> bool {
-    let content = std::fs::read_to_string(file).ok();
-    let Some(ref text) = content else {
-        return false;
-    };
-    let lines: Vec<&str> = text.lines().collect();
-    let l_idx = span_end_line.saturating_sub(1) as usize;
-    if l_idx >= lines.len() {
-        return false;
-    }
-    let char_offset = span_end_col.saturating_sub(1) as usize;
-    let first_line: String = lines[l_idx].chars().skip(char_offset).collect();
-    let mut rest = first_line.clone();
-    if rest.trim().is_empty() {
-        for next_l in lines.iter().skip(l_idx + 1).take(3) {
-            rest.push('\n');
-            rest.push_str(next_l);
-            if !next_l.trim().is_empty() {
-                break;
-            }
-        }
-    }
-    let trimmed = rest.trim_start();
-    if trimmed.starts_with('(') {
-        return true;
-    }
-    if trimmed.starts_with("::<") {
-        if let Some(pos) = trimmed.find('(') {
-            let between = &trimmed[3..pos];
-            if between.contains('>') {
-                return true;
-            }
-        }
-    }
-    false
-}
+pub(crate) use super::scan::is_call_site;
+use super::scan::{find_enclosing_function, find_function_body_end_line};
 
 pub fn handle_prepare_call_hierarchy(
     msg: &Value,
@@ -60,10 +28,11 @@ pub fn handle_prepare_call_hierarchy(
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
 ) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let (uri, line_0based, utf16_col_0based) = match text_document_position(msg) {
+        Ok(t) => t,
+        Err(_) => return Value::Array(vec![]),
+    };
     let file = uri_to_path(uri);
-    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
     let line_1based = line_0based + 1;
 
     let overlay_opt = overlay_mgr.get(&file);
@@ -82,7 +51,7 @@ pub fn handle_prepare_call_hierarchy(
                 overlay.char_col_to_utf16_col(def.start_line, def.start_col),
                 overlay.char_col_to_utf16_col(def.end_line, def.end_col),
             );
-            let range = json!({
+            let sel_range = json!({
                 "start": { "line": def.start_line.saturating_sub(1), "character": sc },
                 "end": { "line": def.end_line.saturating_sub(1), "character": ec }
             });
@@ -91,8 +60,8 @@ pub fn handle_prepare_call_hierarchy(
                 "kind": lsp_symbol_kind(def.kind),
                 "detail": def.signature,
                 "uri": uri,
-                "range": range,
-                "selectionRange": range
+                "range": sel_range,
+                "selectionRange": sel_range
             }));
             return json!(items);
         }
@@ -107,7 +76,7 @@ pub fn handle_prepare_call_hierarchy(
                     let d_str = d_path.to_str().unwrap_or(def.file);
                     let sc = conv.char_col_to_utf16_col(d_str, def.start_line, def.start_col);
                     let ec = conv.char_col_to_utf16_col(d_str, def.end_line, def.end_col);
-                    let range = json!({
+                    let sel_range = json!({
                         "start": { "line": def.start_line.saturating_sub(1), "character": sc },
                         "end": { "line": def.end_line.saturating_sub(1), "character": ec }
                     });
@@ -116,8 +85,8 @@ pub fn handle_prepare_call_hierarchy(
                         "kind": lsp_symbol_kind(def.kind),
                         "detail": def.signature,
                         "uri": path_to_uri(d_str),
-                        "range": range,
-                        "selectionRange": range
+                        "range": sel_range,
+                        "selectionRange": sel_range
                     }));
                 }
             }
@@ -142,75 +111,116 @@ pub fn handle_call_hierarchy_incoming_calls(
         return json!([]);
     };
 
-    let mut incoming = Vec::new();
     let symbols = ws.search_symbols(name);
+    let mut ref_paths = Vec::new();
 
-    for sym in symbols {
+    for sym in &symbols {
         if sym.name == name
             && matches!(sym.kind, DefKind::Fn | DefKind::AssocFn)
             && sym.resolved_path() == Path::new(&item_file)
             && sym.span.start_line() == item_start_line
         {
-            let refs = ws.find_references(sym.path);
-            for r in refs {
-                let r_path = r.resolved_path();
-                let r_str = r_path.to_str().unwrap_or(r.file);
-                let span = r.span;
+            ref_paths.push(sym.path);
+        }
+    }
 
-                if !is_call_site(r_str, span.end_line(), span.end_col()) {
-                    continue;
-                }
-
-                let sc = conv.char_col_to_utf16_col(r_str, span.start_line(), span.start_col());
-                let ec = conv.char_col_to_utf16_col(r_str, span.end_line(), span.end_col());
-                let call_range = json!({
-                    "start": { "line": span.start_line().saturating_sub(1), "character": sc },
-                    "end": { "line": span.end_line().saturating_sub(1), "character": ec }
-                });
-
-                let caller_def = ws.search_symbols("").into_iter().find(|d| {
-                    d.file == r.file
-                        && matches!(d.kind, DefKind::Fn | DefKind::AssocFn)
-                        && d.span.start_line() <= span.start_line()
-                        && d.span.end_line() >= span.end_line()
-                });
-
-                let Some(caller) = caller_def else {
-                    continue;
-                };
-
-                let c_path = caller.resolved_path();
-                let c_str = c_path.to_str().unwrap_or(caller.file);
-                let c_uri = path_to_uri(c_str);
-                let c_sc = conv.char_col_to_utf16_col(
-                    c_str,
-                    caller.span.start_line(),
-                    caller.span.start_col(),
-                );
-                let c_ec = conv.char_col_to_utf16_col(
-                    c_str,
-                    caller.span.end_line(),
-                    caller.span.end_col(),
-                );
-                let c_range = json!({
-                    "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
-                    "end": { "line": caller.span.end_line().saturating_sub(1), "character": c_ec }
-                });
-                let caller_item = json!({
-                    "name": caller.name,
-                    "kind": lsp_symbol_kind(caller.kind),
-                    "uri": c_uri,
-                    "range": c_range,
-                    "selectionRange": c_range
-                });
-
-                incoming.push(json!({
-                    "from": caller_item,
-                    "fromRanges": [call_range]
-                }));
+    // Include trait or impl counterpart paths for the method
+    for other in &symbols {
+        if other.name == name
+            && matches!(other.kind, DefKind::Fn | DefKind::AssocFn)
+            && !ref_paths.contains(&other.path)
+        {
+            let is_related = ref_paths.iter().any(|p| {
+                p.contains(other.path.split("::").next().unwrap_or(""))
+                    || other.path.contains(p.split("::").next().unwrap_or(""))
+                    || p.contains(" as ")
+                    || other.path.contains(" as ")
+            });
+            if is_related {
+                ref_paths.push(other.path);
             }
         }
     }
+
+    let mut incoming_map: HashMap<String, (Value, Vec<Value>)> = HashMap::new();
+
+    for path in ref_paths {
+        let refs = ws.find_references(path);
+        for r in refs {
+            let r_path = r.resolved_path();
+            let r_str = r_path.to_str().unwrap_or(r.file);
+            let span = r.span;
+
+            if !is_call_site(r_str, span.end_line(), span.end_col()) {
+                continue;
+            }
+
+            let sc = conv.char_col_to_utf16_col(r_str, span.start_line(), span.start_col());
+            let ec = conv.char_col_to_utf16_col(r_str, span.end_line(), span.end_col());
+            let call_range = json!({
+                "start": { "line": span.start_line().saturating_sub(1), "character": sc },
+                "end": { "line": span.end_line().saturating_sub(1), "character": ec }
+            });
+
+            let content = std::fs::read_to_string(r_str).unwrap_or_default();
+            let file_lines: Vec<&str> = content.lines().collect();
+            let caller_def =
+                find_enclosing_function(ws, r_str, span.start_line(), &file_lines);
+
+            let Some(caller) = caller_def else {
+                continue;
+            };
+
+            let c_path = caller.resolved_path();
+            let c_str = c_path.to_str().unwrap_or(caller.file);
+            let c_uri = path_to_uri(c_str);
+            let c_sc = conv.char_col_to_utf16_col(
+                c_str,
+                caller.span.start_line(),
+                caller.span.start_col(),
+            );
+            let c_ec = conv.char_col_to_utf16_col(
+                c_str,
+                caller.span.end_line(),
+                caller.span.end_col(),
+            );
+            let c_body_end =
+                find_function_body_end_line(&file_lines, caller.span.start_line());
+            let c_range = json!({
+                "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
+                "end": { "line": c_body_end.saturating_sub(1), "character": 0 }
+            });
+            let c_sel_range = json!({
+                "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
+                "end": { "line": caller.span.end_line().saturating_sub(1), "character": c_ec }
+            });
+            let caller_item = json!({
+                "name": caller.name,
+                "kind": lsp_symbol_kind(caller.kind),
+                "detail": caller.signature,
+                "uri": c_uri,
+                "range": c_range,
+                "selectionRange": c_sel_range
+            });
+
+            let key = format!("{}:{}:{}", caller.path, c_str, caller.span.start_line());
+            incoming_map
+                .entry(key)
+                .or_insert_with(|| (caller_item, Vec::new()))
+                .1
+                .push(call_range);
+        }
+    }
+
+    let incoming: Vec<Value> = incoming_map
+        .into_values()
+        .map(|(from, from_ranges)| {
+            json!({
+                "from": from,
+                "fromRanges": from_ranges
+            })
+        })
+        .collect();
 
     json!(incoming)
 }
@@ -224,7 +234,7 @@ pub fn handle_call_hierarchy_outgoing_calls(
     let uri = item["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let start_line = item["range"]["start"]["line"].as_u64().unwrap_or(0) as u32 + 1;
-    let end_line = item["range"]["end"]["line"]
+    let mut end_line = item["range"]["end"]["line"]
         .as_u64()
         .unwrap_or(u32::MAX as u64) as u32
         + 1;
@@ -237,8 +247,12 @@ pub fn handle_call_hierarchy_outgoing_calls(
         return json!([]);
     };
 
-    let mut outgoing = Vec::new();
     let lines: Vec<&str> = content.lines().collect();
+    if end_line <= start_line {
+        end_line = find_function_body_end_line(&lines, start_line);
+    }
+
+    let mut outgoing = Vec::new();
 
     for line_idx in start_line.saturating_sub(1)..end_line.min(lines.len() as u32) {
         let line_num = line_idx + 1;
@@ -319,6 +333,7 @@ pub fn handle_call_hierarchy_outgoing_calls(
                             let target_item = json!({
                                 "name": def.name,
                                 "kind": lsp_symbol_kind(def.kind),
+                                "detail": def.signature,
                                 "uri": target_uri,
                                 "range": target_range,
                                 "selectionRange": target_range
