@@ -10,7 +10,7 @@
 
 //! LSP signature help intelligence handler.
 
-use super::super::error::{LspError, LspResult};
+use super::super::error::LspResult;
 use super::super::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
@@ -38,30 +38,7 @@ pub fn handle_signature_help(
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
 ) -> LspResult<Value> {
-    let params = msg
-        .get("params")
-        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
-    if !params.is_object() {
-        return Err(LspError::invalid_params("Params must be an object"));
-    }
-
-    let uri = params["textDocument"]["uri"]
-        .as_str()
-        .ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
-    if uri.is_empty() {
-        return Err(LspError::invalid_params("Empty textDocument.uri"));
-    }
-
-    let pos = &params["position"];
-    if !pos.is_object() {
-        return Err(LspError::invalid_params("Missing position object"));
-    }
-    let line_0based = pos["line"]
-        .as_u64()
-        .ok_or_else(|| LspError::invalid_params("Missing position.line"))? as u32;
-    let utf16_col_0based = pos["character"]
-        .as_u64()
-        .ok_or_else(|| LspError::invalid_params("Missing position.character"))? as u32;
+    let (uri, line_0based, utf16_col_0based) = crate::lsp::params::text_document_position(msg)?;
     let line_1based = line_0based + 1;
 
     let file = uri_to_path(uri);
@@ -188,17 +165,83 @@ pub fn handle_signature_help(
     let callee_name: String = chars[name_start..name_end].iter().collect();
 
     let mut sig_opt = None;
-    if let Some(overlay) = overlay_opt {
-        for s in &overlay.symbols {
-            if s.name == callee_name && s.kind == DefKind::Fn {
-                if let Some(ref sig) = s.signature {
-                    sig_opt = Some(sig.clone());
-                    break;
+
+    // 1. Try resolving exact call-site definition from compiled index
+    if let Some(ws) = workspace {
+        let newlines_between = chars[name_start..].iter().filter(|&&c| c == '\n').count() as u32;
+        let callee_line_1based = line_1based.saturating_sub(newlines_between);
+        let last_nl = chars[..name_start].iter().rposition(|&c| c == '\n');
+        let callee_col_1based = if let Some(nl_pos) = last_nl {
+            (name_start - nl_pos) as u32
+        } else {
+            let chars_from_cursor = chars.len() - name_start;
+            col_1based.saturating_sub(chars_from_cursor as u32) + 1
+        };
+
+        if let Some(def) = ws.find_definition_at(&file, callee_line_1based, callee_col_1based) {
+            if def.name == callee_name {
+                if let Some(sig) = def.signature {
+                    sig_opt = Some(sig.to_string());
                 }
             }
         }
     }
 
+    // 2. Check for qualified call (e.g. ExternalCoreService::new or receiver.method)
+    if sig_opt.is_none() {
+        let mut qual_end = name_start;
+        while qual_end > 0 && chars[qual_end - 1].is_whitespace() {
+            qual_end -= 1;
+        }
+        let is_colon_call =
+            qual_end >= 2 && chars[qual_end - 1] == ':' && chars[qual_end - 2] == ':';
+        let is_dot_call = qual_end >= 1 && chars[qual_end - 1] == '.';
+
+        if is_colon_call || is_dot_call {
+            let qual_sep_len = if is_colon_call { 2 } else { 1 };
+            let mut qual_tok_end = qual_end - qual_sep_len;
+            while qual_tok_end > 0 && chars[qual_tok_end - 1].is_whitespace() {
+                qual_tok_end -= 1;
+            }
+            let mut qual_tok_start = qual_tok_end;
+            while qual_tok_start > 0
+                && (chars[qual_tok_start - 1] == '_'
+                    || chars[qual_tok_start - 1].is_alphanumeric()
+                    || chars[qual_tok_start - 1] == ':')
+            {
+                qual_tok_start -= 1;
+            }
+            if qual_tok_start < qual_tok_end {
+                let qualifier: String = chars[qual_tok_start..qual_tok_end].iter().collect();
+                if let Some(ws) = workspace {
+                    let def_opt = ws.find_definition_by_path(&qualifier);
+                    let target_path = def_opt.as_ref().map(|d| d.path).unwrap_or(&qualifier);
+                    let method_path = format!("{target_path}::{callee_name}");
+                    if let Some(method_def) = ws.find_definition_by_path(&method_path) {
+                        if let Some(sig) = method_def.signature {
+                            sig_opt = Some(sig.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Fallback to overlay symbols
+    if sig_opt.is_none() {
+        if let Some(overlay) = overlay_opt {
+            for s in &overlay.symbols {
+                if s.name == callee_name && s.kind == DefKind::Fn {
+                    if let Some(ref sig) = s.signature {
+                        sig_opt = Some(sig.clone());
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Fallback to workspace symbol search
     if sig_opt.is_none() {
         if let Some(ws) = workspace {
             let syms = ws.search_symbols(&callee_name);

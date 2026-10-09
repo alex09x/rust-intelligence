@@ -324,9 +324,16 @@ fn test_domain5_concurrent_intelligence_requests_stress() {
         }
     })));
 
-    // Send 30 interleaved intelligence requests
+    // Send 30 interleaved intelligence requests with mid-stream cancellation of request 115
     for i in 0..30 {
         let req_id = 100 + i;
+        if req_id == 115 {
+            input.extend(make_lsp_msg(&json!({
+                "jsonrpc": "2.0",
+                "method": "$/cancelRequest",
+                "params": { "id": 115 }
+            })));
+        }
         let method = match i % 3 {
             0 => "textDocument/hover",
             1 => "textDocument/completion",
@@ -363,5 +370,19 @@ fn test_domain5_concurrent_intelligence_requests_stress() {
         let req_id = 100 + i;
         let r = responses.iter().find(|res| res["id"] == req_id);
         assert!(r.is_some(), "Expected response for request {}", req_id);
+        let resp = r.unwrap();
+        if req_id == 115 {
+            assert_eq!(
+                resp["error"]["code"], -32800,
+                "Cancelled request 115 must yield code -32800 (RequestCancelled)"
+            );
+        } else {
+            assert!(
+                resp["error"].is_null(),
+                "Non-cancelled request {} must succeed, got {:?}",
+                req_id,
+                resp["error"]
+            );
+        }
     }
 }

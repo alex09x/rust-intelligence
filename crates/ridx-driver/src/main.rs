@@ -431,6 +431,27 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
         }
         intravisit::walk_expr(self, expr);
     }
+
+    fn visit_pat(&mut self, pat: &'tcx hir::Pat<'tcx>) {
+        if let Some(typeck) = self.typeck {
+            if let hir::PatKind::Binding(..) = pat.kind {
+                if let Some((file, s_line, s_col, e_line, e_col, _)) =
+                    resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref())
+                {
+                    let ty = typeck.pat_ty(pat);
+                    self.writer.add_type(RawType {
+                        file,
+                        start_line: s_line,
+                        start_col: s_col,
+                        end_line: e_line,
+                        end_col: e_col,
+                        type_name: ty.to_string(),
+                    });
+                }
+            }
+        }
+        intravisit::walk_pat(self, pat);
+    }
 }
 
 fn extract_target_disambiguator(args: &[String]) -> Option<String> {

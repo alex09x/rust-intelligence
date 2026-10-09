@@ -10,7 +10,7 @@
 
 //! LSP hover intelligence handler.
 
-use super::super::error::{LspError, LspResult};
+use super::super::error::LspResult;
 use super::super::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
@@ -22,30 +22,7 @@ pub fn handle_hover(
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
 ) -> LspResult<Value> {
-    let params = msg
-        .get("params")
-        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
-    if !params.is_object() {
-        return Err(LspError::invalid_params("Params must be an object"));
-    }
-
-    let uri = params["textDocument"]["uri"]
-        .as_str()
-        .ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
-    if uri.is_empty() {
-        return Err(LspError::invalid_params("Empty textDocument.uri"));
-    }
-
-    let pos = &params["position"];
-    if !pos.is_object() {
-        return Err(LspError::invalid_params("Missing position object"));
-    }
-    let line_0based = pos["line"]
-        .as_u64()
-        .ok_or_else(|| LspError::invalid_params("Missing position.line"))? as u32;
-    let utf16_col_0based = pos["character"]
-        .as_u64()
-        .ok_or_else(|| LspError::invalid_params("Missing position.character"))? as u32;
+    let (uri, line_0based, utf16_col_0based) = crate::lsp::params::text_document_position(msg)?;
     let line_1based = line_0based + 1;
 
     let file = uri_to_path(uri);

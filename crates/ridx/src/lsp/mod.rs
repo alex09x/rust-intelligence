@@ -21,6 +21,7 @@ pub mod hierarchy;
 pub mod intelligence;
 pub mod lifecycle;
 pub mod navigation;
+pub mod params;
 pub mod presentation;
 pub mod protocol;
 pub mod symbols;
@@ -34,7 +35,7 @@ pub mod tests;
 #[allow(unused_imports)]
 pub use {
     dispatch::*, editing::*, error::*, handlers::*, hierarchy::*, intelligence::*, lifecycle::*,
-    navigation::*, presentation::*, protocol::*, symbols::*, workspace::*,
+    navigation::*, params::*, presentation::*, protocol::*, symbols::*, workspace::*,
 };
 
 use ridx_format::WorkspaceIndex;

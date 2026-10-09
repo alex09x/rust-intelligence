@@ -21,30 +21,8 @@ pub fn handle_inlay_hint(
     workspace: Option<&WorkspaceIndex>,
     overlay_mgr: &OverlayManager,
 ) -> LspResult<Value> {
-    let params = msg
-        .get("params")
-        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
-    if !params.is_object() {
-        return Err(LspError::invalid_params("Params must be an object"));
-    }
-
-    let uri = params["textDocument"]["uri"]
-        .as_str()
-        .ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
-    if uri.is_empty() {
-        return Err(LspError::invalid_params("Empty textDocument.uri"));
-    }
-
-    let range = &params["range"];
-    if !range.is_object() {
-        return Err(LspError::invalid_params("Missing range object"));
-    }
-    let start_line = range["start"]["line"]
-        .as_u64()
-        .ok_or_else(|| LspError::invalid_params("Missing range.start.line"))? as u32;
-    let end_line = range["end"]["line"]
-        .as_u64()
-        .ok_or_else(|| LspError::invalid_params("Missing range.end.line"))? as u32;
+    let (uri, start_line, _start_col, end_line, _end_col) =
+        crate::lsp::params::text_document_range(msg)?;
 
     let file = uri_to_path(uri);
     let overlay_opt = overlay_mgr.get(&file);
@@ -64,42 +42,26 @@ pub fn handle_inlay_hint(
             continue;
         }
 
-        let trimmed = line_str.trim_start();
-        if let Some(rest) = trimmed.strip_prefix("let ") {
-            let (after_mut, had_mut) = if let Some(m) = rest.strip_prefix("mut ") {
-                (m, true)
-            } else {
-                (rest, false)
-            };
-            let ident_end = after_mut
-                .find(|c: char| !c.is_alphanumeric() && c != '_')
-                .unwrap_or(after_mut.len());
-            let var_name = &after_mut[..ident_end];
+        if let Some((ident_start_byte, _var_name, ident_end_byte)) = find_let_binding(line_str) {
+            let line_1based = line_0based + 1;
+            let col_1based = line_str[..ident_start_byte].chars().count() as u32 + 1;
+            let utf16_char_pos = line_str[..ident_end_byte].encode_utf16().count() as u32;
 
-            if !var_name.is_empty() && !after_mut[ident_end..].trim_start().starts_with(':') {
-                let indent_chars = line_str.len() - trimmed.len();
-                let ident_start_char = indent_chars + 4 + if had_mut { 4 } else { 0 };
-                let ident_end_char = ident_start_char + var_name.chars().count();
+            let inferred_type = workspace
+                .and_then(|ws| ws.hover_at(&file, line_1based, col_1based))
+                .and_then(|hover| hover.inferred_type)
+                .map(|t| t.to_string());
 
-                let line_1based = line_0based + 1;
-                let col_1based = (ident_start_char + 1) as u32;
-
-                let inferred_type = workspace
-                    .and_then(|ws| ws.hover_at(&file, line_1based, col_1based))
-                    .and_then(|hover| hover.inferred_type)
-                    .map(|t| t.to_string());
-
-                if let Some(t) = inferred_type {
-                    hints.push(json!({
-                        "position": {
-                            "line": line_0based,
-                            "character": ident_end_char
-                        },
-                        "label": format!(": {}", t),
-                        "kind": 1,
-                        "paddingLeft": true
-                    }));
-                }
+            if let Some(t) = inferred_type {
+                hints.push(json!({
+                    "position": {
+                        "line": line_0based,
+                        "character": utf16_char_pos
+                    },
+                    "label": format!(": {}", t),
+                    "kind": 1,
+                    "paddingLeft": true
+                }));
             }
         }
     }
@@ -250,3 +212,54 @@ pub fn handle_inlay_hint_resolve(msg: &Value) -> LspResult<Value> {
     }
     Ok(hint)
 }
+
+fn find_let_binding(line_str: &str) -> Option<(usize, &str, usize)> {
+    let mut rest = line_str;
+    let mut offset = 0;
+
+    loop {
+        let trimmed_len = rest.trim_start().len();
+        let ws_len = rest.len() - trimmed_len;
+        offset += ws_len;
+        rest = &rest[ws_len..];
+
+        if rest.starts_with("/*") {
+            let end_idx = rest.find("*/")?;
+            let comment_len = end_idx + 2;
+            offset += comment_len;
+            rest = &rest[comment_len..];
+        } else {
+            break;
+        }
+    }
+
+    let rest_after_let = rest.strip_prefix("let ")?;
+    let mut let_kw_len = 4;
+    let mut after_let = rest_after_let;
+
+    if let Some(after_mut) = rest_after_let.strip_prefix("mut ") {
+        let_kw_len += 4;
+        after_let = after_mut;
+    }
+
+    let ws_len = after_let.len() - after_let.trim_start().len();
+    let ident_start = offset + let_kw_len + ws_len;
+    let trimmed_ident = after_let.trim_start();
+
+    let ident_end_rel = trimmed_ident
+        .find(|c: char| !c.is_alphanumeric() && c != '_')
+        .unwrap_or(trimmed_ident.len());
+    let var_name = &trimmed_ident[..ident_end_rel];
+
+    if var_name.is_empty() {
+        return None;
+    }
+
+    if trimmed_ident[ident_end_rel..].trim_start().starts_with(':') {
+        return None;
+    }
+
+    let ident_end = ident_start + var_name.len();
+    Some((ident_start, var_name, ident_end))
+}
+

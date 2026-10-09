@@ -48,3 +48,10 @@ pub fn invoke_match() -> i32 {
 pub fn invoke_aliased_widget() -> AliasedWidget {
     construct_widget("example")
 }
+
+pub fn invoke_inferred_vec() {
+    /* 🦀 */ let p = make_point(1, 2);
+    let v = vec![1u8];
+    let _ = (p, v);
+}
+
