@@ -161,7 +161,8 @@ struct HirVisitor<'tcx> {
 
 impl<'tcx> HirVisitor<'tcx> {
     fn current_param_env(&self) -> Option<rustc_middle::ty::ParamEnv<'tcx>> {
-        self.current_body_owner.map(|owner| self.tcx.param_env(owner.to_def_id()))
+        self.current_body_owner
+            .map(|owner| self.tcx.param_env(owner.to_def_id()))
     }
 
     fn add_ref_from_res(&mut self, span: Span, res: Res) {
@@ -317,7 +318,9 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
 
     fn visit_nested_body(&mut self, id: hir::BodyId) {
         let prev = self.typeck.replace(self.tcx.typeck_body(id));
-        let prev_owner = self.current_body_owner.replace(self.tcx.hir_body_owner_def_id(id));
+        let prev_owner = self
+            .current_body_owner
+            .replace(self.tcx.hir_body_owner_def_id(id));
         self.visit_body(self.tcx.hir_body(id));
         self.current_body_owner = prev_owner;
         self.typeck = prev;
@@ -436,7 +439,8 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                     resolve_span_coords(self.tcx, expr.span, self.package_root.as_deref())
                 {
                     if let Some(ty) = typeck.expr_ty_opt(expr) {
-                        let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
+                        let owner_path =
+                            resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
                         self.writer.add_type_with_owner(
                             RawType {
                                 file,
@@ -463,7 +467,8 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                         resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref())
                     {
                         let ty = typeck.pat_ty(pat);
-                        let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
+                        let owner_path =
+                            resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
                         self.writer.add_type_with_owner(
                             RawType {
                                 file,
@@ -701,7 +706,9 @@ fn extract_crate_items<'tcx>(
                 } else if parent_kind == hir::def::DefKind::Trait {
                     // Under `Trait::`, only index items declared directly in the trait definition itself.
                     let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
-                        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(parent_did))
+                        rustc_middle::ty::print::with_no_trimmed_paths!(
+                            tcx.def_path_str(parent_did)
+                        )
                     );
                     owners.push(trait_path);
                 }
@@ -737,7 +744,9 @@ fn extract_crate_items<'tcx>(
                 if !did.is_crate_root() && tcx.def_kind(tcx.parent(did)) == hir::def::DefKind::Mod {
                     let parent_did = tcx.parent(did);
                     let mod_path = rustc_middle::ty::print::with_no_visible_paths!(
-                        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(parent_did))
+                        rustc_middle::ty::print::with_no_trimmed_paths!(
+                            tcx.def_path_str(parent_did)
+                        )
                     );
                     owners.push(mod_path);
                 }
@@ -745,13 +754,15 @@ fn extract_crate_items<'tcx>(
             _ => {}
         }
 
-        // Detect Deref implementations: impl Deref for T { type Target = U; }
+        // Detect Deref and trait implementations: impl Trait for T { ... }
         if matches!(kind, hir::def::DefKind::Impl { of_trait: true }) {
             let trait_ref = tcx.impl_trait_ref(did);
             let trait_did = trait_ref.skip_binder().def_id;
+            let self_ty = tcx.type_of(did).skip_binder();
+            let src_owner = resolve_owner_from_ty(tcx, self_ty, None);
+
+            // 1. Deref implementation: impl Deref for T { type Target = U; }
             if tcx.lang_items().deref_trait() == Some(trait_did) {
-                let self_ty = tcx.type_of(did).skip_binder();
-                let src_owner = resolve_owner_from_ty(tcx, self_ty, None);
                 for &assoc_did in tcx.associated_item_def_ids(did) {
                     if tcx.def_kind(assoc_did) == hir::def::DefKind::AssocTy
                         && tcx.item_name(assoc_did).as_str() == "Target"
@@ -764,6 +775,24 @@ fn extract_crate_items<'tcx>(
                     }
                 }
             }
+
+            // 2. Trait implementation link: connect type to implemented trait
+            // (e.g. MyIter -> core::iter::traits::iterator::Iterator, MyType -> core::fmt::Display)
+            if tcx.lang_items().sized_trait() != Some(trait_did)
+                && !tcx.trait_is_auto(trait_did)
+                && !tcx.associated_item_def_ids(trait_did).is_empty()
+            {
+                let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
+                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(trait_did))
+                );
+                if !trait_path.starts_with("core::marker::") {
+                    if let Some(src) = src_owner {
+                        if src != trait_path {
+                            visitor.writer.add_deref(src, trait_path);
+                        }
+                    }
+                }
+            }
         }
 
         // Index supertrait relationships in the autoderef chain: trait SubTrait: SuperTrait
@@ -772,14 +801,17 @@ fn extract_crate_items<'tcx>(
                 rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
             );
             for (clause, _) in tcx.explicit_super_predicates_of(did).skip_binder() {
-                if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder() {
+                if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder()
+                {
                     let super_did = trait_pred.trait_ref.def_id;
                     if super_did != did
                         && tcx.lang_items().sized_trait() != Some(super_did)
                         && !tcx.trait_is_auto(super_did)
                     {
                         let super_path = rustc_middle::ty::print::with_no_visible_paths!(
-                            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(super_did))
+                            rustc_middle::ty::print::with_no_trimmed_paths!(
+                                tcx.def_path_str(super_did)
+                            )
                         );
                         if !super_path.starts_with("core::marker::") {
                             visitor.writer.add_deref(trait_path.clone(), super_path);
@@ -1359,6 +1391,10 @@ fn build_crate_index(
                             }
                         }
                     }
+                    let cas_key = sysroot::compute_sysroot_cas_key(tcx);
+                    let sysroot_src = sysroot::discover_rust_src_path(tcx);
+                    sysroot::ensure_sysroot_indexed(tcx, sysroot_src.as_deref());
+
                     let dep_info = serde_json::json!({
                         "name": crate_name,
                         "version": crate_version,
@@ -1374,6 +1410,7 @@ fn build_crate_index(
                         "env": env_map,
                         "stable_crate_id": format!("{:016x}", local_stable_crate_id),
                         "caught_panics": caught_panics,
+                        "sysroot_cas_key": cas_key,
                     });
                     write_sidecar_metadata(
                         &deps_dir,
@@ -1480,10 +1517,11 @@ pub fn run_driver(mut args: Vec<String>) -> Result<(), ()> {
 }
 
 #[allow(clippy::result_unit_err)]
-pub fn run_with_callbacks<C: Callbacks + Send>(args: &[String], callbacks: &mut C) -> Result<(), ()> {
-    let res = rustc_driver::catch_fatal_errors(|| {
-        rustc_driver::run_compiler(args, callbacks)
-    });
+pub fn run_with_callbacks<C: Callbacks + Send>(
+    args: &[String],
+    callbacks: &mut C,
+) -> Result<(), ()> {
+    let res = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(args, callbacks));
     res.map_err(|_| ())
 }
 

@@ -9,7 +9,6 @@
  */
 
 use std::fs::{self, File};
-use std::hash::{Hash, Hasher};
 use std::io::BufWriter;
 use std::path::Path;
 
@@ -18,20 +17,23 @@ use rustc_middle::ty::TyCtxt;
 use super::{extract_sysroot_crate, SysrootExtractStats};
 
 /// Computes the unique deterministic CAS key for the current sysroot index:
-/// `hash(rustc -Vv, target_triple, ridx format version, driver version)`.
+/// `fnv1a_64(rustc version, target triple, format version, driver hash)`.
 pub fn compute_sysroot_cas_key(tcx: TyCtxt<'_>) -> String {
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    if let Ok(output) = std::process::Command::new("rustc").arg("-Vv").output() {
-        output.stdout.hash(&mut hasher);
+    let mut bytes = Vec::new();
+    if let Some(v) = rustc_interface::util::rustc_version_str() {
+        bytes.extend_from_slice(v.as_bytes());
+    } else {
+        bytes.extend_from_slice(tcx.sess.cfg_version.as_bytes());
     }
-    tcx.sess.target.llvm_target.hash(&mut hasher);
-    ridx_format::CURRENT_FORMAT_VERSION.hash(&mut hasher);
-    ridx_format::get_driver_hash().hash(&mut hasher);
-    format!("{:016x}", hasher.finish())
+    bytes.extend_from_slice(tcx.sess.opts.target_triple.to_string().as_bytes());
+    bytes.extend_from_slice(&ridx_format::CURRENT_FORMAT_VERSION.to_le_bytes());
+    bytes.extend_from_slice(&ridx_format::get_driver_hash().to_le_bytes());
+    let hash = ridx_format::fnv1a_64(&bytes);
+    format!("{:016x}", hash)
 }
 
 /// Ensures sysroot shards (`core.ridx`, `alloc.ridx`, `std.ridx`) are indexed and cached
-/// in `~/.cache/ridx/v3/sysroot/<cas_key>/`. Uses atomic rename and a lockfile.
+/// in `~/.cache/ridx/v3/sysroot/<cas_key>/`. Uses atomic rename into CAS cache directory.
 pub fn ensure_sysroot_indexed<'tcx>(
     tcx: TyCtxt<'tcx>,
     sysroot_src: Option<&Path>,
@@ -41,6 +43,18 @@ pub fn ensure_sysroot_indexed<'tcx>(
         .join("sysroot")
         .join(&cas_key);
     let _ = fs::create_dir_all(&cache_dir);
+
+    // Clean up orphaned temporary files from crashed processes
+    if let Ok(entries) = fs::read_dir(&cache_dir) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                if name.contains(".ridx.tmp.") {
+                    let _ = fs::remove_file(&p);
+                }
+            }
+        }
+    }
 
     let crates_to_index = ["core", "alloc", "std"];
     let mut all_exist = true;
@@ -66,9 +80,7 @@ pub fn ensure_sysroot_indexed<'tcx>(
             continue;
         }
 
-        if let Some((mut writer, mut stats)) =
-            extract_sysroot_crate(tcx, crate_name, sysroot_src)
-        {
+        if let Some((mut writer, mut stats)) = extract_sysroot_crate(tcx, crate_name, sysroot_src) {
             let tmp_path = cache_dir.join(format!("{crate_name}.ridx.tmp.{pid}"));
             if let Ok(file) = File::create(&tmp_path) {
                 let mut buf_writer = BufWriter::new(file);

@@ -873,7 +873,10 @@ pub fn test_generic<V: Visitor>(mut visitor: V) {
         .iter()
         .filter(|t| reader.get_str(t.type_offset) == "V")
         .collect();
-    assert!(!visitor_types.is_empty(), "expected at least one type entry for V");
+    assert!(
+        !visitor_types.is_empty(),
+        "expected at least one type entry for V"
+    );
     let has_owner = visitor_types
         .iter()
         .any(|t| reader.get_str(t.owner_path_offset) == "Visitor");
@@ -974,7 +977,9 @@ pub fn test_sub<S: SubTrait>(s: S) {
         .collect();
     assert!(!v_types.is_empty(), "expected type entry for V");
     assert!(
-        v_types.iter().any(|t| reader.get_str(t.owner_path_offset) == "de::Visitor"),
+        v_types
+            .iter()
+            .any(|t| reader.get_str(t.owner_path_offset) == "de::Visitor"),
         "where-clause generic V must resolve owner to de::Visitor, got {:?}",
         v_types
             .iter()
@@ -989,17 +994,121 @@ pub fn test_sub<S: SubTrait>(s: S) {
         .collect();
     assert!(!s_types.is_empty(), "expected type entry for S");
     assert!(
-        s_types.iter().any(|t| reader.get_str(t.owner_path_offset) == "SubTrait"),
+        s_types
+            .iter()
+            .any(|t| reader.get_str(t.owner_path_offset) == "SubTrait"),
         "generic parameter S must resolve owner to SubTrait"
     );
 
     // 3. Multiple supertraits deref chain: SubTrait -> BaseTrait AND SecondBaseTrait
     let targets = reader.find_deref_targets("SubTrait");
-    assert!(targets.contains(&"BaseTrait"), "SubTrait must declare target BaseTrait");
-    assert!(targets.contains(&"SecondBaseTrait"), "SubTrait must declare target SecondBaseTrait");
+    assert!(
+        targets.contains(&"BaseTrait"),
+        "SubTrait must declare target BaseTrait"
+    );
+    assert!(
+        targets.contains(&"SecondBaseTrait"),
+        "SubTrait must declare target SecondBaseTrait"
+    );
     let chain = reader.resolve_deref_chain("SubTrait", 4);
-    assert!(chain.contains(&"BaseTrait"), "BFS chain must contain BaseTrait");
-    assert!(chain.contains(&"SecondBaseTrait"), "BFS chain must contain SecondBaseTrait");
+    assert!(
+        chain.contains(&"BaseTrait"),
+        "BFS chain must contain BaseTrait"
+    );
+    assert!(
+        chain.contains(&"SecondBaseTrait"),
+        "BFS chain must contain SecondBaseTrait"
+    );
+
+    std::env::remove_var("RIDX_OUT_DIR");
+    std::env::remove_var("CARGO_MANIFEST_DIR");
+    std::env::remove_var("CARGO_PKG_VERSION");
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_workspace_trait_impl_links() {
+    let _lock = DRIVER_TEST_LOCK.lock().unwrap();
+    let temp_dir = std::env::temp_dir().join(format!("ridx_ws_trait_test_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&temp_dir);
+    fs::create_dir_all(&temp_dir).unwrap();
+
+    let ws_dir = temp_dir.join("ws");
+    fs::create_dir_all(&ws_dir).unwrap();
+    let src_file = ws_dir.join("lib.rs");
+    let code = r#"
+pub struct MyIter(pub usize);
+impl Iterator for MyIter {
+    type Item = usize;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0 > 0 { self.0 -= 1; Some(self.0) } else { None }
+    }
+}
+pub struct MyDisplay;
+impl std::fmt::Display for MyDisplay {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MyDisplay")
+    }
+}
+"#;
+    fs::write(&src_file, code).unwrap();
+    let out_dir = temp_dir.join("out");
+    fs::create_dir_all(&out_dir).unwrap();
+    let deps_dir = out_dir.join(".deps");
+    fs::create_dir_all(&deps_dir).unwrap();
+
+    let rmeta_file = temp_dir.join("libws_trait.rmeta");
+    let sysroot = std::process::Command::new("rustc")
+        .args(["--print", "sysroot"])
+        .output()
+        .unwrap();
+    let sysroot_str = String::from_utf8_lossy(&sysroot.stdout).trim().to_string();
+
+    let args = vec![
+        "rustc".to_string(),
+        src_file.to_str().unwrap().to_string(),
+        "--crate-name".to_string(),
+        "ws_trait".to_string(),
+        "--crate-type".to_string(),
+        "lib".to_string(),
+        "--emit=metadata".to_string(),
+        "-o".to_string(),
+        rmeta_file.to_str().unwrap().to_string(),
+        "--sysroot".to_string(),
+        sysroot_str,
+    ];
+
+    std::env::set_var("RIDX_OUT_DIR", &out_dir);
+    std::env::set_var("CARGO_MANIFEST_DIR", &ws_dir);
+    std::env::set_var("CARGO_PKG_VERSION", "0.1.0");
+
+    let res = run_driver(args);
+    assert!(res.is_ok());
+
+    let out_ridx = fs::read_dir(&out_dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .find(|p| p.extension().is_some_and(|ext| ext == "ridx"))
+        .expect("expected .ridx index to exist in out_dir");
+
+    let reader = ridx_format::IndexReader::open(&out_ridx).unwrap();
+
+    // Verify MyIter has deref/trait link to Iterator
+    let iter_targets = reader.find_deref_targets("MyIter");
+    assert!(
+        iter_targets.iter().any(|&t| t.contains("Iterator")),
+        "MyIter must link to Iterator, got: {:?}",
+        iter_targets
+    );
+
+    // Verify MyDisplay has deref/trait link to Display
+    let disp_targets = reader.find_deref_targets("MyDisplay");
+    assert!(
+        disp_targets.iter().any(|&t| t.contains("Display")),
+        "MyDisplay must link to Display, got: {:?}",
+        disp_targets
+    );
 
     std::env::remove_var("RIDX_OUT_DIR");
     std::env::remove_var("CARGO_MANIFEST_DIR");
@@ -1022,13 +1131,15 @@ fn test_sysroot_core_metadata_prototype() {
             tcx: TyCtxt<'tcx>,
         ) -> Compilation {
             self.cas_key = sysroot::compute_sysroot_cas_key(tcx);
-            let rust_src = sysroot::discover_rust_src_path();
+            let rust_src = sysroot::discover_rust_src_path(tcx);
             for cname in ["core", "alloc", "std"] {
                 if let Some((mut writer, mut stats)) =
                     sysroot::extract_sysroot_crate(tcx, cname, rust_src.as_deref())
                 {
                     let mut cursor = std::io::Cursor::new(Vec::new());
-                    writer.write_to(&mut cursor).expect("failed to write sysroot index");
+                    writer
+                        .write_to(&mut cursor)
+                        .expect("failed to write sysroot index");
                     let buf = cursor.into_inner();
                     stats.index_bytes = buf.len();
                     self.crates_data.push((cname.to_string(), buf));
@@ -1074,7 +1185,10 @@ fn test_sysroot_core_metadata_prototype() {
 
     let res = run_with_callbacks(&args, &mut callbacks);
     assert!(res.is_ok(), "compiler run must succeed");
-    assert!(!callbacks.crates_stats.is_empty(), "must extract at least core sysroot crate");
+    assert!(
+        !callbacks.crates_stats.is_empty(),
+        "must extract at least core sysroot crate"
+    );
     assert!(!callbacks.cas_key.is_empty(), "CAS key must be generated");
 
     // Write shards to disk for testing mmap and readers
@@ -1093,24 +1207,144 @@ fn test_sysroot_core_metadata_prototype() {
     }
     let mmap_latency_us = mmap_start.elapsed().as_micros();
 
-    let core_reader = readers.iter().find(|r| r.unit_key().starts_with("core") || r.types().is_empty()).unwrap();
+    let core_reader = readers
+        .iter()
+        .find(|r| r.unit_key().starts_with("core") || r.types().is_empty())
+        .unwrap();
     let defs = core_reader.definitions();
 
     // Verify Option::is_some
-    let is_some_def = defs.iter().find(|d| core_reader.get_str(d.name_offset) == "is_some");
-    assert!(is_some_def.is_some(), "is_some method must exist in core index");
+    let is_some_def = defs
+        .iter()
+        .find(|d| core_reader.get_str(d.name_offset) == "is_some");
+    assert!(
+        is_some_def.is_some(),
+        "is_some method must exist in core index"
+    );
 
     // Verify Iterator::next
-    let next_def = defs.iter().find(|d| core_reader.get_str(d.name_offset) == "next" && core_reader.get_str(d.path_offset).contains("Iterator"));
-    assert!(next_def.is_some(), "Iterator::next method must exist in core index");
+    let next_def = defs.iter().find(|d| {
+        core_reader.get_str(d.name_offset) == "next"
+            && core_reader.get_str(d.path_offset).contains("Iterator")
+    });
+    assert!(
+        next_def.is_some(),
+        "Iterator::next method must exist in core index"
+    );
 
     // Verify primitive inherent impls: str::len with owner "str"
     let str_defs = core_reader.find_definitions_by_owner("str");
-    let has_len = str_defs.iter().any(|d| core_reader.get_str(d.name_offset) == "len");
-    assert!(has_len, "str owner must contain len method via find_definitions_by_owner('str')");
+    let has_len = str_defs
+        .iter()
+        .any(|d| core_reader.get_str(d.name_offset) == "len");
+    assert!(
+        has_len,
+        "str owner must contain len method via find_definitions_by_owner('str')"
+    );
 
     let derefs = core_reader.deref_entries();
-    assert!(!derefs.is_empty(), "core index must contain deref/supertrait entries");
+    assert!(
+        !derefs.is_empty(),
+        "core index must contain deref/supertrait entries"
+    );
+
+    // Verify Option trait implementation links (Option -> Clone, Option -> IntoIterator)
+    let opt_targets = core_reader.find_deref_targets("core::option::Option");
+    let has_clone = opt_targets.iter().any(|&t| t.contains("Clone"));
+    let has_into_iter = opt_targets.iter().any(|&t| t.contains("IntoIterator"));
+    assert!(
+        has_clone,
+        "Option must have Deref/trait link to Clone, got: {:?}",
+        opt_targets
+    );
+    assert!(
+        has_into_iter,
+        "Option must have Deref/trait link to IntoIterator, got: {:?}",
+        opt_targets
+    );
+
+    // Verify alloc shard: Vec -> slice (Deref), Vec -> Extend (trait), String -> str (Deref)
+    if let Some(alloc_reader) = readers.iter().find(|r| r.unit_key().starts_with("alloc")) {
+        let vec_targets = alloc_reader.find_deref_targets("alloc::vec::Vec");
+        assert!(
+            vec_targets.contains(&"slice"),
+            "Vec must have Deref link to slice, got: {:?}",
+            vec_targets
+        );
+        let has_extend = vec_targets.iter().any(|&t| t.contains("Extend"));
+        assert!(
+            has_extend,
+            "Vec must have trait link to Extend, got: {:?}",
+            vec_targets
+        );
+
+        let string_targets = alloc_reader.find_deref_targets("alloc::string::String");
+        assert!(
+            string_targets.contains(&"str"),
+            "String must have Deref link to str, got: {:?}",
+            string_targets
+        );
+
+        let vec_chain = alloc_reader.resolve_deref_chain("alloc::vec::Vec", 8);
+        assert!(
+            vec_chain.contains(&"slice"),
+            "Vec deref chain must contain slice: {:?}",
+            vec_chain
+        );
+
+        let str_chain = alloc_reader.resolve_deref_chain("alloc::string::String", 8);
+        assert!(
+            str_chain.contains(&"str"),
+            "String deref chain must contain str: {:?}",
+            str_chain
+        );
+    }
+
+    if let Some(std_reader) = readers.iter().find(|r| r.unit_key().starts_with("std")) {
+        let f64_defs = std_reader.find_definitions_by_owner("f64");
+        assert!(
+            !f64_defs.is_empty(),
+            "std must contain f64 inherent methods like sqrt/sin"
+        );
+    }
+
+    // Verify WorkspaceIndex automatic discovery and attachment of sysroot shards
+    let test_cache_dir = temp_dir.join("test_cache");
+    let cas_dir = test_cache_dir.join("sysroot").join(&callbacks.cas_key);
+    fs::create_dir_all(&cas_dir).unwrap();
+    for (cname, data) in &callbacks.crates_data {
+        fs::write(cas_dir.join(format!("{cname}.ridx")), data).unwrap();
+    }
+
+    let proj_dir = temp_dir.join("my_proj");
+    fs::create_dir_all(&proj_dir).unwrap();
+    let mut proj_writer = IndexWriter::new("my_proj", "0.1.0");
+    proj_writer.set_unit_key("my_proj-0.1.0");
+    let mut proj_buf = Vec::new();
+    proj_writer
+        .write_to(&mut std::io::Cursor::new(&mut proj_buf))
+        .unwrap();
+    fs::write(proj_dir.join("my_proj.ridx"), &proj_buf).unwrap();
+
+    let mut ws = ridx_format::workspace::WorkspaceIndex::open(&proj_dir)
+        .expect("WorkspaceIndex::open must succeed");
+    ws.attach_sysroot_shards_for_key_in(&test_cache_dir.join("sysroot"), &callbacks.cas_key);
+
+    let ws_str_defs = ws.find_definitions_by_owner("str");
+    assert!(
+        ws_str_defs.iter().any(|d| d.name == "len"),
+        "WorkspaceIndex must find str::len from sysroot"
+    );
+    let ws_vec_chain = ws.resolve_deref_chain("alloc::vec::Vec", 8);
+    assert!(
+        ws_vec_chain.contains(&"slice"),
+        "WorkspaceIndex must resolve Vec -> slice via deref chain"
+    );
+    let ws_opt_chain = ws.resolve_deref_chain("core::option::Option", 8);
+    assert!(
+        ws_opt_chain.iter().any(|&t| t.contains("Clone")),
+        "WorkspaceIndex must find Option: Clone link in deref chain"
+    );
 
     // Format metrics JSON for reporting
     let mut stats_json_parts = Vec::new();
@@ -1122,7 +1356,9 @@ fn test_sysroot_core_metadata_prototype() {
     }
     let all_metrics = format!(
         "{{\"cas_key\":\"{}\",\"mmap_cold_start_us\":{},\"crates\":[{}]}}",
-        callbacks.cas_key, mmap_latency_us, stats_json_parts.join(",")
+        callbacks.cas_key,
+        mmap_latency_us,
+        stats_json_parts.join(",")
     );
     let _ = fs::write("crates/ridx-driver/proto_stats.json", &all_metrics);
 
@@ -1130,8 +1366,13 @@ fn test_sysroot_core_metadata_prototype() {
     println!("  CAS Key:               {}", callbacks.cas_key);
     println!("  Cold start mmap (3x):  {} µs", mmap_latency_us);
     for s in &callbacks.crates_stats {
-        println!("  [{}] defs: {}, derefs: {}, time: {:.2} ms, size: {} KB",
-            s.crate_name, s.total_definitions, s.total_derefs, s.elapsed_ms, s.index_bytes / 1024
+        println!(
+            "  [{}] defs: {}, derefs: {}, time: {:.2} ms, size: {} KB",
+            s.crate_name,
+            s.total_definitions,
+            s.total_derefs,
+            s.elapsed_ms,
+            s.index_bytes / 1024
         );
     }
 

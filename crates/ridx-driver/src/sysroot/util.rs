@@ -8,9 +8,9 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use std::path::{Path, PathBuf};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
+use std::path::{Path, PathBuf};
 
 /// Remaps a compiler-internal span path (e.g. `/rustc/<commit>/library/...`)
 /// to a local `rust-src` source path if available, or returns the relative library path.
@@ -29,20 +29,18 @@ pub fn remap_sysroot_path(raw_path: &str, sysroot_src: Option<&Path>) -> String 
 }
 
 /// Discovers the path to `library` inside `rust-src` for the current sysroot if installed.
-pub fn discover_rust_src_path() -> Option<PathBuf> {
-    if let Ok(output) = std::process::Command::new("rustc")
-        .args(["--print", "sysroot"])
-        .output()
-    {
-        if output.status.success() {
-            let sysroot = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            let candidate = PathBuf::from(sysroot).join("lib/rustlib/src/rust/library");
-            if candidate.is_dir() {
-                return Some(candidate);
-            }
-        }
+pub fn discover_rust_src_path(tcx: TyCtxt<'_>) -> Option<PathBuf> {
+    let candidate = tcx
+        .sess
+        .opts
+        .sysroot
+        .path()
+        .join("lib/rustlib/src/rust/library");
+    if candidate.is_dir() {
+        Some(candidate)
+    } else {
+        None
     }
-    None
 }
 
 /// Checks if a definition is public and not doc(hidden).

@@ -14,12 +14,12 @@ use std::path::Path;
 use ridx_format::{IndexWriter, RawDefinition};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::fast_reject::SimplifiedType;
-use rustc_middle::ty::{IntTy, TyCtxt, UintTy};
+use rustc_middle::ty::{FloatTy, IntTy, Mutability, TyCtxt, UintTy};
 use rustc_span::def_id::DefId;
 
+use super::util::{is_publicly_visible, is_stable_api, remap_sysroot_path};
 use crate::map_def_kind;
 use crate::sanitize::sanitize_type_name;
-use super::util::{is_publicly_visible, is_stable_api, remap_sysroot_path};
 
 /// Extracts inherent methods for primitive types (e.g. `impl str`, `impl [T]`)
 /// with domain owner strings matching `resolve_owner_from_ty` (`"str"`, `"slice"`, etc.).
@@ -48,6 +48,11 @@ pub fn extract_primitive_inherent_impls<'tcx>(
         (SimplifiedType::Int(IntTy::I64), "i64"),
         (SimplifiedType::Int(IntTy::I128), "i128"),
         (SimplifiedType::Int(IntTy::Isize), "isize"),
+        (SimplifiedType::Float(FloatTy::F32), "f32"),
+        (SimplifiedType::Float(FloatTy::F64), "f64"),
+        (SimplifiedType::Array, "array"),
+        (SimplifiedType::Ptr(Mutability::Not), "pointer"),
+        (SimplifiedType::Ptr(Mutability::Mut), "pointer"),
     ];
 
     for (simp_ty, owner_str) in primitives {

@@ -21,10 +21,12 @@ use crate::sanitize::sanitize_type_name;
 
 mod cas;
 mod primitives;
+mod traits;
 pub mod util;
 
 pub use cas::{compute_sysroot_cas_key, ensure_sysroot_indexed};
 pub use primitives::extract_primitive_inherent_impls;
+pub use traits::{collect_sysroot_traits, extract_trait_and_deref_links};
 pub use util::{discover_rust_src_path, is_publicly_visible, is_stable_api, remap_sysroot_path};
 
 /// Statistics collected during sysroot crate metadata extraction.
@@ -53,7 +55,10 @@ pub fn extract_sysroot_crate<'tcx>(
         .find(|&c| tcx.crate_name(c).as_str() == target_crate)?;
 
     let root_did = cnum.as_def_id();
-    let mut writer = IndexWriter::new(target_crate, "1.0.0");
+    let toolchain_version = rustc_interface::util::rustc_version_str()
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| tcx.sess.cfg_version.to_string());
+    let mut writer = IndexWriter::new(target_crate, &toolchain_version);
     let mut visited = HashSet::new();
     let mut queue = VecDeque::new();
 
@@ -76,6 +81,13 @@ pub fn extract_sysroot_crate<'tcx>(
 
             let name_str = child.ident.as_str();
             if name_str.starts_with("__rust_") || name_str.starts_with("__") {
+                continue;
+            }
+
+            // Exclude arch SIMD intrinsics and compiler intrinsics from completion index to eliminate noise
+            if (target_crate == "core" || target_crate == "std")
+                && (name_str == "arch" || name_str == "core_arch" || name_str == "intrinsics")
+            {
                 continue;
             }
 
@@ -120,9 +132,9 @@ pub fn extract_sysroot_crate<'tcx>(
             let name = name_str.to_string();
 
             let signature = match kind {
-                DefKind::Fn | DefKind::AssocFn => {
-                    Some(sanitize_type_name(&tcx.fn_sig(did).skip_binder().to_string()))
-                }
+                DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
+                    &tcx.fn_sig(did).skip_binder().to_string(),
+                )),
                 _ => None,
             };
 
@@ -167,8 +179,9 @@ pub fn extract_sysroot_crate<'tcx>(
                             && !tcx.trait_is_auto(super_did)
                         {
                             let super_path = rustc_middle::ty::print::with_no_visible_paths!(
-                                rustc_middle::ty::print::with_no_trimmed_paths!(tcx
-                                    .def_path_str(super_did))
+                                rustc_middle::ty::print::with_no_trimmed_paths!(
+                                    tcx.def_path_str(super_did)
+                                )
                             );
                             if !super_path.starts_with("core::marker::") {
                                 writer.add_deref(path.clone(), super_path);
@@ -195,8 +208,7 @@ pub fn extract_sysroot_crate<'tcx>(
                     }
                     let a_kind = tcx.def_kind(assoc_did);
                     let a_path = rustc_middle::ty::print::with_no_visible_paths!(
-                        rustc_middle::ty::print::with_no_trimmed_paths!(tcx
-                            .def_path_str(assoc_did))
+                        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did))
                     );
                     let a_sig = match a_kind {
                         DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
@@ -254,7 +266,9 @@ pub fn extract_sysroot_crate<'tcx>(
                             if !visited.insert(assoc_did) {
                                 continue;
                             }
-                            if !is_publicly_visible(tcx, assoc_did) || !is_stable_api(tcx, assoc_did) {
+                            if !is_publicly_visible(tcx, assoc_did)
+                                || !is_stable_api(tcx, assoc_did)
+                            {
                                 continue;
                             }
                             let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
@@ -266,8 +280,9 @@ pub fn extract_sysroot_crate<'tcx>(
                             }
                             let a_kind = tcx.def_kind(assoc_did);
                             let a_path = rustc_middle::ty::print::with_no_visible_paths!(
-                                rustc_middle::ty::print::with_no_trimmed_paths!(tcx
-                                    .def_path_str(assoc_did))
+                                rustc_middle::ty::print::with_no_trimmed_paths!(
+                                    tcx.def_path_str(assoc_did)
+                                )
                             );
                             let a_sig = match a_kind {
                                 DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
@@ -329,6 +344,16 @@ pub fn extract_sysroot_crate<'tcx>(
         &mut visited,
         &mut total_definitions,
         sysroot_src,
+    );
+
+    // Extract Deref relationships and trait implementation links for types
+    let sysroot_traits = traits::collect_sysroot_traits(tcx);
+    traits::extract_trait_and_deref_links(
+        tcx,
+        cnum,
+        &sysroot_traits,
+        &mut writer,
+        &mut total_derefs,
     );
 
     let elapsed = start.elapsed();

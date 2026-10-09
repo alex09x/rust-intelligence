@@ -124,6 +124,9 @@ mod tests {
     #[test]
     fn test_sanitize_fallback_home_paths() {
         let input = "CustomType</Users/alex09x/some/path>";
-        assert_eq!(sanitize_type_name(input), "CustomType<<user_dir>/some/path>");
+        assert_eq!(
+            sanitize_type_name(input),
+            "CustomType<<user_dir>/some/path>"
+        );
     }
 }

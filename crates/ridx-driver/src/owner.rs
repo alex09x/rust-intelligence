@@ -53,6 +53,12 @@ pub fn resolve_owner_from_ty<'tcx>(
         rustc_middle::ty::TyKind::Slice(_) => {
             return Some("slice".to_string());
         }
+        rustc_middle::ty::TyKind::Array(..) => {
+            return Some("array".to_string());
+        }
+        rustc_middle::ty::TyKind::RawPtr(..) => {
+            return Some("pointer".to_string());
+        }
         rustc_middle::ty::TyKind::Bool
         | rustc_middle::ty::TyKind::Char
         | rustc_middle::ty::TyKind::Int(_)
@@ -82,7 +88,9 @@ pub fn resolve_owner_from_param<'tcx>(
             if let rustc_middle::ty::TyKind::Param(p) = self_ty.kind() {
                 if p.index == param_ty.index {
                     let trait_did = trait_pred.trait_ref.def_id;
-                    if tcx.lang_items().sized_trait() == Some(trait_did) || tcx.trait_is_auto(trait_did) {
+                    if tcx.lang_items().sized_trait() == Some(trait_did)
+                        || tcx.trait_is_auto(trait_did)
+                    {
                         continue;
                     }
                     let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
@@ -104,9 +112,8 @@ pub fn resolve_owner_from_param<'tcx>(
     // Prioritize non-sysroot domain traits (e.g. `serde::de::Visitor` over `core::fmt::Debug`)
     // and traits with declared methods/items.
     candidate_traits.sort_by_key(|&(did, ref path)| {
-        let is_sysroot = path.starts_with("core::")
-            || path.starts_with("alloc::")
-            || path.starts_with("std::");
+        let is_sysroot =
+            path.starts_with("core::") || path.starts_with("alloc::") || path.starts_with("std::");
         let has_items = !tcx.associated_item_def_ids(did).is_empty();
         (is_sysroot, !has_items)
     });
