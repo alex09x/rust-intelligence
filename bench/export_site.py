@@ -170,6 +170,11 @@ def export_site_bench(results_path, discrepancies_path, out_path):
                 "textDocument/completion is non-speculative and resolves in tens"
                 " of ms pending trie index caching."
             ),
+            (
+                "Hover latency scales linearly on massive workspaces (bevy"
+                " 3.96 ms vs RA 0.22 ms) due to linear Types table scanning;"
+                " binary search index optimization is prioritized in backlog."
+            ),
         ],
         "workspaces": workspaces,
     }

@@ -26,9 +26,9 @@
 | **Peak Resident Set Size (RSS)** | **47.9 MB** (Anon: **14.0 MB**, File: 34.4 MB) | **1324.2 MB** (Anon: **1292.2 MB**, File: 32.0 MB) | **92.3x lower Heap RAM** |
 | **Active OS Threads** | **2 threads** | **37 threads** | 18.5x fewer threads |
 | **Open File Descriptors** | **3 total** (0 open `.ridx` FDs) | **9 total** | Fixed mmap file handles |
-| **Def Latency (Warm p50)** | **43.0 µs** | **131.0 µs** | Comparable on quiet node (3.0x) |
+| **Def Latency (Warm p50)** | **43.0 µs** | **131.0 µs** | 3.0x faster |
 | **Def Latency (Warm p90)** | **204.3 µs** | **5449.9 µs** | **26.7x faster tail latency** |
-| **Hover Latency (Warm p50)** | **68.0 µs** | **103.5 µs** | Comparable on quiet node (1.5x) |
+| **Hover Latency (Warm p50)** | **68.0 µs** | **103.5 µs** | 1.5x faster |
 | **Refs Latency (Warm p50)** | **93.5 µs** | **1534.0 µs** | **16.4x faster** |
 | **Refs Latency (Warm p90)** | **1183.4 µs** | **24493.8 µs** | **20.7x faster tail latency** |
 | **Read-Only Strict Match Rate (Class A)** | **262 / 300 (87.3%, 95% CI [83.1%, 90.6%]) (87.33%)** | Baseline | Wilson 95% CI |
@@ -39,7 +39,7 @@
 
 ### 2. Latency Analysis & Measured Architectural Differences
 
-On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM), warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: rust-analyzer achieves **131.0 µs** (def) and **103.5 µs** (hover), while RIDX achieves **43.0 µs** (def) and **68.0 µs** (hover). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
+On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM), warmed in-memory query latencies at median (p50) are dynamically measured per capability: for Go to Definition, RIDX is **3.0x faster** (43.0 µs vs 131.0 µs); for Find References, RIDX is **16.4x faster** (93.5 µs vs 1534.0 µs); for Hover, RIDX is **1.5x faster** (68.0 µs vs 103.5 µs). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
 
 Measured architectural differences from the test run:
 1. **Tail Latency**: `textDocument/definition` p90 is **26.7x faster** (204.3 µs vs 5449.9 µs / 5.45 ms).
@@ -111,7 +111,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
-*Target Node:* `booster` (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, NVMe SSD, isolated on cores 24–31)
+*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM, NVMe SSD)
 
 ### 1. Headline Performance & Resource Footprint
 
@@ -122,9 +122,9 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 | **Peak Resident Set Size (RSS)** | **51.2 MB** (Anon: **18.4 MB**, File: 32.8 MB) | **1274.3 MB** (Anon: **1236.8 MB**, File: 37.5 MB) | **67.0x lower Heap RAM** |
 | **Active OS Threads** | **2 threads** | **37 threads** | 18.5x fewer threads |
 | **Open File Descriptors** | **3 total** (0 open `.ridx` FDs) | **9 total** | Fixed mmap file handles |
-| **Def Latency (Warm p50)** | **50.0 µs** | **185.5 µs** | Comparable on quiet node (3.7x) |
+| **Def Latency (Warm p50)** | **50.0 µs** | **185.5 µs** | 3.7x faster |
 | **Def Latency (Warm p90)** | **293.3 µs** | **5057.3 µs** | **17.2x faster tail latency** |
-| **Hover Latency (Warm p50)** | **78.5 µs** | **132.5 µs** | Comparable on quiet node (1.7x) |
+| **Hover Latency (Warm p50)** | **78.5 µs** | **132.5 µs** | 1.7x faster |
 | **Refs Latency (Warm p50)** | **103.0 µs** | **1014.5 µs** | **9.8x faster** |
 | **Refs Latency (Warm p90)** | **2988.6 µs** | **9693.1 µs** | **3.2x faster tail latency** |
 | **Read-Only Strict Match Rate (Class A)** | **288 / 300 (96.0%, 95% CI [93.1%, 97.7%]) (96.00%)** | Baseline | Wilson 95% CI |
@@ -135,7 +135,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 
 ### 2. Latency Analysis & Measured Architectural Differences
 
-On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: rust-analyzer achieves **185.5 µs** (def) and **132.5 µs** (hover), while RIDX achieves **50.0 µs** (def) and **78.5 µs** (hover). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
+On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM), warmed in-memory query latencies at median (p50) are dynamically measured per capability: for Go to Definition, RIDX is **3.7x faster** (50.0 µs vs 185.5 µs); for Find References, RIDX is **9.8x faster** (103.0 µs vs 1014.5 µs); for Hover, RIDX is **1.7x faster** (78.5 µs vs 132.5 µs). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
 
 Measured architectural differences from the test run:
 1. **Tail Latency**: `textDocument/definition` p90 is **17.2x faster** (293.3 µs vs 5057.3 µs / 5.06 ms).
@@ -207,7 +207,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
-*Target Node:* `booster` (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, NVMe SSD, isolated on cores 24–31)
+*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM, NVMe SSD)
 
 ### 1. Headline Performance & Resource Footprint
 
@@ -218,9 +218,9 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 | **Peak Resident Set Size (RSS)** | **103.4 MB** (Anon: **37.9 MB**, File: 68.0 MB) | **2642.1 MB** (Anon: **2604.1 MB**, File: 38.0 MB) | **68.8x lower Heap RAM** |
 | **Active OS Threads** | **2 threads** | **37 threads** | 18.5x fewer threads |
 | **Open File Descriptors** | **4 total** (0 open `.ridx` FDs) | **9 total** | Fixed mmap file handles |
-| **Def Latency (Warm p50)** | **95.0 µs** | **181.0 µs** | Comparable on quiet node (1.9x) |
+| **Def Latency (Warm p50)** | **95.0 µs** | **181.0 µs** | 1.9x faster |
 | **Def Latency (Warm p90)** | **172.1 µs** | **28592.0 µs** | **166.1x faster tail latency** |
-| **Hover Latency (Warm p50)** | **1295.5 µs** | **149.5 µs** | Comparable on quiet node (0.1x) |
+| **Hover Latency (Warm p50)** | **1295.5 µs** | **149.5 µs** | 8.7x slower |
 | **Refs Latency (Warm p50)** | **573.0 µs** | **5079.5 µs** | **8.9x faster** |
 | **Refs Latency (Warm p90)** | **2018.7 µs** | **59270.8 µs** | **29.4x faster tail latency** |
 | **Read-Only Strict Match Rate (Class A)** | **245 / 300 (81.7%, 95% CI [76.9%, 85.6%]) (81.67%)** | Baseline | Wilson 95% CI |
@@ -231,7 +231,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 
 ### 2. Latency Analysis & Measured Architectural Differences
 
-On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: rust-analyzer achieves **181.0 µs** (def) and **149.5 µs** (hover), while RIDX achieves **95.0 µs** (def) and **1295.5 µs** (hover). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
+On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM), warmed in-memory query latencies at median (p50) are dynamically measured per capability: for Go to Definition, RIDX is **1.9x faster** (95.0 µs vs 181.0 µs); for Find References, RIDX is **8.9x faster** (573.0 µs vs 5079.5 µs); for Hover, RIDX is **8.7x slower** (1295.5 µs vs 149.5 µs). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
 
 Measured architectural differences from the test run:
 1. **Tail Latency**: `textDocument/definition` p90 is **166.1x faster** (172.1 µs vs 28592.0 µs / 28.59 ms).
@@ -301,7 +301,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
-*Target Node:* `booster` (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, NVMe SSD, isolated on cores 24–31)
+*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM, NVMe SSD)
 
 ### 1. Headline Performance & Resource Footprint
 
@@ -312,9 +312,9 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 | **Peak Resident Set Size (RSS)** | **536.3 MB** (Anon: **178.0 MB**, File: 358.3 MB) | **10304.9 MB** (Anon: **10266.9 MB**, File: 38.0 MB) | **57.7x lower Heap RAM** |
 | **Active OS Threads** | **2 threads** | **37 threads** | 18.5x fewer threads |
 | **Open File Descriptors** | **4 total** (0 open `.ridx` FDs) | **9 total** | Fixed mmap file handles |
-| **Def Latency (Warm p50)** | **245.0 µs** | **280.5 µs** | Comparable on quiet node (1.1x) |
+| **Def Latency (Warm p50)** | **245.0 µs** | **280.5 µs** | on par (±20%) |
 | **Def Latency (Warm p90)** | **504.3 µs** | **125641.2 µs** | **249.1x faster tail latency** |
-| **Hover Latency (Warm p50)** | **3957.5 µs** | **215.0 µs** | Comparable on quiet node (0.1x) |
+| **Hover Latency (Warm p50)** | **3957.5 µs** | **215.0 µs** | 18.4x slower |
 | **Refs Latency (Warm p50)** | **3880.0 µs** | **13022.0 µs** | **3.4x faster** |
 | **Refs Latency (Warm p90)** | **7931.9 µs** | **117158.9 µs** | **14.8x faster tail latency** |
 | **Read-Only Strict Match Rate (Class A)** | **281 / 300 (93.7%, 95% CI [90.3%, 95.9%]) (93.67%)** | Baseline | Wilson 95% CI |
@@ -325,7 +325,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 
 ### 2. Latency Analysis & Measured Architectural Differences
 
-On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: rust-analyzer achieves **280.5 µs** (def) and **215.0 µs** (hover), while RIDX achieves **245.0 µs** (def) and **3957.5 µs** (hover). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
+On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM), warmed in-memory query latencies at median (p50) are dynamically measured per capability: for Go to Definition, RIDX is **on par (±20%)** (245.0 µs vs 280.5 µs); for Find References, RIDX is **3.4x faster** (3880.0 µs vs 13022.0 µs); for Hover, RIDX is **18.4x slower** (3957.5 µs vs 215.0 µs). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
 
 Measured architectural differences from the test run:
 1. **Tail Latency**: `textDocument/definition` p90 is **249.1x faster** (504.3 µs vs 125641.2 µs / 125.64 ms).
@@ -395,7 +395,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `3954bd16bf13c8eb9566d25f1f5de24af710abf7001687c7f47088e1931a5dbf`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
-*Target Node:* `booster` (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, NVMe SSD, isolated on cores 24–31)
+*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM, NVMe SSD)
 
 ### 1. Headline Performance & Resource Footprint
 
@@ -406,9 +406,9 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 | **Peak Resident Set Size (RSS)** | **272.6 MB** (Anon: **78.6 MB**, File: 196.4 MB) | **3806.8 MB** (Anon: **3766.8 MB**, File: 40.2 MB) | **47.9x lower Heap RAM** |
 | **Active OS Threads** | **2 threads** | **37 threads** | 18.5x fewer threads |
 | **Open File Descriptors** | **4 total** (0 open `.ridx` FDs) | **9 total** | Fixed mmap file handles |
-| **Def Latency (Warm p50)** | **174.0 µs** | **314.5 µs** | Comparable on quiet node (1.8x) |
+| **Def Latency (Warm p50)** | **174.0 µs** | **314.5 µs** | 1.8x faster |
 | **Def Latency (Warm p90)** | **394.1 µs** | **51288.0 µs** | **130.1x faster tail latency** |
-| **Hover Latency (Warm p50)** | **436.0 µs** | **228.0 µs** | Comparable on quiet node (0.5x) |
+| **Hover Latency (Warm p50)** | **436.0 µs** | **228.0 µs** | 1.9x slower |
 | **Refs Latency (Warm p50)** | **654.5 µs** | **1571.5 µs** | **2.4x faster** |
 | **Refs Latency (Warm p90)** | **2265.9 µs** | **110309.6 µs** | **48.7x faster tail latency** |
 | **Read-Only Strict Match Rate (Class A)** | **242 / 300 (80.7%, 95% CI [75.8%, 84.7%]) (80.67%)** | Baseline | Wilson 95% CI |
@@ -419,7 +419,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 
 ### 2. Latency Analysis & Measured Architectural Differences
 
-On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: rust-analyzer achieves **314.5 µs** (def) and **228.0 µs** (hover), while RIDX achieves **174.0 µs** (def) and **436.0 µs** (hover). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
+On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM), warmed in-memory query latencies at median (p50) are dynamically measured per capability: for Go to Definition, RIDX is **1.8x faster** (174.0 µs vs 314.5 µs); for Find References, RIDX is **2.4x faster** (654.5 µs vs 1571.5 µs); for Hover, RIDX is **1.9x slower** (436.0 µs vs 228.0 µs). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
 
 Measured architectural differences from the test run:
 1. **Tail Latency**: `textDocument/definition` p90 is **130.1x faster** (394.1 µs vs 51288.0 µs / 51.29 ms).

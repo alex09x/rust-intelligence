@@ -23,6 +23,15 @@ if str(bench_dir) not in sys.path:
 from metrics import format_ratio_with_ci, percentile
 
 
+def compare_lats(r_us, ra_us):
+    if r_us <= 0 or ra_us <= 0:
+        return "N/A"
+    ratio = r_us / ra_us
+    if 0.8 <= ratio <= 1.25:
+        return "on par (±20%)"
+    return f"{ra_us / r_us:.1f}x faster" if ratio < 0.8 else f"{ratio:.1f}x slower"
+
+
 def generate_repo_report(entry, source_file, discrepancies_file=None):
     repo = entry.get("repo", "unknown")
     commit = entry.get("commit", "unknown")[:8]
@@ -38,7 +47,7 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
         lines.append(f"*Driver SHA256:* `{driver_sha}`  ")
     if ra_version:
         lines.append(f"*rust-analyzer Version:* `{ra_version}`  ")
-    lines.append("*Target Node:* `booster` (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, NVMe SSD, isolated on cores 24–31)\n")
+    lines.append("*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM, NVMe SSD)\n")
 
     disc_path = Path(discrepancies_file) if discrepancies_file else Path(source_file).parent / "discrepancies.jsonl"
     discs = []
@@ -104,18 +113,21 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
     def_ra50 = m.get("ra_def_warm_p50_us", 0)
     def_r90 = m.get("ridx_def_warm_p90_us", 0)
     def_ra90 = m.get("ra_def_warm_p90_us", 0)
-    lines.append(f"| **Def Latency (Warm p50)** | **{def_r50:.1f} µs** | **{def_ra50:.1f} µs** | Comparable on quiet node ({def_ra50 / max(1, def_r50):.1f}x) |")
-    lines.append(f"| **Def Latency (Warm p90)** | **{def_r90:.1f} µs** | **{def_ra90:.1f} µs** | **{def_ra90 / max(1, def_r90):.1f}x faster tail latency** |")
-
     hov_r50 = m.get("ridx_hover_warm_p50_us", 0)
     hov_ra50 = m.get("ra_hover_warm_p50_us", 0)
-    lines.append(f"| **Hover Latency (Warm p50)** | **{hov_r50:.1f} µs** | **{hov_ra50:.1f} µs** | Comparable on quiet node ({hov_ra50 / max(1, hov_r50):.1f}x) |")
-
     ref_r50 = m.get("ridx_refs_warm_p50_us", 0)
     ref_ra50 = m.get("ra_refs_warm_p50_us", 0)
     ref_r90 = m.get("ridx_refs_warm_p90_us", 0)
     ref_ra90 = m.get("ra_refs_warm_p90_us", 0)
-    lines.append(f"| **Refs Latency (Warm p50)** | **{ref_r50:.1f} µs** | **{ref_ra50:.1f} µs** | **{ref_ra50 / max(1, ref_r50):.1f}x faster** |")
+
+    def_comp = compare_lats(def_r50, def_ra50)
+    hov_comp = compare_lats(hov_r50, hov_ra50)
+    ref_comp = compare_lats(ref_r50, ref_ra50)
+
+    lines.append(f"| **Def Latency (Warm p50)** | **{def_r50:.1f} µs** | **{def_ra50:.1f} µs** | {def_comp} |")
+    lines.append(f"| **Def Latency (Warm p90)** | **{def_r90:.1f} µs** | **{def_ra90:.1f} µs** | **{def_ra90 / max(1, def_r90):.1f}x faster tail latency** |")
+    lines.append(f"| **Hover Latency (Warm p50)** | **{hov_r50:.1f} µs** | **{hov_ra50:.1f} µs** | {hov_comp} |")
+    lines.append(f"| **Refs Latency (Warm p50)** | **{ref_r50:.1f} µs** | **{ref_ra50:.1f} µs** | **{ref_comp}** |")
     lines.append(f"| **Refs Latency (Warm p90)** | **{ref_r90:.1f} µs** | **{ref_ra90:.1f} µs** | **{ref_ra90 / max(1, ref_r90):.1f}x faster tail latency** |")
 
     ro_strict = entry.get("readonly_matched_strict", entry.get("matched_scenarios_strict", 0))
@@ -156,10 +168,11 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
     ra_anon10 = w3_10.get("ra", {}).get("total_anon_mb", 9147.1)
     pss_adv = f"{ra_pss10 / max(0.1, r_pss10):.1f}x lower PSS"
 
-    lines.append("On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), "
-                 "warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: "
-                 f"rust-analyzer achieves **{def_ra50:.1f} µs** (def) and **{hov_ra50:.1f} µs** (hover), "
-                 f"while RIDX achieves **{def_r50:.1f} µs** (def) and **{hov_r50:.1f} µs** (hover). "
+    lines.append("On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM), "
+                 "warmed in-memory query latencies at median (p50) are dynamically measured per capability: "
+                 f"for Go to Definition, RIDX is **{def_comp}** ({def_r50:.1f} µs vs {def_ra50:.1f} µs); "
+                 f"for Find References, RIDX is **{ref_comp}** ({ref_r50:.1f} µs vs {ref_ra50:.1f} µs); "
+                 f"for Hover, RIDX is **{hov_comp}** ({hov_r50:.1f} µs vs {hov_ra50:.1f} µs). "
                  "The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.\n")
     lines.append("Measured architectural differences from the test run:\n"
                  f"1. **Tail Latency**: `textDocument/definition` p90 is **{def_ra90 / max(1, def_r90):.1f}x faster** "
@@ -179,8 +192,6 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
     # 3. Discrepancies & Semantic Parity Analysis
     lines.append("### 3. Semantic Parity & Discrepancies Breakdown\n")
 
-
-
     if discs:
         total_ro_discs = len(discs)
         sys_c = sum(1 for d in discs if any(k in d.get("ra", {}).get("span", "") for k in ["rustlib", "rust/src", "alloc", "core", "std"]))
@@ -193,38 +204,14 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
                      f"Expected effect of sysroot indexing: up to +{delta_pp:.2f} percentage points strict-match (raising {ro_pct:.1f}% to {ro_pct + delta_pp:.1f}%).\n\n"
                      f"The {total_ro_discs} non-matching cases were dynamically classified from telemetry:\n")
         labels = {
-            "same_file_decl_vs_impl": (
-                "Class C: Trait Default Method vs Declaration (Semantically Equivalent)",
-                "Same source file, default implementation body vs trait declaration header (e.g. `Error::invalid_type`). Valid location ('points to where defined'), NOT an error.",
-            ),
-            "core_vs_std_reexport": (
-                "Class D: Core vs Std/Alloc Re-export (Canonical vs Facade)",
-                "One points to canonical definition in `core`/`alloc`, the other to `std` re-export.",
-            ),
-            "associated_type_binding": (
-                "Associated Type Bindings in Trait Bounds",
-                "Identifiers in associated type equality constraints (`hir::TypeBinding`, e.g. `where V: Visitor<'de, Value = ()>`, `S::Error`, `Serializer<Ok = ()>`).",
-            ),
-            "multi_version_dependency": (
-                "Multi-Version Dependency Resolution",
-                "Workspace contains multiple semver versions of external crate (e.g. `syn-2` vs `syn-3`).",
-            ),
-            "missing_in_ra": (
-                "Missing in rust-analyzer",
-                "rust-analyzer returned `null` / `Not found` while RIDX resolved target.",
-            ),
-            "missing_in_ridx": (
-                "Missing in RIDX",
-                "RIDX returned `Not found` while rust-analyzer found definition.",
-            ),
-            "line_level_match": (
-                "Class B: Line-Level Match",
-                "Same file, coordinates within 2 lines tolerance.",
-            ),
-            "divergent_target": (
-                "Divergent Target",
-                "Different symbols or macro span offsets.",
-            ),
+            "same_file_decl_vs_impl": ("Class C: Trait Default Method vs Declaration (Semantically Equivalent)", "Same source file, default implementation body vs trait declaration header (e.g. `Error::invalid_type`). Valid location ('points to where defined'), NOT an error."),
+            "core_vs_std_reexport": ("Class D: Core vs Std/Alloc Re-export (Canonical vs Facade)", "One points to canonical definition in `core`/`alloc`, the other to `std` re-export."),
+            "associated_type_binding": ("Associated Type Bindings in Trait Bounds", "Identifiers in associated type equality constraints (`hir::TypeBinding`, e.g. `where V: Visitor<'de, Value = ()>`, `S::Error`, `Serializer<Ok = ()>`)."),
+            "multi_version_dependency": ("Multi-Version Dependency Resolution", "Workspace contains multiple semver versions of external crate (e.g. `syn-2` vs `syn-3`)."),
+            "missing_in_ra": ("Missing in rust-analyzer", "rust-analyzer returned `null` / `Not found` while RIDX resolved target."),
+            "missing_in_ridx": ("Missing in RIDX", "RIDX returned `Not found` while rust-analyzer found definition."),
+            "line_level_match": ("Class B: Line-Level Match", "Same file, coordinates within 2 lines tolerance."),
+            "divergent_target": ("Divergent Target", "Different symbols or macro span offsets."),
         }
         for cat, count in sorted(counts.items(), key=lambda x: -x[1]):
             label, desc = labels.get(cat, (cat, ""))
