@@ -76,8 +76,13 @@ impl MultiRootWorkspace {
         let mut best_match: Option<(usize, &WorkspaceIndex)> = None;
 
         for (root, ws) in &self.roots {
-            if canon.starts_with(root) {
-                let match_len = root.as_os_str().len();
+            let root_dir = if root.is_file() {
+                root.parent().unwrap_or(root)
+            } else {
+                root.as_path()
+            };
+            if canon.starts_with(root_dir) || canon.starts_with(root) {
+                let match_len = root_dir.as_os_str().len();
                 if let Some((best_len, _)) = best_match {
                     if match_len > best_len {
                         best_match = Some((match_len, ws));

@@ -35,6 +35,7 @@ mod ntm_domain6_l2_hierarchies;
 mod ntm_domain7_l2_presentation;
 mod ntm_domain8_l2_editing;
 mod ntm_domain9_l2_workspace;
+mod ntm_domain10_l2_multiroot;
 mod ntm_e2e;
 mod ntm_flycheck_and_auto_import;
 mod ntm_formatting_execution;
