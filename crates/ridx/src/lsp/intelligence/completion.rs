@@ -36,7 +36,6 @@ pub fn handle_completion(
 
     let mut items = Vec::new();
     let mut seen_names = HashSet::new();
-    let mut is_capped = false;
 
     // Extract line slice up to cursor
     let line_slice = if let Some(overlay) = overlay_opt {
@@ -87,96 +86,17 @@ pub fn handle_completion(
                 }));
             }
 
-            // Fallback path: for sysroot types (std/core/alloc not yet indexed in .ridx) or unindexed types
-            let (target_prefix, target_suffix) = if is_dot {
-                let before_dot = trimmed_before[..trimmed_before.len() - 1].trim_end();
-                let rname: String = before_dot
-                    .chars()
-                    .rev()
-                    .take_while(|c| c.is_alphanumeric() || *c == '_')
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .rev()
-                    .collect();
-                let rstart = before_dot.len().saturating_sub(rname.len());
-                let rcol = line_slice[..rstart].chars().count() as u32 + 1;
-                let rtype = ws
-                    .type_at(&file, line_1based, rcol)
-                    .map(|t| t.to_string())
-                    .or_else(|| {
-                        ws.find_definition_at(&file, line_1based, rcol)
-                            .and_then(|d| d.signature.map(|s| s.to_string()))
-                    })
-                    .or_else(|| {
-                        overlay_opt.and_then(|ov| {
-                            ov.symbols
-                                .iter()
-                                .find(|s| s.name == rname)
-                                .and_then(|s| s.signature.clone())
-                        })
-                    });
-                let norm = rtype.as_deref().map(normalize_type).unwrap_or("");
-                (format!("{norm}::"), format!("::{norm}::"))
-            } else {
-                let qual: String = trimmed_before[..trimmed_before.len() - 2]
-                    .trim_end()
-                    .chars()
-                    .rev()
-                    .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .rev()
-                    .collect();
-                let def_opt = ws.find_definition_by_path(&qual);
-                let target = def_opt.as_ref().map(|d| d.path).unwrap_or(&qual);
-                (format!("{target}::"), format!("::{target}::"))
-            };
-
-            for s in ws.search_symbols(&prefix) {
-                if is_dot
-                    && (!matches!(
-                        s.kind,
-                        ridx_format::DefKind::AssocFn
-                            | ridx_format::DefKind::Fn
-                            | ridx_format::DefKind::Field
-                    ) || s
-                        .signature
-                        .is_some_and(|sig| !signature_takes_receiver(sig)))
-                {
-                    continue;
-                }
-                if target_prefix != "::" {
-                    let full_path = format!("{}::{}", s.crate_name, s.path);
-                    if !full_path.starts_with(&target_prefix)
-                        && !full_path.contains(&target_suffix)
-                        && !s.path.starts_with(&target_prefix)
-                    {
-                        continue;
-                    }
-                }
-                if !prefix.is_empty() && !s.name.starts_with(&prefix) {
-                    continue;
-                }
-                if seen_names.insert(s.name.to_string()) {
-                    let detail = s
-                        .signature
-                        .map(|sig| format!("{sig} (in {})", s.crate_name))
-                        .unwrap_or_else(|| format!("{}::{}", s.crate_name, s.path));
-                    items.push(json!({
-                        "label": s.name,
-                        "kind": lsp_completion_kind(s.kind),
-                        "detail": detail
-                    }));
-                    if items.len() >= 100 {
-                        is_capped = true;
-                        break;
-                    }
-                }
-            }
+            // Fallback path: streaming symbol traversal with early-stopping and early-exit
+            let (fallback_items, is_capped) =
+                super::fallback_completion::try_fallback_completion(ws, &owner_ctx, overlay_opt);
+            return Ok(json!({
+                "isIncomplete": is_capped,
+                "items": fallback_items
+            }));
         }
         return Ok(json!({
-            "isIncomplete": is_capped,
-            "items": items
+            "isIncomplete": false,
+            "items": []
         }));
     }
 
@@ -357,25 +277,5 @@ fn is_symbol_in_current_module(cur_file: &str, sym_file: &str) -> bool {
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .is_some_and(|s| s == "mod" || s == "lib"))
-}
-
-fn normalize_type(ty: &str) -> &str {
-    let t = ty
-        .trim()
-        .strip_prefix("&mut ")
-        .or_else(|| ty.trim().strip_prefix('&'))
-        .unwrap_or(ty)
-        .trim();
-    t.split('<').next().unwrap_or(t).trim()
-}
-
-fn signature_takes_receiver(sig: &str) -> bool {
-    sig.find('(').is_some_and(|i| {
-        let p = sig[i + 1..].trim_start();
-        p.starts_with('&')
-            || p.starts_with("self")
-            || p.starts_with("Self")
-            || p.starts_with("mut self")
-    })
 }
 

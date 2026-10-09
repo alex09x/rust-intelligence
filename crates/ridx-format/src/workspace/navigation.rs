@@ -13,7 +13,7 @@
 use super::manifest::{LocationReferences, WorkspaceHover, WorkspaceReference, WorkspaceSymbol};
 use super::WorkspaceIndex;
 use crate::format::{DefEntry, DefKind};
-use crate::reader::ResolvedDefinition;
+use crate::reader::{IndexReader, ResolvedDefinition};
 use std::path::{Path, PathBuf};
 
 impl WorkspaceIndex {
@@ -1101,6 +1101,58 @@ impl WorkspaceIndex {
         }
 
         matches
+    }
+
+    /// Iterates over matching definitions across workspace readers without eager allocation,
+    /// searching preferred crate first and stopping when `cb` returns false.
+    pub fn for_each_symbol_ascii<F>(
+        &self,
+        needle_lower: &[u8],
+        preferred_crate: Option<&str>,
+        mut cb: F,
+    ) where
+        F: FnMut(&IndexReader<memmap2::Mmap>, &DefEntry) -> bool,
+    {
+        if let Some(pref) = preferred_crate {
+            for reader in &self.readers {
+                if reader.crate_name() == pref {
+                    if !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def)) {
+                        return;
+                    }
+                }
+            }
+        }
+        for reader in &self.readers {
+            if preferred_crate.is_some_and(|pref| reader.crate_name() == pref) {
+                continue;
+            }
+            if !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def)) {
+                return;
+            }
+        }
+    }
+
+    /// Iterates over matching definitions specifically for a single target crate without eager allocation.
+    pub fn for_each_symbol_in_crate<F>(
+        &self,
+        target_crate: &str,
+        needle_lower: &[u8],
+        mut cb: F,
+    ) where
+        F: FnMut(&IndexReader<memmap2::Mmap>, &DefEntry) -> bool,
+    {
+        for reader in &self.readers {
+            if reader.crate_name() == target_crate {
+                if !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def)) {
+                    return;
+                }
+            }
+        }
+    }
+
+    /// Returns true if any index reader in the workspace has the given crate name.
+    pub fn has_crate(&self, target_crate: &str) -> bool {
+        self.readers.iter().any(|r| r.crate_name() == target_crate)
     }
 
     /// Finds all references to the symbol at cursor location across the workspace.

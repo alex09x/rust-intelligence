@@ -12,6 +12,7 @@
 
 pub mod auto_import;
 pub mod completion;
+pub mod fallback_completion;
 pub mod hints;
 pub mod hover;
 pub mod owner_completion;
@@ -22,6 +23,7 @@ pub mod tests;
 
 pub use auto_import::*;
 pub use completion::*;
+pub use fallback_completion::*;
 pub use hints::*;
 pub use hover::*;
 pub use signature::*;

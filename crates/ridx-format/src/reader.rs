@@ -717,6 +717,25 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         }
         matches
     }
+
+    /// Iterates over matching definitions without heap allocation, stopping when `cb` returns false.
+    pub fn for_each_symbol_ascii<F>(&self, needle_lower: &[u8], mut cb: F) -> bool
+    where
+        F: FnMut(&DefEntry) -> bool,
+    {
+        for def in self.definitions() {
+            let name = self.get_str(def.name_offset());
+            let path = self.get_str(def.path_offset());
+            if contains_ignore_case_ascii(name, needle_lower)
+                || contains_ignore_case_ascii(path, needle_lower)
+            {
+                if !cb(def) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 /// Case-insensitive ASCII substring search without heap allocations.
