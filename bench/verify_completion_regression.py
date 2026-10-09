@@ -5,10 +5,7 @@
 # Author: https://prod.codes/about/
 # Project: https://github.com/alex09x/rust-intelligence
 # SPDX-License-Identifier: MIT OR Apache-2.0
-"""
-Empirical regression and parity verification: baseline vs current commit vs rust-analyzer.
-Compares candidate counts, empty response rates, recall, and fair matching-subset speedups.
-"""
+"""Empirical regression and parity verification: baseline vs current commit vs rust-analyzer."""
 
 import argparse
 import json
@@ -25,6 +22,11 @@ if str(bench_dir) not in sys.path:
 from lsp_process import SimpleLspProcess
 from metrics import percentile
 
+ROOT_CAUSES = {
+    "comp_colon_41_RangeVisitor": "Shadowing: sysroot core::ops::range resolved before local mod range at serde_core/src/de/impls.rs:2463 (5 sysroot items vs 2 local).",
+    "comp_colon_37_SocketAddr": "Re-export omission: std::net re-exports core::net::SocketAddr, but std.ridx excluded core re-exports (1 item vs 13).",
+}
+
 
 def load_baseline(baseline_file):
     records = {}
@@ -37,65 +39,43 @@ def load_baseline(baseline_file):
 
 
 def preopen_buffers(srv, repo_dir, scenarios):
-    """Pre-opens document buffers so server caches AST / line index."""
     opened = set()
     for sc in scenarios:
-        rel_path = sc["location"][0]
-        full_path = Path(repo_dir) / rel_path
+        full_path = Path(repo_dir) / sc["location"][0]
         if full_path not in opened and full_path.is_file():
             opened.add(full_path)
             try:
                 with open(full_path, "r", encoding="utf-8", errors="replace") as fp:
                     srv.notify("textDocument/didOpen", {
-                        "textDocument": {
-                            "uri": f"file://{full_path}",
-                            "languageId": "rust",
-                            "version": 1,
-                            "text": fp.read(),
-                        }
+                        "textDocument": {"uri": f"file://{full_path}", "languageId": "rust", "version": 1, "text": fp.read()}
                     })
             except (OSError, UnicodeDecodeError):
                 pass
 
 
 def run_scenarios(srv, repo_dir, scenarios, is_ra=False, timeout=5.0):
-    """Executes completion requests for 3 iterations per scenario."""
     if is_ra and hasattr(srv, "wait_quiescent"):
         srv.wait_quiescent(timeout=10.0, settle_idle=0.5)
 
     results = []
     for idx, sc in enumerate(scenarios):
-        rel_path, line, col = sc["location"]
-        full_path = Path(repo_dir) / rel_path
-        params = {
-            "textDocument": {"uri": f"file://{full_path}"},
-            "position": {"line": line - 1, "character": col - 1},
-        }
-
-        durs = []
-        first_res = None
+        full_path = Path(repo_dir) / sc["location"][0]
+        params = {"textDocument": {"uri": f"file://{full_path}"}, "position": {"line": sc["location"][1] - 1, "character": sc["location"][2] - 1}}
+        durs, first_res = [], None
         for it in range(3):
             res, dur, _ = srv.request("textDocument/completion", params, timeout=timeout)
             durs.append(dur)
             if it == 0:
                 first_res = res
-
-        cold = durs[0]
-        warm = sorted(durs[1:])[len(durs[1:]) // 2] if len(durs) > 1 else cold
         items = first_res.get("items", []) if first_res else []
-
         results.append({
-            "name": sc["name"],
-            "location": sc["location"],
-            "cold_us": cold,
-            "warm_us": warm,
-            "count": len(items),
-            "labels": [it.get("label", "").split("(")[0].strip() for it in items],
+            "name": sc["name"], "location": sc["location"], "cold_us": durs[0],
+            "warm_us": sorted(durs[1:])[len(durs[1:]) // 2] if len(durs) > 1 else durs[0],
+            "count": len(items), "labels": [it.get("label", "").split("(")[0].strip() for it in items],
             "first_detail": items[0].get("detail", "") if items else "",
         })
         if (idx + 1) % 25 == 0:
             print(f"    Completed {idx + 1}/{len(scenarios)} scenarios...")
-
     return results
 
 
@@ -109,289 +89,261 @@ def find_default_repo(name):
     return Path("/tmp") / name
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Empirical regression and parity verification")
-    parser.add_argument("--base-commit", default="26a4ddb", help="Baseline commit SHA")
-    parser.add_argument("--curr-commit", default="b05240a", help="Current commit SHA under test")
-    parser.add_argument("--commit-ridx", help="Alias for --curr-commit")
-    parser.add_argument("--base-jsonl", help="Explicit path to baseline rerun jsonl")
-    parser.add_argument("--ridx-bin", help="Path to current ridx binary")
-    parser.add_argument("--ra-bin", help="Path to rust-analyzer binary")
-    parser.add_argument("--serde-dir", help="Path to serde repo")
-    parser.add_argument("--bevy-dir", help="Path to bevy repo")
-    parser.add_argument("--output-json", help="Path for comparison report json")
-    parser.add_argument("--output-jsonl", help="Path for output rerun jsonl")
-    parser.add_argument("--force", action="store_true", help="Allow overwriting existing published benchmark files")
-    args = parser.parse_args()
+def parse_args():
+    p = argparse.ArgumentParser(description="Empirical regression and parity verification")
+    p.add_argument("--base-commit", default="b05240a", help="Baseline commit SHA")
+    p.add_argument("--curr-commit", default="c308792", help="Current commit SHA under test")
+    p.add_argument("--commit-ridx", help="Alias for --curr-commit")
+    p.add_argument("--base-jsonl", help="Explicit path to baseline rerun jsonl")
+    p.add_argument("--curr-jsonl", help="Explicit path to current rerun jsonl (replay mode)")
+    p.add_argument("--replay", action="store_true", help="Replay directly from existing published jsonl")
+    p.add_argument("--v2", action="store_true", help="Format and name report with v2 methodology")
+    p.add_argument("--ridx-bin", help="Path to current ridx binary")
+    p.add_argument("--ra-bin", help="Path to rust-analyzer binary")
+    p.add_argument("--serde-dir", help="Path to serde repo")
+    p.add_argument("--bevy-dir", help="Path to bevy repo")
+    p.add_argument("--output-json", help="Path for comparison report json")
+    p.add_argument("--output-jsonl", help="Path for output rerun jsonl")
+    p.add_argument("--force", action="store_true", help="Allow overwriting existing published benchmark files")
+    return p.parse_args()
 
+
+def calc_pct(data, p):
+    return round(percentile(data, p), 1) if data else 0.0
+
+
+def main():
+    args = parse_args()
     curr_commit = args.commit_ridx if args.commit_ridx else args.curr_commit
     base_commit = args.base_commit
-    out_json = Path(args.output_json) if args.output_json else (bench_dir / "published" / f"completion_regression_{base_commit}_vs_{curr_commit}.json")
-    out_jsonl = Path(args.output_jsonl) if args.output_jsonl else (bench_dir / "published" / f"rerun_completion_{curr_commit}.jsonl")
+    v2_suffix = "_v2" if args.v2 else ""
+
+    out_json = Path(args.output_json) if args.output_json else (
+        bench_dir / "published" / f"completion_regression_{base_commit}_vs_{curr_commit}{v2_suffix}.json"
+    )
+    out_jsonl = Path(args.output_jsonl) if args.output_jsonl else (
+        bench_dir / "published" / f"rerun_completion_{curr_commit}.jsonl"
+    )
+    base_file = Path(args.base_jsonl) if args.base_jsonl else (bench_dir / "published" / f"rerun_completion_{base_commit}.jsonl")
+    curr_file = Path(args.curr_jsonl) if args.curr_jsonl else (
+        bench_dir / "published" / f"rerun_completion_{curr_commit}.jsonl" if args.replay else None
+    )
+
+    base_data = load_baseline(base_file)
+    curr_data = load_baseline(curr_file) if (curr_file and curr_file.is_file()) else None
 
     if not args.force:
-        for out_path in (out_json, out_jsonl):
-            if out_path.exists():
-                raise FileExistsError(f"Refusing to overwrite existing published benchmark file without --force: {out_path}")
-
-    base_file = Path(args.base_jsonl) if args.base_jsonl else (bench_dir / "published" / f"rerun_completion_{base_commit}.jsonl")
-    base_data = load_baseline(base_file)
-
-    curr_bin = Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")
-    ra_custom = Path.home() / ".rustup" / "toolchains" / "1.98.1-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
-    ra_bin = args.ra_bin if args.ra_bin else (str(ra_custom) if ra_custom.is_file() else "rust-analyzer")
-    ra_ver = subprocess.run([ra_bin, "--version"], capture_output=True, text=True, check=False).stdout.strip()
-    tc_ver = subprocess.run(["rustc", "--version"], capture_output=True, text=True, check=False).stdout.strip()
+        if out_json.exists():
+            raise FileExistsError(f"Refusing to overwrite existing file without --force: {out_json}")
+        if not curr_data and out_jsonl.exists():
+            raise FileExistsError(f"Refusing to overwrite existing file without --force: {out_jsonl}")
 
     serde_dir = Path(args.serde_dir) if args.serde_dir else find_default_repo("serde")
     bevy_dir = Path(args.bevy_dir) if args.bevy_dir else find_default_repo("bevy")
+    repos = [("serde-rs/serde", str(serde_dir)), ("bevyengine/bevy", str(bevy_dir))]
 
-    repos = [
-        ("serde-rs/serde", str(serde_dir)),
-        ("bevyengine/bevy", str(bevy_dir)),
-    ]
+    ra_ver, tc_ver = "rust-analyzer 1.98.1", "rustc 1.98.1"
+    if not curr_data:
+        curr_bin = Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")
+        ra_custom = Path.home() / ".rustup" / "toolchains" / "1.98.1-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
+        ra_bin = args.ra_bin if args.ra_bin else (str(ra_custom) if ra_custom.is_file() else "rust-analyzer")
+        ra_ver = subprocess.run([ra_bin, "--version"], capture_output=True, text=True, check=False).stdout.strip()
+        tc_ver = subprocess.run(["rustc", "--version"], capture_output=True, text=True, check=False).stdout.strip()
 
-    all_comparisons = {}
-    published_records = []
+    all_comparisons, published_records = {}, []
 
     for slug, rpath in repos:
-        base_record = base_data[slug]
-        scenarios = base_record["scenarios"]
-        print(f"\n[{slug}] Evaluating {len(scenarios)} scenarios for {curr_commit} vs {base_commit}...")
+        scenarios_base = base_data[slug]["scenarios"]
+        print(f"\n[{slug}] Evaluating {len(scenarios_base)} scenarios for {curr_commit} vs {base_commit}...")
 
-        # Current RIDX server
-        srv_curr = SimpleLspProcess([str(curr_bin), "lsp"], rpath)
-        preopen_buffers(srv_curr, rpath, scenarios)
-        res_curr = run_scenarios(srv_curr, rpath, scenarios, is_ra=False, timeout=5.0)
-        srv_curr.notify("exit", {})
+        if curr_data:
+            c_rec = curr_data[slug]
+            ra_ver, tc_ver, cas_key = c_rec.get("baseline_ra", ra_ver), c_rec.get("toolchain", tc_ver), c_rec.get("sysroot_cas_key")
+            res_scs = c_rec["scenarios"]
+        else:
+            srv_curr = SimpleLspProcess([str(curr_bin), "lsp"], rpath)
+            preopen_buffers(srv_curr, rpath, scenarios_base)
+            res_curr = run_scenarios(srv_curr, rpath, scenarios_base, is_ra=False, timeout=5.0)
+            srv_curr.notify("exit", {})
 
-        # Rust-Analyzer server for exact candidate matching & recall
-        srv_ra = SimpleLspProcess([ra_bin], rpath, is_ra=True)
-        preopen_buffers(srv_ra, rpath, scenarios)
-        res_ra = run_scenarios(srv_ra, rpath, scenarios, is_ra=True, timeout=10.0)
-        srv_ra.notify("exit", {})
+            srv_ra = SimpleLspProcess([ra_bin], rpath, is_ra=True)
+            preopen_buffers(srv_ra, rpath, scenarios_base)
+            res_ra = run_scenarios(srv_ra, rpath, scenarios_base, is_ra=True, timeout=10.0)
+            srv_ra.notify("exit", {})
+            cas_key, res_scs = None, None
 
-        cas_key = None
-        var_dir = Path(rpath) / "target" / "ridx" / "variants"
-        if var_dir.is_dir():
-            for sub in sorted(var_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
-                mf = sub / "variant_manifest.json"
-                if mf.is_file():
-                    try:
-                        with open(mf, "r", encoding="utf-8") as fp:
-                            cas_key = json.load(fp).get("sysroot_cas_key")
-                            if cas_key:
-                                break
-                    except Exception:
-                        pass
+        empty_b = empty_c = empty_ra = reg_empty = closed_cnt = ra_zero = 0
+        closed_names = []
+        tot_b = tot_c = tot_ra = 0
+        recs_b, recs_c, precs_b, precs_c = [], [], [], []
+        recall_regs = []
+        owner_scs, fallback_scs, sc_pub = [], [], []
+        migrated_to_owner = 0
 
-        empty_base = empty_curr = empty_ra = 0
-        regressions_to_empty = closed_empty_count = 0
-        closed_empty_names = []
-        total_items_base = total_items_curr = total_items_ra = 0
-        recalls_base, recalls_curr = [], []
-        precisions_base, precisions_curr = [], []
-        owner_scenarios, fallback_scenarios, sc_published = [], [], []
-
-        for idx, sc in enumerate(scenarios):
-            c = res_curr[idx]
-            r = res_ra[idx]
-            base_cnt = sc["ridx_count"]
-
-            if base_cnt == 0:
-                empty_base += 1
-            if c["count"] == 0:
-                empty_curr += 1
-            if r["count"] == 0:
-                empty_ra += 1
-
-            if base_cnt > 0 and c["count"] == 0:
-                regressions_to_empty += 1
-            if base_cnt == 0 and c["count"] > 0:
-                closed_empty_count += 1
-                closed_empty_names.append(sc["name"])
-
-            total_items_base += base_cnt
-            total_items_curr += c["count"]
-            total_items_ra += r["count"]
-
-            recalls_base.append(sc["recall_pct"])
-
-            if "precision_pct" in sc:
-                prec_b = sc["precision_pct"]
-            elif base_cnt == 0:
-                prec_b = 100.0 if sc["ra_count"] == 0 else 0.0
+        for idx, sc_b in enumerate(scenarios_base):
+            base_cnt, base_ra_cnt = sc_b["ridx_count"], sc_b["ra_count"]
+            if curr_data:
+                c_sc = res_scs[idx]
+                curr_cnt, ra_cnt = c_sc["ridx_count"], c_sc["ra_count"]
+                rec_c, prec_c = c_sc["recall_pct"], c_sc.get("precision_pct", 0.0)
+                warm_c, cold_c, warm_r, cold_r = c_sc["ridx_warm_us"], c_sc["ridx_cold_us"], c_sc["ra_warm_us"], c_sc["ra_cold_us"]
+                route = c_sc["route"]
             else:
-                matched_b = round((sc["recall_pct"] / 100.0) * sc["ra_count"])
-                prec_b = (matched_b / base_cnt) * 100.0
-            precisions_base.append(prec_b)
+                c, r = res_curr[idx], res_ra[idx]
+                curr_cnt, ra_cnt = c["count"], r["count"]
+                labels_c, labels_r = set(c["labels"]), set(r["labels"])
+                matched_c = len(labels_c & labels_r)
+                rec_c = (matched_c / len(labels_r) * 100.0) if labels_r else 0.0
+                prec_c = (matched_c / len(labels_c) * 100.0) if labels_c else 0.0
+                warm_c, cold_c, warm_r, cold_r = round(c["warm_us"]), round(c["cold_us"]), round(r["warm_us"]), round(r["cold_us"])
+                first_det = c["first_detail"]
+                is_owner = "::" in first_det.rsplit(" (in ", 1)[1].rstrip(")") if " (in " in first_det else False
+                route = "owner_path" if is_owner else "fallback"
 
-            labels_c = set(c["labels"])
-            labels_r = set(r["labels"])
-            matched_c = len(labels_c & labels_r)
-            rec_c = (matched_c / len(labels_r) * 100.0) if labels_r else (100.0 if not labels_c else 0.0)
-            recalls_curr.append(rec_c)
-            prec_c = (matched_c / len(labels_c) * 100.0) if labels_c else 100.0
-            precisions_curr.append(prec_c)
+            if base_cnt == 0: empty_b += 1
+            if curr_cnt == 0: empty_c += 1
+            if ra_cnt == 0: empty_ra += 1; ra_zero += 1
 
-            # Route detection: owner-path produces detail with " (in " and "::"
-            is_owner = False
-            first_det = c["first_detail"]
-            if " (in " in first_det:
-                owner_part = first_det.rsplit(" (in ", 1)[1].rstrip(")")
-                is_owner = "::" in owner_part
+            if base_cnt > 0 and curr_cnt == 0: reg_empty += 1
+            if base_cnt == 0 and curr_cnt > 0: closed_cnt += 1; closed_names.append(sc_b["name"])
 
-            route = "owner_path" if is_owner else "fallback"
+            tot_b += base_cnt; tot_c += curr_cnt; tot_ra += ra_cnt
+
+            if ra_cnt > 0:
+                recs_b.append(sc_b["recall_pct"])
+                recs_c.append(rec_c)
+                diff_rec = sc_b["recall_pct"] - rec_c
+                if diff_rec > 5.0:
+                    reg_entry = {
+                        "name": sc_b["name"], "base_recall_pct": sc_b["recall_pct"],
+                        "curr_recall_pct": round(rec_c, 1), "diff_pp": round(diff_rec, 1),
+                        "base_count": base_cnt, "curr_count": curr_cnt, "ra_count": ra_cnt,
+                    }
+                    if sc_b["name"] in ROOT_CAUSES:
+                        reg_entry["root_cause"] = ROOT_CAUSES[sc_b["name"]]
+                    recall_regs.append(reg_entry)
+
+            if base_cnt > 0:
+                prec_b = sc_b["precision_pct"] if "precision_pct" in sc_b else (round((sc_b["recall_pct"] / 100.0) * base_ra_cnt) / base_cnt * 100.0)
+                precs_b.append(prec_b)
+            else:
+                prec_b = 0.0
+
+            if curr_cnt > 0:
+                precs_c.append(prec_c)
+
+            if sc_b.get("route") == "fallback" and route == "owner_path":
+                migrated_to_owner += 1
 
             entry_pub = {
-                "name": sc["name"],
-                "target": sc["target"],
-                "kind": sc["kind"],
-                "location": sc["location"],
-                "route": route,
-                "ridx_warm_us": round(c["warm_us"]),
-                "ridx_cold_us": round(c["cold_us"]),
-                "ra_warm_us": round(r["warm_us"]),
-                "ra_cold_us": round(r["cold_us"]),
-                "recall_pct": round(rec_c, 1),
-                "precision_pct": round(prec_c, 1),
-                "ridx_count": c["count"],
-                "ra_count": r["count"],
-                "base_count": base_cnt,
-                "base_recall_pct": sc["recall_pct"],
-                "base_precision_pct": round(prec_b, 1),
+                "name": sc_b["name"], "target": sc_b["target"], "kind": sc_b["kind"], "location": sc_b["location"],
+                "route": route, "ridx_warm_us": warm_c, "ridx_cold_us": cold_c, "ra_warm_us": warm_r, "ra_cold_us": cold_r,
+                "recall_pct": round(rec_c, 1), "precision_pct": round(prec_c, 1),
+                "ridx_count": curr_cnt, "ra_count": ra_cnt, "base_count": base_cnt,
+                "base_recall_pct": sc_b["recall_pct"], "base_precision_pct": round(prec_b, 1),
             }
-            sc_published.append(entry_pub)
+            sc_pub.append(entry_pub)
+            (owner_scs if route == "owner_path" else fallback_scs).append(entry_pub)
 
-            if is_owner:
-                owner_scenarios.append(entry_pub)
-            else:
-                fallback_scenarios.append(entry_pub)
+        owner_c_warm = [s["ridx_warm_us"] for s in owner_scs]
+        owner_ra_warm = [s["ra_warm_us"] for s in owner_scs]
+        fallback_c_warm = [s["ridx_warm_us"] for s in fallback_scs]
+        fallback_ra_warm = [s["ra_warm_us"] for s in fallback_scs]
+        all_c_warm = [s["ridx_warm_us"] for s in sc_pub]
+        all_ra_warm = [s["ra_warm_us"] for s in sc_pub]
 
-        owner_c_warm = [s["ridx_warm_us"] for s in owner_scenarios]
-        owner_ra_warm = [s["ra_warm_us"] for s in owner_scenarios]
-        fallback_c_warm = [s["ridx_warm_us"] for s in fallback_scenarios]
-        fallback_ra_warm = [s["ra_warm_us"] for s in fallback_scenarios]
+        o_c_p50, o_c_p95 = calc_pct(owner_c_warm, 50.0), calc_pct(owner_c_warm, 95.0)
+        o_ra_p50, o_ra_p95 = calc_pct(owner_ra_warm, 50.0), calc_pct(owner_ra_warm, 95.0)
+        f_c_p50, f_c_p95 = calc_pct(fallback_c_warm, 50.0), calc_pct(fallback_c_warm, 95.0)
+        f_ra_p50, f_ra_p95 = calc_pct(fallback_ra_warm, 50.0), calc_pct(fallback_ra_warm, 95.0)
+        all_c_p50, all_c_p95 = calc_pct(all_c_warm, 50.0), calc_pct(all_c_warm, 95.0)
+        all_ra_p50, all_ra_p95 = calc_pct(all_ra_warm, 50.0), calc_pct(all_ra_warm, 95.0)
 
-        owner_c_p50 = percentile(owner_c_warm, 50.0) if owner_c_warm else 0.0
-        owner_ra_p50 = percentile(owner_ra_warm, 50.0) if owner_ra_warm else 0.0
-        fallback_c_p50 = percentile(fallback_c_warm, 50.0) if fallback_c_warm else 0.0
-        fallback_ra_p50 = percentile(fallback_ra_warm, 50.0) if fallback_ra_warm else 0.0
+        o_speedup = round(o_ra_p50 / max(1.0, o_c_p50), 2) if o_c_p50 > 0 else 0.0
+        f_speedup = round(f_ra_p50 / max(1.0, f_c_p50), 2) if f_c_p50 > 0 else 0.0
+        tot_speedup = round(all_ra_p50 / max(1.0, all_c_p50), 2)
 
-        all_c_warm = [s["ridx_warm_us"] for s in sc_published]
-        all_ra_warm = [s["ra_warm_us"] for s in sc_published]
-        all_c_p50 = percentile(all_c_warm, 50.0)
-        all_ra_p50 = percentile(all_ra_warm, 50.0)
-
-        owner_speedup = round(owner_ra_p50 / max(1.0, owner_c_p50), 2) if owner_c_p50 > 0 else 0.0
-        fallback_speedup = round(fallback_ra_p50 / max(1.0, fallback_c_p50), 2) if fallback_c_p50 > 0 else 0.0
-        overall_speedup = round(all_ra_p50 / max(1.0, all_c_p50), 2)
-
-        avg_rec_base = round(sum(recalls_base) / len(recalls_base), 1)
-        avg_rec_curr = round(sum(recalls_curr) / len(recalls_curr), 1)
-        avg_prec_base = round(sum(precisions_base) / len(precisions_base), 1) if precisions_base else 0.0
-        avg_prec_curr = round(sum(precisions_curr) / len(precisions_curr), 1) if precisions_curr else 100.0
+        avg_rec_b = round(sum(recs_b) / len(recs_b), 1) if recs_b else 0.0
+        avg_rec_c = round(sum(recs_c) / len(recs_c), 1) if recs_c else 0.0
+        avg_prec_b = round(sum(precs_b) / len(precs_b), 1) if precs_b else 0.0
+        avg_prec_c = round(sum(precs_c) / len(precs_c), 1) if precs_c else 0.0
 
         summary = {
-            "repo": slug,
-            "toolchain": tc_ver,
-            "sysroot_cas_key": cas_key,
-            "total_scenarios": len(scenarios),
-            "empty_responses": {
-                base_commit: empty_base,
-                curr_commit: empty_curr,
-                "rust_analyzer_1_98_1": empty_ra,
-            },
-            "closed_empty_responses": {
-                "count": closed_empty_count,
-                "scenarios": closed_empty_names,
-            },
-            "regressions_to_empty": regressions_to_empty,
-            "total_candidates": {
-                base_commit: total_items_base,
-                curr_commit: total_items_curr,
-                "rust_analyzer_1_98_1": total_items_ra,
-            },
+            "repo": slug, "toolchain": tc_ver, "sysroot_cas_key": cas_key, "total_scenarios": len(scenarios_base),
+            "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
+            "closed_empty_responses": {"count": closed_cnt, "scenarios": closed_names},
+            "regressions_to_empty": reg_empty,
+            "total_candidates": {base_commit: tot_b, curr_commit: tot_c, "rust_analyzer_1_98_1": tot_ra},
+            "ra_zero_oracle_count": ra_zero,
             "avg_recall_vs_ra": {
-                base_commit: avg_rec_base,
-                curr_commit: avg_rec_curr,
+                "description": "Calculated strictly over scenarios where ra_count > 0",
+                base_commit: avg_rec_b, f"{base_commit}_n": len(recs_b),
+                curr_commit: avg_rec_c, f"{curr_commit}_n": len(recs_c),
             },
             "avg_precision_vs_ra": {
-                base_commit: avg_prec_base,
-                curr_commit: avg_prec_curr,
+                "description": "Calculated strictly over non-empty responses (ridx_count > 0)",
+                base_commit: avg_prec_b, f"{base_commit}_n": len(precs_b),
+                curr_commit: avg_prec_c, f"{curr_commit}_n": len(precs_c),
             },
+            "recall_regressions_gt_5pp": recall_regs,
             "routes": {
-                "owner_count": len(owner_scenarios),
-                "fallback_count": len(fallback_scenarios),
-                "owner_curr_warm_p50_us": round(owner_c_p50, 1),
-                "owner_ra_warm_p50_us": round(owner_ra_p50, 1),
-                "owner_speedup_fair": owner_speedup,
-                "fallback_curr_warm_p50_us": round(fallback_c_p50, 1),
-                "fallback_ra_warm_p50_us": round(fallback_ra_p50, 1),
-                "fallback_speedup_fair": fallback_speedup,
-                "overall_curr_warm_p50_us": round(all_c_p50, 1),
-                "overall_ra_warm_p50_us": round(all_ra_p50, 1),
-                "overall_speedup": overall_speedup,
+                "owner_count": len(owner_scs), "fallback_count": len(fallback_scs),
+                "migrated_from_fallback_to_owner": migrated_to_owner,
+                "owner_curr_warm_p50_us": o_c_p50, "owner_curr_warm_p95_us": o_c_p95,
+                "owner_ra_warm_p50_us": o_ra_p50, "owner_ra_warm_p95_us": o_ra_p95,
+                "owner_speedup_fair": o_speedup,
+                "fallback_curr_warm_p50_us": f_c_p50, "fallback_curr_warm_p95_us": f_c_p95,
+                "fallback_ra_warm_p50_us": f_ra_p50, "fallback_ra_warm_p95_us": f_ra_p95,
+                "fallback_speedup_fair": f_speedup,
+                "overall_curr_warm_p50_us": all_c_p50, "overall_curr_warm_p95_us": all_c_p95,
+                "overall_ra_warm_p50_us": all_ra_p50, "overall_ra_warm_p95_us": all_ra_p95,
+                "overall_speedup": tot_speedup,
             },
         }
         all_comparisons[slug] = summary
 
         print(f"\n--- Summary for {slug} ---")
-        print(f"  Empty responses:       {base_commit}: {empty_base} -> {curr_commit}: {empty_curr} (closed: {closed_empty_count}, regressions to empty: {regressions_to_empty})")
-        print(f"  Total items returned:  {base_commit}: {total_items_base} -> {curr_commit}: {total_items_curr} (RA: {total_items_ra})")
-        print(f"  Avg recall vs RA:      {base_commit}: {avg_rec_base}% -> {curr_commit}: {avg_rec_curr}% (precision: {base_commit}: {avg_prec_base}% -> {curr_commit}: {avg_prec_curr}%)")
-        print(f"  Owner share:           {len(owner_scenarios)}% ({owner_c_p50:.0f}µs RIDX vs {owner_ra_p50:.0f}µs RA -> {owner_speedup}x)")
-        print(f"  Fallback share:        {len(fallback_scenarios)}% ({fallback_c_p50:.0f}µs RIDX vs {fallback_ra_p50:.0f}µs RA -> {fallback_speedup}x)")
-        print(f"  Overall:               {all_c_p50:.0f}µs RIDX vs {all_ra_p50:.0f}µs RA -> {overall_speedup}x speedup")
+        print(f"  Empty responses:       {base_commit}: {empty_b} -> {curr_commit}: {empty_c} (closed: {closed_cnt})")
+        print(f"  Avg recall (ra>0):     {base_commit}: {avg_rec_b}% (n={len(recs_b)}) -> {curr_commit}: {avg_rec_c}% (n={len(recs_c)}) [ra_zero={ra_zero}]")
+        print(f"  Avg precision (cnt>0): {base_commit}: {avg_prec_b}% (n={len(precs_b)}) -> {curr_commit}: {avg_prec_c}% (n={len(precs_c)})")
+        print(f"  Recall regressions:    {len(recall_regs)} scenarios > 5pp")
+        print(f"  Owner:    p50 {o_c_p50:.0f}µs RIDX vs {o_ra_p50:.0f}µs RA ({o_speedup}x) | p95 {o_c_p95:.0f}µs vs {o_ra_p95:.0f}µs")
+        print(f"  Fallback: p50 {f_c_p50:.0f}µs RIDX vs {f_ra_p50:.0f}µs RA ({f_speedup}x) | p95 {f_c_p95:.0f}µs vs {f_ra_p95:.0f}µs")
+        print(f"  Overall:  p50 {all_c_p50:.0f}µs RIDX vs {all_ra_p50:.0f}µs RA ({tot_speedup}x) | p95 {all_c_p95:.0f}µs vs {all_ra_p95:.0f}µs")
 
-        published_records.append({
-            "repo": slug,
-            "commit_ridx": curr_commit,
-            "baseline_ra": ra_ver,
-            "toolchain": tc_ver,
-            "sysroot_cas_key": cas_key,
-            "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
-            "taskset": "24-31",
-            "seed": 42,
-            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
-            "sample_count": len(scenarios),
-            "capability": "completion",
-            "metrics": {
-                "ridx_completion_warm_p50_us": round(all_c_p50, 1),
-                "ridx_completion_warm_p95_us": round(percentile(all_c_warm, 95.0), 1),
-                "ridx_owner_warm_p50_us": round(owner_c_p50, 1),
-                "ridx_owner_warm_p95_us": round(percentile([s["ridx_warm_us"] for s in owner_scenarios], 95.0), 1) if owner_scenarios else 0.0,
-                "ridx_fallback_warm_p50_us": round(fallback_c_p50, 1),
-                "ridx_fallback_warm_p95_us": round(percentile([s["ridx_warm_us"] for s in fallback_scenarios], 95.0), 1) if fallback_scenarios else 0.0,
-                "ra_matching_owner_warm_p50_us": round(owner_ra_p50, 1),
-                "ra_matching_fallback_warm_p50_us": round(fallback_ra_p50, 1),
-                "ra_overall_warm_p50_us": round(all_ra_p50, 1),
-                "owner_p50_speedup_vs_ra": owner_speedup,
-                "fallback_p50_speedup_vs_ra": fallback_speedup,
-                "overall_p50_speedup_vs_ra": overall_speedup,
-                "owner_share_pct": round(len(owner_scenarios) / len(scenarios) * 100.0, 1),
-                "fallback_share_pct": round(len(fallback_scenarios) / len(scenarios) * 100.0, 1),
-                "avg_recall_vs_ra_pct": avg_rec_curr,
-                "avg_precision_vs_ra_pct": avg_prec_curr,
-                "base_avg_recall_vs_ra_pct": avg_rec_base,
-                "base_avg_precision_vs_ra_pct": avg_prec_base,
-                "empty_responses_ridx": empty_curr,
-                "empty_responses_base": empty_base,
-                "empty_responses_ra": empty_ra,
-            },
-            "scenarios": sc_published,
-        })
+        if not curr_data:
+            published_records.append({
+                "repo": slug, "commit_ridx": curr_commit, "baseline_ra": ra_ver,
+                "toolchain": tc_ver, "sysroot_cas_key": cas_key,
+                "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
+                "taskset": "24-31", "seed": 42,
+                "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+                "sample_count": len(scenarios_base), "capability": "completion",
+                "metrics": {
+                    "ridx_completion_warm_p50_us": all_c_p50, "ridx_completion_warm_p95_us": all_c_p95,
+                    "ridx_owner_warm_p50_us": o_c_p50, "ridx_owner_warm_p95_us": o_c_p95,
+                    "ridx_fallback_warm_p50_us": f_c_p50, "ridx_fallback_warm_p95_us": f_c_p95,
+                    "ra_matching_owner_warm_p50_us": o_ra_p50, "ra_matching_fallback_warm_p50_us": f_ra_p50,
+                    "ra_overall_warm_p50_us": all_ra_p50,
+                    "owner_p50_speedup_vs_ra": o_speedup, "fallback_p50_speedup_vs_ra": f_speedup, "overall_p50_speedup_vs_ra": tot_speedup,
+                    "owner_share_pct": round(len(owner_scs) / len(scenarios_base) * 100.0, 1),
+                    "fallback_share_pct": round(len(fallback_scs) / len(scenarios_base) * 100.0, 1),
+                    "avg_recall_vs_ra_pct": avg_rec_c, "avg_precision_vs_ra_pct": avg_prec_c,
+                    "base_avg_recall_vs_ra_pct": avg_rec_b, "base_avg_precision_vs_ra_pct": avg_prec_b,
+                    "empty_responses_ridx": empty_c, "empty_responses_base": empty_b, "empty_responses_ra": empty_ra,
+                },
+                "scenarios": sc_pub,
+            })
 
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(all_comparisons, f, indent=2)
 
-    with open(out_jsonl, "w", encoding="utf-8") as f:
-        for rec in published_records:
-            f.write(json.dumps(rec) + "\n")
+    if published_records:
+        with open(out_jsonl, "w", encoding="utf-8") as f:
+            for rec in published_records:
+                f.write(json.dumps(rec) + "\n")
 
-    print(f"\nPublished outputs generated successfully:")
-    print(f"  Comparison report: {out_json}")
-    print(f"  Published rerun:   {out_jsonl}")
+    print(f"\nPublished report generated: {out_json}")
 
 
 if __name__ == "__main__":
