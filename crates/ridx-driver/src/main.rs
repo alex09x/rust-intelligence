@@ -30,6 +30,8 @@ use sanitize::sanitize_type_name;
 mod owner;
 use owner::resolve_owner_from_ty;
 
+pub mod sysroot;
+
 use ridx_format::{DefKind as RDefKind, IndexWriter, RawDefinition, RawReference, RawType};
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::{
@@ -1469,15 +1471,18 @@ pub fn run_driver(mut args: Vec<String>) -> Result<(), ()> {
         .unwrap_or_else(|_| PathBuf::from("target/ridx"));
     let disambiguator = extract_target_disambiguator(&args);
 
+    let mut callbacks = IndexCallbacks {
+        out_dir,
+        disambiguator,
+        compiler_args: args.clone(),
+    };
+    run_with_callbacks(&args, &mut callbacks)
+}
+
+#[allow(clippy::result_unit_err)]
+pub fn run_with_callbacks<C: Callbacks + Send>(args: &[String], callbacks: &mut C) -> Result<(), ()> {
     let res = rustc_driver::catch_fatal_errors(|| {
-        rustc_driver::run_compiler(
-            &args,
-            &mut IndexCallbacks {
-                out_dir,
-                disambiguator,
-                compiler_args: args.clone(),
-            },
-        )
+        rustc_driver::run_compiler(args, callbacks)
     });
     res.map_err(|_| ())
 }

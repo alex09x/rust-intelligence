@@ -1006,3 +1006,104 @@ pub fn test_sub<S: SubTrait>(s: S) {
     std::env::remove_var("CARGO_PKG_VERSION");
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_sysroot_core_metadata_prototype() {
+    struct SysrootTestCallbacks {
+        stats: Option<sysroot::SysrootExtractStats>,
+        data: Option<Vec<u8>>,
+    }
+
+    impl Callbacks for SysrootTestCallbacks {
+        fn after_analysis<'tcx>(
+            &mut self,
+            _compiler: &rustc_interface::interface::Compiler,
+            tcx: TyCtxt<'tcx>,
+        ) -> Compilation {
+            let rust_src = sysroot::discover_rust_src_path();
+            if let Some((mut writer, mut stats)) =
+                sysroot::extract_sysroot_crate(tcx, "core", rust_src.as_deref())
+            {
+                let mut cursor = std::io::Cursor::new(Vec::new());
+                writer.write_to(&mut cursor).expect("failed to write sysroot index");
+                let buf = cursor.into_inner();
+                stats.index_bytes = buf.len();
+                self.data = Some(buf);
+                self.stats = Some(stats);
+            }
+            Compilation::Continue
+        }
+    }
+
+    let temp_dir = std::env::temp_dir().join(format!("ridx_sysroot_proto_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&temp_dir);
+    fs::create_dir_all(&temp_dir).unwrap();
+    let src_file = temp_dir.join("lib.rs");
+    fs::write(&src_file, "pub fn dummy() {}\n").unwrap();
+    let rmeta_file = temp_dir.join("libdummy.rmeta");
+
+    let sysroot = std::process::Command::new("rustc")
+        .args(["--print", "sysroot"])
+        .output()
+        .unwrap();
+    let sysroot_str = String::from_utf8_lossy(&sysroot.stdout).trim().to_string();
+
+    let args = vec![
+        "rustc".to_string(),
+        src_file.to_str().unwrap().to_string(),
+        "--crate-name".to_string(),
+        "dummy".to_string(),
+        "--crate-type".to_string(),
+        "lib".to_string(),
+        "--emit=metadata".to_string(),
+        "-o".to_string(),
+        rmeta_file.to_str().unwrap().to_string(),
+        "--sysroot".to_string(),
+        sysroot_str,
+    ];
+
+    let mut callbacks = SysrootTestCallbacks {
+        stats: None,
+        data: None,
+    };
+
+    let res = run_with_callbacks(&args, &mut callbacks);
+    assert!(res.is_ok(), "compiler run must succeed");
+
+    let stats = callbacks.stats.expect("sysroot extraction stats must be present");
+    let data = callbacks.data.expect("sysroot index data must be present");
+
+    let core_ridx = temp_dir.join("core.ridx");
+    fs::write(&core_ridx, &data).unwrap();
+
+    let _metrics_json = format!(
+        "{{\"crate\":\"{}\",\"definitions\":{},\"derefs\":{},\"elapsed_ms\":{:.2},\"shard_bytes\":{}}}",
+        stats.crate_name, stats.total_definitions, stats.total_derefs, stats.elapsed_ms, stats.index_bytes
+    );
+
+    println!("\n=== SYSROOT METADATA EXTRACTION PROTOTYPE (CORE) ===");
+    println!("  Crate:               {}", stats.crate_name);
+    println!("  Total definitions:   {}", stats.total_definitions);
+    println!("  Total derefs:        {}", stats.total_derefs);
+    println!("  Extraction duration: {:.2} ms", stats.elapsed_ms);
+    println!("  Index shard size:    {} KB ({} bytes)", stats.index_bytes / 1024, stats.index_bytes);
+
+    assert!(stats.total_definitions > 1000, "core must have >1000 definitions, found {}", stats.total_definitions);
+    assert!(stats.total_derefs > 10, "core must have >10 deref/supertrait relations, found {}", stats.total_derefs);
+    assert!(stats.elapsed_ms < 500.0, "extraction must complete under 500ms, took {:.2} ms", stats.elapsed_ms);
+
+    let reader = ridx_format::IndexReader::open(&core_ridx).expect("IndexReader must parse generated sysroot index");
+    let defs = reader.definitions();
+    let is_some_def = defs.iter().find(|d| reader.get_str(d.name_offset) == "is_some");
+    assert!(is_some_def.is_some(), "is_some method must exist in core index");
+    let is_some_path = reader.get_str(is_some_def.unwrap().path_offset);
+    assert!(is_some_path.contains("Option"), "is_some path must belong to Option, got: {}", is_some_path);
+
+    let next_def = defs.iter().find(|d| reader.get_str(d.name_offset) == "next" && reader.get_str(d.path_offset).contains("Iterator"));
+    assert!(next_def.is_some(), "Iterator::next method must exist in core index");
+
+    let derefs = reader.deref_entries();
+    assert!(!derefs.is_empty(), "core index must contain deref/supertrait entries");
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
