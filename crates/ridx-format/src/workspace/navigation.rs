@@ -476,6 +476,128 @@ impl WorkspaceIndex {
         None
     }
 
+    /// Collects any known re-export alias paths for a symbol within the workspace.
+    pub fn collect_reexport_aliases(&self, target_path: &str) -> Vec<String> {
+        let mut aliases = Vec::new();
+        let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
+
+        for r in &self.readers {
+            let crate_name = r.crate_name();
+            let mut matches_crate = target_path.starts_with(&format!("{crate_name}::"));
+            if !matches_crate {
+                if let Some(def) = r.find_definition_by_path(target_path) {
+                    if r.get_str(def.name_offset()) == target_name {
+                        matches_crate = true;
+                    }
+                }
+            }
+            if !matches_crate {
+                continue;
+            }
+
+            // 1. Root re-export candidate: `<crate_name>::<target_name>`
+            let root_export = format!("{crate_name}::{target_name}");
+            if root_export != target_path && !aliases.contains(&root_export) {
+                aliases.push(root_export);
+            }
+
+            // 2. Also find internal definitions in this crate matching target_name
+            for def in r.definitions() {
+                let d_name = r.get_str(def.name_offset());
+                if d_name == target_name {
+                    let d_path = r.get_str(def.path_offset());
+                    if !d_path.is_empty() && d_path != target_path {
+                        let full_d_path = format!("{crate_name}::{d_path}");
+                        if !aliases.contains(&d_path.to_string()) {
+                            aliases.push(d_path.to_string());
+                        }
+                        if !aliases.contains(&full_d_path) {
+                            aliases.push(full_d_path);
+                        }
+                    }
+                }
+            }
+        }
+        aliases.sort();
+        aliases.dedup();
+        aliases
+    }
+
+    /// Checks whether there are references to a re-export of `target_path` that are
+    /// not included in `found_refs`.
+    pub fn has_unmerged_reexport_references(
+        &self,
+        target_path: &str,
+        found_refs: &[WorkspaceReference<'_>],
+    ) -> bool {
+        let aliases = self.collect_reexport_aliases(target_path);
+        if aliases.is_empty() {
+            return false;
+        }
+        for alias in &aliases {
+            for r in &self.readers {
+                for aref in r.find_references(alias) {
+                    let span = aref.span();
+                    let file = r.get_file(span.file_id());
+                    let merged = found_refs.iter().any(|fr| {
+                        fr.file == file
+                            && fr.span.start_line() == span.start_line()
+                            && fr.span.start_col() == span.start_col()
+                    });
+                    if !merged {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Checks whether `ref_target_unit` matches `target_unit` for `target_crate`.
+    /// Handles exact unit match, as well as single-version workspaces where Cargo
+    /// assigned different unit hashes (e.g. lib vs test vs dep compilation).
+    fn matches_unit(
+        &self,
+        reader_idx: usize,
+        ref_target_unit: &str,
+        target_unit: &str,
+        target_crate: &str,
+    ) -> bool {
+        if ref_target_unit == target_unit {
+            return true;
+        }
+        let target_unit_in_crate = self.readers.iter().enumerate().any(|(j, r)| {
+            r.crate_name() == target_crate
+                && self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(target_unit)
+        }) || self.reader_extern_units.iter().any(|m| {
+            m.get(target_crate).map(|u| u.as_str()) == Some(target_unit)
+        });
+        if !target_unit_in_crate {
+            return false;
+        }
+
+        let is_reader_extern_target = self
+            .reader_extern_units
+            .get(reader_idx)
+            .and_then(|m| m.get(target_crate))
+            .map(|u| u.as_str())
+            == Some(ref_target_unit);
+        let target_versions_count = self
+            .readers
+            .iter()
+            .filter(|r| r.crate_name() == target_crate)
+            .map(|r| r.crate_version())
+            .filter(|v| !v.is_empty())
+            .collect::<std::collections::HashSet<_>>()
+            .len();
+        let belongs_to_target_crate = is_reader_extern_target
+            || self.readers.iter().enumerate().any(|(j, r)| {
+                r.crate_name() == target_crate
+                    && self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(ref_target_unit)
+            });
+        belongs_to_target_crate && target_versions_count <= 1
+    }
+
     /// Finds all references to a symbol, optionally scoped to a target dependency unit.
     pub fn find_references_for_unit<'a>(
         &'a self,
@@ -485,6 +607,15 @@ impl WorkspaceIndex {
         let mut all_refs = Vec::new();
         let mut seen_refs = std::collections::HashSet::new();
         let mut target_crate = target_path.split("::").next().unwrap_or(target_path);
+        if !self.readers.iter().any(|r| r.crate_name() == target_crate) {
+            for r in &self.readers {
+                if r.find_definition_by_path(target_path).is_some() {
+                    target_crate = r.crate_name();
+                    break;
+                }
+            }
+        }
+        let reexport_aliases = self.collect_reexport_aliases(target_path);
 
         // If target_unit_key is given, locate the definition in target_unit to get its line and file
         let target_def_coords = if let Some(target_unit) = target_unit_key {
@@ -586,15 +717,15 @@ impl WorkspaceIndex {
                         let in_deps = self
                             .reader_dependencies
                             .get(i)
-                            .map(|d| d.iter().any(|dep| dep == target_unit))
+                            .map(|d| d.iter().any(|dep| dep == target_unit || dep == target_crate))
                             .unwrap_or(false);
                         let in_extern_units = self
                             .reader_extern_units
                             .get(i)
-                            .map(|m| m.values().any(|uk| uk == target_unit))
+                            .map(|m| m.keys().any(|k| k == target_crate) || m.values().any(|uk| uk == target_unit))
                             .unwrap_or(false);
                         if !in_deps && !in_extern_units {
-                            // Referring crate has dependency info but does NOT depend on target_unit. Exclude!
+                            // Referring crate has dependency info but does NOT depend on target_unit or target_crate. Exclude!
                             continue;
                         }
                     } else {
@@ -618,21 +749,36 @@ impl WorkspaceIndex {
                 .and_then(|r| r.as_deref())
                 .or(self.workspace_root.as_deref());
 
-            let query_paths: &[&str] = if local_path == global_path {
-                &[target_path]
+            let mut query_path_vec = Vec::new();
+            if local_path == global_path {
+                query_path_vec.push(target_path);
             } else if is_target_unit {
-                &[local_path, global_path]
+                query_path_vec.push(local_path);
+                query_path_vec.push(global_path);
             } else {
-                &[global_path]
-            };
-
-            for &q_path in query_paths {
+                query_path_vec.push(global_path);
+            }
+            for alias in &reexport_aliases {
+                let a_crate = alias.split("::").next().unwrap_or(alias);
+                let a_local = if alias.starts_with(&format!("{a_crate}::")) {
+                    &alias[a_crate.len() + 2..]
+                } else {
+                    alias.as_str()
+                };
+                if is_target_unit {
+                    query_path_vec.push(alias.as_str());
+                    query_path_vec.push(a_local);
+                } else {
+                    query_path_vec.push(alias.as_str());
+                }
+            }
+            for &q_path in &query_path_vec {
                 let refs = reader.find_references(q_path);
                 for r in refs {
                     let r_target_unit = reader.target_unit(r);
                     if let Some(target_unit) = target_unit_key {
                         if !r_target_unit.is_empty() {
-                            if r_target_unit != target_unit {
+                            if !self.matches_unit(i, r_target_unit, target_unit, target_crate) {
                                 continue;
                             }
                         } else if reader_crate == target_crate {
@@ -698,7 +844,7 @@ impl WorkspaceIndex {
                 for (alias, uk) in extern_map {
                     if alias != target_crate {
                         if let Some(target_unit) = target_unit_key {
-                            if uk != target_unit {
+                            if !self.matches_unit(i, uk, target_unit, target_crate) {
                                 continue;
                             }
                         }
@@ -707,7 +853,7 @@ impl WorkspaceIndex {
                             let r_target_unit = reader.target_unit(r);
                             if let Some(target_unit) = target_unit_key {
                                 if !r_target_unit.is_empty() {
-                                    if r_target_unit != target_unit {
+                                    if !self.matches_unit(i, r_target_unit, target_unit, target_crate) {
                                         continue;
                                     }
                                 } else if let Some((

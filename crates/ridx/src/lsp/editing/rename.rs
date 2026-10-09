@@ -201,6 +201,11 @@ pub fn handle_rename(
                         "Cannot rename external symbol '{target_name}'"
                     )));
                 }
+                if ws.has_unmerged_reexport_references(loc_refs.target_path, &loc_refs.references) {
+                    return Err(LspError::request_failed(
+                        "symbol is re-exported; cross-crate references may be incomplete",
+                    ));
+                }
 
                 let decl_path = loc_refs.target_resolved_path();
                 let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);

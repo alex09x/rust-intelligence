@@ -163,7 +163,7 @@ impl<'tcx> HirVisitor<'tcx> {
 
         match res {
             Res::Def(kind, def_id) => {
-                let target_path = self.tcx.def_path_str(def_id);
+                let target_path = rustc_middle::ty::print::with_no_trimmed_paths!(self.tcx.def_path_str(def_id));
                 if !self
                     .seen_refs
                     .insert((file.clone(), s_line, s_col, target_path.clone()))
@@ -632,7 +632,7 @@ fn extract_crate_items<'tcx>(
         };
 
         let kind = tcx.def_kind(def_id);
-        let path = tcx.def_path_str(def_id);
+        let path = rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(def_id));
         let name = path.rsplit("::").next().unwrap_or(&path).to_string();
 
         let signature = match kind {

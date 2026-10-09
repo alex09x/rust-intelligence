@@ -11,11 +11,13 @@
 //! Compiler-grounded L2 integration tests for Domain 8: Editing & Formatting.
 //! Tests formatting, rangeFormatting, onTypeFormatting, and linkedEditingRange.
 
-use super::l2_harness::fixture_dir;
+use super::l2_harness::{fixture_dir, get_or_index_l2_fixture, pos_in_file};
 use ridx::lsp::editing::format::{
     find_crate_edition, handle_formatting, handle_on_type_formatting, handle_range_formatting,
 };
 use ridx::lsp::editing::linked::handle_linked_editing_range;
+use ridx::lsp::editing::rename::handle_rename;
+use ridx::lsp::navigation::references::handle_references;
 use ridx::lsp::protocol::{path_to_uri, PositionConverter};
 use ridx::overlay::OverlayManager;
 use ridx_test_support::apply_text_edits;
@@ -201,3 +203,69 @@ fn test_l2_edition_resolution() {
         "find_crate_edition must return a valid Rust edition: {edition}"
     );
 }
+
+#[test]
+fn test_l2_cross_crate_reexport_references_and_rename() {
+    let ws = get_or_index_l2_fixture("multi_crate");
+    let core_file = fixture_dir("multi_crate").join("crates/core_lib/src/lib.rs");
+    let core_uri = path_to_uri(core_file.to_str().unwrap());
+    let app_file = fixture_dir("multi_crate").join("crates/app_crate/src/lib.rs");
+    let app_uri = path_to_uri(app_file.to_str().unwrap());
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    // 1. References on definition of `Thing` in core_lib must include app_crate usage
+    let (def_line, def_col) = pos_in_file(&core_file, "pub struct Thing {", "Thing");
+    let ref_req = json!({
+        "params": {
+            "textDocument": { "uri": &core_uri },
+            "position": { "line": def_line, "character": def_col },
+            "context": { "includeDeclaration": true }
+        }
+    });
+    let ref_res = handle_references(&ref_req, Some(ws), &overlay_mgr, &mut conv);
+    let arr = ref_res.as_array().expect("references array");
+
+    let has_core_ref = arr.iter().any(|r| r["uri"] == core_uri);
+    let has_app_ref = arr.iter().any(|r| r["uri"] == app_uri);
+    assert!(
+        has_core_ref,
+        "References must include core_lib definition/re-export: {arr:?}"
+    );
+    assert!(
+        has_app_ref,
+        "References across pub use must include app_crate usage: {arr:?}"
+    );
+
+    // 2. Rename on `Thing` must edit both core_lib and app_crate
+    let rename_req = json!({
+        "params": {
+            "textDocument": { "uri": &core_uri },
+            "position": { "line": def_line, "character": def_col },
+            "newName": "RenamedThing"
+        }
+    });
+    let rename_res = handle_rename(&rename_req, Some(ws), &overlay_mgr, &mut conv)
+        .expect("rename across pub use succeeds");
+    let changes = rename_res["changes"].as_object().expect("changes map");
+    assert!(
+        changes.contains_key(&core_uri),
+        "Rename must edit core_lib: {changes:?}"
+    );
+    assert!(
+        changes.contains_key(&app_uri),
+        "Rename across pub use must edit app_crate: {changes:?}"
+    );
+}
+
+#[test]
+fn test_l2_reexport_unmerged_safety_refusal() {
+    let ws = get_or_index_l2_fixture("multi_crate");
+    // Verify that has_unmerged_reexport_references detects missing cross-crate references
+    let incomplete_refs = Vec::new();
+    assert!(
+        ws.has_unmerged_reexport_references("core_lib::inner::Thing", &incomplete_refs),
+        "has_unmerged_reexport_references must report true when cross-crate references are missing"
+    );
+}
+

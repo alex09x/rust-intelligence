@@ -43,3 +43,11 @@ impl Worker for CoreService {
         self.local_val
     }
 }
+
+use core_lib::Thing;
+
+pub fn invoke_reexported_thing() -> u32 {
+    let thing = Thing::new(99);
+    thing.get_value()
+}
+
