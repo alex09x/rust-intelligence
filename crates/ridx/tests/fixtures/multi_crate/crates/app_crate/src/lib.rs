@@ -35,3 +35,11 @@ pub fn invoke_two_versions() -> u32 {
 pub fn invoke_external() -> u32 {
     ext_service::external_compute()
 }
+
+use core_lib::Worker;
+
+impl Worker for CoreService {
+    fn work(&self) -> u32 {
+        self.local_val
+    }
+}

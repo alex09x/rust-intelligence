@@ -19,8 +19,9 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::path::Path;
 
+#[allow(unused_imports)]
 pub(crate) use super::scan::is_call_site;
-use super::scan::{find_enclosing_function, find_function_body_end_line};
+use super::scan::{find_enclosing_function, find_function_body_end_line, is_call_site_in_lines};
 
 pub fn handle_prepare_call_hierarchy(
     msg: &Value,
@@ -96,9 +97,36 @@ pub fn handle_prepare_call_hierarchy(
     json!(items)
 }
 
+fn find_definition_path_in_workspace<'a>(
+    ws: &'a WorkspaceIndex,
+    file_path: &Path,
+    file_str: &str,
+    start_line: u32,
+) -> Option<&'a str> {
+    for (idx, reader) in ws.readers().iter().enumerate() {
+        let rel_file = ws
+            .source_root_at(idx)
+            .and_then(|root| file_path.strip_prefix(root).ok())
+            .and_then(|rel| rel.to_str())
+            .unwrap_or(file_str);
+
+        if let Some(fid) = reader.find_file_id(rel_file) {
+            if let Some(def) = reader.definitions().iter().find(|d| {
+                d.span.file_id == fid
+                    && matches!(DefKind::from(d.kind), DefKind::Fn | DefKind::AssocFn)
+                    && d.span.start_line == start_line
+            }) {
+                return Some(reader.get_str(def.path_offset));
+            }
+        }
+    }
+    None
+}
+
 pub fn handle_call_hierarchy_incoming_calls(
     msg: &Value,
     workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
 ) -> Value {
     let item = &msg["params"]["item"];
@@ -111,38 +139,29 @@ pub fn handle_call_hierarchy_incoming_calls(
         return json!([]);
     };
 
-    let symbols = ws.search_symbols(name);
+    let item_path = Path::new(&item_file);
     let mut ref_paths = Vec::new();
 
-    for sym in &symbols {
-        if sym.name == name
-            && matches!(sym.kind, DefKind::Fn | DefKind::AssocFn)
-            && sym.resolved_path() == Path::new(&item_file)
-            && sym.span.start_line() == item_start_line
-        {
-            ref_paths.push(sym.path);
-        }
+    if let Some(path) = find_definition_path_in_workspace(ws, item_path, &item_file, item_start_line) {
+        ref_paths.push(path);
     }
 
-    // Include trait or impl counterpart paths for the method
-    for other in &symbols {
-        if other.name == name
-            && matches!(other.kind, DefKind::Fn | DefKind::AssocFn)
-            && !ref_paths.contains(&other.path)
-        {
-            let is_related = ref_paths.iter().any(|p| {
-                p.contains(other.path.split("::").next().unwrap_or(""))
-                    || other.path.contains(p.split("::").next().unwrap_or(""))
-                    || p.contains(" as ")
-                    || other.path.contains(" as ")
-            });
-            if is_related {
-                ref_paths.push(other.path);
+    // Include trait or impl counterpart paths for trait methods
+    if ref_paths.iter().any(|p| p.contains(" as ")) {
+        for p in ref_paths.clone() {
+            if let Some(idx) = p.find(" as ") {
+                let trait_part = p[idx + 4..].trim_end_matches('>');
+                for sym in ws.search_symbols(name) {
+                    if sym.path.ends_with(trait_part) && !ref_paths.contains(&sym.path) {
+                        ref_paths.push(sym.path);
+                    }
+                }
             }
         }
     }
 
     let mut incoming_map: HashMap<String, (Value, Vec<Value>)> = HashMap::new();
+    let mut file_cache: HashMap<String, String> = HashMap::new();
 
     for path in ref_paths {
         let refs = ws.find_references(path);
@@ -151,7 +170,17 @@ pub fn handle_call_hierarchy_incoming_calls(
             let r_str = r_path.to_str().unwrap_or(r.file);
             let span = r.span;
 
-            if !is_call_site(r_str, span.end_line(), span.end_col()) {
+            let content = file_cache.entry(r_str.to_string()).or_insert_with(|| {
+                if let Some(overlay) = overlay_mgr.get(r_str) {
+                    overlay.text.clone()
+                } else {
+                    std::fs::read_to_string(r_str).unwrap_or_default()
+                }
+            });
+
+            let file_lines: Vec<&str> = content.lines().collect();
+
+            if !is_call_site_in_lines(&file_lines, span.end_line(), span.end_col()) {
                 continue;
             }
 
@@ -162,12 +191,10 @@ pub fn handle_call_hierarchy_incoming_calls(
                 "end": { "line": span.end_line().saturating_sub(1), "character": ec }
             });
 
-            let content = std::fs::read_to_string(r_str).unwrap_or_default();
-            let file_lines: Vec<&str> = content.lines().collect();
             let caller_def =
                 find_enclosing_function(ws, r_str, span.start_line(), &file_lines);
 
-            let Some(caller) = caller_def else {
+            let Some((caller, c_body_end)) = caller_def else {
                 continue;
             };
 
@@ -184,8 +211,6 @@ pub fn handle_call_hierarchy_incoming_calls(
                 caller.span.end_line(),
                 caller.span.end_col(),
             );
-            let c_body_end =
-                find_function_body_end_line(&file_lines, caller.span.start_line());
             let c_range = json!({
                 "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
                 "end": { "line": c_body_end.saturating_sub(1), "character": 0 }
@@ -228,6 +253,7 @@ pub fn handle_call_hierarchy_incoming_calls(
 pub fn handle_call_hierarchy_outgoing_calls(
     msg: &Value,
     workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
 ) -> Value {
     let item = &msg["params"]["item"];
@@ -243,11 +269,15 @@ pub fn handle_call_hierarchy_outgoing_calls(
         return json!([]);
     };
 
-    let Ok(content) = std::fs::read_to_string(&file) else {
+    let doc_text = if let Some(overlay) = overlay_mgr.get(&file) {
+        overlay.text.clone()
+    } else if let Ok(t) = std::fs::read_to_string(&file) {
+        t
+    } else {
         return json!([]);
     };
 
-    let lines: Vec<&str> = content.lines().collect();
+    let lines: Vec<&str> = doc_text.lines().collect();
     if end_line <= start_line {
         end_line = find_function_body_end_line(&lines, start_line);
     }

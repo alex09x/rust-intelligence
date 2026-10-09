@@ -13,12 +13,7 @@
 use ridx_format::{DefKind, WorkspaceIndex, WorkspaceSymbol};
 use std::path::Path;
 
-pub(crate) fn is_call_site(file: &str, span_end_line: u32, span_end_col: u32) -> bool {
-    let content = std::fs::read_to_string(file).ok();
-    let Some(ref text) = content else {
-        return false;
-    };
-    let lines: Vec<&str> = text.lines().collect();
+pub(crate) fn is_call_site_in_lines(lines: &[&str], span_end_line: u32, span_end_col: u32) -> bool {
     let l_idx = span_end_line.saturating_sub(1) as usize;
     if l_idx >= lines.len() {
         return false;
@@ -64,15 +59,83 @@ pub(crate) fn is_call_site(file: &str, span_end_line: u32, span_end_col: u32) ->
     false
 }
 
+#[allow(dead_code)]
+pub(crate) fn is_call_site(file: &str, span_end_line: u32, span_end_col: u32) -> bool {
+    let content = std::fs::read_to_string(file).ok();
+    let Some(ref text) = content else {
+        return false;
+    };
+    let lines: Vec<&str> = text.lines().collect();
+    is_call_site_in_lines(&lines, span_end_line, span_end_col)
+}
+
 pub(crate) fn find_function_body_end_line(lines: &[&str], start_line_1based: u32) -> u32 {
     let start_idx = start_line_1based.saturating_sub(1) as usize;
     let mut depth = 0i32;
+    let mut paren_bracket_depth = 0i32;
     let mut seen_open = false;
+    let mut in_block_comment = false;
+
     for (idx, line) in lines.iter().enumerate().skip(start_idx) {
-        for ch in line.chars() {
-            if !seen_open && ch == ';' {
-                return (idx + 1) as u32;
+        let mut chars = line.chars().peekable();
+        let mut in_string = false;
+        let mut in_char = false;
+        let mut escape = false;
+
+        while let Some(ch) = chars.next() {
+            if in_block_comment {
+                if ch == '*' && chars.peek() == Some(&'/') {
+                    chars.next();
+                    in_block_comment = false;
+                }
+                continue;
             }
+
+            if escape {
+                escape = false;
+                continue;
+            }
+
+            if ch == '\\' && (in_string || in_char) {
+                escape = true;
+                continue;
+            }
+
+            if ch == '"' && !in_char {
+                in_string = !in_string;
+                continue;
+            }
+
+            if ch == '\'' && !in_string {
+                in_char = !in_char;
+                continue;
+            }
+
+            if in_string || in_char {
+                continue;
+            }
+
+            if ch == '/' {
+                if chars.peek() == Some(&'/') {
+                    break;
+                } else if chars.peek() == Some(&'*') {
+                    chars.next();
+                    in_block_comment = true;
+                    continue;
+                }
+            }
+
+            // Track parens and brackets: ';' inside [u8; 4] is not a declaration terminator
+            if !seen_open {
+                if ch == '(' || ch == '[' {
+                    paren_bracket_depth += 1;
+                } else if (ch == ')' || ch == ']') && paren_bracket_depth > 0 {
+                    paren_bracket_depth -= 1;
+                } else if ch == ';' && paren_bracket_depth == 0 {
+                    return (idx + 1) as u32;
+                }
+            }
+
             if ch == '{' {
                 depth += 1;
                 seen_open = true;
@@ -92,26 +155,109 @@ pub(crate) fn find_enclosing_function<'a>(
     file: &str,
     call_line: u32,
     file_lines: &[&str],
-) -> Option<WorkspaceSymbol<'a>> {
+) -> Option<(WorkspaceSymbol<'a>, u32)> {
     let file_path = Path::new(file);
-    let mut candidates: Vec<_> = ws
-        .search_symbols("")
-        .into_iter()
-        .filter(|d| {
-            matches!(d.kind, DefKind::Fn | DefKind::AssocFn)
-                && (d.resolved_path() == file_path || d.file == file)
-                && d.span.start_line() <= call_line
-        })
-        .collect();
 
-    candidates.sort_by_key(|d| std::cmp::Reverse(d.span.start_line()));
+    // 1. Fast lookup via source_root strip_prefix
+    for (reader_idx, reader) in ws.readers().iter().enumerate() {
+        let sroot = ws.source_root_at(reader_idx);
+        let rel_file = if let Some(root) = sroot {
+            if let Ok(rel) = file_path.strip_prefix(root) {
+                rel.to_str().unwrap_or(file)
+            } else {
+                continue;
+            }
+        } else {
+            file
+        };
 
-    for cand in candidates {
-        let body_end = find_function_body_end_line(file_lines, cand.span.start_line());
-        if call_line <= body_end {
-            return Some(cand);
+        if let Some(fid) = reader.find_file_id(rel_file) {
+            let mut candidates: Vec<_> = reader
+                .definitions()
+                .iter()
+                .filter(|def| {
+                    def.span.file_id == fid
+                        && matches!(DefKind::from(def.kind), DefKind::Fn | DefKind::AssocFn)
+                        && def.span.start_line <= call_line
+                })
+                .collect();
+
+            candidates.sort_by_key(|d| std::cmp::Reverse(d.span.start_line));
+
+            for cand in candidates {
+                let body_end = find_function_body_end_line(file_lines, cand.span.start_line);
+                if call_line <= body_end {
+                    let sig = if cand.sig_offset > 0 {
+                        Some(reader.get_str(cand.sig_offset))
+                    } else {
+                        None
+                    };
+                    return Some((
+                        WorkspaceSymbol {
+                            crate_name: reader.crate_name(),
+                            name: reader.get_str(cand.name_offset),
+                            path: reader.get_str(cand.path_offset),
+                            kind: DefKind::from(cand.kind),
+                            file: reader.get_file(fid),
+                            span: cand.span,
+                            signature: sig,
+                            is_macro_expansion: cand.is_macro_expansion(),
+                            source_root: sroot,
+                            unit_key: None,
+                        },
+                        body_end,
+                    ));
+                }
+            }
+            return None;
         }
     }
+
+    // 2. Direct exact match fallback across readers
+    for (reader_idx, reader) in ws.readers().iter().enumerate() {
+        if let Some(fid) = reader.find_file_id(file) {
+            let mut candidates: Vec<_> = reader
+                .definitions()
+                .iter()
+                .filter(|def| {
+                    def.span.file_id == fid
+                        && matches!(DefKind::from(def.kind), DefKind::Fn | DefKind::AssocFn)
+                        && def.span.start_line <= call_line
+                })
+                .collect();
+
+            candidates.sort_by_key(|d| std::cmp::Reverse(d.span.start_line));
+
+            for cand in candidates {
+                let body_end = find_function_body_end_line(file_lines, cand.span.start_line);
+                if call_line <= body_end {
+                    let sroot = ws.source_root_at(reader_idx);
+                    let sig = if cand.sig_offset > 0 {
+                        Some(reader.get_str(cand.sig_offset))
+                    } else {
+                        None
+                    };
+                    return Some((
+                        WorkspaceSymbol {
+                            crate_name: reader.crate_name(),
+                            name: reader.get_str(cand.name_offset),
+                            path: reader.get_str(cand.path_offset),
+                            kind: DefKind::from(cand.kind),
+                            file: reader.get_file(fid),
+                            span: cand.span,
+                            signature: sig,
+                            is_macro_expansion: cand.is_macro_expansion(),
+                            source_root: sroot,
+                            unit_key: None,
+                        },
+                        body_end,
+                    ));
+                }
+            }
+            return None;
+        }
+    }
+
     None
 }
 

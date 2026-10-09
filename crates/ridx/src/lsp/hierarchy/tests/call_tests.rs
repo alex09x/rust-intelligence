@@ -34,7 +34,7 @@ fn test_call_hierarchy_incoming_and_outgoing() {
         }
     });
 
-    let incoming = handle_call_hierarchy_incoming_calls(&incoming_req, Some(&ws), &mut conv);
+    let incoming = handle_call_hierarchy_incoming_calls(&incoming_req, Some(&ws), &overlay_mgr, &mut conv);
     let arr = incoming.as_array().unwrap();
     // Actual calls from caller and turbo_caller, skipping function value assignment and non-function context static _C
     assert_eq!(arr.len(), 2);
@@ -60,7 +60,7 @@ fn test_call_hierarchy_incoming_and_outgoing() {
             }
         }
     });
-    let outgoing = handle_call_hierarchy_outgoing_calls(&outgoing_req, Some(&ws), &mut conv);
+    let outgoing = handle_call_hierarchy_outgoing_calls(&outgoing_req, Some(&ws), &overlay_mgr, &mut conv);
     let out_arr = outgoing.as_array().unwrap();
     assert_eq!(out_arr.len(), 1);
     let names: Vec<&str> = out_arr
@@ -75,17 +75,17 @@ fn test_call_hierarchy_incoming_and_outgoing() {
         "params": { "item": { "uri": "file:///nonexistent.rs", "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 1, "character": 0 } } } }
     });
     assert_eq!(
-        handle_call_hierarchy_outgoing_calls(&non_exist_req, Some(&ws), &mut conv),
+        handle_call_hierarchy_outgoing_calls(&non_exist_req, Some(&ws), &overlay_mgr, &mut conv),
         json!([])
     );
     assert_eq!(
-        handle_call_hierarchy_outgoing_calls(&outgoing_req, None, &mut conv),
+        handle_call_hierarchy_outgoing_calls(&outgoing_req, None, &overlay_mgr, &mut conv),
         json!([])
     );
 
     // Incoming calls without workspace
     assert_eq!(
-        handle_call_hierarchy_incoming_calls(&incoming_req, None, &mut conv),
+        handle_call_hierarchy_incoming_calls(&incoming_req, None, &overlay_mgr, &mut conv),
         json!([])
     );
 

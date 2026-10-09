@@ -54,3 +54,10 @@ pub fn call_generic<G: Greeter>(g: &G) -> &'static str {
 pub fn call_default(r: &Robot) -> &'static str {
     r.default_greet()
 }
+
+pub fn process_bytes(b: [u8; 4]) -> i32 {
+    let _closing = "}";
+    // }
+    let c = BoxContainer(b[0] as i32);
+    c.extract()
+}

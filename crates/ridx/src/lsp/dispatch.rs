@@ -247,6 +247,7 @@ pub fn dispatch_lsp_message<W: Write>(
             Ok(handle_call_hierarchy_incoming_calls(
                 &msg,
                 multi_root.find_workspace_for_path(Path::new(&f)),
+                overlay_mgr,
                 conv,
             ))
         }
@@ -255,6 +256,7 @@ pub fn dispatch_lsp_message<W: Write>(
             Ok(handle_call_hierarchy_outgoing_calls(
                 &msg,
                 multi_root.find_workspace_for_path(Path::new(&f)),
+                overlay_mgr,
                 conv,
             ))
         }

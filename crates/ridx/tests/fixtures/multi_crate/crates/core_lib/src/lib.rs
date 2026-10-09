@@ -23,3 +23,7 @@ impl CoreService {
         self.id * 10
     }
 }
+
+pub trait Worker {
+    fn work(&self) -> u32;
+}
