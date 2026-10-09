@@ -102,15 +102,37 @@ fn test_presentation_handlers_comprehensive() {
     assert!(!resolve_res.is_null());
 
     // 3. Semantic tokens
-    let sem_res = handle_semantic_tokens_full(&link_req, &overlay_mgr);
+    let sem_res = handle_semantic_tokens_full(&link_req, Some(&ws), &overlay_mgr, &mut conv);
     assert!(sem_res["data"].as_array().is_some());
+    let prev_result_id = sem_res["resultId"].as_str().unwrap().to_string();
+
+    let delta_req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "previousResultId": prev_result_id
+        }
+    });
+    let delta_res = handle_semantic_tokens_delta(&delta_req, Some(&ws), &overlay_mgr, &mut conv);
+    assert_eq!(delta_res["edits"].as_array().unwrap().len(), 0);
+
+    let range_req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "range": {
+                "start": { "line": 0, "character": 0 },
+                "end": { "line": 3, "character": 0 }
+            }
+        }
+    });
+    let range_res = handle_semantic_tokens_range(&range_req, Some(&ws), &overlay_mgr, &mut conv);
+    assert!(range_res["data"].as_array().is_some());
 
     // 4. Folding range
     let fold_res = handle_folding_range(&link_req, &overlay_mgr);
     assert!(fold_res.as_array().is_some());
 
     // 5. Code lens
-    let lens_res = handle_code_lens(&link_req, &overlay_mgr);
+    let lens_res = handle_code_lens(&link_req, Some(&ws), &overlay_mgr);
     assert!(lens_res.as_array().is_some());
     let lens_resolve = handle_code_lens_resolve(&link_req);
     assert!(!lens_resolve.is_null());
@@ -217,13 +239,13 @@ fn test_presentation_handlers_comprehensive() {
     let disk_content = handle_text_document_content(&disk_req, &overlay_mgr);
     assert!(disk_content["text"].as_str().unwrap().contains("disk"));
 
-    // Semantic tokens, folding range, and code lens when document is not in overlay (lines 63, 87, 115 in tokens.rs)
+    // Semantic tokens, folding range, and code lens when document is not in overlay
     assert_eq!(
-        handle_semantic_tokens_full(&missing_req, &overlay_mgr),
-        json!({ "data": [] })
+        handle_semantic_tokens_full(&missing_req, Some(&ws), &overlay_mgr, &mut conv)["data"],
+        json!([])
     );
     assert_eq!(handle_folding_range(&missing_req, &overlay_mgr), json!([]));
-    assert_eq!(handle_code_lens(&missing_req, &overlay_mgr), json!([]));
+    assert_eq!(handle_code_lens(&missing_req, Some(&ws), &overlay_mgr), json!([]));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

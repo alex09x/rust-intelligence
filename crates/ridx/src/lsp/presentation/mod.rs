@@ -10,9 +10,12 @@
 
 //! LSP presentation handlers: selection range, document links, diagnostics, moniker, and content.
 
+pub mod color;
 pub mod compiler_message;
 pub mod diagnostics;
 pub mod flycheck;
+pub mod folding;
+pub mod lens;
 pub mod reconcile;
 pub mod tokens;
 pub mod workspace_diag;
@@ -20,12 +23,16 @@ pub mod workspace_diag;
 #[cfg(test)]
 pub mod tests;
 
+pub use color::*;
 pub use compiler_message::*;
 pub use diagnostics::*;
 pub use flycheck::*;
+pub use folding::*;
+pub use lens::*;
 pub use reconcile::*;
 pub use tokens::*;
 pub use workspace_diag::*;
+
 
 use super::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;

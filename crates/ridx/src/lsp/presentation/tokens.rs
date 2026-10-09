@@ -8,64 +8,286 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! LSP semantic tokens, folding ranges, code lenses, and color presentation.
+//! LSP semantic tokens encoding, delta computation, and range filtering.
 
-use crate::lsp::protocol::uri_to_path;
+use crate::lsp::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
+use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Mutex, OnceLock};
 
-pub fn handle_document_color(_msg: &Value) -> Value {
-    json!([])
+pub const TOKEN_TYPE_NAMESPACE: u32 = 0;
+pub const TOKEN_TYPE_TYPE: u32 = 1;
+pub const TOKEN_TYPE_CLASS: u32 = 2;
+pub const TOKEN_TYPE_ENUM: u32 = 3;
+pub const TOKEN_TYPE_INTERFACE: u32 = 4;
+pub const TOKEN_TYPE_STRUCT: u32 = 5;
+pub const TOKEN_TYPE_TYPE_PARAMETER: u32 = 6;
+pub const TOKEN_TYPE_PARAMETER: u32 = 7;
+pub const TOKEN_TYPE_VARIABLE: u32 = 8;
+pub const TOKEN_TYPE_PROPERTY: u32 = 9;
+pub const TOKEN_TYPE_ENUM_MEMBER: u32 = 10;
+pub const TOKEN_TYPE_FUNCTION: u32 = 11;
+pub const TOKEN_TYPE_METHOD: u32 = 12;
+pub const TOKEN_TYPE_MACRO: u32 = 13;
+pub const TOKEN_TYPE_KEYWORD: u32 = 14;
+pub const TOKEN_TYPE_COMMENT: u32 = 15;
+pub const TOKEN_TYPE_STRING: u32 = 16;
+pub const TOKEN_TYPE_NUMBER: u32 = 17;
+
+pub const MOD_DECLARATION: u32 = 1 << 0;
+pub const MOD_DEFINITION: u32 = 1 << 1;
+pub const MOD_READONLY: u32 = 1 << 2;
+pub const MOD_STATIC: u32 = 1 << 3;
+
+static RESULT_COUNTER: AtomicU64 = AtomicU64::new(1);
+static SEMANTIC_CACHE: OnceLock<Mutex<HashMap<String, Vec<u32>>>> = OnceLock::new();
+
+fn get_cache() -> &'static Mutex<HashMap<String, Vec<u32>>> {
+    SEMANTIC_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-pub fn handle_color_presentation(_msg: &Value) -> Value {
-    json!([])
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RawToken {
+    pub line: u32,
+    pub col: u32,
+    pub length: u32,
+    pub token_type: u32,
+    pub token_modifiers: u32,
 }
 
-pub fn handle_semantic_tokens_full(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
+pub fn defkind_to_token(kind: DefKind) -> (u32, u32) {
+    match kind {
+        DefKind::Mod => (TOKEN_TYPE_NAMESPACE, 0),
+        DefKind::TyAlias | DefKind::AssocTy | DefKind::OpaqueTy => (TOKEN_TYPE_TYPE, 0),
+        DefKind::Enum => (TOKEN_TYPE_ENUM, 0),
+        DefKind::Trait | DefKind::TraitAlias => (TOKEN_TYPE_INTERFACE, 0),
+        DefKind::Struct | DefKind::Union => (TOKEN_TYPE_STRUCT, 0),
+        DefKind::TyParam => (TOKEN_TYPE_TYPE_PARAMETER, 0),
+        DefKind::Field => (TOKEN_TYPE_PROPERTY, 0),
+        DefKind::Variant | DefKind::VariantCtor => (TOKEN_TYPE_ENUM_MEMBER, 0),
+        DefKind::Fn => (TOKEN_TYPE_FUNCTION, MOD_DEFINITION),
+        DefKind::AssocFn => (TOKEN_TYPE_METHOD, MOD_DEFINITION),
+        DefKind::Macro => (TOKEN_TYPE_MACRO, 0),
+        DefKind::Const | DefKind::AssocConst => {
+            (TOKEN_TYPE_VARIABLE, MOD_READONLY | MOD_STATIC)
+        }
+        DefKind::Static => (TOKEN_TYPE_VARIABLE, MOD_STATIC),
+        DefKind::Local => (TOKEN_TYPE_VARIABLE, 0),
+        DefKind::ConstParam => (TOKEN_TYPE_VARIABLE, MOD_READONLY),
+        _ => (TOKEN_TYPE_TYPE, 0),
+    }
+}
 
-    let mut data = Vec::new();
-    if let Some(overlay) = overlay_mgr.get(&file) {
-        let mut prev_line = 0;
-        let mut prev_col = 0;
+pub fn collect_raw_tokens(
+    file: &str,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Vec<RawToken> {
+    let mut tokens = Vec::new();
 
+    // 1. Overlay symbols
+    if let Some(overlay) = overlay_mgr.get(file) {
         for sym in &overlay.symbols {
             let line_0based = sym.start_line.saturating_sub(1);
             let col_0based = overlay.char_col_to_utf16_col(sym.start_line, sym.start_col);
             let length = overlay
                 .char_col_to_utf16_col(sym.end_line, sym.end_col)
                 .saturating_sub(col_0based);
-
-            let delta_line = line_0based.saturating_sub(prev_line);
-            let delta_col = if delta_line == 0 {
-                col_0based.saturating_sub(prev_col)
-            } else {
-                col_0based
-            };
-
-            let token_type = match sym.kind {
-                ridx_format::DefKind::Fn => 0,
-                ridx_format::DefKind::Struct => 1,
-                ridx_format::DefKind::Enum => 2,
-                ridx_format::DefKind::Trait => 3,
-                ridx_format::DefKind::Const => 4,
-                ridx_format::DefKind::Mod => 5,
-                _ => 6,
-            };
-
-            data.extend_from_slice(&[delta_line, delta_col, length, token_type, 0]);
-
-            prev_line = line_0based;
-            prev_col = col_0based;
+            if length > 0 {
+                let (token_type, token_modifiers) = defkind_to_token(sym.kind);
+                tokens.push(RawToken {
+                    line: line_0based,
+                    col: col_0based,
+                    length,
+                    token_type,
+                    token_modifiers,
+                });
+            }
         }
     }
 
-    json!({ "data": data })
+    // 2. Workspace compiled symbols (definitions and references)
+    if let Some(ws) = workspace {
+        let is_overlay_dirty = overlay_mgr.get(file).map(|o| o.is_dirty()).unwrap_or(false);
+        if !is_overlay_dirty {
+            for reader in ws.readers() {
+                if let Some(file_id) = reader.find_file_id(file) {
+                    for def in reader.definitions() {
+                        if def.span.file_id == file_id {
+                            let sl = def.span.start_line.saturating_sub(1);
+                            let sc = conv.char_col_to_utf16_col(file, def.span.start_line, def.span.start_col);
+                            let ec = conv.char_col_to_utf16_col(file, def.span.end_line, def.span.end_col);
+                            let length = ec.saturating_sub(sc);
+                            if length > 0 {
+                                let (tt, tm) = defkind_to_token(DefKind::from(def.kind));
+                                tokens.push(RawToken {
+                                    line: sl,
+                                    col: sc,
+                                    length,
+                                    token_type: tt,
+                                    token_modifiers: tm,
+                                });
+                            }
+                        }
+                    }
+
+                    for rf in reader.references() {
+                        if rf.span.file_id == file_id {
+                            let sl = rf.span.start_line.saturating_sub(1);
+                            let sc = conv.char_col_to_utf16_col(file, rf.span.start_line, rf.span.start_col);
+                            let ec = conv.char_col_to_utf16_col(file, rf.span.end_line, rf.span.end_col);
+                            let length = ec.saturating_sub(sc);
+                            if length > 0 {
+                                let (tt, _) = defkind_to_token(DefKind::from(rf.kind));
+                                tokens.push(RawToken {
+                                    line: sl,
+                                    col: sc,
+                                    length,
+                                    token_type: tt,
+                                    token_modifiers: 0,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Sort tokens by (line, col) ascending, then by length descending
+    tokens.sort_by(|a, b| {
+        a.line
+            .cmp(&b.line)
+            .then_with(|| a.col.cmp(&b.col))
+            .then_with(|| b.length.cmp(&a.length))
+    });
+
+    // Deduplicate overlapping tokens at exact same (line, col)
+    tokens.dedup_by(|a, b| a.line == b.line && a.col == b.col);
+    tokens
 }
 
-pub fn handle_semantic_tokens_range(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
+pub fn encode_tokens_delta(tokens: &[RawToken]) -> Vec<u32> {
+    let mut data = Vec::with_capacity(tokens.len() * 5);
+    let mut prev_line = 0;
+    let mut prev_col = 0;
+
+    for tok in tokens {
+        let delta_line = tok.line.saturating_sub(prev_line);
+        let delta_col = if delta_line == 0 {
+            tok.col.saturating_sub(prev_col)
+        } else {
+            tok.col
+        };
+
+        data.extend_from_slice(&[delta_line, delta_col, tok.length, tok.token_type, tok.token_modifiers]);
+        prev_line = tok.line;
+        prev_col = tok.col;
+    }
+
+    data
+}
+
+/// Handles `textDocument/semanticTokens/full` requests.
+pub fn handle_semantic_tokens_full(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+
+    let raw_tokens = collect_raw_tokens(&file, workspace, overlay_mgr, conv);
+    let data = encode_tokens_delta(&raw_tokens);
+
+    let result_id = format!("ridx-st-{}", RESULT_COUNTER.fetch_add(1, Ordering::SeqCst));
+    if let Ok(mut cache) = get_cache().lock() {
+        if cache.len() > 256 {
+            cache.clear();
+        }
+        cache.insert(result_id.clone(), data.clone());
+    }
+
+    json!({
+        "resultId": result_id,
+        "data": data
+    })
+}
+
+/// Handles `textDocument/semanticTokens/full/delta` requests.
+pub fn handle_semantic_tokens_delta(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
+    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
+    let prev_id = msg["params"]["previousResultId"].as_str().unwrap_or("");
+    let file = uri_to_path(uri);
+
+    let raw_tokens = collect_raw_tokens(&file, workspace, overlay_mgr, conv);
+    let new_data = encode_tokens_delta(&raw_tokens);
+    let new_id = format!("ridx-st-{}", RESULT_COUNTER.fetch_add(1, Ordering::SeqCst));
+
+    let mut cache = get_cache().lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(cached_data) = cache.get(prev_id).cloned() {
+        if cached_data == new_data {
+            cache.insert(new_id.clone(), new_data);
+            return json!({
+                "resultId": new_id,
+                "edits": []
+            });
+        }
+
+        // Find common prefix and suffix
+        let mut prefix = 0;
+        while prefix < cached_data.len() && prefix < new_data.len() && cached_data[prefix] == new_data[prefix] {
+            prefix += 1;
+        }
+
+        let mut suffix = 0;
+        while suffix < cached_data.len() - prefix
+            && suffix < new_data.len() - prefix
+            && cached_data[cached_data.len() - 1 - suffix] == new_data[new_data.len() - 1 - suffix]
+        {
+            suffix += 1;
+        }
+
+        let delete_count = (cached_data.len() - prefix - suffix) as u32;
+        let insert_data = &new_data[prefix..new_data.len() - suffix];
+
+        let edit = json!({
+            "start": prefix,
+            "deleteCount": delete_count,
+            "data": insert_data
+        });
+
+        cache.insert(new_id.clone(), new_data);
+        return json!({
+            "resultId": new_id,
+            "edits": [edit]
+        });
+    }
+
+    cache.insert(new_id.clone(), new_data.clone());
+    json!({
+        "resultId": new_id,
+        "data": new_data
+    })
+}
+
+/// Handles `textDocument/semanticTokens/range` requests.
+pub fn handle_semantic_tokens_range(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+    overlay_mgr: &OverlayManager,
+    conv: &mut PositionConverter,
+) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
     let start_line = msg["params"]["range"]["start"]["line"]
@@ -75,100 +297,12 @@ pub fn handle_semantic_tokens_range(msg: &Value, overlay_mgr: &OverlayManager) -
         .as_u64()
         .unwrap_or(u32::MAX as u64) as u32;
 
-    let mut data = Vec::new();
-    if let Some(overlay) = overlay_mgr.get(&file) {
-        let mut prev_line = 0;
-        let mut prev_col = 0;
+    let raw_tokens = collect_raw_tokens(&file, workspace, overlay_mgr, conv);
+    let in_range: Vec<RawToken> = raw_tokens
+        .into_iter()
+        .filter(|t| t.line >= start_line && t.line <= end_line)
+        .collect();
 
-        for sym in &overlay.symbols {
-            let line_0based = sym.start_line.saturating_sub(1);
-            if line_0based < start_line || line_0based > end_line {
-                continue;
-            }
-            let col_0based = overlay.char_col_to_utf16_col(sym.start_line, sym.start_col);
-            let length = overlay
-                .char_col_to_utf16_col(sym.end_line, sym.end_col)
-                .saturating_sub(col_0based);
-
-            let delta_line = line_0based.saturating_sub(prev_line);
-            let delta_col = if delta_line == 0 {
-                col_0based.saturating_sub(prev_col)
-            } else {
-                col_0based
-            };
-
-            let token_type = match sym.kind {
-                ridx_format::DefKind::Fn => 0,
-                ridx_format::DefKind::Struct => 1,
-                ridx_format::DefKind::Enum => 2,
-                ridx_format::DefKind::Trait => 3,
-                ridx_format::DefKind::Const => 4,
-                ridx_format::DefKind::Mod => 5,
-                _ => 6,
-            };
-
-            data.extend_from_slice(&[delta_line, delta_col, length, token_type, 0]);
-
-            prev_line = line_0based;
-            prev_col = col_0based;
-        }
-    }
-
+    let data = encode_tokens_delta(&in_range);
     json!({ "data": data })
-}
-
-pub fn handle_folding_range(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-
-    let mut ranges = Vec::new();
-    if let Some(overlay) = overlay_mgr.get(&file) {
-        for s in &overlay.scopes {
-            let (sl, sc) = overlay.byte_offset_to_position(s.start_byte);
-            let (el, ec) = overlay.byte_offset_to_position(s.end_byte);
-            if el > sl {
-                ranges.push(json!({
-                    "startLine": sl,
-                    "startCharacter": sc,
-                    "endLine": el,
-                    "endCharacter": ec,
-                    "kind": "region"
-                }));
-            }
-        }
-    }
-
-    json!(ranges)
-}
-
-pub fn handle_code_lens(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-
-    let mut lenses = Vec::new();
-    if let Some(overlay) = overlay_mgr.get(&file) {
-        for sym in &overlay.symbols {
-            if sym.start_line == sym.end_line {
-                let sl = sym.start_line.saturating_sub(1);
-                let sc = overlay.char_col_to_utf16_col(sym.start_line, sym.start_col);
-                let ec = overlay.char_col_to_utf16_col(sym.end_line, sym.end_col);
-                lenses.push(json!({
-                    "range": {
-                        "start": { "line": sl, "character": sc },
-                        "end": { "line": sl, "character": ec }
-                    },
-                    "command": {
-                        "title": format!("References: {}", sym.name),
-                        "command": "ridx.showReferences"
-                    }
-                }));
-            }
-        }
-    }
-
-    json!(lenses)
-}
-
-pub fn handle_code_lens_resolve(msg: &Value) -> Value {
-    msg.get("params").cloned().unwrap_or(Value::Null)
 }

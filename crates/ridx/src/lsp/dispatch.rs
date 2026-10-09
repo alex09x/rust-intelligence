@@ -273,12 +273,23 @@ pub fn dispatch_lsp_message<W: Write>(
         "documentLink/resolve" => Ok(handle_document_link_resolve(&msg)),
         "textDocument/documentColor" => Ok(handle_document_color(&msg)),
         "textDocument/colorPresentation" => Ok(handle_color_presentation(&msg)),
-        "textDocument/semanticTokens/full" | "textDocument/semanticTokens/full/delta" => {
-            Ok(handle_semantic_tokens_full(&msg, overlay_mgr))
+        "textDocument/semanticTokens/full" => {
+            let ws = multi_root.doc_ws(&msg);
+            Ok(handle_semantic_tokens_full(&msg, ws, overlay_mgr, conv))
         }
-        "textDocument/semanticTokens/range" => Ok(handle_semantic_tokens_range(&msg, overlay_mgr)),
+        "textDocument/semanticTokens/full/delta" => {
+            let ws = multi_root.doc_ws(&msg);
+            Ok(handle_semantic_tokens_delta(&msg, ws, overlay_mgr, conv))
+        }
+        "textDocument/semanticTokens/range" => {
+            let ws = multi_root.doc_ws(&msg);
+            Ok(handle_semantic_tokens_range(&msg, ws, overlay_mgr, conv))
+        }
         "textDocument/foldingRange" => Ok(handle_folding_range(&msg, overlay_mgr)),
-        "textDocument/codeLens" => Ok(handle_code_lens(&msg, overlay_mgr)),
+        "textDocument/codeLens" => {
+            let ws = multi_root.doc_ws(&msg);
+            Ok(handle_code_lens(&msg, ws, overlay_mgr))
+        }
         "codeLens/resolve" => Ok(handle_code_lens_resolve(&msg)),
         "textDocument/diagnostic" => {
             Ok(handle_diagnostic_with_flycheck(&msg, overlay_mgr, Some(&lifecycle.flycheck)))
