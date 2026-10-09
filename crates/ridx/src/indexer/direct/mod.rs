@@ -329,6 +329,10 @@ pub fn try_direct_crate_indexing(
     let ws = WorkspaceIndex::open(variant_out_dir).ok()?;
     let stats = ws.stats();
     let manifest_file = base_out_dir.join("ridx_manifest.json");
+    let prev_cas_key = fs::read(&manifest_file)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<ridx_format::VariantManifest>(&bytes).ok())
+        .and_then(|m| m.sysroot_cas_key);
 
     let params = ManifestParams {
         variant_id,
@@ -346,6 +350,7 @@ pub fn try_direct_crate_indexing(
         package: opts.package.clone(),
         stats: &stats,
         dep_shards: &dep_shards,
+        sysroot_cas_key: prev_cas_key.as_deref(),
     };
 
     publish_manifest(params).ok()?;

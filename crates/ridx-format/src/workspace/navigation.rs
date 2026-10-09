@@ -1004,7 +1004,12 @@ impl WorkspaceIndex {
                     .chain(reader.find_definitions_by_owner(sub))
                     .chain(reader.find_definitions_by_owner(&with_prefix))
                 {
-                    let key = (i, def.path_offset(), def.span.start_line, def.span.start_col);
+                    let key = (
+                        i,
+                        def.path_offset(),
+                        def.span.start_line,
+                        def.span.start_col,
+                    );
                     if seen.insert(key) {
                         results.push(self.make_resolved_definition(i, def));
                     }
@@ -1130,12 +1135,8 @@ impl WorkspaceIndex {
     }
 
     /// Iterates over matching definitions specifically for a single target crate without eager allocation.
-    pub fn for_each_symbol_in_crate<F>(
-        &self,
-        target_crate: &str,
-        needle_lower: &[u8],
-        mut cb: F,
-    ) where
+    pub fn for_each_symbol_in_crate<F>(&self, target_crate: &str, needle_lower: &[u8], mut cb: F)
+    where
         F: FnMut(&IndexReader<memmap2::Mmap>, &DefEntry) -> bool,
     {
         for reader in &self.readers {

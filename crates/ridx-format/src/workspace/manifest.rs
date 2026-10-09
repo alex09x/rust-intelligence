@@ -217,6 +217,8 @@ pub struct VariantManifest {
     pub total_types: usize,
     #[serde(default)]
     pub dependency_shards: Vec<DependencyShardInfo>,
+    #[serde(default)]
+    pub sysroot_cas_key: Option<String>,
 }
 
 pub(crate) fn default_manifest_version() -> String {

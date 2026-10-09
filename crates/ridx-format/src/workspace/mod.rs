@@ -17,6 +17,7 @@ pub mod navigation;
 pub mod provenance;
 pub mod reload;
 pub mod std_map;
+pub mod sysroot;
 
 pub use manifest::*;
 
@@ -100,19 +101,32 @@ impl WorkspaceIndex {
                     None
                 }
             });
-            return Ok(Self {
-                readers: vec![reader],
-                paths: vec![p.to_path_buf()],
-                mtimes: vec![mtime],
-                source_roots: vec![source_root],
-                unit_keys: vec![unit_key],
-                reader_generations: vec![gen],
-                reader_dependencies: vec![dependencies],
-                reader_extern_units: vec![extern_units],
-                reader_file_hashes: vec![file_hashes],
-                reader_is_dependency: vec![is_dep],
-                meta_paths: vec![mpath],
-                meta_mtimes: vec![mmtime],
+            let readers = vec![reader];
+            let paths = vec![p.to_path_buf()];
+            let mtimes = vec![mtime];
+            let source_roots = vec![source_root];
+            let unit_keys = vec![unit_key];
+            let reader_generations = vec![gen];
+            let reader_dependencies = vec![dependencies];
+            let reader_extern_units = vec![extern_units];
+            let reader_file_hashes = vec![file_hashes];
+            let reader_is_dependency = vec![is_dep];
+            let meta_paths = vec![mpath];
+            let meta_mtimes = vec![mmtime];
+
+            let ws = Self {
+                readers,
+                paths,
+                mtimes,
+                source_roots,
+                unit_keys,
+                reader_generations,
+                reader_dependencies,
+                reader_extern_units,
+                reader_file_hashes,
+                reader_is_dependency,
+                meta_paths,
+                meta_mtimes,
                 last_reloaded_files: HashSet::new(),
                 root_dir: None,
                 workspace_root: ws_root,
@@ -123,7 +137,8 @@ impl WorkspaceIndex {
                 manifest_generation: None,
                 manifest_ino: None,
                 active_variant_id: None,
-            });
+            };
+            return Ok(ws);
         }
 
         // If directory, check target/ridx subfolder first if it exists
@@ -218,6 +233,7 @@ impl WorkspaceIndex {
                         } else {
                             None
                         },
+                        manifest.sysroot_cas_key,
                     )),
                 )
             } else {
@@ -283,6 +299,7 @@ impl WorkspaceIndex {
                     } else {
                         None
                     },
+                    manifest.sysroot_cas_key,
                 )),
             )
         } else {
@@ -352,7 +369,7 @@ impl WorkspaceIndex {
         }
 
         // Load external dependency shards from global cache if specified in manifest
-        if let Some((_, _, _, ref dep_shards, _)) = manifest_info {
+        if let Some((_, _, _, ref dep_shards, _, _)) = manifest_info {
             let cache_dir = crate::format::resolve_cache_dir();
             for dep in dep_shards {
                 let obj_path = PathBuf::from(&dep.object_path);
@@ -486,10 +503,10 @@ impl WorkspaceIndex {
             ));
         }
 
-        let (manifest_path, manifest_mtime, active_variant_id, manifest_ws_root) =
+        let (manifest_path, manifest_mtime, active_variant_id, manifest_ws_root, sysroot_cas_key) =
             match manifest_info {
-                Some((mp, mm, avid, _, ws_r)) => (Some(mp), mm, Some(avid), ws_r),
-                None => (None, None, None, None),
+                Some((mp, mm, avid, _, ws_r, cas_k)) => (Some(mp), mm, Some(avid), ws_r, cas_k),
+                None => (None, None, None, None, None),
             };
         let workspace_root = manifest_ws_root.or_else(|| {
             if scan_dir.ends_with("target/ridx") {
@@ -502,7 +519,7 @@ impl WorkspaceIndex {
             }
         });
 
-        Ok(Self {
+        let mut ws = Self {
             readers,
             paths,
             mtimes,
@@ -525,7 +542,11 @@ impl WorkspaceIndex {
             manifest_generation: None,
             manifest_ino: None,
             active_variant_id,
-        })
+        };
+        if let Some(cas_key) = sysroot_cas_key {
+            ws.attach_sysroot_shards_for_key(&cas_key);
+        }
+        Ok(ws)
     }
 
     /// Auto-discovers .ridx indices starting from current directory up to root or target/ridx.

@@ -258,6 +258,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
 
     // Collect external dependency shards recorded by compiler driver
     let mut dep_shards: Vec<ridx_format::DependencyShardInfo> = Vec::new();
+    let mut sysroot_cas_key: Option<String> = None;
     let deps_dir = variant_out_dir.join(".deps");
     if deps_dir.is_dir() {
         if let Ok(entries) = fs::read_dir(&deps_dir) {
@@ -265,6 +266,12 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
                 let path = entry.path();
                 if path.extension().and_then(|s| s.to_str()) == Some("json") {
                     if let Ok(content) = fs::read(&path) {
+                        if sysroot_cas_key.is_none() {
+                            if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
+                                sysroot_cas_key =
+                                    val["sysroot_cas_key"].as_str().map(ToString::to_string);
+                            }
+                        }
                         if let Ok(mut info) =
                             serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content)
                         {
@@ -344,6 +351,7 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         package,
         stats: &stats,
         dep_shards: &dep_shards,
+        sysroot_cas_key: sysroot_cas_key.as_deref(),
     })?;
 
     eprintln!(

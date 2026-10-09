@@ -29,6 +29,7 @@ pub struct ManifestParams<'a> {
     pub package: Option<String>,
     pub stats: &'a ridx_format::WorkspaceStats,
     pub dep_shards: &'a [ridx_format::DependencyShardInfo],
+    pub sysroot_cas_key: Option<&'a str>,
 }
 
 pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
@@ -72,6 +73,7 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
         "total_refs": params.stats.total_refs,
         "total_types": params.stats.total_types,
         "dependency_shards": params.dep_shards,
+        "sysroot_cas_key": params.sysroot_cas_key,
         "crates": params.stats.crate_summaries.iter().map(|c| serde_json::json!({
             "name": c.name,
             "version": c.version,
