@@ -168,6 +168,13 @@ impl LifecycleManager {
                 "resolveProvider": true
             },
             "codeLensProvider": { "resolveProvider": true },
+            "executeCommandProvider": {
+                "commands": [
+                    "ridx.showReferences",
+                    "ridx.applyEdits",
+                    "ridx.resolveWorkspace"
+                ]
+            },
             "inlayHintProvider": { "resolveProvider": true },
             "inlineValueProvider": true,
             "monikerProvider": true,

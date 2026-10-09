@@ -192,22 +192,65 @@ fn test_l2_folding_range_and_code_lens() {
             "textDocument": { "uri": &uri }
         }
     });
-    let lens_res = handle_code_lens(&lens_req, Some(ws), &OverlayManager::new());
+    let mut conv = PositionConverter::new();
+    let empty_overlay = OverlayManager::new();
+    let lens_res = handle_code_lens(&lens_req, Some(ws), &empty_overlay, &mut conv);
     let lenses = lens_res.as_array().expect("code lens array");
     assert!(
         !lenses.is_empty(),
         "Code lenses must be generated for definitions"
     );
-    let has_reference_lens = lenses.iter().any(|lens| {
-        lens["command"]["title"]
+    assert!(
+        lenses[0]["data"].is_object(),
+        "Unresolved code lens must carry data payload"
+    );
+
+    let resolve_req = json!({ "params": &lenses[0] });
+    let resolved = handle_code_lens_resolve(&resolve_req, Some(ws), &empty_overlay, &mut conv);
+    assert!(!resolved.is_null(), "codeLens/resolve returns params");
+    assert!(
+        resolved["command"]["title"]
             .as_str()
             .map(|t| t.contains("reference") || t.contains("References"))
-            .unwrap_or(false)
-    });
-    assert!(has_reference_lens, "Must produce reference counting code lens");
+            .unwrap_or(false),
+        "Resolved code lens must carry reference title"
+    );
+    assert_eq!(
+        resolved["command"]["command"],
+        "ridx.showReferences",
+        "Code lens command must match registered ridx.showReferences"
+    );
 
-    let resolved = handle_code_lens_resolve(&lens_req);
-    assert!(!resolved.is_null(), "codeLens/resolve returns params");
+    // 4. Test code lens with dirty overlay
+    let mut dirty_overlay = OverlayManager::new();
+    let dirty_code = format!("// Header line\n\n{}", std::fs::read_to_string(&lib_file).unwrap());
+    dirty_overlay.open_document(&uri, lib_file.to_str().unwrap(), 1, dirty_code);
+    let dirty_lenses = handle_code_lens(&lens_req, Some(ws), &dirty_overlay, &mut conv);
+    let dirty_arr = dirty_lenses.as_array().unwrap();
+    assert!(!dirty_arr.is_empty());
+    let dirty_resolved =
+        handle_code_lens_resolve(&json!({ "params": &dirty_arr[0] }), Some(ws), &dirty_overlay, &mut conv);
+    assert!(
+        dirty_resolved["command"]["title"].as_str().is_some(),
+        "Dirty overlay code lens must resolve cleanly"
+    );
+
+    // 5. Folding range ignores braces in strings and comments
+    let tricky_file = fixture_dir("traits_and_generics").join("src/tricky_fold.rs");
+    let tricky_code = "fn dummy() {\n    let s = \"{ not a block }\";\n    // { also not a block }\n    let c = '{';\n}\n";
+    let _ = std::fs::write(&tricky_file, tricky_code);
+    let tricky_uri = path_to_uri(tricky_file.to_str().unwrap());
+    let tricky_req = json!({ "params": { "textDocument": { "uri": &tricky_uri } } });
+    let tricky_res = handle_folding_range(&tricky_req, &empty_overlay);
+    let _ = std::fs::remove_file(&tricky_file);
+    let tricky_folds = tricky_res.as_array().unwrap();
+    assert_eq!(
+        tricky_folds.len(),
+        1,
+        "Only outer function brace should form a folding range, got: {tricky_folds:?}"
+    );
+    assert_eq!(tricky_folds[0]["startLine"], 0);
+    assert_eq!(tricky_folds[0]["endLine"], 4);
 }
 
 #[test]
@@ -233,4 +276,34 @@ fn test_l2_presentation_colors_and_links() {
 
     let sel_range = handle_selection_range(&dummy_req, &overlay_mgr);
     assert_eq!(sel_range, json!([]), "Selection range without overlay returns empty");
+}
+
+#[test]
+fn test_l2_code_lens_command_declared_in_execute_command_provider() {
+    let ws = get_or_index_l2_fixture("traits_and_generics");
+    let lib_file = fixture_dir("traits_and_generics").join("src/lib.rs");
+    let uri = path_to_uri(lib_file.to_str().unwrap());
+    let mut conv = PositionConverter::new();
+    let overlay_mgr = OverlayManager::new();
+
+    let lens_req = json!({ "params": { "textDocument": { "uri": &uri } } });
+    let lenses = handle_code_lens(&lens_req, Some(ws), &overlay_mgr, &mut conv);
+    let lens_arr = lenses.as_array().expect("lenses array");
+    assert!(!lens_arr.is_empty());
+
+    let resolve_req = json!({ "params": &lens_arr[0] });
+    let resolved = handle_code_lens_resolve(&resolve_req, Some(ws), &overlay_mgr, &mut conv);
+    let cmd = resolved["command"]["command"].as_str().expect("lens command");
+
+    let mut lc = ridx::lsp::lifecycle::LifecycleManager::new();
+    let init_req = json!({ "params": { "capabilities": {} } });
+    let (init_res, _) = lc.handle_initialize(&init_req).expect("initialize result");
+    let exec_cmds = init_res["capabilities"]["executeCommandProvider"]["commands"]
+        .as_array()
+        .expect("executeCommandProvider.commands");
+    let has_cmd = exec_cmds.iter().any(|c| c.as_str() == Some(cmd));
+    assert!(
+        has_cmd,
+        "Code lens command '{cmd}' must be declared in executeCommandProvider.commands: {exec_cmds:?}"
+    );
 }

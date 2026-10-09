@@ -56,7 +56,27 @@ impl MultiRootWorkspace {
         }
 
         if let Ok(ws) = WorkspaceIndex::open(&norm_path) {
-            self.roots.push((norm_path, ws));
+            let root_dir = if norm_path.is_file() {
+                if norm_path.file_name().and_then(|n| n.to_str()) == Some("Cargo.toml") {
+                    norm_path.parent().unwrap_or(&norm_path).to_path_buf()
+                } else if norm_path.extension().and_then(|e| e.to_str()) == Some("ridx") {
+                    let mut dir = norm_path.parent().unwrap_or(&norm_path);
+                    while let Some(parent) = dir.parent() {
+                        let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                        if name == ".ridx" || name == "ridx" || name == "target" || name == "variants" {
+                            dir = parent;
+                        } else {
+                            break;
+                        }
+                    }
+                    dir.to_path_buf()
+                } else {
+                    norm_path.parent().unwrap_or(&norm_path).to_path_buf()
+                }
+            } else {
+                norm_path
+            };
+            self.roots.push((root_dir, ws));
             return true;
         }
         false
@@ -76,13 +96,8 @@ impl MultiRootWorkspace {
         let mut best_match: Option<(usize, &WorkspaceIndex)> = None;
 
         for (root, ws) in &self.roots {
-            let root_dir = if root.is_file() {
-                root.parent().unwrap_or(root)
-            } else {
-                root.as_path()
-            };
-            if canon.starts_with(root_dir) || canon.starts_with(root) {
-                let match_len = root_dir.as_os_str().len();
+            if canon.starts_with(root) {
+                let match_len = root.as_os_str().len();
                 if let Some((best_len, _)) = best_match {
                     if match_len > best_len {
                         best_match = Some((match_len, ws));

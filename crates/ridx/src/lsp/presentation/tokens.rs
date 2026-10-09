@@ -81,6 +81,40 @@ pub fn defkind_to_token(kind: DefKind) -> (u32, u32) {
     }
 }
 
+fn filter_non_overlapping(mut tokens: Vec<RawToken>) -> Vec<RawToken> {
+    tokens.sort_by(|a, b| {
+        a.line
+            .cmp(&b.line)
+            .then_with(|| a.length.cmp(&b.length))
+            .then_with(|| a.col.cmp(&b.col))
+    });
+
+    let mut by_line: std::collections::BTreeMap<u32, Vec<RawToken>> = std::collections::BTreeMap::new();
+    for tok in tokens {
+        by_line.entry(tok.line).or_default().push(tok);
+    }
+
+    let mut result = Vec::new();
+    for (_line, line_tokens) in by_line {
+        let mut chosen: Vec<RawToken> = Vec::new();
+        for tok in line_tokens {
+            let tok_end = tok.col + tok.length;
+            let overlaps = chosen.iter().any(|c| {
+                let c_end = c.col + c.length;
+                tok.col < c_end && tok_end > c.col
+            });
+            if !overlaps {
+                chosen.push(tok);
+            }
+        }
+        chosen.sort_by_key(|t| t.col);
+        result.extend(chosen);
+    }
+
+    result.sort_by(|a, b| a.line.cmp(&b.line).then_with(|| a.col.cmp(&b.col)));
+    result
+}
+
 pub fn collect_raw_tokens(
     file: &str,
     workspace: Option<&WorkspaceIndex>,
@@ -88,69 +122,102 @@ pub fn collect_raw_tokens(
     conv: &mut PositionConverter,
 ) -> Vec<RawToken> {
     let mut tokens = Vec::new();
+    let overlay_opt = overlay_mgr.get(file);
 
-    // 1. Overlay symbols
-    if let Some(overlay) = overlay_mgr.get(file) {
+    // 1. Overlay symbols (live buffers)
+    if let Some(overlay) = overlay_opt {
         for sym in &overlay.symbols {
-            let line_0based = sym.start_line.saturating_sub(1);
-            let col_0based = overlay.char_col_to_utf16_col(sym.start_line, sym.start_col);
-            let length = overlay
-                .char_col_to_utf16_col(sym.end_line, sym.end_col)
-                .saturating_sub(col_0based);
-            if length > 0 {
-                let (token_type, token_modifiers) = defkind_to_token(sym.kind);
-                tokens.push(RawToken {
-                    line: line_0based,
-                    col: col_0based,
-                    length,
-                    token_type,
-                    token_modifiers,
-                });
+            if sym.start_line == sym.end_line {
+                let line_0based = sym.start_line.saturating_sub(1);
+                let col_0based = overlay.char_col_to_utf16_col(sym.start_line, sym.start_col);
+                let length = overlay
+                    .char_col_to_utf16_col(sym.end_line, sym.end_col)
+                    .saturating_sub(col_0based);
+                if length > 0 {
+                    let (token_type, token_modifiers) = defkind_to_token(sym.kind);
+                    tokens.push(RawToken {
+                        line: line_0based,
+                        col: col_0based,
+                        length,
+                        token_type,
+                        token_modifiers,
+                    });
+                }
             }
         }
     }
 
     // 2. Workspace compiled symbols (definitions and references)
     if let Some(ws) = workspace {
-        let is_overlay_dirty = overlay_mgr.get(file).map(|o| o.is_dirty()).unwrap_or(false);
-        if !is_overlay_dirty {
-            for reader in ws.readers() {
-                if let Some(file_id) = reader.find_file_id(file) {
-                    for def in reader.definitions() {
-                        if def.span.file_id == file_id {
+        let file_path = std::path::Path::new(file);
+        for (idx, reader) in ws.readers().iter().enumerate() {
+            let rel_file = ws
+                .source_root_at(idx)
+                .and_then(|root| file_path.strip_prefix(root).ok())
+                .and_then(|rel| rel.to_str())
+                .unwrap_or(file);
+
+            if let Some(file_id) = reader.find_file_id(rel_file) {
+                for def in reader.definitions() {
+                    if def.span.file_id == file_id && def.span.start_line == def.span.end_line {
+                        let (sl, sc, length) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
+                            if let Some((live_l, live_c)) = overlay.map_compiled_to_live(def.span.start_line, def.span.start_col) {
+                                let span_len = def.span.end_col.saturating_sub(def.span.start_col);
+                                let l0 = live_l.saturating_sub(1);
+                                let c0 = overlay.char_col_to_utf16_col(live_l, live_c);
+                                let c1 = overlay.char_col_to_utf16_col(live_l, live_c + span_len);
+                                (l0, c0, c1.saturating_sub(c0))
+                            } else {
+                                continue;
+                            }
+                        } else {
                             let sl = def.span.start_line.saturating_sub(1);
                             let sc = conv.char_col_to_utf16_col(file, def.span.start_line, def.span.start_col);
                             let ec = conv.char_col_to_utf16_col(file, def.span.end_line, def.span.end_col);
-                            let length = ec.saturating_sub(sc);
-                            if length > 0 {
-                                let (tt, tm) = defkind_to_token(DefKind::from(def.kind));
-                                tokens.push(RawToken {
-                                    line: sl,
-                                    col: sc,
-                                    length,
-                                    token_type: tt,
-                                    token_modifiers: tm,
-                                });
-                            }
+                            (sl, sc, ec.saturating_sub(sc))
+                        };
+
+                        if length > 0 {
+                            let (tt, tm) = defkind_to_token(DefKind::from(def.kind));
+                            tokens.push(RawToken {
+                                line: sl,
+                                col: sc,
+                                length,
+                                token_type: tt,
+                                token_modifiers: tm,
+                            });
                         }
                     }
+                }
 
-                    for rf in reader.references() {
-                        if rf.span.file_id == file_id {
+                for rf in reader.references() {
+                    if rf.span.file_id == file_id && !rf.is_macro_expansion() && rf.span.start_line == rf.span.end_line {
+                        let (sl, sc, length) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
+                            if let Some((live_l, live_c)) = overlay.map_compiled_to_live(rf.span.start_line, rf.span.start_col) {
+                                let span_len = rf.span.end_col.saturating_sub(rf.span.start_col);
+                                let l0 = live_l.saturating_sub(1);
+                                let c0 = overlay.char_col_to_utf16_col(live_l, live_c);
+                                let c1 = overlay.char_col_to_utf16_col(live_l, live_c + span_len);
+                                (l0, c0, c1.saturating_sub(c0))
+                            } else {
+                                continue;
+                            }
+                        } else {
                             let sl = rf.span.start_line.saturating_sub(1);
                             let sc = conv.char_col_to_utf16_col(file, rf.span.start_line, rf.span.start_col);
                             let ec = conv.char_col_to_utf16_col(file, rf.span.end_line, rf.span.end_col);
-                            let length = ec.saturating_sub(sc);
-                            if length > 0 {
-                                let (tt, _) = defkind_to_token(DefKind::from(rf.kind));
-                                tokens.push(RawToken {
-                                    line: sl,
-                                    col: sc,
-                                    length,
-                                    token_type: tt,
-                                    token_modifiers: 0,
-                                });
-                            }
+                            (sl, sc, ec.saturating_sub(sc))
+                        };
+
+                        if length > 0 {
+                            let (tt, _) = defkind_to_token(DefKind::from(rf.kind));
+                            tokens.push(RawToken {
+                                line: sl,
+                                col: sc,
+                                length,
+                                token_type: tt,
+                                token_modifiers: 0,
+                            });
                         }
                     }
                 }
@@ -158,17 +225,7 @@ pub fn collect_raw_tokens(
         }
     }
 
-    // Sort tokens by (line, col) ascending, then by length descending
-    tokens.sort_by(|a, b| {
-        a.line
-            .cmp(&b.line)
-            .then_with(|| a.col.cmp(&b.col))
-            .then_with(|| b.length.cmp(&a.length))
-    });
-
-    // Deduplicate overlapping tokens at exact same (line, col)
-    tokens.dedup_by(|a, b| a.line == b.line && a.col == b.col);
-    tokens
+    filter_non_overlapping(tokens)
 }
 
 pub fn encode_tokens_delta(tokens: &[RawToken]) -> Vec<u32> {

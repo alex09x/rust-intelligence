@@ -290,9 +290,18 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/foldingRange" => Ok(handle_folding_range(&msg, overlay_mgr)),
         "textDocument/codeLens" => {
             let ws = multi_root.doc_ws(&msg);
-            Ok(handle_code_lens(&msg, ws, overlay_mgr))
+            Ok(handle_code_lens(&msg, ws, overlay_mgr, conv))
         }
-        "codeLens/resolve" => Ok(handle_code_lens_resolve(&msg)),
+        "codeLens/resolve" => {
+            let uri = msg["params"]["data"]["uri"]
+                .as_str()
+                .or_else(|| msg["params"]["textDocument"]["uri"].as_str());
+            let ws = uri.and_then(|u| {
+                let p = uri_to_path(u);
+                multi_root.find_workspace_for_path(Path::new(&p))
+            });
+            Ok(handle_code_lens_resolve(&msg, ws, overlay_mgr, conv))
+        }
         "textDocument/diagnostic" => {
             Ok(handle_diagnostic_with_flycheck(&msg, overlay_mgr, Some(&lifecycle.flycheck)))
         }

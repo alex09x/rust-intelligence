@@ -39,14 +39,72 @@ pub fn handle_folding_range(msg: &Value, overlay_mgr: &OverlayManager) -> Value 
         return json!(ranges);
     }
 
-    // 2. Disk-file fallback folding ranges via brace matching
+    // 2. Disk-file fallback folding ranges via brace matching (ignoring strings and comments)
     if let Ok(content) = std::fs::read_to_string(&file) {
         let mut brace_stack = Vec::new();
+        let mut in_block_comment = false;
+
         for (line_idx, line) in content.lines().enumerate() {
             let line_u32 = line_idx as u32;
-            for (col_idx, ch) in line.chars().enumerate() {
-                if ch == '{' {
-                    brace_stack.push((line_u32, col_idx as u32));
+            let mut in_string = false;
+            let mut in_char = false;
+            let mut escaped = false;
+            let chars: Vec<char> = line.chars().collect();
+            let mut i = 0;
+
+            while i < chars.len() {
+                let ch = chars[i];
+                let next = chars.get(i + 1).copied();
+
+                if in_block_comment {
+                    if ch == '*' && next == Some('/') {
+                        in_block_comment = false;
+                        i += 2;
+                        continue;
+                    }
+                    i += 1;
+                    continue;
+                }
+
+                if in_string {
+                    if escaped {
+                        escaped = false;
+                    } else if ch == '\\' {
+                        escaped = true;
+                    } else if ch == '"' {
+                        in_string = false;
+                    }
+                    i += 1;
+                    continue;
+                }
+
+                if in_char {
+                    if escaped {
+                        escaped = false;
+                    } else if ch == '\\' {
+                        escaped = true;
+                    } else if ch == '\'' {
+                        in_char = false;
+                    }
+                    i += 1;
+                    continue;
+                }
+
+                if ch == '/' && next == Some('/') {
+                    break;
+                }
+                if ch == '/' && next == Some('*') {
+                    in_block_comment = true;
+                    i += 2;
+                    continue;
+                }
+
+                if ch == '"' {
+                    in_string = true;
+                } else if ch == '\'' {
+                    in_char = true;
+                } else if ch == '{' {
+                    brace_stack.push((line_u32, i as u32));
                 } else if ch == '}' {
                     if let Some((start_line, start_col)) = brace_stack.pop() {
                         if line_u32 > start_line {
@@ -54,12 +112,13 @@ pub fn handle_folding_range(msg: &Value, overlay_mgr: &OverlayManager) -> Value 
                                 "startLine": start_line,
                                 "startCharacter": start_col,
                                 "endLine": line_u32,
-                                "endCharacter": col_idx as u32,
+                                "endCharacter": i as u32,
                                 "kind": "region"
                             }));
                         }
                     }
                 }
+                i += 1;
             }
         }
     }

@@ -132,10 +132,12 @@ fn test_presentation_handlers_comprehensive() {
     assert!(fold_res.as_array().is_some());
 
     // 5. Code lens
-    let lens_res = handle_code_lens(&link_req, Some(&ws), &overlay_mgr);
+    let lens_res = handle_code_lens(&link_req, Some(&ws), &overlay_mgr, &mut conv);
     assert!(lens_res.as_array().is_some());
-    let lens_resolve = handle_code_lens_resolve(&link_req);
+    let first_lens = &lens_res.as_array().unwrap()[0];
+    let lens_resolve = handle_code_lens_resolve(&json!({ "params": first_lens }), Some(&ws), &overlay_mgr, &mut conv);
     assert!(!lens_resolve.is_null());
+    assert_eq!(lens_resolve["command"]["command"], "ridx.showReferences");
 
     // 6. Moniker
     let mon_req = json!({
@@ -245,7 +247,7 @@ fn test_presentation_handlers_comprehensive() {
         json!([])
     );
     assert_eq!(handle_folding_range(&missing_req, &overlay_mgr), json!([]));
-    assert_eq!(handle_code_lens(&missing_req, Some(&ws), &overlay_mgr), json!([]));
+    assert_eq!(handle_code_lens(&missing_req, Some(&ws), &overlay_mgr, &mut conv), json!([]));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
