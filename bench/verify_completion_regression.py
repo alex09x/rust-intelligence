@@ -174,7 +174,7 @@ def main():
         cas_key = None
         var_dir = Path(rpath) / "target" / "ridx" / "variants"
         if var_dir.is_dir():
-            for sub in sorted(var_dir.iterdir(), reverse=True):
+            for sub in sorted(var_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
                 mf = sub / "variant_manifest.json"
                 if mf.is_file():
                     try:
