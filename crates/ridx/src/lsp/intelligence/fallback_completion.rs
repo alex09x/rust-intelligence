@@ -11,7 +11,9 @@
 //! Streaming, low-latency fallback completion for dot- and colon-triggered queries.
 
 use super::super::protocol::lsp_completion_kind;
-use super::owner_completion::{signature_takes_receiver, OwnerCompletionContext};
+use super::owner_completion::{
+    extract_colon_qualifier, signature_takes_receiver, OwnerCompletionContext,
+};
 use crate::overlay::DocumentOverlay;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
@@ -75,15 +77,7 @@ pub fn try_fallback_completion(
             None,
         )
     } else {
-        let qual: String = ctx.trimmed_before[..ctx.trimmed_before.len() - 2]
-            .trim_end()
-            .chars()
-            .rev()
-            .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect();
+        let qual = extract_colon_qualifier(ctx.trimmed_before);
         let def_opt = ws.resolve_qualifier(ctx.file, &qual);
         let target = def_opt.as_ref().map(|d| d.path).unwrap_or(&qual);
         let first_seg = qual.split("::").next().unwrap_or(&qual);

@@ -97,6 +97,52 @@ fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> HashS
     set
 }
 
+/// Extracts the path qualifier preceding `::`, accounting for nested `use` groups like `use alloc::{string::`.
+pub(crate) fn extract_colon_qualifier(trimmed_before: &str) -> String {
+    let before_colon = trimmed_before[..trimmed_before.len().saturating_sub(2)].trim_end();
+
+    if let Some(brace_idx) = before_colon.rfind('{') {
+        let after_brace = &before_colon[brace_idx + 1..];
+        if !after_brace.contains('}') {
+            let last_item = after_brace.rsplit(',').next().unwrap_or(after_brace).trim();
+            let sub_qual: String = last_item
+                .chars()
+                .rev()
+                .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev()
+                .collect();
+            let before_brace = before_colon[..brace_idx].trim_end();
+            let base_qual: String = before_brace
+                .chars()
+                .rev()
+                .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev()
+                .collect();
+            let base_trimmed = base_qual.trim_end_matches(':');
+            if !base_trimmed.is_empty() && !sub_qual.is_empty() {
+                return format!("{base_trimmed}::{sub_qual}");
+            } else if !base_trimmed.is_empty() {
+                return base_trimmed.to_string();
+            } else if !sub_qual.is_empty() {
+                return sub_qual;
+            }
+        }
+    }
+
+    before_colon
+        .chars()
+        .rev()
+        .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect()
+}
+
 /// Context parameters for owner-based scoped completion.
 pub struct OwnerCompletionContext<'a> {
     pub file: &'a str,
@@ -211,15 +257,7 @@ pub fn try_owner_completion(
             Some(items)
         }
     } else if ctx.is_colon {
-        let qual: String = ctx.trimmed_before[..ctx.trimmed_before.len() - 2]
-            .trim_end()
-            .chars()
-            .rev()
-            .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect();
+        let qual = extract_colon_qualifier(ctx.trimmed_before);
 
         if qual.is_empty() {
             return None;
