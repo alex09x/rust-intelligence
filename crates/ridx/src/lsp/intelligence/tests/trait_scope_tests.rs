@@ -284,3 +284,27 @@ fn test_completion_trait_scope_filtering() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_signature_takes_receiver_lifetimes() {
+    use crate::lsp::intelligence::owner_completion::signature_takes_receiver;
+
+    assert!(signature_takes_receiver("fn(&self)"));
+    assert!(signature_takes_receiver("fn(&self, x: i32)"));
+    assert!(signature_takes_receiver("fn(&mut self)"));
+    assert!(signature_takes_receiver("fn(self)"));
+    assert!(signature_takes_receiver("fn(mut self)"));
+    assert!(signature_takes_receiver("fn(&'a self)"));
+    assert!(signature_takes_receiver("fn(&'a mut self)"));
+    assert!(signature_takes_receiver("fn(&'_ self)"));
+    assert!(signature_takes_receiver("fn(&'static self)"));
+    assert!(signature_takes_receiver("fn(self: Box<Self>)"));
+    assert!(signature_takes_receiver("fn(self: &Self)"));
+
+    assert!(!signature_takes_receiver("fn()"));
+    assert!(!signature_takes_receiver("fn(x: i32)"));
+    assert!(!signature_takes_receiver("fn(&Other)"));
+    assert!(!signature_takes_receiver("fn(&'a Other)"));
+    assert!(!signature_takes_receiver("fn(new_val: i32)"));
+}
+

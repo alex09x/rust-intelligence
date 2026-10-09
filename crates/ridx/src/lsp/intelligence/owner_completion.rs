@@ -45,21 +45,32 @@ pub(crate) fn is_sysroot_path(path: &str) -> bool {
         )
 }
 
-/// Checks if a function signature takes a receiver argument (`self`, `&self`, `&mut self`).
+/// Checks if a function signature takes a receiver argument (`self`, `&self`, `&'a self`, `&'a mut self`, `&mut self`, `mut self`).
 pub(crate) fn signature_takes_receiver(sig: &str) -> bool {
     let Some(i) = sig.find('(') else {
         return false;
     };
-    let p = sig[i + 1..].trim_start();
-    p.starts_with("&self")
-        || p.starts_with("&mut self")
-        || p.starts_with("mut self")
-        || (p.starts_with("self")
-            && (p.len() == 4
-                || p[4..].starts_with(',')
-                || p[4..].starts_with(')')
-                || p[4..].starts_with(':')
-                || p[4..].starts_with(' ')))
+    let mut p = sig[i + 1..].trim_start();
+    if let Some(rest) = p.strip_prefix('&') {
+        p = rest.trim_start();
+        // Skip optional lifetime like 'a, '_, 'static
+        if p.starts_with('\'') {
+            if let Some(sp) = p.find(|c: char| c.is_whitespace() || c == ',' || c == ')') {
+                p = p[sp..].trim_start();
+            }
+        }
+    }
+    if let Some(rest) = p.strip_prefix("mut") {
+        if rest.starts_with(' ') || rest.starts_with('\t') {
+            p = rest.trim_start();
+        }
+    }
+    p.starts_with("self")
+        && (p.len() == 4
+            || p[4..].starts_with(',')
+            || p[4..].starts_with(')')
+            || p[4..].starts_with(':')
+            || p[4..].starts_with(' '))
 }
 
 /// Returns true if a trait belongs to the standard 2021/2024 prelude and is in scope by default.
