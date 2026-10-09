@@ -513,8 +513,19 @@ Evaluated against `rust-analyzer 1.98.1 (48a229c)` on `booster` (100 sampled sce
 
 *Historical Baseline Check (`bb4aa75` -> `8fa53fa`):* Zero regressions to empty responses, with empty responses dropping 84 -> 82 on Serde and 43 -> 33 on Bevy, resolving 12 previously empty scenarios while narrowing blind prefix candidate spam.
 
+### Stage 3.1: Generic Trait Bounds via `predicates_of` (`b05240a`)
+
+Commit `b05240a` resolved generic parameters (`T: Trait`, e.g., `visitor.`, `serializer.`, `seed.`) to primary domain traits via `param_env.caller_bounds()` and indexed supertrait inheritance into `.ridx` autoderef chains. Published in `bench/published/rerun_completion_b05240a.jsonl` and `bench/published/completion_regression_26a4ddb_vs_b05240a.json`:
+
+| Repository | `26a4ddb` Empty Responses | `b05240a` Empty Responses | Closed Empty Responses | Regressions to Empty | Total Items (`26a4ddb` -> `b05240a`) | Recall vs RA 1.98.1 (`26a4ddb` -> `b05240a`) | Owner Share (`26a4ddb` -> `b05240a`) | Overall Speedup vs RA 1.98.1 |
+|---|---|---|---|---|---|---|---|---|
+| **`serde-rs/serde`** | 82 / 100 | **62 / 100** | **20 / 82** (-24.4%) | **0** | 656 -> **1,158** (+76.5%) | 7.3% -> **17.2%** (+9.9%) | 5.0% -> **25.0%** (5x boost) | **5.82x** (750 µs vs 4.37 ms) |
+| **`bevyengine/bevy`** | 33 / 100 | **33 / 100** | 0 / 33 (sysroot std) | **0** | 3,739 -> 3,739 (100%) | 23.8% -> 23.8% (100%) | 32.0% -> 32.0% | **1.34x** (3.33 ms vs 4.46 ms) |
+
 ### Key Architectural Findings:
 1. **Ultra-Fast Owner-Path Execution**: On concrete domain types (`World`, `Schedule`, `Entity`, `Commands`, `QueryState` in Bevy; `Visitor`, `ContentVisitor`, `Deserializer` in Serde), the owner path completes in **49–179 µs** warm p50, delivering a **36.1x – 143.3x speedup** over rust-analyzer on those exact matching positions.
-2. **Honest Scope on Fallback & Overall Performance**: Following streaming zero-allocation traversal in commit `26a4ddb`, fallback completion on large workspaces (`bevy`) improved from 44.4 ms (~18x slower) to **11.1 ms vs 2.4 ms RA (~4.6x slower)** on that subset. When combined with the ultra-fast owner path, overall completion across all 100 positions on `bevy` is now **1.34x faster than rust-analyzer (3.15 ms vs 4.22 ms)**, and on `serde` is **5.43x faster (800 µs vs 4.35 ms)**. For standard library primitives (`core::`, `alloc::`, `std::`, `str`, `Result`, `Option`) and unconstrained generic type parameters (`T: Trait`, e.g., `visitor.`, `serializer.` which dominate `serde`), recall remains low until Stage 3 implements trait-bounds from `predicates_of` and sysroot indexing.
-3. **Strict Zero-Regression Guarantee**: Side-by-side verification confirms `26a4ddb` maintained 100% item-for-item parity with `8fa53fa` across all 200 scenarios (identical item counts, identical recall, 0 regressions to empty), while delivering a 4.1x speedup on Bevy fallback and a 13.2x speedup on overall Bevy completion latency.
+2. **Honest Scope on Fallback & Overall Performance**: Following streaming zero-allocation traversal in commit `26a4ddb`, fallback completion on large workspaces (`bevy`) improved from 44.4 ms (~18x slower) to **11.1 ms vs 2.4 ms RA (~4.6x slower)** on that subset. When combined with the ultra-fast owner path, overall completion across all 100 positions on `bevy` is now **1.34x faster than rust-analyzer (3.15 ms vs 4.22 ms)**, and on `serde` is **5.43x – 5.82x faster (750–800 µs vs 4.35 ms)**.
+3. **Dramatic Generic Recall Boost without Sysroot**: In commit `b05240a`, resolving generic bounds via `param_env.caller_bounds()` closed 20 previously empty scenarios on Serde (`visitor.visit_u16`, `serializer.serialize_u8`, `seq_access.next_element`, `map_access.next_key`), more than doubling Serde recall from 7.3% to 17.2% and expanding owner-path routing from 5% to 25% with zero regressions. The remaining 62 empty Serde and 33 empty Bevy scenarios are standard library sysroot types (`Option`, `Result`, `Iterator`, `Formatter`, `Path`), reserved for Stage 3.2 sysroot indexing.
+4. **Strict Zero-Regression Guarantee**: Across all transitions (`bb4aa75` -> `8fa53fa` -> `26a4ddb` -> `b05240a`), RIDX maintains exactly 0 regressions from non-empty to empty responses across all 200 scenarios.
+
 

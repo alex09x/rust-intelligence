@@ -1,0 +1,95 @@
+{
+  "serde-rs/serde": {
+    "repo": "serde-rs/serde",
+    "total_scenarios": 100,
+    "empty_responses": {
+      "26a4ddb": 82,
+      "b05240a": 62,
+      "rust_analyzer_1_98_1": 2
+    },
+    "closed_empty_responses": {
+      "count": 20,
+      "scenarios": [
+        "comp_dot_39_deserialize_ignored_any",
+        "comp_dot_5_visit_u16",
+        "comp_dot_22_visit_borrowed_str",
+        "comp_dot_24_next_element",
+        "comp_dot_42_visit_f64",
+        "comp_dot_27_deserialize_enum",
+        "comp_dot_3_serialize_u8",
+        "comp_dot_44_serialize_map",
+        "comp_dot_7_visit_borrowed_bytes",
+        "comp_dot_31_next_key",
+        "comp_dot_47_visit_borrowed_str",
+        "comp_dot_23_deserialize",
+        "comp_dot_40_deserialize_identifier",
+        "comp_dot_16_visit_enum",
+        "comp_dot_49_deserialize_identifier",
+        "comp_dot_8_visit_enum",
+        "comp_dot_20_serialize",
+        "comp_dot_6_visit_u8",
+        "comp_dot_11_visit_unit",
+        "comp_dot_28_visit_unit"
+      ]
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "26a4ddb": 656,
+      "b05240a": 1158,
+      "rust_analyzer_1_98_1": 4665
+    },
+    "avg_recall_vs_ra": {
+      "26a4ddb": 7.3,
+      "b05240a": 17.2
+    },
+    "routes": {
+      "owner_count": 25,
+      "fallback_count": 75,
+      "owner_curr_warm_p50_us": 64.0,
+      "owner_ra_warm_p50_us": 5406.0,
+      "owner_speedup_fair": 84.47,
+      "fallback_curr_warm_p50_us": 801.0,
+      "fallback_ra_warm_p50_us": 2248.0,
+      "fallback_speedup_fair": 2.81,
+      "overall_curr_warm_p50_us": 750.0,
+      "overall_ra_warm_p50_us": 4367.5,
+      "overall_speedup": 5.82
+    }
+  },
+  "bevyengine/bevy": {
+    "repo": "bevyengine/bevy",
+    "total_scenarios": 100,
+    "empty_responses": {
+      "26a4ddb": 33,
+      "b05240a": 33,
+      "rust_analyzer_1_98_1": 6
+    },
+    "closed_empty_responses": {
+      "count": 0,
+      "scenarios": []
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "26a4ddb": 3739,
+      "b05240a": 3739,
+      "rust_analyzer_1_98_1": 6817
+    },
+    "avg_recall_vs_ra": {
+      "26a4ddb": 23.8,
+      "b05240a": 23.8
+    },
+    "routes": {
+      "owner_count": 32,
+      "fallback_count": 68,
+      "owner_curr_warm_p50_us": 183.5,
+      "owner_ra_warm_p50_us": 6256.5,
+      "owner_speedup_fair": 34.1,
+      "fallback_curr_warm_p50_us": 11604.0,
+      "fallback_ra_warm_p50_us": 2564.5,
+      "fallback_speedup_fair": 0.22,
+      "overall_curr_warm_p50_us": 3330.0,
+      "overall_ra_warm_p50_us": 4457.5,
+      "overall_speedup": 1.34
+    }
+  }
+}
