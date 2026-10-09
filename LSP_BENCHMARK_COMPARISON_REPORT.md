@@ -600,6 +600,77 @@ Across all 200 scenarios, exactly 2 experienced a recall drop > 5.0 pp (both in 
 
 #### 3. Route Migration & Tail Latency (p95)
 - **Bevy Fallback Median Shift (11.6 ms → 1.59 ms)**: With sysroot metadata attached, exactly **16 heavy sysroot queries** (e.g., `Result::`, `Option::`, `String::`) that previously ran as slow linear scans across all 69 workspace members migrated to the owner path (warm p50 dropped from 13.1 ms to 773 µs). Removing these 16 queries relieved the fallback pool, leaving 52 lightweight queries with median 1.59 ms.
-- **Tail Latency Reality (p95)**: On small repos (Serde, 2 workspace members), RIDX is faster across p50 (6.64x, 662 µs vs 4.40 ms) and p95 (6.06x, 2.01 ms vs 12.15 ms). On large multi-crate workspaces (Bevy, 69 workspace members, ~1,248 total dependency shards in index), RIDX owner-path p95 is 1.06 ms (18.35x faster than RA's 19.49 ms), but fallback p95 is 20.39 ms (vs RA's 6.43 ms, 3.17x slower), bringing overall Bevy p95 to 20.30 ms (vs RA's 17.08 ms, 1.19x slower).
+- **Tail Latency Context in Historical c308792 Run (p95)**: In the earlier `c308792` benchmark run, on small repos (Serde, 2 workspace members), RIDX measured p50 of 662 µs vs 4.40 ms (6.64x) and p95 of 2.01 ms vs 12.15 ms (6.06x). On large multi-crate workspaces (Bevy, 69 workspace members, ~1,248 total dependency shards in index), RIDX owner-path p95 was 1.06 ms (18.35x faster than RA's 19.49 ms), while fallback p95 was 20.39 ms (vs RA's 6.43 ms, 3.17x slower) prior to Step B-1 scan budgeting. (See Section 8 for updated `4a2441f` results).
+
+---
+
+## 8. Stage 3.2.2: Generic Bounds, In-Memory Caching & Bounded Fallback (`4a2441f`)
+
+*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)  
+*Toolchain Parity:* `rustc 1.98.1 (48a229cea 2026-09-01)` matching `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
+*Sysroot CAS Key:* `ad5e1980a489d231` (`sysroot_transplanted: true`)  
+*Evaluation:* 200 total scenarios across `serde-rs/serde` (n=100) and `bevyengine/bevy` (n=100)  
+*Published Reports:*
+- Grounded Report vs `558c448`: `bench/published/completion_regression_558c448_vs_4a2441f.json`
+- Grounded Report vs `5e3da10`: `bench/published/completion_regression_5e3da10_vs_4a2441f.json`
+- Grounded Report vs `3645c36`: `bench/published/completion_regression_3645c36_vs_4a2441f.json`
+- Raw Telemetry: `bench/published/rerun_completion_4a2441f.jsonl`
+
+### Headline Comparison Table (`3645c36` -> `4a2441f`)
+
+| Metric | `serde-rs/serde` (`3645c36` → `4a2441f`) | `bevyengine/bevy` (`3645c36` → `4a2441f`) | Combined Total |
+|---|---|---|---|
+| **Empty Responses** | **32 → 21** (**11 closed**) | **13 → 4** (**9 closed**) | **45 → 25** (**20 closed**, 74% resolved from initial 95) |
+| **Regressions to Empty** | **0** | **0** | **0** |
+| **Total Candidates Returned** | 2,459 → 2,571 (RA: 4,675) | 4,772 → 4,886 (RA: 6,832) | 7,231 → 7,457 (RA: 11,507) |
+| **Grounded Recall vs RA** (`ra_count > 0`) | **34.9% → 45.2%** (+10.3 pp, n=98) | **39.3% → 48.0%** (+8.7 pp, n=94) | **37.1% → 46.6%** (+9.5 pp, n=192) |
+| *Undefined Oracle Scenarios (`ra_count == 0`)* | 2 excluded (`ra_zero_oracle`) | 6 excluded (`ra_zero_oracle`) | 8 excluded overall |
+| **Grounded Precision vs RA** (`ridx_count > 0`, `ra_count > 0`) | **75.4% → 78.5%** (+3.1 pp, n: 67 → 77) | **60.3% → 63.2%** (+2.9 pp, n: 83 → 92) | **67.1% → 70.2%** (+3.1 pp, n: 150 → 169) |
+| **Owner-Path Share** | 68% → **72%** (n=72) | 87% → **87%** (n=87) | **79.5% overall** (n=159 / 200) |
+| **Owner-Path Speedup (p50 / p95)** | **20.53x** (258 µs vs 5,296 µs) / **16.53x** (793 µs vs 13.11 ms) | **12.91x** (373 µs vs 4,815 µs) / **14.35x** (1.20 ms vs 17.17 ms) | **13x – 21x** (p50) / **14x – 17x** (p95) |
+| **Fallback Speedup (p50 / p95)** | **1.63x** (1,285 µs vs 2,092 µs) / **6.42x** (1.65 ms vs 10.59 ms) | **2.68x** (971 µs vs 2,605 µs) / **1.07x** (12.54 ms vs 13.37 ms) | **1.6x – 2.7x** (p50) / **1.07x – 6.4x** (p95) |
+| **Overall Speedup (p50 / p95)** | **13.29x** (332 µs vs 4,418 µs) / **7.78x** (1.62 ms vs 12.57 ms) | **10.96x** (398 µs vs 4,364 µs) / **1.62x** (10.76 ms vs 17.40 ms) | **11.0x – 13.3x** (p50) / **1.62x – 7.8x** (p95) |
+
+### Detailed Latency Breakdown (p50 and p95)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             RIDX vs rust-analyzer 1.98.1 Latency                            │
+├──────────────────────┬───────────────────────────────┬──────────────────────────────────────┤
+│ Route                │ serde-rs/serde (p50 / p95)    │ bevyengine/bevy (p50 / p95)          │
+├──────────────────────┼───────────────────────────────┼──────────────────────────────────────┤
+│ Owner Path (79.5%)   │ RIDX:   258 µs /   793 µs     │ RIDX:   373 µs /  1.20 ms            │
+│                      │ RA:   5,296 µs / 13.11 ms     │ RA:   4,815 µs / 17.17 ms            │
+│                      │ Speedup: 20.53x (p50) / 16.5x │ Speedup: 12.91x (p50) / 14.35x (p95) │
+├──────────────────────┼───────────────────────────────┼──────────────────────────────────────┤
+│ Fallback Path (20.5%)│ RIDX: 1,285 µs /  1.65 ms     │ RIDX:   971 µs / 12.54 ms            │
+│                      │ RA:   2,092 µs / 10.59 ms     │ RA:   2,605 µs / 13.37 ms            │
+│                      │ Speedup:  1.63x (p50) / 6.42x │ Speedup:  2.68x (p50) /  1.07x (p95) │
+├──────────────────────┼───────────────────────────────┼──────────────────────────────────────┤
+│ Overall Combined     │ RIDX:   332 µs /  1.62 ms     │ RIDX:   398 µs / 10.76 ms            │
+│                      │ RA:   4,418 µs / 12.57 ms     │ RA:   4,364 µs / 17.40 ms            │
+│                      │ Speedup: 13.29x (p50) / 7.78x │ Speedup: 10.96x (p50) /  1.62x (p95) │
+└──────────────────────┴───────────────────────────────┴──────────────────────────────────────┘
+```
+
+### Changes in this run
+
+#### 1. In-Memory Lexical Scope Caching (P2)
+Previously, `resolve_self_owners` and `resolve_generic_param_owners` performed disk reads via `std::fs::read_to_string` and rescanned tokens on every single query. In commit `d3b125a`, `crates/ridx/src/lsp/intelligence/scope_cache/` introduced thread-safe in-memory caching keyed by `(path, mtime, size)` (or overlay version and full-buffer FNV-1a hash for live editor buffers):
+- **Scope Caching**: File scopes, line offsets, and block hierarchies are parsed once per file version; cache hit avoids re-reading and re-parsing.
+- **Supertrait & Associated Type Bound Caching**: Trait supertraits (`Iterator`, `Deref`, etc.) and associated type bounds (`type Item: ...`) are cached by definition location, eliminating repeated external crate reads (`~/.cargo/registry` and sysroot).
+- **Multi-line & Lifetime Support**: Associated type declarations spanning multiple lines and containing lifetimes (e.g. `'a`, `'static`) or `where` clauses are correctly sanitized and parsed.
+
+#### 2. Bounded Fallback Scan & Zero-Allocation Path Matching (Step B-1)
+Following the expansion of owner routing (now covering 79.5% of queries across workspaces), exactly 13 queries remained on the fallback path in Bevy. In commit `4a2441f`:
+- **Scan Budget**: For unresolved qualifiers, `try_fallback_completion` imposes a strict scan budget (`MAX_UNRESOLVED_FALLBACK_BUDGET = 5,000` symbols), preventing runaway full-index scans across hundreds of thousands of symbols.
+- **Zero-Allocation Matching**: The previous per-symbol `format!("{crate_name}::{path}")` heap allocation inside the symbol iterator was replaced with zero-allocation slice checks (`full_path_matches`).
+- **Tail Latency Shift**: Bevy fallback median latency dropped from 1.59 ms to **971 µs** (2.68x faster than RA's 2.61 ms), with fallback p95 12.5 ms vs RA 13.4 ms (comparable, n=13). Overall Bevy p95 is **10.76 ms vs 17.40 ms** (1.62x faster than rust-analyzer).
+
+#### 3. No recall regressions on the 200 benchmark scenarios vs 558c448
+Across all benchmark comparisons against `558c448`:
+- Exactly 0 scenarios experienced a recall regression.
+- Recall and precision were 100% preserved (45.2% / 78.5% on Serde; 48.0% / 63.2% on Bevy).
+- Empty responses remain at 21 on Serde and 4 on Bevy (total 25 across 200 scenarios, resolving 70 of the 95 empty responses from the initial unindexed baseline).
 
 

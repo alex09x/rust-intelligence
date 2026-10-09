@@ -71,12 +71,16 @@ def export_site_bench(results_path, discrepancies_path, out_path):
                     reruns[rentry.get("repo", "")] = rentry
 
     comp_v3 = {}
-    comp_v3_file = bench_dir / "published" / "completion_regression_b05240a_vs_c308792_v3.json"
-    if not comp_v3_file.exists():
-        comp_v3_file = bench_dir / "published" / "completion_regression_b05240a_vs_c308792_v2.json"
-    if comp_v3_file.exists():
-        with open(comp_v3_file, "r", encoding="utf-8") as cf:
-            comp_v3 = json.load(cf)
+    comp_files = [
+        bench_dir / "published" / "completion_regression_558c448_vs_4a2441f.json",
+        bench_dir / "published" / "completion_regression_b05240a_vs_c308792_v3.json",
+        bench_dir / "published" / "completion_regression_b05240a_vs_c308792_v2.json",
+    ]
+    for cf_path in comp_files:
+        if cf_path.exists():
+            with open(cf_path, "r", encoding="utf-8") as cf:
+                comp_v3 = json.load(cf)
+            break
 
     for r in repos_data:
         slug = r.get("repo", "")
@@ -149,29 +153,31 @@ def export_site_bench(results_path, discrepancies_path, out_path):
         if slug in comp_v3:
             cm = comp_v3[slug]
             rt = cm.get("routes", {})
+            owner_cnt = rt.get("owner_count", 0)
+            fallback_cnt = rt.get("fallback_count", 0)
             rows.append([
-                "Completion: owner-path (warm p50 · n=48)",
+                f"Completion: owner-path (warm p50 · n={owner_cnt})",
                 rt.get("owner_curr_warm_p50_us", 0) * 1e-6,
                 fmt_lat(rt.get("owner_curr_warm_p50_us", 0)),
                 rt.get("owner_ra_warm_p50_us", 0) * 1e-6,
                 fmt_lat(rt.get("owner_ra_warm_p50_us", 0)),
             ])
             rows.append([
-                "Completion: owner-path (tail p95 · n=48)",
+                f"Completion: owner-path (tail p95 · n={owner_cnt})",
                 rt.get("owner_curr_warm_p95_us", 0) * 1e-6,
                 fmt_lat(rt.get("owner_curr_warm_p95_us", 0)),
                 rt.get("owner_ra_warm_p95_us", 0) * 1e-6,
                 fmt_lat(rt.get("owner_ra_warm_p95_us", 0)),
             ])
             rows.append([
-                "Completion: fallback (warm p50 · n=52)",
+                f"Completion: fallback (warm p50 · n={fallback_cnt})",
                 rt.get("fallback_curr_warm_p50_us", 0) * 1e-6,
                 fmt_lat(rt.get("fallback_curr_warm_p50_us", 0)),
                 rt.get("fallback_ra_warm_p50_us", 0) * 1e-6,
                 fmt_lat(rt.get("fallback_ra_warm_p50_us", 0)),
             ])
             rows.append([
-                "Completion: fallback (tail p95 · n=52)",
+                f"Completion: fallback (tail p95 · n={fallback_cnt})",
                 rt.get("fallback_curr_warm_p95_us", 0) * 1e-6,
                 fmt_lat(rt.get("fallback_curr_warm_p95_us", 0)),
                 rt.get("fallback_ra_warm_p95_us", 0) * 1e-6,
@@ -248,15 +254,18 @@ def export_site_bench(results_path, discrepancies_path, out_path):
             ),
             (
                 "Completion on large workspaces (bevy, 69 workspace members, ~1,248"
-                " dependency shards): fallback completion p95 is 20.39 ms vs 6.43 ms"
-                " for rust-analyzer (3.17x slower; p50: 1.59 ms vs 1.82 ms, 1.14x faster);"
-                " overall completion across all 100 positions is 10.33x faster at p50"
-                " (420 µs vs 4.34 ms) but 1.19x slower at p95 (20.30 ms vs 17.08 ms). On"
-                " owner-routed queries (48%), RIDX is 17.97x faster at p50 (407 µs vs"
-                " 7.31 ms) and 18.35x faster at p95 (1.06 ms vs 19.49 ms). Empty responses"
-                " dropped from 95 to 50 across 200 queries (0 regressions). Non-empty"
-                " precision (excluding 0-item oracle scenarios) is 77.7% on serde (n=65,"
-                " base: 80.6%, n=37) and 56.2% on bevy (n=80, base: 60.9%, n=64)."
+                " dependency shards): on owner-routed queries (87%, n=87), RIDX is"
+                " 12.91x faster at p50 (373 µs vs 4.82 ms) and 14.35x faster at p95"
+                " (1.20 ms vs 17.17 ms). Following Step B-1 scan budgeting and zero-allocation"
+                " path matching, fallback completion p50 dropped to 971 µs vs 2.61 ms"
+                " for rust-analyzer (2.68x faster) and p95 to 12.54 ms vs 13.37 ms"
+                " (1.07x faster). Overall completion across all 100 positions is"
+                " 10.96x faster at p50 (398 µs vs 4.36 ms) and 1.62x faster at p95"
+                " (10.76 ms vs 17.40 ms). Empty responses dropped from 95 to 25 across"
+                " 200 queries (0 regressions). Grounded recall vs RA is 45.2% on serde"
+                " (n=98) and 48.0% on bevy (n=94). Non-empty precision (excluding 0-item"
+                " oracle scenarios) is 78.5% on serde (n=77) and 63.2% on bevy (n=92)."
+                " Sysroot transplanted: true."
             ),
             (
                 "Hover latency on very large workspaces (bevy) is ~1.5x slower"

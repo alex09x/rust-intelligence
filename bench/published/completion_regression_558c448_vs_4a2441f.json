@@ -1,0 +1,152 @@
+{
+  "serde-rs/serde": {
+    "repo": "serde-rs/serde",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "ad5e1980a489d231",
+    "driver_hash": "93f2d416218dfb1a",
+    "std_ridx_mtime": "2026-10-09T18:33:46.899685+00:00",
+    "std_ridx_hash": "0153d083037d5dba",
+    "sysroot_transplanted": true,
+    "invalid_config": false,
+    "total_scenarios": 100,
+    "empty_responses": {
+      "558c448": 21,
+      "4a2441f": 21,
+      "rust_analyzer_1_98_1": 2
+    },
+    "closed_empty_responses": {
+      "count": 0,
+      "scenarios": []
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "558c448": 2571,
+      "4a2441f": 2571,
+      "rust_analyzer_1_98_1": 4675
+    },
+    "ra_zero_oracle_count": 2,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "558c448": 45.2,
+      "558c448_n": 98,
+      "4a2441f": 45.2,
+      "4a2441f_n": 98
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "558c448": 78.5,
+      "558c448_n": 77,
+      "4a2441f": 78.5,
+      "4a2441f_n": 77
+    },
+    "recall_regressions": [],
+    "recall_regressions_gt_5pp": [],
+    "routes": {
+      "owner_count": 72,
+      "fallback_count": 28,
+      "migrated_from_fallback_to_owner": 0,
+      "owner_accuracy": {
+        "base_recall_pct": 57.8,
+        "curr_recall_pct": 57.8,
+        "base_precision_pct": 83.6,
+        "curr_precision_pct": 83.6
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 11.8,
+        "curr_recall_pct": 11.8,
+        "base_precision_pct": 18.8,
+        "curr_precision_pct": 18.8
+      },
+      "owner_curr_warm_p50_us": 258.0,
+      "owner_curr_warm_p95_us": 793.0,
+      "owner_ra_warm_p50_us": 5295.5,
+      "owner_ra_warm_p95_us": 13110.8,
+      "owner_speedup_fair": 20.53,
+      "fallback_curr_warm_p50_us": 1285.0,
+      "fallback_curr_warm_p95_us": 1649.0,
+      "fallback_ra_warm_p50_us": 2091.5,
+      "fallback_ra_warm_p95_us": 10590.1,
+      "fallback_speedup_fair": 1.63,
+      "overall_curr_warm_p50_us": 332.5,
+      "overall_curr_warm_p95_us": 1615.9,
+      "overall_ra_warm_p50_us": 4417.5,
+      "overall_ra_warm_p95_us": 12573.3,
+      "overall_speedup": 13.29
+    }
+  },
+  "bevyengine/bevy": {
+    "repo": "bevyengine/bevy",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "ad5e1980a489d231",
+    "driver_hash": "93f2d416218dfb1a",
+    "std_ridx_mtime": "2026-10-09T18:33:46.899685+00:00",
+    "std_ridx_hash": "0153d083037d5dba",
+    "sysroot_transplanted": true,
+    "invalid_config": false,
+    "total_scenarios": 100,
+    "empty_responses": {
+      "558c448": 4,
+      "4a2441f": 4,
+      "rust_analyzer_1_98_1": 6
+    },
+    "closed_empty_responses": {
+      "count": 0,
+      "scenarios": []
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "558c448": 4886,
+      "4a2441f": 4886,
+      "rust_analyzer_1_98_1": 6832
+    },
+    "ra_zero_oracle_count": 6,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "558c448": 48.0,
+      "558c448_n": 94,
+      "4a2441f": 48.0,
+      "4a2441f_n": 94
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "558c448": 63.2,
+      "558c448_n": 92,
+      "4a2441f": 63.2,
+      "4a2441f_n": 92
+    },
+    "recall_regressions": [],
+    "recall_regressions_gt_5pp": [],
+    "routes": {
+      "owner_count": 87,
+      "fallback_count": 13,
+      "migrated_from_fallback_to_owner": 0,
+      "owner_accuracy": {
+        "base_recall_pct": 50.8,
+        "curr_recall_pct": 50.8,
+        "base_precision_pct": 66.6,
+        "curr_precision_pct": 66.6
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 20.6,
+        "curr_recall_pct": 20.6,
+        "base_precision_pct": 21.5,
+        "curr_precision_pct": 21.5
+      },
+      "owner_curr_warm_p50_us": 373.0,
+      "owner_curr_warm_p95_us": 1196.8,
+      "owner_ra_warm_p50_us": 4815.0,
+      "owner_ra_warm_p95_us": 17171.6,
+      "owner_speedup_fair": 12.91,
+      "fallback_curr_warm_p50_us": 971.0,
+      "fallback_curr_warm_p95_us": 12539.2,
+      "fallback_ra_warm_p50_us": 2605.0,
+      "fallback_ra_warm_p95_us": 13365.6,
+      "fallback_speedup_fair": 2.68,
+      "overall_curr_warm_p50_us": 398.0,
+      "overall_curr_warm_p95_us": 10761.7,
+      "overall_ra_warm_p50_us": 4364.0,
+      "overall_ra_warm_p95_us": 17401.8,
+      "overall_speedup": 10.96
+    }
+  }
+}

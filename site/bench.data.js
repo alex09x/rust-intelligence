@@ -17,7 +17,7 @@ window.RIDX_BENCH = {
   },
   "limitations": [
     "Standard library (std/core/alloc) definition shards are not indexed yet; expected effect when indexed is +4.71 pp overall (+4.87 pp read-only).",
-    "Completion on large workspaces (bevy, 69 workspace members, ~1,248 dependency shards): fallback completion p95 is 20.39 ms vs 6.43 ms for rust-analyzer (3.17x slower; p50: 1.59 ms vs 1.82 ms, 1.14x faster); overall completion across all 100 positions is 10.33x faster at p50 (420 \u00b5s vs 4.34 ms) but 1.19x slower at p95 (20.30 ms vs 17.08 ms). On owner-routed queries (48%), RIDX is 17.97x faster at p50 (407 \u00b5s vs 7.31 ms) and 18.35x faster at p95 (1.06 ms vs 19.49 ms). Empty responses dropped from 95 to 50 across 200 queries (0 regressions). Non-empty precision (excluding 0-item oracle scenarios) is 77.7% on serde (n=65, base: 80.6%, n=37) and 56.2% on bevy (n=80, base: 60.9%, n=64).",
+    "Completion on large workspaces (bevy, 69 workspace members, ~1,248 dependency shards): on owner-routed queries (87%, n=87), RIDX is 12.91x faster at p50 (373 \u00b5s vs 4.82 ms) and 14.35x faster at p95 (1.20 ms vs 17.17 ms). Following Step B-1 scan budgeting and zero-allocation path matching, fallback completion p50 dropped to 971 \u00b5s vs 2.61 ms for rust-analyzer (2.68x faster) and p95 to 12.54 ms vs 13.37 ms (1.07x faster). Overall completion across all 100 positions is 10.96x faster at p50 (398 \u00b5s vs 4.36 ms) and 1.62x faster at p95 (10.76 ms vs 17.40 ms). Empty responses dropped from 95 to 25 across 200 queries (0 regressions). Grounded recall vs RA is 45.2% on serde (n=98) and 48.0% on bevy (n=94). Non-empty precision (excluding 0-item oracle scenarios) is 78.5% on serde (n=77) and 63.2% on bevy (n=92). Sysroot transplanted: true.",
     "Hover latency on very large workspaces (bevy) is ~1.5x slower than rust-analyzer (354 \u00b5s vs 231 \u00b5s at warm p50, re-measured post-844eac0 down from 18.4x / 3.96 ms prior to binary search optimization); on small to medium workspaces (tokio, serde, ripgrep) it is faster than or on par with rust-analyzer."
   ],
   "completion": {
@@ -25,182 +25,150 @@ window.RIDX_BENCH = {
       "repo": "serde-rs/serde",
       "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
       "sysroot_cas_key": "ad5e1980a489d231",
+      "driver_hash": "93f2d416218dfb1a",
+      "std_ridx_mtime": "2026-10-09T18:33:46.899685+00:00",
+      "std_ridx_hash": "0153d083037d5dba",
+      "sysroot_transplanted": true,
+      "invalid_config": false,
       "total_scenarios": 100,
       "empty_responses": {
-        "b05240a": 62,
-        "c308792": 34,
+        "558c448": 21,
+        "4a2441f": 21,
         "rust_analyzer_1_98_1": 2
       },
       "closed_empty_responses": {
-        "count": 28,
-        "scenarios": [
-          "comp_dot_36_write_str",
-          "comp_dot_30_invalid_type",
-          "comp_colon_27_from_utf8",
-          "comp_dot_41_map",
-          "comp_dot_45_len",
-          "comp_dot_13_bad_type",
-          "comp_dot_21_deserialize_bytes",
-          "comp_dot_4_bad_type",
-          "comp_dot_26_write_str",
-          "comp_colon_14_error",
-          "comp_dot_18_bad_type",
-          "comp_dot_35_deserialize_seq",
-          "comp_dot_15_visit_u64",
-          "comp_dot_10_map",
-          "comp_dot_9_map",
-          "comp_dot_12_bad_type",
-          "comp_dot_38_deserialize_integer",
-          "comp_dot_29_write_str",
-          "comp_dot_37_write_str",
-          "comp_dot_34_map",
-          "comp_dot_1_map",
-          "comp_colon_20_Fuse",
-          "comp_dot_32_write_str",
-          "comp_colon_17_SocketAddr",
-          "comp_colon_9_new",
-          "comp_dot_14_octets",
-          "comp_dot_17_debug_struct",
-          "comp_dot_46_deserialize_float"
-        ]
+        "count": 0,
+        "scenarios": []
       },
       "regressions_to_empty": 0,
       "total_candidates": {
-        "b05240a": 1158,
-        "c308792": 2293,
+        "558c448": 2571,
+        "4a2441f": 2571,
         "rust_analyzer_1_98_1": 4675
       },
       "ra_zero_oracle_count": 2,
       "avg_recall_vs_ra": {
         "description": "Calculated strictly over scenarios where ra_count > 0",
-        "b05240a": 16.5,
-        "b05240a_n": 98,
-        "c308792": 31.1,
-        "c308792_n": 98
+        "558c448": 45.2,
+        "558c448_n": 98,
+        "4a2441f": 45.2,
+        "4a2441f_n": 98
       },
       "avg_precision_vs_ra": {
         "description": "Calculated strictly over non-empty responses where ra_count > 0",
-        "b05240a": 80.6,
-        "b05240a_n": 37,
-        "c308792": 77.7,
-        "c308792_n": 65
+        "558c448": 78.5,
+        "558c448_n": 77,
+        "4a2441f": 78.5,
+        "4a2441f_n": 77
       },
-      "recall_regressions_gt_5pp": [
-        {
-          "name": "comp_colon_37_SocketAddr",
-          "base_recall_pct": 15.4,
-          "curr_recall_pct": 7.7,
-          "diff_pp": 7.7,
-          "base_count": 24,
-          "curr_count": 1,
-          "ra_count": 13,
-          "root_cause": "Re-export omission: std::net re-exports core::net::SocketAddr, but std.ridx excluded core re-exports (1 item vs 13)."
-        },
-        {
-          "name": "comp_colon_41_RangeVisitor",
-          "base_recall_pct": 100.0,
-          "curr_recall_pct": 0.0,
-          "diff_pp": 100.0,
-          "base_count": 33,
-          "curr_count": 5,
-          "ra_count": 2,
-          "root_cause": "Shadowing: sysroot core::ops::range resolved before local mod range at serde_core/src/de/impls.rs:2463 (5 sysroot items vs 2 local)."
-        }
-      ],
+      "recall_regressions": [],
+      "recall_regressions_gt_5pp": [],
       "routes": {
-        "owner_count": 48,
-        "fallback_count": 52,
-        "migrated_from_fallback_to_owner": 23,
-        "owner_curr_warm_p50_us": 213.5,
-        "owner_curr_warm_p95_us": 714.1,
-        "owner_ra_warm_p50_us": 6142.5,
-        "owner_ra_warm_p95_us": 12710.8,
-        "owner_speedup_fair": 28.77,
-        "fallback_curr_warm_p50_us": 1486.0,
-        "fallback_curr_warm_p95_us": 2050.0,
-        "fallback_ra_warm_p50_us": 1796.0,
-        "fallback_ra_warm_p95_us": 7471.6,
-        "fallback_speedup_fair": 1.21,
-        "overall_curr_warm_p50_us": 662.5,
-        "overall_curr_warm_p95_us": 2006.2,
-        "overall_ra_warm_p50_us": 4398.5,
-        "overall_ra_warm_p95_us": 12154.2,
-        "overall_speedup": 6.64
+        "owner_count": 72,
+        "fallback_count": 28,
+        "migrated_from_fallback_to_owner": 0,
+        "owner_accuracy": {
+          "base_recall_pct": 57.8,
+          "curr_recall_pct": 57.8,
+          "base_precision_pct": 83.6,
+          "curr_precision_pct": 83.6
+        },
+        "fallback_accuracy": {
+          "base_recall_pct": 11.8,
+          "curr_recall_pct": 11.8,
+          "base_precision_pct": 18.8,
+          "curr_precision_pct": 18.8
+        },
+        "owner_curr_warm_p50_us": 258.0,
+        "owner_curr_warm_p95_us": 793.0,
+        "owner_ra_warm_p50_us": 5295.5,
+        "owner_ra_warm_p95_us": 13110.8,
+        "owner_speedup_fair": 20.53,
+        "fallback_curr_warm_p50_us": 1285.0,
+        "fallback_curr_warm_p95_us": 1649.0,
+        "fallback_ra_warm_p50_us": 2091.5,
+        "fallback_ra_warm_p95_us": 10590.1,
+        "fallback_speedup_fair": 1.63,
+        "overall_curr_warm_p50_us": 332.5,
+        "overall_curr_warm_p95_us": 1615.9,
+        "overall_ra_warm_p50_us": 4417.5,
+        "overall_ra_warm_p95_us": 12573.3,
+        "overall_speedup": 13.29
       }
     },
     "bevyengine/bevy": {
       "repo": "bevyengine/bevy",
       "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
       "sysroot_cas_key": "ad5e1980a489d231",
+      "driver_hash": "93f2d416218dfb1a",
+      "std_ridx_mtime": "2026-10-09T18:33:46.899685+00:00",
+      "std_ridx_hash": "0153d083037d5dba",
+      "sysroot_transplanted": true,
+      "invalid_config": false,
       "total_scenarios": 100,
       "empty_responses": {
-        "b05240a": 33,
-        "c308792": 16,
+        "558c448": 4,
+        "4a2441f": 4,
         "rust_analyzer_1_98_1": 6
       },
       "closed_empty_responses": {
-        "count": 17,
-        "scenarios": [
-          "comp_dot_30_is_some",
-          "comp_dot_22_or_else",
-          "comp_dot_45_step_by",
-          "comp_dot_27_is_err",
-          "comp_colon_27_into_raw",
-          "comp_dot_26_as_ref",
-          "comp_dot_2_load",
-          "comp_colon_36_leak",
-          "comp_dot_35_init",
-          "comp_dot_15_is_ok",
-          "comp_colon_28_Backtrace",
-          "comp_dot_16_map",
-          "comp_dot_37_contains_key",
-          "comp_colon_9_into",
-          "comp_dot_6_len",
-          "comp_colon_13_Result",
-          "comp_dot_28_load"
-        ]
+        "count": 0,
+        "scenarios": []
       },
       "regressions_to_empty": 0,
       "total_candidates": {
-        "b05240a": 3739,
-        "c308792": 4657,
+        "558c448": 4886,
+        "4a2441f": 4886,
         "rust_analyzer_1_98_1": 6832
       },
       "ra_zero_oracle_count": 6,
       "avg_recall_vs_ra": {
         "description": "Calculated strictly over scenarios where ra_count > 0",
-        "b05240a": 22.1,
-        "b05240a_n": 94,
-        "c308792": 32.2,
-        "c308792_n": 94
+        "558c448": 48.0,
+        "558c448_n": 94,
+        "4a2441f": 48.0,
+        "4a2441f_n": 94
       },
       "avg_precision_vs_ra": {
         "description": "Calculated strictly over non-empty responses where ra_count > 0",
-        "b05240a": 60.9,
-        "b05240a_n": 64,
-        "c308792": 56.2,
-        "c308792_n": 80
+        "558c448": 63.2,
+        "558c448_n": 92,
+        "4a2441f": 63.2,
+        "4a2441f_n": 92
       },
+      "recall_regressions": [],
       "recall_regressions_gt_5pp": [],
       "routes": {
-        "owner_count": 48,
-        "fallback_count": 52,
-        "migrated_from_fallback_to_owner": 16,
-        "owner_curr_warm_p50_us": 407.0,
-        "owner_curr_warm_p95_us": 1062.2,
-        "owner_ra_warm_p50_us": 7314.5,
-        "owner_ra_warm_p95_us": 19488.3,
-        "owner_speedup_fair": 17.97,
-        "fallback_curr_warm_p50_us": 1591.0,
-        "fallback_curr_warm_p95_us": 20385.3,
-        "fallback_ra_warm_p50_us": 1819.0,
-        "fallback_ra_warm_p95_us": 6434.5,
-        "fallback_speedup_fair": 1.14,
-        "overall_curr_warm_p50_us": 420.0,
-        "overall_curr_warm_p95_us": 20298.1,
-        "overall_ra_warm_p50_us": 4339.5,
-        "overall_ra_warm_p95_us": 17084.3,
-        "overall_speedup": 10.33
+        "owner_count": 87,
+        "fallback_count": 13,
+        "migrated_from_fallback_to_owner": 0,
+        "owner_accuracy": {
+          "base_recall_pct": 50.8,
+          "curr_recall_pct": 50.8,
+          "base_precision_pct": 66.6,
+          "curr_precision_pct": 66.6
+        },
+        "fallback_accuracy": {
+          "base_recall_pct": 20.6,
+          "curr_recall_pct": 20.6,
+          "base_precision_pct": 21.5,
+          "curr_precision_pct": 21.5
+        },
+        "owner_curr_warm_p50_us": 373.0,
+        "owner_curr_warm_p95_us": 1196.8,
+        "owner_ra_warm_p50_us": 4815.0,
+        "owner_ra_warm_p95_us": 17171.6,
+        "owner_speedup_fair": 12.91,
+        "fallback_curr_warm_p50_us": 971.0,
+        "fallback_curr_warm_p95_us": 12539.2,
+        "fallback_ra_warm_p50_us": 2605.0,
+        "fallback_ra_warm_p95_us": 13365.6,
+        "fallback_speedup_fair": 2.68,
+        "overall_curr_warm_p50_us": 398.0,
+        "overall_curr_warm_p95_us": 10761.7,
+        "overall_ra_warm_p50_us": 4364.0,
+        "overall_ra_warm_p95_us": 17401.8,
+        "overall_speedup": 10.96
       }
     }
   },
@@ -252,46 +220,46 @@ window.RIDX_BENCH = {
           "221 \u00b5s"
         ],
         [
-          "Completion: owner-path (warm p50 \u00b7 n=48)",
-          0.00021349999999999999,
-          "214 \u00b5s",
-          0.0061424999999999995,
-          "6.14 ms"
+          "Completion: owner-path (warm p50 \u00b7 n=72)",
+          0.000258,
+          "258 \u00b5s",
+          0.0052955,
+          "5.30 ms"
         ],
         [
-          "Completion: owner-path (tail p95 \u00b7 n=48)",
-          0.0007141,
-          "714 \u00b5s",
-          0.0127108,
-          "12.71 ms"
+          "Completion: owner-path (tail p95 \u00b7 n=72)",
+          0.000793,
+          "793 \u00b5s",
+          0.013110799999999999,
+          "13.11 ms"
         ],
         [
-          "Completion: fallback (warm p50 \u00b7 n=52)",
-          0.001486,
-          "1.49 ms",
-          0.0017959999999999999,
-          "1.80 ms"
+          "Completion: fallback (warm p50 \u00b7 n=28)",
+          0.001285,
+          "1.28 ms",
+          0.0020915,
+          "2.09 ms"
         ],
         [
-          "Completion: fallback (tail p95 \u00b7 n=52)",
-          0.0020499999999999997,
-          "2.05 ms",
-          0.0074716,
-          "7.47 ms"
+          "Completion: fallback (tail p95 \u00b7 n=28)",
+          0.0016489999999999999,
+          "1.65 ms",
+          0.0105901,
+          "10.59 ms"
         ],
         [
           "Completion: overall (warm p50 \u00b7 n=100)",
-          0.0006625,
-          "662 \u00b5s",
-          0.0043985,
-          "4.40 ms"
+          0.0003325,
+          "332 \u00b5s",
+          0.0044174999999999996,
+          "4.42 ms"
         ],
         [
           "Completion: overall (tail p95 \u00b7 n=100)",
-          0.0020062,
-          "2.01 ms",
-          0.0121542,
-          "12.15 ms"
+          0.0016159,
+          "1.62 ms",
+          0.012573299999999999,
+          "12.57 ms"
         ]
       ],
       "accuracy": {
@@ -508,46 +476,46 @@ window.RIDX_BENCH = {
           "575 \u00b5s"
         ],
         [
-          "Completion: owner-path (warm p50 \u00b7 n=48)",
-          0.00040699999999999997,
-          "407 \u00b5s",
-          0.0073145,
-          "7.31 ms"
+          "Completion: owner-path (warm p50 \u00b7 n=87)",
+          0.00037299999999999996,
+          "373 \u00b5s",
+          0.004815,
+          "4.82 ms"
         ],
         [
-          "Completion: owner-path (tail p95 \u00b7 n=48)",
-          0.0010622,
-          "1.06 ms",
-          0.0194883,
-          "19.49 ms"
+          "Completion: owner-path (tail p95 \u00b7 n=87)",
+          0.0011967999999999998,
+          "1.20 ms",
+          0.0171716,
+          "17.17 ms"
         ],
         [
-          "Completion: fallback (warm p50 \u00b7 n=52)",
-          0.001591,
-          "1.59 ms",
-          0.0018189999999999999,
-          "1.82 ms"
+          "Completion: fallback (warm p50 \u00b7 n=13)",
+          0.000971,
+          "971 \u00b5s",
+          0.0026049999999999997,
+          "2.60 ms"
         ],
         [
-          "Completion: fallback (tail p95 \u00b7 n=52)",
-          0.0203853,
-          "20.39 ms",
-          0.0064345,
-          "6.43 ms"
+          "Completion: fallback (tail p95 \u00b7 n=13)",
+          0.0125392,
+          "12.54 ms",
+          0.0133656,
+          "13.37 ms"
         ],
         [
           "Completion: overall (warm p50 \u00b7 n=100)",
-          0.00041999999999999996,
-          "420 \u00b5s",
-          0.0043395,
-          "4.34 ms"
+          0.00039799999999999997,
+          "398 \u00b5s",
+          0.004364,
+          "4.36 ms"
         ],
         [
           "Completion: overall (tail p95 \u00b7 n=100)",
-          0.020298099999999996,
-          "20.30 ms",
-          0.0170843,
-          "17.08 ms"
+          0.0107617,
+          "10.76 ms",
+          0.0174018,
+          "17.40 ms"
         ]
       ],
       "accuracy": {
