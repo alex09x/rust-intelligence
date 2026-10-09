@@ -130,13 +130,25 @@ pub fn handle_code_lens_resolve(
                     let r_path = r.resolved_path();
                     let r_str = r_path.to_str().unwrap_or(r.file);
                     let r_uri = path_to_uri(r_str);
-                    let sc = conv.char_col_to_utf16_col(r_str, r.span.start_line(), r.span.start_col());
-                    let ec = conv.char_col_to_utf16_col(r_str, r.span.end_line(), r.span.end_col());
+                    let (live_sl, live_sc) = if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
+                        rov.map_compiled_to_live(r.span.start_line(), r.span.start_col())
+                            .unwrap_or((r.span.start_line(), r.span.start_col()))
+                    } else {
+                        (r.span.start_line(), r.span.start_col())
+                    };
+                    let (live_el, live_ec) = if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
+                        rov.map_compiled_to_live(r.span.end_line(), r.span.end_col())
+                            .unwrap_or((r.span.end_line(), r.span.end_col()))
+                    } else {
+                        (r.span.end_line(), r.span.end_col())
+                    };
+                    let sc = conv.char_col_to_utf16_col(r_str, live_sl, live_sc);
+                    let ec = conv.char_col_to_utf16_col(r_str, live_el, live_ec);
                     locations.push(json!({
                         "uri": r_uri,
                         "range": {
-                            "start": { "line": r.span.start_line().saturating_sub(1), "character": sc },
-                            "end": { "line": r.span.end_line().saturating_sub(1), "character": ec }
+                            "start": { "line": live_sl.saturating_sub(1), "character": sc },
+                            "end": { "line": live_el.saturating_sub(1), "character": ec }
                         }
                     }));
                 }
@@ -152,7 +164,7 @@ pub fn handle_code_lens_resolve(
     };
 
     let sl = line_1based.saturating_sub(1);
-    let sc = col_1based.saturating_sub(1);
+    let sc = conv.char_col_to_utf16_col(&file, line_1based, col_1based);
     lens["command"] = json!({
         "title": title,
         "command": "ridx.showReferences",
