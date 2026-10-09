@@ -74,31 +74,43 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 "Buffer base pointer must be 8-byte aligned for zero-copy RIDX reading",
             ));
         }
-        if bytes.len() < std::mem::size_of::<Header>() {
+        if bytes.len() < std::mem::size_of::<HeaderV2>() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "File too small for RIDX header",
             ));
         }
 
-        // Safely decode header into aligned memory without unaligned pointer casting
-        let mut header_buf = [0u8; std::mem::size_of::<Header>()];
-        header_buf.copy_from_slice(&bytes[..std::mem::size_of::<Header>()]);
-        let raw_header: Header = unsafe { std::mem::transmute(header_buf) };
-        let header = raw_header.from_le();
+        let magic: [u8; 4] = bytes[0..4].try_into().unwrap();
+        if magic != MAGIC {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid RIDX magic: {:?}", magic),
+            ));
+        }
 
-        if header.magic != MAGIC {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("Invalid RIDX magic: {:?}", header.magic),
-            ));
-        }
-        if header.version != CURRENT_VERSION {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("Unsupported RIDX version: {}", header.version),
-            ));
-        }
+        let version = u32::from_le_bytes(bytes[4..8].try_into().unwrap());
+        let header = match version {
+            2 => Header::from_le_v2(&bytes[..std::mem::size_of::<HeaderV2>()]),
+            CURRENT_VERSION => {
+                if bytes.len() < std::mem::size_of::<Header>() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "File too small for RIDX header",
+                    ));
+                }
+                let mut header_buf = [0u8; std::mem::size_of::<Header>()];
+                header_buf.copy_from_slice(&bytes[..std::mem::size_of::<Header>()]);
+                let raw_header: Header = unsafe { std::mem::transmute(header_buf) };
+                raw_header.from_le()
+            }
+            _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Unsupported RIDX version: {}", version),
+                ));
+            }
+        };
 
         validate_sections(bytes.len(), &header)?;
 
@@ -313,6 +325,44 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const TypeEntry, count) }
     }
 
+    /// Slice of all definitions-by-owner entries in the index (sorted by owner hash).
+    #[inline]
+    pub fn defs_by_owner(&self) -> &[OwnerIndexEntry] {
+        let header = self.header();
+        let count = header.defs_by_owner_count as usize;
+        if count == 0 {
+            return &[];
+        }
+        let start = header.defs_by_owner_offset as usize;
+        let len = count * std::mem::size_of::<OwnerIndexEntry>();
+        let bytes = self.bytes();
+        if start + len > bytes.len() {
+            return &[];
+        }
+        unsafe {
+            std::slice::from_raw_parts(bytes[start..].as_ptr() as *const OwnerIndexEntry, count)
+        }
+    }
+
+    /// Slice of all deref entries in the index (sorted by source_type_hash).
+    #[inline]
+    pub fn deref_entries(&self) -> &[DerefEntry] {
+        let header = self.header();
+        let count = header.derefs_count as usize;
+        if count == 0 {
+            return &[];
+        }
+        let start = header.derefs_offset as usize;
+        let len = count * std::mem::size_of::<DerefEntry>();
+        let bytes = self.bytes();
+        if start + len > bytes.len() {
+            return &[];
+        }
+        unsafe {
+            std::slice::from_raw_parts(bytes[start..].as_ptr() as *const DerefEntry, count)
+        }
+    }
+
     /// Find a definition by its canonical path (e.g. `stdx::panic_context::enter`).
     pub fn find_definition_by_path(&self, path: &str) -> Option<&DefEntry> {
         let hash = fnv1a_64(path.as_bytes());
@@ -478,9 +528,13 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         results
     }
 
-    /// Retrieves the inferred expression type at a cursor position `(file, line, col)`.
-    /// When nested expressions overlap, selects the tightest (innermost) span.
-    pub fn type_at(&self, file: &str, line: u32, col: u32) -> Option<&str> {
+    /// Finds the innermost TypeEntry at a cursor position `(file, line, col)`.
+    pub fn find_innermost_type_entry(
+        &self,
+        file: &str,
+        line: u32,
+        col: u32,
+    ) -> Option<&TypeEntry> {
         let file_id = self.find_file_id(file)?;
         let types = self.types();
         let key = (file_id, line, col);
@@ -515,7 +569,116 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             }
         }
 
-        best.map(|(e, _)| self.get_str(e.type_offset()))
+        best.map(|(e, _)| e)
+    }
+
+    /// Retrieves the inferred expression type at a cursor position `(file, line, col)`.
+    /// When nested expressions overlap, selects the tightest (innermost) span.
+    pub fn type_at(&self, file: &str, line: u32, col: u32) -> Option<&str> {
+        self.find_innermost_type_entry(file, line, col)
+            .map(|e| self.get_str(e.type_offset()))
+    }
+
+    /// Retrieves the inferred expression type and optional canonical owner path at `(file, line, col)`.
+    /// Returns `(type_name, canonical_owner_path)`.
+    pub fn type_entry_at(&self, file: &str, line: u32, col: u32) -> Option<(&str, Option<&str>)> {
+        let entry = self.find_innermost_type_entry(file, line, col)?;
+        let ty_name = self.get_str(entry.type_offset());
+        let owner_offset = entry.owner_path_offset();
+        let owner = if owner_offset != 0 {
+            let s = self.get_str(owner_offset);
+            if s.is_empty() {
+                None
+            } else {
+                Some(s)
+            }
+        } else {
+            None
+        };
+        Some((ty_name, owner))
+    }
+
+    /// Find all definitions belonging to an owner (canonical type path or module path).
+    ///
+    /// Performs binary search on the 64-bit FNV-1a hash of `owner`, with full collision
+    /// verification against the interned canonical owner string.
+    pub fn find_definitions_by_owner(&self, owner: &str) -> Vec<&DefEntry> {
+        let owner_entries = self.defs_by_owner();
+        if owner_entries.is_empty() || owner.is_empty() {
+            return Vec::new();
+        }
+        let hash = fnv1a_64(owner.as_bytes());
+        let defs = self.definitions();
+        let mut results = Vec::new();
+
+        if let Ok(idx) = owner_entries.binary_search_by_key(&hash, |e| e.hash()) {
+            let mut start = idx;
+            while start > 0 && owner_entries[start - 1].hash() == hash {
+                start -= 1;
+            }
+            let mut i = start;
+            while i < owner_entries.len() && owner_entries[i].hash() == hash {
+                let entry = &owner_entries[i];
+                if self.get_str(entry.owner_path_offset()) == owner {
+                    let def_idx = entry.def_index() as usize;
+                    if def_idx < defs.len() {
+                        results.push(&defs[def_idx]);
+                    }
+                }
+                i += 1;
+            }
+        }
+
+        results
+    }
+
+    /// Look up the direct Deref target for a canonical type path.
+    pub fn find_deref_target(&self, source: &str) -> Option<&str> {
+        let entries = self.deref_entries();
+        if entries.is_empty() || source.is_empty() {
+            return None;
+        }
+        let hash = fnv1a_64(source.as_bytes());
+        if let Ok(idx) = entries.binary_search_by_key(&hash, |e| e.source_type_hash()) {
+            let mut start = idx;
+            while start > 0 && entries[start - 1].source_type_hash() == hash {
+                start -= 1;
+            }
+            let mut i = start;
+            while i < entries.len() && entries[i].source_type_hash() == hash {
+                let entry = &entries[i];
+                if self.get_str(entry.source_type_offset()) == source {
+                    return Some(self.get_str(entry.target_type_offset()));
+                }
+                i += 1;
+            }
+        }
+        None
+    }
+
+    /// Resolves the autoderef chain starting from `source` up to `max_depth` steps.
+    ///
+    /// Returns the sequence of target type canonical paths (excluding `source`).
+    /// Handles cycles gracefully by tracking visited types.
+    pub fn resolve_deref_chain(&self, source: &str, max_depth: usize) -> Vec<&str> {
+        let mut chain = Vec::new();
+        let mut current = source;
+        let mut visited = std::collections::HashSet::new();
+        visited.insert(source);
+
+        for _ in 0..max_depth {
+            if let Some(target) = self.find_deref_target(current) {
+                if target.is_empty() || !visited.insert(target) {
+                    break;
+                }
+                chain.push(target);
+                current = target;
+            } else {
+                break;
+            }
+        }
+
+        chain
     }
 
     /// Fast symbol search across definitions matching a query string.
@@ -673,6 +836,26 @@ fn validate_sections(buf_len: usize, header: &Header) -> io::Result<()> {
         std::mem::size_of::<TypeEntry>(),
         4,
         "Types table",
+    )?;
+
+    // 8. Definitions by owner table
+    check_section(
+        buf_len,
+        header.defs_by_owner_offset,
+        header.defs_by_owner_count,
+        std::mem::size_of::<OwnerIndexEntry>(),
+        8,
+        "Definitions by owner table",
+    )?;
+
+    // 9. Derefs table
+    check_section(
+        buf_len,
+        header.derefs_offset,
+        header.derefs_count,
+        std::mem::size_of::<DerefEntry>(),
+        8,
+        "Derefs table",
     )?;
 
     Ok(())
@@ -1179,6 +1362,12 @@ mod tests {
             _pad3: 0,
             _pad4: 0,
             _pad5: 0,
+            defs_by_owner_offset: 16,
+            defs_by_owner_count: 0,
+            _pad6: 0,
+            derefs_offset: 16,
+            derefs_count: 0,
+            _pad7: 0,
         };
         assert!(validate_sections(1000, &hdr).is_err());
 
@@ -1712,6 +1901,300 @@ mod tests {
             dur_new,
             dur_old.as_nanos() as f64 / dur_new.as_nanos().max(1) as f64
         );
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_v3_defs_by_owner_and_derefs_roundtrip() {
+        let temp_dir = std::env::temp_dir().join(format!("ridx_v3_roundtrip_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&temp_dir);
+        let idx_path = temp_dir.join("test_v3.ridx");
+
+        let mut writer = crate::writer::IndexWriter::new("test_v3_crate", "0.1.0");
+
+        // Add struct definition
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 1,
+            kind: crate::format::DefKind::Struct,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "MyStruct".to_string(),
+            path: "test_v3_crate::MyStruct".to_string(),
+            file: "src/lib.rs".to_string(),
+            start_line: 10,
+            start_col: 1,
+            end_line: 15,
+            end_col: 2,
+            signature: None,
+        });
+
+        // Add method with canonical owner
+        writer.add_definition_with_owners(
+            crate::writer::RawDefinition {
+                def_id: 2,
+                kind: crate::format::DefKind::AssocFn,
+                visibility: 0,
+                is_macro_expansion: false,
+                name: "do_work".to_string(),
+                path: "test_v3_crate::MyStruct::do_work".to_string(),
+                file: "src/lib.rs".to_string(),
+                start_line: 20,
+                start_col: 5,
+                end_line: 22,
+                end_col: 6,
+                signature: Some("pub fn do_work(&self)".to_string()),
+            },
+            vec!["test_v3_crate::MyStruct".to_string()],
+        );
+
+        // Add field with canonical owner
+        writer.add_definition_with_owners(
+            crate::writer::RawDefinition {
+                def_id: 3,
+                kind: crate::format::DefKind::Field,
+                visibility: 0,
+                is_macro_expansion: false,
+                name: "count".to_string(),
+                path: "test_v3_crate::MyStruct::count".to_string(),
+                file: "src/lib.rs".to_string(),
+                start_line: 11,
+                start_col: 5,
+                end_line: 11,
+                end_col: 15,
+                signature: None,
+            },
+            vec!["test_v3_crate::MyStruct".to_string()],
+        );
+
+        // Add type with canonical owner
+        writer.add_type_with_owner(
+            crate::writer::RawType {
+                file: "src/lib.rs".to_string(),
+                start_line: 30,
+                start_col: 5,
+                end_line: 30,
+                end_col: 15,
+                type_name: "MyStruct".to_string(),
+            },
+            Some("test_v3_crate::MyStruct".to_string()),
+        );
+
+        // Add deref mapping: String -> str
+        writer.add_deref("alloc::string::String", "core::primitive::str");
+
+        let mut f = std::fs::File::create(&idx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+
+        let reader = IndexReader::open(&idx_path).unwrap();
+        assert_eq!(reader.header().version, 3);
+        assert!(reader.header().defs_by_owner_count >= 2);
+        assert_eq!(reader.header().derefs_count, 1);
+
+        // Verify find_definitions_by_owner
+        let defs = reader.find_definitions_by_owner("test_v3_crate::MyStruct");
+        assert_eq!(defs.len(), 2);
+        let names: Vec<&str> = defs.iter().map(|d| reader.get_str(d.name_offset())).collect();
+        assert!(names.contains(&"do_work"));
+        assert!(names.contains(&"count"));
+
+        // Verify deref lookup
+        assert_eq!(
+            reader.find_deref_target("alloc::string::String"),
+            Some("core::primitive::str")
+        );
+        assert_eq!(reader.find_deref_target("core::primitive::str"), None);
+        assert_eq!(
+            reader.resolve_deref_chain("alloc::string::String", 3),
+            vec!["core::primitive::str"]
+        );
+
+        // Verify type_entry_at
+        let (ty, owner) = reader.type_entry_at("src/lib.rs", 30, 8).unwrap();
+        assert_eq!(ty, "MyStruct");
+        assert_eq!(owner, Some("test_v3_crate::MyStruct"));
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_v3_canonical_owner_collision_protection() {
+        let temp_dir = std::env::temp_dir().join(format!("ridx_v3_collision_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&temp_dir);
+        let idx_path = temp_dir.join("test_collision.ridx");
+
+        let mut writer = crate::writer::IndexWriter::new("collision_crate", "0.1.0");
+
+        // Two types with same short name "File" in different modules
+        writer.add_definition_with_owners(
+            crate::writer::RawDefinition {
+                def_id: 1,
+                kind: crate::format::DefKind::AssocFn,
+                visibility: 0,
+                is_macro_expansion: false,
+                name: "read_a".to_string(),
+                path: "collision_crate::module_a::File::read_a".to_string(),
+                file: "src/a.rs".to_string(),
+                start_line: 10,
+                start_col: 5,
+                end_line: 12,
+                end_col: 6,
+                signature: None,
+            },
+            vec!["collision_crate::module_a::File".to_string()],
+        );
+
+        writer.add_definition_with_owners(
+            crate::writer::RawDefinition {
+                def_id: 2,
+                kind: crate::format::DefKind::AssocFn,
+                visibility: 0,
+                is_macro_expansion: false,
+                name: "read_b".to_string(),
+                path: "collision_crate::module_b::File::read_b".to_string(),
+                file: "src/b.rs".to_string(),
+                start_line: 10,
+                start_col: 5,
+                end_line: 12,
+                end_col: 6,
+                signature: None,
+            },
+            vec!["collision_crate::module_b::File".to_string()],
+        );
+
+        let mut f = std::fs::File::create(&idx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+
+        let reader = IndexReader::open(&idx_path).unwrap();
+
+        let a_defs = reader.find_definitions_by_owner("collision_crate::module_a::File");
+        assert_eq!(a_defs.len(), 1);
+        assert_eq!(reader.get_str(a_defs[0].name_offset()), "read_a");
+
+        let b_defs = reader.find_definitions_by_owner("collision_crate::module_b::File");
+        assert_eq!(b_defs.len(), 1);
+        assert_eq!(reader.get_str(b_defs[0].name_offset()), "read_b");
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_v3_autoderef_chain_and_cycles() {
+        let temp_dir = std::env::temp_dir().join(format!("ridx_v3_deref_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&temp_dir);
+        let idx_path = temp_dir.join("test_deref.ridx");
+
+        let mut writer = crate::writer::IndexWriter::new("deref_crate", "0.1.0");
+
+        // Chain: TypeA -> TypeB -> TypeC
+        writer.add_deref("pkg::TypeA", "pkg::TypeB");
+        writer.add_deref("pkg::TypeB", "pkg::TypeC");
+
+        // Cycle: CycleX -> CycleY -> CycleX
+        writer.add_deref("pkg::CycleX", "pkg::CycleY");
+        writer.add_deref("pkg::CycleY", "pkg::CycleX");
+
+        let mut f = std::fs::File::create(&idx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+
+        let reader = IndexReader::open(&idx_path).unwrap();
+
+        let chain = reader.resolve_deref_chain("pkg::TypeA", 5);
+        assert_eq!(chain, vec!["pkg::TypeB", "pkg::TypeC"]);
+
+        let chain_limited = reader.resolve_deref_chain("pkg::TypeA", 1);
+        assert_eq!(chain_limited, vec!["pkg::TypeB"]);
+
+        // Cycle does not loop infinitely
+        let cycle_chain = reader.resolve_deref_chain("pkg::CycleX", 10);
+        assert_eq!(cycle_chain, vec!["pkg::CycleY"]);
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_v2_backwards_compatibility() {
+        // Construct a raw v2 buffer with 128-byte HeaderV2
+        let header_v2 = HeaderV2 {
+            magic: MAGIC,
+            version: 2,
+            crate_name_offset: 0,
+            crate_version_offset: 0,
+            string_pool_offset: 128,
+            string_pool_len: 8,
+            files_offset: 136,
+            files_count: 0,
+            unit_key_offset: 0,
+            defs_offset: 136,
+            defs_count: 0,
+            generation_offset: 0,
+            defs_by_hash_offset: 136,
+            defs_by_hash_count: 0,
+            _pad2: 0,
+            refs_offset: 136,
+            refs_count: 0,
+            _pad3: 0,
+            refs_by_target_offset: 136,
+            refs_by_target_count: 0,
+            _pad4: 0,
+            types_offset: 136,
+            types_count: 0,
+            _pad5: 0,
+        };
+
+        let mut buf = Vec::new();
+        let header_bytes: [u8; 128] = unsafe { std::mem::transmute(header_v2.to_le()) };
+        buf.extend_from_slice(&header_bytes);
+        buf.extend_from_slice(b"\0crate\0\0"); // 8 bytes string pool at offset 128
+
+        // Pad to 8-byte alignment
+        while buf.len() % 8 != 0 {
+            buf.push(0);
+        }
+
+        let reader = IndexReader::from_buffer(buf).unwrap();
+        assert_eq!(reader.header().version, 2);
+        assert_eq!(reader.header().defs_by_owner_count, 0);
+        assert_eq!(reader.header().derefs_count, 0);
+        assert!(reader.defs_by_owner().is_empty());
+        assert!(reader.deref_entries().is_empty());
+        assert_eq!(reader.find_definitions_by_owner("anything"), Vec::<&DefEntry>::new());
+        assert_eq!(reader.find_deref_target("anything"), None);
+    }
+
+    #[test]
+    fn test_v3_owner_matching_first_interned_string() {
+        let temp_dir = std::env::temp_dir().join(format!("ridx_first_string_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&temp_dir);
+        let idx_path = temp_dir.join("test_first.ridx");
+
+        let mut writer = crate::writer::IndexWriter::new("first_crate", "0.1.0");
+        // "first_crate" is the first non-empty string interned in the pool.
+        // Add a type whose owner is "first_crate".
+        writer.add_type_with_owner(
+            crate::writer::RawType {
+                file: "src/lib.rs".to_string(),
+                start_line: 1,
+                start_col: 1,
+                end_line: 1,
+                end_col: 10,
+                type_name: "RootItem".to_string(),
+            },
+            Some("first_crate".to_string()),
+        );
+
+        let mut f = std::fs::File::create(&idx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+
+        let reader = IndexReader::open(&idx_path).unwrap();
+        let (ty, owner) = reader.type_entry_at("src/lib.rs", 1, 5).unwrap();
+        assert_eq!(ty, "RootItem");
+        // Must NOT be None (even though first_crate is the first string in pool, offset 0 is reserved for empty string)
+        assert_eq!(owner, Some("first_crate"));
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }

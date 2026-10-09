@@ -424,14 +424,18 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                     resolve_span_coords(self.tcx, expr.span, self.package_root.as_deref())
                 {
                     if let Some(ty) = typeck.expr_ty_opt(expr) {
-                        self.writer.add_type(RawType {
-                            file,
-                            start_line: s_line,
-                            start_col: s_col,
-                            end_line: e_line,
-                            end_col: e_col,
-                            type_name: sanitize_type_name(&ty.to_string()),
-                        });
+                        let owner_path = resolve_owner_from_ty(self.tcx, ty);
+                        self.writer.add_type_with_owner(
+                            RawType {
+                                file,
+                                start_line: s_line,
+                                start_col: s_col,
+                                end_line: e_line,
+                                end_col: e_col,
+                                type_name: sanitize_type_name(&ty.to_string()),
+                            },
+                            owner_path,
+                        );
                     }
                 }
             }
@@ -447,14 +451,18 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                         resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref())
                     {
                         let ty = typeck.pat_ty(pat);
-                        self.writer.add_type(RawType {
-                            file,
-                            start_line: s_line,
-                            start_col: s_col,
-                            end_line: e_line,
-                            end_col: e_col,
-                            type_name: sanitize_type_name(&ty.to_string()),
-                        });
+                        let owner_path = resolve_owner_from_ty(self.tcx, ty);
+                        self.writer.add_type_with_owner(
+                            RawType {
+                                file,
+                                start_line: s_line,
+                                start_col: s_col,
+                                end_line: e_line,
+                                end_col: e_col,
+                                type_name: sanitize_type_name(&ty.to_string()),
+                            },
+                            owner_path,
+                        );
                     }
                 }
             }
@@ -617,6 +625,46 @@ fn compute_dependency_unit_key(
     format!("{:016x}", ridx_format::fnv1a_64(key_str.as_bytes()))
 }
 
+fn resolve_owner_from_ty<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ty: rustc_middle::ty::Ty<'tcx>,
+) -> Option<String> {
+    let peeled = ty.peel_refs();
+    if let Some(adt_def) = peeled.ty_adt_def() {
+        let did = adt_def.did();
+        let path = rustc_middle::ty::print::with_no_visible_paths!(
+            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
+        );
+        return Some(path);
+    }
+    match peeled.kind() {
+        rustc_middle::ty::TyKind::Dynamic(predicates, ..) => {
+            if let Some(principal) = predicates.principal() {
+                let did = principal.def_id();
+                let path = rustc_middle::ty::print::with_no_visible_paths!(
+                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
+                );
+                return Some(path);
+            }
+        }
+        rustc_middle::ty::TyKind::Str => {
+            return Some("str".to_string());
+        }
+        rustc_middle::ty::TyKind::Slice(_) => {
+            return Some("slice".to_string());
+        }
+        rustc_middle::ty::TyKind::Bool
+        | rustc_middle::ty::TyKind::Char
+        | rustc_middle::ty::TyKind::Int(_)
+        | rustc_middle::ty::TyKind::Uint(_)
+        | rustc_middle::ty::TyKind::Float(_) => {
+            return Some(peeled.to_string());
+        }
+        _ => {}
+    }
+    None
+}
+
 fn extract_crate_items<'tcx>(
     tcx: TyCtxt<'tcx>,
     visitor: &mut HirVisitor<'tcx>,
@@ -660,20 +708,86 @@ fn extract_crate_items<'tcx>(
             _ => None,
         };
 
-        visitor.writer.add_definition(RawDefinition {
-            def_id: def_id.local_def_index.as_u32(),
-            kind: map_def_kind(kind),
-            visibility: 0,
-            is_macro_expansion: is_macro,
-            name,
-            path,
-            signature,
-            file,
-            start_line: s_line,
-            start_col: s_col,
-            end_line: e_line,
-            end_col: e_col,
-        });
+        let mut owners = Vec::new();
+        let did = def_id.to_def_id();
+
+        match kind {
+            hir::def::DefKind::AssocFn
+            | hir::def::DefKind::AssocConst { .. }
+            | hir::def::DefKind::AssocTy => {
+                let parent_did = tcx.parent(did);
+                let parent_kind = tcx.def_kind(parent_did);
+                if matches!(parent_kind, hir::def::DefKind::Impl { .. }) {
+                    let self_ty = tcx.type_of(parent_did).skip_binder();
+                    if let Some(owner) = resolve_owner_from_ty(tcx, self_ty) {
+                        owners.push(owner);
+                    }
+                    if matches!(parent_kind, hir::def::DefKind::Impl { of_trait: true }) {
+                        let trait_ref = tcx.impl_trait_ref(parent_did);
+                        let trait_did = trait_ref.skip_binder().def_id;
+                        let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
+                            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(trait_did))
+                        );
+                        owners.push(trait_path);
+                    }
+                } else if parent_kind == hir::def::DefKind::Trait {
+                    let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
+                        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(parent_did))
+                    );
+                    owners.push(trait_path);
+                }
+            }
+            hir::def::DefKind::Field => {
+                let mut parent_did = tcx.parent(did);
+                if tcx.def_kind(parent_did) == hir::def::DefKind::Variant {
+                    parent_did = tcx.parent(parent_did);
+                }
+                let struct_path = rustc_middle::ty::print::with_no_visible_paths!(
+                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(parent_did))
+                );
+                owners.push(struct_path);
+            }
+            _ => {}
+        }
+
+        // Detect Deref implementations: impl Deref for T { type Target = U; }
+        if matches!(kind, hir::def::DefKind::Impl { of_trait: true }) {
+            let trait_ref = tcx.impl_trait_ref(did);
+            let trait_did = trait_ref.skip_binder().def_id;
+            if tcx.lang_items().deref_trait() == Some(trait_did) {
+                let self_ty = tcx.type_of(did).skip_binder();
+                let src_owner = resolve_owner_from_ty(tcx, self_ty);
+                for &assoc_did in tcx.associated_item_def_ids(did) {
+                    if tcx.def_kind(assoc_did) == hir::def::DefKind::AssocTy
+                        && tcx.item_name(assoc_did).as_str() == "Target"
+                    {
+                        let target_ty = tcx.type_of(assoc_did).skip_binder();
+                        let tgt_owner = resolve_owner_from_ty(tcx, target_ty);
+                        if let (Some(src), Some(tgt)) = (src_owner.clone(), tgt_owner) {
+                            visitor.writer.add_deref(src, tgt);
+                        }
+                    }
+                }
+            }
+        }
+
+        visitor.writer.add_definition_with_owners(
+            RawDefinition {
+                def_id: def_id.local_def_index.as_u32(),
+                kind: map_def_kind(kind),
+                visibility: 0,
+                is_macro_expansion: is_macro,
+                name,
+                path,
+                signature,
+                file,
+                start_line: s_line,
+                start_col: s_col,
+                end_line: e_line,
+                end_col: e_col,
+            },
+            owners,
+        );
     }
 
     // Traverse all item bodies for references and types

@@ -14,8 +14,8 @@
 //! Structures are designed for zero-copy memory-mapped reading with natural alignment.
 
 pub const MAGIC: [u8; 4] = *b"RIDX";
-pub const CURRENT_VERSION: u32 = 2;
-pub const CURRENT_FORMAT_VERSION: u32 = 2;
+pub const CURRENT_VERSION: u32 = 3;
+pub const CURRENT_FORMAT_VERSION: u32 = 3;
 pub const EXTRACTOR_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Returns the 64-bit fingerprint of the active `ridx-driver` binary and runtime environment.
@@ -149,8 +149,10 @@ pub fn normalized_source_hash(bytes: &[u8]) -> u64 {
 
 /// Compile-time layout guarantees to ensure unambiguous on-disk structure sizes.
 const _: () = {
-    assert!(std::mem::size_of::<Header>() == 128);
+    assert!(std::mem::size_of::<Header>() == 160);
     assert!(std::mem::align_of::<Header>() == 8);
+    assert!(std::mem::size_of::<HeaderV2>() == 128);
+    assert!(std::mem::align_of::<HeaderV2>() == 8);
     assert!(std::mem::size_of::<Span>() == 20);
     assert!(std::mem::align_of::<Span>() == 4);
     assert!(std::mem::size_of::<DefEntry>() == 40);
@@ -161,6 +163,10 @@ const _: () = {
     assert!(std::mem::align_of::<TypeEntry>() == 4);
     assert!(std::mem::size_of::<HashIndexEntry>() == 16);
     assert!(std::mem::align_of::<HashIndexEntry>() == 8);
+    assert!(std::mem::size_of::<OwnerIndexEntry>() == 16);
+    assert!(std::mem::align_of::<OwnerIndexEntry>() == 8);
+    assert!(std::mem::size_of::<DerefEntry>() == 16);
+    assert!(std::mem::align_of::<DerefEntry>() == 8);
     assert!(std::mem::size_of::<FileEntry>() == 16);
     assert!(std::mem::align_of::<FileEntry>() == 8);
 };
@@ -255,13 +261,13 @@ impl FileEntry {
     }
 }
 
-/// Fixed-size header at offset 0 of any .ridx file.
+/// Fixed-size header at offset 0 of any .ridx file (format version 3, 160 bytes).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Header {
     /// Magic signature ("RIDX")
     pub magic: [u8; 4],
-    /// Format version (currently 2)
+    /// Format version (currently 3)
     pub version: u32,
     /// Offset in string pool for crate name
     pub crate_name_offset: u32,
@@ -304,9 +310,49 @@ pub struct Header {
     pub types_offset: u64,
     pub types_count: u32,
     pub _pad5: u32,
+
+    /// Offset of the definitions-by-owner table (array of OwnerIndexEntry sorted by hash)
+    pub defs_by_owner_offset: u64,
+    pub defs_by_owner_count: u32,
+    pub _pad6: u32,
+
+    /// Offset of the deref mapping table (array of DerefEntry sorted by source_type_hash)
+    pub derefs_offset: u64,
+    pub derefs_count: u32,
+    pub _pad7: u32,
 }
 
-impl Header {
+/// Fixed-size header for version 2 .ridx files (128 bytes).
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HeaderV2 {
+    pub magic: [u8; 4],
+    pub version: u32,
+    pub crate_name_offset: u32,
+    pub crate_version_offset: u32,
+    pub string_pool_offset: u64,
+    pub string_pool_len: u64,
+    pub files_offset: u64,
+    pub files_count: u32,
+    pub unit_key_offset: u32,
+    pub defs_offset: u64,
+    pub defs_count: u32,
+    pub generation_offset: u32,
+    pub defs_by_hash_offset: u64,
+    pub defs_by_hash_count: u32,
+    pub _pad2: u32,
+    pub refs_offset: u64,
+    pub refs_count: u32,
+    pub _pad3: u32,
+    pub refs_by_target_offset: u64,
+    pub refs_by_target_count: u32,
+    pub _pad4: u32,
+    pub types_offset: u64,
+    pub types_count: u32,
+    pub _pad5: u32,
+}
+
+impl HeaderV2 {
     #[inline]
     pub fn to_le(self) -> Self {
         Self {
@@ -364,6 +410,119 @@ impl Header {
             types_offset: u64::from_le(self.types_offset),
             types_count: u32::from_le(self.types_count),
             _pad5: 0,
+        }
+    }
+}
+
+impl Header {
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            magic: self.magic,
+            version: self.version.to_le(),
+            crate_name_offset: self.crate_name_offset.to_le(),
+            crate_version_offset: self.crate_version_offset.to_le(),
+            string_pool_offset: self.string_pool_offset.to_le(),
+            string_pool_len: self.string_pool_len.to_le(),
+            files_offset: self.files_offset.to_le(),
+            files_count: self.files_count.to_le(),
+            unit_key_offset: self.unit_key_offset.to_le(),
+            defs_offset: self.defs_offset.to_le(),
+            defs_count: self.defs_count.to_le(),
+            generation_offset: self.generation_offset.to_le(),
+            defs_by_hash_offset: self.defs_by_hash_offset.to_le(),
+            defs_by_hash_count: self.defs_by_hash_count.to_le(),
+            _pad2: 0,
+            refs_offset: self.refs_offset.to_le(),
+            refs_count: self.refs_count.to_le(),
+            _pad3: 0,
+            refs_by_target_offset: self.refs_by_target_offset.to_le(),
+            refs_by_target_count: self.refs_by_target_count.to_le(),
+            _pad4: 0,
+            types_offset: self.types_offset.to_le(),
+            types_count: self.types_count.to_le(),
+            _pad5: 0,
+            defs_by_owner_offset: self.defs_by_owner_offset.to_le(),
+            defs_by_owner_count: self.defs_by_owner_count.to_le(),
+            _pad6: 0,
+            derefs_offset: self.derefs_offset.to_le(),
+            derefs_count: self.derefs_count.to_le(),
+            _pad7: 0,
+        }
+    }
+
+    #[inline]
+    pub fn from_le(self) -> Self {
+        Self {
+            magic: self.magic,
+            version: u32::from_le(self.version),
+            crate_name_offset: u32::from_le(self.crate_name_offset),
+            crate_version_offset: u32::from_le(self.crate_version_offset),
+            string_pool_offset: u64::from_le(self.string_pool_offset),
+            string_pool_len: u64::from_le(self.string_pool_len),
+            files_offset: u64::from_le(self.files_offset),
+            files_count: u32::from_le(self.files_count),
+            unit_key_offset: u32::from_le(self.unit_key_offset),
+            defs_offset: u64::from_le(self.defs_offset),
+            defs_count: u32::from_le(self.defs_count),
+            generation_offset: u32::from_le(self.generation_offset),
+            defs_by_hash_offset: u64::from_le(self.defs_by_hash_offset),
+            defs_by_hash_count: u32::from_le(self.defs_by_hash_count),
+            _pad2: 0,
+            refs_offset: u64::from_le(self.refs_offset),
+            refs_count: u32::from_le(self.refs_count),
+            _pad3: 0,
+            refs_by_target_offset: u64::from_le(self.refs_by_target_offset),
+            refs_by_target_count: u32::from_le(self.refs_by_target_count),
+            _pad4: 0,
+            types_offset: u64::from_le(self.types_offset),
+            types_count: u32::from_le(self.types_count),
+            _pad5: 0,
+            defs_by_owner_offset: u64::from_le(self.defs_by_owner_offset),
+            defs_by_owner_count: u32::from_le(self.defs_by_owner_count),
+            _pad6: 0,
+            derefs_offset: u64::from_le(self.derefs_offset),
+            derefs_count: u32::from_le(self.derefs_count),
+            _pad7: 0,
+        }
+    }
+
+    /// Decodes a version 2 header (128 bytes), setting v3-specific table offsets and counts to 0.
+    pub fn from_le_v2(bytes: &[u8]) -> Self {
+        let mut b = [0u8; 128];
+        b.copy_from_slice(&bytes[..128]);
+        let raw: HeaderV2 = unsafe { std::mem::transmute(b) };
+        Self {
+            magic: raw.magic,
+            version: u32::from_le(raw.version),
+            crate_name_offset: u32::from_le(raw.crate_name_offset),
+            crate_version_offset: u32::from_le(raw.crate_version_offset),
+            string_pool_offset: u64::from_le(raw.string_pool_offset),
+            string_pool_len: u64::from_le(raw.string_pool_len),
+            files_offset: u64::from_le(raw.files_offset),
+            files_count: u32::from_le(raw.files_count),
+            unit_key_offset: u32::from_le(raw.unit_key_offset),
+            defs_offset: u64::from_le(raw.defs_offset),
+            defs_count: u32::from_le(raw.defs_count),
+            generation_offset: u32::from_le(raw.generation_offset),
+            defs_by_hash_offset: u64::from_le(raw.defs_by_hash_offset),
+            defs_by_hash_count: u32::from_le(raw.defs_by_hash_count),
+            _pad2: 0,
+            refs_offset: u64::from_le(raw.refs_offset),
+            refs_count: u32::from_le(raw.refs_count),
+            _pad3: 0,
+            refs_by_target_offset: u64::from_le(raw.refs_by_target_offset),
+            refs_by_target_count: u32::from_le(raw.refs_by_target_count),
+            _pad4: 0,
+            types_offset: u64::from_le(raw.types_offset),
+            types_count: u32::from_le(raw.types_count),
+            _pad5: 0,
+            defs_by_owner_offset: 0,
+            defs_by_owner_count: 0,
+            _pad6: 0,
+            derefs_offset: 0,
+            derefs_count: 0,
+            _pad7: 0,
         }
     }
 
@@ -783,16 +942,26 @@ pub struct TypeEntry {
     pub span: Span,
     /// Offset in string pool of the inferred type name (e.g. "Option<JoinHandle<T>>")
     pub type_offset: u32,
-    pub _pad: [u8; 4],
+    /// Offset in string pool of the canonical owner path (e.g. "tokio::fs::File"), or 0
+    pub owner_path_offset: u32,
 }
 
 impl TypeEntry {
+    #[inline]
+    pub fn new(span: Span, type_offset: u32, owner_path_offset: u32) -> Self {
+        Self {
+            span,
+            type_offset,
+            owner_path_offset,
+        }
+    }
+
     #[inline]
     pub fn to_le(self) -> Self {
         Self {
             span: self.span.to_le(),
             type_offset: self.type_offset.to_le(),
-            _pad: self._pad,
+            owner_path_offset: self.owner_path_offset.to_le(),
         }
     }
 
@@ -801,7 +970,7 @@ impl TypeEntry {
         Self {
             span: self.span.from_le(),
             type_offset: u32::from_le(self.type_offset),
-            _pad: self._pad,
+            owner_path_offset: u32::from_le(self.owner_path_offset),
         }
     }
 
@@ -812,6 +981,10 @@ impl TypeEntry {
     #[inline]
     pub fn type_offset(&self) -> u32 {
         u32::from_le(self.type_offset)
+    }
+    #[inline]
+    pub fn owner_path_offset(&self) -> u32 {
+        u32::from_le(self.owner_path_offset)
     }
 }
 
@@ -852,6 +1025,114 @@ impl HashIndexEntry {
     #[inline]
     pub fn index(&self) -> u32 {
         u32::from_le(self.index)
+    }
+}
+
+/// Definition owner index entry for fast lookup of methods, fields, and associated items by owner.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct OwnerIndexEntry {
+    /// 64-bit FNV-1a hash of the canonical owner path (e.g. "tokio::fs::File")
+    pub hash: u64,
+    /// Offset in string pool for the canonical owner path
+    pub owner_path_offset: u32,
+    /// Index into definitions table
+    pub def_index: u32,
+}
+
+impl OwnerIndexEntry {
+    #[inline]
+    pub fn new(hash: u64, owner_path_offset: u32, def_index: u32) -> Self {
+        Self {
+            hash,
+            owner_path_offset,
+            def_index,
+        }
+    }
+
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            hash: self.hash.to_le(),
+            owner_path_offset: self.owner_path_offset.to_le(),
+            def_index: self.def_index.to_le(),
+        }
+    }
+
+    #[inline]
+    pub fn from_le(self) -> Self {
+        Self {
+            hash: u64::from_le(self.hash),
+            owner_path_offset: u32::from_le(self.owner_path_offset),
+            def_index: u32::from_le(self.def_index),
+        }
+    }
+
+    #[inline]
+    pub fn hash(&self) -> u64 {
+        u64::from_le(self.hash)
+    }
+    #[inline]
+    pub fn owner_path_offset(&self) -> u32 {
+        u32::from_le(self.owner_path_offset)
+    }
+    #[inline]
+    pub fn def_index(&self) -> u32 {
+        u32::from_le(self.def_index)
+    }
+}
+
+/// Deref target mapping entry for resolving autoderef chains (e.g. `String` -> `str`).
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct DerefEntry {
+    /// 64-bit FNV-1a hash of the source type canonical path (e.g. "alloc::string::String")
+    pub source_type_hash: u64,
+    /// Offset in string pool for source type canonical path
+    pub source_type_offset: u32,
+    /// Offset in string pool for target type canonical path (e.g. "core::primitive::str")
+    pub target_type_offset: u32,
+}
+
+impl DerefEntry {
+    #[inline]
+    pub fn new(source_type_hash: u64, source_type_offset: u32, target_type_offset: u32) -> Self {
+        Self {
+            source_type_hash,
+            source_type_offset,
+            target_type_offset,
+        }
+    }
+
+    #[inline]
+    pub fn to_le(self) -> Self {
+        Self {
+            source_type_hash: self.source_type_hash.to_le(),
+            source_type_offset: self.source_type_offset.to_le(),
+            target_type_offset: self.target_type_offset.to_le(),
+        }
+    }
+
+    #[inline]
+    pub fn from_le(self) -> Self {
+        Self {
+            source_type_hash: u64::from_le(self.source_type_hash),
+            source_type_offset: u32::from_le(self.source_type_offset),
+            target_type_offset: u32::from_le(self.target_type_offset),
+        }
+    }
+
+    #[inline]
+    pub fn source_type_hash(&self) -> u64 {
+        u64::from_le(self.source_type_hash)
+    }
+    #[inline]
+    pub fn source_type_offset(&self) -> u32 {
+        u32::from_le(self.source_type_offset)
+    }
+    #[inline]
+    pub fn target_type_offset(&self) -> u32 {
+        u32::from_le(self.target_type_offset)
     }
 }
 
@@ -922,6 +1203,12 @@ mod tests {
             types_offset: 0,
             types_count: 0,
             _pad5: 0,
+            defs_by_owner_offset: 0,
+            defs_by_owner_count: 0,
+            _pad6: 0,
+            derefs_offset: 0,
+            derefs_count: 0,
+            _pad7: 0,
         };
         let hdr_le = hdr.to_le();
         let hdr_from = hdr_le.from_le();
@@ -967,11 +1254,12 @@ mod tests {
         let ty = TypeEntry {
             span: Span::new(0, 1, 1, 2, 2),
             type_offset: 50,
-            _pad: [0; 4],
+            owner_path_offset: 120,
         };
         let ty_le = ty.to_le();
         let ty_from = ty_le.from_le();
         assert_eq!(ty.type_offset, ty_from.type_offset);
+        assert_eq!(ty.owner_path_offset, ty_from.owner_path_offset);
 
         let h_entry = HashIndexEntry {
             hash: 9999,
@@ -982,6 +1270,20 @@ mod tests {
         let h_from = h_le.from_le();
         assert_eq!(h_from.hash(), 9999);
         assert_eq!(h_from.index(), 7);
+
+        let owner_entry = OwnerIndexEntry::new(123456789, 42, 10);
+        let owner_le = owner_entry.to_le();
+        let owner_from = owner_le.from_le();
+        assert_eq!(owner_from.hash(), 123456789);
+        assert_eq!(owner_from.owner_path_offset(), 42);
+        assert_eq!(owner_from.def_index(), 10);
+
+        let deref_entry = DerefEntry::new(987654321, 100, 200);
+        let deref_le = deref_entry.to_le();
+        let deref_from = deref_le.from_le();
+        assert_eq!(deref_from.source_type_hash(), 987654321);
+        assert_eq!(deref_from.source_type_offset(), 100);
+        assert_eq!(deref_from.target_type_offset(), 200);
     }
 
     #[test]

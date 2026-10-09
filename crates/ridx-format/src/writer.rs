@@ -63,7 +63,6 @@ pub struct RawType {
 }
 
 /// In-memory builder for constructing and serializing `.ridx` files.
-#[derive(Default)]
 pub struct IndexWriter {
     crate_name: String,
     crate_version: String,
@@ -77,8 +76,10 @@ pub struct IndexWriter {
     file_offsets: Vec<u32>,
 
     definitions: Vec<RawDefinition>,
+    def_owners: Vec<(u32, String)>,
     references: Vec<RawReference>,
-    types: Vec<RawType>,
+    types: Vec<(RawType, Option<String>)>,
+    derefs: Vec<(String, String)>,
     unit_key: Option<String>,
     generation: Option<String>,
     file_hashes: HashMap<String, u64>,
@@ -94,8 +95,10 @@ impl IndexWriter {
             file_map: HashMap::new(),
             file_offsets: Vec::new(),
             definitions: Vec::new(),
+            def_owners: Vec::new(),
             references: Vec::new(),
             types: Vec::new(),
+            derefs: Vec::new(),
             unit_key: None,
             generation: None,
             file_hashes: HashMap::new(),
@@ -105,7 +108,15 @@ impl IndexWriter {
         writer.string_map.insert(String::new(), 0);
         writer
     }
+}
 
+impl Default for IndexWriter {
+    fn default() -> Self {
+        Self::new("", "")
+    }
+}
+
+impl IndexWriter {
     /// Sets the compilation unit key for this index shard.
     pub fn set_unit_key(&mut self, unit_key: impl Into<String>) {
         self.unit_key = Some(unit_key.into());
@@ -137,7 +148,12 @@ impl IndexWriter {
     }
 
     /// Intern a string into the pool, returning its byte offset.
+    /// Offset 0 is always reserved for the empty string (and used as a sentinel for 'no owner').
     pub fn intern_string(&mut self, s: &str) -> u32 {
+        if self.string_pool.is_empty() {
+            self.string_pool.push(0);
+            self.string_map.insert(String::new(), 0);
+        }
         if let Some(&offset) = self.string_map.get(s) {
             return offset;
         }
@@ -161,7 +177,35 @@ impl IndexWriter {
     }
 
     pub fn add_definition(&mut self, def: RawDefinition) {
+        let idx = self.definitions.len() as u32;
+        if let Some((parent, _)) = def.path.rsplit_once("::") {
+            if !parent.is_empty() {
+                self.def_owners.push((idx, parent.to_string()));
+            }
+        }
         self.definitions.push(def);
+    }
+
+    pub fn add_definition_with_owners(&mut self, def: RawDefinition, owners: Vec<String>) {
+        let idx = self.definitions.len() as u32;
+        for owner in owners {
+            if !owner.is_empty() {
+                self.def_owners.push((idx, owner));
+            }
+        }
+        // Also add module parent if not present
+        if let Some((parent, _)) = def.path.rsplit_once("::") {
+            if !parent.is_empty() {
+                self.def_owners.push((idx, parent.to_string()));
+            }
+        }
+        self.definitions.push(def);
+    }
+
+    pub fn add_def_owner(&mut self, def_id: u32, owner: String) {
+        if let Some(idx) = self.definitions.iter().position(|d| d.def_id == def_id) {
+            self.def_owners.push((idx as u32, owner));
+        }
     }
 
     pub fn add_reference(&mut self, r: RawReference) {
@@ -169,7 +213,15 @@ impl IndexWriter {
     }
 
     pub fn add_type(&mut self, t: RawType) {
-        self.types.push(t);
+        self.types.push((t, None));
+    }
+
+    pub fn add_type_with_owner(&mut self, t: RawType, owner_path: Option<String>) {
+        self.types.push((t, owner_path));
+    }
+
+    pub fn add_deref(&mut self, source_type: impl Into<String>, target_type: impl Into<String>) {
+        self.derefs.push((source_type.into(), target_type.into()));
     }
 
     /// Total count of definitions queued.
@@ -187,6 +239,11 @@ impl IndexWriter {
         self.types.len()
     }
 
+    /// Total count of deref mappings queued.
+    pub fn deref_count(&self) -> usize {
+        self.derefs.len()
+    }
+
     /// Returns all unique file paths known to this writer.
     pub fn indexed_files(&self) -> Vec<String> {
         let mut set = std::collections::HashSet::new();
@@ -200,7 +257,7 @@ impl IndexWriter {
             set.insert(r.file.clone());
         }
         for t in &self.types {
-            set.insert(t.file.clone());
+            set.insert(t.0.file.clone());
         }
         let mut list: Vec<String> = set.into_iter().collect();
         list.sort();
@@ -225,8 +282,10 @@ impl IndexWriter {
         };
 
         let definitions = std::mem::take(&mut self.definitions);
+        let def_owners_raw = std::mem::take(&mut self.def_owners);
         let references = std::mem::take(&mut self.references);
         let types = std::mem::take(&mut self.types);
+        let derefs_raw = std::mem::take(&mut self.derefs);
 
         // Prepare definitions records and hash index
         let mut def_entries = Vec::with_capacity(definitions.len());
@@ -275,6 +334,41 @@ impl IndexWriter {
             });
         }
         def_hashes.sort_by_key(|e| e.hash);
+
+        // Build definitions by owner index
+        let mut owner_entries = Vec::with_capacity(def_owners_raw.len());
+        let mut seen_owners = std::collections::HashSet::new();
+        for (def_idx, owner) in &def_owners_raw {
+            if (*def_idx as usize) >= definitions.len() || owner.is_empty() {
+                continue;
+            }
+            if seen_owners.insert((*def_idx, owner.clone())) {
+                let owner_path_offset = self.intern_string(owner);
+                let hash = fnv1a_64(owner.as_bytes());
+                owner_entries.push(OwnerIndexEntry::new(hash, owner_path_offset, *def_idx));
+            }
+        }
+        owner_entries.sort_by_key(|e| e.hash);
+
+        // Build derefs table
+        let mut deref_entries = Vec::with_capacity(derefs_raw.len());
+        let mut seen_derefs = std::collections::HashSet::new();
+        for (src, tgt) in &derefs_raw {
+            if src.is_empty() || tgt.is_empty() {
+                continue;
+            }
+            if seen_derefs.insert((src.clone(), tgt.clone())) {
+                let source_type_offset = self.intern_string(src);
+                let target_type_offset = self.intern_string(tgt);
+                let source_type_hash = fnv1a_64(src.as_bytes());
+                deref_entries.push(DerefEntry::new(
+                    source_type_hash,
+                    source_type_offset,
+                    target_type_offset,
+                ));
+            }
+        }
+        deref_entries.sort_by_key(|e| e.source_type_hash);
 
         // Prepare references records
         let mut ref_entries = Vec::with_capacity(references.len());
@@ -334,15 +428,19 @@ impl IndexWriter {
 
         // Prepare types records
         let mut type_entries = Vec::with_capacity(types.len());
-        for t in &types {
+        for (t, owner_opt) in &types {
             let file_id = self.get_or_insert_file(&t.file);
             let type_offset = self.intern_string(&t.type_name);
-
-            let entry = TypeEntry {
-                span: Span::new(file_id, t.start_line, t.start_col, t.end_line, t.end_col),
-                type_offset,
-                _pad: [0; 4],
+            let owner_path_offset = match owner_opt {
+                Some(o) => self.intern_string(o),
+                None => 0,
             };
+
+            let entry = TypeEntry::new(
+                Span::new(file_id, t.start_line, t.start_col, t.end_line, t.end_col),
+                type_offset,
+                owner_path_offset,
+            );
             type_entries.push(entry);
         }
 
@@ -357,8 +455,10 @@ impl IndexWriter {
 
         // Restore original collections on self
         self.definitions = definitions;
+        self.def_owners = def_owners_raw;
         self.references = references;
         self.types = types;
+        self.derefs = derefs_raw;
 
         // Layout the file sections with 8-byte alignment
         let header_size = std::mem::size_of::<Header>() as u64;
@@ -390,7 +490,16 @@ impl IndexWriter {
         current_offset = align_up(refs_by_target_offset + refs_by_target_len, 8);
 
         let types_offset = current_offset;
-        let _types_len = (type_entries.len() * std::mem::size_of::<TypeEntry>()) as u64;
+        let types_len = (type_entries.len() * std::mem::size_of::<TypeEntry>()) as u64;
+        current_offset = align_up(types_offset + types_len, 8);
+
+        let defs_by_owner_offset = current_offset;
+        let defs_by_owner_len =
+            (owner_entries.len() * std::mem::size_of::<OwnerIndexEntry>()) as u64;
+        current_offset = align_up(defs_by_owner_offset + defs_by_owner_len, 8);
+
+        let derefs_offset = current_offset;
+        let _derefs_len = (deref_entries.len() * std::mem::size_of::<DerefEntry>()) as u64;
 
         let header = Header {
             magic: MAGIC,
@@ -417,6 +526,12 @@ impl IndexWriter {
             types_offset,
             types_count: type_entries.len() as u32,
             _pad5: 0,
+            defs_by_owner_offset,
+            defs_by_owner_count: owner_entries.len() as u32,
+            _pad6: 0,
+            derefs_offset,
+            derefs_count: deref_entries.len() as u32,
+            _pad7: 0,
         };
 
         // Write Header in explicit little-endian format
@@ -469,6 +584,20 @@ impl IndexWriter {
         // Write Types Table (in little-endian format)
         writer.seek(io::SeekFrom::Start(types_offset))?;
         for entry in &type_entries {
+            let entry_le = entry.to_le();
+            writer.write_all(as_byte_slice(&entry_le))?;
+        }
+
+        // Write Definitions By Owner Table (in little-endian format)
+        writer.seek(io::SeekFrom::Start(defs_by_owner_offset))?;
+        for entry in &owner_entries {
+            let entry_le = entry.to_le();
+            writer.write_all(as_byte_slice(&entry_le))?;
+        }
+
+        // Write Derefs Table (in little-endian format)
+        writer.seek(io::SeekFrom::Start(derefs_offset))?;
+        for entry in &deref_entries {
             let entry_le = entry.to_le();
             writer.write_all(as_byte_slice(&entry_le))?;
         }

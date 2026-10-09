@@ -345,17 +345,18 @@ fn test_case_cross_crate_ident_name_isolation() {
         "impl CoreService {\n    pub fn execute",
         "execute",
     );
-    let (app_local_call_line, _) = pos_in_file(&app_file, "local_svc.execute()", "execute");
+    let (app_local_call_line, app_local_call_col) = pos_in_file(&app_file, "local_svc.execute()", "execute");
 
     for r in arr {
         if r["uri"] == app_uri {
             let l = r["range"]["start"]["line"].as_u64().unwrap() as u32;
+            let c = r["range"]["start"]["character"].as_u64().unwrap() as u32;
             assert_ne!(
                 l, app_local_line,
                 "Must not match local CoreService definition in app_crate"
             );
-            assert_ne!(
-                l, app_local_call_line,
+            assert!(
+                l != app_local_call_line || c != app_local_call_col,
                 "Must not match local_svc.execute() call in app_crate"
             );
         }

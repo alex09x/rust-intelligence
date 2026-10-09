@@ -1118,7 +1118,7 @@ mod tests {
 
         let mf_cov = serde_json::json!({
             "version": "2.0",
-            "format_version": 2,
+            "format_version": crate::format::CURRENT_FORMAT_VERSION,
             "extractor_version": crate::format::EXTRACTOR_VERSION,
             "active_variant_id": "v_cov",
             "variant_dir": "variants/v_cov",

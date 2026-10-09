@@ -945,6 +945,103 @@ impl WorkspaceIndex {
         None
     }
 
+    /// Inferred expression type and optional canonical owner path at cursor location.
+    pub fn type_entry_at(&self, file: &str, line: u32, col: u32) -> Option<(&str, Option<&str>)> {
+        let p = Path::new(file);
+        let is_abs = p.is_absolute();
+        let belongs_to_dep = if is_abs {
+            self.source_roots.iter().any(|r| {
+                if let Some(r) = r.as_ref() {
+                    p.starts_with(r)
+                } else {
+                    false
+                }
+            })
+        } else {
+            false
+        };
+
+        for (i, reader) in self.readers.iter().enumerate() {
+            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
+                if is_abs {
+                    if let Ok(rel) = p.strip_prefix(root) {
+                        rel.to_str().unwrap_or(file)
+                    } else {
+                        continue;
+                    }
+                } else {
+                    file
+                }
+            } else {
+                if belongs_to_dep {
+                    continue;
+                }
+                file
+            };
+            if let Some(res) = reader.type_entry_at(target_file, line, col) {
+                return Some(res);
+            }
+        }
+        None
+    }
+
+    /// Finds all definitions belonging to an owner (canonical type path or module path) across the workspace.
+    pub fn find_definitions_by_owner<'a>(&'a self, owner: &str) -> Vec<ResolvedDefinition<'a>> {
+        let mut results = Vec::new();
+        let mut seen = std::collections::HashSet::new();
+
+        let candidates = super::std_map::std_path_candidates(owner);
+        for cand in &candidates {
+            let cand_str = cand.as_str();
+            for (i, reader) in self.readers.iter().enumerate() {
+                let prefix = format!("{}::", reader.crate_name());
+                let sub = cand_str.strip_prefix(&prefix).unwrap_or(cand_str);
+
+                for def in reader
+                    .find_definitions_by_owner(cand_str)
+                    .into_iter()
+                    .chain(reader.find_definitions_by_owner(sub))
+                {
+                    let key = (i, def.path_offset(), def.span.start_line, def.span.start_col);
+                    if seen.insert(key) {
+                        results.push(self.make_resolved_definition(i, def));
+                    }
+                }
+            }
+        }
+
+        results
+    }
+
+    /// Resolves the autoderef chain starting from `source` up to `max_depth` steps across the workspace.
+    pub fn resolve_deref_chain(&self, source: &str, max_depth: usize) -> Vec<&str> {
+        let mut chain = Vec::new();
+        let mut current = source;
+        let mut visited = std::collections::HashSet::new();
+        visited.insert(source);
+
+        for _ in 0..max_depth {
+            let mut found = None;
+            for reader in &self.readers {
+                if let Some(target) = reader.find_deref_target(current) {
+                    found = Some(target);
+                    break;
+                }
+            }
+            if let Some(target) = found {
+                if target.is_empty() || !visited.insert(target) {
+                    break;
+                }
+                chain.push(target);
+                current = target;
+            } else {
+                break;
+            }
+        }
+
+        chain
+    }
+
     /// Substring symbol search across all definitions in the workspace.
     pub fn search_symbols<'a>(&'a self, query: &str) -> Vec<WorkspaceSymbol<'a>> {
         let mut matches = Vec::new();

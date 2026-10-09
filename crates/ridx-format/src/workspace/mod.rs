@@ -1167,8 +1167,8 @@ mod tests {
         // Variant manifest with empty workspace_root and active_variant_id
         let manifest_json = serde_json::json!({
             "version": "2.0",
-            "format_version": 2,
-            "extractor_version": "1",
+            "format_version": crate::format::CURRENT_FORMAT_VERSION,
+            "extractor_version": crate::format::EXTRACTOR_VERSION,
             "active_variant_id": "", // empty active_variant_id (line 219)
             "variant_dir": "",
             "base_out_dir": ws_dir.0.display().to_string(),
