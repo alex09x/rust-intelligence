@@ -70,6 +70,14 @@ def export_site_bench(results_path, discrepancies_path, out_path):
                     rentry = json.loads(rline)
                     reruns[rentry.get("repo", "")] = rentry
 
+    comp_v3 = {}
+    comp_v3_file = bench_dir / "published" / "completion_regression_b05240a_vs_c308792_v3.json"
+    if not comp_v3_file.exists():
+        comp_v3_file = bench_dir / "published" / "completion_regression_b05240a_vs_c308792_v2.json"
+    if comp_v3_file.exists():
+        with open(comp_v3_file, "r", encoding="utf-8") as cf:
+            comp_v3 = json.load(cf)
+
     for r in repos_data:
         slug = r.get("repo", "")
         info = repo_meta.get(slug, {"label": slug.split("/")[-1], "meta": slug})
@@ -138,6 +146,52 @@ def export_site_bench(results_path, discrepancies_path, out_path):
                 fmt_lat(rm.get("ra_hover_warm_p95_us", 0)),
             ])
 
+        if slug in comp_v3:
+            cm = comp_v3[slug]
+            rt = cm.get("routes", {})
+            rows.append([
+                "Completion: owner-path (warm p50 · n=48)",
+                rt.get("owner_curr_warm_p50_us", 0) * 1e-6,
+                fmt_lat(rt.get("owner_curr_warm_p50_us", 0)),
+                rt.get("owner_ra_warm_p50_us", 0) * 1e-6,
+                fmt_lat(rt.get("owner_ra_warm_p50_us", 0)),
+            ])
+            rows.append([
+                "Completion: owner-path (tail p95 · n=48)",
+                rt.get("owner_curr_warm_p95_us", 0) * 1e-6,
+                fmt_lat(rt.get("owner_curr_warm_p95_us", 0)),
+                rt.get("owner_ra_warm_p95_us", 0) * 1e-6,
+                fmt_lat(rt.get("owner_ra_warm_p95_us", 0)),
+            ])
+            rows.append([
+                "Completion: fallback (warm p50 · n=52)",
+                rt.get("fallback_curr_warm_p50_us", 0) * 1e-6,
+                fmt_lat(rt.get("fallback_curr_warm_p50_us", 0)),
+                rt.get("fallback_ra_warm_p50_us", 0) * 1e-6,
+                fmt_lat(rt.get("fallback_ra_warm_p50_us", 0)),
+            ])
+            rows.append([
+                "Completion: fallback (tail p95 · n=52)",
+                rt.get("fallback_curr_warm_p95_us", 0) * 1e-6,
+                fmt_lat(rt.get("fallback_curr_warm_p95_us", 0)),
+                rt.get("fallback_ra_warm_p95_us", 0) * 1e-6,
+                fmt_lat(rt.get("fallback_ra_warm_p95_us", 0)),
+            ])
+            rows.append([
+                "Completion: overall (warm p50 · n=100)",
+                rt.get("overall_curr_warm_p50_us", 0) * 1e-6,
+                fmt_lat(rt.get("overall_curr_warm_p50_us", 0)),
+                rt.get("overall_ra_warm_p50_us", 0) * 1e-6,
+                fmt_lat(rt.get("overall_ra_warm_p50_us", 0)),
+            ])
+            rows.append([
+                "Completion: overall (tail p95 · n=100)",
+                rt.get("overall_curr_warm_p95_us", 0) * 1e-6,
+                fmt_lat(rt.get("overall_curr_warm_p95_us", 0)),
+                rt.get("overall_ra_warm_p95_us", 0) * 1e-6,
+                fmt_lat(rt.get("overall_ra_warm_p95_us", 0)),
+            ])
+
         w3_10 = (
             r.get("w3_multi_worktree", {})
             .get("live_server_scaling", {})
@@ -193,10 +247,16 @@ def export_site_bench(results_path, discrepancies_path, out_path):
                 " (+4.87 pp read-only)."
             ),
             (
-                "On large workspaces, fallback completion (std types, generic"
-                " params) is ~18x slower than rust-analyzer (bevy: 44 ms vs"
-                " 2.4 ms); owner-path completion on concrete domain types is"
-                " 36–65x faster (100–186 µs)."
+                "Completion on large workspaces (bevy, 69 workspace members, ~1,248"
+                " dependency shards): fallback completion p95 is 20.39 ms vs 6.43 ms"
+                " for rust-analyzer (3.17x slower; p50: 1.59 ms vs 1.82 ms, 1.14x faster);"
+                " overall completion across all 100 positions is 10.33x faster at p50"
+                " (420 µs vs 4.34 ms) but 1.19x slower at p95 (20.30 ms vs 17.08 ms). On"
+                " owner-routed queries (48%), RIDX is 17.97x faster at p50 (407 µs vs"
+                " 7.31 ms) and 18.35x faster at p95 (1.06 ms vs 19.49 ms). Empty responses"
+                " dropped from 95 to 50 across 200 queries (0 regressions). Non-empty"
+                " precision (excluding 0-item oracle scenarios) is 77.7% on serde (n=65,"
+                " base: 80.6%, n=37) and 56.2% on bevy (n=80, base: 60.9%, n=64)."
             ),
             (
                 "Hover latency on very large workspaces (bevy) is ~1.5x slower"
@@ -206,6 +266,7 @@ def export_site_bench(results_path, discrepancies_path, out_path):
                 " ripgrep) it is faster than or on par with rust-analyzer."
             ),
         ],
+        "completion": comp_v3,
         "workspaces": workspaces,
     }
 

@@ -528,4 +528,78 @@ Commit `b05240a` resolved generic parameters (`T: Trait`, e.g., `visitor.`, `ser
 3. **Dramatic Generic Recall Boost without Sysroot**: In commit `b05240a`, resolving generic bounds via `param_env.caller_bounds()` closed 20 previously empty scenarios on Serde (`visitor.visit_u16`, `serializer.serialize_u8`, `seq_access.next_element`, `map_access.next_key`), more than doubling Serde recall from 7.3% to 17.2% and expanding owner-path routing from 5% to 25% with zero regressions. The remaining 62 empty Serde and 33 empty Bevy scenarios are standard library sysroot types (`Option`, `Result`, `Iterator`, `Formatter`, `Path`), reserved for Stage 3.2 sysroot indexing.
 4. **Strict Zero-Regression Guarantee**: Across all transitions (`bb4aa75` -> `8fa53fa` -> `26a4ddb` -> `b05240a`), RIDX maintains exactly 0 regressions from non-empty to empty responses across all 200 scenarios.
 
+---
+
+## 7. Stage 3.2.1: Sysroot Metadata Indexing & Parity Verification (`c308792` vs `b05240a`)
+
+*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)  
+*Toolchain Parity:* `rustc 1.98.1 (48a229cea 2026-09-01)` matching `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
+*Sysroot CAS Key:* `ad5e1980a489d231` (deterministic shared cache for `alloc.ridx`, `core.ridx`, `std.ridx`)  
+*Evaluation:* 200 total scenarios across `serde-rs/serde` (n=100) and `bevyengine/bevy` (n=100)  
+*Published Reports:*
+- Grounded v3 Report: `bench/published/completion_regression_b05240a_vs_c308792_v3.json`
+- Historical Reports: `bench/published/completion_regression_b05240a_vs_c308792_v2.json` and `completion_regression_b05240a_vs_c308792.json`
+- Raw Telemetry: `bench/published/rerun_completion_c308792.jsonl` and `rerun_completion_b05240a.jsonl`
+
+### Headline Comparison Table (`b05240a` -> `c308792`)
+
+| Metric | `serde-rs/serde` (`b05240a` → `c308792`) | `bevyengine/bevy` (`b05240a` → `c308792`) | Combined Total |
+|---|---|---|---|
+| **Empty Responses** | **62 → 34** (28 closed) | **33 → 16** (17 closed) | **95 → 50** (**45 closed**) |
+| **Regressions to Empty** | **0** | **0** | **0** |
+| **Total Candidates Returned** | 1,158 → 2,293 (RA: 4,675) | 3,739 → 4,657 (RA: 6,832) | 4,897 → 6,950 (RA: 11,507) |
+| **Grounded Recall vs RA** (`ra_count > 0`) | **16.5% → 31.1%** (+14.6 pp, n=98) | **22.1% → 32.2%** (+10.1 pp, n=94) | **19.2% → 31.6%** (+12.4 pp, n=192) |
+| *Undefined Oracle Scenarios (`ra_count == 0`)* | 2 excluded (`ra_zero_oracle`) | 6 excluded (`ra_zero_oracle`) | 8 excluded overall |
+| **Grounded Precision vs RA** (`ridx_count > 0`, `ra_count > 0`) | **80.6% → 77.7%** (-2.9 pp, n: 37 → 65) | **60.9% → 56.2%** (-4.7 pp, n: 64 → 80) | **68.1% → 65.8%** (-2.3 pp, n: 101 → 145) |
+| *Precision Excluded Scenarios (`ra_count == 0`)* | 1 in base, 1 in curr | 3 in base, 4 in curr | 4 in base, 5 in curr |
+| **Owner-Path Share** | 25% → **48%** | 32% → **48%** | **48% overall** |
+| **Owner-Path Speedup (p50 / p95)** | **28.77x** (214 µs vs 6,143 µs) / **17.80x** (714 µs vs 12.71 ms) | **17.97x** (407 µs vs 7,314 µs) / **18.35x** (1.06 ms vs 19.49 ms) | **18x – 29x** (p50) / **18x** (p95) |
+| **Fallback Speedup (p50 / p95)** | **1.21x** (1,486 µs vs 1,796 µs) / **3.64x** (2.05 ms vs 7.47 ms) | **1.14x** (1,591 µs vs 1,819 µs) / **3.17x slower** (20.39 ms vs 6.43 ms) | **1.14x – 1.21x** (p50) / tail varies by dependency count |
+| **Overall Speedup (p50 / p95)** | **6.64x** (662 µs vs 4,398 µs) / **6.06x** (2.01 ms vs 12.15 ms) | **10.33x** (420 µs vs 4,340 µs) / **1.19x slower** (20.30 ms vs 17.08 ms) | **6.6x – 10.3x** (p50) / **1.19x slower – 6.1x faster** (p95) |
+
+### Detailed Latency Breakdown (p50 and p95)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             RIDX vs rust-analyzer 1.98.1 Latency                            │
+├──────────────────────┬───────────────────────────────┬──────────────────────────────────────┤
+│ Route                │ serde-rs/serde (p50 / p95)    │ bevyengine/bevy (p50 / p95)          │
+├──────────────────────┼───────────────────────────────┼──────────────────────────────────────┤
+│ Owner Path (48%)     │ RIDX:   214 µs /   714 µs     │ RIDX:   407 µs /  1.06 ms            │
+│                      │ RA:   6,143 µs / 12.71 ms     │ RA:   7,314 µs / 19.49 ms            │
+│                      │ Speedup: 28.77x (p50) / 17.8x │ Speedup: 17.97x (p50) / 18.35x (p95) │
+├──────────────────────┼───────────────────────────────┼──────────────────────────────────────┤
+│ Fallback Path (52%)  │ RIDX: 1,486 µs /  2.05 ms     │ RIDX: 1,591 µs / 20.39 ms            │
+│                      │ RA:   1,796 µs /  7.47 ms     │ RA:   1,819 µs /  6.43 ms            │
+│                      │ Speedup:  1.21x (p50) / 3.64x │ Speedup:  1.14x (p50) / 3.17x slower │
+├──────────────────────┼───────────────────────────────┼──────────────────────────────────────┤
+│ Overall Combined     │ RIDX:   662 µs /  2.01 ms     │ RIDX:   420 µs / 20.30 ms            │
+│                      │ RA:   4,398 µs / 12.15 ms     │ RA:   4,340 µs / 17.08 ms            │
+│                      │ Speedup:  6.64x (p50) / 6.06x │ Speedup: 10.33x (p50) / 1.19x slower │
+└──────────────────────┴───────────────────────────────┴──────────────────────────────────────┘
+```
+
+### Explanatory Findings & Root Causes
+
+#### 1. Precision & Recall Grounding
+Evaluating precision and recall strictly over grounded non-empty sets where `ra_count > 0`:
+- **Serde Recall**: `b05240a` = 16.5% (n=98) → `c308792` = 31.1% (n=98), +14.6 pp. (2 scenarios excluded where `ra_count == 0`).
+- **Bevy Recall**: `b05240a` = 22.1% (n=94) → `c308792` = 32.2% (n=94), +10.1 pp. (6 scenarios excluded where `ra_count == 0`).
+- **Serde Precision**: `b05240a` = 80.6% (n=37) → `c308792` = 77.7% (n=65), -2.9 pp.
+- **Bevy Precision**: `b05240a` = 60.9% (n=64) → `c308792` = 56.2% (n=80), -4.7 pp.
+- **Empty Responses**: reduced from 95 to 50 (28 closed in Serde, 17 closed in Bevy, 0 regressions to empty).
+
+#### 2. Root Cause of Recall Regressions (> 5.0 pp)
+Across all 200 scenarios, exactly 2 experienced a recall drop > 5.0 pp (both in Serde, 0 in Bevy):
+1. **`comp_colon_41_RangeVisitor` (`serde_core/src/de/impls.rs:2434:20`)**:
+   - *Observation*: Recall dropped from 100.0% (33 items) to 0.0% (5 items, RA returned 2).
+   - *Root Cause*: The cursor qualifier was `range`. In `b05240a` (no sysroot), `find_definition_by_path("range")` failed, falling back to workspace symbol search which located `RangeVisitor` and `FIELDS`. In `c308792`, `core.ridx` was attached; `find_definition_by_path("range")` matched `core::ops::range` before checking the local submodule `mod range { ... }` defined at line 2463. Owner completion returned 5 sysroot range items (`legacy`, `Range`, `RangeInclusive`, `RangeFrom`, `RangeToInclusive`), shadowing local submodule items.
+2. **`comp_colon_37_SocketAddr` (`serde_core/src/ser/impls.rs:853:22`)**:
+   - *Observation*: Recall dropped from 15.4% (24 items) to 7.7% (1 item, RA returned 13).
+   - *Root Cause*: The cursor qualifier was `net`. In Rust 1.98, `SocketAddr` lives in `core::net` and is re-exported by `std::net`. During `ridx-driver` sysroot compilation, items re-exported across crates were excluded (`did.krate != cnum`), leaving `std::net` with only `Shutdown`. When owner completion matched `net` to `std::net`, it returned only 1 candidate (`Shutdown`). In `b05240a`, it fell back to workspace symbol search, finding 24 items.
+
+#### 3. Route Migration & Tail Latency (p95)
+- **Bevy Fallback Median Shift (11.6 ms → 1.59 ms)**: With sysroot metadata attached, exactly **16 heavy sysroot queries** (e.g., `Result::`, `Option::`, `String::`) that previously ran as slow linear scans across all 69 workspace members migrated to the owner path (warm p50 dropped from 13.1 ms to 773 µs). Removing these 16 queries relieved the fallback pool, leaving 52 lightweight queries with median 1.59 ms.
+- **Tail Latency Reality (p95)**: On small repos (Serde, 2 workspace members), RIDX is faster across p50 (6.64x, 662 µs vs 4.40 ms) and p95 (6.06x, 2.01 ms vs 12.15 ms). On large multi-crate workspaces (Bevy, 69 workspace members, ~1,248 total dependency shards in index), RIDX owner-path p95 is 1.06 ms (18.35x faster than RA's 19.49 ms), but fallback p95 is 20.39 ms (vs RA's 6.43 ms, 3.17x slower), bringing overall Bevy p95 to 20.30 ms (vs RA's 17.08 ms, 1.19x slower).
+
 

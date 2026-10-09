@@ -98,6 +98,7 @@ def parse_args():
     p.add_argument("--curr-jsonl", help="Explicit path to current rerun jsonl (replay mode)")
     p.add_argument("--replay", action="store_true", help="Replay directly from existing published jsonl")
     p.add_argument("--v2", action="store_true", help="Format and name report with v2 methodology")
+    p.add_argument("--v3", action="store_true", help="Format and name report with v3 methodology")
     p.add_argument("--ridx-bin", help="Path to current ridx binary")
     p.add_argument("--ra-bin", help="Path to rust-analyzer binary")
     p.add_argument("--serde-dir", help="Path to serde repo")
@@ -116,10 +117,10 @@ def main():
     args = parse_args()
     curr_commit = args.commit_ridx if args.commit_ridx else args.curr_commit
     base_commit = args.base_commit
-    v2_suffix = "_v2" if args.v2 else ""
+    v_suffix = "_v3" if args.v3 else ("_v2" if args.v2 else "")
 
     out_json = Path(args.output_json) if args.output_json else (
-        bench_dir / "published" / f"completion_regression_{base_commit}_vs_{curr_commit}{v2_suffix}.json"
+        bench_dir / "published" / f"completion_regression_{base_commit}_vs_{curr_commit}{v_suffix}.json"
     )
     out_jsonl = Path(args.output_jsonl) if args.output_jsonl else (
         bench_dir / "published" / f"rerun_completion_{curr_commit}.jsonl"
@@ -225,11 +226,12 @@ def main():
 
             if base_cnt > 0:
                 prec_b = sc_b["precision_pct"] if "precision_pct" in sc_b else (round((sc_b["recall_pct"] / 100.0) * base_ra_cnt) / base_cnt * 100.0)
-                precs_b.append(prec_b)
+                if base_ra_cnt > 0:
+                    precs_b.append(prec_b)
             else:
                 prec_b = 0.0
 
-            if curr_cnt > 0:
+            if curr_cnt > 0 and ra_cnt > 0:
                 precs_c.append(prec_c)
 
             if sc_b.get("route") == "fallback" and route == "owner_path":
@@ -281,7 +283,7 @@ def main():
                 curr_commit: avg_rec_c, f"{curr_commit}_n": len(recs_c),
             },
             "avg_precision_vs_ra": {
-                "description": "Calculated strictly over non-empty responses (ridx_count > 0)",
+                "description": "Calculated strictly over non-empty responses where ra_count > 0",
                 base_commit: avg_prec_b, f"{base_commit}_n": len(precs_b),
                 curr_commit: avg_prec_c, f"{curr_commit}_n": len(precs_c),
             },
@@ -305,7 +307,7 @@ def main():
         print(f"\n--- Summary for {slug} ---")
         print(f"  Empty responses:       {base_commit}: {empty_b} -> {curr_commit}: {empty_c} (closed: {closed_cnt})")
         print(f"  Avg recall (ra>0):     {base_commit}: {avg_rec_b}% (n={len(recs_b)}) -> {curr_commit}: {avg_rec_c}% (n={len(recs_c)}) [ra_zero={ra_zero}]")
-        print(f"  Avg precision (cnt>0): {base_commit}: {avg_prec_b}% (n={len(precs_b)}) -> {curr_commit}: {avg_prec_c}% (n={len(precs_c)})")
+        print(f"  Avg precision (cnt>0, ra>0): {base_commit}: {avg_prec_b}% (n={len(precs_b)}) -> {curr_commit}: {avg_prec_c}% (n={len(precs_c)})")
         print(f"  Recall regressions:    {len(recall_regs)} scenarios > 5pp")
         print(f"  Owner:    p50 {o_c_p50:.0f}µs RIDX vs {o_ra_p50:.0f}µs RA ({o_speedup}x) | p95 {o_c_p95:.0f}µs vs {o_ra_p95:.0f}µs")
         print(f"  Fallback: p50 {f_c_p50:.0f}µs RIDX vs {f_ra_p50:.0f}µs RA ({f_speedup}x) | p95 {f_c_p95:.0f}µs vs {f_ra_p95:.0f}µs")

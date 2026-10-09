@@ -16,9 +16,193 @@
   },
   "limitations": [
     "Standard library (std/core/alloc) definition shards are not indexed yet; expected effect when indexed is +4.71 pp overall (+4.87 pp read-only).",
-    "On large workspaces, fallback completion (std types, generic params) is ~4.6x slower than rust-analyzer (bevy: 11.1 ms vs 2.4 ms); overall completion across all 100 positions is 1.34x faster (3.15 ms vs 4.22 ms), while owner-path completion on concrete domain types is 36\u2013143x faster (49\u2013179 \u00b5s).",
+    "Completion on large workspaces (bevy, 69 workspace members, ~1,248 dependency shards): fallback completion p95 is 20.39 ms vs 6.43 ms for rust-analyzer (3.17x slower; p50: 1.59 ms vs 1.82 ms, 1.14x faster); overall completion across all 100 positions is 10.33x faster at p50 (420 \u00b5s vs 4.34 ms) but 1.19x slower at p95 (20.30 ms vs 17.08 ms). On owner-routed queries (48%), RIDX is 17.97x faster at p50 (407 \u00b5s vs 7.31 ms) and 18.35x faster at p95 (1.06 ms vs 19.49 ms). Empty responses dropped from 95 to 50 across 200 queries (0 regressions). Non-empty precision (excluding 0-item oracle scenarios) is 77.7% on serde (n=65, base: 80.6%, n=37) and 56.2% on bevy (n=80, base: 60.9%, n=64).",
     "Hover latency on very large workspaces (bevy) is ~1.5x slower than rust-analyzer (354 \u00b5s vs 231 \u00b5s at warm p50, re-measured post-844eac0 down from 18.4x / 3.96 ms prior to binary search optimization); on small to medium workspaces (tokio, serde, ripgrep) it is faster than or on par with rust-analyzer."
   ],
+  "completion": {
+    "serde-rs/serde": {
+      "repo": "serde-rs/serde",
+      "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+      "sysroot_cas_key": "ad5e1980a489d231",
+      "total_scenarios": 100,
+      "empty_responses": {
+        "b05240a": 62,
+        "c308792": 34,
+        "rust_analyzer_1_98_1": 2
+      },
+      "closed_empty_responses": {
+        "count": 28,
+        "scenarios": [
+          "comp_dot_36_write_str",
+          "comp_dot_30_invalid_type",
+          "comp_colon_27_from_utf8",
+          "comp_dot_41_map",
+          "comp_dot_45_len",
+          "comp_dot_13_bad_type",
+          "comp_dot_21_deserialize_bytes",
+          "comp_dot_4_bad_type",
+          "comp_dot_26_write_str",
+          "comp_colon_14_error",
+          "comp_dot_18_bad_type",
+          "comp_dot_35_deserialize_seq",
+          "comp_dot_15_visit_u64",
+          "comp_dot_10_map",
+          "comp_dot_9_map",
+          "comp_dot_12_bad_type",
+          "comp_dot_38_deserialize_integer",
+          "comp_dot_29_write_str",
+          "comp_dot_37_write_str",
+          "comp_dot_34_map",
+          "comp_dot_1_map",
+          "comp_colon_20_Fuse",
+          "comp_dot_32_write_str",
+          "comp_colon_17_SocketAddr",
+          "comp_colon_9_new",
+          "comp_dot_14_octets",
+          "comp_dot_17_debug_struct",
+          "comp_dot_46_deserialize_float"
+        ]
+      },
+      "regressions_to_empty": 0,
+      "total_candidates": {
+        "b05240a": 1158,
+        "c308792": 2293,
+        "rust_analyzer_1_98_1": 4675
+      },
+      "ra_zero_oracle_count": 2,
+      "avg_recall_vs_ra": {
+        "description": "Calculated strictly over scenarios where ra_count > 0",
+        "b05240a": 16.5,
+        "b05240a_n": 98,
+        "c308792": 31.1,
+        "c308792_n": 98
+      },
+      "avg_precision_vs_ra": {
+        "description": "Calculated strictly over non-empty responses where ra_count > 0",
+        "b05240a": 80.6,
+        "b05240a_n": 37,
+        "c308792": 77.7,
+        "c308792_n": 65
+      },
+      "recall_regressions_gt_5pp": [
+        {
+          "name": "comp_colon_37_SocketAddr",
+          "base_recall_pct": 15.4,
+          "curr_recall_pct": 7.7,
+          "diff_pp": 7.7,
+          "base_count": 24,
+          "curr_count": 1,
+          "ra_count": 13,
+          "root_cause": "Re-export omission: std::net re-exports core::net::SocketAddr, but std.ridx excluded core re-exports (1 item vs 13)."
+        },
+        {
+          "name": "comp_colon_41_RangeVisitor",
+          "base_recall_pct": 100.0,
+          "curr_recall_pct": 0.0,
+          "diff_pp": 100.0,
+          "base_count": 33,
+          "curr_count": 5,
+          "ra_count": 2,
+          "root_cause": "Shadowing: sysroot core::ops::range resolved before local mod range at serde_core/src/de/impls.rs:2463 (5 sysroot items vs 2 local)."
+        }
+      ],
+      "routes": {
+        "owner_count": 48,
+        "fallback_count": 52,
+        "migrated_from_fallback_to_owner": 23,
+        "owner_curr_warm_p50_us": 213.5,
+        "owner_curr_warm_p95_us": 714.1,
+        "owner_ra_warm_p50_us": 6142.5,
+        "owner_ra_warm_p95_us": 12710.8,
+        "owner_speedup_fair": 28.77,
+        "fallback_curr_warm_p50_us": 1486.0,
+        "fallback_curr_warm_p95_us": 2050.0,
+        "fallback_ra_warm_p50_us": 1796.0,
+        "fallback_ra_warm_p95_us": 7471.6,
+        "fallback_speedup_fair": 1.21,
+        "overall_curr_warm_p50_us": 662.5,
+        "overall_curr_warm_p95_us": 2006.2,
+        "overall_ra_warm_p50_us": 4398.5,
+        "overall_ra_warm_p95_us": 12154.2,
+        "overall_speedup": 6.64
+      }
+    },
+    "bevyengine/bevy": {
+      "repo": "bevyengine/bevy",
+      "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+      "sysroot_cas_key": "ad5e1980a489d231",
+      "total_scenarios": 100,
+      "empty_responses": {
+        "b05240a": 33,
+        "c308792": 16,
+        "rust_analyzer_1_98_1": 6
+      },
+      "closed_empty_responses": {
+        "count": 17,
+        "scenarios": [
+          "comp_dot_30_is_some",
+          "comp_dot_22_or_else",
+          "comp_dot_45_step_by",
+          "comp_dot_27_is_err",
+          "comp_colon_27_into_raw",
+          "comp_dot_26_as_ref",
+          "comp_dot_2_load",
+          "comp_colon_36_leak",
+          "comp_dot_35_init",
+          "comp_dot_15_is_ok",
+          "comp_colon_28_Backtrace",
+          "comp_dot_16_map",
+          "comp_dot_37_contains_key",
+          "comp_colon_9_into",
+          "comp_dot_6_len",
+          "comp_colon_13_Result",
+          "comp_dot_28_load"
+        ]
+      },
+      "regressions_to_empty": 0,
+      "total_candidates": {
+        "b05240a": 3739,
+        "c308792": 4657,
+        "rust_analyzer_1_98_1": 6832
+      },
+      "ra_zero_oracle_count": 6,
+      "avg_recall_vs_ra": {
+        "description": "Calculated strictly over scenarios where ra_count > 0",
+        "b05240a": 22.1,
+        "b05240a_n": 94,
+        "c308792": 32.2,
+        "c308792_n": 94
+      },
+      "avg_precision_vs_ra": {
+        "description": "Calculated strictly over non-empty responses where ra_count > 0",
+        "b05240a": 60.9,
+        "b05240a_n": 64,
+        "c308792": 56.2,
+        "c308792_n": 80
+      },
+      "recall_regressions_gt_5pp": [],
+      "routes": {
+        "owner_count": 48,
+        "fallback_count": 52,
+        "migrated_from_fallback_to_owner": 16,
+        "owner_curr_warm_p50_us": 407.0,
+        "owner_curr_warm_p95_us": 1062.2,
+        "owner_ra_warm_p50_us": 7314.5,
+        "owner_ra_warm_p95_us": 19488.3,
+        "owner_speedup_fair": 17.97,
+        "fallback_curr_warm_p50_us": 1591.0,
+        "fallback_curr_warm_p95_us": 20385.3,
+        "fallback_ra_warm_p50_us": 1819.0,
+        "fallback_ra_warm_p95_us": 6434.5,
+        "fallback_speedup_fair": 1.14,
+        "overall_curr_warm_p50_us": 420.0,
+        "overall_curr_warm_p95_us": 20298.1,
+        "overall_ra_warm_p50_us": 4339.5,
+        "overall_ra_warm_p95_us": 17084.3,
+        "overall_speedup": 10.33
+      }
+    }
+  },
   "workspaces": {
     "serde": {
       "meta": "serde \u00b7 3 crates \u00b7 warm cache \u00b7 booster (16 cores / 32 threads)",
@@ -65,6 +249,48 @@
           "112 \u00b5s",
           0.00022074999999999994,
           "221 \u00b5s"
+        ],
+        [
+          "Completion: owner-path (warm p50 \u00b7 n=48)",
+          0.00021349999999999999,
+          "214 \u00b5s",
+          0.0061424999999999995,
+          "6.14 ms"
+        ],
+        [
+          "Completion: owner-path (tail p95 \u00b7 n=48)",
+          0.0007141,
+          "714 \u00b5s",
+          0.0127108,
+          "12.71 ms"
+        ],
+        [
+          "Completion: fallback (warm p50 \u00b7 n=52)",
+          0.001486,
+          "1.49 ms",
+          0.0017959999999999999,
+          "1.80 ms"
+        ],
+        [
+          "Completion: fallback (tail p95 \u00b7 n=52)",
+          0.0020499999999999997,
+          "2.05 ms",
+          0.0074716,
+          "7.47 ms"
+        ],
+        [
+          "Completion: overall (warm p50 \u00b7 n=100)",
+          0.0006625,
+          "662 \u00b5s",
+          0.0043985,
+          "4.40 ms"
+        ],
+        [
+          "Completion: overall (tail p95 \u00b7 n=100)",
+          0.0020062,
+          "2.01 ms",
+          0.0121542,
+          "12.15 ms"
         ]
       ],
       "accuracy": {
@@ -279,6 +505,48 @@
           "622 \u00b5s",
           0.0005745999999999997,
           "575 \u00b5s"
+        ],
+        [
+          "Completion: owner-path (warm p50 \u00b7 n=48)",
+          0.00040699999999999997,
+          "407 \u00b5s",
+          0.0073145,
+          "7.31 ms"
+        ],
+        [
+          "Completion: owner-path (tail p95 \u00b7 n=48)",
+          0.0010622,
+          "1.06 ms",
+          0.0194883,
+          "19.49 ms"
+        ],
+        [
+          "Completion: fallback (warm p50 \u00b7 n=52)",
+          0.001591,
+          "1.59 ms",
+          0.0018189999999999999,
+          "1.82 ms"
+        ],
+        [
+          "Completion: fallback (tail p95 \u00b7 n=52)",
+          0.0203853,
+          "20.39 ms",
+          0.0064345,
+          "6.43 ms"
+        ],
+        [
+          "Completion: overall (warm p50 \u00b7 n=100)",
+          0.00041999999999999996,
+          "420 \u00b5s",
+          0.0043395,
+          "4.34 ms"
+        ],
+        [
+          "Completion: overall (tail p95 \u00b7 n=100)",
+          0.020298099999999996,
+          "20.30 ms",
+          0.0170843,
+          "17.08 ms"
         ]
       ],
       "accuracy": {
