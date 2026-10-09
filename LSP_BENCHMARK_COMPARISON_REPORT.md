@@ -15,7 +15,7 @@
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
-*Target Node:* `booster` (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, NVMe SSD, isolated on cores 24–31)
+*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM, NVMe SSD)
 
 ### 1. Headline Performance & Resource Footprint
 
@@ -39,7 +39,7 @@
 
 ### 2. Latency Analysis & Measured Architectural Differences
 
-On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24–31), warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: rust-analyzer achieves **131.0 µs** (def) and **103.5 µs** (hover), while RIDX achieves **43.0 µs** (def) and **68.0 µs** (hover). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
+On a quiet, dedicated build node (`booster`, AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM), warmed in-memory query latencies for single-token lookups at median (p50) are roughly on par: rust-analyzer achieves **131.0 µs** (def) and **103.5 µs** (hover), while RIDX achieves **43.0 µs** (def) and **68.0 µs** (hover). The earlier 20–45x speedup figures were artifacts of a noisy test environment on `ram8`.
 
 Measured architectural differences from the test run:
 1. **Tail Latency**: `textDocument/definition` p90 is **26.7x faster** (204.3 µs vs 5449.9 µs / 5.45 ms).

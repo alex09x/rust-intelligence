@@ -1,5 +1,5 @@
 {
-  "node": "booster (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM)",
+  "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
   "baseline": "rust-analyzer 1.98.1 (48a229c)",
   "summary": {
     "corpus": "5 repositories (serde, ripgrep, tokio, bevy, rust-analyzer)",
@@ -20,7 +20,7 @@
   ],
   "workspaces": {
     "serde": {
-      "meta": "serde \u00b7 3 crates \u00b7 warm cache \u00b7 booster (32 cores)",
+      "meta": "serde \u00b7 3 crates \u00b7 warm cache \u00b7 booster (16 cores / 32 threads)",
       "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
       "rows": [
         [
@@ -82,7 +82,7 @@
       }
     },
     "ripgrep": {
-      "meta": "ripgrep \u00b7 7 crates \u00b7 warm cache \u00b7 booster (32 cores)",
+      "meta": "ripgrep \u00b7 7 crates \u00b7 warm cache \u00b7 booster (16 cores / 32 threads)",
       "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
       "rows": [
         [
@@ -144,7 +144,7 @@
       }
     },
     "Tokio": {
-      "meta": "Tokio \u00b7 42 crates \u00b7 880 files \u00b7 booster (32 cores)",
+      "meta": "Tokio \u00b7 42 crates \u00b7 880 files \u00b7 booster (16 cores / 32 threads)",
       "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
       "rows": [
         [
@@ -206,7 +206,7 @@
       }
     },
     "bevy": {
-      "meta": "bevy \u00b7 147 crates \u00b7 2,800 files \u00b7 booster (32 cores)",
+      "meta": "bevy \u00b7 147 crates \u00b7 2,800 files \u00b7 booster (16 cores / 32 threads)",
       "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
       "rows": [
         [
@@ -268,7 +268,7 @@
       }
     },
     "rust-analyzer": {
-      "meta": "rust-analyzer \u00b7 261 crates \u00b7 3,050 files \u00b7 booster (32 cores)",
+      "meta": "rust-analyzer \u00b7 261 crates \u00b7 3,050 files \u00b7 booster (16 cores / 32 threads)",
       "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
       "rows": [
         [

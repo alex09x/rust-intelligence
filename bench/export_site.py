@@ -39,24 +39,24 @@ def export_site_bench(results_path, discrepancies_path, out_path):
     repo_meta = {
         "serde-rs/serde": {
             "label": "serde",
-            "meta": "serde · 3 crates · warm cache · booster (32 cores)",
+            "meta": "serde · 3 crates · warm cache · booster (16 cores / 32 threads)",
         },
         "BurntSushi/ripgrep": {
             "label": "ripgrep",
-            "meta": "ripgrep · 7 crates · warm cache · booster (32 cores)",
+            "meta": "ripgrep · 7 crates · warm cache · booster (16 cores / 32 threads)",
         },
         "tokio-rs/tokio": {
             "label": "Tokio",
-            "meta": "Tokio · 42 crates · 880 files · booster (32 cores)",
+            "meta": "Tokio · 42 crates · 880 files · booster (16 cores / 32 threads)",
         },
         "bevyengine/bevy": {
             "label": "bevy",
-            "meta": "bevy · 147 crates · 2,800 files · booster (32 cores)",
+            "meta": "bevy · 147 crates · 2,800 files · booster (16 cores / 32 threads)",
         },
         "rust-lang/rust-analyzer": {
             "label": "rust-analyzer",
             "meta": (
-                "rust-analyzer · 261 crates · 3,050 files · booster (32 cores)"
+                "rust-analyzer · 261 crates · 3,050 files · booster (16 cores / 32 threads)"
             ),
         },
     }
@@ -145,7 +145,7 @@ def export_site_bench(results_path, discrepancies_path, out_path):
         }
 
     output = {
-        "node": "booster (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM)",
+        "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
         "baseline": "rust-analyzer 1.98.1 (48a229c)",
         "summary": {
             "corpus": "5 repositories (serde, ripgrep, tokio, bevy, rust-analyzer)",
