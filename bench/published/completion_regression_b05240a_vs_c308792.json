@@ -1,0 +1,133 @@
+{
+  "serde-rs/serde": {
+    "repo": "serde-rs/serde",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "ad5e1980a489d231",
+    "total_scenarios": 100,
+    "empty_responses": {
+      "b05240a": 62,
+      "c308792": 34,
+      "rust_analyzer_1_98_1": 2
+    },
+    "closed_empty_responses": {
+      "count": 28,
+      "scenarios": [
+        "comp_dot_36_write_str",
+        "comp_dot_30_invalid_type",
+        "comp_colon_27_from_utf8",
+        "comp_dot_41_map",
+        "comp_dot_45_len",
+        "comp_dot_13_bad_type",
+        "comp_dot_21_deserialize_bytes",
+        "comp_dot_4_bad_type",
+        "comp_dot_26_write_str",
+        "comp_colon_14_error",
+        "comp_dot_18_bad_type",
+        "comp_dot_35_deserialize_seq",
+        "comp_dot_15_visit_u64",
+        "comp_dot_10_map",
+        "comp_dot_9_map",
+        "comp_dot_12_bad_type",
+        "comp_dot_38_deserialize_integer",
+        "comp_dot_29_write_str",
+        "comp_dot_37_write_str",
+        "comp_dot_34_map",
+        "comp_dot_1_map",
+        "comp_colon_20_Fuse",
+        "comp_dot_32_write_str",
+        "comp_colon_17_SocketAddr",
+        "comp_colon_9_new",
+        "comp_dot_14_octets",
+        "comp_dot_17_debug_struct",
+        "comp_dot_46_deserialize_float"
+      ]
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "b05240a": 1158,
+      "c308792": 2293,
+      "rust_analyzer_1_98_1": 4675
+    },
+    "avg_recall_vs_ra": {
+      "b05240a": 17.2,
+      "c308792": 31.4
+    },
+    "avg_precision_vs_ra": {
+      "b05240a": 30.8,
+      "c308792": 84.5
+    },
+    "routes": {
+      "owner_count": 48,
+      "fallback_count": 52,
+      "owner_curr_warm_p50_us": 213.5,
+      "owner_ra_warm_p50_us": 6142.5,
+      "owner_speedup_fair": 28.77,
+      "fallback_curr_warm_p50_us": 1486.0,
+      "fallback_ra_warm_p50_us": 1796.0,
+      "fallback_speedup_fair": 1.21,
+      "overall_curr_warm_p50_us": 662.5,
+      "overall_ra_warm_p50_us": 4398.5,
+      "overall_speedup": 6.64
+    }
+  },
+  "bevyengine/bevy": {
+    "repo": "bevyengine/bevy",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "ad5e1980a489d231",
+    "total_scenarios": 100,
+    "empty_responses": {
+      "b05240a": 33,
+      "c308792": 16,
+      "rust_analyzer_1_98_1": 6
+    },
+    "closed_empty_responses": {
+      "count": 17,
+      "scenarios": [
+        "comp_dot_30_is_some",
+        "comp_dot_22_or_else",
+        "comp_dot_45_step_by",
+        "comp_dot_27_is_err",
+        "comp_colon_27_into_raw",
+        "comp_dot_26_as_ref",
+        "comp_dot_2_load",
+        "comp_colon_36_leak",
+        "comp_dot_35_init",
+        "comp_dot_15_is_ok",
+        "comp_colon_28_Backtrace",
+        "comp_dot_16_map",
+        "comp_dot_37_contains_key",
+        "comp_colon_9_into",
+        "comp_dot_6_len",
+        "comp_colon_13_Result",
+        "comp_dot_28_load"
+      ]
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "b05240a": 3739,
+      "c308792": 4657,
+      "rust_analyzer_1_98_1": 6832
+    },
+    "avg_recall_vs_ra": {
+      "b05240a": 23.8,
+      "c308792": 32.3
+    },
+    "avg_precision_vs_ra": {
+      "b05240a": 42.0,
+      "c308792": 60.9
+    },
+    "routes": {
+      "owner_count": 48,
+      "fallback_count": 52,
+      "owner_curr_warm_p50_us": 407.0,
+      "owner_ra_warm_p50_us": 7314.5,
+      "owner_speedup_fair": 17.97,
+      "fallback_curr_warm_p50_us": 1591.0,
+      "fallback_ra_warm_p50_us": 1819.0,
+      "fallback_speedup_fair": 1.14,
+      "overall_curr_warm_p50_us": 420.0,
+      "overall_ra_warm_p50_us": 4339.5,
+      "overall_speedup": 10.33
+    }
+  }
+}
