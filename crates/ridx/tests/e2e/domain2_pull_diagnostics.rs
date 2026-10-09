@@ -66,6 +66,11 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
             "capabilities": {
                 "textDocument": {
                     "diagnostic": { "dynamicRegistration": true }
+                },
+                "workspace": {
+                    "diagnostics": {
+                        "refreshSupport": true
+                    }
                 }
             }
         }
@@ -85,6 +90,10 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
     assert!(
         lifecycle.client_pull_diagnostics(),
         "Must recognize pull diagnostic client"
+    );
+    assert!(
+        lifecycle.client_refresh_diagnostics(),
+        "Must recognize workspace diagnostic refresh support"
     );
 
     let out_str = String::from_utf8_lossy(&out);
@@ -181,7 +190,7 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
         "Pull response must contain the syntax diagnostic"
     );
 
-    // 5. InternalDiagnostic from flycheck triggers workspace/diagnostic/refresh instead of publish
+    // 5. InternalDiagnostic from flycheck triggers workspace/diagnostic/refresh with unique ID
     out.clear();
     let gen = lifecycle.flycheck.current_generation();
     let flycheck_diag = json!({
@@ -220,9 +229,97 @@ fn test_e2e_pull_diagnostic_client_no_publish_on_did_change() {
         1,
         "Must send workspace/diagnostic/refresh for pull clients on flycheck completion"
     );
+    assert_eq!(refresh_msgs[0]["id"], "ridx-refresh-1");
     let published_after_flycheck = extract_published_diagnostics(&out);
     assert!(
         published_after_flycheck.is_empty(),
         "Must not send push publishDiagnostics to pull client after flycheck"
+    );
+
+    // 6. Client responds to server-initiated workspace/diagnostic/refresh request
+    out.clear();
+    let client_response = json!({
+        "jsonrpc": "2.0",
+        "id": "ridx-refresh-1",
+        "result": null
+    });
+    dispatch_lsp_message(
+        LspMessage::Client(client_response),
+        &mut out,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    )
+    .unwrap();
+    assert!(
+        out.is_empty(),
+        "Client response without method must be silently accepted without errors or output"
+    );
+}
+
+#[test]
+fn test_e2e_pull_client_without_refresh_support_no_server_refresh_request() {
+    let mut multi_root = MultiRootWorkspace::new();
+    let mut overlay_mgr = OverlayManager::new();
+    let mut lifecycle = LifecycleManager::new();
+    let cancelled = Arc::new(Mutex::new(HashSet::new()));
+
+    // Initialize with diagnostic pull support but NO refreshSupport
+    let init_req = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "rootUri": "file:///tmp/dummy_workspace",
+            "capabilities": {
+                "textDocument": {
+                    "diagnostic": { "dynamicRegistration": true }
+                }
+            }
+        }
+    });
+    let mut out = Vec::new();
+    dispatch_lsp_message(
+        LspMessage::Client(init_req),
+        &mut out,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    )
+    .unwrap();
+
+    assert!(lifecycle.client_pull_diagnostics());
+    assert!(!lifecycle.client_refresh_diagnostics());
+
+    // InternalDiagnostic should not trigger refresh request when refreshSupport is false
+    out.clear();
+    let gen = lifecycle.flycheck.current_generation();
+    let flycheck_diag = json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/publishDiagnostics",
+        "params": {
+            "uri": "file:///tmp/dummy_workspace/src/lib.rs",
+            "diagnostics": []
+        }
+    });
+    dispatch_lsp_message(
+        LspMessage::InternalDiagnostic(gen, flycheck_diag),
+        &mut out,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    )
+    .unwrap();
+
+    let refresh_msgs = extract_messages_by_method(&out, "workspace/diagnostic/refresh");
+    assert!(
+        refresh_msgs.is_empty(),
+        "Must NOT send workspace/diagnostic/refresh if client lacks refreshSupport"
     );
 }

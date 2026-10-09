@@ -27,6 +27,8 @@ pub struct LifecycleManager {
     pub flycheck: Arc<FlycheckState>,
     pub conv: crate::lsp::protocol::PositionConverter,
     client_pull_diagnostics: bool,
+    client_refresh_diagnostics: bool,
+    refresh_counter: std::sync::atomic::AtomicU64,
 }
 
 impl Default for LifecycleManager {
@@ -42,11 +44,25 @@ impl LifecycleManager {
             flycheck: Arc::new(FlycheckState::new()),
             conv: crate::lsp::protocol::PositionConverter::new(),
             client_pull_diagnostics: false,
+            client_refresh_diagnostics: false,
+            refresh_counter: std::sync::atomic::AtomicU64::new(0),
         }
     }
 
     pub fn client_pull_diagnostics(&self) -> bool {
         self.client_pull_diagnostics
+    }
+
+    pub fn client_refresh_diagnostics(&self) -> bool {
+        self.client_refresh_diagnostics
+    }
+
+    pub fn next_refresh_id(&self) -> String {
+        let n = self
+            .refresh_counter
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+            + 1;
+        format!("ridx-refresh-{}", n)
     }
 
     #[allow(dead_code)]
@@ -73,6 +89,10 @@ impl LifecycleManager {
         self.state = ServerState::Initialized;
         self.client_pull_diagnostics =
             msg["params"]["capabilities"]["textDocument"]["diagnostic"].is_object();
+        self.client_refresh_diagnostics = msg["params"]["capabilities"]["workspace"]["diagnostics"]
+            ["refreshSupport"]
+            .as_bool()
+            .unwrap_or(false);
 
         let mut folder_paths = Vec::new();
         if let Some(folders) = msg["params"]["workspaceFolders"].as_array() {

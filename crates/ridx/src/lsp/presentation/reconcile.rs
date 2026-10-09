@@ -64,27 +64,21 @@ pub fn reconcile_diagnostics(heuristic: &[Value], authoritative: &[Value]) -> Ve
     result
 }
 
-/// Maps authoritative compiler diagnostics to live buffer coordinates based on overlay line shifts.
+/// Maps authoritative compiler diagnostics to live buffer coordinates based on line shifts.
 ///
 /// Diagnostics whose lines fall into modified, inserted, or deleted regions are dropped.
-/// If the overlay is not dirty, diagnostics are returned as-is.
-/// If the overlay has no compiled baseline to compare against, authoritative diagnostics
-/// are omitted to avoid sending stale coordinates.
+/// If `baseline_text` is None or equals `live_text`, diagnostics are returned as-is.
 pub fn map_authoritative_diagnostics_to_live(
     auth_items: &[Value],
-    overlay: Option<&crate::overlay::DocumentOverlay>,
+    baseline_text: Option<&str>,
+    live_text: &str,
     uri: &str,
 ) -> Vec<Value> {
-    let Some(ov) = overlay else {
+    let Some(base_text) = baseline_text else {
         return auth_items.to_vec();
     };
 
-    let baseline = ov.compiled_text.as_deref().or(ov.disk_text.as_deref());
-    let Some(base_text) = baseline else {
-        return auth_items.to_vec();
-    };
-
-    if base_text == ov.text {
+    if base_text == live_text {
         return auth_items.to_vec();
     }
 
@@ -104,11 +98,11 @@ pub fn map_authoritative_diagnostics_to_live(
             continue;
         };
 
-        let live_start = ov.map_compiled_to_live(sl as u32 + 1, sc as u32 + 1);
-        let live_end = ov.map_compiled_to_live(el as u32 + 1, ec as u32 + 1);
+        let live_start = crate::overlay::map_text_line_to_live(base_text, live_text, sl as u32 + 1);
+        let live_end = crate::overlay::map_text_line_to_live(base_text, live_text, el as u32 + 1);
 
         match (live_start, live_end) {
-            (Some((new_sl, _)), Some((new_el, _))) => {
+            (Some(new_sl), Some(new_el)) => {
                 let mut d = item.clone();
                 d["range"]["start"]["line"] = json!(new_sl.saturating_sub(1));
                 d["range"]["start"]["character"] = json!(sc);
@@ -126,8 +120,16 @@ pub fn map_authoritative_diagnostics_to_live(
                                 rel["location"]["range"]["end"]["line"].as_u64(),
                             ) {
                                 if let (Some(m_sl), Some(m_el)) = (
-                                    ov.map_compiled_line_to_live(r_sl as u32 + 1),
-                                    ov.map_compiled_line_to_live(r_el as u32 + 1),
+                                    crate::overlay::map_text_line_to_live(
+                                        base_text,
+                                        live_text,
+                                        r_sl as u32 + 1,
+                                    ),
+                                    crate::overlay::map_text_line_to_live(
+                                        base_text,
+                                        live_text,
+                                        r_el as u32 + 1,
+                                    ),
                                 ) {
                                     rel["location"]["range"]["start"]["line"] =
                                         json!(m_sl.saturating_sub(1));
@@ -193,7 +195,9 @@ pub fn publish_reconciled_diagnostics<W: Write>(
         .map(|a| a.as_slice())
         .unwrap_or(&[]);
     let raw_auth = flycheck.get_latest_diagnostics(uri);
-    let auth_items = map_authoritative_diagnostics_to_live(&raw_auth, ov_opt, uri);
+    let baseline = flycheck.get_diagnostic_baseline(uri);
+    let auth_items =
+        map_authoritative_diagnostics_to_live(&raw_auth, baseline.as_deref(), text, uri);
     let merged = reconcile_diagnostics(h_items, &auth_items);
 
     if !merged.is_empty() {
@@ -221,5 +225,46 @@ pub fn publish_reconciled_diagnostics<W: Write>(
         send_response(writer, &notif)?;
     }
 
+    Ok(())
+}
+
+/// Dispatches an internal compiler diagnostic notification from flycheck.
+///
+/// Updates the cached latest diagnostics and text baseline. If the client declared
+/// pull diagnostics capability, suppresses push publishDiagnostics and emits
+/// `workspace/diagnostic/refresh` (if refreshSupport is enabled). Otherwise, pushes
+/// reconciled diagnostics to the client.
+pub fn handle_internal_diagnostic<W: Write>(
+    diag: &Value,
+    lifecycle: &crate::lsp::lifecycle::LifecycleManager,
+    overlay_mgr: &OverlayManager,
+    writer: &mut W,
+) -> std::io::Result<()> {
+    let uri = diag["params"]["uri"].as_str().unwrap_or("");
+    let diags = diag["params"]["diagnostics"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    let file = uri_to_path(uri);
+    let baseline = overlay_mgr
+        .get(&file)
+        .and_then(|ov| ov.disk_text.clone())
+        .or_else(|| std::fs::read_to_string(&file).ok());
+    lifecycle
+        .flycheck
+        .set_latest_diagnostics_with_baseline(uri, diags, baseline);
+    if lifecycle.client_pull_diagnostics() {
+        if lifecycle.client_refresh_diagnostics() {
+            let refresh = json!({
+                "jsonrpc": "2.0",
+                "method": "workspace/diagnostic/refresh",
+                "id": lifecycle.next_refresh_id(),
+                "params": {}
+            });
+            send_response(writer, &refresh)?;
+        }
+    } else {
+        publish_reconciled_diagnostics(uri, None, overlay_mgr, &lifecycle.flycheck, writer)?;
+    }
     Ok(())
 }

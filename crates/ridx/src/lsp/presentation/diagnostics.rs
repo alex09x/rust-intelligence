@@ -34,9 +34,12 @@ pub fn handle_diagnostic_with_flycheck(
     if let Some(fc) = flycheck {
         let auth_items = fc.get_latest_diagnostics(uri);
         let file = uri_to_path(uri);
+        let live_text = overlay_mgr.get(&file).map_or("", |ov| ov.text.as_str());
+        let baseline = fc.get_diagnostic_baseline(uri);
         let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_live(
             &auth_items,
-            overlay_mgr.get(&file),
+            baseline.as_deref(),
+            live_text,
             uri,
         );
         let merged = super::reconcile::reconcile_diagnostics(h_items, &mapped_auth);

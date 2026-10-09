@@ -91,7 +91,7 @@ fn test_e2e_flycheck_e0425_line_shifted_after_lines_inserted_above() {
     )
     .unwrap();
 
-    // 3. didSave -> advances compiled baseline
+    // 3. didSave -> saves document to disk (flycheck baseline established, compiled_text untouched)
     out.clear();
     let save_notif = json!({
         "jsonrpc": "2.0",

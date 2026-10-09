@@ -294,3 +294,50 @@ fn test_staleness_definition_in_modified_hunk_abstains() {
         "Must abstain rather than return stale compiled definition inside modified hunk"
     );
 }
+
+#[test]
+fn test_case_9_line_shift_after_did_save_without_reindex() {
+    let ws = get_or_index_l2_fixture("traits_and_generics");
+    let lib_file = fixture_dir("traits_and_generics").join("src/lib.rs");
+    let uri = path_to_uri(lib_file.to_str().unwrap());
+    let mut overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    let original_text = fs::read_to_string(&lib_file).unwrap();
+    let prefix = "// Line 1\n// Line 2\n// Line 3\n// Line 4\n// Line 5\n";
+    let shifted_text = format!("{}{}", prefix, original_text);
+
+    let file_str = lib_file.to_str().unwrap();
+    overlay_mgr.open_with_provenance(&uri, file_str, 2, shifted_text.clone(), false);
+    overlay_mgr
+        .get_mut(file_str)
+        .unwrap()
+        .advance_compiled_baseline(original_text);
+
+    // didSave occurs: saves document to disk without re-indexing
+    overlay_mgr.save_document(file_str);
+
+    assert!(
+        overlay_mgr.get(file_str).unwrap().is_dirty(),
+        "Buffer must remain dirty relative to index compiled_text after didSave without reindex"
+    );
+
+    // Definition query on shifted `Robot` in `call_concrete(r: &Robot)`
+    let (cur_line, cur_col) = pos_in_str(&shifted_text, "call_concrete(r: &Robot)", "Robot");
+    let def_req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": cur_line, "character": cur_col }
+        }
+    });
+
+    let def_res = handle_definition(&def_req, Some(ws), &overlay_mgr, &mut conv);
+    assert!(
+        !def_res.is_null(),
+        "Must resolve definition after save without reindex"
+    );
+
+    let (expected_line, expected_col) = pos_in_str(&shifted_text, "pub struct Robot;", "Robot");
+    assert_eq!(def_res["range"]["start"]["line"], expected_line);
+    assert_eq!(def_res["range"]["start"]["character"], expected_col);
+}

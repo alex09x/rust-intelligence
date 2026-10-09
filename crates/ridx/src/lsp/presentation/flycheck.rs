@@ -41,11 +41,17 @@ fn kill_child_process_tree(child: &mut Child) {
 
 pub type FlycheckCallback = Box<dyn Fn(u64, Value) + Send + Sync>;
 
+#[derive(Default, Clone)]
+pub struct CachedDiagnostic {
+    pub items: Vec<Value>,
+    pub baseline: Option<String>,
+}
+
 pub struct FlycheckState {
     running_child: Arc<Mutex<Option<(u64, Child)>>>,
     generation: Arc<AtomicU64>,
     published_uris: Arc<Mutex<HashMap<PathBuf, HashSet<String>>>>,
-    latest_diagnostics: Arc<Mutex<HashMap<String, Vec<Value>>>>,
+    latest_diagnostics: Arc<Mutex<HashMap<String, CachedDiagnostic>>>,
     active_diagnostic_uris: Arc<Mutex<HashSet<String>>>,
     worker_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
     notifier: Arc<Mutex<Option<FlycheckCallback>>>,
@@ -56,9 +62,9 @@ impl Default for FlycheckState {
         Self {
             running_child: Arc::new(Mutex::new(None)),
             generation: Arc::new(AtomicU64::new(0)),
-            published_uris: Arc::new(Mutex::new(HashMap::new())),
-            latest_diagnostics: Arc::new(Mutex::new(HashMap::new())),
-            active_diagnostic_uris: Arc::new(Mutex::new(HashSet::new())),
+            published_uris: Arc::default(),
+            latest_diagnostics: Arc::default(),
+            active_diagnostic_uris: Arc::default(),
             worker_handle: Arc::new(Mutex::new(None)),
             notifier: Arc::new(Mutex::new(None)),
         }
@@ -79,16 +85,41 @@ impl FlycheckState {
             .lock()
             .unwrap()
             .get(uri)
-            .cloned()
+            .map(|c| c.items.clone())
             .unwrap_or_default()
     }
 
+    pub fn get_diagnostic_baseline(&self, uri: &str) -> Option<String> {
+        self.latest_diagnostics
+            .lock()
+            .unwrap()
+            .get(uri)
+            .and_then(|c| c.baseline.clone())
+    }
+
     pub fn set_latest_diagnostics(&self, uri: &str, diags: Vec<Value>) {
+        self.set_latest_diagnostics_with_baseline(uri, diags, None);
+    }
+
+    pub fn set_latest_diagnostics_with_baseline(
+        &self,
+        uri: &str,
+        diags: Vec<Value>,
+        baseline: Option<String>,
+    ) {
         let mut guard = self.latest_diagnostics.lock().unwrap();
         if diags.is_empty() {
             guard.remove(uri);
         } else {
-            guard.insert(uri.to_string(), diags);
+            let base = baseline
+                .or_else(|| std::fs::read_to_string(super::super::protocol::uri_to_path(uri)).ok());
+            guard.insert(
+                uri.to_string(),
+                CachedDiagnostic {
+                    items: diags,
+                    baseline: base,
+                },
+            );
         }
     }
 
@@ -199,7 +230,7 @@ fn run_check_internal<F>(
     generation: &Arc<AtomicU64>,
     running_child: &Arc<Mutex<Option<(u64, Child)>>>,
     published_uris: &Arc<Mutex<HashMap<PathBuf, HashSet<String>>>>,
-    latest_diagnostics: &Arc<Mutex<HashMap<String, Vec<Value>>>>,
+    latest_diagnostics: &Arc<Mutex<HashMap<String, CachedDiagnostic>>>,
     mut emit_notif: F,
 ) -> std::io::Result<usize>
 where
@@ -232,19 +263,15 @@ where
     cmd.env("CARGO_TARGET_DIR", target_dir);
 
     // Only inject RUSTC_WRAPPER if explicitly requested via environment opt-in
-    if std::env::var("RIDX_FLYCHECK_DRIVER")
-        .map(|v| v == "1")
-        .unwrap_or(false)
-    {
+    if std::env::var("RIDX_FLYCHECK_DRIVER").is_ok_and(|v| v == "1") {
         if let Some(driver) = find_ridx_driver(workspace_root) {
             cmd.env("RUSTC_WRAPPER", driver);
         }
     }
 
     let mut child = cmd.spawn()?;
-    let stdout = match child.stdout.take() {
-        Some(out) => out,
-        None => return Ok(0),
+    let Some(stdout) = child.stdout.take() else {
+        return Ok(0);
     };
 
     {
@@ -271,19 +298,20 @@ where
         };
         if let Ok(val) = serde_json::from_str::<Value>(&line) {
             if val.get("reason").and_then(|r| r.as_str()) == Some("compiler-message") {
-                if let Some(msg) = val.get("message") {
-                    if let Some((uri, diag)) = parse_compiler_message(msg, workspace_root) {
-                        let l_start = diag["range"]["start"]["line"].as_u64().unwrap_or(0);
-                        let c_start = diag["range"]["start"]["character"].as_u64().unwrap_or(0);
-                        let l_end = diag["range"]["end"]["line"].as_u64().unwrap_or(0);
-                        let c_end = diag["range"]["end"]["character"].as_u64().unwrap_or(0);
-                        let sev = diag["severity"].as_i64().unwrap_or(1);
-                        let m_text = diag["message"].as_str().unwrap_or("").to_string();
+                if let Some((uri, diag)) = val
+                    .get("message")
+                    .and_then(|m| parse_compiler_message(m, workspace_root))
+                {
+                    let l_start = diag["range"]["start"]["line"].as_u64().unwrap_or(0);
+                    let c_start = diag["range"]["start"]["character"].as_u64().unwrap_or(0);
+                    let l_end = diag["range"]["end"]["line"].as_u64().unwrap_or(0);
+                    let c_end = diag["range"]["end"]["character"].as_u64().unwrap_or(0);
+                    let sev = diag["severity"].as_i64().unwrap_or(1);
+                    let m_text = diag["message"].as_str().unwrap_or("").to_string();
 
-                        let key = (uri.clone(), l_start, c_start, l_end, c_end, sev, m_text);
-                        if seen_diagnostics.insert(key) {
-                            file_diagnostics.entry(uri).or_default().push(diag);
-                        }
+                    let key = (uri.clone(), l_start, c_start, l_end, c_end, sev, m_text);
+                    if seen_diagnostics.insert(key) {
+                        file_diagnostics.entry(uri).or_default().push(diag);
                     }
                 }
             }
@@ -323,10 +351,7 @@ where
         let notif = json!({
             "jsonrpc": "2.0",
             "method": "textDocument/publishDiagnostics",
-            "params": {
-                "uri": uri,
-                "diagnostics": diags
-            }
+            "params": { "uri": uri, "diagnostics": diags }
         });
         emit_notif(my_gen, notif)?;
     }
@@ -340,10 +365,7 @@ where
             let clear_notif = json!({
                 "jsonrpc": "2.0",
                 "method": "textDocument/publishDiagnostics",
-                "params": {
-                    "uri": old_uri,
-                    "diagnostics": []
-                }
+                "params": { "uri": old_uri, "diagnostics": [] }
             });
             emit_notif(my_gen, clear_notif)?;
         }
@@ -353,7 +375,15 @@ where
         published_guard.insert(workspace_root.to_path_buf(), current_uris.clone());
         let mut latest_guard = latest_diagnostics.lock().unwrap();
         for (uri, diags) in &file_diagnostics {
-            latest_guard.insert(uri.clone(), diags.clone());
+            let path = super::super::protocol::uri_to_path(uri);
+            let baseline = std::fs::read_to_string(&path).ok();
+            latest_guard.insert(
+                uri.clone(),
+                CachedDiagnostic {
+                    items: diags.clone(),
+                    baseline,
+                },
+            );
         }
         for old_uri in &prev_published {
             if !current_uris.contains(old_uri) {

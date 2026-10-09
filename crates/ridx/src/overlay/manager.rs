@@ -84,7 +84,6 @@ impl OverlayManager {
     pub fn save_document(&mut self, file_path: &str) {
         if let Some(overlay) = self.overlays.get_mut(file_path) {
             overlay.disk_text = Some(overlay.text.clone());
-            overlay.compiled_text = Some(overlay.text.clone());
         }
     }
 
