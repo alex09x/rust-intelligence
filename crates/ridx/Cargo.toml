@@ -15,3 +15,8 @@ serde_json = "1.0"
 colored = "2.1"
 scip = "0.10.0"
 protobuf = "3"
+
+[dev-dependencies]
+ridx-test-support = { path = "../ridx-test-support" }
+tempfile = "3"
+syn = { version = "2", features = ["full"] }

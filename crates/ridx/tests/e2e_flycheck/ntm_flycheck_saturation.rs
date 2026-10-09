@@ -11,16 +11,12 @@
 //! Verification test for flycheck publish and clear delivery under client queue saturation.
 
 use ridx::lsp::run_lsp_server_stream;
+use ridx_test_support::make_lsp_msg;
 use serde_json::json;
 use std::fs;
 use std::io::Cursor;
 
-fn make_lsp_msg(val: &serde_json::Value) -> Vec<u8> {
-    let s = serde_json::to_string(val).unwrap();
-    format!("Content-Length: {}\r\n\r\n{}", s.len(), s).into_bytes()
-}
-
-static PATH_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
+use crate::PATH_MUTEX;
 
 struct PipeReader {
     rx: std::sync::mpsc::Receiver<Vec<u8>>,

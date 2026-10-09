@@ -1,4 +1,5 @@
-/target
+target/
+crates/ridx/tests/fixtures/**/target/
 *.ridx
 .prod/
 *.profraw
@@ -13,3 +14,5 @@ bench_scenarios.json
 *.scip
 index.scip
 *.jsonl
+*.html
+!site/index.html

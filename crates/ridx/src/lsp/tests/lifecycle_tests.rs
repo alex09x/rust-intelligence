@@ -19,7 +19,7 @@ fn test_position_converter_caching_and_utf16() {
     std::fs::create_dir_all(&temp_dir).unwrap();
     let file_path = temp_dir.join("test.rs");
 
-    let content = "fn main() {\n    let s = \"привет\";\n    let rocket = \"🚀!\";\n}\n";
+    let content = "fn main() {\n    let s = \"grüßen\";\n    let rocket = \"🚀!\";\n}\n";
     std::fs::write(&file_path, content).unwrap();
 
     let path_str = file_path.to_str().unwrap();

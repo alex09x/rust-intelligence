@@ -26,7 +26,7 @@ fn setup_test_presentation() -> (PathBuf, WorkspaceIndex, OverlayManager, Positi
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let code =
-        "// привет https://example.com/test\npub fn hello() {\n    let a = 1;\n    let b = 2;\n}\n";
+        "// link https://example.com/test\npub fn hello() {\n    let a = 1;\n    let b = 2;\n}\n";
     let _ = fs::write(&src_file, code);
 
     let mut writer = IndexWriter::new("test_pres", "0.1.0");
@@ -62,7 +62,7 @@ fn test_presentation_handlers_comprehensive() {
     let file_path = temp_dir.join("src/lib.rs");
     let uri = format!("file://{}", file_path.to_str().unwrap());
 
-    let code = "// привет https://example.com/test\npub fn hello() {\n    let a = 1;\n    let b = 2;\n}\nmod my_mod {\n    struct MyStruct; enum MyEnum { A }\n    trait MyTrait {}\n    const MY_CONST: i32 = 1;\n}\n";
+    let code = "// link https://example.com/test\npub fn hello() {\n    let a = 1;\n    let b = 2;\n}\nmod my_mod {\n    struct MyStruct; enum MyEnum { A }\n    trait MyTrait {}\n    const MY_CONST: i32 = 1;\n}\n";
     overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, code.to_string());
     if let Some(doc) = overlay_mgr.get_mut(file_path.to_str().unwrap()) {
         doc.symbols.push(crate::overlay::OverlaySymbol {

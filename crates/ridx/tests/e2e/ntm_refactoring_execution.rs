@@ -12,76 +12,9 @@ use ridx::lsp::editing::actions::handle_code_action;
 use ridx::lsp::presentation::workspace_diag::handle_workspace_diagnostic;
 use ridx::lsp::workspace::MultiRootWorkspace;
 use ridx::overlay::OverlayManager;
+use ridx_test_support::apply_text_edits;
 use serde_json::json;
 use std::fs;
-
-fn utf16_col_to_char_slice(line: &str, utf16_col: usize) -> (String, String) {
-    let mut utf16_count = 0;
-    let mut split_byte = line.len();
-    for (b_idx, c) in line.char_indices() {
-        if utf16_count >= utf16_col {
-            split_byte = b_idx;
-            break;
-        }
-        utf16_count += c.len_utf16();
-    }
-    (
-        line[..split_byte].to_string(),
-        line[split_byte..].to_string(),
-    )
-}
-
-fn apply_text_edits(content: &str, edits: &[serde_json::Value]) -> String {
-    let mut parsed: Vec<(u32, u32, u32, u32, String)> = edits
-        .iter()
-        .map(|e| {
-            let r = &e["range"];
-            (
-                r["start"]["line"].as_u64().unwrap() as u32,
-                r["start"]["character"].as_u64().unwrap() as u32,
-                r["end"]["line"].as_u64().unwrap() as u32,
-                r["end"]["character"].as_u64().unwrap() as u32,
-                e["newText"].as_str().unwrap().to_string(),
-            )
-        })
-        .collect();
-
-    // Sort descending so later edits do not shift earlier character offsets
-    parsed.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| b.1.cmp(&a.1)));
-
-    let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
-    if content.ends_with('\n') {
-        lines.push(String::new());
-    }
-
-    for (s_line, s_char, e_line, e_char, new_text) in parsed {
-        let s_l = s_line as usize;
-        let e_l = e_line as usize;
-        let s_c = s_char as usize;
-        let e_c = e_char as usize;
-
-        if s_l == e_l {
-            let line = &lines[s_l];
-            let (before, _) = utf16_col_to_char_slice(line, s_c);
-            let (_, after) = utf16_col_to_char_slice(line, e_c);
-            let replaced = format!("{}{}{}", before, new_text, after);
-            let repl_lines: Vec<String> = replaced.split('\n').map(|s| s.to_string()).collect();
-            lines.splice(s_l..=s_l, repl_lines);
-        } else {
-            let (start_prefix, _) = utf16_col_to_char_slice(&lines[s_l], s_c);
-            let (_, end_suffix) = utf16_col_to_char_slice(&lines[e_l], e_c);
-            let combined = format!("{}{}{}", start_prefix, new_text, end_suffix);
-            let repl_lines: Vec<String> = combined.split('\n').map(|s| s.to_string()).collect();
-            lines.splice(s_l..=e_l, repl_lines);
-        }
-    }
-
-    let mut result = lines.join("\n");
-    if content.ends_with('\n') && !result.ends_with('\n') {
-        result.push('\n');
-    }
-    result
-}
 
 #[test]
 fn test_refactor_organize_imports_execution() {
@@ -251,8 +184,8 @@ fn test_extract_variable_unicode_and_dependency_order() {
         "fn f(){ let a=2; let extracted = a+1; let b=extracted; }"
     );
 
-    // 2. Unicode safety: fn f(){ let привет=1; } -> extract 1 without panic
-    let code2 = "fn f(){ let привет=1; }";
+    // 2. Unicode safety: fn f(){ let grüßen=1; } -> extract 1 without panic
+    let code2 = "fn f(){ let grüßen=1; }";
     overlay_mgr.open_document(uri, file, 2, code2.to_string());
     let sc = code2[..code2.find('1').unwrap()].encode_utf16().count() as u32;
     let ec = sc + 1;
@@ -275,7 +208,7 @@ fn test_extract_variable_unicode_and_dependency_order() {
     let transformed2 = apply_text_edits(code2, edits2);
     assert_eq!(
         transformed2,
-        "fn f(){ let extracted = 1; let привет=extracted; }"
+        "fn f(){ let extracted = 1; let grüßen=extracted; }"
     );
 }
 
@@ -373,7 +306,7 @@ fn test_extract_variable_multiline_short_circuit_and_loop_rejected() {
 
 #[test]
 fn test_review_v4651_inline_completion_unicode_edit() {
-    let code = "fn f(){ привет }";
+    let code = "fn f(){ grüßen }";
     let overlay_mgr = OverlayManager::new();
     let temp_file = std::env::temp_dir().join(format!("test_inline_u_{}.rs", std::process::id()));
     let _ = fs::write(&temp_file, code);
@@ -390,8 +323,8 @@ fn test_review_v4651_inline_completion_unicode_edit() {
     let items = res["items"].as_array().expect("items array");
     assert!(!items.is_empty());
     let range = &items[0]["range"];
-    assert_eq!(range["start"]["character"], 8, "start of 'привет'");
+    assert_eq!(range["start"]["character"], 8, "start of 'grüßen'");
     assert_eq!(range["end"]["character"], 14);
-    assert_eq!(items[0]["insertText"], "привет");
+    assert_eq!(items[0]["insertText"], "grüßen");
     let _ = fs::remove_file(temp_file);
 }

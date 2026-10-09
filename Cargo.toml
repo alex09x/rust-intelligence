@@ -3,5 +3,9 @@ members = [
     "crates/ridx-format",
     "crates/ridx-driver",
     "crates/ridx",
+    "crates/ridx-test-support",
+]
+exclude = [
+    "crates/ridx/tests/fixtures",
 ]
 resolver = "2"

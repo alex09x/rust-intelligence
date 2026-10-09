@@ -352,10 +352,10 @@ mod tests {
 
         // Real file with unicode
         let tmp = std::env::temp_dir().join(format!("conv_{}.rs", std::process::id()));
-        std::fs::write(&tmp, "let привет = 42;\nlet rocket = \"🚀\";\n").unwrap();
+        std::fs::write(&tmp, "let grüßen = 42;\nlet rocket = \"🚀\";\n").unwrap();
         let path = tmp.to_str().unwrap();
 
-        // 'let ' = 4 chars, 'привет' = 6 chars
+        // 'let ' = 4 chars, 'grüßen' = 6 chars
         assert_eq!(conv.char_col_to_utf16_col(path, 1, 5), 4);
         assert_eq!(conv.utf16_col_to_char_col(path, 1, 4), 5);
         // Column beyond line length
