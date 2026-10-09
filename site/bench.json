@@ -1,0 +1,333 @@
+{
+  "node": "booster (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24-31)",
+  "baseline": "rust-analyzer 1.98.1 (48a229c)",
+  "summary": {
+    "corpus": "5 repositories (serde, ripgrep, tokio, bevy, rust-analyzer)",
+    "total_scenarios": 2100,
+    "overall_strict_matched": 1714,
+    "overall_strict_pct": 81.62,
+    "readonly_queries": 1500,
+    "readonly_strict_matched": 1318,
+    "readonly_strict_pct": 87.87,
+    "sysroot_unique_discrepancies": 99,
+    "sysroot_unique_discrepancies_pct": 25.65,
+    "expected_sysroot_gain_overall_pp": 4.71,
+    "expected_sysroot_gain_readonly_pp": 4.87
+  },
+  "limitations": [
+    "Standard library (std/core/alloc) definition shards are not indexed yet; expected effect when indexed is +4.71 pp overall (+4.87 pp read-only).",
+    "textDocument/completion is non-speculative and resolves in tens of ms pending trie index caching."
+  ],
+  "workspaces": {
+    "serde": {
+      "meta": "serde \u00b7 3 crates \u00b7 warm cache \u00b7 booster (32 cores)",
+      "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
+      "rows": [
+        [
+          "Go to definition (warm p50)",
+          4.2999999999999995e-05,
+          "43 \u00b5s",
+          0.00013099999999999999,
+          "131 \u00b5s"
+        ],
+        [
+          "Go to definition (tail p95)",
+          0.0003653499999999999,
+          "365 \u00b5s",
+          0.006890099999999998,
+          "6.89 ms"
+        ],
+        [
+          "Find references (warm p50)",
+          9.35e-05,
+          "94 \u00b5s",
+          0.001534,
+          "1.53 ms"
+        ],
+        [
+          "Find references (tail p95)",
+          0.0015533999999999995,
+          "1.55 ms",
+          0.034199949999999986,
+          "34.20 ms"
+        ],
+        [
+          "Hover (warm p50)",
+          6.8e-05,
+          "68 \u00b5s",
+          0.0001035,
+          "104 \u00b5s"
+        ],
+        [
+          "Hover (tail p95)",
+          0.00011204999999999999,
+          "112 \u00b5s",
+          0.00022074999999999994,
+          "221 \u00b5s"
+        ]
+      ],
+      "accuracy": {
+        "readonly_strict_pct": 87.33333333333333,
+        "readonly_matched": 262,
+        "readonly_total": 300,
+        "overall_strict_pct": 80.95238095238095,
+        "overall_matched": 340,
+        "overall_total": 420
+      },
+      "memory": {
+        "ridx_heap_anon_mb": 14.0,
+        "ra_heap_anon_mb": 1292.23828125,
+        "ridx_pss_10_mb": 20.5,
+        "ra_pss_10_mb": 9211.46
+      }
+    },
+    "ripgrep": {
+      "meta": "ripgrep \u00b7 7 crates \u00b7 warm cache \u00b7 booster (32 cores)",
+      "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
+      "rows": [
+        [
+          "Go to definition (warm p50)",
+          4.9999999999999996e-05,
+          "50 \u00b5s",
+          0.00018549999999999998,
+          "186 \u00b5s"
+        ],
+        [
+          "Go to definition (tail p95)",
+          0.0004840499999999996,
+          "484 \u00b5s",
+          0.005978549999999992,
+          "5.98 ms"
+        ],
+        [
+          "Find references (warm p50)",
+          0.000103,
+          "103 \u00b5s",
+          0.0010145,
+          "1.01 ms"
+        ],
+        [
+          "Find references (tail p95)",
+          0.00431285,
+          "4.31 ms",
+          0.013361149999999987,
+          "13.36 ms"
+        ],
+        [
+          "Hover (warm p50)",
+          7.85e-05,
+          "78 \u00b5s",
+          0.0001325,
+          "132 \u00b5s"
+        ],
+        [
+          "Hover (tail p95)",
+          0.000102,
+          "102 \u00b5s",
+          0.00025215,
+          "252 \u00b5s"
+        ]
+      ],
+      "accuracy": {
+        "readonly_strict_pct": 96.0,
+        "readonly_matched": 288,
+        "readonly_total": 300,
+        "overall_strict_pct": 90.47619047619048,
+        "overall_matched": 380,
+        "overall_total": 420
+      },
+      "memory": {
+        "ridx_heap_anon_mb": 18.44921875,
+        "ra_heap_anon_mb": 1236.828125,
+        "ridx_pss_10_mb": 26.23,
+        "ra_pss_10_mb": 9526.09
+      }
+    },
+    "Tokio": {
+      "meta": "Tokio \u00b7 42 crates \u00b7 880 files \u00b7 booster (32 cores)",
+      "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
+      "rows": [
+        [
+          "Go to definition (warm p50)",
+          9.499999999999999e-05,
+          "95 \u00b5s",
+          0.00018099999999999998,
+          "181 \u00b5s"
+        ],
+        [
+          "Go to definition (tail p95)",
+          0.00020109999999999996,
+          "201 \u00b5s",
+          0.029288149999999992,
+          "29.29 ms"
+        ],
+        [
+          "Find references (warm p50)",
+          0.0005729999999999999,
+          "573 \u00b5s",
+          0.0050795,
+          "5.08 ms"
+        ],
+        [
+          "Find references (tail p95)",
+          0.0023149499999999975,
+          "2.31 ms",
+          0.07338924999999992,
+          "73.39 ms"
+        ],
+        [
+          "Hover (warm p50)",
+          0.0012955,
+          "1.30 ms",
+          0.0001495,
+          "150 \u00b5s"
+        ],
+        [
+          "Hover (tail p95)",
+          0.00150045,
+          "1.50 ms",
+          0.00037319999999999996,
+          "373 \u00b5s"
+        ]
+      ],
+      "accuracy": {
+        "readonly_strict_pct": 81.66666666666667,
+        "readonly_matched": 245,
+        "readonly_total": 300,
+        "overall_strict_pct": 77.85714285714286,
+        "overall_matched": 327,
+        "overall_total": 420
+      },
+      "memory": {
+        "ridx_heap_anon_mb": 37.875,
+        "ra_heap_anon_mb": 2604.0625,
+        "ridx_pss_10_mb": 196.51,
+        "ra_pss_10_mb": 17528.4
+      }
+    },
+    "bevy": {
+      "meta": "bevy \u00b7 147 crates \u00b7 2,800 files \u00b7 booster (32 cores)",
+      "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
+      "rows": [
+        [
+          "Go to definition (warm p50)",
+          0.000245,
+          "245 \u00b5s",
+          0.0002805,
+          "280 \u00b5s"
+        ],
+        [
+          "Go to definition (tail p95)",
+          0.0005901999999999998,
+          "590 \u00b5s",
+          0.14801694999999992,
+          "148.02 ms"
+        ],
+        [
+          "Find references (warm p50)",
+          0.0038799999999999998,
+          "3.88 ms",
+          0.013021999999999999,
+          "13.02 ms"
+        ],
+        [
+          "Find references (tail p95)",
+          0.03683609999999996,
+          "36.84 ms",
+          0.1678113499999999,
+          "167.81 ms"
+        ],
+        [
+          "Hover (warm p50)",
+          0.0039575,
+          "3.96 ms",
+          0.000215,
+          "215 \u00b5s"
+        ],
+        [
+          "Hover (tail p95)",
+          0.011206849999999999,
+          "11.21 ms",
+          0.0005449999999999999,
+          "545 \u00b5s"
+        ]
+      ],
+      "accuracy": {
+        "readonly_strict_pct": 93.66666666666667,
+        "readonly_matched": 281,
+        "readonly_total": 300,
+        "overall_strict_pct": 85.0,
+        "overall_matched": 357,
+        "overall_total": 420
+      },
+      "memory": {
+        "ridx_heap_anon_mb": 178.01953125,
+        "ra_heap_anon_mb": 10266.875,
+        "ridx_pss_10_mb": 1725.31,
+        "ra_pss_10_mb": 58549.17
+      }
+    },
+    "rust-analyzer": {
+      "meta": "rust-analyzer \u00b7 261 crates \u00b7 3,050 files \u00b7 booster (32 cores)",
+      "target": "Pilot benchmark \u00b7 300 sampled positions \u00b7 warm latencies (post-index)",
+      "rows": [
+        [
+          "Go to definition (warm p50)",
+          0.000174,
+          "174 \u00b5s",
+          0.0003145,
+          "314 \u00b5s"
+        ],
+        [
+          "Go to definition (tail p95)",
+          0.0006069999999999986,
+          "607 \u00b5s",
+          0.05328209999999997,
+          "53.28 ms"
+        ],
+        [
+          "Find references (warm p50)",
+          0.0006544999999999999,
+          "654 \u00b5s",
+          0.0015715,
+          "1.57 ms"
+        ],
+        [
+          "Find references (tail p95)",
+          0.005966549999999999,
+          "5.97 ms",
+          0.1330458499999999,
+          "133.05 ms"
+        ],
+        [
+          "Hover (warm p50)",
+          0.00043599999999999997,
+          "436 \u00b5s",
+          0.00022799999999999999,
+          "228 \u00b5s"
+        ],
+        [
+          "Hover (tail p95)",
+          0.0009685999999999999,
+          "969 \u00b5s",
+          0.0005147999999999998,
+          "515 \u00b5s"
+        ]
+      ],
+      "accuracy": {
+        "readonly_strict_pct": 80.66666666666666,
+        "readonly_matched": 242,
+        "readonly_total": 300,
+        "overall_strict_pct": 73.80952380952381,
+        "overall_matched": 310,
+        "overall_total": 420
+      },
+      "memory": {
+        "ridx_heap_anon_mb": 78.6484375,
+        "ra_heap_anon_mb": 3766.76171875,
+        "ridx_pss_10_mb": 122.19,
+        "ra_pss_10_mb": 21120.21
+      }
+    }
+  }
+}

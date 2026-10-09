@@ -8,27 +8,66 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-// Preliminary numbers from README / LSP_BENCHMARK_COMPARISON_REPORT.md (seconds).
-const WORKSPACES = {
-  "Tokio": {
-    meta: "Tokio · 42 crates · 880 files",
-    target: "runtime::context::blocking::try_enter_blocking_region",
+// Pilot benchmark telemetry from bench.json / LSP_BENCHMARK_COMPARISON_REPORT.md (seconds).
+let WORKSPACES = {
+  "serde": {
+    meta: "serde · 3 crates · warm cache · booster (32 cores)",
+    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
     rows: [
-      ["Go to definition", 24e-6, "24 µs", 10.554, "10,554 ms"],
-      ["Find references", 655e-6, "655 µs", 1.273, "1,273 ms"],
-      ["Hover", 42e-6, "42 µs", 0.344, "344 ms"],
-      ["Incoming calls", 262e-6, "262 µs", 0.363, "363 ms"],
-      ["Workspace symbols (Runtime)", 16.9e-3, "16.9 ms", 0.323, "323 ms"],
+      ["Go to definition (warm p50)", 43e-6, "43 µs", 131e-6, "131 µs"],
+      ["Go to definition (tail p95)", 365e-6, "365 µs", 6.89e-3, "6.89 ms"],
+      ["Find references (warm p50)", 94e-6, "94 µs", 1.53e-3, "1.53 ms"],
+      ["Find references (tail p95)", 1.55e-3, "1.55 ms", 34.2e-3, "34.20 ms"],
+      ["Hover (warm p50)", 68e-6, "68 µs", 104e-6, "104 µs"],
+      ["Hover (tail p95)", 112e-6, "112 µs", 221e-6, "221 µs"],
+    ],
+  },
+  "ripgrep": {
+    meta: "ripgrep · 7 crates · warm cache · booster (32 cores)",
+    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
+    rows: [
+      ["Go to definition (warm p50)", 50e-6, "50 µs", 186e-6, "186 µs"],
+      ["Go to definition (tail p95)", 484e-6, "484 µs", 5.98e-3, "5.98 ms"],
+      ["Find references (warm p50)", 103e-6, "103 µs", 1.01e-3, "1.01 ms"],
+      ["Find references (tail p95)", 4.31e-3, "4.31 ms", 13.36e-3, "13.36 ms"],
+      ["Hover (warm p50)", 78e-6, "78 µs", 132e-6, "132 µs"],
+      ["Hover (tail p95)", 102e-6, "102 µs", 252e-6, "252 µs"],
+    ],
+  },
+  "Tokio": {
+    meta: "Tokio · 42 crates · 880 files · booster (32 cores)",
+    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
+    rows: [
+      ["Go to definition (warm p50)", 95e-6, "95 µs", 181e-6, "181 µs"],
+      ["Go to definition (tail p95)", 201e-6, "201 µs", 29.29e-3, "29.29 ms"],
+      ["Find references (warm p50)", 573e-6, "573 µs", 5.08e-3, "5.08 ms"],
+      ["Find references (tail p95)", 2.31e-3, "2.31 ms", 73.39e-3, "73.39 ms"],
+      ["Hover (warm p50)", 1.30e-3, "1.30 ms", 150e-6, "150 µs"],
+      ["Hover (tail p95)", 1.50e-3, "1.50 ms", 373e-6, "373 µs"],
+    ],
+  },
+  "bevy": {
+    meta: "bevy · 147 crates · 2,800 files · booster (32 cores)",
+    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
+    rows: [
+      ["Go to definition (warm p50)", 245e-6, "245 µs", 280e-6, "280 µs"],
+      ["Go to definition (tail p95)", 590e-6, "590 µs", 148.02e-3, "148.02 ms"],
+      ["Find references (warm p50)", 3.88e-3, "3.88 ms", 13.02e-3, "13.02 ms"],
+      ["Find references (tail p95)", 36.84e-3, "36.84 ms", 167.81e-3, "167.81 ms"],
+      ["Hover (warm p50)", 3.96e-3, "3.96 ms", 215e-6, "215 µs"],
+      ["Hover (tail p95)", 11.21e-3, "11.21 ms", 545e-6, "545 µs"],
     ],
   },
   "rust-analyzer": {
-    meta: "rust-analyzer · 261 crates · 3,050 files",
-    target: "ide::AnalysisHost",
+    meta: "rust-analyzer · 261 crates · 3,050 files · booster (32 cores)",
+    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
     rows: [
-      ["Go to definition", 704e-6, "704 µs", 10.905, "10,905 ms"],
-      ["Find references", 4.06e-3, "4.06 ms", 1.487, "1,487 ms"],
-      ["Hover", 410e-6, "410 µs", 0.381, "381 ms"],
-      ["Incoming calls", 1.61e-3, "1.61 ms", 0.382, "382 ms"],
+      ["Go to definition (warm p50)", 174e-6, "174 µs", 314e-6, "314 µs"],
+      ["Go to definition (tail p95)", 607e-6, "607 µs", 53.28e-3, "53.28 ms"],
+      ["Find references (warm p50)", 654e-6, "654 µs", 1.57e-3, "1.57 ms"],
+      ["Find references (tail p95)", 5.97e-3, "5.97 ms", 133.05e-3, "133.05 ms"],
+      ["Hover (warm p50)", 436e-6, "436 µs", 228e-6, "228 µs"],
+      ["Hover (tail p95)", 969e-6, "969 µs", 515e-6, "515 µs"],
     ],
   },
 };
@@ -103,6 +142,7 @@ const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
 function tabs(boxId, keys, onSelect) {
   const box = document.getElementById(boxId);
+  box.replaceChildren();
   const buttons = keys.map((k) => {
     const b = el("button", "chip");
     b.textContent = k;
@@ -120,23 +160,38 @@ function tabs(boxId, keys, onSelect) {
 // Log scale from 10 µs to 20 s.
 const pct = (s) => Math.max(1.5, Math.min(100, (Math.log10(s / 1e-5) / Math.log10(2e6)) * 100));
 
-tabs("ws-tabs", Object.keys(WORKSPACES), (name) => {
-  const ws = WORKSPACES[name];
-  document.getElementById("ws-meta").textContent = ws.meta;
-  document.getElementById("ws-target").textContent = `target: ${ws.target}`;
-  const rows = document.getElementById("ws-rows");
-  rows.replaceChildren(...ws.rows.map(([cap, , rl, , al]) => el("div", "cap",
-    `<b>${cap}</b>
-     <div class="bar-row"><span class="mono rust">ridx</span><div class="track"><div class="fr" style="width:0"></div></div><b class="mono">${rl}</b></div>
-     <div class="bar-row"><span class="mono mute">rust-analyzer</span><div class="track"><div class="fa" style="width:0"></div></div><b class="mono mute">${al}</b></div>`)));
-  requestAnimationFrame(() => {
-    ws.rows.forEach(([, r, , a], i) => {
-      const cap = rows.children[i];
-      cap.querySelector(".fr").style.width = `${pct(r)}%`;
-      cap.querySelector(".fa").style.width = `${pct(a)}%`;
+function renderWorkspaces(wsData) {
+  tabs("ws-tabs", Object.keys(wsData), (name) => {
+    const ws = wsData[name];
+    document.getElementById("ws-meta").textContent = ws.meta;
+    document.getElementById("ws-target").textContent = ws.target;
+    const rows = document.getElementById("ws-rows");
+    rows.replaceChildren(...ws.rows.map(([cap, , rl, , al]) => el("div", "cap",
+      `<b>${cap}</b>
+       <div class="bar-row"><span class="mono rust">ridx</span><div class="track"><div class="fr" style="width:0"></div></div><b class="mono">${rl}</b></div>
+       <div class="bar-row"><span class="mono mute">rust-analyzer</span><div class="track"><div class="fa" style="width:0"></div></div><b class="mono mute">${al}</b></div>`)));
+    requestAnimationFrame(() => {
+      ws.rows.forEach(([, r, , a], i) => {
+        const cap = rows.children[i];
+        if (cap) {
+          cap.querySelector(".fr").style.width = `${pct(r)}%`;
+          cap.querySelector(".fa").style.width = `${pct(a)}%`;
+        }
+      });
     });
   });
-});
+}
+
+renderWorkspaces(WORKSPACES);
+
+fetch("bench.json")
+  .then((r) => (r.ok ? r.json() : null))
+  .then((data) => {
+    if (data && data.workspaces) {
+      renderWorkspaces(data.workspaces);
+    }
+  })
+  .catch(() => {});
 
 const archButtons = [...document.querySelectorAll("[data-arch]")];
 const archDetail = document.getElementById("arch-detail");
