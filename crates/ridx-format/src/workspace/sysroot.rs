@@ -75,7 +75,7 @@ impl super::WorkspaceIndex {
         self.attach_shard_paths(&shards);
     }
 
-    fn attach_shard_paths(&mut self, shards: &[PathBuf]) {
+    pub fn attach_shard_paths(&mut self, shards: &[PathBuf]) {
         for sys_path in shards {
             if let Ok(reader) = IndexReader::open(sys_path) {
                 let mtime = fs::metadata(sys_path).and_then(|m| m.modified()).ok();

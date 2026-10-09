@@ -61,4 +61,24 @@ pub fn invoke_println(x: i32) {
     println!("{x}");
 }
 
+pub mod range {
+    pub struct RangeVisitor;
+    pub const FIELDS: &[&str] = &["start", "end"];
+}
 
+pub fn invoke_local_range() {
+    let _ = range::RangeVisitor;
+}
+
+pub mod remote_ops {
+    use core::ops;
+
+    pub fn invoke_sysroot_ops() {
+        let _ = ops::Range { start: 0, end: 1 };
+    }
+}
+
+pub fn invoke_prelude_types() {
+    let _: Vec<i32> = Vec::new();
+    let _ = String::from("hello");
+}

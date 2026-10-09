@@ -129,7 +129,7 @@ pub fn get_or_index_l2_fixture(name: &str) -> &'static WorkspaceIndex {
         no_default_features: false,
         all_features: false,
         target: None,
-        cache_dir: Some(test_cache_dir),
+        cache_dir: Some(test_cache_dir.clone()),
         driver_bin: Some(driver_bin),
     };
 
@@ -137,12 +137,40 @@ pub fn get_or_index_l2_fixture(name: &str) -> &'static WorkspaceIndex {
         panic!("Indexing L2 fixture {name} failed: {e}");
     });
 
-    let ws = WorkspaceIndex::open(&fix_dir).unwrap_or_else(|e| {
+    let mut ws = WorkspaceIndex::open(&fix_dir).unwrap_or_else(|e| {
         panic!(
             "Failed to open indexed WorkspaceIndex at {:?}: {e}",
             fix_dir
         );
     });
+
+    if !ws.has_sysroot() {
+        let cas_key_opt = ws.sysroot_cas_key().map(str::to_string);
+        if let Some(ref cas_key) = cas_key_opt {
+            ws.attach_sysroot_shards_for_key_in(&test_cache_dir.join("sysroot"), cas_key);
+        }
+        if !ws.has_sysroot() {
+            if let Ok(entries) = std::fs::read_dir(test_cache_dir.join("sysroot")) {
+                for entry in entries.flatten() {
+                    if entry.path().is_dir() {
+                        if let Some(key) = entry.file_name().to_str() {
+                            ws.attach_sysroot_shards_for_key_in(
+                                &test_cache_dir.join("sysroot"),
+                                key,
+                            );
+                            if ws.has_sysroot() {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if !ws.has_sysroot() {
+        panic!("L2 fixture {name}: driver did not build or attach real sysroot shards");
+    }
 
     let leaked: &'static WorkspaceIndex = Box::leak(Box::new(ws));
     cache.insert(name.to_string(), leaked);

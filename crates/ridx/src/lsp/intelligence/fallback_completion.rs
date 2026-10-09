@@ -84,7 +84,7 @@ pub fn try_fallback_completion(
             .into_iter()
             .rev()
             .collect();
-        let def_opt = ws.find_definition_by_path(&qual);
+        let def_opt = ws.resolve_qualifier(ctx.file, &qual);
         let target = def_opt.as_ref().map(|d| d.path).unwrap_or(&qual);
         let first_seg = qual.split("::").next().unwrap_or(&qual);
         let target_crate = if ws.has_crate(first_seg) {

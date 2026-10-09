@@ -148,7 +148,11 @@ pub fn handle_completion(
     let mut is_capped = false;
     if let Some(ws) = workspace {
         let current_crate = ws.crate_name_for_file(&file);
-        let ws_symbols = ws.search_symbols(&prefix);
+        let ws_symbols = if prefix.is_empty() {
+            ws.search_local_symbols(&prefix)
+        } else {
+            ws.search_symbols(&prefix)
+        };
 
         for s in ws_symbols {
             if s.kind == ridx_format::DefKind::Local {

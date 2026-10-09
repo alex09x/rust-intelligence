@@ -664,21 +664,7 @@ fn extract_crate_items<'tcx>(
         );
         let mut name = path.rsplit("::").next().unwrap_or(&path).to_string();
 
-        if kind == hir::def::DefKind::Use {
-            if let Ok(snippet) = tcx.sess.source_map().span_to_snippet(item_span) {
-                let trimmed = snippet.trim();
-                if !trimmed.is_empty() && trimmed.chars().all(|c| c.is_alphanumeric() || c == '_') {
-                    name = trimmed.to_string();
-                    if let Some((parent, _)) = path.rsplit_once("::") {
-                        path = format!("{parent}::{name}");
-                    } else {
-                        path = name.clone();
-                    }
-                }
-            }
-        }
-
-        let signature = match kind {
+        let mut signature = match kind {
             hir::def::DefKind::Fn => Some(sanitize_type_name(
                 &tcx.fn_sig(def_id).skip_binder().to_string(),
             )),
@@ -687,6 +673,60 @@ fn extract_crate_items<'tcx>(
             }
             _ => None,
         };
+
+        if kind == hir::def::DefKind::Use {
+            let mut is_glob = false;
+            if let hir::Node::Item(item) = tcx.hir_node_by_def_id(def_id) {
+                if let hir::ItemKind::Use(use_path, use_kind) = &item.kind {
+                    if matches!(use_kind, hir::UseKind::Glob) {
+                        is_glob = true;
+                        name = "*".to_string();
+                        let target_path = use_path
+                            .res
+                            .iter()
+                            .flatten()
+                            .find_map(|r| {
+                                r.opt_def_id().map(|target_did| {
+                                    rustc_middle::ty::print::with_no_visible_paths!(
+                                        rustc_middle::ty::print::with_no_trimmed_paths!(
+                                            tcx.def_path_str(target_did)
+                                        )
+                                    )
+                                })
+                            })
+                            .unwrap_or_else(|| {
+                                use_path
+                                    .segments
+                                    .iter()
+                                    .map(|s| s.ident.as_str())
+                                    .collect::<Vec<_>>()
+                                    .join("::")
+                            });
+                        path = format!("{path}::*");
+                        signature = Some(target_path);
+                    }
+                }
+            }
+
+            if !is_glob {
+                if let Ok(snippet) = tcx.sess.source_map().span_to_snippet(item_span) {
+                    let trimmed = snippet.trim();
+                    if trimmed.ends_with("::*") || trimmed.ends_with("::*;") {
+                        name = "*".to_string();
+                        path = format!("{path}::*");
+                    } else if !trimmed.is_empty()
+                        && trimmed.chars().all(|c| c.is_alphanumeric() || c == '_')
+                    {
+                        name = trimmed.to_string();
+                        if let Some((parent, _)) = path.rsplit_once("::") {
+                            path = format!("{parent}::{name}");
+                        } else {
+                            path = name.clone();
+                        }
+                    }
+                }
+            }
+        }
 
         let mut owners = Vec::new();
         let did = def_id.to_def_id();

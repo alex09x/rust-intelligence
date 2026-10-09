@@ -73,45 +73,7 @@ pub(crate) fn signature_takes_receiver(sig: &str) -> bool {
             || p[4..].starts_with(' '))
 }
 
-/// Returns true if a trait belongs to the standard 2021/2024 prelude and is in scope by default.
-/// Checked strictly against canonical full paths (e.g. `core::clone::Clone`).
-pub(crate) fn is_prelude_trait(path: &str) -> bool {
-    matches!(
-        path,
-        "core::clone::Clone"
-            | "core::cmp::PartialEq"
-            | "core::cmp::PartialOrd"
-            | "core::cmp::Ord"
-            | "core::iter::traits::iterator::Iterator"
-            | "core::iter::Iterator"
-            | "core::iter::traits::collect::IntoIterator"
-            | "core::iter::IntoIterator"
-            | "core::iter::traits::collect::Extend"
-            | "core::iter::Extend"
-            | "core::iter::traits::collect::FromIterator"
-            | "core::iter::FromIterator"
-            | "core::iter::traits::double_ended::DoubleEndedIterator"
-            | "core::iter::DoubleEndedIterator"
-            | "core::iter::traits::exact_size::ExactSizeIterator"
-            | "core::iter::ExactSizeIterator"
-            | "core::convert::AsRef"
-            | "core::convert::AsMut"
-            | "core::convert::Into"
-            | "core::convert::TryInto"
-            | "alloc::string::ToString"
-            | "alloc::borrow::ToOwned"
-            | "core::ops::function::Fn"
-            | "core::ops::Fn"
-            | "core::ops::function::FnMut"
-            | "core::ops::FnMut"
-            | "core::ops::function::FnOnce"
-            | "core::ops::FnOnce"
-            | "core::future::future::Future"
-            | "core::future::Future"
-            | "core::future::into_future::IntoFuture"
-            | "core::future::IntoFuture"
-    )
-}
+pub(crate) use ridx_format::workspace::is_prelude_trait;
 
 /// Collects all trait names/paths referenced in the given file.
 fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> HashSet<String> {
@@ -263,23 +225,23 @@ pub fn try_owner_completion(
             return None;
         }
 
-        let qual_path = if qual == "crate" {
-            ws.crate_name_for_file(ctx.file)
-                .map(|c| c.to_string())
-                .unwrap_or_else(|| qual.clone())
-        } else if let Some(rest) = qual.strip_prefix("crate::") {
-            ws.crate_name_for_file(ctx.file)
-                .map(|c| format!("{c}::{rest}"))
-                .unwrap_or_else(|| qual.clone())
-        } else {
-            qual.clone()
-        };
-
-        let def_opt = ws.find_definition_by_path(&qual_path);
+        let def_opt = ws.resolve_qualifier(ctx.file, &qual);
         let target_owner = def_opt
             .as_ref()
             .map(|d| d.path.to_string())
-            .unwrap_or(qual_path);
+            .unwrap_or_else(|| {
+                if qual == "crate" {
+                    ws.crate_name_for_file(ctx.file)
+                        .map(|c| c.to_string())
+                        .unwrap_or_else(|| qual.clone())
+                } else if let Some(rest) = qual.strip_prefix("crate::") {
+                    ws.crate_name_for_file(ctx.file)
+                        .map(|c| format!("{c}::{rest}"))
+                        .unwrap_or_else(|| qual.clone())
+                } else {
+                    qual.clone()
+                }
+            });
 
         let has_sysroot = ws.has_sysroot();
         if !has_sysroot && is_sysroot_path(&target_owner) {

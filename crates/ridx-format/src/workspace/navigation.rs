@@ -17,7 +17,7 @@ use crate::reader::{IndexReader, ResolvedDefinition};
 use std::path::{Path, PathBuf};
 
 impl WorkspaceIndex {
-    fn make_resolved_definition<'a>(
+    pub(crate) fn make_resolved_definition<'a>(
         &'a self,
         reader_idx: usize,
         def: &DefEntry,
@@ -110,31 +110,8 @@ impl WorkspaceIndex {
 
     /// Returns the crate name that contains or owns the specified file path, if known.
     pub fn crate_name_for_file(&self, file_path: &str) -> Option<&str> {
-        let p = Path::new(file_path);
-        let is_abs = p.is_absolute();
-        for (i, reader) in self.readers.iter().enumerate() {
-            if let Some(Some(root)) = self.source_roots.get(i) {
-                if is_abs && p.starts_with(root) {
-                    return Some(reader.crate_name());
-                }
-            }
-        }
-        for (i, hashes) in self.reader_file_hashes.iter().enumerate() {
-            if hashes.contains_key(file_path) {
-                if let Some(reader) = self.readers.get(i) {
-                    return Some(reader.crate_name());
-                }
-            }
-        }
-        for reader in &self.readers {
-            let cname = reader.crate_name();
-            if file_path.contains(&format!("/{cname}/"))
-                || file_path.contains(&format!("\\{cname}\\"))
-            {
-                return Some(cname);
-            }
-        }
-        None
+        self.reader_index_for_file(file_path)
+            .and_then(|i| self.readers.get(i).map(|r| r.crate_name()))
     }
 
     /// Resolves a file path for a given crate.
@@ -997,12 +974,24 @@ impl WorkspaceIndex {
                 let prefix = format!("{}::", reader.crate_name());
                 let sub = cand_str.strip_prefix(&prefix).unwrap_or(cand_str);
                 let with_prefix = format!("{prefix}{cand_str}");
+                let is_sysroot = matches!(reader.crate_name(), "core" | "alloc" | "std");
+                let allow_with_prefix = !is_sysroot
+                    || cand_str.contains("::")
+                    || cand_str.starts_with("core")
+                    || cand_str.starts_with("std")
+                    || cand_str.starts_with("alloc");
+
+                let prefix_defs = if allow_with_prefix {
+                    Some(reader.find_definitions_by_owner(&with_prefix))
+                } else {
+                    None
+                };
 
                 for def in reader
                     .find_definitions_by_owner(cand_str)
                     .into_iter()
                     .chain(reader.find_definitions_by_owner(sub))
-                    .chain(reader.find_definitions_by_owner(&with_prefix))
+                    .chain(prefix_defs.into_iter().flatten())
                 {
                     let key = (
                         i,
@@ -1048,6 +1037,19 @@ impl WorkspaceIndex {
 
     /// Substring symbol search across all definitions in the workspace.
     pub fn search_symbols<'a>(&'a self, query: &str) -> Vec<WorkspaceSymbol<'a>> {
+        self.search_symbols_filtered(query, |_, _| true)
+    }
+
+    /// Substring symbol search across non-dependency definitions in the workspace.
+    pub fn search_local_symbols<'a>(&'a self, query: &str) -> Vec<WorkspaceSymbol<'a>> {
+        self.search_symbols_filtered(query, |i, _| !self.reader_is_dependency.get(i).copied().unwrap_or(false))
+    }
+
+    /// Substring symbol search with custom reader predicate.
+    pub fn search_symbols_filtered<'a, F>(&'a self, query: &str, mut filter: F) -> Vec<WorkspaceSymbol<'a>>
+    where
+        F: FnMut(usize, &IndexReader<memmap2::Mmap>) -> bool,
+    {
         let mut matches = Vec::new();
         let mut seen = std::collections::HashSet::new();
 
@@ -1059,6 +1061,9 @@ impl WorkspaceIndex {
                 None
             };
             for (i, reader) in self.readers.iter().enumerate() {
+                if !filter(i, reader) {
+                    continue;
+                }
                 let crate_name = reader.crate_name();
                 let defs = match &q_ascii_lower {
                     Some(lower) => reader.search_symbols_ascii(lower.as_bytes()),

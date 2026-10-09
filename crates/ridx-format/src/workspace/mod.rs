@@ -12,14 +12,18 @@
 //!
 //! Provides unified zero-copy queries across all crates in a cargo workspace.
 
+pub mod file_module;
 pub mod manifest;
 pub mod navigation;
+pub mod prelude;
 pub mod provenance;
+pub mod qualifier;
 pub mod reload;
 pub mod std_map;
 pub mod sysroot;
 
 pub use manifest::*;
+pub use prelude::is_prelude_trait;
 
 use crate::reader::IndexReader;
 use memmap2::Mmap;
@@ -52,6 +56,7 @@ pub struct WorkspaceIndex {
     pub(crate) manifest_generation: Option<u64>,
     pub(crate) manifest_ino: Option<u64>,
     pub(crate) active_variant_id: Option<String>,
+    pub(crate) sysroot_cas_key: Option<String>,
 }
 
 impl std::fmt::Debug for WorkspaceIndex {
@@ -137,6 +142,7 @@ impl WorkspaceIndex {
                 manifest_generation: None,
                 manifest_ino: None,
                 active_variant_id: None,
+                sysroot_cas_key: None,
             };
             return Ok(ws);
         }
@@ -542,6 +548,7 @@ impl WorkspaceIndex {
             manifest_generation: None,
             manifest_ino: None,
             active_variant_id,
+            sysroot_cas_key: sysroot_cas_key.clone(),
         };
         if let Some(cas_key) = sysroot_cas_key {
             ws.attach_sysroot_shards_for_key(&cas_key);
@@ -651,6 +658,11 @@ impl WorkspaceIndex {
     /// Currently active build variant ID, if loaded from a variant manifest.
     pub fn active_variant_id(&self) -> Option<&str> {
         self.active_variant_id.as_deref()
+    }
+
+    /// Returns the sysroot CAS key from the active variant manifest, if present.
+    pub fn sysroot_cas_key(&self) -> Option<&str> {
+        self.sysroot_cas_key.as_deref()
     }
 
     /// Root directory of the workspace if known.

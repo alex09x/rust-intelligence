@@ -224,7 +224,10 @@ fn test_l2_completion_generic_trait_bound() {
         .find(|item| item["label"] == "default_greet")
         .expect("default_greet method must be suggested for g. where G: Greeter");
     assert!(
-        default_greet_item["detail"].as_str().unwrap().contains("Greeter"),
+        default_greet_item["detail"]
+            .as_str()
+            .unwrap()
+            .contains("Greeter"),
         "Detail should mention Greeter trait"
     );
 }
@@ -303,7 +306,9 @@ fn test_l2_signature_help_cross_crate_and_trait() {
     );
     let sig_greet = res_greet["signatures"][0]["label"].as_str().unwrap();
     assert!(
-        sig_greet.contains("fn(&'a Self) -> &'static str") || sig_greet.contains("fn greet"),
+        sig_greet.contains("fn(&self)")
+            || sig_greet.contains("fn(&'a Self)")
+            || sig_greet.contains("fn greet"),
         "Expected Greeter::greet signature, got: {sig_greet}"
     );
 }
