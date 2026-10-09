@@ -1,0 +1,198 @@
+{
+  "serde-rs/serde": {
+    "repo": "serde-rs/serde",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "ad5e1980a489d231",
+    "driver_hash": "93f2d416218dfb1a",
+    "std_ridx_mtime": "2026-10-09T18:33:46.899685+00:00",
+    "std_ridx_hash": "0153d083037d5dba",
+    "sysroot_transplanted": true,
+    "invalid_config": false,
+    "total_scenarios": 100,
+    "empty_responses": {
+      "3645c36": 32,
+      "5e3da10": 22,
+      "rust_analyzer_1_98_1": 2
+    },
+    "closed_empty_responses": {
+      "count": 10,
+      "scenarios": [
+        "comp_colon_12_Error",
+        "comp_colon_2_bad_type",
+        "comp_colon_47_Error",
+        "comp_colon_19_Error",
+        "comp_colon_10_Deserializer",
+        "comp_colon_31_Ok",
+        "comp_colon_48_Error",
+        "comp_colon_13_Value",
+        "comp_colon_1_Error",
+        "comp_colon_46_Error"
+      ]
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "3645c36": 2568,
+      "5e3da10": 2559,
+      "rust_analyzer_1_98_1": 4675
+    },
+    "ra_zero_oracle_count": 2,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "3645c36": 34.9,
+      "3645c36_n": 98,
+      "5e3da10": 43.9,
+      "5e3da10_n": 98
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "3645c36": 75.4,
+      "3645c36_n": 67,
+      "5e3da10": 78.2,
+      "5e3da10_n": 76
+    },
+    "recall_regressions_gt_5pp": [
+      {
+        "name": "comp_colon_37_SocketAddr",
+        "base_recall_pct": 100.0,
+        "curr_recall_pct": 92.3,
+        "diff_pp": 7.7,
+        "base_count": 100,
+        "curr_count": 100,
+        "ra_count": 13,
+        "root_cause": "Re-export omission: std::net re-exports core::net::SocketAddr, but std.ridx excluded core re-exports (1 item vs 13)."
+      }
+    ],
+    "routes": {
+      "owner_count": 71,
+      "fallback_count": 29,
+      "migrated_from_fallback_to_owner": 10,
+      "owner_accuracy": {
+        "base_recall_pct": 44.5,
+        "curr_recall_pct": 56.9,
+        "base_precision_pct": 81.7,
+        "curr_precision_pct": 83.3
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 10.9,
+        "curr_recall_pct": 11.1,
+        "base_precision_pct": 10.8,
+        "curr_precision_pct": 18.6
+      },
+      "owner_curr_warm_p50_us": 232.0,
+      "owner_curr_warm_p95_us": 711.5,
+      "owner_ra_warm_p50_us": 4993.0,
+      "owner_ra_warm_p95_us": 12366.5,
+      "owner_speedup_fair": 21.52,
+      "fallback_curr_warm_p50_us": 1242.0,
+      "fallback_curr_warm_p95_us": 2102.2,
+      "fallback_ra_warm_p50_us": 1869.0,
+      "fallback_ra_warm_p95_us": 10226.6,
+      "fallback_speedup_fair": 1.5,
+      "overall_curr_warm_p50_us": 316.5,
+      "overall_curr_warm_p95_us": 1453.1,
+      "overall_ra_warm_p50_us": 4188.0,
+      "overall_ra_warm_p95_us": 12309.9,
+      "overall_speedup": 13.23
+    }
+  },
+  "bevyengine/bevy": {
+    "repo": "bevyengine/bevy",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "ad5e1980a489d231",
+    "driver_hash": "93f2d416218dfb1a",
+    "std_ridx_mtime": "2026-10-09T18:33:46.899685+00:00",
+    "std_ridx_hash": "0153d083037d5dba",
+    "sysroot_transplanted": true,
+    "invalid_config": false,
+    "total_scenarios": 100,
+    "empty_responses": {
+      "3645c36": 13,
+      "5e3da10": 7,
+      "rust_analyzer_1_98_1": 6
+    },
+    "closed_empty_responses": {
+      "count": 6,
+      "scenarios": [
+        "comp_colon_12_Item",
+        "comp_colon_29_Item",
+        "comp_colon_6_from_slice_unchecked_mut",
+        "comp_colon_48_State",
+        "comp_colon_21_Contiguous",
+        "comp_colon_45_Excluded"
+      ]
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "3645c36": 4825,
+      "5e3da10": 4854,
+      "rust_analyzer_1_98_1": 6832
+    },
+    "ra_zero_oracle_count": 6,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "3645c36": 39.3,
+      "3645c36_n": 94,
+      "5e3da10": 45.2,
+      "5e3da10_n": 94
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "3645c36": 60.3,
+      "3645c36_n": 83,
+      "5e3da10": 62.2,
+      "5e3da10_n": 89
+    },
+    "recall_regressions_gt_5pp": [
+      {
+        "name": "comp_colon_14_into_system",
+        "base_recall_pct": 100.0,
+        "curr_recall_pct": 85.7,
+        "diff_pp": 14.3,
+        "base_count": 7,
+        "curr_count": 6,
+        "ra_count": 7
+      },
+      {
+        "name": "comp_colon_18_empty",
+        "base_recall_pct": 100.0,
+        "curr_recall_pct": 81.6,
+        "diff_pp": 18.4,
+        "base_count": 49,
+        "curr_count": 40,
+        "ra_count": 49
+      }
+    ],
+    "routes": {
+      "owner_count": 84,
+      "fallback_count": 16,
+      "migrated_from_fallback_to_owner": 6,
+      "owner_accuracy": {
+        "base_recall_pct": 42.9,
+        "curr_recall_pct": 49.6,
+        "base_precision_pct": 63.8,
+        "curr_precision_pct": 65.7
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 14.8,
+        "curr_recall_pct": 15.5,
+        "base_precision_pct": 21.4,
+        "curr_precision_pct": 21.5
+      },
+      "owner_curr_warm_p50_us": 301.5,
+      "owner_curr_warm_p95_us": 1008.4,
+      "owner_ra_warm_p50_us": 4776.5,
+      "owner_ra_warm_p95_us": 17469.4,
+      "owner_speedup_fair": 15.84,
+      "fallback_curr_warm_p50_us": 9638.5,
+      "fallback_curr_warm_p95_us": 13059.8,
+      "fallback_ra_warm_p50_us": 3018.5,
+      "fallback_ra_warm_p95_us": 11488.5,
+      "fallback_speedup_fair": 0.31,
+      "overall_curr_warm_p50_us": 318.5,
+      "overall_curr_warm_p95_us": 9962.2,
+      "overall_ra_warm_p50_us": 4181.0,
+      "overall_ra_warm_p95_us": 17826.7,
+      "overall_speedup": 13.13
+    }
+  }
+}

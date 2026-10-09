@@ -304,7 +304,7 @@ def main():
 
         summary = {
             "repo": slug, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
-            "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha,
+            "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": True,
             "invalid_config": is_invalid_config,
             "total_scenarios": len(scenarios_base),
             "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
@@ -356,7 +356,7 @@ def main():
             published_records.append({
                 "repo": slug, "commit_ridx": curr_commit, "baseline_ra": ra_ver,
                 "toolchain": tc_ver, "sysroot_cas_key": cas_key,
-                "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha,
+                "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": True,
                 "invalid_config": is_invalid_config,
                 "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
                 "taskset": "24-31", "seed": 42,
