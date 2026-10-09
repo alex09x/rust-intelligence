@@ -29,6 +29,7 @@ mod l2_harness;
 mod ntm_compare_harness;
 mod ntm_domain4_actions_stress;
 mod ntm_domain5_intelligence_stress;
+mod ntm_domain5_l2_cas_and_macros;
 mod ntm_domain5_l2_intelligence;
 mod ntm_e2e;
 mod ntm_flycheck_and_auto_import;

@@ -24,6 +24,9 @@ use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+mod sanitize;
+use sanitize::sanitize_type_name;
+
 use ridx_format::{DefKind as RDefKind, IndexWriter, RawDefinition, RawReference, RawType};
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::{
@@ -414,18 +417,20 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
             }
 
             // Inferred expression type
-            if let Some((file, s_line, s_col, e_line, e_col, _)) =
-                resolve_span_coords(self.tcx, expr.span, self.package_root.as_deref())
-            {
-                if let Some(ty) = typeck.expr_ty_opt(expr) {
-                    self.writer.add_type(RawType {
-                        file,
-                        start_line: s_line,
-                        start_col: s_col,
-                        end_line: e_line,
-                        end_col: e_col,
-                        type_name: ty.to_string(),
-                    });
+            if !expr.span.from_expansion() {
+                if let Some((file, s_line, s_col, e_line, e_col, _)) =
+                    resolve_span_coords(self.tcx, expr.span, self.package_root.as_deref())
+                {
+                    if let Some(ty) = typeck.expr_ty_opt(expr) {
+                        self.writer.add_type(RawType {
+                            file,
+                            start_line: s_line,
+                            start_col: s_col,
+                            end_line: e_line,
+                            end_col: e_col,
+                            type_name: sanitize_type_name(&ty.to_string()),
+                        });
+                    }
                 }
             }
         }
@@ -433,20 +438,22 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
     }
 
     fn visit_pat(&mut self, pat: &'tcx hir::Pat<'tcx>) {
-        if let Some(typeck) = self.typeck {
-            if let hir::PatKind::Binding(..) = pat.kind {
-                if let Some((file, s_line, s_col, e_line, e_col, _)) =
-                    resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref())
-                {
-                    let ty = typeck.pat_ty(pat);
-                    self.writer.add_type(RawType {
-                        file,
-                        start_line: s_line,
-                        start_col: s_col,
-                        end_line: e_line,
-                        end_col: e_col,
-                        type_name: ty.to_string(),
-                    });
+        if !pat.span.from_expansion() {
+            if let Some(typeck) = self.typeck {
+                if let hir::PatKind::Binding(..) = pat.kind {
+                    if let Some((file, s_line, s_col, e_line, e_col, _)) =
+                        resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref())
+                    {
+                        let ty = typeck.pat_ty(pat);
+                        self.writer.add_type(RawType {
+                            file,
+                            start_line: s_line,
+                            start_col: s_col,
+                            end_line: e_line,
+                            end_col: e_col,
+                            type_name: sanitize_type_name(&ty.to_string()),
+                        });
+                    }
                 }
             }
         }
@@ -630,7 +637,9 @@ fn extract_crate_items<'tcx>(
 
         let signature = match kind {
             hir::def::DefKind::Fn | hir::def::DefKind::AssocFn => {
-                Some(tcx.fn_sig(def_id).skip_binder().to_string())
+                Some(sanitize_type_name(
+                    &tcx.fn_sig(def_id).skip_binder().to_string(),
+                ))
             }
             _ => None,
         };
@@ -1332,6 +1341,5 @@ fn main() {
     }
 }
 
-#[cfg(test)]
 #[cfg(test)]
 pub mod tests;

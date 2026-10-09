@@ -11,3 +11,9 @@
 pub fn external_compute() -> u32 {
     999
 }
+
+pub fn external_closure_builder(offset: i32) -> impl Fn(i32) -> i32 {
+    let base = offset + 1;
+    move |x| x + base
+}
+

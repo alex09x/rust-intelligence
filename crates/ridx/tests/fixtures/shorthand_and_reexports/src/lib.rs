@@ -52,6 +52,13 @@ pub fn invoke_aliased_widget() -> AliasedWidget {
 pub fn invoke_inferred_vec() {
     /* 🦀 */ let p = make_point(1, 2);
     let v = vec![1u8];
-    let _ = (p, v);
+    let s = String::from("hello");
+    let mut it = v.iter().map(|x| x + 1);
+    let _ = (p, &v, s, it.next());
 }
+
+pub fn invoke_println(x: i32) {
+    println!("{x}");
+}
+
 
