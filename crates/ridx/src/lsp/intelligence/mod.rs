@@ -17,6 +17,7 @@ pub mod generic_completion;
 pub mod hints;
 pub mod hover;
 pub mod owner_completion;
+pub mod scope_cache;
 pub mod self_completion;
 pub mod signature;
 pub mod syntax_pos;

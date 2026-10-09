@@ -44,10 +44,18 @@ pub fn handle_completion(
             let bp = overlay.line_char_col_to_byte(line_1based, col_1based);
             overlay.text[s..bp.min(overlay.text.len())].to_string()
         })
-    } else if let Ok(c) = std::fs::read_to_string(&file) {
-        c.lines().nth(line_0based as usize).map_or_else(String::new, |l| {
-            l.chars().take(col_1based.saturating_sub(1) as usize).collect()
-        })
+    } else if let Some(scopes) = super::scope_cache::get_or_parse_file_scopes(&file, None) {
+        let line_idx = line_0based as usize;
+        let line_start = scopes.line_starts.get(line_idx).copied().unwrap_or(0);
+        let next_start = scopes
+            .line_starts
+            .get(line_idx + 1)
+            .copied()
+            .unwrap_or(scopes.text.len());
+        let line = &scopes.text[line_start..next_start];
+        line.chars()
+            .take(col_1based.saturating_sub(1) as usize)
+            .collect()
     } else {
         String::new()
     };

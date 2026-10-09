@@ -21,9 +21,7 @@ pub use parse::*;
 pub use scan::*;
 pub use types::*;
 
-use crate::lsp::intelligence::self_completion::{
-    clean_trait_name, collect_trait_and_supertraits,
-};
+use crate::lsp::intelligence::self_completion::collect_trait_and_supertraits;
 use ridx_format::{DefKind, WorkspaceIndex};
 use std::collections::HashSet;
 
@@ -36,13 +34,9 @@ pub fn resolve_generic_param_owners(
     overlay_text: Option<&str>,
     qual: &str,
 ) -> Option<Vec<String>> {
-    let text = if let Some(t) = overlay_text {
-        t.to_string()
-    } else {
-        std::fs::read_to_string(file).ok()?
-    };
-
-    let generics = find_generic_params_in_scope(&text, line_1based, line_slice);
+    let scopes = crate::lsp::intelligence::scope_cache::get_or_parse_file_scopes(file, overlay_text)?;
+    let cursor_byte = scopes.cursor_byte(line_1based, line_slice);
+    let generics = scopes.find_generic_params_in_scope(cursor_byte);
     if generics.is_empty() {
         return None;
     }
@@ -74,22 +68,14 @@ pub fn resolve_generic_param_owners(
                 for def in ws.find_definitions_by_owner(target_path) {
                     if def.name == seg && def.kind == DefKind::AssocTy {
                         // Inspect associated type bound: `type Assoc: Bound;`
-                        if let Ok(src) = std::fs::read_to_string(def.file) {
-                            let line_idx = def.start_line.saturating_sub(1) as usize;
-                            if let Some(line) = src.lines().nth(line_idx) {
-                                if let Some(colon_pos) = line.find(':') {
-                                    let after_colon = line[colon_pos + 1..].trim();
-                                    let bound_part = after_colon
-                                        .split(&[';', '=', '+', ' '][..])
-                                        .next()
-                                        .unwrap_or("");
-                                    let clean_bound = clean_trait_name(bound_part);
-                                    if !clean_bound.is_empty()
-                                        && !next_traits.contains(&clean_bound)
-                                    {
-                                        next_traits.push(clean_bound);
-                                    }
-                                }
+                        let bounds =
+                            crate::lsp::intelligence::scope_cache::get_or_resolve_assoc_bounds(
+                                def.file,
+                                def.start_line,
+                            );
+                        for clean_bound in bounds {
+                            if !next_traits.contains(&clean_bound) {
+                                next_traits.push(clean_bound);
                             }
                         }
                     }

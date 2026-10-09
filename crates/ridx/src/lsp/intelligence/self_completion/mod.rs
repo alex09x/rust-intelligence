@@ -64,32 +64,17 @@ pub(crate) fn collect_trait_and_supertraits(
 
     if let Some(def) = def_opt {
         if def.kind == DefKind::Trait {
-            if let Ok(src) = std::fs::read_to_string(def.file) {
-                let start_line = def.start_line as usize;
-                let header: String = src
-                    .lines()
-                    .skip(start_line.saturating_sub(1))
-                    .take(10)
-                    .take_while(|l| !l.contains('{'))
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                if let Some(colon_idx) = header.find(':') {
-                    let after_colon = &header[colon_idx + 1..];
-                    let super_chunk = after_colon.split("where").next().unwrap_or(after_colon);
-                    for part in super_chunk.split('+') {
-                        let st_clean = clean_trait_name(part);
-                        if !st_clean.is_empty() {
-                            collect_trait_and_supertraits(
-                                ws,
-                                def.file,
-                                &st_clean,
-                                owners,
-                                seen,
-                                depth + 1,
-                            );
-                        }
-                    }
-                }
+            let supertraits =
+                super::scope_cache::get_or_resolve_trait_supertraits(def.file, def.start_line);
+            for st_clean in supertraits {
+                collect_trait_and_supertraits(
+                    ws,
+                    def.file,
+                    &st_clean,
+                    owners,
+                    seen,
+                    depth + 1,
+                );
             }
         }
     }
@@ -103,13 +88,9 @@ pub fn resolve_self_owners(
     line_slice: &str,
     overlay_text: Option<&str>,
 ) -> Option<Vec<String>> {
-    let text = if let Some(t) = overlay_text {
-        t.to_string()
-    } else {
-        std::fs::read_to_string(file).ok()?
-    };
-
-    let scope = find_enclosing_scope(&text, line_1based, line_slice)?;
+    let scopes = super::scope_cache::get_or_parse_file_scopes(file, overlay_text)?;
+    let cursor_byte = scopes.cursor_byte(line_1based, line_slice);
+    let scope = scopes.find_enclosing_scope(cursor_byte)?;
     let mut owners = Vec::new();
     let mut seen = HashSet::new();
 
