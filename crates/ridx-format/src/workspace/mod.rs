@@ -681,26 +681,7 @@ impl WorkspaceIndex {
             return false;
         }
 
-        if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
-            let ch = Path::new(&cargo_home);
-            if target_path.starts_with(ch.join("registry"))
-                || target_path.starts_with(ch.join("git"))
-            {
-                return true;
-            }
-        }
-
-        let path_str = target_path.to_string_lossy();
-        if path_str.contains("/.cargo/registry/")
-            || path_str.contains("\\.cargo\\registry\\")
-            || path_str.contains("/.cargo/git/")
-            || path_str.contains("\\.cargo\\git\\")
-            || path_str.contains("/.rustup/toolchains/")
-            || path_str.contains("\\.rustup\\toolchains\\")
-            || path_str.contains("/lib/rustlib/")
-            || path_str.contains("\\lib\\rustlib\\")
-            || path_str.contains("/target/ridx/dependencies/")
-        {
+        if is_external_dependency_path(target_path) {
             return true;
         }
 
@@ -727,6 +708,28 @@ impl WorkspaceIndex {
         let s = path.to_str().unwrap_or("");
         self.is_external_target(s, path, None)
     }
+}
+
+/// Checks whether a path points to an external dependency cache or toolchain
+/// (e.g. Cargo registry, Cargo git checkouts, Rustup toolchains, standard library).
+pub fn is_external_dependency_path(path: &Path) -> bool {
+    if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
+        let ch = Path::new(&cargo_home);
+        if path.starts_with(ch.join("registry")) || path.starts_with(ch.join("git")) {
+            return true;
+        }
+    }
+
+    let path_str = path.to_string_lossy();
+    path_str.contains("/.cargo/registry/")
+        || path_str.contains(r"\.cargo\registry\")
+        || path_str.contains("/.cargo/git/")
+        || path_str.contains(r"\.cargo\git\")
+        || path_str.contains("/.rustup/toolchains/")
+        || path_str.contains(r"\.rustup\toolchains\")
+        || path_str.contains("/lib/rustlib/")
+        || path_str.contains(r"\lib\rustlib\")
+        || path_str.contains("/target/ridx/dependencies/")
 }
 
 pub(crate) fn collect_ridx_files(dir: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {

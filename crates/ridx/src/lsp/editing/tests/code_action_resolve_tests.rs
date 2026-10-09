@@ -262,3 +262,41 @@ fn test_code_action_resolve_result_with_apply_workspace_edit_with_versions() {
     let expected_code = "use a::A;\nuse z::Z;\nfn main() {}\n";
     assert_eq!(updated.get(uri).unwrap(), expected_code);
 }
+
+#[test]
+fn test_code_action_resolve_closed_file_disk_modified_returns_content_modified() {
+    let temp = tempfile::tempdir().unwrap();
+    let file_path = temp.path().join("closed_mod.rs");
+    let initial_code = "use b::B;\nuse a::A;\nfn main() {}\n";
+    std::fs::write(&file_path, initial_code).unwrap();
+    let uri = format!("file://{}", file_path.display());
+    let initial_hash = ridx_format::normalized_source_hash(initial_code.as_bytes());
+
+    let overlay_mgr = OverlayManager::new();
+
+    let req = json!({
+        "params": {
+            "title": "Organize Imports",
+            "kind": "source.organizeImports",
+            "data": {
+                "uri": &uri,
+                "kind": "source.organizeImports",
+                "content_hash": initial_hash
+            }
+        }
+    });
+
+    // 1. Resolve succeeds while disk content hash matches
+    let res = handle_code_action_resolve(&req, None, &overlay_mgr);
+    assert!(res.is_ok(), "Resolve should succeed when disk content matches hash");
+
+    // 2. Modify disk content
+    std::fs::write(&file_path, "use b::B;\nuse a::A;\n// modified\nfn main() {}\n").unwrap();
+
+    // 3. Resolve must fail with ContentModified (-32801)
+    let err = handle_code_action_resolve(&req, None, &overlay_mgr).unwrap_err();
+    assert_eq!(
+        err.code, CONTENT_MODIFIED,
+        "Resolving action for modified closed file must return ContentModified error"
+    );
+}

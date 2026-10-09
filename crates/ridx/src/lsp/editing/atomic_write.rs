@@ -149,36 +149,11 @@ pub fn commit_closed_writes_atomic(closed_writes: &[(String, String)]) -> bool {
 
 /// Checks whether a path is an external read-only dependency (e.g. in cargo cache or toolchains).
 pub fn is_readonly_dependency(path: &Path, workspace: Option<&ridx_format::WorkspaceIndex>) -> bool {
-    let path_str = path.to_string_lossy();
-    if path_str.contains("/.cargo/registry/")
-        || path_str.contains("\\.cargo\\registry\\")
-        || path_str.contains("/.cargo/git/")
-        || path_str.contains("\\.cargo\\git\\")
-        || path_str.contains("/.rustup/toolchains/")
-        || path_str.contains("\\.rustup\\toolchains\\")
-        || path_str.contains("/lib/rustlib/")
-        || path_str.contains("\\lib\\rustlib\\")
-        || path_str.contains("/target/ridx/dependencies/")
-    {
-        return true;
-    }
-    if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
-        let ch = Path::new(&cargo_home);
-        if path.starts_with(ch.join("registry")) || path.starts_with(ch.join("git")) {
-            return true;
-        }
-    }
     if let Some(ws) = workspace {
-        if ws.is_external_path(path) {
-            let is_temp_or_standalone = path_str.starts_with("/tmp")
-                || path_str.starts_with("\\tmp")
-                || path.starts_with(std::env::temp_dir());
-            if !is_temp_or_standalone {
-                return true;
-            }
-        }
+        ws.is_external_path(path)
+    } else {
+        ridx_format::is_external_dependency_path(path)
     }
-    false
 }
 
 /// Validates that none of the URIs in a WorkspaceEdit target read-only external dependencies.

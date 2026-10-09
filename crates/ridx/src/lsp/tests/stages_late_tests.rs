@@ -15,21 +15,28 @@ use std::io::Cursor;
 
 #[test]
 fn test_lsp_server_stream_stage5_safe_code_changes() {
+    let temp_dir = std::env::temp_dir().join(format!("stage5_test_{}", std::process::id()));
+    let _ = std::fs::create_dir_all(&temp_dir);
+    let doc_path = temp_dir.join("stage5_test.rs");
+    let doc_uri = format!("file://{}", doc_path.display());
+    let code = "fn main() {\n    let mut counter = 0;\n    counter += 1;\n}\n";
+
     let mut input = Vec::new();
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",
         "id": 1,
         "method": "initialize",
-        "params": { "capabilities": {} }
+        "params": {
+            "rootUri": format!("file://{}", temp_dir.display()),
+            "capabilities": {}
+        }
     })));
-    let doc_uri = "file:///tmp/stage5_test.rs";
-    let code = "fn main() {\n    let mut counter = 0;\n    counter += 1;\n}\n";
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",
         "method": "textDocument/didOpen",
         "params": {
             "textDocument": {
-                "uri": doc_uri,
+                "uri": &doc_uri,
                 "languageId": "rust",
                 "version": 1,
                 "text": code
@@ -41,7 +48,7 @@ fn test_lsp_server_stream_stage5_safe_code_changes() {
         "id": 60,
         "method": "textDocument/prepareRename",
         "params": {
-            "textDocument": { "uri": doc_uri },
+            "textDocument": { "uri": &doc_uri },
             "position": { "line": 1, "character": 12 }
         }
     })));
@@ -50,7 +57,7 @@ fn test_lsp_server_stream_stage5_safe_code_changes() {
         "id": 61,
         "method": "textDocument/rename",
         "params": {
-            "textDocument": { "uri": doc_uri },
+            "textDocument": { "uri": &doc_uri },
             "position": { "line": 1, "character": 12 },
             "newName": "total_count"
         }
@@ -60,7 +67,7 @@ fn test_lsp_server_stream_stage5_safe_code_changes() {
         "id": 62,
         "method": "textDocument/codeAction",
         "params": {
-            "textDocument": { "uri": doc_uri },
+            "textDocument": { "uri": &doc_uri },
             "range": {
                 "start": { "line": 1, "character": 4 },
                 "end": { "line": 1, "character": 20 }
@@ -107,7 +114,7 @@ fn test_lsp_server_stream_stage5_safe_code_changes() {
     let changes = rename_resp["result"]["changes"]
         .as_object()
         .expect("changes map");
-    let edits = changes[doc_uri].as_array().expect("edits list");
+    let edits = changes[&doc_uri].as_array().expect("edits list");
     assert!(!edits.is_empty());
     assert_eq!(edits[0]["newText"], "total_count");
 
@@ -119,6 +126,8 @@ fn test_lsp_server_stream_stage5_safe_code_changes() {
     let resolve_resp = &responses[4];
     assert_eq!(resolve_resp["id"], 63);
     assert_eq!(resolve_resp["result"]["title"], "Organize imports");
+
+    let _ = std::fs::remove_dir_all(&temp_dir);
 }
 
 #[test]

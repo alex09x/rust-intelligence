@@ -83,7 +83,8 @@ pub fn setup_test_editing() -> (PathBuf, WorkspaceIndex, OverlayManager, Positio
     let ridx_file = temp_dir.join("index.ridx");
     builder.write_to_file(&ridx_file);
 
-    let ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
     let overlay_mgr = OverlayManager::new();
     let conv = PositionConverter::new();
 

@@ -143,6 +143,13 @@ pub fn handle_code_action(
         }
     }
 
+    let content_hash = ridx_format::normalized_source_hash(doc_text.as_bytes());
+    for action in &mut actions {
+        if let Some(data) = action.get_mut("data").and_then(|d| d.as_object_mut()) {
+            data.insert("content_hash".to_string(), json!(content_hash));
+        }
+    }
+
     Ok(json!(actions))
 }
 
@@ -164,18 +171,25 @@ pub fn handle_code_action_resolve(
         .and_then(|t| t.as_str())
         .ok_or_else(|| LspError::invalid_params("CodeAction must contain a title"))?;
 
-    // Check version conflict if data contains uri and version
+    // Check version conflict if data contains uri and version / content_hash
     if let Some(data) = params.get("data") {
-        if let (Some(uri), Some(expected_ver)) = (
-            data.get("uri").and_then(|u| u.as_str()),
-            data.get("version").and_then(|v| v.as_i64()),
-        ) {
+        if let Some(uri) = data.get("uri").and_then(|u| u.as_str()) {
             let file = uri_to_path(uri);
             if let Some(ov) = overlay_mgr.get(&file) {
-                if ov.version as i64 != expected_ver {
+                if let Some(expected_ver) = data.get("version").and_then(|v| v.as_i64()) {
+                    if ov.version as i64 != expected_ver {
+                        return Err(LspError::content_modified(format!(
+                            "Document '{uri}' was modified since code action was computed (version {} != expected {})",
+                            ov.version, expected_ver
+                        )));
+                    }
+                }
+            } else if let Some(expected_hash) = data.get("content_hash").and_then(|h| h.as_u64()) {
+                let disk_bytes = std::fs::read(&file).unwrap_or_default();
+                let current_hash = ridx_format::normalized_source_hash(&disk_bytes);
+                if current_hash != expected_hash {
                     return Err(LspError::content_modified(format!(
-                        "Document '{uri}' was modified since code action was computed (version {} != expected {})",
-                        ov.version, expected_ver
+                        "Document '{uri}' on disk was modified since code action was computed",
                     )));
                 }
             }

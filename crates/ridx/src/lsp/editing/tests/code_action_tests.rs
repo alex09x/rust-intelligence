@@ -184,11 +184,12 @@ fn test_code_action_quickfix_unused_mut() {
 #[test]
 fn test_code_action_auto_import_from_workspace_symbol() {
     let (_temp, ws, overlay_mgr, _conv) = setup_test_editing();
-    let uri = "file:///tmp/auto_import.rs";
+    let file_path = _temp.join("src/auto_import.rs");
+    let uri = format!("file://{}", file_path.to_str().unwrap());
 
     let req = json!({
         "params": {
-            "textDocument": { "uri": uri },
+            "textDocument": { "uri": &uri },
             "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 10 } },
             "context": {
                 "only": ["quickfix"],

@@ -127,7 +127,8 @@ fn test_domain4_real_l2_external_dependency_rejection() {
     let ridx_file = temp.path().join("app.ridx");
     builder.write_to_file(&ridx_file);
 
-    let ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp.path().to_path_buf()));
     let overlay_mgr = ridx::overlay::OverlayManager::new();
 
     let ext_uri = format!("file://{}", ext_service_path.display());
@@ -170,15 +171,20 @@ fn test_domain4_real_l2_external_dependency_rejection() {
 
 #[test]
 fn test_domain4_stream_code_action_did_change_resolve_conflict() {
+    let temp = tempfile::tempdir().unwrap();
+    let doc_path = temp.path().join("stream_conflict.rs");
+    let uri = format!("file://{}", doc_path.display());
     let mut input = Vec::new();
-    let uri = "file:///tmp/stream_conflict.rs";
 
     // 1. Initialize
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",
         "id": 1,
         "method": "initialize",
-        "params": { "capabilities": {} }
+        "params": {
+            "rootUri": format!("file://{}", temp.path().display()),
+            "capabilities": {}
+        }
     })));
     input.extend(make_lsp_msg(&json!({
         "jsonrpc": "2.0",
@@ -192,7 +198,7 @@ fn test_domain4_stream_code_action_did_change_resolve_conflict() {
         "method": "textDocument/didOpen",
         "params": {
             "textDocument": {
-                "uri": uri,
+                "uri": &uri,
                 "languageId": "rust",
                 "version": 1,
                 "text": "use z::Z;\nuse a::A;\nfn main() {}\n"
@@ -206,7 +212,7 @@ fn test_domain4_stream_code_action_did_change_resolve_conflict() {
         "id": 10,
         "method": "textDocument/codeAction",
         "params": {
-            "textDocument": { "uri": uri },
+            "textDocument": { "uri": &uri },
             "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 0 } },
             "context": { "only": ["source.organizeImports"], "diagnostics": [] }
         }
@@ -217,7 +223,7 @@ fn test_domain4_stream_code_action_did_change_resolve_conflict() {
         "jsonrpc": "2.0",
         "method": "textDocument/didChange",
         "params": {
-            "textDocument": { "uri": uri, "version": 2 },
+            "textDocument": { "uri": &uri, "version": 2 },
             "contentChanges": [{
                 "text": "// updated\nuse z::Z;\nuse a::A;\nfn main() {}\n"
             }]
@@ -233,7 +239,7 @@ fn test_domain4_stream_code_action_did_change_resolve_conflict() {
             "title": "Organize Imports",
             "kind": "source.organizeImports",
             "data": {
-                "uri": uri,
+                "uri": &uri,
                 "version": 1,
                 "kind": "source.organizeImports"
             }
