@@ -909,6 +909,17 @@ impl WorkspaceIndex {
     pub fn type_at(&self, file: &str, line: u32, col: u32) -> Option<&str> {
         let p = Path::new(file);
         let is_abs = p.is_absolute();
+        let belongs_to_dep = if is_abs {
+            self.source_roots.iter().any(|r| {
+                if let Some(r) = r.as_ref() {
+                    p.starts_with(r)
+                } else {
+                    false
+                }
+            })
+        } else {
+            false
+        };
 
         for (i, reader) in self.readers.iter().enumerate() {
             let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
@@ -922,17 +933,8 @@ impl WorkspaceIndex {
                     file
                 }
             } else {
-                if is_abs {
-                    let belongs_to_dep = self.source_roots.iter().any(|r| {
-                        if let Some(r) = r.as_ref() {
-                            p.starts_with(r)
-                        } else {
-                            false
-                        }
-                    });
-                    if belongs_to_dep {
-                        continue;
-                    }
+                if belongs_to_dep {
+                    continue;
                 }
                 file
             };
@@ -960,36 +962,36 @@ impl WorkspaceIndex {
                     .or(self.workspace_root.as_deref());
                 let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
 
-            for def in defs {
-                let name = reader.get_str(def.name_offset());
-                let path = reader.get_str(def.path_offset());
-                let span = def.span();
-                let file = reader.get_file(span.file_id());
-                let sym_key = (path, file, span.start_line(), span.start_col());
-                if !seen.insert(sym_key) {
-                    continue;
-                }
-                let signature = if def.sig_offset() != 0 {
-                    Some(reader.get_str(def.sig_offset()))
-                } else {
-                    None
-                };
+                for def in defs {
+                    let name = reader.get_str(def.name_offset());
+                    let path = reader.get_str(def.path_offset());
+                    let span = def.span();
+                    let file = reader.get_file(span.file_id());
+                    let sym_key = (path, file, span.start_line(), span.start_col());
+                    if !seen.insert(sym_key) {
+                        continue;
+                    }
+                    let signature = if def.sig_offset() != 0 {
+                        Some(reader.get_str(def.sig_offset()))
+                    } else {
+                        None
+                    };
 
-                matches.push(WorkspaceSymbol {
-                    crate_name,
-                    name,
-                    path,
-                    kind: DefKind::from(def.kind),
-                    file,
-                    span,
-                    signature,
-                    is_macro_expansion: def.is_macro_expansion(),
-                    source_root,
-                    unit_key,
-                });
+                    matches.push(WorkspaceSymbol {
+                        crate_name,
+                        name,
+                        path,
+                        kind: DefKind::from(def.kind),
+                        file,
+                        span,
+                        signature,
+                        is_macro_expansion: def.is_macro_expansion(),
+                        source_root,
+                        unit_key,
+                    });
+                }
             }
         }
-    }
 
         matches
     }

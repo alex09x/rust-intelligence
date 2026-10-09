@@ -51,35 +51,36 @@ impl MultiRootWorkspace {
 
     pub fn add_root(&mut self, path: PathBuf) -> bool {
         let norm_path = path.canonicalize().unwrap_or_else(|_| path.clone());
-        if self.roots.iter().any(|(p, _)| p == &norm_path) {
+        let root_dir = if norm_path.is_file() {
+            if norm_path.file_name().and_then(|n| n.to_str()) == Some("Cargo.toml") {
+                norm_path.parent().unwrap_or(&norm_path).to_path_buf()
+            } else if norm_path.extension().and_then(|e| e.to_str()) == Some("ridx") {
+                let mut dir = norm_path.parent().unwrap_or(&norm_path);
+                while let Some(parent) = dir.parent() {
+                    let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                    if name == ".ridx" || name == "ridx" || name == "target" || name == "variants" {
+                        dir = parent;
+                    } else {
+                        break;
+                    }
+                }
+                dir.to_path_buf()
+            } else {
+                norm_path.parent().unwrap_or(&norm_path).to_path_buf()
+            }
+        } else {
+            norm_path.clone()
+        };
+
+        if self
+            .roots
+            .iter()
+            .any(|(p, _)| p == &root_dir || p == &norm_path)
+        {
             return false;
         }
 
         if let Ok(ws) = WorkspaceIndex::open(&norm_path) {
-            let root_dir = if norm_path.is_file() {
-                if norm_path.file_name().and_then(|n| n.to_str()) == Some("Cargo.toml") {
-                    norm_path.parent().unwrap_or(&norm_path).to_path_buf()
-                } else if norm_path.extension().and_then(|e| e.to_str()) == Some("ridx") {
-                    let mut dir = norm_path.parent().unwrap_or(&norm_path);
-                    while let Some(parent) = dir.parent() {
-                        let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                        if name == ".ridx"
-                            || name == "ridx"
-                            || name == "target"
-                            || name == "variants"
-                        {
-                            dir = parent;
-                        } else {
-                            break;
-                        }
-                    }
-                    dir.to_path_buf()
-                } else {
-                    norm_path.parent().unwrap_or(&norm_path).to_path_buf()
-                }
-            } else {
-                norm_path
-            };
             self.roots.push((root_dir, ws));
             return true;
         }
