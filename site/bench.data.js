@@ -17,7 +17,7 @@ window.RIDX_BENCH = {
   },
   "limitations": [
     "Standard library (std/core/alloc) definition shards are not indexed yet; expected effect when indexed is +4.71 pp overall (+4.87 pp read-only).",
-    "On large workspaces, fallback completion (std types, generic params) is ~18x slower than rust-analyzer (bevy: 44 ms vs 2.4 ms); owner-path completion on concrete domain types is 36\u201365x faster (100\u2013186 \u00b5s).",
+    "On large workspaces, fallback completion (std types, generic params) is ~4.6x slower than rust-analyzer (bevy: 11.1 ms vs 2.4 ms); overall completion across all 100 positions is 1.34x faster (3.15 ms vs 4.22 ms), while owner-path completion on concrete domain types is 36\u2013143x faster (49\u2013179 \u00b5s).",
     "Hover latency on very large workspaces (bevy) is ~1.5x slower than rust-analyzer (354 \u00b5s vs 231 \u00b5s at warm p50, re-measured post-844eac0 down from 18.4x / 3.96 ms prior to binary search optimization); on small to medium workspaces (tokio, serde, ripgrep) it is faster than or on par with rust-analyzer."
   ],
   "workspaces": {

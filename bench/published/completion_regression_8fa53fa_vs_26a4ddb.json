@@ -1,0 +1,74 @@
+{
+  "serde-rs/serde": {
+    "repo": "serde-rs/serde",
+    "total_scenarios": 100,
+    "empty_responses": {
+      "8fa53fa": 82,
+      "26a4ddb": 82,
+      "rust_analyzer_1_98_1": 2
+    },
+    "total_candidates": {
+      "8fa53fa": 656,
+      "26a4ddb": 656,
+      "rust_analyzer_1_98_1": 4665
+    },
+    "avg_recall_vs_ra": {
+      "8fa53fa": 7.3,
+      "26a4ddb": 7.3
+    },
+    "regressions_scenarios": 0,
+    "improvements_scenarios": 1,
+    "routes": {
+      "owner_count": 5,
+      "fallback_count": 95,
+      "owner_base_warm_p50_us": 97.0,
+      "owner_curr_warm_p50_us": 49.0,
+      "owner_ra_warm_p50_us": 7023.0,
+      "owner_speedup_fair": 143.33,
+      "fallback_base_warm_p50_us": 1800.0,
+      "fallback_curr_warm_p50_us": 809.0,
+      "fallback_ra_warm_p50_us": 4345.0,
+      "fallback_speedup_fair": 5.37,
+      "overall_base_warm_p50_us": 1790.0,
+      "overall_curr_warm_p50_us": 800.0,
+      "overall_ra_warm_p50_us": 4348.0,
+      "overall_speedup": 5.43
+    }
+  },
+  "bevyengine/bevy": {
+    "repo": "bevyengine/bevy",
+    "total_scenarios": 100,
+    "empty_responses": {
+      "8fa53fa": 33,
+      "26a4ddb": 33,
+      "rust_analyzer_1_98_1": 6
+    },
+    "total_candidates": {
+      "8fa53fa": 3739,
+      "26a4ddb": 3739,
+      "rust_analyzer_1_98_1": 6817
+    },
+    "avg_recall_vs_ra": {
+      "8fa53fa": 23.8,
+      "26a4ddb": 23.8
+    },
+    "regressions_scenarios": 0,
+    "improvements_scenarios": 0,
+    "routes": {
+      "owner_count": 32,
+      "fallback_count": 68,
+      "owner_base_warm_p50_us": 189.5,
+      "owner_curr_warm_p50_us": 179.0,
+      "owner_ra_warm_p50_us": 6457.5,
+      "owner_speedup_fair": 36.08,
+      "fallback_base_warm_p50_us": 45658.5,
+      "fallback_curr_warm_p50_us": 11099.5,
+      "fallback_ra_warm_p50_us": 2492.0,
+      "fallback_speedup_fair": 0.22,
+      "overall_base_warm_p50_us": 41756.5,
+      "overall_curr_warm_p50_us": 3154.5,
+      "overall_ra_warm_p50_us": 4470.5,
+      "overall_speedup": 1.42
+    }
+  }
+}

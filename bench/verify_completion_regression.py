@@ -320,9 +320,10 @@ def run_verification(args=None):
         print(f"  Fair Fallback Speedup:{fallback_speedup}x ({fallback_ra_p50:.0f}µs RA vs {fallback_c_p50:.0f}µs 8fa53fa on {len(fallback_scenarios)} matching positions)")
 
         # Prepare updated published format
+        commit_label = args.commit_ridx if args and args.commit_ridx else "26a4ddb"
         updated_published_records.append({
             "repo": slug,
-            "commit_ridx": "8fa53fa",
+            "commit_ridx": commit_label,
             "baseline_ra": ra_ver,
             "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
             "taskset": "24-31",
@@ -355,17 +356,18 @@ def run_verification(args=None):
         })
 
     # Save summary report & updated published jsonl
-    report_file = bench_dir / "published" / "completion_regression_bb4aa75_vs_8fa53fa.json"
+    report_file = Path(args.output_json) if args and args.output_json else (bench_dir / "published" / "completion_regression_8fa53fa_vs_26a4ddb.json")
     with open(report_file, "w", encoding="utf-8") as f:
         json.dump(all_comparisons, f, indent=2)
 
-    with open(published_jsonl, "w", encoding="utf-8") as f:
+    output_jsonl = Path(args.output_jsonl) if args and args.output_jsonl else (bench_dir / "published" / "rerun_completion_26a4ddb.jsonl")
+    with open(output_jsonl, "w", encoding="utf-8") as f:
         for rec in updated_published_records:
             f.write(json.dumps(rec) + "\n")
 
     print(f"\nVerification finished successfully!")
     print(f"Summary saved: {report_file}")
-    print(f"Published rerun updated: {published_jsonl}")
+    print(f"Published rerun updated: {output_jsonl}")
 
 
 if __name__ == "__main__":
@@ -376,6 +378,9 @@ if __name__ == "__main__":
     parser.add_argument("--ra-bin", help="Path to rust-analyzer binary")
     parser.add_argument("--serde-dir", help="Path to serde repository")
     parser.add_argument("--bevy-dir", help="Path to bevy repository")
+    parser.add_argument("--commit-ridx", default="26a4ddb", help="Commit label for ridx under test")
+    parser.add_argument("--output-json", help="Path for comparison report json")
+    parser.add_argument("--output-jsonl", help="Path for output rerun jsonl")
     args = parser.parse_args()
     run_verification(args)
 
