@@ -8,69 +8,9 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-// Pilot benchmark telemetry from bench.json / LSP_BENCHMARK_COMPARISON_REPORT.md (seconds).
-let WORKSPACES = {
-  "serde": {
-    meta: "serde · 3 crates · warm cache · booster (32 cores)",
-    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
-    rows: [
-      ["Go to definition (warm p50)", 43e-6, "43 µs", 131e-6, "131 µs"],
-      ["Go to definition (tail p95)", 365e-6, "365 µs", 6.89e-3, "6.89 ms"],
-      ["Find references (warm p50)", 94e-6, "94 µs", 1.53e-3, "1.53 ms"],
-      ["Find references (tail p95)", 1.55e-3, "1.55 ms", 34.2e-3, "34.20 ms"],
-      ["Hover (warm p50)", 68e-6, "68 µs", 104e-6, "104 µs"],
-      ["Hover (tail p95)", 112e-6, "112 µs", 221e-6, "221 µs"],
-    ],
-  },
-  "ripgrep": {
-    meta: "ripgrep · 7 crates · warm cache · booster (32 cores)",
-    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
-    rows: [
-      ["Go to definition (warm p50)", 50e-6, "50 µs", 186e-6, "186 µs"],
-      ["Go to definition (tail p95)", 484e-6, "484 µs", 5.98e-3, "5.98 ms"],
-      ["Find references (warm p50)", 103e-6, "103 µs", 1.01e-3, "1.01 ms"],
-      ["Find references (tail p95)", 4.31e-3, "4.31 ms", 13.36e-3, "13.36 ms"],
-      ["Hover (warm p50)", 78e-6, "78 µs", 132e-6, "132 µs"],
-      ["Hover (tail p95)", 102e-6, "102 µs", 252e-6, "252 µs"],
-    ],
-  },
-  "Tokio": {
-    meta: "Tokio · 42 crates · 880 files · booster (32 cores)",
-    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
-    rows: [
-      ["Go to definition (warm p50)", 95e-6, "95 µs", 181e-6, "181 µs"],
-      ["Go to definition (tail p95)", 201e-6, "201 µs", 29.29e-3, "29.29 ms"],
-      ["Find references (warm p50)", 573e-6, "573 µs", 5.08e-3, "5.08 ms"],
-      ["Find references (tail p95)", 2.31e-3, "2.31 ms", 73.39e-3, "73.39 ms"],
-      ["Hover (warm p50)", 1.30e-3, "1.30 ms", 150e-6, "150 µs"],
-      ["Hover (tail p95)", 1.50e-3, "1.50 ms", 373e-6, "373 µs"],
-    ],
-  },
-  "bevy": {
-    meta: "bevy · 147 crates · 2,800 files · booster (32 cores)",
-    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
-    rows: [
-      ["Go to definition (warm p50)", 245e-6, "245 µs", 280e-6, "280 µs"],
-      ["Go to definition (tail p95)", 590e-6, "590 µs", 148.02e-3, "148.02 ms"],
-      ["Find references (warm p50)", 3.88e-3, "3.88 ms", 13.02e-3, "13.02 ms"],
-      ["Find references (tail p95)", 36.84e-3, "36.84 ms", 167.81e-3, "167.81 ms"],
-      ["Hover (warm p50)", 3.96e-3, "3.96 ms", 215e-6, "215 µs"],
-      ["Hover (tail p95)", 11.21e-3, "11.21 ms", 545e-6, "545 µs"],
-    ],
-  },
-  "rust-analyzer": {
-    meta: "rust-analyzer · 261 crates · 3,050 files · booster (32 cores)",
-    target: "Pilot benchmark · 300 sampled positions · warm latencies (post-index)",
-    rows: [
-      ["Go to definition (warm p50)", 174e-6, "174 µs", 314e-6, "314 µs"],
-      ["Go to definition (tail p95)", 607e-6, "607 µs", 53.28e-3, "53.28 ms"],
-      ["Find references (warm p50)", 654e-6, "654 µs", 1.57e-3, "1.57 ms"],
-      ["Find references (tail p95)", 5.97e-3, "5.97 ms", 133.05e-3, "133.05 ms"],
-      ["Hover (warm p50)", 436e-6, "436 µs", 228e-6, "228 µs"],
-      ["Hover (tail p95)", 969e-6, "969 µs", 515e-6, "515 µs"],
-    ],
-  },
-};
+// Benchmark telemetry loaded via bench.data.js fallback or dynamic fetch('bench.json').
+let WORKSPACES = (typeof window !== "undefined" && window.RIDX_BENCH && window.RIDX_BENCH.workspaces) || null;
+
 
 const ARCH = {
   editor: ["your editor process", "LSP client", "Any editor that speaks the Language Server Protocol. It launches ridx lsp and talks to it over stdin/stdout.", ["No plugin of its own required", "Same binary for every editor"]],
@@ -161,6 +101,11 @@ function tabs(boxId, keys, onSelect) {
 const pct = (s) => Math.max(1.5, Math.min(100, (Math.log10(s / 1e-5) / Math.log10(2e6)) * 100));
 
 function renderWorkspaces(wsData) {
+  if (!wsData || Object.keys(wsData).length === 0) {
+    const meta = document.getElementById("ws-meta");
+    if (meta) meta.textContent = "Benchmark telemetry unavailable";
+    return;
+  }
   tabs("ws-tabs", Object.keys(wsData), (name) => {
     const ws = wsData[name];
     document.getElementById("ws-meta").textContent = ws.meta;
@@ -182,16 +127,26 @@ function renderWorkspaces(wsData) {
   });
 }
 
-renderWorkspaces(WORKSPACES);
+if (WORKSPACES) {
+  renderWorkspaces(WORKSPACES);
+} else {
+  const meta = document.getElementById("ws-meta");
+  if (meta) meta.textContent = "Loading benchmark telemetry...";
+}
 
 fetch("bench.json")
   .then((r) => (r.ok ? r.json() : null))
   .then((data) => {
     if (data && data.workspaces) {
-      renderWorkspaces(data.workspaces);
+      WORKSPACES = data.workspaces;
+      renderWorkspaces(WORKSPACES);
     }
   })
-  .catch(() => {});
+  .catch(() => {
+    if (!WORKSPACES) {
+      renderWorkspaces(null);
+    }
+  });
 
 const archButtons = [...document.querySelectorAll("[data-arch]")];
 const archDetail = document.getElementById("arch-detail");

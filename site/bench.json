@@ -1,5 +1,5 @@
 {
-  "node": "booster (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM, isolated on cores 24-31)",
+  "node": "booster (AMD Ryzen 9 7950X, 32 cores, 128 GB RAM)",
   "baseline": "rust-analyzer 1.98.1 (48a229c)",
   "summary": {
     "corpus": "5 repositories (serde, ripgrep, tokio, bevy, rust-analyzer)",
