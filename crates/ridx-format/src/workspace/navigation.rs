@@ -952,9 +952,17 @@ impl WorkspaceIndex {
 
         let queries = super::std_map::std_path_candidates(query);
         for q in &queries {
+            let q_ascii_lower = if q.is_ascii() {
+                Some(q.to_ascii_lowercase())
+            } else {
+                None
+            };
             for (i, reader) in self.readers.iter().enumerate() {
                 let crate_name = reader.crate_name();
-                let defs = reader.search_symbols(q);
+                let defs = match &q_ascii_lower {
+                    Some(lower) => reader.search_symbols_ascii(lower.as_bytes()),
+                    None => reader.search_symbols(q),
+                };
                 let source_root = self
                     .source_roots
                     .get(i)
