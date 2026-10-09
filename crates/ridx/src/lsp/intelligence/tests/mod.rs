@@ -14,6 +14,9 @@ pub mod edge_tests;
 pub mod extra_suite;
 pub mod hover_tests;
 pub mod inlay_hint_tests;
+pub mod owner_colon_tests;
+pub mod owner_dot_tests;
+pub mod owner_fallback_tests;
 pub mod signature_help_tests;
 pub mod suite;
 

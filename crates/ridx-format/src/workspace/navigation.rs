@@ -996,11 +996,13 @@ impl WorkspaceIndex {
             for (i, reader) in self.readers.iter().enumerate() {
                 let prefix = format!("{}::", reader.crate_name());
                 let sub = cand_str.strip_prefix(&prefix).unwrap_or(cand_str);
+                let with_prefix = format!("{prefix}{cand_str}");
 
                 for def in reader
                     .find_definitions_by_owner(cand_str)
                     .into_iter()
                     .chain(reader.find_definitions_by_owner(sub))
+                    .chain(reader.find_definitions_by_owner(&with_prefix))
                 {
                     let key = (i, def.path_offset(), def.span.start_line, def.span.start_col);
                     if seen.insert(key) {

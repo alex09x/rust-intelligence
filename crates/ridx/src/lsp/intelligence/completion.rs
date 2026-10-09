@@ -70,6 +70,24 @@ pub fn handle_completion(
     // Unified scoped completion after '.' (receiver methods) or '::' (associated items)
     if is_dot || is_colon {
         if let Some(ws) = workspace {
+            // Fast path: try O(1) owner-index and autoderef lookup (<100 µs)
+            let owner_ctx = super::owner_completion::OwnerCompletionContext {
+                file: &file,
+                line_1based,
+                line_slice: &line_slice,
+                prefix: &prefix,
+                is_dot,
+                is_colon,
+                trimmed_before,
+            };
+            if let Some(owner_items) = super::owner_completion::try_owner_completion(ws, &owner_ctx) {
+                return Ok(json!({
+                    "isIncomplete": false,
+                    "items": owner_items
+                }));
+            }
+
+            // Fallback path: for sysroot types (std/core/alloc not yet indexed in .ridx) or unindexed types
             let (target_prefix, target_suffix) = if is_dot {
                 let before_dot = trimmed_before[..trimmed_before.len() - 1].trim_end();
                 let rname: String = before_dot

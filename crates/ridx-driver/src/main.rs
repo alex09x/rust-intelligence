@@ -625,6 +625,12 @@ fn compute_dependency_unit_key(
     format!("{:016x}", ridx_format::fnv1a_64(key_str.as_bytes()))
 }
 
+/// Resolves the canonical owner path from a type (ADT, dyn Trait, str, slice, primitives).
+///
+/// Note (P3.3 limitation): Blanket implementations such as `impl<T: Trait> Trait for T`
+/// (where the self type is an unconstrained generic parameter) return `None` because they do not have
+/// a single concrete ADT or primitive owner. Methods from blanket implementations are resolved
+/// via the fallback completion path.
 fn resolve_owner_from_ty<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: rustc_middle::ty::Ty<'tcx>,
@@ -711,6 +717,7 @@ fn extract_crate_items<'tcx>(
         let mut owners = Vec::new();
         let did = def_id.to_def_id();
 
+        #[allow(clippy::collapsible_match)]
         match kind {
             hir::def::DefKind::AssocFn
             | hir::def::DefKind::AssocConst { .. }
@@ -722,20 +729,24 @@ fn extract_crate_items<'tcx>(
                     if let Some(owner) = resolve_owner_from_ty(tcx, self_ty) {
                         owners.push(owner);
                     }
-                    if matches!(parent_kind, hir::def::DefKind::Impl { of_trait: true }) {
-                        let trait_ref = tcx.impl_trait_ref(parent_did);
-                        let trait_did = trait_ref.skip_binder().def_id;
-                        let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
-                            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(trait_did))
-                        );
-                        owners.push(trait_path);
-                    }
+                    // P3.2: Trait impl methods are indexed ONLY under the Self type.
+                    // They are NOT indexed under the trait path to prevent thousands of duplicate
+                    // method entries (e.g. `fmt` from every `impl Display for ...`) under `Trait::`.
                 } else if parent_kind == hir::def::DefKind::Trait {
+                    // Under `Trait::`, only index items declared directly in the trait definition itself.
                     let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
                         rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(parent_did))
                     );
                     owners.push(trait_path);
                 }
+            }
+            hir::def::DefKind::Variant => {
+                // P3.1: Enum variants are owned by the enum type path for `Enum::Variant` completion.
+                let parent_did = tcx.parent(did);
+                let enum_path = rustc_middle::ty::print::with_no_visible_paths!(
+                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(parent_did))
+                );
+                owners.push(enum_path);
             }
             hir::def::DefKind::Field => {
                 let mut parent_did = tcx.parent(did);
@@ -746,6 +757,24 @@ fn extract_crate_items<'tcx>(
                     rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(parent_did))
                 );
                 owners.push(struct_path);
+            }
+            hir::def::DefKind::Fn
+            | hir::def::DefKind::Struct
+            | hir::def::DefKind::Enum
+            | hir::def::DefKind::Mod
+            | hir::def::DefKind::Const { .. }
+            | hir::def::DefKind::Static { .. }
+            | hir::def::DefKind::Trait
+            | hir::def::DefKind::TyAlias
+            | hir::def::DefKind::Union => {
+                // P3.1: Items declared inside a module are owned by the module path for `module::` completion.
+                if !did.is_crate_root() && tcx.def_kind(tcx.parent(did)) == hir::def::DefKind::Mod {
+                    let parent_did = tcx.parent(did);
+                    let mod_path = rustc_middle::ty::print::with_no_visible_paths!(
+                        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(parent_did))
+                    );
+                    owners.push(mod_path);
+                }
             }
             _ => {}
         }

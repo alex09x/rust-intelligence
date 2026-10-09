@@ -14,6 +14,7 @@ pub mod auto_import;
 pub mod completion;
 pub mod hints;
 pub mod hover;
+pub mod owner_completion;
 pub mod signature;
 
 #[cfg(test)]
