@@ -45,14 +45,30 @@ pub fn dispatch_lsp_message<W: Write>(
                     .as_array()
                     .cloned()
                     .unwrap_or_default();
+                let file = uri_to_path(uri);
+                if let Some(ov) = overlay_mgr.get_mut(&file) {
+                    if ov.compiled_text.is_none() {
+                        ov.compiled_text = Some(ov.disk_text.as_ref().unwrap_or(&ov.text).clone());
+                    }
+                }
                 lifecycle.flycheck.set_latest_diagnostics(uri, diags);
-                publish_reconciled_diagnostics(
-                    uri,
-                    None,
-                    overlay_mgr,
-                    &lifecycle.flycheck,
-                    writer,
-                )?;
+                if lifecycle.client_pull_diagnostics() {
+                    let refresh = json!({
+                        "jsonrpc": "2.0",
+                        "method": "workspace/diagnostic/refresh",
+                        "id": "ridx-refresh",
+                        "params": {}
+                    });
+                    send_response(writer, &refresh)?;
+                } else {
+                    publish_reconciled_diagnostics(
+                        uri,
+                        None,
+                        overlay_mgr,
+                        &lifecycle.flycheck,
+                        writer,
+                    )?;
+                }
             }
             return Ok(true);
         }
@@ -166,13 +182,15 @@ pub fn dispatch_lsp_message<W: Write>(
                 }
             }
             conv.invalidate(&file);
-            publish_reconciled_diagnostics(
-                uri,
-                Some(version),
-                overlay_mgr,
-                &lifecycle.flycheck,
-                writer,
-            )?;
+            if !lifecycle.client_pull_diagnostics() {
+                publish_reconciled_diagnostics(
+                    uri,
+                    Some(version),
+                    overlay_mgr,
+                    &lifecycle.flycheck,
+                    writer,
+                )?;
+            }
             return Ok(true);
         }
 

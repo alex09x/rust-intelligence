@@ -223,7 +223,10 @@ impl DocumentOverlay {
 
     pub fn map_compiled_line_to_live(&self, compiled_line: u32) -> Option<u32> {
         let c_idx = compiled_line.saturating_sub(1) as usize;
-        let compiled_text = self.compiled_text.as_ref()?;
+        let compiled_text = self
+            .compiled_text
+            .as_deref()
+            .or(self.disk_text.as_deref())?;
         let compiled_lines: Vec<&str> = compiled_text.lines().collect();
         if c_idx >= compiled_lines.len() {
             return None;

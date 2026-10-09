@@ -26,6 +26,7 @@ pub struct LifecycleManager {
     state: ServerState,
     pub flycheck: Arc<FlycheckState>,
     pub conv: crate::lsp::protocol::PositionConverter,
+    client_pull_diagnostics: bool,
 }
 
 impl Default for LifecycleManager {
@@ -40,7 +41,12 @@ impl LifecycleManager {
             state: ServerState::Uninitialized,
             flycheck: Arc::new(FlycheckState::new()),
             conv: crate::lsp::protocol::PositionConverter::new(),
+            client_pull_diagnostics: false,
         }
+    }
+
+    pub fn client_pull_diagnostics(&self) -> bool {
+        self.client_pull_diagnostics
     }
 
     #[allow(dead_code)]
@@ -65,6 +71,8 @@ impl LifecycleManager {
         }
 
         self.state = ServerState::Initialized;
+        self.client_pull_diagnostics =
+            msg["params"]["capabilities"]["textDocument"]["diagnostic"].is_object();
 
         let mut folder_paths = Vec::new();
         if let Some(folders) = msg["params"]["workspaceFolders"].as_array() {
@@ -162,6 +170,11 @@ impl LifecycleManager {
             },
             "range": true,
             "full": { "delta": true }
+        });
+
+        caps["diagnosticProvider"] = json!({
+            "interFileDependencies": true,
+            "workspaceDiagnostics": true,
         });
 
         let capabilities = json!({

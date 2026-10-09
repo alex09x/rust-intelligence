@@ -64,6 +64,92 @@ pub fn reconcile_diagnostics(heuristic: &[Value], authoritative: &[Value]) -> Ve
     result
 }
 
+/// Maps authoritative compiler diagnostics to live buffer coordinates based on overlay line shifts.
+///
+/// Diagnostics whose lines fall into modified, inserted, or deleted regions are dropped.
+/// If the overlay is not dirty, diagnostics are returned as-is.
+/// If the overlay has no compiled baseline to compare against, authoritative diagnostics
+/// are omitted to avoid sending stale coordinates.
+pub fn map_authoritative_diagnostics_to_live(
+    auth_items: &[Value],
+    overlay: Option<&crate::overlay::DocumentOverlay>,
+    uri: &str,
+) -> Vec<Value> {
+    let Some(ov) = overlay else {
+        return auth_items.to_vec();
+    };
+
+    let baseline = ov.compiled_text.as_deref().or(ov.disk_text.as_deref());
+    let Some(base_text) = baseline else {
+        return auth_items.to_vec();
+    };
+
+    if base_text == ov.text {
+        return auth_items.to_vec();
+    }
+
+    let mut mapped = Vec::with_capacity(auth_items.len());
+    for item in auth_items {
+        let range = &item["range"];
+        let Some(sl) = range["start"]["line"].as_u64() else {
+            continue;
+        };
+        let Some(sc) = range["start"]["character"].as_u64() else {
+            continue;
+        };
+        let Some(el) = range["end"]["line"].as_u64() else {
+            continue;
+        };
+        let Some(ec) = range["end"]["character"].as_u64() else {
+            continue;
+        };
+
+        let live_start = ov.map_compiled_to_live(sl as u32 + 1, sc as u32 + 1);
+        let live_end = ov.map_compiled_to_live(el as u32 + 1, ec as u32 + 1);
+
+        match (live_start, live_end) {
+            (Some((new_sl, _)), Some((new_el, _))) => {
+                let mut d = item.clone();
+                d["range"]["start"]["line"] = json!(new_sl.saturating_sub(1));
+                d["range"]["start"]["character"] = json!(sc);
+                d["range"]["end"]["line"] = json!(new_el.saturating_sub(1));
+                d["range"]["end"]["character"] = json!(ec);
+
+                if let Some(related) = d
+                    .get_mut("relatedInformation")
+                    .and_then(|r| r.as_array_mut())
+                {
+                    for rel in related {
+                        if rel["location"]["uri"].as_str() == Some(uri) {
+                            if let (Some(r_sl), Some(r_el)) = (
+                                rel["location"]["range"]["start"]["line"].as_u64(),
+                                rel["location"]["range"]["end"]["line"].as_u64(),
+                            ) {
+                                if let (Some(m_sl), Some(m_el)) = (
+                                    ov.map_compiled_line_to_live(r_sl as u32 + 1),
+                                    ov.map_compiled_line_to_live(r_el as u32 + 1),
+                                ) {
+                                    rel["location"]["range"]["start"]["line"] =
+                                        json!(m_sl.saturating_sub(1));
+                                    rel["location"]["range"]["end"]["line"] =
+                                        json!(m_el.saturating_sub(1));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                mapped.push(d);
+            }
+            _ => {
+                // Diagnostic line falls in modified/inserted/deleted region; drop it.
+                continue;
+            }
+        }
+    }
+    mapped
+}
+
 /// Publishes reconciled diagnostics for a document URI to an LSP writer.
 ///
 /// Sends a `textDocument/publishDiagnostics` notification when diagnostics are non-empty,
@@ -76,13 +162,16 @@ pub fn publish_reconciled_diagnostics<W: Write>(
     writer: &mut W,
 ) -> std::io::Result<()> {
     let file = uri_to_path(uri);
-    let text = if let Some(ov) = overlay_mgr.get(&file) {
-        Some(ov.text.clone())
+    let ov_opt = overlay_mgr.get(&file);
+    let file_text;
+    let effective_text = if let Some(ov) = ov_opt {
+        Some(ov.text.as_str())
     } else {
-        std::fs::read_to_string(&file).ok()
+        file_text = std::fs::read_to_string(&file).ok();
+        file_text.as_deref()
     };
 
-    let Some(doc_text) = text else {
+    let Some(text) = effective_text else {
         if flycheck.clear_published(uri) {
             let clear_notif = json!({
                 "jsonrpc": "2.0",
@@ -98,12 +187,13 @@ pub fn publish_reconciled_diagnostics<W: Write>(
         return Ok(());
     };
 
-    let heuristic = handle_document_diagnostic_text(&doc_text);
+    let heuristic = handle_document_diagnostic_text(text);
     let h_items = heuristic["items"]
         .as_array()
         .map(|a| a.as_slice())
         .unwrap_or(&[]);
-    let auth_items = flycheck.get_latest_diagnostics(uri);
+    let raw_auth = flycheck.get_latest_diagnostics(uri);
+    let auth_items = map_authoritative_diagnostics_to_live(&raw_auth, ov_opt, uri);
     let merged = reconcile_diagnostics(h_items, &auth_items);
 
     if !merged.is_empty() {

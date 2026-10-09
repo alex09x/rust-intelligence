@@ -166,7 +166,10 @@ impl FlycheckState {
         }
     }
 
-    /// Synchronous runner for direct unit tests or CLI execution.
+    /// Synchronous runner reserved exclusively for direct unit and integration tests.
+    /// Emits raw compiler messages directly to the test writer without overlay reconciliation.
+    /// Production LSP workflows exclusively use `trigger_check`, routing through
+    /// `InternalDiagnostic` and `publish_reconciled_diagnostics`.
     pub fn run_check<W: std::io::Write>(
         &self,
         workspace_root: &Path,

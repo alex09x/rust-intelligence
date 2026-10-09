@@ -33,7 +33,13 @@ pub fn handle_diagnostic_with_flycheck(
         .unwrap_or(&[]);
     if let Some(fc) = flycheck {
         let auth_items = fc.get_latest_diagnostics(uri);
-        let merged = super::reconcile::reconcile_diagnostics(h_items, &auth_items);
+        let file = uri_to_path(uri);
+        let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_live(
+            &auth_items,
+            overlay_mgr.get(&file),
+            uri,
+        );
+        let merged = super::reconcile::reconcile_diagnostics(h_items, &mapped_auth);
         json!({ "kind": "full", "items": merged })
     } else {
         syntax_res

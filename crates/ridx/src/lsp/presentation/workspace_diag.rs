@@ -43,7 +43,13 @@ pub fn handle_workspace_diagnostic_with_flycheck(
             .unwrap_or(&[]);
         if let Some(fc) = flycheck {
             let auth = fc.get_latest_diagnostics(uri);
-            super::reconcile::reconcile_diagnostics(h_items, &auth)
+            let file = crate::lsp::protocol::uri_to_path(uri);
+            let mapped_auth = super::reconcile::map_authoritative_diagnostics_to_live(
+                &auth,
+                overlay_mgr.get(&file),
+                uri,
+            );
+            super::reconcile::reconcile_diagnostics(h_items, &mapped_auth)
         } else {
             h_items.to_vec()
         }
