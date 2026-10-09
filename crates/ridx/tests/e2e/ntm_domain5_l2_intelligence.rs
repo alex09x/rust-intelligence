@@ -189,6 +189,47 @@ fn test_l2_completion_receiver_isolation() {
 }
 
 #[test]
+fn test_l2_completion_generic_trait_bound() {
+    let ws = get_or_index_l2_fixture("traits_and_generics");
+    let lib_file = fixture_dir("traits_and_generics").join("src/lib.rs");
+    let uri = path_to_uri(lib_file.to_str().unwrap());
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    // Line 51: `    g.greet()` -> trigger completion after `g.`
+    let (line, col) = pos_in_file(&lib_file, "g.greet()", "greet");
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": line, "character": col }
+        }
+    });
+
+    let res = handle_completion(&req, Some(ws), &overlay_mgr, &mut conv).unwrap();
+    let items = res["items"]
+        .as_array()
+        .expect("Completion items must be an array");
+
+    let greet_item = items
+        .iter()
+        .find(|item| item["label"] == "greet")
+        .expect("greet method must be suggested for g. where G: Greeter");
+    assert!(
+        greet_item["detail"].as_str().unwrap().contains("Greeter"),
+        "Detail should mention Greeter trait"
+    );
+
+    let default_greet_item = items
+        .iter()
+        .find(|item| item["label"] == "default_greet")
+        .expect("default_greet method must be suggested for g. where G: Greeter");
+    assert!(
+        default_greet_item["detail"].as_str().unwrap().contains("Greeter"),
+        "Detail should mention Greeter trait"
+    );
+}
+
+#[test]
 fn test_l2_signature_help_cross_crate_and_trait() {
     let ws_multi = get_or_index_l2_fixture("multi_crate");
     let app_file = fixture_dir("multi_crate").join("crates/app_crate/src/lib.rs");

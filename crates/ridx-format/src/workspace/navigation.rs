@@ -1115,10 +1115,10 @@ impl WorkspaceIndex {
     {
         if let Some(pref) = preferred_crate {
             for reader in &self.readers {
-                if reader.crate_name() == pref {
-                    if !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def)) {
-                        return;
-                    }
+                if reader.crate_name() == pref
+                    && !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def))
+                {
+                    return;
                 }
             }
         }
@@ -1142,10 +1142,10 @@ impl WorkspaceIndex {
         F: FnMut(&IndexReader<memmap2::Mmap>, &DefEntry) -> bool,
     {
         for reader in &self.readers {
-            if reader.crate_name() == target_crate {
-                if !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def)) {
-                    return;
-                }
+            if reader.crate_name() == target_crate
+                && !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def))
+            {
+                return;
             }
         }
     }

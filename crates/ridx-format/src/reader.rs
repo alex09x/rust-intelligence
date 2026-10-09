@@ -726,12 +726,11 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         for def in self.definitions() {
             let name = self.get_str(def.name_offset());
             let path = self.get_str(def.path_offset());
-            if contains_ignore_case_ascii(name, needle_lower)
-                || contains_ignore_case_ascii(path, needle_lower)
+            if (contains_ignore_case_ascii(name, needle_lower)
+                || contains_ignore_case_ascii(path, needle_lower))
+                && !cb(def)
             {
-                if !cb(def) {
-                    return false;
-                }
+                return false;
             }
         }
         true

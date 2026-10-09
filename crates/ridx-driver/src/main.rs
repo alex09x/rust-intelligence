@@ -27,6 +27,9 @@ use std::time::Instant;
 mod sanitize;
 use sanitize::sanitize_type_name;
 
+mod owner;
+use owner::resolve_owner_from_ty;
+
 use ridx_format::{DefKind as RDefKind, IndexWriter, RawDefinition, RawReference, RawType};
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::{
@@ -147,6 +150,7 @@ fn resolve_span_coords(
 struct HirVisitor<'tcx> {
     tcx: TyCtxt<'tcx>,
     typeck: Option<&'tcx TypeckResults<'tcx>>,
+    current_body_owner: Option<rustc_span::def_id::LocalDefId>,
     package_root: Option<PathBuf>,
     writer: IndexWriter,
     krate_to_unit: std::collections::HashMap<rustc_span::def_id::CrateNum, String>,
@@ -154,6 +158,10 @@ struct HirVisitor<'tcx> {
 }
 
 impl<'tcx> HirVisitor<'tcx> {
+    fn current_param_env(&self) -> Option<rustc_middle::ty::ParamEnv<'tcx>> {
+        self.current_body_owner.map(|owner| self.tcx.param_env(owner.to_def_id()))
+    }
+
     fn add_ref_from_res(&mut self, span: Span, res: Res) {
         let Some((file, s_line, s_col, e_line, e_col, is_macro)) =
             resolve_span_coords(self.tcx, span, self.package_root.as_deref())
@@ -307,7 +315,9 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
 
     fn visit_nested_body(&mut self, id: hir::BodyId) {
         let prev = self.typeck.replace(self.tcx.typeck_body(id));
+        let prev_owner = self.current_body_owner.replace(self.tcx.hir_body_owner_def_id(id));
         self.visit_body(self.tcx.hir_body(id));
+        self.current_body_owner = prev_owner;
         self.typeck = prev;
     }
 
@@ -424,7 +434,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                     resolve_span_coords(self.tcx, expr.span, self.package_root.as_deref())
                 {
                     if let Some(ty) = typeck.expr_ty_opt(expr) {
-                        let owner_path = resolve_owner_from_ty(self.tcx, ty);
+                        let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
                         self.writer.add_type_with_owner(
                             RawType {
                                 file,
@@ -451,7 +461,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                         resolve_span_coords(self.tcx, pat.span, self.package_root.as_deref())
                     {
                         let ty = typeck.pat_ty(pat);
-                        let owner_path = resolve_owner_from_ty(self.tcx, ty);
+                        let owner_path = resolve_owner_from_ty(self.tcx, ty, self.current_param_env());
                         self.writer.add_type_with_owner(
                             RawType {
                                 file,
@@ -625,52 +635,6 @@ fn compute_dependency_unit_key(
     format!("{:016x}", ridx_format::fnv1a_64(key_str.as_bytes()))
 }
 
-/// Resolves the canonical owner path from a type (ADT, dyn Trait, str, slice, primitives).
-///
-/// Note (P3.3 limitation): Blanket implementations such as `impl<T: Trait> Trait for T`
-/// (where the self type is an unconstrained generic parameter) return `None` because they do not have
-/// a single concrete ADT or primitive owner. Methods from blanket implementations are resolved
-/// via the fallback completion path.
-fn resolve_owner_from_ty<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    ty: rustc_middle::ty::Ty<'tcx>,
-) -> Option<String> {
-    let peeled = ty.peel_refs();
-    if let Some(adt_def) = peeled.ty_adt_def() {
-        let did = adt_def.did();
-        let path = rustc_middle::ty::print::with_no_visible_paths!(
-            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
-        );
-        return Some(path);
-    }
-    match peeled.kind() {
-        rustc_middle::ty::TyKind::Dynamic(predicates, ..) => {
-            if let Some(principal) = predicates.principal() {
-                let did = principal.def_id();
-                let path = rustc_middle::ty::print::with_no_visible_paths!(
-                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
-                );
-                return Some(path);
-            }
-        }
-        rustc_middle::ty::TyKind::Str => {
-            return Some("str".to_string());
-        }
-        rustc_middle::ty::TyKind::Slice(_) => {
-            return Some("slice".to_string());
-        }
-        rustc_middle::ty::TyKind::Bool
-        | rustc_middle::ty::TyKind::Char
-        | rustc_middle::ty::TyKind::Int(_)
-        | rustc_middle::ty::TyKind::Uint(_)
-        | rustc_middle::ty::TyKind::Float(_) => {
-            return Some(peeled.to_string());
-        }
-        _ => {}
-    }
-    None
-}
-
 fn extract_crate_items<'tcx>(
     tcx: TyCtxt<'tcx>,
     visitor: &mut HirVisitor<'tcx>,
@@ -726,7 +690,7 @@ fn extract_crate_items<'tcx>(
                 let parent_kind = tcx.def_kind(parent_did);
                 if matches!(parent_kind, hir::def::DefKind::Impl { .. }) {
                     let self_ty = tcx.type_of(parent_did).skip_binder();
-                    if let Some(owner) = resolve_owner_from_ty(tcx, self_ty) {
+                    if let Some(owner) = resolve_owner_from_ty(tcx, self_ty, None) {
                         owners.push(owner);
                     }
                     // P3.2: Trait impl methods are indexed ONLY under the Self type.
@@ -785,15 +749,43 @@ fn extract_crate_items<'tcx>(
             let trait_did = trait_ref.skip_binder().def_id;
             if tcx.lang_items().deref_trait() == Some(trait_did) {
                 let self_ty = tcx.type_of(did).skip_binder();
-                let src_owner = resolve_owner_from_ty(tcx, self_ty);
+                let src_owner = resolve_owner_from_ty(tcx, self_ty, None);
                 for &assoc_did in tcx.associated_item_def_ids(did) {
                     if tcx.def_kind(assoc_did) == hir::def::DefKind::AssocTy
                         && tcx.item_name(assoc_did).as_str() == "Target"
                     {
                         let target_ty = tcx.type_of(assoc_did).skip_binder();
-                        let tgt_owner = resolve_owner_from_ty(tcx, target_ty);
+                        let tgt_owner = resolve_owner_from_ty(tcx, target_ty, None);
                         if let (Some(src), Some(tgt)) = (src_owner.clone(), tgt_owner) {
                             visitor.writer.add_deref(src, tgt);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Index supertrait relationships in the autoderef chain: trait SubTrait: SuperTrait
+        if kind == hir::def::DefKind::Trait {
+            let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
+                rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
+            );
+            for (clause, _) in tcx.predicates_of(did).predicates {
+                if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder() {
+                    let self_ty = trait_pred.self_ty().peel_refs();
+                    if let rustc_middle::ty::TyKind::Param(p) = self_ty.kind() {
+                        if p.name.as_str() == "Self" {
+                            let super_did = trait_pred.trait_ref.def_id;
+                            if super_did != did
+                                && tcx.lang_items().sized_trait() != Some(super_did)
+                                && !tcx.trait_is_auto(super_did)
+                            {
+                                let super_path = rustc_middle::ty::print::with_no_visible_paths!(
+                                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(super_did))
+                                );
+                                if !super_path.starts_with("core::marker::") {
+                                    visitor.writer.add_deref(trait_path.clone(), super_path);
+                                }
+                            }
                         }
                     }
                 }
@@ -1178,6 +1170,7 @@ fn build_crate_index(
         let mut visitor = HirVisitor {
             tcx,
             typeck: None,
+            current_body_owner: None,
             package_root: manifest_dir.clone(),
             writer: IndexWriter::new(&crate_name, &crate_version),
             krate_to_unit: krate_to_unit.clone(),
@@ -1296,6 +1289,7 @@ fn build_crate_index(
     let mut visitor = HirVisitor {
         tcx,
         typeck: None,
+        current_body_owner: None,
         package_root: None,
         writer: IndexWriter::new(&crate_name, &crate_version),
         krate_to_unit,
