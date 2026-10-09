@@ -30,6 +30,35 @@ pub fn normalize_type(ty: &str) -> &str {
     t.split('<').next().unwrap_or(t).trim()
 }
 
+/// Checks if a crate-relative path matches target_prefix or target_suffix without heap allocation.
+#[inline]
+fn full_path_matches(
+    crate_name: &str,
+    path: &str,
+    target_prefix: &str,
+    target_suffix: &str,
+) -> bool {
+    if path.starts_with(target_prefix) {
+        return true;
+    }
+    if let Some(rest) = target_prefix.strip_prefix(crate_name) {
+        if let Some(rest_path) = rest.strip_prefix("::") {
+            if path.starts_with(rest_path) {
+                return true;
+            }
+        }
+    }
+    if path.contains(target_suffix) {
+        return true;
+    }
+    if let Some(target_inner) = target_suffix.strip_prefix("::") {
+        if path.starts_with(target_inner) {
+            return true;
+        }
+    }
+    false
+}
+
 /// Executes fast fallback completion for dot- or colon-triggered queries.
 ///
 /// Returns `(items, isIncomplete)`.
@@ -41,6 +70,16 @@ pub fn try_fallback_completion(
     let mut items = Vec::new();
     let mut seen_names = HashSet::new();
     let mut is_capped = false;
+
+    let is_unresolved = if ctx.is_colon {
+        let qual = extract_colon_qualifier(ctx.trimmed_before);
+        let first_seg = qual.split("::").next().unwrap_or(&qual);
+        ws.resolve_qualifier(ctx.file, &qual).is_none() && !ws.has_crate(first_seg)
+    } else {
+        false
+    };
+    let max_scan_budget: usize = if is_unresolved { 5_000 } else { 25_000 };
+    let mut scanned_count: usize = 0;
 
     let (target_prefix, target_suffix, target_for_needle, target_crate) = if ctx.is_dot {
         let before_dot = ctx.trimmed_before[..ctx.trimmed_before.len() - 1].trim_end();
@@ -133,6 +172,12 @@ pub fn try_fallback_completion(
     let mut collector = |reader: &ridx_format::IndexReader<memmap2::Mmap>,
                          def: &ridx_format::DefEntry|
      -> bool {
+        scanned_count += 1;
+        if scanned_count >= max_scan_budget {
+            is_capped = true;
+            return false;
+        }
+
         let kind = DefKind::from(def.kind);
         if ctx.is_dot
             && (!matches!(
@@ -152,14 +197,10 @@ pub fn try_fallback_completion(
         let path = reader.get_str(def.path_offset());
         let crate_name = reader.crate_name();
 
-        if target_prefix != "::" {
-            let full_path = format!("{crate_name}::{path}");
-            if !full_path.starts_with(&target_prefix)
-                && !full_path.contains(&target_suffix)
-                && !path.starts_with(&target_prefix)
-            {
-                return true;
-            }
+        if target_prefix != "::"
+            && !full_path_matches(crate_name, path, &target_prefix, &target_suffix)
+        {
+            return true;
         }
 
         if !ctx.prefix.is_empty() && !name.starts_with(ctx.prefix) {
