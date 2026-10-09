@@ -87,7 +87,7 @@ mod tests {
 
     #[test]
     fn test_sanitize_closure_simple() {
-        let input = "{closure@/Users/alex09x/rust-intelligence/src/lib.rs:12:34}";
+        let input = "{closure@/home/user/project/src/lib.rs:12:34}";
         assert_eq!(sanitize_type_name(input), "{closure}");
     }
 
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_sanitize_nested_iterators() {
-        let input = "Map<Filter<Chars<'_>, {closure@/Users/alex/foo.rs:1:2}>, {closure@/home/ci/bar.rs:3:4}>";
+        let input = "Map<Filter<Chars<'_>, {closure@/home/user/foo.rs:1:2}>, {closure@/home/ci/bar.rs:3:4}>";
         assert_eq!(
             sanitize_type_name(input),
             "Map<Filter<Chars<'_>, {closure}>, {closure}>"
@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn test_sanitize_fallback_home_paths() {
-        let input = "CustomType</Users/alex09x/some/path>";
+        let input = "CustomType</home/user/some/path>";
         assert_eq!(
             sanitize_type_name(input),
             "CustomType<<user_dir>/some/path>"
