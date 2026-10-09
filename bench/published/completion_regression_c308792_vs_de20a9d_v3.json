@@ -1,0 +1,149 @@
+{
+  "serde-rs/serde": {
+    "repo": "serde-rs/serde",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "ad5e1980a489d231",
+    "invalid_config": false,
+    "total_scenarios": 100,
+    "empty_responses": {
+      "c308792": 34,
+      "de20a9d": 32,
+      "rust_analyzer_1_98_1": 2
+    },
+    "closed_empty_responses": {
+      "count": 2,
+      "scenarios": [
+        "comp_colon_38_Enum",
+        "comp_colon_25_U64"
+      ]
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "c308792": 2293,
+      "de20a9d": 2479,
+      "rust_analyzer_1_98_1": 4665
+    },
+    "ra_zero_oracle_count": 2,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "c308792": 31.1,
+      "c308792_n": 98,
+      "de20a9d": 33.1,
+      "de20a9d_n": 98
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "c308792": 77.7,
+      "c308792_n": 65,
+      "de20a9d": 74.9,
+      "de20a9d_n": 67
+    },
+    "recall_regressions_gt_5pp": [],
+    "routes": {
+      "owner_count": 52,
+      "fallback_count": 48,
+      "migrated_from_fallback_to_owner": 4,
+      "owner_accuracy": {
+        "base_recall_pct": 48.8,
+        "curr_recall_pct": 48.9,
+        "base_precision_pct": 85.6,
+        "curr_precision_pct": 84.5
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 11.0,
+        "curr_recall_pct": 15.3,
+        "base_precision_pct": 51.5,
+        "curr_precision_pct": 42.0
+      },
+      "owner_curr_warm_p50_us": 204.5,
+      "owner_curr_warm_p95_us": 747.3,
+      "owner_ra_warm_p50_us": 5976.0,
+      "owner_ra_warm_p95_us": 12384.0,
+      "owner_speedup_fair": 29.22,
+      "fallback_curr_warm_p50_us": 1876.5,
+      "fallback_curr_warm_p95_us": 2576.9,
+      "fallback_ra_warm_p50_us": 1817.5,
+      "fallback_ra_warm_p95_us": 7642.0,
+      "fallback_speedup_fair": 0.97,
+      "overall_curr_warm_p50_us": 630.0,
+      "overall_curr_warm_p95_us": 2528.2,
+      "overall_ra_warm_p50_us": 4406.0,
+      "overall_ra_warm_p95_us": 12084.1,
+      "overall_speedup": 6.99
+    }
+  },
+  "bevyengine/bevy": {
+    "repo": "bevyengine/bevy",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "ad5e1980a489d231",
+    "invalid_config": false,
+    "total_scenarios": 100,
+    "empty_responses": {
+      "c308792": 16,
+      "de20a9d": 13,
+      "rust_analyzer_1_98_1": 6
+    },
+    "closed_empty_responses": {
+      "count": 3,
+      "scenarios": [
+        "comp_colon_3_Run",
+        "comp_colon_38_Type",
+        "comp_colon_31_AliasedMutability"
+      ]
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "c308792": 4657,
+      "de20a9d": 4651,
+      "rust_analyzer_1_98_1": 6817
+    },
+    "ra_zero_oracle_count": 6,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "c308792": 32.2,
+      "c308792_n": 94,
+      "de20a9d": 37.5,
+      "de20a9d_n": 94
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "c308792": 56.2,
+      "c308792_n": 80,
+      "de20a9d": 59.6,
+      "de20a9d_n": 83
+    },
+    "recall_regressions_gt_5pp": [],
+    "routes": {
+      "owner_count": 61,
+      "fallback_count": 39,
+      "migrated_from_fallback_to_owner": 14,
+      "owner_accuracy": {
+        "base_recall_pct": 38.4,
+        "curr_recall_pct": 43.8,
+        "base_precision_pct": 65.4,
+        "curr_precision_pct": 67.5
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 21.3,
+        "curr_recall_pct": 26.2,
+        "base_precision_pct": 33.3,
+        "curr_precision_pct": 38.8
+      },
+      "owner_curr_warm_p50_us": 372.0,
+      "owner_curr_warm_p95_us": 1112.0,
+      "owner_ra_warm_p50_us": 6329.0,
+      "owner_ra_warm_p95_us": 19527.0,
+      "owner_speedup_fair": 17.01,
+      "fallback_curr_warm_p50_us": 362.0,
+      "fallback_curr_warm_p95_us": 23788.9,
+      "fallback_ra_warm_p50_us": 1853.0,
+      "fallback_ra_warm_p95_us": 6750.4,
+      "fallback_speedup_fair": 5.12,
+      "overall_curr_warm_p50_us": 367.0,
+      "overall_curr_warm_p95_us": 23478.2,
+      "overall_ra_warm_p50_us": 4448.5,
+      "overall_ra_warm_p95_us": 16810.0,
+      "overall_speedup": 12.12
+    }
+  }
+}
