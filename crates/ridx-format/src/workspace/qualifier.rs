@@ -35,12 +35,20 @@ impl WorkspaceIndex {
             if let Some(target) =
                 self.find_definition_at(resolved.file, resolved.start_line, resolved.start_col)
             {
+                if target.kind == DefKind::Use
+                    || (target.file == resolved.file
+                        && target.start_line == resolved.start_line
+                        && target.start_col == resolved.start_col)
+                {
+                    return None;
+                }
                 if let Some(rest) = rest_opt {
                     return self.find_definition_by_path(&format!("{}::{rest}", target.path));
                 } else {
                     return Some(target);
                 }
             }
+            return None;
         } else if matches!(
             kind,
             DefKind::Mod
@@ -123,18 +131,23 @@ impl WorkspaceIndex {
         let crate_idx = self.reader_index_for_file(file);
         let mod_path_opt = self.module_path_for_file(file);
 
+        let is_sysroot = matches!(first_seg, "core" | "alloc" | "std");
+        let is_dep_crate = !is_sysroot && self.has_crate(first_seg);
+
         // 1. File scope: check definitions and imports declared directly in `file`
         if let Some(idx) = crate_idx {
             let reader = &self.readers[idx];
             if let Some(fid) = reader.find_file_id(file) {
                 // Fast path: check if local item exists with path `<mod_path>::<first_seg>`
-                if let Some(ref mod_path) = mod_path_opt {
-                    let fast_target = format!("{mod_path}::{first_seg}");
-                    if let Some(def) = reader.find_definition_by_path(&fast_target) {
-                        let span = def.span();
-                        if span.file_id == fid {
-                            if let Some(res) = self.resolve_file_item(idx, def, rest_opt) {
-                                return Some(res);
+                if !is_sysroot && !is_dep_crate {
+                    if let Some(ref mod_path) = mod_path_opt {
+                        let fast_target = format!("{mod_path}::{first_seg}");
+                        if let Some(def) = reader.find_definition_by_path(&fast_target) {
+                            let span = def.span();
+                            if span.file_id == fid {
+                                if let Some(res) = self.resolve_file_item(idx, def, rest_opt) {
+                                    return Some(res);
+                                }
                             }
                         }
                     }
@@ -144,6 +157,9 @@ impl WorkspaceIndex {
                 for def in reader.definitions() {
                     let span = def.span();
                     if span.file_id == fid && reader.get_str(def.name_offset()) == first_seg {
+                        if (is_sysroot || is_dep_crate) && DefKind::from(def.kind) == DefKind::Use {
+                            continue;
+                        }
                         if let Some(res) = self.resolve_file_item(idx, def, rest_opt) {
                             return Some(res);
                         }
@@ -244,18 +260,24 @@ impl WorkspaceIndex {
         if let Some(idx) = crate_idx {
             let cname = self.readers[idx].crate_name();
 
-            // Try enclosing module
-            if let Some(ref mod_path) = mod_path_opt {
-                if let Some(def) =
-                    self.find_definition_by_path(&format!("{mod_path}::{qual_trimmed}"))
-                {
-                    return Some(def);
+            if !is_sysroot {
+                // Try enclosing module
+                if let Some(ref mod_path) = mod_path_opt {
+                    if let Some(def) =
+                        self.find_definition_by_path(&format!("{mod_path}::{qual_trimmed}"))
+                    {
+                        if def.kind != DefKind::Use {
+                            return Some(def);
+                        }
+                    }
                 }
-            }
 
-            // Try crate root
-            if let Some(def) = self.find_definition_by_path(&format!("{cname}::{qual_trimmed}")) {
-                return Some(def);
+                // Try crate root
+                if let Some(def) = self.find_definition_by_path(&format!("{cname}::{qual_trimmed}")) {
+                    if def.kind != DefKind::Use {
+                        return Some(def);
+                    }
+                }
             }
         }
 

@@ -15,6 +15,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+os.environ.setdefault("RUSTUP_TOOLCHAIN", "1.98.1")
+
 bench_dir = Path(__file__).resolve().parent
 if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
@@ -89,6 +91,29 @@ def find_default_repo(name):
     return Path("/tmp") / name
 
 
+def find_sysroot_cas_key(rpath):
+    root = Path(rpath) / "target" / "ridx"
+    candidates = [root / "ridx_manifest.json"]
+    vdir = root / "variants"
+    if vdir.is_dir():
+        candidates.extend(sorted(vdir.glob("*/variant_manifest.json"), reverse=True))
+    for mf in candidates:
+        if mf.is_file():
+            try:
+                k = json.loads(mf.read_text(encoding="utf-8")).get("sysroot_cas_key")
+                if k:
+                    return k
+            except Exception:
+                pass
+    return None
+
+
+def calc_route_acc(scs, key_rec, key_prec, key_cnt):
+    recs = [s[key_rec] for s in scs if s["ra_count"] > 0]
+    precs = [s[key_prec] for s in scs if s[key_cnt] > 0 and s["ra_count"] > 0]
+    return (round(sum(recs) / len(recs), 1) if recs else 0.0, round(sum(precs) / len(precs), 1) if precs else 0.0)
+
+
 def parse_args():
     p = argparse.ArgumentParser(description="Empirical regression and parity verification")
     p.add_argument("--base-commit", default="b05240a", help="Baseline commit SHA")
@@ -106,6 +131,7 @@ def parse_args():
     p.add_argument("--output-json", help="Path for comparison report json")
     p.add_argument("--output-jsonl", help="Path for output rerun jsonl")
     p.add_argument("--force", action="store_true", help="Allow overwriting existing published benchmark files")
+    p.add_argument("--allow-invalid-config", action="store_true", help="Allow running even if toolchain != 1.98.1 or sysroot_cas_key is empty")
     return p.parse_args()
 
 
@@ -148,8 +174,10 @@ def main():
         curr_bin = Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")
         ra_custom = Path.home() / ".rustup" / "toolchains" / "1.98.1-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
         ra_bin = args.ra_bin if args.ra_bin else (str(ra_custom) if ra_custom.is_file() else "rust-analyzer")
+        rustc_custom = Path.home() / ".rustup" / "toolchains" / "1.98.1-x86_64-unknown-linux-gnu" / "bin" / "rustc"
+        rustc_bin = str(rustc_custom) if rustc_custom.is_file() else "rustc"
         ra_ver = subprocess.run([ra_bin, "--version"], capture_output=True, text=True, check=False).stdout.strip()
-        tc_ver = subprocess.run(["rustc", "--version"], capture_output=True, text=True, check=False).stdout.strip()
+        tc_ver = subprocess.run([rustc_bin, "--version"], capture_output=True, text=True, check=False, env={**os.environ, "RUSTUP_TOOLCHAIN": "1.98.1"}).stdout.strip()
 
     all_comparisons, published_records = {}, []
 
@@ -171,7 +199,16 @@ def main():
             preopen_buffers(srv_ra, rpath, scenarios_base)
             res_ra = run_scenarios(srv_ra, rpath, scenarios_base, is_ra=True, timeout=10.0)
             srv_ra.notify("exit", {})
-            cas_key, res_scs = None, None
+
+            cas_key = find_sysroot_cas_key(rpath)
+            res_scs = None
+
+        is_invalid_config = not cas_key or ("1.98.1" not in tc_ver)
+        if is_invalid_config and not args.allow_invalid_config:
+            raise RuntimeError(
+                f"Invalid benchmark configuration for {slug}: toolchain={tc_ver!r} (expected 1.98.1), sysroot_cas_key={cas_key!r}. "
+                "Use --allow-invalid-config to override."
+            )
 
         empty_b = empty_c = empty_ra = reg_empty = closed_cnt = ra_zero = 0
         closed_names = []
@@ -270,8 +307,14 @@ def main():
         avg_prec_b = round(sum(precs_b) / len(precs_b), 1) if precs_b else 0.0
         avg_prec_c = round(sum(precs_c) / len(precs_c), 1) if precs_c else 0.0
 
+        o_rec_c, o_prec_c = calc_route_acc(owner_scs, "recall_pct", "precision_pct", "ridx_count")
+        o_rec_b, o_prec_b = calc_route_acc(owner_scs, "base_recall_pct", "base_precision_pct", "base_count")
+        f_rec_c, f_prec_c = calc_route_acc(fallback_scs, "recall_pct", "precision_pct", "ridx_count")
+        f_rec_b, f_prec_b = calc_route_acc(fallback_scs, "base_recall_pct", "base_precision_pct", "base_count")
+
         summary = {
-            "repo": slug, "toolchain": tc_ver, "sysroot_cas_key": cas_key, "total_scenarios": len(scenarios_base),
+            "repo": slug, "toolchain": tc_ver, "sysroot_cas_key": cas_key, "invalid_config": is_invalid_config,
+            "total_scenarios": len(scenarios_base),
             "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
             "closed_empty_responses": {"count": closed_cnt, "scenarios": closed_names},
             "regressions_to_empty": reg_empty,
@@ -291,6 +334,8 @@ def main():
             "routes": {
                 "owner_count": len(owner_scs), "fallback_count": len(fallback_scs),
                 "migrated_from_fallback_to_owner": migrated_to_owner,
+                "owner_accuracy": {"base_recall_pct": o_rec_b, "curr_recall_pct": o_rec_c, "base_precision_pct": o_prec_b, "curr_precision_pct": o_prec_c},
+                "fallback_accuracy": {"base_recall_pct": f_rec_b, "curr_recall_pct": f_rec_c, "base_precision_pct": f_prec_b, "curr_precision_pct": f_prec_c},
                 "owner_curr_warm_p50_us": o_c_p50, "owner_curr_warm_p95_us": o_c_p95,
                 "owner_ra_warm_p50_us": o_ra_p50, "owner_ra_warm_p95_us": o_ra_p95,
                 "owner_speedup_fair": o_speedup,
@@ -308,6 +353,8 @@ def main():
         print(f"  Empty responses:       {base_commit}: {empty_b} -> {curr_commit}: {empty_c} (closed: {closed_cnt})")
         print(f"  Avg recall (ra>0):     {base_commit}: {avg_rec_b}% (n={len(recs_b)}) -> {curr_commit}: {avg_rec_c}% (n={len(recs_c)}) [ra_zero={ra_zero}]")
         print(f"  Avg precision (cnt>0, ra>0): {base_commit}: {avg_prec_b}% (n={len(precs_b)}) -> {curr_commit}: {avg_prec_c}% (n={len(precs_c)})")
+        print(f"  Owner accuracy:        recall {o_rec_b}% -> {o_rec_c}% | precision {o_prec_b}% -> {o_prec_c}% (n={len(owner_scs)})")
+        print(f"  Fallback accuracy:     recall {f_rec_b}% -> {f_rec_c}% | precision {f_prec_b}% -> {f_prec_c}% (n={len(fallback_scs)})")
         print(f"  Recall regressions:    {len(recall_regs)} scenarios > 5pp")
         print(f"  Owner:    p50 {o_c_p50:.0f}µs RIDX vs {o_ra_p50:.0f}µs RA ({o_speedup}x) | p95 {o_c_p95:.0f}µs vs {o_ra_p95:.0f}µs")
         print(f"  Fallback: p50 {f_c_p50:.0f}µs RIDX vs {f_ra_p50:.0f}µs RA ({f_speedup}x) | p95 {f_c_p95:.0f}µs vs {f_ra_p95:.0f}µs")
@@ -316,7 +363,7 @@ def main():
         if not curr_data:
             published_records.append({
                 "repo": slug, "commit_ridx": curr_commit, "baseline_ra": ra_ver,
-                "toolchain": tc_ver, "sysroot_cas_key": cas_key,
+                "toolchain": tc_ver, "sysroot_cas_key": cas_key, "invalid_config": is_invalid_config,
                 "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
                 "taskset": "24-31", "seed": 42,
                 "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),

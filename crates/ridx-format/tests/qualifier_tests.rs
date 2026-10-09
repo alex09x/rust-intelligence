@@ -264,3 +264,43 @@ fn test_resolve_qualifier_glob_import() {
     assert_eq!(res3.unwrap().path, "test_crate::de::Error");
 }
 
+#[test]
+fn test_resolve_qualifier_sysroot_not_shadowed_by_use() {
+    let temp_dir = TempDir::new().unwrap();
+    let target_dir = temp_dir.path();
+
+    let mut writer = IndexWriter::new("test_crate", "0.1.0");
+    writer.set_unit_key("test_crate-0.1.0");
+
+    // In src/system_registry.rs: `use core::cell::Cell;`
+    // Indexed as DefKind::Use with name "core" and path "test_crate::system::system_registry::core"
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Use,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "core".to_string(),
+        path: "test_crate::system::system_registry::core".to_string(),
+        signature: None,
+        file: "src/system_registry.rs".to_string(),
+        start_line: 10,
+        start_col: 9,
+        end_line: 10,
+        end_col: 13,
+    });
+
+    let mut buf = Vec::new();
+    writer.write_to(&mut Cursor::new(&mut buf)).unwrap();
+    fs::write(target_dir.join("test_crate.ridx"), buf).unwrap();
+
+    let ws = WorkspaceIndex::open(target_dir).unwrap();
+
+    // "core" qualifier must NOT resolve to the local Use entry
+    let res = ws.resolve_qualifier("src/system_registry.rs", "core");
+    assert!(
+        res.is_none() || res.as_ref().unwrap().path != "test_crate::system::system_registry::core",
+        "sysroot qualifier 'core' must not be shadowed by local Use entry"
+    );
+}
+
+
