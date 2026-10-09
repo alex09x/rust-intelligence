@@ -31,7 +31,7 @@ def generate_repo_report(entry, source_file, discrepancies_file=None):
     ra_version = entry.get("ra_version", "")
     lines = []
 
-    lines.append(f"## Benchmark Report: `{repo}` (commit `{commit}`) — Preliminary (Serde only)")
+    lines.append(f"## Benchmark Report: `{repo}` (commit `{commit}`)")
     lines.append(f"*Source Data:* `{source_file}`  ")
     lines.append(f"*Run Status:* `{status}`  ")
     if driver_sha:

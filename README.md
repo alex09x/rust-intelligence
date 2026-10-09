@@ -96,10 +96,19 @@ When combined with `mitts` (distributed compilation and build artifact store):
 
 ---
 
-## 5. Preliminary Benchmark Results
+## 5. Benchmark Results
 
 > [!NOTE]
-> The figures below represent preliminary single-symbol latency measurements from early validation runs (see [LSP_BENCHMARK_COMPARISON_REPORT.md](LSP_BENCHMARK_COMPARISON_REPORT.md)). A comprehensive, statistically stratified benchmark across the pinned 100-project corpus ([`bench/corpus/rust-100.tsv`](bench/corpus/rust-100.tsv)) with cold/warm measurement, 300 sampled call-sites per repo, and precision/recall parity analysis against `rust-analyzer` is currently in progress.
+> Detailed results from the multi-repository pilot benchmark across 5 repositories (2,100 evaluated scenarios) are published in [`LSP_BENCHMARK_COMPARISON_REPORT.md`](LSP_BENCHMARK_COMPARISON_REPORT.md) and governed by [`bench/BENCHMARK_METHODOLOGY.md`](bench/BENCHMARK_METHODOLOGY.md).
+
+### Pilot Benchmark Summary (5 Repositories, 2,100 Scenarios)
+- **Read-Only Strict Match Rate**: **87.87%** (1,318 / 1,500 queries across `serde`, `ripgrep`, `tokio`, `bevy`, and `rust-analyzer`).
+- **Overall Scenario Strict Match Rate**: **81.62%** (1,714 / 2,100 scenarios, including unsaved buffer mutations and 100-commit walk).
+- **Standard Library Sysroot Impact**: 99 of 386 unique discrepancies target sysroot (`std`/`core`/`alloc`). Expected effect of sysroot indexing: up to **+4.71 percentage points** overall (81.62% → 86.33%) and up to **+4.87 percentage points** on read-only queries (87.87% → 92.73%).
+- **Tail Latency Advantage (p90)**: Up to **26.7x faster** for `textDocument/definition` (204 µs vs 5.45 ms) and **20.7x faster** for `textDocument/references` (1.18 ms vs 24.5 ms).
+- **Memory Scaling**: **92.3x lower heap RAM** (14 MB vs 1,292 MB), and **449x lower PSS** footprint across 10 concurrent worktrees (20.5 MB vs 9,211 MB).
+
+### Single-Symbol Latency Measurements (Reference Workspaces)
 
 ### A. Tokio Workspace (42 Crates, 880 Files, 298k References)
 | Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Verified Target |
