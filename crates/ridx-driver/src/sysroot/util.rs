@@ -58,3 +58,50 @@ pub fn is_stable_api(tcx: TyCtxt<'_>, did: DefId) -> bool {
         true
     }
 }
+
+/// Formats an associated function signature cleanly, explicitly showing the receiver
+/// (`fn(&self, ...)`, `fn(&mut self, ...)`, `fn(self, ...)`, or `fn(...)` without self).
+pub fn format_assoc_fn_sig<'tcx>(tcx: TyCtxt<'tcx>, assoc_did: DefId) -> String {
+    let fn_sig = tcx.fn_sig(assoc_did).instantiate_identity().skip_binder();
+    let ret = crate::sanitize::sanitize_type_name(&fn_sig.output().to_string());
+    let has_self = tcx
+        .opt_associated_item(assoc_did)
+        .map(|a| a.is_method())
+        .unwrap_or(false);
+
+    if !has_self {
+        let args: Vec<String> = fn_sig
+            .inputs()
+            .iter()
+            .map(|ty| crate::sanitize::sanitize_type_name(&ty.to_string()))
+            .collect();
+        return if ret == "()" {
+            format!("fn({})", args.join(", "))
+        } else {
+            format!("fn({}) -> {}", args.join(", "), ret)
+        };
+    }
+
+    // Has self parameter: inspect the first input type to determine receiver style
+    let (self_str, rest_inputs) = if let Some((first, rest)) = fn_sig.inputs().split_first() {
+        let s = match first.kind() {
+            rustc_middle::ty::TyKind::Ref(_, _, rustc_middle::ty::Mutability::Mut) => "&mut self",
+            rustc_middle::ty::TyKind::Ref(_, _, rustc_middle::ty::Mutability::Not) => "&self",
+            _ => "self",
+        };
+        (s, rest)
+    } else {
+        ("&self", [].as_slice())
+    };
+
+    let mut args = vec![self_str.to_string()];
+    for ty in rest_inputs {
+        args.push(crate::sanitize::sanitize_type_name(&ty.to_string()));
+    }
+
+    if ret == "()" {
+        format!("fn({})", args.join(", "))
+    } else {
+        format!("fn({}) -> {}", args.join(", "), ret)
+    }
+}

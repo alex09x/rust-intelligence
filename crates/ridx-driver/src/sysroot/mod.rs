@@ -24,10 +24,13 @@ mod primitives;
 mod traits;
 pub mod util;
 
-pub use cas::{compute_sysroot_cas_key, ensure_sysroot_indexed};
+pub use cas::{compute_sysroot_cas_key, compute_sysroot_cas_key_str, ensure_sysroot_indexed};
 pub use primitives::extract_primitive_inherent_impls;
 pub use traits::{collect_sysroot_traits, extract_trait_and_deref_links};
-pub use util::{discover_rust_src_path, is_publicly_visible, is_stable_api, remap_sysroot_path};
+pub use util::{
+    discover_rust_src_path, format_assoc_fn_sig, is_publicly_visible, is_stable_api,
+    remap_sysroot_path,
+};
 
 /// Statistics collected during sysroot crate metadata extraction.
 #[derive(Debug, Clone, Default)]
@@ -132,9 +135,10 @@ pub fn extract_sysroot_crate<'tcx>(
             let name = name_str.to_string();
 
             let signature = match kind {
-                DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
+                DefKind::Fn => Some(sanitize_type_name(
                     &tcx.fn_sig(did).skip_binder().to_string(),
                 )),
+                DefKind::AssocFn => Some(util::format_assoc_fn_sig(tcx, did)),
                 _ => None,
             };
 
@@ -285,9 +289,10 @@ pub fn extract_sysroot_crate<'tcx>(
                                 )
                             );
                             let a_sig = match a_kind {
-                                DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
+                                DefKind::Fn => Some(sanitize_type_name(
                                     &tcx.fn_sig(assoc_did).skip_binder().to_string(),
                                 )),
+                                DefKind::AssocFn => Some(util::format_assoc_fn_sig(tcx, assoc_did)),
                                 _ => None,
                             };
                             let a_span = tcx

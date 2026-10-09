@@ -16,20 +16,26 @@ use rustc_middle::ty::TyCtxt;
 
 use super::{extract_sysroot_crate, SysrootExtractStats};
 
-/// Computes the unique deterministic CAS key for the current sysroot index:
+/// Computes the unique deterministic CAS key for a target triple and optional rustc version string:
 /// `fnv1a_64(rustc version, target triple, format version, driver hash)`.
-pub fn compute_sysroot_cas_key(tcx: TyCtxt<'_>) -> String {
+pub fn compute_sysroot_cas_key_str(version_str: Option<&str>, target_triple: &str) -> String {
     let mut bytes = Vec::new();
-    if let Some(v) = rustc_interface::util::rustc_version_str() {
+    if let Some(v) = version_str.or_else(|| rustc_interface::util::rustc_version_str()) {
         bytes.extend_from_slice(v.as_bytes());
-    } else {
-        bytes.extend_from_slice(tcx.sess.cfg_version.as_bytes());
     }
-    bytes.extend_from_slice(tcx.sess.opts.target_triple.to_string().as_bytes());
+    bytes.extend_from_slice(target_triple.as_bytes());
     bytes.extend_from_slice(&ridx_format::CURRENT_FORMAT_VERSION.to_le_bytes());
     bytes.extend_from_slice(&ridx_format::get_driver_hash().to_le_bytes());
     let hash = ridx_format::fnv1a_64(&bytes);
     format!("{:016x}", hash)
+}
+
+/// Computes the unique deterministic CAS key for the current sysroot index:
+/// `fnv1a_64(rustc version, target triple, format version, driver hash)`.
+pub fn compute_sysroot_cas_key(tcx: TyCtxt<'_>) -> String {
+    let ver = rustc_interface::util::rustc_version_str()
+        .unwrap_or(&tcx.sess.cfg_version);
+    compute_sysroot_cas_key_str(Some(ver), &tcx.sess.opts.target_triple.to_string())
 }
 
 /// Ensures sysroot shards (`core.ridx`, `alloc.ridx`, `std.ridx`) are indexed and cached

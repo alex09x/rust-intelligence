@@ -679,9 +679,12 @@ fn extract_crate_items<'tcx>(
         }
 
         let signature = match kind {
-            hir::def::DefKind::Fn | hir::def::DefKind::AssocFn => Some(sanitize_type_name(
+            hir::def::DefKind::Fn => Some(sanitize_type_name(
                 &tcx.fn_sig(def_id).skip_binder().to_string(),
             )),
+            hir::def::DefKind::AssocFn => {
+                Some(sysroot::util::format_assoc_fn_sig(tcx, def_id.to_def_id()))
+            }
             _ => None,
         };
 
@@ -1156,6 +1159,7 @@ fn build_crate_index(
                 );
                 (gen, hashes)
             };
+            let cas_key = sysroot::compute_sysroot_cas_key(tcx);
             let dep_info = serde_json::json!({
                 "name": crate_name,
                 "version": crate_version,
@@ -1172,6 +1176,7 @@ fn build_crate_index(
                 "compiler_args": compiler_args,
                 "stable_crate_id": format!("{:016x}", local_stable_crate_id),
                 "caught_panics": caught_panics,
+                "sysroot_cas_key": cas_key,
             });
             write_sidecar_metadata(
                 &deps_dir,
@@ -1242,6 +1247,7 @@ fn build_crate_index(
                         let _ = fs::remove_file(&tmp_file_path);
                     } else {
                         // Publish sidecar metadata only after .ridx file is published
+                        let cas_key = sysroot::compute_sysroot_cas_key(tcx);
                         let dep_info = serde_json::json!({
                             "name": crate_name,
                             "version": crate_version,
@@ -1258,6 +1264,7 @@ fn build_crate_index(
                             "compiler_args": compiler_args,
                             "stable_crate_id": format!("{:016x}", local_stable_crate_id),
                             "caught_panics": caught_panics,
+                            "sysroot_cas_key": cas_key,
                         });
                         write_sidecar_metadata(
                             &deps_dir,
@@ -1472,6 +1479,18 @@ pub fn run_driver(mut args: Vec<String>) -> Result<(), ()> {
         } else {
             break;
         }
+    }
+
+    if args.iter().any(|a| a == "--sysroot-cas-key") {
+        let target = args
+            .windows(2)
+            .find(|w| w[0] == "--target")
+            .map(|w| w[1].as_str())
+            .or_else(|| args.iter().find_map(|a| a.strip_prefix("--target=")))
+            .unwrap_or_else(|| rustc_session::config::host_tuple());
+        let cas_key = sysroot::compute_sysroot_cas_key_str(None, target);
+        println!("{cas_key}");
+        return Ok(());
     }
 
     let is_query = args.iter().any(|a| {

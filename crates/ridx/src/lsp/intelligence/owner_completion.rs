@@ -22,6 +22,8 @@ pub(crate) fn is_sysroot_path(path: &str) -> bool {
         || path.starts_with("std::")
         || path == "str"
         || path == "slice"
+        || path == "array"
+        || path == "pointer"
         || matches!(
             path,
             "bool"
@@ -45,13 +47,81 @@ pub(crate) fn is_sysroot_path(path: &str) -> bool {
 
 /// Checks if a function signature takes a receiver argument (`self`, `&self`, `&mut self`).
 pub(crate) fn signature_takes_receiver(sig: &str) -> bool {
-    sig.find('(').is_some_and(|i| {
-        let p = sig[i + 1..].trim_start();
-        p.starts_with('&')
-            || p.starts_with("self")
-            || p.starts_with("Self")
-            || p.starts_with("mut self")
-    })
+    let Some(i) = sig.find('(') else {
+        return false;
+    };
+    let p = sig[i + 1..].trim_start();
+    p.starts_with("&self")
+        || p.starts_with("&mut self")
+        || p.starts_with("mut self")
+        || (p.starts_with("self")
+            && (p.len() == 4
+                || p[4..].starts_with(',')
+                || p[4..].starts_with(')')
+                || p[4..].starts_with(':')
+                || p[4..].starts_with(' ')))
+}
+
+/// Returns true if a trait belongs to the standard 2021/2024 prelude and is in scope by default.
+/// Checked strictly against canonical full paths (e.g. `core::clone::Clone`).
+pub(crate) fn is_prelude_trait(path: &str) -> bool {
+    matches!(
+        path,
+        "core::clone::Clone"
+            | "core::cmp::PartialEq"
+            | "core::cmp::PartialOrd"
+            | "core::cmp::Ord"
+            | "core::iter::traits::iterator::Iterator"
+            | "core::iter::Iterator"
+            | "core::iter::traits::collect::IntoIterator"
+            | "core::iter::IntoIterator"
+            | "core::iter::traits::collect::Extend"
+            | "core::iter::Extend"
+            | "core::iter::traits::collect::FromIterator"
+            | "core::iter::FromIterator"
+            | "core::iter::traits::double_ended::DoubleEndedIterator"
+            | "core::iter::DoubleEndedIterator"
+            | "core::iter::traits::exact_size::ExactSizeIterator"
+            | "core::iter::ExactSizeIterator"
+            | "core::convert::AsRef"
+            | "core::convert::AsMut"
+            | "core::convert::Into"
+            | "core::convert::TryInto"
+            | "alloc::string::ToString"
+            | "alloc::borrow::ToOwned"
+            | "core::ops::function::Fn"
+            | "core::ops::Fn"
+            | "core::ops::function::FnMut"
+            | "core::ops::FnMut"
+            | "core::ops::function::FnOnce"
+            | "core::ops::FnOnce"
+            | "core::future::future::Future"
+            | "core::future::Future"
+            | "core::future::into_future::IntoFuture"
+            | "core::future::IntoFuture"
+    )
+}
+
+/// Collects all trait names/paths referenced in the given file.
+fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> HashSet<String> {
+    let mut set = HashSet::new();
+    for reader in ws.readers() {
+        if let Some(fid) = reader.find_file_id(file_path) {
+            for r in reader.references() {
+                if r.span().file_id() == fid {
+                    let path = reader.get_str(r.target_path_offset());
+                    if !path.is_empty() {
+                        if let Some(short) = path.rsplit("::").next() {
+                            set.insert(short.to_string());
+                        }
+                        set.insert(path.to_string());
+                    }
+                }
+            }
+            break;
+        }
+    }
+    set
 }
 
 /// Context parameters for owner-based scoped completion.
@@ -95,31 +165,48 @@ pub fn try_owner_completion(
             return None;
         };
 
-        if is_sysroot_path(owner) {
+        let has_sysroot = ws.has_sysroot();
+        if !has_sysroot && is_sysroot_path(owner) {
             return None;
         }
 
         let mut owners = vec![owner.to_string()];
-        for deref_target in ws.resolve_deref_chain(owner, 3) {
+        for deref_target in ws.resolve_deref_chain(owner, 8) {
             owners.push(deref_target.to_string());
         }
 
         let mut items = Vec::new();
         let mut seen = HashSet::new();
+        let mut file_traits: Option<HashSet<String>> = None;
 
         for o in &owners {
-            for def in ws.find_definitions_by_owner(o) {
-                if !matches!(
-                    def.kind,
-                    DefKind::AssocFn | DefKind::Fn | DefKind::Field
-                ) {
-                    continue;
+            if o != owner && !is_prelude_trait(o) {
+                let is_trait = ws
+                    .find_definition_by_path(o)
+                    .map(|d| d.kind == DefKind::Trait)
+                    .unwrap_or(false);
+                if is_trait {
+                    let file_set = file_traits
+                        .get_or_insert_with(|| collect_file_referenced_traits(ws, ctx.file));
+                    let short_name = o.rsplit("::").next().unwrap_or(o);
+                    if !file_set.contains(short_name) && !file_set.contains(o) {
+                        continue;
+                    }
                 }
-                if def
-                    .signature
-                    .as_ref()
-                    .is_some_and(|sig| !signature_takes_receiver(sig))
-                {
+            }
+
+            for def in ws.find_definitions_by_owner(o) {
+                if def.kind == DefKind::Field {
+                    // Struct fields are always accessible via dot
+                } else if matches!(def.kind, DefKind::AssocFn | DefKind::Fn) {
+                    let has_receiver = def
+                        .signature
+                        .as_ref()
+                        .is_some_and(|sig| signature_takes_receiver(sig));
+                    if !has_receiver {
+                        continue;
+                    }
+                } else {
                     continue;
                 }
                 if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
@@ -183,7 +270,8 @@ pub fn try_owner_completion(
             .map(|d| d.path.to_string())
             .unwrap_or(qual_path);
 
-        if is_sysroot_path(&target_owner) {
+        let has_sysroot = ws.has_sysroot();
+        if !has_sysroot && is_sysroot_path(&target_owner) {
             return None;
         }
 

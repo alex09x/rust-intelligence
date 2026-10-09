@@ -12,6 +12,7 @@ computes recall against rust-analyzer, and exports published jsonl.
 """
 
 import json
+import os
 import random
 import subprocess
 import sys
@@ -124,6 +125,7 @@ def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sa
     ra_warm_latencies = []
     ra_cold_latencies = []
     recalls = []
+    precisions = []
 
     for idx, sc in enumerate(scenarios):
         f, line, col = sc["file"], sc["line"], sc["col"]
@@ -180,12 +182,14 @@ def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sa
         ra_warm_latencies.append(ra_warm)
         ra_cold_latencies.append(ra_cold)
 
-        # Recall computation vs rust-analyzer
+        # Recall and precision computation vs rust-analyzer
         labels_ridx = {it.get("label", "").split("(")[0].strip() for it in ridx_items}
         labels_ra = {it.get("label", "").split("(")[0].strip() for it in ra_items}
         matched = len(labels_ridx & labels_ra)
         rec = (matched / len(labels_ra) * 100.0) if labels_ra else (100.0 if not labels_ridx else 0.0)
         recalls.append(rec)
+        prec = (matched / len(labels_ridx) * 100.0) if labels_ridx else 100.0
+        precisions.append(prec)
 
         results.append({
             "name": sc["name"],
@@ -198,6 +202,7 @@ def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sa
             "ra_warm_us": round(ra_warm),
             "ra_cold_us": round(ra_cold),
             "recall_pct": round(rec, 1),
+            "precision_pct": round(prec, 1),
             "ridx_count": len(ridx_items),
             "ra_count": len(ra_items),
         })
@@ -240,6 +245,7 @@ def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sa
         "ra_completion_cold_p50_us": round(percentile(ra_cold_latencies, 50.0), 1),
         "ra_completion_cold_p95_us": round(percentile(ra_cold_latencies, 95.0), 1),
         "avg_recall_vs_ra_pct": round(sum(recalls) / len(recalls), 1) if recalls else 0.0,
+        "avg_precision_vs_ra_pct": round(sum(precisions) / len(precisions), 1) if precisions else 100.0,
         "warm_p50_speedup_vs_ra": round(percentile(ra_warm_latencies, 50.0) / max(1.0, percentile(all_ridx_warm, 50.0)), 2),
         "owner_p50_speedup_vs_ra": round(owner_ra_warm_p50 / max(1.0, percentile(owner_warm_latencies, 50.0)), 2) if owner_warm_latencies else 0.0,
         "fallback_p50_speedup_vs_ra": round(fallback_ra_warm_p50 / max(1.0, percentile(fallback_warm_latencies, 50.0)), 2) if fallback_warm_latencies else 0.0,
@@ -311,6 +317,7 @@ def main():
             print(f"  RA Warm:             p50 = {m['ra_completion_warm_p50_us']} µs, p95 = {m['ra_completion_warm_p95_us']} µs")
             print(f"  Speedup vs RA:       {m['warm_p50_speedup_vs_ra']}x (Owner: {m['owner_p50_speedup_vs_ra']}x)")
             print(f"  Recall vs RA:        {m['avg_recall_vs_ra_pct']}%")
+            print(f"  Precision vs RA:     {m.get('avg_precision_vs_ra_pct', 0.0)}%")
 
     print(f"\nSuccessfully generated and published: {out_file}")
 

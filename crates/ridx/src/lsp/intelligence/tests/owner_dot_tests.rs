@@ -103,7 +103,10 @@ fn test_completion_owner_method_isolation() {
     assert_eq!(items.len(), 1, "Must isolate and return exactly 1 item");
     assert_eq!(items[0]["label"], "execute");
     assert!(
-        items[0]["detail"].as_str().unwrap().contains("ServiceA::execute"),
+        items[0]["detail"]
+            .as_str()
+            .unwrap()
+            .contains("ServiceA::execute"),
         "Detail must refer to ServiceA, not ServiceB"
     );
 
@@ -177,7 +180,11 @@ fn test_completion_autoderef_chain() {
 
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
-    assert_eq!(items.len(), 1, "Autoderef must find inner_action from InnerTarget");
+    assert_eq!(
+        items.len(),
+        1,
+        "Autoderef must find inner_action from InnerTarget"
+    );
     assert_eq!(items[0]["label"], "inner_action");
 
     let _ = fs::remove_dir_all(&temp_dir);

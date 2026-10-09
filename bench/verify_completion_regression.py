@@ -191,6 +191,7 @@ def main():
 
         recalls_base = []
         recalls_curr = []
+        precisions_curr = []
 
         owner_scenarios = []
         fallback_scenarios = []
@@ -225,6 +226,8 @@ def main():
             matched_c = len(labels_c & labels_r)
             rec_c = (matched_c / len(labels_r) * 100.0) if labels_r else (100.0 if not labels_c else 0.0)
             recalls_curr.append(rec_c)
+            prec_c = (matched_c / len(labels_c) * 100.0) if labels_c else 100.0
+            precisions_curr.append(prec_c)
 
             # Route detection: owner-path produces detail with " (in " and "::"
             is_owner = False
@@ -246,6 +249,7 @@ def main():
                 "ra_warm_us": round(r["warm_us"]),
                 "ra_cold_us": round(r["cold_us"]),
                 "recall_pct": round(rec_c, 1),
+                "precision_pct": round(prec_c, 1),
                 "ridx_count": c["count"],
                 "ra_count": r["count"],
                 "base_count": base_cnt,
@@ -279,6 +283,7 @@ def main():
 
         avg_rec_base = round(sum(recalls_base) / len(recalls_base), 1)
         avg_rec_curr = round(sum(recalls_curr) / len(recalls_curr), 1)
+        avg_prec_curr = round(sum(precisions_curr) / len(precisions_curr), 1) if precisions_curr else 100.0
 
         summary = {
             "repo": slug,
@@ -302,6 +307,9 @@ def main():
                 base_commit: avg_rec_base,
                 curr_commit: avg_rec_curr,
             },
+            "avg_precision_vs_ra": {
+                "curr_commit": avg_prec_curr,
+            },
             "routes": {
                 "owner_count": len(owner_scenarios),
                 "fallback_count": len(fallback_scenarios),
@@ -321,7 +329,7 @@ def main():
         print(f"\n--- Summary for {slug} ---")
         print(f"  Empty responses:       {base_commit}: {empty_base} -> {curr_commit}: {empty_curr} (closed: {closed_empty_count}, regressions to empty: {regressions_to_empty})")
         print(f"  Total items returned:  {base_commit}: {total_items_base} -> {curr_commit}: {total_items_curr} (RA: {total_items_ra})")
-        print(f"  Avg recall vs RA:      {base_commit}: {avg_rec_base}% -> {curr_commit}: {avg_rec_curr}%")
+        print(f"  Avg recall vs RA:      {base_commit}: {avg_rec_base}% -> {curr_commit}: {avg_rec_curr}% (precision: {avg_prec_curr}%)")
         print(f"  Owner share:           {len(owner_scenarios)}% ({owner_c_p50:.0f}µs RIDX vs {owner_ra_p50:.0f}µs RA -> {owner_speedup}x)")
         print(f"  Fallback share:        {len(fallback_scenarios)}% ({fallback_c_p50:.0f}µs RIDX vs {fallback_ra_p50:.0f}µs RA -> {fallback_speedup}x)")
         print(f"  Overall:               {all_c_p50:.0f}µs RIDX vs {all_ra_p50:.0f}µs RA -> {overall_speedup}x speedup")
@@ -352,6 +360,7 @@ def main():
                 "owner_share_pct": round(len(owner_scenarios) / len(scenarios) * 100.0, 1),
                 "fallback_share_pct": round(len(fallback_scenarios) / len(scenarios) * 100.0, 1),
                 "avg_recall_vs_ra_pct": avg_rec_curr,
+                "avg_precision_vs_ra_pct": avg_prec_curr,
                 "base_avg_recall_vs_ra_pct": avg_rec_base,
                 "empty_responses_ridx": empty_curr,
                 "empty_responses_base": empty_base,

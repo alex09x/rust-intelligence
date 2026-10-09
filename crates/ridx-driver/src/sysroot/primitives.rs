@@ -17,7 +17,7 @@ use rustc_middle::ty::fast_reject::SimplifiedType;
 use rustc_middle::ty::{FloatTy, IntTy, Mutability, TyCtxt, UintTy};
 use rustc_span::def_id::DefId;
 
-use super::util::{is_publicly_visible, is_stable_api, remap_sysroot_path};
+use super::util::{format_assoc_fn_sig, is_publicly_visible, is_stable_api, remap_sysroot_path};
 use crate::map_def_kind;
 use crate::sanitize::sanitize_type_name;
 
@@ -80,9 +80,10 @@ pub fn extract_primitive_inherent_impls<'tcx>(
                     rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did))
                 );
                 let a_sig = match a_kind {
-                    DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
+                    DefKind::Fn => Some(sanitize_type_name(
                         &tcx.fn_sig(assoc_did).skip_binder().to_string(),
                     )),
+                    DefKind::AssocFn => Some(format_assoc_fn_sig(tcx, assoc_did)),
                     _ => None,
                 };
                 let a_span = tcx

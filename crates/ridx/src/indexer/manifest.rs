@@ -110,3 +110,60 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
 
     Ok(())
 }
+
+/// Deterministically resolves the sysroot CAS key for a variant:
+/// 1. Searches `.deps/*.json` sidecar files in the variant directory.
+/// 2. Falls back to reading `sysroot_cas_key` from the existing manifest file.
+/// 3. Falls back to querying the driver binary directly (`driver_bin --sysroot-cas-key`).
+pub fn resolve_sysroot_cas_key(
+    deps_dir: &Path,
+    manifest_file: &Path,
+    driver_bin: &Path,
+    target: Option<&str>,
+) -> Option<String> {
+    if deps_dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(deps_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.extension().and_then(|s| s.to_str()) == Some("json") {
+                    if let Ok(content) = fs::read(&p) {
+                        if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
+                            if let Some(k) = val["sysroot_cas_key"].as_str() {
+                                return Some(k.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if let Ok(bytes) = fs::read(manifest_file) {
+        if let Ok(m) = serde_json::from_slice::<ridx_format::VariantManifest>(&bytes) {
+            if let Some(k) = m.sysroot_cas_key {
+                return Some(k);
+            }
+        }
+    }
+
+    let mut cmd = std::process::Command::new(driver_bin);
+    cmd.arg("--sysroot-cas-key");
+    if let Some(tgt) = target {
+        cmd.arg("--target").arg(tgt);
+    }
+    if let Some(ld) = super::cargo::compute_sysroot_ld_path() {
+        cmd.env("LD_LIBRARY_PATH", &ld);
+        cmd.env("DYLD_FALLBACK_LIBRARY_PATH", &ld);
+    }
+    if let Ok(out) = cmd.output() {
+        if out.status.success() {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !s.is_empty() {
+                return Some(s);
+            }
+        }
+    }
+
+    None
+}
+
