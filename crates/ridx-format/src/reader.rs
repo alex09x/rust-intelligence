@@ -632,11 +632,12 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         results
     }
 
-    /// Look up the direct Deref target for a canonical type path.
-    pub fn find_deref_target(&self, source: &str) -> Option<&str> {
+    /// Look up all direct Deref or supertrait targets for a canonical type path.
+    pub fn find_deref_targets(&self, source: &str) -> Vec<&str> {
+        let mut targets = Vec::new();
         let entries = self.deref_entries();
         if entries.is_empty() || source.is_empty() {
-            return None;
+            return targets;
         }
         let hash = fnv1a_64(source.as_bytes());
         if let Ok(idx) = entries.binary_search_by_key(&hash, |e| e.source_type_hash()) {
@@ -648,33 +649,39 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             while i < entries.len() && entries[i].source_type_hash() == hash {
                 let entry = &entries[i];
                 if self.get_str(entry.source_type_offset()) == source {
-                    return Some(self.get_str(entry.target_type_offset()));
+                    targets.push(self.get_str(entry.target_type_offset()));
                 }
                 i += 1;
             }
         }
-        None
+        targets
     }
 
-    /// Resolves the autoderef chain starting from `source` up to `max_depth` steps.
+    /// Look up the first direct Deref target for a canonical type path.
+    pub fn find_deref_target(&self, source: &str) -> Option<&str> {
+        self.find_deref_targets(source).into_iter().next()
+    }
+
+    /// Resolves the autoderef/supertrait chain starting from `source` up to `max_depth` steps.
     ///
     /// Returns the sequence of target type canonical paths (excluding `source`).
-    /// Handles cycles gracefully by tracking visited types.
+    /// Handles multiple supertraits and cycles gracefully via breadth-first search and visited tracking.
     pub fn resolve_deref_chain(&self, source: &str, max_depth: usize) -> Vec<&str> {
         let mut chain = Vec::new();
-        let mut current = source;
+        let mut queue = std::collections::VecDeque::new();
         let mut visited = std::collections::HashSet::new();
         visited.insert(source);
+        queue.push_back((source, 0));
 
-        for _ in 0..max_depth {
-            if let Some(target) = self.find_deref_target(current) {
-                if target.is_empty() || !visited.insert(target) {
-                    break;
+        while let Some((current, depth)) = queue.pop_front() {
+            if depth >= max_depth {
+                continue;
+            }
+            for target in self.find_deref_targets(current) {
+                if !target.is_empty() && visited.insert(target) {
+                    chain.push(target);
+                    queue.push_back((target, depth + 1));
                 }
-                chain.push(target);
-                current = target;
-            } else {
-                break;
             }
         }
 

@@ -913,7 +913,10 @@ pub fn test_where<V>(mut v: V) where V: de::Visitor {
 pub trait BaseTrait {
     fn base_method(&self);
 }
-pub trait SubTrait: BaseTrait {
+pub trait SecondBaseTrait {
+    fn second_method(&self);
+}
+pub trait SubTrait: BaseTrait + SecondBaseTrait {
     fn sub_method(&self);
 }
 pub fn test_sub<S: SubTrait>(s: S) {
@@ -990,13 +993,13 @@ pub fn test_sub<S: SubTrait>(s: S) {
         "generic parameter S must resolve owner to SubTrait"
     );
 
-    // 3. Supertrait deref chain: SubTrait -> BaseTrait
-    let target = reader.find_deref_target("SubTrait");
-    assert_eq!(
-        target,
-        Some("BaseTrait"),
-        "SubTrait must declare deref target to BaseTrait"
-    );
+    // 3. Multiple supertraits deref chain: SubTrait -> BaseTrait AND SecondBaseTrait
+    let targets = reader.find_deref_targets("SubTrait");
+    assert!(targets.contains(&"BaseTrait"), "SubTrait must declare target BaseTrait");
+    assert!(targets.contains(&"SecondBaseTrait"), "SubTrait must declare target SecondBaseTrait");
+    let chain = reader.resolve_deref_chain("SubTrait", 4);
+    assert!(chain.contains(&"BaseTrait"), "BFS chain must contain BaseTrait");
+    assert!(chain.contains(&"SecondBaseTrait"), "BFS chain must contain SecondBaseTrait");
 
     std::env::remove_var("RIDX_OUT_DIR");
     std::env::remove_var("CARGO_MANIFEST_DIR");

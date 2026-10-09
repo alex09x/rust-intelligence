@@ -769,23 +769,18 @@ fn extract_crate_items<'tcx>(
             let trait_path = rustc_middle::ty::print::with_no_visible_paths!(
                 rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
             );
-            for (clause, _) in tcx.predicates_of(did).predicates {
+            for (clause, _) in tcx.explicit_super_predicates_of(did).skip_binder() {
                 if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder() {
-                    let self_ty = trait_pred.self_ty().peel_refs();
-                    if let rustc_middle::ty::TyKind::Param(p) = self_ty.kind() {
-                        if p.name.as_str() == "Self" {
-                            let super_did = trait_pred.trait_ref.def_id;
-                            if super_did != did
-                                && tcx.lang_items().sized_trait() != Some(super_did)
-                                && !tcx.trait_is_auto(super_did)
-                            {
-                                let super_path = rustc_middle::ty::print::with_no_visible_paths!(
-                                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(super_did))
-                                );
-                                if !super_path.starts_with("core::marker::") {
-                                    visitor.writer.add_deref(trait_path.clone(), super_path);
-                                }
-                            }
+                    let super_did = trait_pred.trait_ref.def_id;
+                    if super_did != did
+                        && tcx.lang_items().sized_trait() != Some(super_did)
+                        && !tcx.trait_is_auto(super_did)
+                    {
+                        let super_path = rustc_middle::ty::print::with_no_visible_paths!(
+                            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(super_did))
+                        );
+                        if !super_path.starts_with("core::marker::") {
+                            visitor.writer.add_deref(trait_path.clone(), super_path);
                         }
                     }
                 }

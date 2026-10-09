@@ -1016,28 +1016,25 @@ impl WorkspaceIndex {
     }
 
     /// Resolves the autoderef chain starting from `source` up to `max_depth` steps across the workspace.
+    /// Handles multiple supertraits across workspace readers via breadth-first search.
     pub fn resolve_deref_chain(&self, source: &str, max_depth: usize) -> Vec<&str> {
         let mut chain = Vec::new();
-        let mut current = source;
+        let mut queue = std::collections::VecDeque::new();
         let mut visited = std::collections::HashSet::new();
         visited.insert(source);
+        queue.push_back((source, 0));
 
-        for _ in 0..max_depth {
-            let mut found = None;
-            for reader in &self.readers {
-                if let Some(target) = reader.find_deref_target(current) {
-                    found = Some(target);
-                    break;
-                }
+        while let Some((current, depth)) = queue.pop_front() {
+            if depth >= max_depth {
+                continue;
             }
-            if let Some(target) = found {
-                if target.is_empty() || !visited.insert(target) {
-                    break;
+            for reader in &self.readers {
+                for target in reader.find_deref_targets(current) {
+                    if !target.is_empty() && visited.insert(target) {
+                        chain.push(target);
+                        queue.push_back((target, depth + 1));
+                    }
                 }
-                chain.push(target);
-                current = target;
-            } else {
-                break;
             }
         }
 

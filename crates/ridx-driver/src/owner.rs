@@ -78,7 +78,7 @@ pub fn resolve_owner_from_param<'tcx>(
 
     for clause in param_env.caller_bounds() {
         if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder() {
-            let self_ty = trait_pred.self_ty().peel_refs();
+            let self_ty = trait_pred.self_ty();
             if let rustc_middle::ty::TyKind::Param(p) = self_ty.kind() {
                 if p.index == param_ty.index {
                     let trait_did = trait_pred.trait_ref.def_id;
