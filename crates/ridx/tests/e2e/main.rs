@@ -11,6 +11,8 @@
 //! Aggregated end-to-end and integration test suite for Rust Intelligence (ridx).
 
 mod cli;
+mod l2_cases;
+mod l2_harness;
 mod ntm_compare_harness;
 mod ntm_e2e;
 mod ntm_flycheck_and_auto_import;

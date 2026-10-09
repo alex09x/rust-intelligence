@@ -8,13 +8,16 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+pub mod declaration_tests;
+pub mod definition_tests;
+pub mod implementation_tests;
 pub mod ref_tests;
+pub mod references_matrix_tests;
+pub mod type_definition_tests;
 
-use super::*;
 use crate::lsp::protocol::PositionConverter;
 use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference, RawType, WorkspaceIndex};
-use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
 
@@ -219,157 +222,4 @@ pub fn setup_test_navigation() -> (PathBuf, WorkspaceIndex, OverlayManager, Posi
     let conv = PositionConverter::new();
 
     (temp_dir, ws, overlay_mgr, conv)
-}
-
-#[test]
-fn test_definition_declaration_implementation() {
-    let (temp_dir, ws, overlay_mgr, mut conv) = setup_test_navigation();
-    let file_path = temp_dir.join("src/lib.rs");
-    let uri = format!("file://{}", file_path.to_str().unwrap());
-
-    // 1. Definition from workspace
-    let def_req = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 4, "character": 19 }
-        }
-    });
-    let def_res = handle_definition(&def_req, Some(&ws), &overlay_mgr, &mut conv);
-    assert!(!def_res.is_null());
-    assert_eq!(def_res["range"]["start"]["line"], 0);
-
-    // 2. Declaration delegates to definition
-    let decl_res = handle_declaration(&def_req, Some(&ws), &overlay_mgr, &mut conv);
-    assert_eq!(decl_res, def_res);
-
-    // 3. Type definition
-    let type_def_req = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 1, "character": 12 }
-        }
-    });
-    let ty_res = handle_type_definition(&type_def_req, Some(&ws), &overlay_mgr, &mut conv);
-    assert!(!ty_res.is_null());
-
-    // 4. Implementation
-    let impl_req = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 2, "character": 11 }
-        }
-    });
-    let impl_res = handle_implementation(&impl_req, Some(&ws), &overlay_mgr, &mut conv);
-    assert!(!impl_res.as_array().unwrap().is_empty());
-
-    // 5. Dirty overlay safety: modified imports return null/empty
-    let mut ov_dirty = OverlayManager::new();
-    ov_dirty.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        1,
-        "pub fn foo() {}\n".to_string(),
-    );
-    ov_dirty.update(
-        file_path.to_str().unwrap(),
-        2,
-        "use std::collections::HashMap;\npub fn foo() {}\n".to_string(),
-    );
-    assert!(handle_definition(&def_req, Some(&ws), &ov_dirty, &mut conv).is_null());
-    assert!(handle_type_definition(&type_def_req, Some(&ws), &ov_dirty, &mut conv).is_null());
-    assert_eq!(
-        handle_implementation(&impl_req, Some(&ws), &ov_dirty, &mut conv),
-        json!([])
-    );
-
-    // 6. Overlay definition
-    ov_dirty.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        2,
-        "pub fn local_def() {}\n".to_string(),
-    );
-    let def_local_req = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 0, "character": 8 }
-        }
-    });
-    let def_local_res = handle_definition(&def_local_req, Some(&ws), &ov_dirty, &mut conv);
-    assert!(!def_local_res.is_null());
-
-    // 7. Dirty target overlay in handle_definition maps to live lines
-    let target_code = fs::read_to_string(&file_path).unwrap();
-    let mut ov_target_dirty = OverlayManager::new();
-    ov_target_dirty.open_document(&uri, file_path.to_str().unwrap(), 1, target_code.clone());
-    ov_target_dirty.update(
-        file_path.to_str().unwrap(),
-        2,
-        format!("// prepended line\n{}", target_code),
-    );
-    if let Some(ov) = ov_target_dirty.get_mut(file_path.to_str().unwrap()) {
-        ov.symbols.clear(); // forces fallback to workspace definition which then maps via dirty target overlay
-    }
-    let def_req_shifted = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 1, "character": 8 }
-        }
-    });
-    let def_dirty_target =
-        handle_definition(&def_req_shifted, Some(&ws), &ov_target_dirty, &mut conv);
-    assert!(!def_dirty_target.is_null());
-    assert_eq!(def_dirty_target["range"]["start"]["line"], 1);
-
-    // 8. Unmapped line in dirty buffer returns null for definition
-    let mut ov_unmapped = OverlayManager::new();
-    ov_unmapped.open_document(
-        &uri,
-        file_path.to_str().unwrap(),
-        1,
-        "line1\nline2\n".to_string(),
-    );
-    ov_unmapped.update(
-        file_path.to_str().unwrap(),
-        2,
-        "completely\ndifferent\ntext\n".to_string(),
-    );
-    let def_unmapped_req = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 1, "character": 0 }
-        }
-    });
-    assert!(handle_definition(&def_unmapped_req, Some(&ws), &ov_unmapped, &mut conv).is_null());
-
-    // 9. Declaration at empty position returns null
-    let decl_empty_req = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 0, "character": 0 }
-        }
-    });
-    assert!(handle_declaration(&decl_empty_req, Some(&ws), &overlay_mgr, &mut conv).is_null());
-    assert!(handle_type_definition(&decl_empty_req, Some(&ws), &overlay_mgr, &mut conv).is_null());
-    assert!(handle_type_definition(&type_def_req, None, &overlay_mgr, &mut conv).is_null());
-    assert_eq!(
-        handle_implementation(&decl_empty_req, Some(&ws), &overlay_mgr, &mut conv),
-        json!([])
-    );
-    assert_eq!(
-        handle_implementation(&impl_req, None, &overlay_mgr, &mut conv),
-        json!([])
-    );
-    let impl_none_req = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 0, "character": 8 }
-        }
-    });
-    assert_eq!(
-        handle_implementation(&impl_none_req, Some(&ws), &overlay_mgr, &mut conv),
-        json!([])
-    );
-
-    let _ = fs::remove_dir_all(&temp_dir);
 }

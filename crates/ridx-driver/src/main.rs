@@ -387,10 +387,7 @@ impl<'tcx> Visitor<'tcx> for HirVisitor<'tcx> {
                             if let Some(resolved_did) =
                                 self.resolve_trait_instance(expr.hir_id, def_id)
                             {
-                                res = Res::Def(
-                                    self.tcx.def_kind(resolved_did),
-                                    resolved_did,
-                                );
+                                res = Res::Def(self.tcx.def_kind(resolved_did), resolved_did);
                             }
                         }
                         self.add_ref_from_res(segment.ident.span, res);
@@ -723,9 +720,15 @@ fn write_sidecar_metadata(
 ) {
     let content = serde_json::to_string_pretty(dep_info).unwrap_or_default();
     // 1. By crate name + suffix (e.g. syn-3d995041387dd824.json or serde.json)
-    let _ = fs::write(deps_dir.join(format!("{crate_name}{suffix}.json")), &content);
+    let _ = fs::write(
+        deps_dir.join(format!("{crate_name}{suffix}.json")),
+        &content,
+    );
     // 2. By crate name + stable crate id (e.g. syn_a1b2c3d4e5f60718.json)
-    let _ = fs::write(deps_dir.join(format!("{crate_name}_{stable_crate_id:016x}.json")), &content);
+    let _ = fs::write(
+        deps_dir.join(format!("{crate_name}_{stable_crate_id:016x}.json")),
+        &content,
+    );
     // 3. By bare crate name (only if it does not exist yet)
     let bare = deps_dir.join(format!("{crate_name}.json"));
     if !bare.is_file() {
@@ -740,7 +743,9 @@ fn build_crate_index(
     compiler_args: &[String],
 ) {
     let start = Instant::now();
-    let local_stable_crate_id = tcx.stable_crate_id(rustc_span::def_id::LOCAL_CRATE).as_u64();
+    let local_stable_crate_id = tcx
+        .stable_crate_id(rustc_span::def_id::LOCAL_CRATE)
+        .as_u64();
     let caught_panics = CAUGHT_PANICS.load(std::sync::atomic::Ordering::Relaxed);
     let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
     let crate_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
@@ -958,7 +963,13 @@ fn build_crate_index(
                 "stable_crate_id": format!("{:016x}", local_stable_crate_id),
                 "caught_panics": caught_panics,
             });
-            write_sidecar_metadata(&deps_dir, &crate_name, &suffix, local_stable_crate_id, &dep_info);
+            write_sidecar_metadata(
+                &deps_dir,
+                &crate_name,
+                &suffix,
+                local_stable_crate_id,
+                &dep_info,
+            );
 
             let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
             eprintln!(
@@ -1037,7 +1048,13 @@ fn build_crate_index(
                             "stable_crate_id": format!("{:016x}", local_stable_crate_id),
                             "caught_panics": caught_panics,
                         });
-                        write_sidecar_metadata(&deps_dir, &crate_name, &suffix, local_stable_crate_id, &dep_info);
+                        write_sidecar_metadata(
+                            &deps_dir,
+                            &crate_name,
+                            &suffix,
+                            local_stable_crate_id,
+                            &dep_info,
+                        );
 
                         let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
                         if caught_panics > 0 {
@@ -1178,7 +1195,13 @@ fn build_crate_index(
                         "stable_crate_id": format!("{:016x}", local_stable_crate_id),
                         "caught_panics": caught_panics,
                     });
-                    write_sidecar_metadata(&deps_dir, &crate_name, &suffix, local_stable_crate_id, &dep_info);
+                    write_sidecar_metadata(
+                        &deps_dir,
+                        &crate_name,
+                        &suffix,
+                        local_stable_crate_id,
+                        &dep_info,
+                    );
 
                     let file_size = fs::metadata(&out_file_path).map(|m| m.len()).unwrap_or(0);
                     if caught_panics > 0 {

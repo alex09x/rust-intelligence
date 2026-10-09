@@ -56,9 +56,9 @@ Eight repositories completed full indexing without errors. Three repositories (`
 | **polars** | 2,009 | 50 | 54,625 | 514,835 | 912,341 | **0 ICE** | **0** | Complete |
 | **bevy** | 871 | 616 | 430,865 | 1,883,927 | 4,060,358 | **0 ICE** | **0** | Complete |
 | **TOTAL (8 complete)** | **12,042** | **1,611** | **1,205,186** | **8,996,492** | **18,124,835** | **0 ICE** | **0** | **100% Success** |
-| *diesel* | 823 | — | — | — | — | — | — | *Не проиндексирован: integration_tests требуют libpq/libmysqlclient/sqlite3-dev* |
-| *sqlx* | 1,471 | — | — | — | — | — | — | *Не проиндексирован: examples требуют DATABASE_URL (query!)* |
-| *wasmtime* | 1,404 | — | — | — | — | — | — | *Не проиндексирован: build.rs требует wasm32-unknown-unknown target* |
+| *diesel* | 823 | — | — | — | — | — | — | *Not indexed: integration_tests require libpq/libmysqlclient/sqlite3-dev* |
+| *sqlx* | 1,471 | — | — | — | — | — | — | *Not indexed: examples require DATABASE_URL (query!)* |
+| *wasmtime* | 1,404 | — | — | — | — | — | — | *Not indexed: build.rs requires wasm32-unknown-unknown target* |
 
 
 ### 3. Semantic Parity & Discrepancies Breakdown

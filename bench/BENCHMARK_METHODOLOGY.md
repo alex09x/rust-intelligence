@@ -1,279 +1,271 @@
-# Методика бенчмарк-тестирования: RIDX vs rust-analyzer (Live) vs rust-analyzer SCIP
+# Benchmark Methodology: RIDX vs. rust-analyzer (Live) vs. rust-analyzer SCIP
 
-Документ описывает утверждённую и реализованную методику сравнительного тестирования производительности, потребления ресурсов и точности ответов **Rust Intelligence (`ridx`)** против **`rust-analyzer 1.98.1` (live LSP)** и **`rust-analyzer scip` (статический индекс)**.
+This document specifies the validated, implemented methodology for comparative benchmarking of latency, resource consumption, and semantic accuracy: **Rust Intelligence (`ridx`)** vs. **`rust-analyzer 1.98.1` (live LSP daemon)** and **`rust-analyzer scip` (static index)**.
 
 ---
 
-## 1. Архитектура и участники сравнения
+## 1. Architecture and Evaluated Systems
 
-Бенчмарк включает трёх полноценных участников:
+The benchmark evaluates three distinct systems:
 
 1. **`ridx` (Rust Intelligence)**:
-   - Бинарный предвычисленный CAS-индекс (`.ridx`), формат flat mmap.
-   - Нулевая аллокация в куче во время чтения (zero-memory cold/warm lookups).
-   - Поддерживает режимы CLI (`ridx def`, `ridx refs`, `ridx hover`) и framed JSON-RPC LSP daemon (`ridx lsp`).
+   - Pre-computed content-addressed CAS index (`.ridx`), flat `mmap` format.
+   - Zero heap allocation during read queries (zero-memory cold and warm lookups).
+   - Operates in CLI mode (`ridx def`, `ridx refs`, `ridx hover`) and as a framed JSON-RPC LSP daemon (`ridx lsp`).
 
 2. **`rust-analyzer` (Live LSP daemon)**:
-   - Полнофункциональный LSP-сервер версии 1.98.1.
-   - Инкрементальный компиляторный движок Salsa, живой семантический анализ, фоновые проверки.
-   - Конфигурируется с `"checkOnSave": false` для предотвращения неконтролируемого запуска `cargo check` в фоне.
+   - Full-featured LSP server version 1.98.1.
+   - Incremental Salsa compiler engine, live semantic analysis, background checks.
+   - Configured with `"checkOnSave": false` to prevent uncontrolled background `cargo check` execution.
 
 3. **`rust-analyzer scip` (Static Index)**:
-   - Режим предварительной сборки статического индекса в формате SCIP Protobuf (`rust-analyzer scip <dir> --output index.scip --exclude-vendored-libraries`).
-   - Читается в память через официальный крейт `scip 0.10.0` встроенным in-memory loader (`ScipIndex`).
-   - Обеспечивает прямое сравнение «статический индекс vs статический индекс» без накладных расходов Salsa и JSON-RPC.
+   - Ahead-of-time static index generation in SCIP Protobuf format (`rust-analyzer scip <dir> --output index.scip --exclude-vendored-libraries`).
+   - Parsed into memory via the official `scip 0.10.0` crate by an in-memory loader (`ScipIndex`).
+   - Enables direct "static index vs. static index" comparison isolated from Salsa and JSON-RPC overhead.
 
 ---
 
-## 2. Корпус тестирования и изоляция окружения
+## 2. Test Corpus and Environment Isolation
 
-### 2.1. Корпус репозиториев
-- Эталонный датасет: топ-100 открытых Rust-репозиториев (`bench/corpus/rust-100.tsv`).
-- Пилотный этап (5 разнородных проектов):
-  1. `serde-rs/serde` (макросы, кодогенерация, трейты)
-  2. `BurntSushi/ripgrep` (CLI, системные вызовы, сложные типы)
-  3. `tokio-rs/tokio` (асинхронный рантайм, многопоточность)
-  4. `rust-lang/rust-analyzer` (тяжёлый монорепозиторий, глубокие деревья AST)
-  5. `bevyengine/bevy` (крупный игровой движок, массивная кодовая база)
+### 2.1. Repository Corpus
+- Reference dataset: top 100 open-source Rust repositories (`bench/corpus/rust-100.tsv`).
+- Core benchmark suite (5 diverse projects):
+  1. `serde-rs/serde` (macros, codegen, traits)
+  2. `BurntSushi/ripgrep` (CLI, system APIs, complex types)
+  3. `tokio-rs/tokio` (async runtime, concurrency)
+  4. `rust-lang/rust-analyzer` (heavy monorepo, deep AST trees)
+  5. `bevyengine/bevy` (large game engine, massive codebase)
 
-### 2.2. Изоляция и чистота среды
-- Каждый репозиторий клонируется/чекаутится в отдельный рабочий каталог по строго зафиксированному commit SHA.
-- **Последовательный запуск**: одновременно тестируется строго один проект. Запрещены параллельные запуски нескольких бенчмарков на одном хосте.
-- **Очистка артефактов**: после завершения замеров каждого репозитория каталоги `target/` и файл `index.scip` принудительно удаляются, чтобы не загрязнять кэши и файловую систему.
+### 2.2. Environmental Isolation
+- Each repository is checked out into an isolated directory pinned to an exact commit SHA.
+- **Sequential Execution**: Exactly one project runs at any time. Concurrent benchmark runs on the same node are prohibited.
+- **Artifact Cleanup**: After completing measurements for each repository, `target/` directories and `index.scip` files are purged to prevent cache pollution.
 
 ---
 
-## 3. Устранение внешнего и системного шума (Noise Elimination)
+## 3. Noise Elimination
 
-Для гарантии воспроизводимости и исключения артефактов измерений:
+To guarantee reproducibility and eliminate measurement artifacts:
 
 1. **CPU Core Pinning**:
-   - Все процессы бенчмарка (`cargo check`, `ridx index`, `rust-analyzer scip`, `ridx lsp`, `rust-analyzer lsp`) изолируются на 8 выделенных ядрах ноды `ram9` через `taskset -c 24-31`.
-2. **Контроль фоновых процессов компилятора (`pgrep`)**:
-   - Во время прогона запросов фоновый поток раннера каждые 5 мс инспектирует дерево дочерних процессов сервера (`/proc/<pid>/stat`).
-   - Если сервер порождает `cargo` или `rustc` во время замеров, выставляется флаг `cargo_spawned: true`.
-3. **Аппаратный Prometheus Guard**:
-   - В начале и в конце прогона каждого проекта считываются метрики узла через Prometheus API:
-     - `CPU Steal Time > 1.0%` (конфликт за гипервизор/CPU)
+   - All benchmark processes (`cargo check`, `ridx index`, `rust-analyzer scip`, `ridx lsp`, `rust-analyzer lsp`) are pinned to 8 isolated cores on dedicated node `booster` via `taskset -c 24-31`.
+2. **Compiler Background Process Guard (`pgrep`)**:
+   - During query execution, a background monitor samples the process tree (`/proc/<pid>/stat`) every 5 ms.
+   - If the server spawns `cargo` or `rustc` during query evaluation, the run is flagged with `cargo_spawned: true`.
+3. **Prometheus Hardware Guard**:
+   - At the beginning and end of each project run, node health metrics are inspected via Prometheus:
+     - `CPU Steal Time > 1.0%`
      - `CPU Throttling > 0`
      - `Node CPU Load > 85%`
-     - Всплески `Disk IO Wait`
-   - При обнаружении аномалий прогон маркируется статусом `NOISE_REJECTED` и отбраковывается.
+     - `Disk IO Wait` spikes
+   - Any anomaly triggers a `NOISE_REJECTED` status and invalidates the run.
 
 ---
 
-## 4. Отслеживание файловых дескрипторов, потоков и дезагрегированной памяти
+## 4. Resource Telemetry: Descriptors, Threads, and Disaggregated Memory
 
-Раннер непрерывно (каждые 5 мс) опрашивает структуры ядра Linux `/proc/<pid>/`:
+The runner polls Linux kernel `/proc/<pid>/` telemetry every 5 ms:
 
-| Метрика | Источник | Описание и назначение |
+| Metric | Source | Purpose and Description |
 | :--- | :--- | :--- |
-| **`peak_open_fds`** | `count(/proc/<pid>/fd)` | Число открытых файловых дескрипторов. Позволяет замерить количество одновременно открытых файлов и вотчеров inotify (критично для выявления утечек дескрипторов в LSP-серверах). |
-| **`peak_threads`** | `/proc/<pid>/status` (`Threads:`) | Пиковое число системных потоков ОС (rayon / tokio threadpool / salsa workers). |
-| **`peak_rss_anon_mb`** | `/proc/<pid>/status` (`RssAnon:`) | **Физическая память (куча/стек)** в ОЗУ, которую ОС не может сбросить на диск. Отражает реальный footprint компилятора и структур данных. |
-| **`peak_rss_file_mb`** | `/proc/<pid>/status` (`RssFile:`) | **Память страниц файлов (page cache от mmap)**. Для `ridx` страницы индекса могут вытесняться ядром ОС при нехватке памяти. |
+| **`peak_open_fds`** | `count(/proc/<pid>/fd)` | Number of open file descriptors; tracks open file handles and inotify watchers to detect FD leaks. |
+| **`peak_threads`** | `/proc/<pid>/status` (`Threads:`) | Peak OS thread count (rayon threadpools, tokio workers, Salsa workers). |
+| **`peak_rss_anon_mb`** | `/proc/<pid>/status` (`RssAnon:`) | **Anonymous Physical RAM (Heap/Stack)** that cannot be paged to disk. Reflects true runtime heap footprint. |
+| **`peak_rss_file_mb`** | `/proc/<pid>/status` (`RssFile:`) | **Page cache memory from `mmap` files**. For `ridx`, index pages can be evicted cleanly under OS memory pressure. |
 
-Отслеживание работает на всех этапах:
-- Сборка: `cargo check`, `ridx index`, `rust-analyzer scip`.
-- Запросы: сессии `ridx lsp`, `rust-analyzer` и `scip-loader`.
-
----
+Telemetry runs across all phases:
+- Indexing: `cargo check`, `ridx index`, `rust-analyzer scip`.
+- Serving: `ridx lsp`, `rust-analyzer`, and `scip-loader` sessions.
 
 ---
 
----
+## 5. Comprehensive Neutral Sampling: 300 Variations per Method across LSP 3.17 (78 Methods and Scenarios)
 
-## 5. Полный нейтральный сэмплинг: 300 разновидностей тестов на каждый отдельный метод LSP 3.17 (78 методов и сценариев)
+The benchmark evaluates **all 78 distinct LSP 3.17 methods, notifications, and operational scenarios**. Each method is sampled across **300 diverse test cases** per repository.
 
-Для всестороннего тестирования и локализации любых узких мест методика охватывает **все 78 отдельных методов, уведомлений и операций LSP 3.17**. Каждый метод тестируется независимо в объёме **300 разнообразных тестовых сценариев** на каждый репозиторий корпуса.
+Query targets and parameters are extracted using an AST scanner from source code:
 
-Точки запросов и параметры генерируются нейтральным AST-сканером из исходного кода:
-
-### Домен 1: Жизненный цикл и управление сессией (Lifecycle & Control)
-| # | LSP Метод | RPC | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 1: Lifecycle & Control
+| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 1 | **`initialize`** | Request | **300** | 300 комбинаций возможностей клиента (динамическая регистрация, иерархические символы, сниппеты, inlay hints, pull diagnostics, workspace folders). |
-| 2 | **`initialized`** | Notif | **300** | 300 сессий установления соединения с различными наборами корней воркспейсов. |
-| 3 | **`shutdown`** | Request | **300** | 300 остановок сервера из разных рабочих состояний (холодный старт, фоновая компиляция, активные буферы оверлея). |
-| 4 | **`exit`** | Notif | **300** | 300 проверок завершения процесса (код 0 после shutdown, код 1 при аварийном завершении без shutdown). |
-| 5 | **`$/cancelRequest`** | Notif | **300** | 300 отмен запросов (отмена тяжёлых `references`, `workspace/symbol`, `semanticTokens` на ранней и поздней стадиях). |
-| 6 | **`$/setTrace`** | Notif | **300** | 300 динамических переключений уровня логирования (`off`, `messages`, `verbose`) под нагрузкой. |
-| 7 | **`window/workDoneProgress/cancel`** | Notif | **300** | 300 отмен фонового прогресса со стороны клиента во время индексации. |
+| 1 | **`initialize`** | Request | **300** | 300 capability combinations (dynamic registration, hierarchical symbols, snippets, inlay hints, pull diagnostics, workspace folders). |
+| 2 | **`initialized`** | Notif | **300** | 300 connection establishment sessions with varying workspace root sets. |
+| 3 | **`shutdown`** | Request | **300** | 300 server shutdown sequences from varied states (cold start, background build, active overlays). |
+| 4 | **`exit`** | Notif | **300** | 300 exit validations (exit code 0 following shutdown, exit code 1 on abort without shutdown). |
+| 5 | **`$/cancelRequest`** | Notif | **300** | 300 cancellation requests (cancelling heavy `references`, `workspace/symbol`, `semanticTokens` early and late). |
+| 6 | **`$/setTrace`** | Notif | **300** | 300 dynamic trace level switches (`off`, `messages`, `verbose`) under load. |
+| 7 | **`window/workDoneProgress/cancel`** | Notif | **300** | 300 client-side cancellations of background progress tokens during indexing. |
 
-### Домен 2: Синхронизация документов и буферов (Document Synchronization)
-| # | LSP Метод | RPC | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 2: Document Synchronization
+| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 8 | **`textDocument/didOpen`** | Notif | **300** | 300 разнородных файлов проекта: большие монолиты (>3000 строк), малые файлы, файлы с BOM, файлы с эмодзи/суррогатами. |
-| 9 | **`textDocument/didChange` (Full)** | Notif | **300** | 300 сценариев полной замены содержимого документов разной структуры. |
-| 10 | **`textDocument/didChange` (Incremental)** | Notif | **300** | 300 инкрементальных правок: точечные вставки идентификаторов, блочные удаления функций, многострочные правки в UTF-16. |
-| 11 | **`textDocument/willSave`** | Notif | **300** | 300 предсохранительных уведомлений с различными `TextDocumentSaveReason` (Manual, AfterDelay, FocusOut). |
-| 12 | **`textDocument/willSaveWaitUntil`** | Request | **300** | 300 запросов текстовых правок перед сохранением (очистка хвостовых пробелов, организация импортов). |
-| 13 | **`textDocument/didSave`** | Notif | **300** | 300 сохранений на диск с проверкой перезагрузки манифеста и инкрементального триггера Flycheck. |
-| 14 | **`textDocument/didClose`** | Notif | **300** | 300 закрытий файлов с валидацией очистки оверлейной памяти и возврата к дисковому индексу. |
+| 8 | **`textDocument/didOpen`** | Notif | **300** | 300 diverse files: large monoliths (>3,000 lines), small modules, BOM files, emoji/surrogate pairs. |
+| 9 | **`textDocument/didChange` (Full)** | Notif | **300** | 300 full document replacement scenarios across varied code structures. |
+| 10 | **`textDocument/didChange` (Incremental)** | Notif | **300** | 300 incremental edits: token inserts, function deletes, multiline UTF-16 edits. |
+| 11 | **`textDocument/willSave`** | Notif | **300** | 300 pre-save notifications with varying `TextDocumentSaveReason` (Manual, AfterDelay, FocusOut). |
+| 12 | **`textDocument/willSaveWaitUntil`** | Request | **300** | 300 pre-save edit requests (trailing whitespace cleanup, import organization). |
+| 13 | **`textDocument/didSave`** | Notif | **300** | 300 disk saves verifying manifest reload and incremental flycheck triggers. |
+| 14 | **`textDocument/didClose`** | Notif | **300** | 300 file closures validating overlay eviction and return to compiled disk baseline. |
 
-### Домен 3: Навигация и семантический интеллект (Language Intelligence)
-| # | LSP Метод | RPC | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 3: Language Intelligence
+| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 15 | **`textDocument/definition`** | Request | **300** | 100 вызовов функций, 60 путей (`Mod::item`), 40 аннотаций типов, 30 вызовов макросов, 30 полей структур, 40 конструкторов. |
-| 16 | **`textDocument/declaration`** | Request | **300** | 120 прототипов методов в трейтах, 80 extern "C" функций, 100 ассоциированных типов и констант. |
-| 17 | **`textDocument/typeDefinition`** | Request | **300** | 100 составных структур, 80 enum-вариантов, 60 type aliases (`type Result<T>`), 60 возвращаемых типов функций. |
-| 18 | **`textDocument/implementation`** | Request | **300** | 100 стандартных трейтов (`Clone`, `Debug`), 100 доменных трейтов, 100 generic-структур с множественными `impl`. |
-| 19 | **`textDocument/references`** | Request | **300** | 150 мест использования, 150 мест объявления: приватные методы, публичные API, трейты, поля, статические константы. |
-| 20 | **`textDocument/documentHighlight`** | Request | **300** | 120 локальных переменных, 80 аргументов функций, 50 затенений (shadowing), 50 полей структур. |
-| 21 | **`textDocument/documentSymbol`** | Request | **300** | 300 файлов: плоские модули, файлы с глубокими `impl`, макросы, структуры с сотнями полей. |
-| 22 | **`workspace/symbol`** | Request | **300** | 80 точных имён, 80 префиксов, 60 нечётких (fuzzy), 40 CamelCase, 20 коротких (1–2 символа), 20 заведомо несуществующих. |
-| 23 | **`workspaceSymbol/resolve`** | Request | **300** | 300 символов для проверки ленивой подгрузки doc-комментариев, сигнатур и контейнеров. |
-| 24 | **`textDocument/hover`** | Request | **300** | 90 структур и enum, 70 generic-функций, 50 примитивов (`u32`), 30 макросов, 30 ключевых слов (`match`, `impl`), 30 лайфтаймов (`'a`). |
-| 25 | **`textDocument/completion`** | Request | **300** | 100 дополнений после `.`, 80 после `::`, 40 авто-импортов, 40 локальных переменных, 40 сниппетов и ключевых слов. |
-| 26 | **`completionItem/resolve`** | Request | **300** | 300 элементов автодополнения для ленивого резолва документации и расширенных правок. |
-| 27 | **`textDocument/signatureHelp`** | Request | **300** | 100 функций с 1–2 аргументами, 80 с 4+ аргументами, 60 generic-функций, 30 методов с `&mut self`, 30 замыканий. |
-| 28 | **`textDocument/inlayHint`** | Request | **300** | 120 типов `let x = ...`, 100 имён аргументов, 50 цепочек `iter().map()`, 30 типов возврата замыканий. |
-| 29 | **`inlayHint/resolve`** | Request | **300** | 300 инлей-подсказок для проверки обогащения тултипов и локаций исходных определений. |
-| 30 | **`textDocument/inlineValue`** | Request | **300** | 300 точек отладки для вычисления значений локальных переменных и параметров. |
-| 31 | **`textDocument/inlineCompletion`** | Request | **300** | 300 позиций курсора в коде для генерации инлайн-дополнений (ghost text). |
-| 32 | **`textDocument/moniker`** | Request | **300** | 300 позиций символов для проверки экспортируемых LSIF/SCIP идентификаторов. |
-| 33 | **`moniker/resolve`** | Request | **300** | 300 моникеров для проверки метаданных схемы, пакета и версии. |
+| 15 | **`textDocument/definition`** | Request | **300** | 100 function calls, 60 paths (`Mod::item`), 40 type annotations, 30 macro calls, 30 struct fields, 40 constructors. |
+| 16 | **`textDocument/declaration`** | Request | **300** | 120 trait method prototypes, 80 extern "C" functions, 100 associated types and constants. |
+| 17 | **`textDocument/typeDefinition`** | Request | **300** | 100 composite structs, 80 enum variants, 60 type aliases (`type Result<T>`), 60 return types. |
+| 18 | **`textDocument/implementation`** | Request | **300** | 100 standard traits (`Clone`, `Debug`), 100 domain traits, 100 generic structs with multiple `impl` blocks. |
+| 19 | **`textDocument/references`** | Request | **300** | 150 usage sites, 150 declarations: private methods, public APIs, traits, fields, static constants. |
+| 20 | **`textDocument/documentHighlight`** | Request | **300** | 120 local variables, 80 function arguments, 50 shadowing bindings, 50 struct fields. |
+| 21 | **`textDocument/documentSymbol`** | Request | **300** | 300 files: flat modules, deep `impl` hierarchies, macros, structs with 100+ fields. |
+| 22 | **`workspace/symbol`** | Request | **300** | 80 exact names, 80 prefixes, 60 fuzzy matches, 40 CamelCase, 20 short (1–2 chars), 20 non-existent. |
+| 23 | **`workspaceSymbol/resolve`** | Request | **300** | 300 symbols verifying lazy resolution of doc-comments, signatures, and container paths. |
+| 24 | **`textDocument/hover`** | Request | **300** | 90 structs and enums, 70 generic functions, 50 primitives (`u32`), 30 macros, 30 keywords (`match`, `impl`), 30 lifetimes (`'a`). |
+| 25 | **`textDocument/completion`** | Request | **300** | 100 completions after `.`, 80 after `::`, 40 auto-imports, 40 local variables, 40 snippets and keywords. |
+| 26 | **`completionItem/resolve`** | Request | **300** | 300 completion items for lazy documentation and extended text edit resolution. |
+| 27 | **`textDocument/signatureHelp`** | Request | **300** | 100 functions with 1–2 args, 80 with 4+ args, 60 generic functions, 30 `&mut self` methods, 30 closures. |
+| 28 | **`textDocument/inlayHint`** | Request | **300** | 120 `let x = ...` types, 100 parameter names, 50 `iter().map()` chains, 30 closure return types. |
+| 29 | **`inlayHint/resolve`** | Request | **300** | 300 inlay hints verifying tooltip enrichment and source definition ranges. |
+| 30 | **`textDocument/inlineValue`** | Request | **300** | 300 debugging probe positions to evaluate local variables and arguments. |
+| 31 | **`textDocument/inlineCompletion`** | Request | **300** | 300 cursor positions for ghost text inline completion evaluation. |
+| 32 | **`textDocument/moniker`** | Request | **300** | 300 symbol positions for exported LSIF/SCIP moniker verification. |
+| 33 | **`moniker/resolve`** | Request | **300** | 300 monikers verifying package, scheme, and version metadata. |
 
-### Домен 4: Иерархии вызовов и типов (Hierarchies)
-| # | LSP Метод | RPC | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 4: Hierarchies
+| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 34 | **`textDocument/prepareCallHierarchy`** | Request | **300** | 300 позиций функций: публичные API, приватные хелперы, замыкания, методы трейтов. |
-| 35 | **`callHierarchy/incomingCalls`** | Request | **300** | 300 функций (от изолированных функций до корневых диспетчеров с десятками входящих вызовов). |
-| 36 | **`callHierarchy/outgoingCalls`** | Request | **300** | 300 функций (от простых атомарных функций до сложных методов с цепочками вызовов). |
-| 37 | **`textDocument/prepareTypeHierarchy`** | Request | **300** | 150 структур, 100 трейтов, 50 enum для инициализации дерева наследования. |
-| 38 | **`typeHierarchy/supertypes`** | Request | **300** | 300 запросов супертипов и цепочек наследования базовых трейтов. |
-| 39 | **`typeHierarchy/subtypes`** | Request | **300** | 300 запросов имплементаций и подтипов по всем крейтам воркспейса. |
+| 34 | **`textDocument/prepareCallHierarchy`** | Request | **300** | 300 function positions: public APIs, private helpers, closures, trait methods. |
+| 35 | **`callHierarchy/incomingCalls`** | Request | **300** | 300 functions (from isolated leaf functions to root dispatchers with 10+ callers). |
+| 36 | **`callHierarchy/outgoingCalls`** | Request | **300** | 300 functions (from simple atomic functions to deep invocation chains). |
+| 37 | **`textDocument/prepareTypeHierarchy`** | Request | **300** | 150 structs, 100 traits, 50 enums initializing hierarchy trees. |
+| 38 | **`typeHierarchy/supertypes`** | Request | **300** | 300 queries for supertypes and base trait inheritance chains. |
+| 39 | **`typeHierarchy/subtypes`** | Request | **300** | 300 queries for implementors and subtypes across all workspace crates. |
 
-### Домен 5: Выделение, ссылки и цвета (Selection, Links & Colors)
-| # | LSP Метод | RPC | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 5: Selection, Links & Colors
+| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 40 | **`textDocument/selectionRange`** | Request | **300** | 300 позиций курсора для ступенчатого расширения выделения (токен $\to$ выражение $\to$ блок $\to$ функция $\to$ файл). |
-| 41 | **`textDocument/documentLink`** | Request | **300** | 300 фрагментов документации со ссылками на внешние URL и локальные файлы. |
-| 42 | **`documentLink/resolve`** | Request | **300** | 300 ссылок для валидации и нормализации адресов назначения. |
-| 43 | **`textDocument/documentColor`** | Request | **300** | 300 цветовых определений в коде (HEX, RGB, RGBA константы в UI-крейтах). |
-| 44 | **`textDocument/colorPresentation`** | Request | **300** | 300 преобразований цветовых форматов (HEX $\to$ RGB, RGBA $\to$ HSL). |
+| 40 | **`textDocument/selectionRange`** | Request | **300** | 300 cursor positions for stepwise expansion (token $\to$ expression $\to$ block $\to$ fn $\to$ file). |
+| 41 | **`textDocument/documentLink`** | Request | **300** | 300 doc comments with links to external URLs and local file paths. |
+| 42 | **`documentLink/resolve`** | Request | **300** | 300 links validating destination URI normalization. |
+| 43 | **`textDocument/documentColor`** | Request | **300** | 300 color definitions in code (HEX, RGB, RGBA constants in UI crates). |
+| 44 | **`textDocument/colorPresentation`** | Request | **300** | 300 color format conversions (HEX $\to$ RGB, RGBA $\to$ HSL). |
 
-### Домен 6: Редактирование, рефакторинг и команды (Editing & Refactoring)
-| # | LSP Метод | RPC | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 6: Editing & Refactoring
+| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 45 | **`textDocument/formatting`** | Request | **300** | 300 файлов с неформатированным кодом для сквозного форматирования через rustfmt. |
-| 46 | **`textDocument/rangeFormatting`** | Request | **300** | 300 диапазонов строк со сбитыми отступами, лишними пробелами и переносами. |
-| 47 | **`textDocument/onTypeFormatting`** | Request | **300** | 300 символьных триггеров: ввод `;`, `}` и переносов строк в телах функций. |
-| 48 | **`textDocument/prepareRename`** | Request | **300** | 150 валидных идентификаторов, 100 попыток переименования ключевых слов (`fn`, `match`), 50 макросов. |
-| 49 | **`textDocument/rename`** | Request | **300** | 300 транзакционных переименований с заменой во всех файлах проекта. |
-| 50 | **`textDocument/linkedEditingRange`**| Request | **300** | 300 спаренных диапазонов синхронного редактирования идентификаторов. |
-| 51 | **`textDocument/codeAction`** | Request | **300** | 100 неиспользуемых импортов, 100 точек быстрого исправления ошибок, 100 точек рефакторинга. |
-| 52 | **`codeAction/resolve`** | Request | **300** | 300 действий для проверки генерации точных диффов `WorkspaceEdit`. |
-| 53 | **`workspace/executeCommand`** | Request | **300** | 300 вызовов LSP-команд (включая `ridx.applyEdits`, `cargo.reload`, запуск тестов). |
-| 54 | **`workspace/applyEdit` (Client RPC)**| RPC | **300** | 300 сценариев двухфазного применения правок клиентом с проверкой отката при ошибке. |
+| 45 | **`textDocument/formatting`** | Request | **300** | 300 unformatted files evaluated for whole-document formatting via rustfmt. |
+| 46 | **`textDocument/rangeFormatting`** | Request | **300** | 300 line ranges with misaligned indents, whitespace, and wrap anomalies. |
+| 47 | **`textDocument/onTypeFormatting`** | Request | **300** | 300 trigger characters: typing `;`, `}`, and newlines within function bodies. |
+| 48 | **`textDocument/prepareRename`** | Request | **300** | 150 valid identifiers, 100 keyword renames (`fn`, `match`), 50 macro invocations. |
+| 49 | **`textDocument/rename`** | Request | **300** | 300 transactional cross-file renames verifying multi-file replacements. |
+| 50 | **`textDocument/linkedEditingRange`**| Request | **300** | 300 synchronized paired range editing scenarios. |
+| 51 | **`textDocument/codeAction`** | Request | **300** | 100 unused imports, 100 quick-fix diagnostics, 100 refactoring candidates. |
+| 52 | **`codeAction/resolve`** | Request | **300** | 300 actions verifying accurate `WorkspaceEdit` diff generation. |
+| 53 | **`workspace/executeCommand`** | Request | **300** | 300 custom LSP commands (including `ridx.applyEdits`, `cargo.reload`, test running). |
+| 54 | **`workspace/applyEdit` (Client RPC)**| RPC | **300** | 300 two-phase edit scenarios verifying rollback on client rejection. |
 
-### Домен 7: Презентация, токены и сворачивание (Presentation & Tokens)
-| # | LSP Метод | RPC | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 7: Presentation & Tokens
+| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 55 | **`textDocument/semanticTokens/full`** | Request | **300** | 300 файлов: полная токенизация синтаксических категорий (типы, макросы, константы, ключевые слова). |
-| 56 | **`textDocument/semanticTokens/full/delta`** | Request | **300** | 300 инкрементальных дельта-запросов токенов после точечных правок кода. |
-| 57 | **`textDocument/semanticTokens/range`** | Request | **300** | 300 видимых областей экрана (viewport: строки 1–50, 100–160 и т.д.) в файлах разного размера. |
-| 58 | **`textDocument/foldingRange`** | Request | **300** | 300 файлов: блоки функций, ветки `match`, блоки `unsafe`, многострочные doc-комментарии. |
-| 59 | **`textDocument/codeLens`** | Request | **300** | 300 точек линз: счётчики ссылок над функциями, запуск тестов `#[test]`. |
-| 60 | **`codeLens/resolve`** | Request | **300** | 300 линз для ленивого разрешения заголовка и параметров запускаемой команды. |
+| 55 | **`textDocument/semanticTokens/full`** | Request | **300** | 300 files: full syntax tokenization (types, macros, constants, keywords). |
+| 56 | **`textDocument/semanticTokens/full/delta`** | Request | **300** | 300 incremental delta token queries after localized buffer edits. |
+| 57 | **`textDocument/semanticTokens/range`** | Request | **300** | 300 visible screen viewports (lines 1–50, 100–160, etc.) across diverse file sizes. |
+| 58 | **`textDocument/foldingRange`** | Request | **300** | 300 files: function bodies, `match` arms, `unsafe` blocks, multiline doc-comments. |
+| 59 | **`textDocument/codeLens`** | Request | **300** | 300 code lens probe sites: reference counts above functions, `#[test]` runners. |
+| 60 | **`codeLens/resolve`** | Request | **300** | 300 lenses verifying lazy title and command parameter resolution. |
 
-### Домен 8: Диагностика (Diagnostics)
-| # | LSP Метод | RPC | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 8: Diagnostics
+| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 61 | **`textDocument/diagnostic`** | Request | **300** | 150 валидных файлов (чистый отчёт), 150 файлов с инжектированными синтаксическими и семантическими ошибками. |
-| 62 | **`workspace/diagnostic`** | Request | **300** | 300 глобальных запросов pull-диагностики по всем крейтам воркспейса. |
-| 63 | **`textDocument/publishDiagnostics`** | Push | **300** | 300 проверок потоковой трансляции предупреждений и ошибок компилятора из фонового Flycheck. |
+| 61 | **`textDocument/diagnostic`** | Request | **300** | 150 valid clean files, 150 files with injected syntax and semantic errors. |
+| 62 | **`workspace/diagnostic`** | Request | **300** | 300 global pull-diagnostic queries across all workspace crates. |
+| 63 | **`textDocument/publishDiagnostics`** | Push | **300** | 300 streamed compiler diagnostic checks from background Flycheck. |
 
-### Домен 9: Управление воркспейсом и файлы (Workspace & File Operations)
-| # | LSP Метод | RPC | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 9: Workspace & File Operations
+| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 64 | **`workspace/workspaceFolders`** | Request | **300** | 300 сценариев перечисления папок мульти-корневых воркспейсов. |
-| 65 | **`workspace/didChangeWorkspaceFolders`**| Notif | **300** | 300 динамических добавлений и удалений корней проекта. |
-| 66 | **`workspace/didChangeConfiguration`** | Notif | **300** | 300 динамических изменений настроек клиента на лету. |
-| 67 | **`workspace/configuration`** | Request | **300** | 300 запросов настроек клиента по секциям (`rust-analyzer`, `ridx`). |
-| 68 | **`workspace/didChangeWatchedFiles`** | Notif | **300** | 300 файловых событий на диске с проверкой перезагрузки кешей. |
-| 69 | **`workspace/didCreateFiles`** | Notif | **300** | 300 уведомлений о создании файлов с автоматической индексацией. |
-| 70 | **`workspace/willCreateFiles`** | Request | **300** | 300 валидаций создания файлов. |
-| 71 | **`workspace/didRenameFiles`** | Notif | **300** | 300 уведомлений о перемещении файлов с перепривязкой оверлеев. |
-| 72 | **`workspace/willRenameFiles`** | Request | **300** | 300 валидаций перемещения файлов. |
-| 73 | **`workspace/didDeleteFiles`** | Notif | **300** | 300 уведомлений об удалении файлов с очисткой оверлеев. |
-| 74 | **`workspace/willDeleteFiles`** | Request | **300** | 300 валидаций удаления файлов. |
-| 75 | **`textDocument/content`** | Request | **300** | 300 виртуальных инспекций содержимого буферов документов. |
+| 64 | **`workspace/workspaceFolders`** | Request | **300** | 300 folder enumeration scenarios across multi-root workspaces. |
+| 65 | **`workspace/didChangeWorkspaceFolders`**| Notif | **300** | 300 dynamic workspace root additions and removals. |
+| 66 | **`workspace/didChangeConfiguration`** | Notif | **300** | 300 live configuration updates without server restart. |
+| 67 | **`workspace/configuration`** | Request | **300** | 300 client section configuration lookups (`rust-analyzer`, `ridx`). |
+| 68 | **`workspace/didChangeWatchedFiles`** | Notif | **300** | 300 disk file change notifications verifying cache invalidation. |
+| 69 | **`workspace/didCreateFiles`** | Notif | **300** | 300 file creation notifications with automatic indexing. |
+| 70 | **`workspace/willCreateFiles`** | Request | **300** | 300 pre-creation file validations. |
+| 71 | **`workspace/didRenameFiles`** | Notif | **300** | 300 file rename notifications with overlay rebinding. |
+| 72 | **`workspace/willRenameFiles`** | Request | **300** | 300 pre-rename file validations. |
+| 73 | **`workspace/didDeleteFiles`** | Notif | **300** | 300 file deletion notifications with overlay eviction. |
+| 74 | **`workspace/willDeleteFiles`** | Request | **300** | 300 pre-deletion file validations. |
+| 75 | **`textDocument/content`** | Request | **300** | 300 virtual document buffer inspections. |
 
-### Домен 10: Семантические мутации памяти (Memory Mutation Scenarios)
-| # | Мутационный сценарий | Тип | Объём | Разновидности тестов (300 вариантов на метод) |
+### Domain 10: Memory Mutation Scenarios
+| # | Mutation Scenario | Type | Volume | Test Variations (300 per method) |
 |:---:|---|:---:|:---:|---|
-| 76 | **Кейс A: Новый символ (Cross-file in-scope)** | Мутация | **300** | 300 кросс-файловых связок: объявление новой функции в файле A и квалифицированный вызов в файле B без сохранения на диск. |
-| 77 | **Кейс B: Детектор устаревшего оверлея (Stale detector)** | Мутация | **300** | 300 переименований в файле A с проверкой, что запрос старого имени в файле B возвращает `Not Found`, а не устаревшие данные диска. |
-| 78 | **Кейс C: Смещение строк (Line displacement)** | Мутация | **300** | 300 проверок математики смещения диапазонов: вставка пустого блока в файл A со сдвигом координат в файле B на +10 строк. |
-
----
-
-### Итоговый масштаб бенчмарка:
-- **78 методов и сценариев $\times$ 300 разновидностей = 23,400 тестов на каждый репозиторий**.
-- **117,000 измерений** на полном эталонном корпусе из 5 разнородных репозиториев (`serde`, `ripgrep`, `tokio`, `rust-analyzer`, `bevy`).
-- Исчерпывающая матрица ошибок (Error Attribution Matrix): при расхождении ответов раннер автоматически относит ошибку к конкретному классу синтаксиса (например, неразрешённый макрос, дженерик, циклический импорт или замыкание).
+| 76 | **Case A: New Symbol (Cross-file in-scope)** | Mutation | **300** | 300 cross-file links: declare new function in file A, invoke with qualified path in file B without saving to disk. |
+| 77 | **Case B: Stale Overlay Detector** | Mutation | **300** | 300 renames in file A verifying that querying the old name in file B returns `Not Found` rather than stale disk data. |
+| 78 | **Case C: Line Displacement** | Mutation | **300** | 300 coordinate shift verifications: insert 10 empty lines in file A with target range in file B shifting by exactly +10 lines. |
 
 ---
 
+### Total Benchmark Scale:
+- **78 methods and scenarios $\times$ 300 variations = 23,400 tests per repository**.
+- **117,000 measurements** across the 5-project reference corpus (`serde`, `ripgrep`, `tokio`, `rust-analyzer`, `bevy`).
+- Comprehensive Error Attribution Matrix: on discrepancies, the runner categorizes the syntax class (e.g. unexpanded macro, generic, cyclic import, closure).
 
 ---
 
-## 6. Замеры задержек: разделение Warmup и Cold vs Warm
+## 6. Latency Measurements: Warmup and Cold vs. Warm Separation
 
-1. **Время готовности (Readiness / Warmup)**:
-   - `ridx`: время открытия CAS-манифеста и `mmap` сегментов (`readiness_warmup_micros`).
-   - `rust-analyzer`: время от старта процесса до окончания фонового анализа и ответа на ping (`readiness_warmup_micros`).
-   - `scip`: время парсинга Protobuf-индекса в память (`scip_load_ms`).
-   - *Время готовности строго отделено от времени ответов на поисковые запросы.*
+1. **Readiness / Warmup Time**:
+   - `ridx`: time to open CAS manifest and mount `mmap` segments (`readiness_warmup_micros`).
+   - `rust-analyzer`: time from process start to background analysis completion and ping response (`readiness_warmup_micros`).
+   - `scip`: time to parse Protobuf index into memory (`scip_load_ms`).
+   - *Readiness time is strictly separated from query evaluation latency.*
 
-2. **Запросы к серверу (3 итерации на каждую позицию)**:
-   - **Итерация 1**: `Cold latency` (первое чтение, холодный кэш страниц и процессора).
-   - **Итерации 2 и 3**: `Warm latency` (медиана повторных обращений).
-   - Расчёт перцентилей распределения: **p50, p90, p95, p99** по каждой функции (`def`, `hover`, `refs`).
+2. **Query Latency (3 iterations per probe)**:
+   - **Iteration 1**: `Cold latency` (first read, cold page cache and CPU cache).
+   - **Iterations 2 and 3**: `Warm latency` (median of subsequent queries).
+   - Percentile calculations: **p50, p90, p95, p99** per method (`def`, `hover`, `refs`).
 
 ---
 
-## 7. Кросс-файловые семантические мутации (без сохранения на диск)
+## 7. Cross-File Semantic Mutations (Unsaved Editor Buffers)
 
-Для проверки работы серверов с несохранёнными буферами редактора (`textDocument/didChange`):
+To validate behavior on unsaved editor buffers via `textDocument/didChange`:
 
-### Кейс A: Новый символ (Кросс-файловая связь оверлеев)
-- В файле A (корень крейта `src/lib.rs` / `src/main.rs` или публично экспортированный `pub mod`) объявляется новая функция:
+### Case A: New Symbol (Cross-File Overlay Linkage)
+- In file A (`src/lib.rs` / `src/main.rs` or public module), a new function is declared:
   ```rust
   pub fn bench_probe_<idx>() -> usize { 42 }
   ```
-- В файле B того же крейта в тело существующей функции инжектируется вызов с полным путём:
+- In file B of the same crate, an invocation is injected into an existing function body:
   ```rust
   let _probe = crate::<mod_path>::bench_probe_<idx>();
   ```
-- Запрос `goto_definition` отправляется на позицию `bench_probe_<idx>` в файле B.
-- **Критерий**: сервер должен вернуть определение в файле A. Это подтверждает построение семантических связей между несохранёнными оверлеями без обращения к диску.
+- A `goto_definition` request targets `bench_probe_<idx>` in file B.
+- **Criterion**: The server must resolve the definition to file A, confirming semantic cross-file linkage between unsaved overlays without touching disk.
 
-### Кейс B: Детектор устаревшего оверлея (Stale Overlay Detector)
-- В файле A функция переименовывается (`func` $\to$ `func_renamed_stale`).
-- Файл B не изменяется.
-- В файле B отправляется запрос `goto_definition` на старое имя `func`.
-- **Критерий**: сервер обязан вернуть `Not Found`. Если сервер находит старое определение — это штраф за отдачу устаревших данных из дискового индекса.
+### Case B: Stale Overlay Detector
+- In file A, a function is renamed (`func` $\to$ `func_renamed_stale`).
+- File B remains unchanged.
+- In file B, `goto_definition` is requested for the old identifier `func`.
+- **Criterion**: The server must return `Not Found`. If the server returns the old definition, it fails for returning stale disk index data.
 
-### Кейс C: Смещение строк (Line Displacement)
-- В начало файла A вставляются 10 пустых строк.
-- В файле B запрашивается определение символа из файла A.
-- **Критерий**: возвращённый диапазон `targetSelectionRange` должен сместиться ровно на +10 строк.
+### Case C: Line Displacement
+- 10 empty lines are prepended to file A.
+- From file B, definition of a symbol in file A is queried.
+- **Criterion**: The returned `targetSelectionRange` must shift by exactly +10 lines.
 
-*(Для SCIP мутации помечаются как `N/A`, так как SCIP является чисто статическим форматом).*
+*(For SCIP, mutation tests are marked `N/A` as SCIP is a purely static offline index format).*
 
 ---
 
-## 8. Арбитраж расхождений и отчётность
+## 8. Discrepancy Arbitration and Reporting
 
-1. **Логирование расхождений**:
-   - Все случаи расхождения ответов (один сервер нашёл, другой нет, или указаны разные диапазоны) сохраняются в `bench/results/discrepancies.jsonl` со всеми JSON-RPC запросами и ответами.
-2. **Ручная экспертная разметка**:
-   - Первые 50 расхождений размечаются по категориям:
-     - `RA_CORRECT`: эталон прав, RIDX ошибся.
-     - `RIDX_CORRECT`: RIDX прав, эталон ошибся.
-     - `BOTH_FAILED`: оба сервера не справились.
-     - `BENIGN_DIFFERENCE`: допустимая разница в границах спана (например, имя идентификатора vs вся сигнатура).
-3. **Итоговый отчёт**:
-   - Каждая строка в `bench/results/pilot_results.jsonl` содержит полную запись со всеми перцентилями, метриками RSS (Anon/File), дескрипторами (FDs), потоками, временем сборки и статусом Prometheus.
+1. **Discrepancy Logging**:
+   - All response discrepancies (one server found a target, the other returned null, or differing ranges) are recorded in `bench/results/discrepancies.jsonl` with full JSON-RPC payloads.
+2. **Attribution Categories**:
+   - `RA_CORRECT`: Baseline correct, RIDX missed.
+   - `RIDX_CORRECT`: RIDX correct, baseline missed.
+   - `BOTH_FAILED`: Neither server resolved target.
+   - `BENIGN_DIFFERENCE`: Permissible span variation (e.g. identifier token span vs. full declaration header).
+3. **Structured Results**:
+   - Each entry in `bench/results/pilot_results.jsonl` contains complete percentiles, RSS breakdown (Anon/File), open file descriptors (FDs), thread counts, build durations, and Prometheus node status.

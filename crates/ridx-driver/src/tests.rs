@@ -730,7 +730,11 @@ fn test_driver_cas_rebuild_on_driver_version_change() {
     std::env::set_var("RIDX_OUT_DIR", &out_dir);
     std::env::set_var("RIDX_CACHE_DIR", &cache_dir);
     // Point manifest_dir to a path containing .cargo/registry so is_immutable = true
-    let reg_dir = temp_dir.join(".cargo").join("registry").join("src").join("dep_crate-1.0.0");
+    let reg_dir = temp_dir
+        .join(".cargo")
+        .join("registry")
+        .join("src")
+        .join("dep_crate-1.0.0");
     fs::create_dir_all(&reg_dir).unwrap();
     std::env::set_var("CARGO_MANIFEST_DIR", &reg_dir);
     std::env::set_var("CARGO_PKG_VERSION", "1.0.0");
@@ -749,7 +753,11 @@ fn test_driver_cas_rebuild_on_driver_version_change() {
         &args,
     );
     let shard1_path = ridx_format::cache_object_path(&cache_dir, &unit1);
-    assert!(shard1_path.is_file(), "expected shard 1 at {:?}", shard1_path);
+    assert!(
+        shard1_path.is_file(),
+        "expected shard 1 at {:?}",
+        shard1_path
+    );
     let reader1 = ridx_format::IndexReader::open(&shard1_path).unwrap();
     assert_eq!(reader1.unit_key(), unit1);
 
@@ -762,14 +770,24 @@ fn test_driver_cas_rebuild_on_driver_version_change() {
         Some(&reg_dir),
         &args,
     );
-    assert_ne!(unit1, unit2, "unit keys must differ between driver versions");
+    assert_ne!(
+        unit1, unit2,
+        "unit keys must differ between driver versions"
+    );
 
     let shard2_path = ridx_format::cache_object_path(&cache_dir, &unit2);
-    assert!(!shard2_path.exists(), "shard 2 must not exist before rebuild");
+    assert!(
+        !shard2_path.exists(),
+        "shard 2 must not exist before rebuild"
+    );
 
     let res2 = run_driver(args.clone());
     assert!(res2.is_ok());
-    assert!(shard2_path.is_file(), "expected shard 2 to be rebuilt at {:?}", shard2_path);
+    assert!(
+        shard2_path.is_file(),
+        "expected shard 2 to be rebuilt at {:?}",
+        shard2_path
+    );
     let reader2 = ridx_format::IndexReader::open(&shard2_path).unwrap();
     assert_eq!(reader2.unit_key(), unit2);
 
@@ -778,7 +796,10 @@ fn test_driver_cas_rebuild_on_driver_version_change() {
     fs::write(&shard2_path, b"corrupted header bytes").unwrap();
     let res3 = run_driver(args.clone());
     assert!(res3.is_ok());
-    assert!(shard2_path.is_file(), "expected shard 2 to be recovered and rebuilt");
+    assert!(
+        shard2_path.is_file(),
+        "expected shard 2 to be recovered and rebuilt"
+    );
     let reader3 = ridx_format::IndexReader::open(&shard2_path).unwrap();
     assert_eq!(reader3.unit_key(), unit2);
 
