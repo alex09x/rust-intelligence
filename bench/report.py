@@ -40,8 +40,16 @@ def generate_repo_report(entry, source_file, discrepancies_file=None, rerun_data
     ra_version = entry.get("ra_version", "")
     lines = []
 
-    lines.append(f"## Benchmark Report: `{repo}` (commit `{commit}`)")
-    lines.append(f"*Source Data:* `{source_file}`  ")
+    try:
+        repo_root = Path(__file__).resolve().parent.parent
+        src_path = Path(source_file)
+        if src_path.is_absolute():
+            clean_source = str(src_path.resolve().relative_to(repo_root))
+        else:
+            clean_source = str(src_path)
+    except Exception:
+        clean_source = Path(source_file).name
+    lines.append(f"*Source Data:* `{clean_source}`  ")
     lines.append(f"*Run Status:* `{status}`  ")
     if driver_sha:
         lines.append(f"*Driver SHA256:* `{driver_sha}`  ")

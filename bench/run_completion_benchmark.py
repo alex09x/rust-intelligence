@@ -82,14 +82,17 @@ def sample_completion_scenarios(repo_dir, sample_count=100, seed=42):
     return scenarios[:sample_count]
 
 
-def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sample_count=100):
+def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sample_count=100, ra_bin=None):
     """Runs symmetric completion benchmark on a single repository."""
     scenarios = sample_completion_scenarios(repo_dir, sample_count, seed)
     print(f"[{repo_slug}] Running {len(scenarios)} completion scenarios (50/50 dot/colon)...")
 
-    ra_ver = subprocess.run(["rust-analyzer", "--version"], capture_output=True, text=True, check=False).stdout.strip()
+    if not ra_bin:
+        ra_bin_custom = Path.home() / ".rustup" / "toolchains" / "1.98.1-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
+        ra_bin = str(ra_bin_custom) if ra_bin_custom.is_file() else "rust-analyzer"
+    ra_ver = subprocess.run([ra_bin, "--version"], capture_output=True, text=True, check=False).stdout.strip()
     ridx_srv = SimpleLspProcess([str(ridx_bin), "lsp"], repo_dir)
-    ra_srv = SimpleLspProcess(["rust-analyzer"], repo_dir, is_ra=True)
+    ra_srv = SimpleLspProcess([ra_bin], repo_dir, is_ra=True)
 
     # Pre-open buffers for warm scenario execution
     opened_files = set()
@@ -116,6 +119,8 @@ def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sa
     owner_cold_latencies = []
     fallback_warm_latencies = []
     fallback_cold_latencies = []
+    owner_ra_warm_latencies = []
+    fallback_ra_warm_latencies = []
     ra_warm_latencies = []
     ra_cold_latencies = []
     recalls = []
@@ -166,9 +171,11 @@ def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sa
         if is_owner:
             owner_warm_latencies.append(ridx_warm)
             owner_cold_latencies.append(ridx_cold)
+            owner_ra_warm_latencies.append(ra_warm)
         else:
             fallback_warm_latencies.append(ridx_warm)
             fallback_cold_latencies.append(ridx_cold)
+            fallback_ra_warm_latencies.append(ra_warm)
 
         ra_warm_latencies.append(ra_warm)
         ra_cold_latencies.append(ra_cold)
@@ -208,6 +215,9 @@ def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sa
     all_ridx_warm = owner_warm_latencies + fallback_warm_latencies
     all_ridx_cold = owner_cold_latencies + fallback_cold_latencies
 
+    owner_ra_warm_p50 = percentile(owner_ra_warm_latencies, 50.0) if owner_ra_warm_latencies else 0.0
+    fallback_ra_warm_p50 = percentile(fallback_ra_warm_latencies, 50.0) if fallback_ra_warm_latencies else 0.0
+
     metrics = {
         "ridx_completion_warm_p50_us": round(percentile(all_ridx_warm, 50.0), 1),
         "ridx_completion_warm_p95_us": round(percentile(all_ridx_warm, 95.0), 1),
@@ -225,11 +235,14 @@ def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sa
         "owner_share_pct": round(100.0 - fallback_pct, 1),
         "ra_completion_warm_p50_us": round(percentile(ra_warm_latencies, 50.0), 1),
         "ra_completion_warm_p95_us": round(percentile(ra_warm_latencies, 95.0), 1),
+        "ra_matching_owner_warm_p50_us": round(owner_ra_warm_p50, 1),
+        "ra_matching_fallback_warm_p50_us": round(fallback_ra_warm_p50, 1),
         "ra_completion_cold_p50_us": round(percentile(ra_cold_latencies, 50.0), 1),
         "ra_completion_cold_p95_us": round(percentile(ra_cold_latencies, 95.0), 1),
         "avg_recall_vs_ra_pct": round(sum(recalls) / len(recalls), 1) if recalls else 0.0,
         "warm_p50_speedup_vs_ra": round(percentile(ra_warm_latencies, 50.0) / max(1.0, percentile(all_ridx_warm, 50.0)), 2),
-        "owner_p50_speedup_vs_ra": round(percentile(ra_warm_latencies, 50.0) / max(1.0, percentile(owner_warm_latencies, 50.0)), 2) if owner_warm_latencies else 0.0,
+        "owner_p50_speedup_vs_ra": round(owner_ra_warm_p50 / max(1.0, percentile(owner_warm_latencies, 50.0)), 2) if owner_warm_latencies else 0.0,
+        "fallback_p50_speedup_vs_ra": round(fallback_ra_warm_p50 / max(1.0, percentile(fallback_warm_latencies, 50.0)), 2) if fallback_warm_latencies else 0.0,
     }
 
     return {
@@ -249,19 +262,44 @@ def eval_completion_repo(repo_slug, repo_dir, ridx_bin, commit_ridx, seed=42, sa
 
 
 def main():
-    commit = "8fa53fa"
-    ridx_bin = Path("/home/alex09x/prod-code-storage/workspaces/rust-intelligence/target/release/ridx")
+    import argparse
+    parser = argparse.ArgumentParser(description="Run completion benchmarks")
+    parser.add_argument("--commit", default="8fa53fa")
+    parser.add_argument("--ridx-bin", help="Path to ridx binary")
+    parser.add_argument("--ra-bin", help="Path to rust-analyzer binary")
+    parser.add_argument("--serde-dir", help="Path to serde repo")
+    parser.add_argument("--bevy-dir", help="Path to bevy repo")
+    args = parser.parse_args()
+
+    commit = args.commit
+    ridx_bin = Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")
     out_file = bench_dir / "published" / f"rerun_completion_{commit}.jsonl"
 
+    def default_repo(name):
+        env_key = f"BENCH_{name.upper()}_DIR"
+        if env_key in os.environ:
+            return Path(os.environ[env_key])
+        for cand in [
+            Path.home() / "prod-code-storage" / "bench_repos" / name,
+            bench_dir.parent.parent / "bench_repos" / name,
+            Path("/tmp") / name,
+        ]:
+            if cand.is_dir():
+                return cand
+        return Path("/tmp") / name
+
+    serde_path = Path(args.serde_dir) if args.serde_dir else default_repo("serde")
+    bevy_path = Path(args.bevy_dir) if args.bevy_dir else default_repo("bevy")
+
     repos = [
-        ("serde-rs/serde", "/home/alex09x/prod-code-storage/bench_repos/serde"),
-        ("bevyengine/bevy", "/home/alex09x/prod-code-storage/bench_repos/bevy"),
+        ("serde-rs/serde", str(serde_path)),
+        ("bevyengine/bevy", str(bevy_path)),
     ]
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with open(out_file, "w", encoding="utf-8") as f_out:
         for slug, rpath in repos:
-            data = eval_completion_repo(slug, rpath, ridx_bin, commit, seed=42, sample_count=100)
+            data = eval_completion_repo(slug, rpath, ridx_bin, commit, seed=42, sample_count=100, ra_bin=args.ra_bin)
             f_out.write(json.dumps(data) + "\n")
             f_out.flush()
             m = data["metrics"]

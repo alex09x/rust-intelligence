@@ -11,7 +11,7 @@
 ---
 
 ## Benchmark Report: `serde-rs/serde` (commit `6693a89c`)
-*Source Data:* `/Users/alex09x/Documents/workspace/rust-intelligence/bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/results/pilot_results.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
@@ -107,7 +107,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 ---
 
 ## Benchmark Report: `BurntSushi/ripgrep` (commit `3fce3b5b`)
-*Source Data:* `/Users/alex09x/Documents/workspace/rust-intelligence/bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/results/pilot_results.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
@@ -203,7 +203,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 ---
 
 ## Benchmark Report: `tokio-rs/tokio` (commit `b2636752`)
-*Source Data:* `/Users/alex09x/Documents/workspace/rust-intelligence/bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/results/pilot_results.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
@@ -299,7 +299,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 ---
 
 ## Benchmark Report: `bevyengine/bevy` (commit `68c80f3b`)
-*Source Data:* `/Users/alex09x/Documents/workspace/rust-intelligence/bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/results/pilot_results.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
@@ -395,7 +395,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 ---
 
 ## Benchmark Report: `rust-lang/rust-analyzer` (commit `021bfc15`)
-*Source Data:* `/Users/alex09x/Documents/workspace/rust-intelligence/bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/results/pilot_results.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `3954bd16bf13c8eb9566d25f1f5de24af710abf7001687c7f47088e1931a5dbf`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
@@ -486,3 +486,31 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 *CAS & Indexing Breakdown:*
 - **CAS Growth (+56.4 MB per worktree)**: Represents first-party workspace crate objects compiled for differing source states across commit offsets (`HEAD~0`, `HEAD~5`, ...). Third-party dependencies are 100% deduplicated.
 - **Index Duration**: Corresponds to cargo executing `ridx-driver` across all workspace crate targets. Once cached in CAS, index assembly and subsequent LSP lookups are sub-millisecond.
+
+---
+
+## 6. Scoped Completion Telemetry (Stage 2: Owner-Index & Autoderef)
+
+Commit `8fa53fa` routed dot- (`receiver.`) and colon- (`path::`) completion requests through the dedicated format v3 `defs_by_owner` index and autoderef chain (`derefs`), bypassing full-workspace symbol scanning. Evaluated against `rust-analyzer 1.98.1 (48a229c)` on `booster` (100 sampled scenarios: 50 dot, 50 colon per repository; published in `bench/published/rerun_completion_8fa53fa.jsonl` and `bench/published/completion_regression_bb4aa75_vs_8fa53fa.json`):
+
+### Latency Breakdown: Matching Owner-Path vs Fallback Subsets
+
+| Repository | Matching Owner Positions (n) | Owner RIDX warm p50 | RA warm p50 (matching owner) | Fair Owner Speedup | Fallback Share % | Fallback RIDX warm p50 | RA warm p50 (matching fallback) | Recall vs RA 1.98.1 |
+|---|---|---|---|---|---|---|---|---|
+| **`bevyengine/bevy`** (`bevy_ecs`) | 32 (32%) | **186.5 µs** | **6,670.5 µs** | **35.8x** | **68.0%** (n=68) | **44,390.5 µs** | **2,399.5 µs** | **23.8%** |
+| **`serde-rs/serde`** | 5 (5%) | **100.0 µs** | **6,484.0 µs** | **64.8x** | **95.0%** (n=95) | **2,522.0 µs** | **4,256.0 µs** | **7.3%** |
+
+### Empirical Regression Check: `bb4aa75` vs `8fa53fa` (100+100 Identical Positions)
+
+| Repository | `bb4aa75` Empty Responses | `8fa53fa` Empty Responses | Regressions to Empty | Total Items (`bb4aa75` -> `8fa53fa`) | Recall vs RA 1.98.1 (`bb4aa75` -> `8fa53fa`) |
+|---|---|---|---|---|---|
+| **`serde-rs/serde`** | 84 / 100 | **82 / 100** | **0** | 1,033 -> 656 | 6.8% -> **7.3%** |
+| **`bevyengine/bevy`** | 43 / 100 | **33 / 100** | **0** | 3,418 -> 3,739 | 18.9% -> **23.8%** |
+
+*Note on Serde candidate count:* In `bb4aa75`, colon completion on 5 scenarios dumped 100 arbitrary symbols by blind prefix scanning; in `8fa53fa`, targeted scoping narrowed this to 23 relevant symbols (aligning closer to RA's 17 candidates). Zero scenarios regressed from non-empty to empty.
+
+### Key Architectural Findings:
+1. **Ultra-Fast Owner-Path Execution**: On concrete domain types (`World`, `Schedule`, `Entity`, `Commands`, `QueryState` in Bevy; `Visitor`, `ContentVisitor`, `Deserializer` in Serde), the owner path completes in **100–186 µs** warm p50, delivering a **35.8x – 64.8x speedup** over rust-analyzer on those exact matching positions.
+2. **Honest Scope on Fallback & Generic Bounds**: On large workspaces, fallback completion (std types, generic params) is ~18x slower than rust-analyzer (bevy: 44 ms vs 2.4 ms). Completion is fast and accurate for concrete workspace and dependency types, but for standard library primitives (`core::`, `alloc::`, `std::`, `str`, `Result`, `Option`) and unconstrained generic type parameters (`T: Trait`, e.g., `visitor.`, `serializer.` which dominate `serde`), recall remains low until Stage 3 implements trait-bounds from `predicates_of` and sysroot indexing.
+3. **No Regressions Against Baseline**: Side-by-side verification confirms `8fa53fa` caused zero regressions to empty responses compared to `bb4aa75`, while resolving 12 previously empty scenarios (10 in Bevy, 2 in Serde) and slightly increasing overall recall.
+

@@ -1,0 +1,68 @@
+{
+  "serde-rs/serde": {
+    "repo": "serde-rs/serde",
+    "total_scenarios": 100,
+    "empty_responses": {
+      "bb4aa75": 84,
+      "8fa53fa": 82,
+      "rust_analyzer_1_98_1": 2
+    },
+    "total_candidates": {
+      "bb4aa75": 1033,
+      "8fa53fa": 656,
+      "rust_analyzer_1_98_1": 4665
+    },
+    "avg_recall_vs_ra": {
+      "bb4aa75": 6.8,
+      "8fa53fa": 7.3
+    },
+    "regressions_scenarios": 5,
+    "improvements_scenarios": 4,
+    "routes": {
+      "owner_count": 5,
+      "fallback_count": 95,
+      "owner_c_warm_p50_us": 97.0,
+      "owner_ra_warm_p50_us": 6398.0,
+      "owner_speedup_fair": 65.96,
+      "fallback_c_warm_p50_us": 1800.0,
+      "fallback_ra_warm_p50_us": 4251.0,
+      "fallback_speedup_fair": 2.36,
+      "overall_c_warm_p50_us": 1790.0,
+      "overall_ra_warm_p50_us": 4348.0,
+      "overall_speedup": 2.43
+    }
+  },
+  "bevyengine/bevy": {
+    "repo": "bevyengine/bevy",
+    "total_scenarios": 100,
+    "empty_responses": {
+      "bb4aa75": 43,
+      "8fa53fa": 33,
+      "rust_analyzer_1_98_1": 6
+    },
+    "total_candidates": {
+      "bb4aa75": 3418,
+      "8fa53fa": 3739,
+      "rust_analyzer_1_98_1": 6817
+    },
+    "avg_recall_vs_ra": {
+      "bb4aa75": 18.9,
+      "8fa53fa": 23.8
+    },
+    "regressions_scenarios": 5,
+    "improvements_scenarios": 27,
+    "routes": {
+      "owner_count": 32,
+      "fallback_count": 68,
+      "owner_c_warm_p50_us": 189.5,
+      "owner_ra_warm_p50_us": 6072.0,
+      "owner_speedup_fair": 32.04,
+      "fallback_c_warm_p50_us": 45658.5,
+      "fallback_ra_warm_p50_us": 2461.0,
+      "fallback_speedup_fair": 0.05,
+      "overall_c_warm_p50_us": 41756.5,
+      "overall_ra_warm_p50_us": 4470.5,
+      "overall_speedup": 0.11
+    }
+  }
+}

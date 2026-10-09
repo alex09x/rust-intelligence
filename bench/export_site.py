@@ -193,8 +193,10 @@ def export_site_bench(results_path, discrepancies_path, out_path):
                 " (+4.87 pp read-only)."
             ),
             (
-                "textDocument/completion is non-speculative and resolves in tens"
-                " of ms pending trie index caching."
+                "On large workspaces, fallback completion (std types, generic"
+                " params) is ~18x slower than rust-analyzer (bevy: 44 ms vs"
+                " 2.4 ms); owner-path completion on concrete domain types is"
+                " 36–65x faster (100–186 µs)."
             ),
             (
                 "Hover latency on very large workspaces (bevy) is ~1.5x slower"
