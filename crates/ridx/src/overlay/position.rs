@@ -56,7 +56,7 @@ impl DocumentOverlay {
         let target_char = char_col_1based.saturating_sub(1);
         let mut utf16_count = 0;
         for (i, c) in line_str.chars().enumerate() {
-            if (i as u32) >= target_char {
+            if c == '\n' || c == '\r' || (i as u32) >= target_char {
                 break;
             }
             utf16_count += c.len_utf16() as u32;
@@ -96,7 +96,7 @@ impl DocumentOverlay {
         let target_char = col.saturating_sub(1) as usize;
         let mut byte_offset = start;
         for (i, c) in line_str.chars().enumerate() {
-            if i >= target_char {
+            if c == '\n' || c == '\r' || i >= target_char {
                 break;
             }
             byte_offset += c.len_utf8();
@@ -121,7 +121,7 @@ impl DocumentOverlay {
         let mut cur_utf16 = 0;
         let mut byte_offset = start;
         for c in line_str.chars() {
-            if cur_utf16 >= utf16_col_0based {
+            if c == '\n' || c == '\r' || cur_utf16 >= utf16_col_0based {
                 break;
             }
             cur_utf16 += c.len_utf16() as u32;

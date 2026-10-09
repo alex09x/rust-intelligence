@@ -11,6 +11,12 @@
 //! Aggregated end-to-end and integration test suite for Rust Intelligence (ridx).
 
 mod cli;
+mod domain3_coordinates;
+mod domain3_proptest;
+mod domain3_staleness;
+mod domain3_sync_edits;
+mod domain3_sync_lifecycle;
+mod domain3_sync_open;
 mod l2_cases;
 mod l2_harness;
 mod ntm_compare_harness;

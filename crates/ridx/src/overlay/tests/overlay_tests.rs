@@ -154,21 +154,21 @@ fn test_overlay_local_variables_and_params() {
 
 #[test]
 fn test_unicode_binding_does_not_panic() {
-    let code = "fn f() {\n    let привет = 1;\n    let мир = привет;\n}\n".to_string();
+    let code = "fn f() {\n    let grüßen = 1;\n    let world = grüßen;\n}\n".to_string();
     let overlay = DocumentOverlay::new("file:///test/unicode.rs", "src/unicode.rs", 1, code);
 
     assert!(!overlay.symbols.is_empty());
     let def = overlay
-        .find_definition_at(3, 16)
-        .expect("should resolve 'привет'");
-    assert_eq!(def.name, "привет");
+        .find_definition_at(3, 18)
+        .expect("should resolve 'grüßen'");
+    assert_eq!(def.name, "grüßen");
     assert_eq!(def.start_line, 2);
 
-    let mir = overlay
-        .find_definition_at(3, 9)
-        .expect("should resolve 'мир'");
-    assert_eq!(mir.name, "мир");
-    assert_eq!(mir.start_line, 3);
+    let world = overlay
+        .find_definition_at(3, 10)
+        .expect("should resolve 'world'");
+    assert_eq!(world.name, "world");
+    assert_eq!(world.start_line, 3);
 }
 
 #[test]
@@ -222,12 +222,12 @@ fn test_overlay_edit_mapping() {
 
 #[test]
 fn test_overlay_position_conversion_with_unicode() {
-    let code = "let привет = 42;\n".to_string();
+    let code = "let grüßen = 42;\n".to_string();
     let overlay = DocumentOverlay::new("file:///test/conv.rs", "src/conv.rs", 1, code);
 
     // 'let ' = 4 chars / 4 utf-16
-    // 'привет' = 6 Cyrillic chars (12 utf-8 bytes, 6 utf-16 code units)
-    // utf-16 col 4 -> 1-based char col 5 (the start of 'привет')
+    // 'grüßen' = 6 Unicode chars (each 1 UTF-16 code unit)
+    // utf-16 col 4 -> 1-based char col 5 (the start of 'grüßen')
     let char_col = overlay.utf16_col_to_char_col(1, 4);
     assert_eq!(char_col, 5);
 
@@ -341,25 +341,25 @@ fn test_incremental_change_single_line() {
 #[test]
 fn test_incremental_change_multiline_and_utf16() {
     // Line 0: fn test() {
-    // Line 1:     let привет = "🚀";
+    // Line 1:     let grüßen = "🚀";
     // Line 2: }
-    let initial = "fn test() {\n    let привет = \"🚀\";\n}\n".to_string();
+    let initial = "fn test() {\n    let grüßen = \"🚀\";\n}\n".to_string();
     let mut overlay = DocumentOverlay::new("file:///test/utf16.rs", "src/utf16.rs", 1, initial);
 
-    // Replace "привет" (6 UTF-16 code units, starting at char 8) with "mir"
+    // Replace "grüßen" (6 UTF-16 code units, starting at char 8) with "val"
     let change = serde_json::json!({
         "range": {
             "start": { "line": 1, "character": 8 },
             "end": { "line": 1, "character": 14 }
         },
-        "text": "mir"
+        "text": "val"
     });
 
     overlay.apply_content_changes(2, &[change]);
-    assert_eq!(overlay.text, "fn test() {\n    let mir = \"🚀\";\n}\n");
+    assert_eq!(overlay.text, "fn test() {\n    let val = \"🚀\";\n}\n");
 
-    let def = overlay.find_definition_at(2, 10).expect("resolve mir");
-    assert_eq!(def.name, "mir");
+    let def = overlay.find_definition_at(2, 10).expect("resolve val");
+    assert_eq!(def.name, "val");
 }
 
 #[test]

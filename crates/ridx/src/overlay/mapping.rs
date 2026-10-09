@@ -180,15 +180,15 @@ impl DocumentOverlay {
     pub fn map_line_to_compiled(&self, live_line: u32) -> Option<u32> {
         let l_idx = live_line.saturating_sub(1) as usize;
         let curr_lines: Vec<&str> = self.text.lines().collect();
+        if l_idx >= curr_lines.len() {
+            return None;
+        }
 
         let compiled_text = self.compiled_text.as_ref()?;
 
         let compiled_lines: Vec<&str> = compiled_text.lines().collect();
         if self.text == *compiled_text {
-            if l_idx < curr_lines.len() {
-                return Some(live_line);
-            }
-            return None;
+            return Some(live_line);
         }
 
         let mut prefix_common = 0;
@@ -204,8 +204,8 @@ impl DocumentOverlay {
         }
 
         let mut suffix_common = 0;
-        while suffix_common < curr_lines.len()
-            && suffix_common < compiled_lines.len()
+        while suffix_common < curr_lines.len().saturating_sub(prefix_common)
+            && suffix_common < compiled_lines.len().saturating_sub(prefix_common)
             && curr_lines[curr_lines.len() - 1 - suffix_common]
                 == compiled_lines[compiled_lines.len() - 1 - suffix_common]
         {
@@ -223,16 +223,15 @@ impl DocumentOverlay {
 
     pub fn map_compiled_line_to_live(&self, compiled_line: u32) -> Option<u32> {
         let c_idx = compiled_line.saturating_sub(1) as usize;
-        let curr_lines: Vec<&str> = self.text.lines().collect();
-
         let compiled_text = self.compiled_text.as_ref()?;
-
         let compiled_lines: Vec<&str> = compiled_text.lines().collect();
-        if self.text == *compiled_text {
-            if c_idx < compiled_lines.len() {
-                return Some(compiled_line);
-            }
+        if c_idx >= compiled_lines.len() {
             return None;
+        }
+
+        let curr_lines: Vec<&str> = self.text.lines().collect();
+        if self.text == *compiled_text {
+            return Some(compiled_line);
         }
 
         let mut prefix_common = 0;
@@ -248,8 +247,8 @@ impl DocumentOverlay {
         }
 
         let mut suffix_common = 0;
-        while suffix_common < curr_lines.len()
-            && suffix_common < compiled_lines.len()
+        while suffix_common < curr_lines.len().saturating_sub(prefix_common)
+            && suffix_common < compiled_lines.len().saturating_sub(prefix_common)
             && curr_lines[curr_lines.len() - 1 - suffix_common]
                 == compiled_lines[compiled_lines.len() - 1 - suffix_common]
         {

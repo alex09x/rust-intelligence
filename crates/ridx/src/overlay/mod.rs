@@ -95,8 +95,8 @@ pub struct DocumentOverlay {
     pub text: String,
     pub compiled_text: Option<String>,
     pub disk_text: Option<String>,
-    pub(crate) line_starts: Vec<usize>,
-    pub(crate) symbols: Vec<OverlaySymbol>,
+    pub line_starts: Vec<usize>,
+    pub symbols: Vec<OverlaySymbol>,
     pub(crate) scopes: Vec<Scope>,
 }
 

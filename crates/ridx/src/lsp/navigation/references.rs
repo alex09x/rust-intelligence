@@ -60,9 +60,20 @@ pub fn handle_references(
 
     // 2. Workspace compiled references
     if let Some(ws) = workspace {
-        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
-        if !is_dirty {
-            if let Some(loc_refs) = ws.find_references_at(&file, line_1based, col_1based) {
+        let (query_line, query_col) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
+            if overlay.has_modified_imports() {
+                (0, 0)
+            } else if let Some((cl, cc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
+                (cl, cc)
+            } else {
+                (0, 0)
+            }
+        } else {
+            (line_1based, col_1based)
+        };
+
+        if query_line > 0 {
+            if let Some(loc_refs) = ws.find_references_at(&file, query_line, query_col) {
                 if include_decl
                     && !loc_refs.target_file.is_empty()
                     && loc_refs.target_file != "external"
@@ -70,25 +81,60 @@ pub fn handle_references(
                     let decl_path = loc_refs.target_resolved_path();
                     let decl_str = decl_path.to_str().unwrap_or(loc_refs.target_file);
                     let decl_uri = path_to_uri(decl_str);
-                    let sc = conv.char_col_to_utf16_col(
-                        decl_str,
-                        loc_refs.target_line,
-                        loc_refs.target_col,
-                    );
-                    let ec = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
-                        conv.char_col_to_utf16_col(
+                    let (sl, el, sc, ec) = if let Some(target_ov) =
+                        overlay_mgr.get(decl_str).filter(|o| o.is_dirty())
+                    {
+                        let s = target_ov
+                            .map_compiled_to_live(loc_refs.target_line, loc_refs.target_col);
+                        let e = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
+                            target_ov.map_compiled_to_live(
+                                loc_refs.target_end_line,
+                                loc_refs.target_end_col,
+                            )
+                        } else {
+                            s
+                        };
+                        match (s, e) {
+                            (Some(s), Some(e)) => {
+                                let sc = target_ov.char_col_to_utf16_col(s.0, s.1);
+                                let ec = if loc_refs.target_end_line > 0
+                                    && loc_refs.target_end_col > 0
+                                {
+                                    target_ov.char_col_to_utf16_col(e.0, e.1)
+                                } else {
+                                    sc + (loc_refs.target_symbol.encode_utf16().count() as u32)
+                                };
+                                (s.0.saturating_sub(1), e.0.saturating_sub(1), sc, ec)
+                            }
+                            _ => (
+                                loc_refs.target_line.saturating_sub(1),
+                                loc_refs.target_line.saturating_sub(1),
+                                0,
+                                0,
+                            ),
+                        }
+                    } else {
+                        let sc = conv.char_col_to_utf16_col(
                             decl_str,
-                            loc_refs.target_end_line,
-                            loc_refs.target_end_col,
-                        )
-                    } else {
-                        sc + (loc_refs.target_symbol.encode_utf16().count() as u32)
-                    };
-                    let sl = loc_refs.target_line.saturating_sub(1);
-                    let el = if loc_refs.target_end_line > 0 {
-                        loc_refs.target_end_line.saturating_sub(1)
-                    } else {
-                        sl
+                            loc_refs.target_line,
+                            loc_refs.target_col,
+                        );
+                        let ec = if loc_refs.target_end_line > 0 && loc_refs.target_end_col > 0 {
+                            conv.char_col_to_utf16_col(
+                                decl_str,
+                                loc_refs.target_end_line,
+                                loc_refs.target_end_col,
+                            )
+                        } else {
+                            sc + (loc_refs.target_symbol.encode_utf16().count() as u32)
+                        };
+                        let sl = loc_refs.target_line.saturating_sub(1);
+                        let el = if loc_refs.target_end_line > 0 {
+                            loc_refs.target_end_line.saturating_sub(1)
+                        } else {
+                            sl
+                        };
+                        (sl, el, sc, ec)
                     };
                     results.push(json!({
                         "uri": decl_uri,
@@ -104,13 +150,35 @@ pub fn handle_references(
                     let r_str = r_path.to_str().unwrap_or(r.file);
                     let r_uri = path_to_uri(r_str);
                     let span = r.span;
-                    let sc = conv.char_col_to_utf16_col(r_str, span.start_line(), span.start_col());
-                    let ec = conv.char_col_to_utf16_col(r_str, span.end_line(), span.end_col());
+                    let (sl, el, sc, ec) = if let Some(target_ov) =
+                        overlay_mgr.get(r_str).filter(|o| o.is_dirty())
+                    {
+                        let s = target_ov.map_compiled_to_live(span.start_line(), span.start_col());
+                        let e = target_ov.map_compiled_to_live(span.end_line(), span.end_col());
+                        match (s, e) {
+                            (Some(s), Some(e)) => {
+                                let sc = target_ov.char_col_to_utf16_col(s.0, s.1);
+                                let ec = target_ov.char_col_to_utf16_col(e.0, e.1);
+                                (s.0.saturating_sub(1), e.0.saturating_sub(1), sc, ec)
+                            }
+                            _ => continue,
+                        }
+                    } else {
+                        let sc =
+                            conv.char_col_to_utf16_col(r_str, span.start_line(), span.start_col());
+                        let ec = conv.char_col_to_utf16_col(r_str, span.end_line(), span.end_col());
+                        (
+                            span.start_line().saturating_sub(1),
+                            span.end_line().saturating_sub(1),
+                            sc,
+                            ec,
+                        )
+                    };
                     results.push(json!({
                         "uri": r_uri,
                         "range": {
-                            "start": { "line": span.start_line().saturating_sub(1), "character": sc },
-                            "end": { "line": span.end_line().saturating_sub(1), "character": ec }
+                            "start": { "line": sl, "character": sc },
+                            "end": { "line": el, "character": ec }
                         }
                     }));
                 }

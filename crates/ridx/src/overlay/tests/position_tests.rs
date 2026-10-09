@@ -12,7 +12,7 @@ use crate::overlay::DocumentOverlay;
 
 #[test]
 fn test_position_conversions_and_bounds() {
-    let text = "let rocket = \"🚀\";\nlet привет = 42;";
+    let text = "let rocket = \"🚀\";\nlet grüßen = 42;";
     let ov = DocumentOverlay::new("file:///pos.rs", "/pos.rs", 1, text.to_string());
 
     // 1. Line out of bounds
