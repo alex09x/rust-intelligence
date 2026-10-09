@@ -303,6 +303,7 @@ pub fn try_owner_completion(
         };
 
         let has_sysroot = ws.has_sysroot();
+        let syntax_pos = super::syntax_pos::classify_colon_position(ctx.trimmed_before);
         let mut items = Vec::new();
         let mut seen = HashSet::new();
 
@@ -311,6 +312,9 @@ pub fn try_owner_completion(
                 continue;
             }
             for def in ws.find_definitions_by_owner(target_owner) {
+                if !super::syntax_pos::is_def_allowed_in_position(def.kind, syntax_pos) {
+                    continue;
+                }
                 if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
                     continue;
                 }

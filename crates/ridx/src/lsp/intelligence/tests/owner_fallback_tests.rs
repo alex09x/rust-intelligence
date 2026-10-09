@@ -213,3 +213,118 @@ fn test_completion_self_colon_colon() {
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
+#[test]
+fn test_completion_self_colon_colon_type_position_filters_methods() {
+    let temp_dir = std::env::temp_dir().join(format!("ridx_self_colon_type_{}", std::process::id()));
+    let _ = fs::create_dir_all(temp_dir.join("src"));
+    let src_file = temp_dir.join("src/lib.rs");
+    let code = "pub struct UniqueEntityIter;\nimpl Iterator for UniqueEntityIter {\n    type Item = u32;\n    fn next(&mut self) -> Option<Self::Item> { None }\n    fn reduce<F>(self, f: F) -> Option<Self::> { None }\n}\n";
+    let _ = fs::write(&src_file, code);
+
+    let src_path = src_file.to_str().unwrap().to_string();
+    let mut writer = IndexWriter::new("test_iter", "0.1.0");
+
+    // Definition of UniqueEntityIter struct
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        file: src_path.clone(),
+        name: "UniqueEntityIter".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 28,
+        path: "test_iter::UniqueEntityIter".to_string(),
+        signature: Some("pub struct UniqueEntityIter;".to_string()),
+    });
+
+    // Associated type Item on UniqueEntityIter
+    writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 2,
+            kind: DefKind::AssocTy,
+            visibility: 1,
+            is_macro_expansion: false,
+            file: src_path.clone(),
+            name: "Item".to_string(),
+            start_line: 3,
+            start_col: 5,
+            end_line: 3,
+            end_col: 21,
+            path: "test_iter::UniqueEntityIter::Item".to_string(),
+            signature: Some("type Item = u32".to_string()),
+        },
+        vec!["test_iter::UniqueEntityIter".to_string()],
+    );
+
+    // Associated function next on UniqueEntityIter
+    writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 3,
+            kind: DefKind::AssocFn,
+            visibility: 1,
+            is_macro_expansion: false,
+            file: src_path.clone(),
+            name: "next".to_string(),
+            start_line: 4,
+            start_col: 5,
+            end_line: 4,
+            end_col: 54,
+            path: "test_iter::UniqueEntityIter::next".to_string(),
+            signature: Some("fn next(&mut self) -> Option<Self::Item>".to_string()),
+        },
+        vec!["test_iter::UniqueEntityIter".to_string()],
+    );
+
+    // Associated function reduce on UniqueEntityIter
+    writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 4,
+            kind: DefKind::AssocFn,
+            visibility: 1,
+            is_macro_expansion: false,
+            file: src_path.clone(),
+            name: "reduce".to_string(),
+            start_line: 5,
+            start_col: 5,
+            end_line: 5,
+            end_col: 56,
+            path: "test_iter::UniqueEntityIter::reduce".to_string(),
+            signature: Some("fn reduce<F>(self, f: F) -> Option<Self::Item>".to_string()),
+        },
+        vec!["test_iter::UniqueEntityIter".to_string()],
+    );
+
+    let ridx_file = temp_dir.join("index.ridx");
+    let mut f = fs::File::create(&ridx_file).unwrap();
+    writer.write_to(&mut f).unwrap();
+    drop(f);
+
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    // Line 5 (0-based line 4): `    fn reduce<F>(self, f: F) -> Option<Self::> { None }`
+    // `Option<Self::` is 45 characters long (0-based index 45 points right after `::`)
+    let uri = format!("file://{}", src_file.to_str().unwrap());
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 4, "character": 45 }
+        }
+    });
+
+    let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    assert!(res["items"].is_array());
+    let items = res["items"].as_array().unwrap();
+
+    let labels: Vec<&str> = items.iter().filter_map(|it| it["label"].as_str()).collect();
+    assert_eq!(labels, vec!["Item"], "In Option<Self::|>, only Item should be offered, but got: {:?}", labels);
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+

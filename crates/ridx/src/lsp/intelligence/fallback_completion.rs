@@ -124,6 +124,11 @@ pub fn try_fallback_completion(
     };
 
     let needle_lower = needle.to_ascii_lowercase();
+    let syntax_pos = if ctx.is_colon {
+        super::syntax_pos::classify_colon_position(ctx.trimmed_before)
+    } else {
+        super::syntax_pos::SyntaxPosition::Any
+    };
 
     let mut collector = |reader: &ridx_format::IndexReader<memmap2::Mmap>,
                          def: &ridx_format::DefEntry|
@@ -136,6 +141,10 @@ pub fn try_fallback_completion(
             ) || (def.sig_offset() != 0
                 && !signature_takes_receiver(reader.get_str(def.sig_offset()))))
         {
+            return true;
+        }
+
+        if ctx.is_colon && !super::syntax_pos::is_def_allowed_in_position(kind, syntax_pos) {
             return true;
         }
 

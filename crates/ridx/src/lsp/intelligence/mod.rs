@@ -18,6 +18,7 @@ pub mod hover;
 pub mod owner_completion;
 pub mod self_completion;
 pub mod signature;
+pub mod syntax_pos;
 
 #[cfg(test)]
 pub mod tests;
@@ -28,3 +29,4 @@ pub use fallback_completion::*;
 pub use hints::*;
 pub use hover::*;
 pub use signature::*;
+pub use syntax_pos::*;
