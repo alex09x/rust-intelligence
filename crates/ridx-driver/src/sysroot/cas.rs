@@ -20,7 +20,7 @@ use super::{extract_sysroot_crate, SysrootExtractStats};
 /// `fnv1a_64(rustc version, target triple, format version, driver hash)`.
 pub fn compute_sysroot_cas_key_str(version_str: Option<&str>, target_triple: &str) -> String {
     let mut bytes = Vec::new();
-    if let Some(v) = version_str.or_else(|| rustc_interface::util::rustc_version_str()) {
+    if let Some(v) = version_str.or(rustc_interface::util::rustc_version_str()) {
         bytes.extend_from_slice(v.as_bytes());
     }
     bytes.extend_from_slice(target_triple.as_bytes());
@@ -33,8 +33,7 @@ pub fn compute_sysroot_cas_key_str(version_str: Option<&str>, target_triple: &st
 /// Computes the unique deterministic CAS key for the current sysroot index:
 /// `fnv1a_64(rustc version, target triple, format version, driver hash)`.
 pub fn compute_sysroot_cas_key(tcx: TyCtxt<'_>) -> String {
-    let ver = rustc_interface::util::rustc_version_str()
-        .unwrap_or(&tcx.sess.cfg_version);
+    let ver = rustc_interface::util::rustc_version_str().unwrap_or(tcx.sess.cfg_version.as_ref());
     compute_sysroot_cas_key_str(Some(ver), &tcx.sess.opts.target_triple.to_string())
 }
 

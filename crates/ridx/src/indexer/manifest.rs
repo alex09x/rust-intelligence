@@ -166,4 +166,3 @@ pub fn resolve_sysroot_cas_key(
 
     None
 }
-
