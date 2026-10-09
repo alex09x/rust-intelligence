@@ -13,6 +13,7 @@
 pub mod actions;
 pub mod atomic_write;
 pub mod commands;
+pub mod extract;
 pub mod format;
 pub mod ident;
 pub mod linked;
@@ -25,6 +26,7 @@ mod tests;
 pub use actions::*;
 pub use atomic_write::commit_closed_writes_atomic;
 pub use commands::*;
+pub use extract::*;
 pub use format::*;
 pub use ident::*;
 pub use linked::*;

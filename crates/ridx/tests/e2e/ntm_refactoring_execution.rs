@@ -48,7 +48,7 @@ fn test_refactor_organize_imports_execution() {
         }
     });
 
-    let res = handle_code_action(&req, &overlay_mgr);
+    let res = handle_code_action(&req, None, &overlay_mgr).unwrap();
     let actions = res.as_array().expect("actions list");
     let organize_act = actions
         .iter()
@@ -100,7 +100,7 @@ fn test_refactor_extract_variable_execution() {
         }
     });
 
-    let res = handle_code_action(&req, &overlay_mgr);
+    let res = handle_code_action(&req, None, &overlay_mgr).unwrap();
     let actions = res.as_array().expect("actions list");
     let extract_act = actions
         .iter()
@@ -138,7 +138,7 @@ fn test_organize_imports_multiline_items() {
         }
     });
 
-    let actions = handle_code_action(&req, &overlay_mgr);
+    let actions = handle_code_action(&req, None, &overlay_mgr).unwrap();
     let act_arr = actions.as_array().expect("actions array");
     assert!(
         !act_arr.is_empty(),
@@ -169,7 +169,7 @@ fn test_extract_variable_unicode_and_dependency_order() {
             "context": { "only": ["refactor.extract"], "diagnostics": [] }
         }
     });
-    let actions1 = handle_code_action(&req1, &overlay_mgr);
+    let actions1 = handle_code_action(&req1, None, &overlay_mgr).unwrap();
     let act_arr1 = actions1.as_array().expect("actions");
     assert!(
         !act_arr1.is_empty(),
@@ -196,7 +196,7 @@ fn test_extract_variable_unicode_and_dependency_order() {
             "context": { "only": ["refactor.extract"], "diagnostics": [] }
         }
     });
-    let actions2 = handle_code_action(&req2, &overlay_mgr);
+    let actions2 = handle_code_action(&req2, None, &overlay_mgr).unwrap();
     let act_arr2 = actions2.as_array().expect("actions");
     assert!(
         !act_arr2.is_empty(),
@@ -271,7 +271,8 @@ fn assert_extract_rejected(code: &str, line: u64, start: u64, end: u64, msg: &st
         }
     });
     assert!(
-        handle_code_action(&req, &overlay_mgr)
+        handle_code_action(&req, None, &overlay_mgr)
+            .unwrap()
             .as_array()
             .unwrap()
             .is_empty(),

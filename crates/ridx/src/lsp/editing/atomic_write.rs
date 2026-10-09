@@ -146,3 +146,81 @@ pub fn commit_closed_writes_atomic(closed_writes: &[(String, String)]) -> bool {
 
     true
 }
+
+/// Checks whether a path is an external read-only dependency (e.g. in cargo cache or toolchains).
+pub fn is_readonly_dependency(path: &Path, workspace: Option<&ridx_format::WorkspaceIndex>) -> bool {
+    let path_str = path.to_string_lossy();
+    if path_str.contains("/.cargo/registry/")
+        || path_str.contains("\\.cargo\\registry\\")
+        || path_str.contains("/.cargo/git/")
+        || path_str.contains("\\.cargo\\git\\")
+        || path_str.contains("/.rustup/toolchains/")
+        || path_str.contains("\\.rustup\\toolchains\\")
+        || path_str.contains("/lib/rustlib/")
+        || path_str.contains("\\lib\\rustlib\\")
+        || path_str.contains("/target/ridx/dependencies/")
+    {
+        return true;
+    }
+    if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
+        let ch = Path::new(&cargo_home);
+        if path.starts_with(ch.join("registry")) || path.starts_with(ch.join("git")) {
+            return true;
+        }
+    }
+    if let Some(ws) = workspace {
+        if ws.is_external_path(path) {
+            let is_temp_or_standalone = path_str.starts_with("/tmp")
+                || path_str.starts_with("\\tmp")
+                || path.starts_with(std::env::temp_dir());
+            if !is_temp_or_standalone {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Validates that none of the URIs in a WorkspaceEdit target read-only external dependencies.
+pub fn validate_workspace_edit(
+    edit: &serde_json::Value,
+    workspace: Option<&ridx_format::WorkspaceIndex>,
+) -> crate::lsp::error::LspResult<()> {
+    if let Some(changes) = edit.get("changes").and_then(|c| c.as_object()) {
+        for uri in changes.keys() {
+            let p = crate::lsp::protocol::uri_to_path(uri);
+            if is_readonly_dependency(Path::new(&p), workspace) {
+                return Err(crate::lsp::error::LspError::request_failed(format!(
+                    "Cannot modify read-only external dependency: {p}"
+                )));
+            }
+        }
+    }
+
+    if let Some(doc_changes) = edit.get("documentChanges").and_then(|c| c.as_array()) {
+        for dc in doc_changes {
+            if let Some(uri) = dc
+                .get("textDocument")
+                .and_then(|td| td.get("uri"))
+                .and_then(|u| u.as_str())
+            {
+                let p = crate::lsp::protocol::uri_to_path(uri);
+                if is_readonly_dependency(Path::new(&p), workspace) {
+                    return Err(crate::lsp::error::LspError::request_failed(format!(
+                        "Cannot modify read-only external dependency: {p}"
+                    )));
+                }
+            } else if let Some(uri) = dc.get("uri").and_then(|u| u.as_str()) {
+                let p = crate::lsp::protocol::uri_to_path(uri);
+                if is_readonly_dependency(Path::new(&p), workspace) {
+                    return Err(crate::lsp::error::LspError::request_failed(format!(
+                        "Cannot modify read-only external dependency: {p}"
+                    )));
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+

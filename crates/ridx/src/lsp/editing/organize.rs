@@ -21,7 +21,11 @@ struct UseEntry {
 
 /// Organizes and sorts import statements in the given document text.
 /// Correctly handles multi-line use trees, attributes, and comments.
-pub fn organize_imports_action(doc_text: &str, uri: &str) -> Option<Value> {
+pub fn organize_imports_action(
+    doc_text: &str,
+    uri: &str,
+    doc_version: Option<i32>,
+) -> Option<Value> {
     let lines: Vec<&str> = doc_text.lines().collect();
     if lines.is_empty() {
         return None;
@@ -129,22 +133,49 @@ pub fn organize_imports_action(doc_text: &str, uri: &str) -> Option<Value> {
             let new_text = new_text_lines.join("\n");
             let end_char = lines[end_idx].encode_utf16().count() as u32;
 
+            let edits_vec = vec![json!({
+                "range": {
+                    "start": { "line": start_idx as u32, "character": 0 },
+                    "end": { "line": end_idx as u32, "character": end_char }
+                },
+                "newText": new_text
+            })];
+
+            let mut doc_changes = Vec::new();
+            if let Some(ver) = doc_version {
+                doc_changes.push(json!({
+                    "textDocument": {
+                        "uri": uri,
+                        "version": ver
+                    },
+                    "edits": edits_vec
+                }));
+            }
+
+            let edit = if doc_changes.is_empty() {
+                json!({
+                    "changes": {
+                        uri: edits_vec
+                    }
+                })
+            } else {
+                json!({
+                    "changes": {
+                        uri: edits_vec
+                    },
+                    "documentChanges": doc_changes
+                })
+            };
+
             return Some(json!({
                 "title": "Organize Imports",
                 "kind": "source.organizeImports",
-                "edit": {
-                    "changes": {
-                        uri: [
-                            {
-                                "range": {
-                                    "start": { "line": start_idx as u32, "character": 0 },
-                                    "end": { "line": end_idx as u32, "character": end_char }
-                                },
-                                "newText": new_text
-                            }
-                        ]
-                    }
-                }
+                "data": {
+                    "uri": uri,
+                    "version": doc_version,
+                    "kind": "source.organizeImports"
+                },
+                "edit": edit
             }));
         }
     }

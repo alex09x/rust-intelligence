@@ -27,6 +27,7 @@ mod domain3_sync_open;
 mod l2_cases;
 mod l2_harness;
 mod ntm_compare_harness;
+mod ntm_domain4_actions_stress;
 mod ntm_e2e;
 mod ntm_flycheck_and_auto_import;
 mod ntm_formatting_execution;

@@ -8,9 +8,13 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+pub mod code_action_resolve_tests;
+pub mod code_action_tests;
 pub mod format_tests;
 pub mod formatting_unit_tests;
 pub mod ident_validation_tests;
+pub mod linked_editing_tests;
+pub mod on_type_formatting_tests;
 pub mod prepare_rename_tests;
 pub mod rename_edge_tests;
 pub mod rename_matrix_tests;

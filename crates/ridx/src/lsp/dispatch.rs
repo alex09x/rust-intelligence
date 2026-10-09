@@ -309,8 +309,28 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/formatting" => Ok(handle_formatting(&msg, overlay_mgr)),
         "textDocument/rangeFormatting" => Ok(handle_range_formatting(&msg, overlay_mgr)),
         "textDocument/onTypeFormatting" => Ok(handle_on_type_formatting(&msg, overlay_mgr)),
-        "textDocument/codeAction" => Ok(handle_code_action(&msg, overlay_mgr)),
-        "codeAction/resolve" => Ok(handle_code_action_resolve(&msg)),
+        "textDocument/codeAction" => {
+            let ws = multi_root.doc_ws(&msg);
+            handle_code_action(&msg, ws, overlay_mgr)
+        }
+        "codeAction/resolve" => {
+            let uri = msg["params"]
+                .get("data")
+                .and_then(|d| d.get("uri"))
+                .and_then(|u| u.as_str())
+                .or_else(|| {
+                    msg["params"]
+                        .get("edit")
+                        .and_then(|e| e.get("changes"))
+                        .and_then(|c| c.as_object())
+                        .and_then(|m| m.keys().next().map(|s| s.as_str()))
+                });
+            let ws = uri.and_then(|u| {
+                let p = uri_to_path(u);
+                multi_root.find_workspace_for_path(Path::new(&p))
+            });
+            handle_code_action_resolve(&msg, ws, overlay_mgr)
+        }
         "workspace/executeCommand" => {
             if let Some(res) = try_dispatch_apply_edits_command(&msg, overlay_mgr, writer, &mut id)?
             {

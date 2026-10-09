@@ -68,9 +68,15 @@ fn test_format_and_actions() {
             "context": { "diagnostics": [] }
         }
     });
-    let action_res = handle_code_action(&action_req, &overlay_mgr);
+    let action_res = handle_code_action(&action_req, None, &overlay_mgr).unwrap();
     assert!(action_res.is_array());
-    let resolve_res = handle_code_action_resolve(&action_req);
+    let resolve_req = json!({
+        "params": {
+            "title": "dummy",
+            "data": { "uri": &uri, "kind": "quickfix", "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 0 } } }
+        }
+    });
+    let resolve_res = handle_code_action_resolve(&resolve_req, None, &overlay_mgr).unwrap();
     assert!(!resolve_res.is_null());
 
     let action_diag = json!({
@@ -87,7 +93,7 @@ fn test_format_and_actions() {
             }
         }
     });
-    let act_res = handle_code_action(&action_diag, &overlay_mgr);
+    let act_res = handle_code_action(&action_diag, None, &overlay_mgr).unwrap();
     assert_eq!(act_res.as_array().unwrap().len(), 1);
 
     // 3. Execute command

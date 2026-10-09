@@ -75,7 +75,7 @@ fn test_extract_variable_inside_closure_rejected() {
         }
     });
 
-    let actions = handle_code_action(&req, &overlay_mgr);
+    let actions = handle_code_action(&req, None, &overlay_mgr).expect("code action succeeds");
     let arr = actions.as_array().expect("code action array");
     for action in arr {
         let kind = action.get("kind").and_then(|k| k.as_str()).unwrap_or("");
