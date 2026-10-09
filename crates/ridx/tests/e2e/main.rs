@@ -11,6 +11,10 @@
 //! Aggregated end-to-end and integration test suite for Rust Intelligence (ridx).
 
 mod cli;
+mod domain2_compiler_message;
+mod domain2_flycheck_lifecycle;
+mod domain2_flycheck_state;
+mod domain2_syntax_diagnostics;
 mod domain3_coordinates;
 mod domain3_proptest;
 mod domain3_staleness;
