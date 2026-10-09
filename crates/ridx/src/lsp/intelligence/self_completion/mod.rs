@@ -39,7 +39,7 @@ fn collect_type_owner(
     }
 }
 
-fn collect_trait_and_supertraits(
+pub(crate) fn collect_trait_and_supertraits(
     ws: &WorkspaceIndex,
     file: &str,
     trait_name: &str,

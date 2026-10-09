@@ -13,6 +13,7 @@
 pub mod auto_import;
 pub mod completion;
 pub mod fallback_completion;
+pub mod generic_completion;
 pub mod hints;
 pub mod hover;
 pub mod owner_completion;

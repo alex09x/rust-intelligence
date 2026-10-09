@@ -274,6 +274,15 @@ pub fn try_owner_completion(
                 ctx.line_slice,
                 ctx.overlay_text,
             )?
+        } else if let Some(owners) = super::generic_completion::resolve_generic_param_owners(
+            ws,
+            ctx.file,
+            ctx.line_1based,
+            ctx.line_slice,
+            ctx.overlay_text,
+            &qual,
+        ) {
+            owners
         } else {
             let def_opt = ws.resolve_qualifier(ctx.file, &qual);
             let target_owner = def_opt
