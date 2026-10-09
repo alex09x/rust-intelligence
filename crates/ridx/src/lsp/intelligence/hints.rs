@@ -10,6 +10,7 @@
 
 //! LSP inlay hints, inline values, and inline completions.
 
+use super::super::error::{LspError, LspResult};
 use super::super::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
@@ -19,23 +20,40 @@ pub fn handle_inlay_hint(
     msg: &Value,
     workspace: Option<&WorkspaceIndex>,
     overlay_mgr: &OverlayManager,
-) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-    let start_line = msg["params"]["range"]["start"]["line"]
-        .as_u64()
-        .unwrap_or(0) as u32;
-    let end_line = msg["params"]["range"]["end"]["line"]
-        .as_u64()
-        .unwrap_or(u32::MAX as u64) as u32;
+) -> LspResult<Value> {
+    let params = msg
+        .get("params")
+        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
+    if !params.is_object() {
+        return Err(LspError::invalid_params("Params must be an object"));
+    }
 
+    let uri = params["textDocument"]["uri"]
+        .as_str()
+        .ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
+    if uri.is_empty() {
+        return Err(LspError::invalid_params("Empty textDocument.uri"));
+    }
+
+    let range = &params["range"];
+    if !range.is_object() {
+        return Err(LspError::invalid_params("Missing range object"));
+    }
+    let start_line = range["start"]["line"]
+        .as_u64()
+        .ok_or_else(|| LspError::invalid_params("Missing range.start.line"))? as u32;
+    let end_line = range["end"]["line"]
+        .as_u64()
+        .ok_or_else(|| LspError::invalid_params("Missing range.end.line"))? as u32;
+
+    let file = uri_to_path(uri);
     let overlay_opt = overlay_mgr.get(&file);
     let text = if let Some(ov) = overlay_opt {
         ov.text.clone()
     } else if let Ok(t) = std::fs::read_to_string(&file) {
         t
     } else {
-        return json!([]);
+        return Ok(json!([]));
     };
 
     let mut hints = Vec::new();
@@ -86,7 +104,7 @@ pub fn handle_inlay_hint(
         }
     }
 
-    json!(hints)
+    Ok(json!(hints))
 }
 
 pub fn handle_inline_value(
@@ -214,10 +232,21 @@ pub fn handle_inline_completion(
     json!({ "items": items })
 }
 
-pub fn handle_inlay_hint_resolve(msg: &Value) -> Value {
-    let mut hint = msg.get("params").cloned().unwrap_or(Value::Null);
-    if hint.is_object() && hint.get("tooltip").is_none() {
+pub fn handle_inlay_hint_resolve(msg: &Value) -> LspResult<Value> {
+    let params = msg
+        .get("params")
+        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
+    if !params.is_object() {
+        return Err(LspError::invalid_params("Params must be an InlayHint object"));
+    }
+
+    if params.get("position").is_none() || params.get("label").is_none() {
+        return Err(LspError::invalid_params("InlayHint must contain position and label"));
+    }
+
+    let mut hint = params.clone();
+    if hint.get("tooltip").is_none() {
         hint["tooltip"] = json!("Inferred type by ridx");
     }
-    hint
+    Ok(hint)
 }

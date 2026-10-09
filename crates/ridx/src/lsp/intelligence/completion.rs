@@ -10,6 +10,7 @@
 
 //! LSP completion intelligence handler.
 
+use super::super::error::{LspError, LspResult};
 use super::super::protocol::{lsp_completion_kind, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
@@ -21,13 +22,34 @@ pub fn handle_completion(
     workspace: Option<&WorkspaceIndex>,
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
-) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+) -> LspResult<Value> {
+    let params = msg
+        .get("params")
+        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
+    if !params.is_object() {
+        return Err(LspError::invalid_params("Params must be an object"));
+    }
+
+    let uri = params["textDocument"]["uri"]
+        .as_str()
+        .ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
+    if uri.is_empty() {
+        return Err(LspError::invalid_params("Empty textDocument.uri"));
+    }
+
+    let pos = &params["position"];
+    if !pos.is_object() {
+        return Err(LspError::invalid_params("Missing position object"));
+    }
+    let line_0based = pos["line"]
+        .as_u64()
+        .ok_or_else(|| LspError::invalid_params("Missing position.line"))? as u32;
+    let utf16_col_0based = pos["character"]
+        .as_u64()
+        .ok_or_else(|| LspError::invalid_params("Missing position.character"))? as u32;
     let line_1based = line_0based + 1;
 
+    let file = uri_to_path(uri);
     let overlay_opt = overlay_mgr.get(&file);
     let col_1based = if let Some(overlay) = overlay_opt {
         overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
@@ -76,6 +98,9 @@ pub fn handle_completion(
         };
 
         for s in &overlay.symbols {
+            if s.name.contains("{closure") || s.name.contains("{block}") {
+                continue;
+            }
             if !prefix.is_empty() && !s.name.starts_with(&prefix) {
                 continue;
             }
@@ -181,14 +206,43 @@ pub fn handle_completion(
         }
     }
 
-    json!({
+    Ok(json!({
         "isIncomplete": is_capped,
         "items": items
-    })
+    }))
 }
 
-pub fn handle_completion_resolve(msg: &Value) -> Value {
-    msg.get("params").cloned().unwrap_or(Value::Null)
+pub fn handle_completion_resolve(msg: &Value) -> LspResult<Value> {
+    let params = msg
+        .get("params")
+        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
+    if !params.is_object() {
+        return Err(LspError::invalid_params("Params must be a CompletionItem object"));
+    }
+
+    let label = params
+        .get("label")
+        .and_then(|l| l.as_str())
+        .ok_or_else(|| LspError::invalid_params("CompletionItem must contain a label"))?;
+    if label.is_empty() {
+        return Err(LspError::invalid_params("CompletionItem label cannot be empty"));
+    }
+
+    let mut resolved = params.clone();
+    if resolved.get("documentation").is_none() {
+        if let Some(detail) = resolved.get("detail").and_then(|d| d.as_str()) {
+            resolved["documentation"] = json!({
+                "kind": "markdown",
+                "value": format!("```rust\n{detail}\n```")
+            });
+        } else if let Some(data) = resolved.get("data").and_then(|d| d.as_str()) {
+            resolved["documentation"] = json!({
+                "kind": "markdown",
+                "value": data
+            });
+        }
+    }
+    Ok(resolved)
 }
 
 fn is_symbol_in_current_module(cur_file: &str, sym_file: &str) -> bool {

@@ -8,8 +8,13 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+pub mod completion_resolve_tests;
+pub mod completion_tests;
 pub mod edge_tests;
 pub mod extra_suite;
+pub mod hover_tests;
+pub mod inlay_hint_tests;
+pub mod signature_help_tests;
 pub mod suite;
 
 use crate::lsp::protocol::PositionConverter;
@@ -100,7 +105,8 @@ pub fn setup_test_intelligence() -> (PathBuf, WorkspaceIndex, OverlayManager, Po
     let mut f = fs::File::create(&ridx_file).unwrap();
     writer.write_to(&mut f).unwrap();
 
-    let ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
     let overlay_mgr = OverlayManager::new();
     let conv = PositionConverter::new();
 

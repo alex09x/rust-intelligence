@@ -33,7 +33,7 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 30 }
         }
     });
-    let sig_generic = handle_signature_help(&req_generic, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_generic = handle_signature_help(&req_generic, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_generic.is_null());
 
     // 2. Complex call with nested brackets and overlay signature extraction
@@ -50,7 +50,7 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 1, "character": 38 }
         }
     });
-    let sig_complex = handle_signature_help(&req_complex, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_complex = handle_signature_help(&req_complex, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_complex.is_null());
 
     // 3. Signature help on disk file (not in overlay)
@@ -63,7 +63,7 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 1, "character": 16 }
         }
     });
-    let sig_disk = handle_signature_help(&req_disk, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_disk = handle_signature_help(&req_disk, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_disk.is_null());
 
     // 4. Signature help outside calls or on unknown function
@@ -73,7 +73,7 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 2 }
         }
     });
-    assert!(handle_signature_help(&req_outside, Some(&ws), &overlay_mgr, &mut conv).is_null());
+    assert!(handle_signature_help(&req_outside, Some(&ws), &overlay_mgr, &mut conv).unwrap().is_null());
 
     // 5. Signature help with unknown callee returns null
     let unknown_call = "fn test() { no_such_func(1, 2); }\n";
@@ -89,7 +89,7 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 26 }
         }
     });
-    assert!(handle_signature_help(&req_unknown, Some(&ws), &overlay_mgr, &mut conv).is_null());
+    assert!(handle_signature_help(&req_unknown, Some(&ws), &overlay_mgr, &mut conv).unwrap().is_null());
 
     // 6. Signature help with whitespace, turbofish, brackets, and angle brackets
     let ws_call =
@@ -101,7 +101,7 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 44 }
         }
     });
-    let sig_ws = handle_signature_help(&req_ws, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_ws = handle_signature_help(&req_ws, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_ws.is_null());
 
     // 7. Signature help with braces, nested turbofish, and fallback to workspace symbols
@@ -121,7 +121,7 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 63 }
         }
     });
-    let sig_complex = handle_signature_help(&req_complex, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_complex = handle_signature_help(&req_complex, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_complex.is_null());
 
     // 8. Signature help at expression without callee name (e.g. `(1 + 2)`)
@@ -133,7 +133,7 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 16 }
         }
     });
-    assert!(handle_signature_help(&req_paren, Some(&ws), &overlay_mgr, &mut conv).is_null());
+    assert!(handle_signature_help(&req_paren, Some(&ws), &overlay_mgr, &mut conv).unwrap().is_null());
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -156,7 +156,7 @@ fn test_hover_dirty_fallback() {
             "position": { "line": 1, "character": 12 }
         }
     });
-    let h_user = handle_hover(&req_user, Some(&ws), &overlay_mgr, &mut conv);
+    let h_user = handle_hover(&req_user, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!h_user.is_null());
 
     // 2. Dirty overlay that maps back to line 0 (calculate with signature)
@@ -171,7 +171,7 @@ fn test_hover_dirty_fallback() {
             "position": { "line": 1, "character": 10 }
         }
     });
-    let h_calc = handle_hover(&req_calc, Some(&ws), &overlay_mgr, &mut conv);
+    let h_calc = handle_hover(&req_calc, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!h_calc.is_null());
 
     // 3. Dirty overlay mapping back to User (definition without signature)
@@ -181,7 +181,7 @@ fn test_hover_dirty_fallback() {
             "position": { "line": 2, "character": 12 }
         }
     });
-    let h_user_dirty = handle_hover(&req_user_dirty, Some(&ws), &overlay_mgr, &mut conv);
+    let h_user_dirty = handle_hover(&req_user_dirty, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!h_user_dirty.is_null());
 
     // 4. Dirty overlay mapping back to line 0 col 30 (inferred type without overlay definition)
@@ -191,7 +191,7 @@ fn test_hover_dirty_fallback() {
             "position": { "line": 1, "character": 30 }
         }
     });
-    let h_type = handle_hover(&req_at_30, Some(&ws), &overlay_mgr, &mut conv);
+    let h_type = handle_hover(&req_at_30, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!h_type.is_null());
     assert!(h_type["contents"]["value"]
         .as_str()
@@ -213,7 +213,7 @@ fn test_hover_dirty_fallback() {
             "position": { "line": 1, "character": 10 }
         }
     });
-    let h_calc_fb = handle_hover(&req_calc_fallback, Some(&ws), &overlay_mgr, &mut conv);
+    let h_calc_fb = handle_hover(&req_calc_fallback, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!h_calc_fb.is_null());
     assert!(h_calc_fb["contents"]["value"]
         .as_str()
@@ -226,7 +226,7 @@ fn test_hover_dirty_fallback() {
             "position": { "line": 2, "character": 12 }
         }
     });
-    let h_user_fb = handle_hover(&req_user_fallback, Some(&ws), &overlay_mgr, &mut conv);
+    let h_user_fb = handle_hover(&req_user_fallback, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!h_user_fb.is_null());
     assert!(h_user_fb["contents"]["value"]
         .as_str()
@@ -240,7 +240,7 @@ fn test_hover_dirty_fallback() {
             "position": { "line": 0, "character": 0 }
         }
     });
-    assert!(handle_signature_help(&req_nonexist_sig, Some(&ws), &overlay_mgr, &mut conv).is_null());
+    assert!(handle_signature_help(&req_nonexist_sig, Some(&ws), &overlay_mgr, &mut conv).unwrap().is_null());
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

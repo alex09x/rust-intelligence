@@ -10,6 +10,7 @@
 
 //! LSP signature help intelligence handler.
 
+use super::super::error::{LspError, LspResult};
 use super::super::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
@@ -36,13 +37,34 @@ pub fn handle_signature_help(
     workspace: Option<&WorkspaceIndex>,
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
-) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+) -> LspResult<Value> {
+    let params = msg
+        .get("params")
+        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
+    if !params.is_object() {
+        return Err(LspError::invalid_params("Params must be an object"));
+    }
+
+    let uri = params["textDocument"]["uri"]
+        .as_str()
+        .ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
+    if uri.is_empty() {
+        return Err(LspError::invalid_params("Empty textDocument.uri"));
+    }
+
+    let pos = &params["position"];
+    if !pos.is_object() {
+        return Err(LspError::invalid_params("Missing position object"));
+    }
+    let line_0based = pos["line"]
+        .as_u64()
+        .ok_or_else(|| LspError::invalid_params("Missing position.line"))? as u32;
+    let utf16_col_0based = pos["character"]
+        .as_u64()
+        .ok_or_else(|| LspError::invalid_params("Missing position.character"))? as u32;
     let line_1based = line_0based + 1;
 
+    let file = uri_to_path(uri);
     let overlay_opt = overlay_mgr.get(&file);
     let col_1based = if let Some(overlay) = overlay_opt {
         overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
@@ -74,7 +96,7 @@ pub fn handle_signature_help(
         let start_byte = byte_pos.saturating_sub(8192);
         safe_slice(&content, start_byte, byte_pos).to_string()
     } else {
-        return Value::Null;
+        return Ok(Value::Null);
     };
 
     let mut paren_depth = 0;
@@ -126,7 +148,7 @@ pub fn handle_signature_help(
     }
 
     let Some(call_start) = open_paren_pos else {
-        return Value::Null;
+        return Ok(Value::Null);
     };
 
     let mut name_end = call_start;
@@ -160,7 +182,7 @@ pub fn handle_signature_help(
     }
 
     if name_start == name_end {
-        return Value::Null;
+        return Ok(Value::Null);
     }
 
     let callee_name: String = chars[name_start..name_end].iter().collect();
@@ -192,7 +214,7 @@ pub fn handle_signature_help(
     }
 
     let Some(sig) = sig_opt else {
-        return Value::Null;
+        return Ok(Value::Null);
     };
 
     let parameters: Vec<Value> = if let Some(start) = sig.find('(') {
@@ -235,7 +257,7 @@ pub fn handle_signature_help(
         Vec::new()
     };
 
-    json!({
+    Ok(json!({
         "signatures": [
             {
                 "label": sig,
@@ -244,5 +266,5 @@ pub fn handle_signature_help(
         ],
         "activeSignature": 0,
         "activeParameter": active_param
-    })
+    }))
 }

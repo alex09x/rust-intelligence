@@ -10,6 +10,7 @@
 
 //! LSP hover intelligence handler.
 
+use super::super::error::{LspError, LspResult};
 use super::super::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
@@ -20,13 +21,34 @@ pub fn handle_hover(
     workspace: Option<&WorkspaceIndex>,
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
-) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
+) -> LspResult<Value> {
+    let params = msg
+        .get("params")
+        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
+    if !params.is_object() {
+        return Err(LspError::invalid_params("Params must be an object"));
+    }
+
+    let uri = params["textDocument"]["uri"]
+        .as_str()
+        .ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
+    if uri.is_empty() {
+        return Err(LspError::invalid_params("Empty textDocument.uri"));
+    }
+
+    let pos = &params["position"];
+    if !pos.is_object() {
+        return Err(LspError::invalid_params("Missing position object"));
+    }
+    let line_0based = pos["line"]
+        .as_u64()
+        .ok_or_else(|| LspError::invalid_params("Missing position.line"))? as u32;
+    let utf16_col_0based = pos["character"]
+        .as_u64()
+        .ok_or_else(|| LspError::invalid_params("Missing position.character"))? as u32;
     let line_1based = line_0based + 1;
 
+    let file = uri_to_path(uri);
     let overlay_opt = overlay_mgr.get(&file);
     let col_1based = if let Some(overlay) = overlay_opt {
         overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
@@ -39,7 +61,7 @@ pub fn handle_hover(
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
             if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
-                return format_hover(&hover);
+                return Ok(format_hover(&hover));
             }
         }
     }
@@ -51,12 +73,12 @@ pub fn handle_hover(
         } else {
             format!("```rust\n{} {}\n```", def.kind.as_str(), def.name)
         };
-        return json!({
+        return Ok(json!({
             "contents": {
                 "kind": "markdown",
                 "value": hover_text
             }
-        });
+        }));
     }
 
     // 3. Fallback to mapped compiled hover if dirty buffer preserves valid mapping
@@ -65,14 +87,14 @@ pub fn handle_hover(
             if overlay.is_dirty() && !overlay.has_modified_imports() {
                 if let Some((ml, mc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
                     if let Some(hover) = ws.hover_at(&file, ml, mc) {
-                        return format_hover(&hover);
+                        return Ok(format_hover(&hover));
                     }
                 }
             }
         }
     }
 
-    Value::Null
+    Ok(Value::Null)
 }
 
 fn format_hover(hover: &ridx_format::WorkspaceHover) -> Value {

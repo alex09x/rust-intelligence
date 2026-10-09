@@ -28,7 +28,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 1, "character": 43 }
         }
     });
-    let sig_disk = handle_signature_help(&req_disk, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_disk = handle_signature_help(&req_disk, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_disk.is_null());
 
     // 2. Delimiters handling: angle brackets in arguments and whitespace before :: (lines 83-100, 136-137 in signature.rs)
@@ -41,7 +41,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 1, "character": 62 }
         }
     });
-    let sig_delim = handle_signature_help(&req_delim, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_delim = handle_signature_help(&req_delim, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_delim.is_null());
 
     // 3. Callee signature with no parens and unclosed parens (lines 216, 219 in signature.rs)
@@ -100,7 +100,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 27 }
         }
     });
-    let sig_no_paren = handle_signature_help(&req_no_paren, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_no_paren = handle_signature_help(&req_no_paren, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_no_paren.is_null());
 
     let req_unclosed = json!({
@@ -109,7 +109,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 40 }
         }
     });
-    let sig_unclosed = handle_signature_help(&req_unclosed, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_unclosed = handle_signature_help(&req_unclosed, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_unclosed.is_null());
 
     let req_empty_sig = json!({
@@ -118,7 +118,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 57 }
         }
     });
-    let sig_empty = handle_signature_help(&req_empty_sig, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_empty = handle_signature_help(&req_empty_sig, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(sig_empty.is_null());
 
     let req_missing_ov = json!({
@@ -127,7 +127,7 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 73 }
         }
     });
-    let sig_missing_ov = handle_signature_help(&req_missing_ov, Some(&ws), &overlay_mgr, &mut conv);
+    let sig_missing_ov = handle_signature_help(&req_missing_ov, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(sig_missing_ov.is_null());
 
     let _ = fs::remove_dir_all(&temp_dir);
@@ -146,7 +146,7 @@ fn test_hover_empty_parts_and_unmapped_dirty() {
             "position": { "line": 0, "character": 0 }
         }
     });
-    let h_empty = handle_hover(&req_empty, Some(&ws), &overlay_mgr, &mut conv);
+    let h_empty = handle_hover(&req_empty, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(h_empty.is_null());
 
     // 2. Dirty overlay where mapping fails or points to empty line (lines 110-114 in hover.rs)
@@ -158,7 +158,7 @@ fn test_hover_empty_parts_and_unmapped_dirty() {
             "position": { "line": 1, "character": 0 }
         }
     });
-    let h_unmapped = handle_hover(&req_unmapped, Some(&ws), &overlay_mgr, &mut conv);
+    let h_unmapped = handle_hover(&req_unmapped, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(h_unmapped.is_null());
 
     let _ = fs::remove_dir_all(&temp_dir);

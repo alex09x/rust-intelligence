@@ -227,16 +227,16 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/documentHighlight" => {
             Ok(handle_document_highlight(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
         }
-        "textDocument/hover" => Ok(handle_hover(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)),
+        "textDocument/hover" => handle_hover(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv),
         "textDocument/completion" => {
-            Ok(handle_completion(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
+            handle_completion(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
-        "completionItem/resolve" => Ok(handle_completion_resolve(&msg)),
+        "completionItem/resolve" => handle_completion_resolve(&msg),
         "textDocument/signatureHelp" => {
-            Ok(handle_signature_help(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
+            handle_signature_help(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
-        "textDocument/inlayHint" => Ok(handle_inlay_hint(&msg, multi_root.doc_ws(&msg), overlay_mgr)),
-        "inlayHint/resolve" => Ok(handle_inlay_hint_resolve(&msg)),
+        "textDocument/inlayHint" => handle_inlay_hint(&msg, multi_root.doc_ws(&msg), overlay_mgr),
+        "inlayHint/resolve" => handle_inlay_hint_resolve(&msg),
         "textDocument/inlineValue" => Ok(handle_inline_value(&msg, Some(overlay_mgr))),
         "textDocument/inlineCompletion" => Ok(handle_inline_completion(&msg, Some(overlay_mgr))),
         "textDocument/prepareCallHierarchy" => {
