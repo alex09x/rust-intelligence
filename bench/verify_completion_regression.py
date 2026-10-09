@@ -27,14 +27,12 @@ from metrics import percentile
 
 
 def load_baseline(baseline_file):
-    """Loads baseline records from published jsonl."""
     records = {}
     with open(baseline_file, "r", encoding="utf-8") as f:
         for line in f:
-            if not line.strip():
-                continue
-            d = json.loads(line)
-            records[d["repo"]] = d
+            if line.strip():
+                d = json.loads(line)
+                records[d["repo"]] = d
     return records
 
 
@@ -105,11 +103,7 @@ def find_default_repo(name):
     env_key = f"BENCH_{name.upper()}_DIR"
     if env_key in os.environ:
         return Path(os.environ[env_key])
-    for c in [
-        Path.home() / "prod-code-storage" / "bench_repos" / name,
-        bench_dir.parent.parent / "bench_repos" / name,
-        Path("/tmp") / name,
-    ]:
+    for c in [Path.home() / "prod-code-storage" / "bench_repos" / name, bench_dir.parent.parent / "bench_repos" / name, Path("/tmp") / name]:
         if c.is_dir():
             return c
     return Path("/tmp") / name
@@ -138,9 +132,7 @@ def main():
     if not args.force:
         for out_path in (out_json, out_jsonl):
             if out_path.exists():
-                raise FileExistsError(
-                    f"Refusing to overwrite existing published benchmark file without --force: {out_path}"
-                )
+                raise FileExistsError(f"Refusing to overwrite existing published benchmark file without --force: {out_path}")
 
     base_file = Path(args.base_jsonl) if args.base_jsonl else (bench_dir / "published" / f"rerun_completion_{base_commit}.jsonl")
     base_data = load_baseline(base_file)
@@ -149,6 +141,7 @@ def main():
     ra_custom = Path.home() / ".rustup" / "toolchains" / "1.98.1-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
     ra_bin = args.ra_bin if args.ra_bin else (str(ra_custom) if ra_custom.is_file() else "rust-analyzer")
     ra_ver = subprocess.run([ra_bin, "--version"], capture_output=True, text=True, check=False).stdout.strip()
+    tc_ver = subprocess.run(["rustc", "--version"], capture_output=True, text=True, check=False).stdout.strip()
 
     serde_dir = Path(args.serde_dir) if args.serde_dir else find_default_repo("serde")
     bevy_dir = Path(args.bevy_dir) if args.bevy_dir else find_default_repo("bevy")
@@ -178,24 +171,27 @@ def main():
         res_ra = run_scenarios(srv_ra, rpath, scenarios, is_ra=True, timeout=10.0)
         srv_ra.notify("exit", {})
 
-        empty_base = 0
-        empty_curr = 0
-        empty_ra = 0
-        regressions_to_empty = 0
-        closed_empty_count = 0
+        cas_key = None
+        var_dir = Path(rpath) / "target" / "ridx" / "variants"
+        if var_dir.is_dir():
+            for sub in sorted(var_dir.iterdir(), reverse=True):
+                mf = sub / "variant_manifest.json"
+                if mf.is_file():
+                    try:
+                        with open(mf, "r", encoding="utf-8") as fp:
+                            cas_key = json.load(fp).get("sysroot_cas_key")
+                            if cas_key:
+                                break
+                    except Exception:
+                        pass
+
+        empty_base = empty_curr = empty_ra = 0
+        regressions_to_empty = closed_empty_count = 0
         closed_empty_names = []
-
-        total_items_base = 0
-        total_items_curr = 0
-        total_items_ra = 0
-
-        recalls_base = []
-        recalls_curr = []
-        precisions_curr = []
-
-        owner_scenarios = []
-        fallback_scenarios = []
-        sc_published = []
+        total_items_base = total_items_curr = total_items_ra = 0
+        recalls_base, recalls_curr = [], []
+        precisions_base, precisions_curr = [], []
+        owner_scenarios, fallback_scenarios, sc_published = [], [], []
 
         for idx, sc in enumerate(scenarios):
             c = res_curr[idx]
@@ -220,6 +216,15 @@ def main():
             total_items_ra += r["count"]
 
             recalls_base.append(sc["recall_pct"])
+
+            if "precision_pct" in sc:
+                prec_b = sc["precision_pct"]
+            elif base_cnt == 0:
+                prec_b = 100.0 if sc["ra_count"] == 0 else 0.0
+            else:
+                matched_b = round((sc["recall_pct"] / 100.0) * sc["ra_count"])
+                prec_b = (matched_b / base_cnt) * 100.0
+            precisions_base.append(prec_b)
 
             labels_c = set(c["labels"])
             labels_r = set(r["labels"])
@@ -254,6 +259,7 @@ def main():
                 "ra_count": r["count"],
                 "base_count": base_cnt,
                 "base_recall_pct": sc["recall_pct"],
+                "base_precision_pct": round(prec_b, 1),
             }
             sc_published.append(entry_pub)
 
@@ -283,10 +289,13 @@ def main():
 
         avg_rec_base = round(sum(recalls_base) / len(recalls_base), 1)
         avg_rec_curr = round(sum(recalls_curr) / len(recalls_curr), 1)
+        avg_prec_base = round(sum(precisions_base) / len(precisions_base), 1) if precisions_base else 0.0
         avg_prec_curr = round(sum(precisions_curr) / len(precisions_curr), 1) if precisions_curr else 100.0
 
         summary = {
             "repo": slug,
+            "toolchain": tc_ver,
+            "sysroot_cas_key": cas_key,
             "total_scenarios": len(scenarios),
             "empty_responses": {
                 base_commit: empty_base,
@@ -308,7 +317,8 @@ def main():
                 curr_commit: avg_rec_curr,
             },
             "avg_precision_vs_ra": {
-                "curr_commit": avg_prec_curr,
+                base_commit: avg_prec_base,
+                curr_commit: avg_prec_curr,
             },
             "routes": {
                 "owner_count": len(owner_scenarios),
@@ -322,14 +332,14 @@ def main():
                 "overall_curr_warm_p50_us": round(all_c_p50, 1),
                 "overall_ra_warm_p50_us": round(all_ra_p50, 1),
                 "overall_speedup": overall_speedup,
-            }
+            },
         }
         all_comparisons[slug] = summary
 
         print(f"\n--- Summary for {slug} ---")
         print(f"  Empty responses:       {base_commit}: {empty_base} -> {curr_commit}: {empty_curr} (closed: {closed_empty_count}, regressions to empty: {regressions_to_empty})")
         print(f"  Total items returned:  {base_commit}: {total_items_base} -> {curr_commit}: {total_items_curr} (RA: {total_items_ra})")
-        print(f"  Avg recall vs RA:      {base_commit}: {avg_rec_base}% -> {curr_commit}: {avg_rec_curr}% (precision: {avg_prec_curr}%)")
+        print(f"  Avg recall vs RA:      {base_commit}: {avg_rec_base}% -> {curr_commit}: {avg_rec_curr}% (precision: {base_commit}: {avg_prec_base}% -> {curr_commit}: {avg_prec_curr}%)")
         print(f"  Owner share:           {len(owner_scenarios)}% ({owner_c_p50:.0f}µs RIDX vs {owner_ra_p50:.0f}µs RA -> {owner_speedup}x)")
         print(f"  Fallback share:        {len(fallback_scenarios)}% ({fallback_c_p50:.0f}µs RIDX vs {fallback_ra_p50:.0f}µs RA -> {fallback_speedup}x)")
         print(f"  Overall:               {all_c_p50:.0f}µs RIDX vs {all_ra_p50:.0f}µs RA -> {overall_speedup}x speedup")
@@ -338,6 +348,8 @@ def main():
             "repo": slug,
             "commit_ridx": curr_commit,
             "baseline_ra": ra_ver,
+            "toolchain": tc_ver,
+            "sysroot_cas_key": cas_key,
             "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
             "taskset": "24-31",
             "seed": 42,
@@ -362,6 +374,7 @@ def main():
                 "avg_recall_vs_ra_pct": avg_rec_curr,
                 "avg_precision_vs_ra_pct": avg_prec_curr,
                 "base_avg_recall_vs_ra_pct": avg_rec_base,
+                "base_avg_precision_vs_ra_pct": avg_prec_base,
                 "empty_responses_ridx": empty_curr,
                 "empty_responses_base": empty_base,
                 "empty_responses_ra": empty_ra,
