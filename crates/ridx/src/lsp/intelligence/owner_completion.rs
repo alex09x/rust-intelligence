@@ -102,33 +102,35 @@ pub(crate) fn extract_colon_qualifier(trimmed_before: &str) -> String {
     let before_colon = trimmed_before[..trimmed_before.len().saturating_sub(2)].trim_end();
 
     if let Some(brace_idx) = before_colon.rfind('{') {
-        let after_brace = &before_colon[brace_idx + 1..];
-        if !after_brace.contains('}') {
-            let last_item = after_brace.rsplit(',').next().unwrap_or(after_brace).trim();
-            let sub_qual: String = last_item
-                .chars()
-                .rev()
-                .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
-                .collect::<Vec<_>>()
-                .into_iter()
-                .rev()
-                .collect();
-            let before_brace = before_colon[..brace_idx].trim_end();
-            let base_qual: String = before_brace
-                .chars()
-                .rev()
-                .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
-                .collect::<Vec<_>>()
-                .into_iter()
-                .rev()
-                .collect();
-            let base_trimmed = base_qual.trim_end_matches(':');
-            if !base_trimmed.is_empty() && !sub_qual.is_empty() {
-                return format!("{base_trimmed}::{sub_qual}");
-            } else if !base_trimmed.is_empty() {
-                return base_trimmed.to_string();
-            } else if !sub_qual.is_empty() {
-                return sub_qual;
+        let before_brace = before_colon[..brace_idx].trim_end();
+        if let Some(prefix_base) = before_brace.strip_suffix("::") {
+            let after_brace = &before_colon[brace_idx + 1..];
+            if !after_brace.contains('}') {
+                let last_item = after_brace.rsplit(',').next().unwrap_or(after_brace).trim();
+                let sub_qual: String = last_item
+                    .chars()
+                    .rev()
+                    .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .rev()
+                    .collect();
+                let base_qual: String = prefix_base
+                    .chars()
+                    .rev()
+                    .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .rev()
+                    .collect();
+                let base_trimmed = base_qual.trim_end_matches(':');
+                if !base_trimmed.is_empty() && !sub_qual.is_empty() {
+                    return format!("{base_trimmed}::{sub_qual}");
+                } else if !base_trimmed.is_empty() {
+                    return base_trimmed.to_string();
+                } else if !sub_qual.is_empty() {
+                    return sub_qual;
+                }
             }
         }
     }
@@ -318,3 +320,18 @@ pub fn try_owner_completion(
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract_colon_qualifier() {
+        assert_eq!(extract_colon_qualifier("use core::cell::"), "core::cell");
+        assert_eq!(extract_colon_qualifier("    use alloc::{string::"), "alloc::string");
+        assert_eq!(extract_colon_qualifier("    use alloc::{vec::Vec, string::"), "alloc::string");
+        assert_eq!(extract_colon_qualifier("unsafe { UniqueEntityEquivalentSlice::"), "UniqueEntityEquivalentSlice");
+        assert_eq!(extract_colon_qualifier("match x { Some(v) => Foo::"), "Foo");
+    }
+}
+

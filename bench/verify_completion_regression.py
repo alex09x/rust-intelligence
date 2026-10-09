@@ -15,8 +15,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-os.environ.setdefault("RUSTUP_TOOLCHAIN", "1.98.1")
-
 bench_dir = Path(__file__).resolve().parent
 if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
@@ -93,11 +91,9 @@ def find_default_repo(name):
 
 def find_sysroot_cas_key(rpath):
     root = Path(rpath) / "target" / "ridx"
-    candidates = [root / "ridx_manifest.json"]
     vdir = root / "variants"
-    if vdir.is_dir():
-        candidates.extend(sorted(vdir.glob("*/variant_manifest.json"), reverse=True))
-    for mf in candidates:
+    cands = [root / "ridx_manifest.json"] + (sorted(vdir.glob("*/variant_manifest.json"), reverse=True) if vdir.is_dir() else [])
+    for mf in cands:
         if mf.is_file():
             try:
                 k = json.loads(mf.read_text(encoding="utf-8")).get("sysroot_cas_key")
@@ -131,7 +127,8 @@ def parse_args():
     p.add_argument("--output-json", help="Path for comparison report json")
     p.add_argument("--output-jsonl", help="Path for output rerun jsonl")
     p.add_argument("--force", action="store_true", help="Allow overwriting existing published benchmark files")
-    p.add_argument("--allow-invalid-config", action="store_true", help="Allow running even if toolchain != 1.98.1 or sysroot_cas_key is empty")
+    p.add_argument("--toolchain", default="1.98.1", help="Expected compiler and rust-analyzer toolchain version")
+    p.add_argument("--allow-invalid-config", action="store_true", help="Allow running even if toolchain or sysroot invalid")
     return p.parse_args()
 
 
@@ -144,6 +141,8 @@ def main():
     curr_commit = args.commit_ridx if args.commit_ridx else args.curr_commit
     base_commit = args.base_commit
     v_suffix = "_v3" if args.v3 else ("_v2" if args.v2 else "")
+    tc_target = args.toolchain
+    os.environ["RUSTUP_TOOLCHAIN"] = tc_target
 
     out_json = Path(args.output_json) if args.output_json else (
         bench_dir / "published" / f"completion_regression_{base_commit}_vs_{curr_commit}{v_suffix}.json"
@@ -169,15 +168,15 @@ def main():
     bevy_dir = Path(args.bevy_dir) if args.bevy_dir else find_default_repo("bevy")
     repos = [("serde-rs/serde", str(serde_dir)), ("bevyengine/bevy", str(bevy_dir))]
 
-    ra_ver, tc_ver = "rust-analyzer 1.98.1", "rustc 1.98.1"
+    ra_ver, tc_ver = f"rust-analyzer {tc_target}", f"rustc {tc_target}"
     if not curr_data:
         curr_bin = Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")
-        ra_custom = Path.home() / ".rustup" / "toolchains" / "1.98.1-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
+        ra_custom = Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
         ra_bin = args.ra_bin if args.ra_bin else (str(ra_custom) if ra_custom.is_file() else "rust-analyzer")
-        rustc_custom = Path.home() / ".rustup" / "toolchains" / "1.98.1-x86_64-unknown-linux-gnu" / "bin" / "rustc"
+        rustc_custom = Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rustc"
         rustc_bin = str(rustc_custom) if rustc_custom.is_file() else "rustc"
         ra_ver = subprocess.run([ra_bin, "--version"], capture_output=True, text=True, check=False).stdout.strip()
-        tc_ver = subprocess.run([rustc_bin, "--version"], capture_output=True, text=True, check=False, env={**os.environ, "RUSTUP_TOOLCHAIN": "1.98.1"}).stdout.strip()
+        tc_ver = subprocess.run([rustc_bin, "--version"], capture_output=True, text=True, check=False, env={**os.environ, "RUSTUP_TOOLCHAIN": tc_target}).stdout.strip()
 
     all_comparisons, published_records = {}, []
 
@@ -203,10 +202,10 @@ def main():
             cas_key = find_sysroot_cas_key(rpath)
             res_scs = None
 
-        is_invalid_config = not cas_key or ("1.98.1" not in tc_ver)
+        is_invalid_config = not cas_key or (tc_target not in tc_ver)
         if is_invalid_config and not args.allow_invalid_config:
             raise RuntimeError(
-                f"Invalid benchmark configuration for {slug}: toolchain={tc_ver!r} (expected 1.98.1), sysroot_cas_key={cas_key!r}. "
+                f"Invalid benchmark configuration for {slug}: toolchain={tc_ver!r} (expected {tc_target}), sysroot_cas_key={cas_key!r}. "
                 "Use --allow-invalid-config to override."
             )
 
