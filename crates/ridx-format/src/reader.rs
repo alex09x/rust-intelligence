@@ -31,6 +31,7 @@ pub struct ResolvedDefinition<'a> {
     pub end_line: u32,
     pub end_col: u32,
     pub is_macro_expansion: bool,
+    pub is_reexport: bool,
     pub source_root: Option<&'a Path>,
     pub unit_key: Option<&'a str>,
 }
@@ -431,6 +432,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                         end_line: def_span.end_line(),
                         end_col: def_span.end_col(),
                         is_macro_expansion: def.is_macro_expansion(),
+                        is_reexport: def.is_reexport(),
                         source_root: None,
                         unit_key: None,
                     });
@@ -457,6 +459,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 end_line: r.target_line(),
                 end_col: r.target_col() + (target_name.len() as u32),
                 is_macro_expansion: r.is_macro_expansion(),
+                is_reexport: false,
                 source_root: None,
                 unit_key: if !target_unit.is_empty() {
                     Some(target_unit)
@@ -497,6 +500,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 end_line: def_span.end_line(),
                 end_col: def_span.end_col(),
                 is_macro_expansion: def.is_macro_expansion(),
+                is_reexport: def.is_reexport(),
                 source_root: None,
                 unit_key: None,
             });
@@ -949,6 +953,7 @@ mod tests {
             end_line: 3,
             end_col: 2,
             is_macro_expansion: false,
+            is_reexport: false,
             source_root: Some(Path::new("/workspace")),
             unit_key: Some("unit1"),
         };
@@ -1483,6 +1488,7 @@ mod tests {
             end_line: 1,
             end_col: 10,
             is_macro_expansion: false,
+            is_reexport: false,
             source_root: None,
             unit_key: None,
         };

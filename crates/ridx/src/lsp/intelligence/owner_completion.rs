@@ -237,7 +237,7 @@ pub fn try_owner_completion(
                     let detail = def
                         .signature
                         .map(|sig| format!("{sig} (in {})", def.path))
-                        .unwrap_or_else(|| def.path.to_string());
+                        .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
                     items.push(json!({
                         "label": def.name,
                         "kind": lsp_completion_kind(def.kind),
@@ -268,7 +268,14 @@ pub fn try_owner_completion(
         let def_opt = ws.resolve_qualifier(ctx.file, &qual);
         let target_owner = def_opt
             .as_ref()
-            .map(|d| d.path.to_string())
+            .map(|d| {
+                if d.is_reexport {
+                    if let Some(sig) = d.signature {
+                        return sig.to_string();
+                    }
+                }
+                d.path.to_string()
+            })
             .unwrap_or_else(|| {
                 if qual == "crate" {
                     ws.crate_name_for_file(ctx.file)
@@ -299,7 +306,7 @@ pub fn try_owner_completion(
                 let detail = def
                     .signature
                     .map(|sig| format!("{sig} (in {})", def.path))
-                    .unwrap_or_else(|| def.path.to_string());
+                    .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
                 items.push(json!({
                     "label": def.name,
                     "kind": lsp_completion_kind(def.kind),

@@ -757,6 +757,7 @@ impl From<u8> for DefKind {
 
 /// A definition record in the index.
 pub const FLAG_MACRO_EXPANSION: u8 = 1 << 0;
+pub const FLAG_REEXPORT: u8 = 1 << 1;
 
 /// A definition record in the index.
 #[repr(C)]
@@ -835,6 +836,10 @@ impl DefEntry {
     #[inline]
     pub fn is_macro_expansion(&self) -> bool {
         (self.flags & FLAG_MACRO_EXPANSION) != 0
+    }
+    #[inline]
+    pub fn is_reexport(&self) -> bool {
+        (self.flags & FLAG_REEXPORT) != 0
     }
 }
 

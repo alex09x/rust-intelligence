@@ -1,0 +1,222 @@
+/*
+ * rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+ * Copyright (c) 2026 Alexander Panasenko
+ *
+ * Contact: alex@prod.codes
+ * Author: https://prod.codes/about/
+ * Project: https://github.com/alex09x/rust-intelligence
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+use std::collections::HashSet;
+use std::path::Path;
+
+use ridx_format::{IndexWriter, RawDefinition};
+use rustc_hir::def::DefKind;
+use rustc_middle::ty::TyCtxt;
+use rustc_span::def_id::DefId;
+
+use super::util::{self, is_publicly_visible, is_stable_api, remap_sysroot_path};
+use crate::map_def_kind;
+use crate::sanitize::sanitize_type_name;
+
+/// Extracts the diagnostic-remapped source span for a compiler definition.
+pub fn extract_def_span(
+    tcx: TyCtxt<'_>,
+    did: DefId,
+    sysroot_src: Option<&Path>,
+) -> (String, u32, u32, u32, u32) {
+    let item_span = tcx.def_ident_span(did).unwrap_or_else(|| tcx.def_span(did));
+    if !item_span.is_dummy() {
+        let sm = tcx.sess.source_map();
+        let lo = sm.lookup_char_pos(item_span.lo());
+        let hi = sm.lookup_char_pos(item_span.hi());
+        let raw_file = sm.filename_for_diagnostics(&lo.file.name).to_string();
+        let remapped = remap_sysroot_path(&raw_file, sysroot_src);
+        (
+            remapped,
+            lo.line as u32,
+            (lo.col.0 + 1) as u32,
+            hi.line as u32,
+            (hi.col.0 + 1) as u32,
+        )
+    } else {
+        (String::new(), 0, 0, 0, 0)
+    }
+}
+
+/// Records a lightweight re-export alias in the target crate index without duplicating item bodies.
+pub fn record_reexport<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    did: DefId,
+    name_str: &str,
+    mod_path: &str,
+    sysroot_src: Option<&Path>,
+    writer: &mut IndexWriter,
+    total_definitions: &mut usize,
+) {
+    let canonical_path = rustc_middle::ty::print::with_no_visible_paths!(
+        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
+    );
+    let alias_path = format!("{mod_path}::{name_str}");
+    let (file, s_line, s_col, e_line, e_col) = extract_def_span(tcx, did, sysroot_src);
+    let kind = tcx.def_kind(did);
+
+    let raw_def = RawDefinition {
+        def_id: *total_definitions as u32,
+        kind: map_def_kind(kind),
+        visibility: 0,
+        is_macro_expansion: false,
+        name: name_str.to_string(),
+        path: alias_path,
+        signature: Some(canonical_path),
+        file,
+        start_line: s_line,
+        start_col: s_col,
+        end_line: e_line,
+        end_col: e_col,
+    };
+
+    writer.add_reexport_with_owners(raw_def, vec![mod_path.to_string()]);
+    *total_definitions += 1;
+}
+
+/// Extracts supertraits and associated items for a trait.
+#[allow(clippy::too_many_arguments)]
+pub fn extract_trait_items<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    did: DefId,
+    path: &str,
+    sysroot_src: Option<&Path>,
+    writer: &mut IndexWriter,
+    visited: &mut HashSet<DefId>,
+    total_definitions: &mut usize,
+    total_derefs: &mut usize,
+) {
+    for (clause, _) in tcx.explicit_super_predicates_of(did).skip_binder() {
+        if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder() {
+            let super_did = trait_pred.trait_ref.def_id;
+            if super_did != did
+                && tcx.lang_items().sized_trait() != Some(super_did)
+                && !tcx.trait_is_auto(super_did)
+            {
+                let super_path = rustc_middle::ty::print::with_no_visible_paths!(
+                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(super_did))
+                );
+                if !super_path.starts_with("core::marker::") {
+                    writer.add_deref(path.to_string(), super_path);
+                    *total_derefs += 1;
+                }
+            }
+        }
+    }
+
+    for assoc_did in tcx.associated_item_def_ids(did) {
+        let assoc_did = *assoc_did;
+        if !visited.insert(assoc_did) {
+            continue;
+        }
+        if !is_publicly_visible(tcx, assoc_did) || !is_stable_api(tcx, assoc_did) {
+            continue;
+        }
+        let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
+            continue;
+        };
+        let a_name = name_sym.to_string();
+        if a_name.starts_with("__rust_") || a_name.starts_with("__") {
+            continue;
+        }
+        let a_kind = tcx.def_kind(assoc_did);
+        let a_path = rustc_middle::ty::print::with_no_visible_paths!(
+            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did))
+        );
+        let a_sig = match a_kind {
+            DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
+                &tcx.fn_sig(assoc_did).skip_binder().to_string(),
+            )),
+            _ => None,
+        };
+        let (a_file, a_sl, a_sc, a_el, a_ec) = extract_def_span(tcx, assoc_did, sysroot_src);
+
+        writer.add_definition_with_owners(
+            RawDefinition {
+                def_id: *total_definitions as u32,
+                kind: map_def_kind(a_kind),
+                visibility: 0,
+                is_macro_expansion: false,
+                name: a_name,
+                path: a_path,
+                signature: a_sig,
+                file: a_file,
+                start_line: a_sl,
+                start_col: a_sc,
+                end_line: a_el,
+                end_col: a_ec,
+            },
+            vec![path.to_string()],
+        );
+        *total_definitions += 1;
+    }
+}
+
+/// Extracts inherent methods and constants for struct, enum, union, and type aliases.
+pub fn extract_inherent_impl_items<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    did: DefId,
+    path: &str,
+    sysroot_src: Option<&Path>,
+    writer: &mut IndexWriter,
+    visited: &mut HashSet<DefId>,
+    total_definitions: &mut usize,
+) {
+    for impl_did in tcx.inherent_impls(did) {
+        let impl_did = *impl_did;
+        for assoc_did in tcx.associated_item_def_ids(impl_did) {
+            let assoc_did = *assoc_did;
+            if !visited.insert(assoc_did) {
+                continue;
+            }
+            if !is_publicly_visible(tcx, assoc_did) || !is_stable_api(tcx, assoc_did) {
+                continue;
+            }
+            let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
+                continue;
+            };
+            let a_name = name_sym.to_string();
+            if a_name.starts_with("__rust_") || a_name.starts_with("__") {
+                continue;
+            }
+            let a_kind = tcx.def_kind(assoc_did);
+            let a_path = rustc_middle::ty::print::with_no_visible_paths!(
+                rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did))
+            );
+            let a_sig = match a_kind {
+                DefKind::Fn => Some(sanitize_type_name(
+                    &tcx.fn_sig(assoc_did).skip_binder().to_string(),
+                )),
+                DefKind::AssocFn => Some(util::format_assoc_fn_sig(tcx, assoc_did)),
+                _ => None,
+            };
+            let (a_file, a_sl, a_sc, a_el, a_ec) = extract_def_span(tcx, assoc_did, sysroot_src);
+
+            writer.add_definition_with_owners(
+                RawDefinition {
+                    def_id: *total_definitions as u32,
+                    kind: map_def_kind(a_kind),
+                    visibility: 0,
+                    is_macro_expansion: false,
+                    name: a_name,
+                    path: a_path,
+                    signature: a_sig,
+                    file: a_file,
+                    start_line: a_sl,
+                    start_col: a_sc,
+                    end_line: a_el,
+                    end_col: a_ec,
+                },
+                vec![path.to_string()],
+            );
+            *total_definitions += 1;
+        }
+    }
+}

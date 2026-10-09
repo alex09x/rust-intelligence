@@ -39,6 +39,7 @@ impl WorkspaceIndex {
             end_line: span.end_line(),
             end_col: span.end_col(),
             is_macro_expansion: def.is_macro_expansion(),
+            is_reexport: def.is_reexport(),
             source_root: self
                 .source_roots
                 .get(reader_idx)
@@ -298,6 +299,7 @@ impl WorkspaceIndex {
                         end_line: def_span.end_line(),
                         end_col: def_span.end_col(),
                         is_macro_expansion: def.is_macro_expansion(),
+                        is_reexport: def.is_reexport(),
                         source_root: self
                             .source_roots
                             .get(j)
@@ -352,6 +354,7 @@ impl WorkspaceIndex {
                         end_line: def_span.end_line(),
                         end_col: def_span.end_col(),
                         is_macro_expansion: def.is_macro_expansion(),
+                        is_reexport: def.is_reexport(),
                         source_root: self
                             .source_roots
                             .get(j)
@@ -409,6 +412,7 @@ impl WorkspaceIndex {
                                     end_line: d_span.end_line(),
                                     end_col: d_span.end_col(),
                                     is_macro_expansion: def.is_macro_expansion(),
+                                    is_reexport: def.is_reexport(),
                                     source_root: self
                                         .source_roots
                                         .get(j)
@@ -970,6 +974,7 @@ impl WorkspaceIndex {
         let candidates = super::std_map::std_path_candidates(owner);
         for cand in &candidates {
             let cand_str = cand.as_str();
+            let prev_len = results.len();
             for (i, reader) in self.readers.iter().enumerate() {
                 let prefix = format!("{}::", reader.crate_name());
                 let sub = cand_str.strip_prefix(&prefix).unwrap_or(cand_str);
@@ -1003,6 +1008,9 @@ impl WorkspaceIndex {
                         results.push(self.make_resolved_definition(i, def));
                     }
                 }
+            }
+            if cand_str == owner && results.len() > prev_len {
+                break;
             }
         }
 

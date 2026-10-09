@@ -10,7 +10,7 @@
 
 //! Builder and serializer for the RIDX binary index format.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{self, Seek, Write};
 
 use crate::format::*;
@@ -83,6 +83,7 @@ pub struct IndexWriter {
     unit_key: Option<String>,
     generation: Option<String>,
     file_hashes: HashMap<String, u64>,
+    reexport_indices: HashSet<u32>,
 }
 
 impl IndexWriter {
@@ -102,6 +103,7 @@ impl IndexWriter {
             unit_key: None,
             generation: None,
             file_hashes: HashMap::new(),
+            reexport_indices: HashSet::new(),
         };
         // Offset 0 is reserved for empty string
         writer.string_pool.push(0);
@@ -202,6 +204,13 @@ impl IndexWriter {
         self.definitions.push(def);
     }
 
+    /// Adds a definition marked with FLAG_REEXPORT and associates it with owners.
+    pub fn add_reexport_with_owners(&mut self, def: RawDefinition, owners: Vec<String>) {
+        let idx = self.definitions.len() as u32;
+        self.reexport_indices.insert(idx);
+        self.add_definition_with_owners(def, owners);
+    }
+
     pub fn add_def_owner(&mut self, def_id: u32, owner: String) {
         if let Some(idx) = self.definitions.iter().position(|d| d.def_id == def_id) {
             self.def_owners.push((idx as u32, owner));
@@ -291,7 +300,7 @@ impl IndexWriter {
         let mut def_entries = Vec::with_capacity(definitions.len());
         let mut def_hashes = Vec::with_capacity(definitions.len());
 
-        for def in &definitions {
+        for (def_idx, def) in definitions.iter().enumerate() {
             let file_id = self.get_or_insert_file(&def.file);
             let name_offset = self.intern_string(&def.name);
             let path_offset = self.intern_string(&def.path);
@@ -300,15 +309,19 @@ impl IndexWriter {
                 None => 0,
             };
 
+            let mut flags = 0u8;
+            if def.is_macro_expansion {
+                flags |= FLAG_MACRO_EXPANSION;
+            }
+            if self.reexport_indices.contains(&(def_idx as u32)) {
+                flags |= FLAG_REEXPORT;
+            }
+
             let entry = DefEntry {
                 def_id: def.def_id,
                 kind: def.kind as u8,
                 visibility: def.visibility,
-                flags: if def.is_macro_expansion {
-                    FLAG_MACRO_EXPANSION
-                } else {
-                    0
-                },
+                flags,
                 _pad: 0,
                 name_offset,
                 path_offset,

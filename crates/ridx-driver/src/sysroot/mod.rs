@@ -20,6 +20,7 @@ use crate::map_def_kind;
 use crate::sanitize::sanitize_type_name;
 
 mod cas;
+mod items;
 mod primitives;
 mod traits;
 pub mod util;
@@ -64,75 +65,108 @@ pub fn extract_sysroot_crate<'tcx>(
     let mut writer = IndexWriter::new(target_crate, &toolchain_version);
     let mut visited = HashSet::new();
     let mut queue = VecDeque::new();
+    let mut queue_visited = HashSet::new();
 
     queue.push_back(root_did);
+    queue_visited.insert(root_did);
     visited.insert(root_did);
 
     let mut total_definitions = 0usize;
     let mut total_derefs = 0usize;
 
     while let Some(mod_did) = queue.pop_front() {
+        let mod_path = rustc_middle::ty::print::with_no_visible_paths!(
+            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(mod_did))
+        );
+        let mut mod_seen = HashSet::new();
+
         for child in tcx.module_children(mod_did) {
             let Some(did) = child.res.opt_def_id() else {
                 continue;
             };
-
-            // Stay strictly within the target sysroot crate
-            if did.krate != cnum {
-                continue;
-            }
 
             let name_str = child.ident.as_str();
             if name_str.starts_with("__rust_") || name_str.starts_with("__") {
                 continue;
             }
 
-            // Exclude arch SIMD intrinsics and compiler intrinsics from completion index to eliminate noise
+            // Exclude arch SIMD intrinsics and compiler intrinsics from completion index
             if (target_crate == "core" || target_crate == "std")
                 && (name_str == "arch" || name_str == "core_arch" || name_str == "intrinsics")
             {
                 continue;
             }
 
-            if !visited.insert(did) {
+            if !mod_seen.insert((did, name_str.to_string())) {
                 continue;
             }
 
-            let kind = tcx.def_kind(did);
-            if kind == DefKind::Mod {
-                // Traverse module only if publicly visible
-                if is_publicly_visible(tcx, did) {
-                    queue.push_back(did);
+            // Cross-crate re-export check
+            if did.krate != cnum {
+                let dep_crate = tcx.crate_name(did.krate);
+                let dep_crate_str = dep_crate.as_str();
+                let allowed = match target_crate {
+                    "std" => dep_crate_str == "core" || dep_crate_str == "alloc",
+                    "alloc" => dep_crate_str == "core",
+                    _ => false,
+                };
+                if !allowed {
+                    continue;
                 }
+
+                if !child.vis.is_public()
+                    || !is_publicly_visible(tcx, did)
+                    || !is_stable_api(tcx, did)
+                {
+                    continue;
+                }
+
+                items::record_reexport(
+                    tcx,
+                    did,
+                    name_str,
+                    &mod_path,
+                    sysroot_src,
+                    &mut writer,
+                    &mut total_definitions,
+                );
+                continue;
             }
 
-            // Filter out non-public or doc(hidden) definitions and unstable APIs
+            // Intra-crate item
+            let canonical_path = rustc_middle::ty::print::with_no_visible_paths!(
+                rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
+            );
+            let alias_path = format!("{mod_path}::{name_str}");
+
+            let kind = tcx.def_kind(did);
+            if kind == DefKind::Mod && is_publicly_visible(tcx, did) && queue_visited.insert(did) {
+                queue.push_back(did);
+            }
+
             if !is_publicly_visible(tcx, did) || !is_stable_api(tcx, did) {
                 continue;
             }
 
-            let item_span = tcx.def_ident_span(did).unwrap_or_else(|| tcx.def_span(did));
-            let (file, s_line, s_col, e_line, e_col) = if !item_span.is_dummy() {
-                let sm = tcx.sess.source_map();
-                let lo = sm.lookup_char_pos(item_span.lo());
-                let hi = sm.lookup_char_pos(item_span.hi());
-                let raw_file = sm.filename_for_diagnostics(&lo.file.name).to_string();
-                let remapped = remap_sysroot_path(&raw_file, sysroot_src);
-                (
-                    remapped,
-                    lo.line as u32,
-                    (lo.col.0 + 1) as u32,
-                    hi.line as u32,
-                    (hi.col.0 + 1) as u32,
-                )
-            } else {
-                (String::new(), 0, 0, 0, 0)
-            };
+            if !visited.insert(did) {
+                // If already visited, record as re-export alias if exposed under different path/name
+                if alias_path != canonical_path && child.vis.is_public() {
+                    items::record_reexport(
+                        tcx,
+                        did,
+                        name_str,
+                        &mod_path,
+                        sysroot_src,
+                        &mut writer,
+                        &mut total_definitions,
+                    );
+                }
+                continue;
+            }
 
-            let path = rustc_middle::ty::print::with_no_visible_paths!(
-                rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
-            );
-            let name = name_str.to_string();
+            // First time seeing this definition in this crate
+            let (file, s_line, s_col, e_line, e_col) =
+                items::extract_def_span(tcx, did, sysroot_src);
 
             let signature = match kind {
                 DefKind::Fn => Some(sanitize_type_name(
@@ -147,194 +181,67 @@ pub fn extract_sysroot_crate<'tcx>(
                 kind: map_def_kind(kind),
                 visibility: 0,
                 is_macro_expansion: false,
-                name: name.clone(),
-                path: path.clone(),
+                name: name_str.to_string(),
+                path: canonical_path.clone(),
                 signature,
-                file: file.clone(),
+                file,
                 start_line: s_line,
                 start_col: s_col,
                 end_line: e_line,
                 end_col: e_col,
             };
 
-            // Module ownership: items declared inside module belong to module for `mod::` completion
-            let owners = if !did.is_crate_root() && tcx.def_kind(tcx.parent(did)) == DefKind::Mod {
-                let parent_did = tcx.parent(did);
-                let mod_path = rustc_middle::ty::print::with_no_visible_paths!(
-                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(parent_did))
+            let mut owners = vec![mod_path.clone()];
+            if !did.is_crate_root() && tcx.def_kind(tcx.parent(did)) == DefKind::Mod {
+                let parent_path = rustc_middle::ty::print::with_no_visible_paths!(
+                    rustc_middle::ty::print::with_no_trimmed_paths!(
+                        tcx.def_path_str(tcx.parent(did))
+                    )
                 );
-                vec![mod_path]
-            } else {
-                Vec::new()
-            };
+                if parent_path != mod_path {
+                    owners.push(parent_path);
+                }
+            }
 
             writer.add_definition_with_owners(raw_def, owners);
             total_definitions += 1;
 
-            // Extract supertraits and associated items for traits
-            if kind == DefKind::Trait {
-                for (clause, _) in tcx.explicit_super_predicates_of(did).skip_binder() {
-                    if let rustc_middle::ty::ClauseKind::Trait(trait_pred) =
-                        clause.kind().skip_binder()
-                    {
-                        let super_did = trait_pred.trait_ref.def_id;
-                        if super_did != did
-                            && tcx.lang_items().sized_trait() != Some(super_did)
-                            && !tcx.trait_is_auto(super_did)
-                        {
-                            let super_path = rustc_middle::ty::print::with_no_visible_paths!(
-                                rustc_middle::ty::print::with_no_trimmed_paths!(
-                                    tcx.def_path_str(super_did)
-                                )
-                            );
-                            if !super_path.starts_with("core::marker::") {
-                                writer.add_deref(path.clone(), super_path);
-                                total_derefs += 1;
-                            }
-                        }
-                    }
-                }
-
-                for assoc_did in tcx.associated_item_def_ids(did) {
-                    let assoc_did = *assoc_did;
-                    if !visited.insert(assoc_did) {
-                        continue;
-                    }
-                    if !is_publicly_visible(tcx, assoc_did) || !is_stable_api(tcx, assoc_did) {
-                        continue;
-                    }
-                    let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
-                        continue;
-                    };
-                    let a_name = name_sym.to_string();
-                    if a_name.starts_with("__rust_") || a_name.starts_with("__") {
-                        continue;
-                    }
-                    let a_kind = tcx.def_kind(assoc_did);
-                    let a_path = rustc_middle::ty::print::with_no_visible_paths!(
-                        rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did))
-                    );
-                    let a_sig = match a_kind {
-                        DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
-                            &tcx.fn_sig(assoc_did).skip_binder().to_string(),
-                        )),
-                        _ => None,
-                    };
-                    let a_span = tcx
-                        .def_ident_span(assoc_did)
-                        .unwrap_or_else(|| tcx.def_span(assoc_did));
-                    let (a_file, a_sl, a_sc, a_el, a_ec) = if !a_span.is_dummy() {
-                        let sm = tcx.sess.source_map();
-                        let lo = sm.lookup_char_pos(a_span.lo());
-                        let hi = sm.lookup_char_pos(a_span.hi());
-                        let raw_file = sm.filename_for_diagnostics(&lo.file.name).to_string();
-                        let remapped = remap_sysroot_path(&raw_file, sysroot_src);
-                        (
-                            remapped,
-                            lo.line as u32,
-                            (lo.col.0 + 1) as u32,
-                            hi.line as u32,
-                            (hi.col.0 + 1) as u32,
-                        )
-                    } else {
-                        (file.clone(), 0, 0, 0, 0)
-                    };
-                    writer.add_definition_with_owners(
-                        RawDefinition {
-                            def_id: total_definitions as u32,
-                            kind: map_def_kind(a_kind),
-                            visibility: 0,
-                            is_macro_expansion: false,
-                            name: a_name,
-                            path: a_path,
-                            signature: a_sig,
-                            file: a_file,
-                            start_line: a_sl,
-                            start_col: a_sc,
-                            end_line: a_el,
-                            end_col: a_ec,
-                        },
-                        vec![path.clone()],
-                    );
-                    total_definitions += 1;
-                }
+            if alias_path != canonical_path && child.vis.is_public() {
+                items::record_reexport(
+                    tcx,
+                    did,
+                    name_str,
+                    &mod_path,
+                    sysroot_src,
+                    &mut writer,
+                    &mut total_definitions,
+                );
             }
 
-            // Extract inherent methods for types
+            if kind == DefKind::Trait {
+                items::extract_trait_items(
+                    tcx,
+                    did,
+                    &canonical_path,
+                    sysroot_src,
+                    &mut writer,
+                    &mut visited,
+                    &mut total_definitions,
+                    &mut total_derefs,
+                );
+            }
+
             match kind {
                 DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias => {
-                    for impl_did in tcx.inherent_impls(did) {
-                        let impl_did = *impl_did;
-                        for assoc_did in tcx.associated_item_def_ids(impl_did) {
-                            let assoc_did = *assoc_did;
-                            if !visited.insert(assoc_did) {
-                                continue;
-                            }
-                            if !is_publicly_visible(tcx, assoc_did)
-                                || !is_stable_api(tcx, assoc_did)
-                            {
-                                continue;
-                            }
-                            let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
-                                continue;
-                            };
-                            let a_name = name_sym.to_string();
-                            if a_name.starts_with("__rust_") || a_name.starts_with("__") {
-                                continue;
-                            }
-                            let a_kind = tcx.def_kind(assoc_did);
-                            let a_path = rustc_middle::ty::print::with_no_visible_paths!(
-                                rustc_middle::ty::print::with_no_trimmed_paths!(
-                                    tcx.def_path_str(assoc_did)
-                                )
-                            );
-                            let a_sig = match a_kind {
-                                DefKind::Fn => Some(sanitize_type_name(
-                                    &tcx.fn_sig(assoc_did).skip_binder().to_string(),
-                                )),
-                                DefKind::AssocFn => Some(util::format_assoc_fn_sig(tcx, assoc_did)),
-                                _ => None,
-                            };
-                            let a_span = tcx
-                                .def_ident_span(assoc_did)
-                                .unwrap_or_else(|| tcx.def_span(assoc_did));
-                            let (a_file, a_sl, a_sc, a_el, a_ec) = if !a_span.is_dummy() {
-                                let sm = tcx.sess.source_map();
-                                let lo = sm.lookup_char_pos(a_span.lo());
-                                let hi = sm.lookup_char_pos(a_span.hi());
-                                let raw_file =
-                                    sm.filename_for_diagnostics(&lo.file.name).to_string();
-                                let remapped = remap_sysroot_path(&raw_file, sysroot_src);
-                                (
-                                    remapped,
-                                    lo.line as u32,
-                                    (lo.col.0 + 1) as u32,
-                                    hi.line as u32,
-                                    (hi.col.0 + 1) as u32,
-                                )
-                            } else {
-                                (file.clone(), 0, 0, 0, 0)
-                            };
-                            writer.add_definition_with_owners(
-                                RawDefinition {
-                                    def_id: total_definitions as u32,
-                                    kind: map_def_kind(a_kind),
-                                    visibility: 0,
-                                    is_macro_expansion: false,
-                                    name: a_name,
-                                    path: a_path,
-                                    signature: a_sig,
-                                    file: a_file,
-                                    start_line: a_sl,
-                                    start_col: a_sc,
-                                    end_line: a_el,
-                                    end_col: a_ec,
-                                },
-                                vec![path.clone()],
-                            );
-                            total_definitions += 1;
-                        }
-                    }
+                    items::extract_inherent_impl_items(
+                        tcx,
+                        did,
+                        &canonical_path,
+                        sysroot_src,
+                        &mut writer,
+                        &mut visited,
+                        &mut total_definitions,
+                    );
                 }
                 _ => {}
             }
