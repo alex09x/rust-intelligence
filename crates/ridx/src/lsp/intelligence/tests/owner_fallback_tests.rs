@@ -135,3 +135,81 @@ fn test_completion_unknown_type_fallback_dot() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_completion_self_colon_colon() {
+    let temp_dir = std::env::temp_dir().join(format!("ridx_self_colon_{}", std::process::id()));
+    let _ = fs::create_dir_all(temp_dir.join("src"));
+    let src_file = temp_dir.join("src/lib.rs");
+    let code = "pub struct MyCounter;\nimpl MyCounter {\n    pub fn increment() {}\n    pub fn test() {\n        Self::\n    }\n}\n";
+    let _ = fs::write(&src_file, code);
+
+    let src_path = src_file.to_str().unwrap().to_string();
+    let mut writer = IndexWriter::new("test_self", "0.1.0");
+
+    // Definition of MyCounter struct
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        file: src_path.clone(),
+        name: "MyCounter".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 22,
+        path: "test_self::MyCounter".to_string(),
+        signature: Some("pub struct MyCounter;".to_string()),
+    });
+
+    // Associated function increment with owner test_self::MyCounter
+    writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 2,
+            kind: DefKind::AssocFn,
+            visibility: 1,
+            is_macro_expansion: false,
+            file: src_path.clone(),
+            name: "increment".to_string(),
+            start_line: 3,
+            start_col: 5,
+            end_line: 3,
+            end_col: 26,
+            path: "test_self::MyCounter::increment".to_string(),
+            signature: Some("pub fn increment()".to_string()),
+        },
+        vec!["test_self::MyCounter".to_string()],
+    );
+
+    let ridx_file = temp_dir.join("index.ridx");
+    let mut f = fs::File::create(&ridx_file).unwrap();
+    writer.write_to(&mut f).unwrap();
+    drop(f);
+
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    // Query completion at `Self::` (line 5, character 14, 0-based: line 4, character 14)
+    let uri = format!("file://{}", src_file.to_str().unwrap());
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 4, "character": 14 }
+        }
+    });
+
+    let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    assert!(res["items"].is_array());
+    let items = res["items"].as_array().unwrap();
+    assert!(!items.is_empty(), "Items should not be empty for Self::");
+    let inc_item = items.iter().find(|it| it["label"] == "increment");
+    assert!(inc_item.is_some(), "increment method should be found via Self::");
+    let detail = inc_item.unwrap()["detail"].as_str().unwrap();
+    assert!(detail.contains("test_self::MyCounter"), "detail should link to owner path: {detail}");
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+

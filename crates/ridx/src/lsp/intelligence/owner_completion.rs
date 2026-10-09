@@ -154,6 +154,7 @@ pub struct OwnerCompletionContext<'a> {
     pub is_dot: bool,
     pub is_colon: bool,
     pub trimmed_before: &'a str,
+    pub overlay_text: Option<&'a str>,
 }
 
 /// Attempts high-speed owner-based completion for dot- (`receiver.`) or colon- (`path::`) trigger.
@@ -265,56 +266,71 @@ pub fn try_owner_completion(
             return None;
         }
 
-        let def_opt = ws.resolve_qualifier(ctx.file, &qual);
-        let target_owner = def_opt
-            .as_ref()
-            .map(|d| {
-                if d.is_reexport {
-                    if let Some(sig) = d.signature {
-                        return sig.to_string();
+        let target_owners: Vec<String> = if qual == "Self" {
+            super::self_completion::resolve_self_owners(
+                ws,
+                ctx.file,
+                ctx.line_1based,
+                ctx.line_slice,
+                ctx.overlay_text,
+            )?
+        } else {
+            let def_opt = ws.resolve_qualifier(ctx.file, &qual);
+            let target_owner = def_opt
+                .as_ref()
+                .map(|d| {
+                    if d.is_reexport {
+                        if let Some(sig) = d.signature {
+                            return sig.to_string();
+                        }
                     }
-                }
-                d.path.to_string()
-            })
-            .unwrap_or_else(|| {
-                if qual == "crate" {
-                    ws.crate_name_for_file(ctx.file)
-                        .map(|c| c.to_string())
-                        .unwrap_or_else(|| qual.clone())
-                } else if let Some(rest) = qual.strip_prefix("crate::") {
-                    ws.crate_name_for_file(ctx.file)
-                        .map(|c| format!("{c}::{rest}"))
-                        .unwrap_or_else(|| qual.clone())
-                } else {
-                    qual.clone()
-                }
-            });
+                    d.path.to_string()
+                })
+                .unwrap_or_else(|| {
+                    if qual == "crate" {
+                        ws.crate_name_for_file(ctx.file)
+                            .map(|c| c.to_string())
+                            .unwrap_or_else(|| qual.clone())
+                    } else if let Some(rest) = qual.strip_prefix("crate::") {
+                        ws.crate_name_for_file(ctx.file)
+                            .map(|c| format!("{c}::{rest}"))
+                            .unwrap_or_else(|| qual.clone())
+                    } else {
+                        qual.clone()
+                    }
+                });
+            vec![target_owner]
+        };
 
         let has_sysroot = ws.has_sysroot();
-        if !has_sysroot && is_sysroot_path(&target_owner) {
-            return None;
-        }
-
         let mut items = Vec::new();
         let mut seen = HashSet::new();
 
-        for def in ws.find_definitions_by_owner(&target_owner) {
-            if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
+        for target_owner in &target_owners {
+            if !has_sysroot && is_sysroot_path(target_owner) {
                 continue;
             }
-            if seen.insert(def.name.to_string()) {
-                let detail = def
-                    .signature
-                    .map(|sig| format!("{sig} (in {})", def.path))
-                    .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
-                items.push(json!({
-                    "label": def.name,
-                    "kind": lsp_completion_kind(def.kind),
-                    "detail": detail
-                }));
-                if items.len() >= 100 {
-                    break;
+            for def in ws.find_definitions_by_owner(target_owner) {
+                if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
+                    continue;
                 }
+                if seen.insert(def.name.to_string()) {
+                    let detail = def
+                        .signature
+                        .map(|sig| format!("{sig} (in {})", def.path))
+                        .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
+                    items.push(json!({
+                        "label": def.name,
+                        "kind": lsp_completion_kind(def.kind),
+                        "detail": detail
+                    }));
+                    if items.len() >= 100 {
+                        break;
+                    }
+                }
+            }
+            if items.len() >= 100 {
+                break;
             }
         }
 

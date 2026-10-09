@@ -78,6 +78,7 @@ pub fn handle_completion(
                 is_dot,
                 is_colon,
                 trimmed_before,
+                overlay_text: overlay_opt.map(|o| o.text.as_str()),
             };
             if let Some(owner_items) = super::owner_completion::try_owner_completion(ws, &owner_ctx) {
                 return Ok(json!({

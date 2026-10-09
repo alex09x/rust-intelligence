@@ -21,6 +21,12 @@ if str(bench_dir) not in sys.path:
 
 from lsp_process import SimpleLspProcess
 from metrics import percentile
+from provenance import (
+    find_default_repo,
+    find_sysroot_cas_key,
+    get_driver_hash,
+    get_sysroot_std_metadata,
+)
 
 ROOT_CAUSES = {
     "comp_colon_41_RangeVisitor": "Shadowing: sysroot core::ops::range resolved before local mod range at serde_core/src/de/impls.rs:2463 (5 sysroot items vs 2 local).",
@@ -79,29 +85,7 @@ def run_scenarios(srv, repo_dir, scenarios, is_ra=False, timeout=5.0):
     return results
 
 
-def find_default_repo(name):
-    env_key = f"BENCH_{name.upper()}_DIR"
-    if env_key in os.environ:
-        return Path(os.environ[env_key])
-    for c in [Path.home() / "prod-code-storage" / "bench_repos" / name, bench_dir.parent.parent / "bench_repos" / name, Path("/tmp") / name]:
-        if c.is_dir():
-            return c
-    return Path("/tmp") / name
 
-
-def find_sysroot_cas_key(rpath):
-    root = Path(rpath) / "target" / "ridx"
-    vdir = root / "variants"
-    cands = [root / "ridx_manifest.json"] + (sorted(vdir.glob("*/variant_manifest.json"), reverse=True) if vdir.is_dir() else [])
-    for mf in cands:
-        if mf.is_file():
-            try:
-                k = json.loads(mf.read_text(encoding="utf-8")).get("sysroot_cas_key")
-                if k:
-                    return k
-            except Exception:
-                pass
-    return None
 
 
 def calc_route_acc(scs, key_rec, key_prec, key_cnt):
@@ -187,6 +171,9 @@ def main():
         if curr_data:
             c_rec = curr_data[slug]
             ra_ver, tc_ver, cas_key = c_rec.get("baseline_ra", ra_ver), c_rec.get("toolchain", tc_ver), c_rec.get("sysroot_cas_key")
+            driver_hash = c_rec.get("driver_hash")
+            std_mtime = c_rec.get("std_ridx_mtime")
+            std_sha = c_rec.get("std_ridx_hash")
             res_scs = c_rec["scenarios"]
         else:
             srv_curr = SimpleLspProcess([str(curr_bin), "lsp"], rpath)
@@ -200,6 +187,8 @@ def main():
             srv_ra.notify("exit", {})
 
             cas_key = find_sysroot_cas_key(rpath)
+            driver_hash = get_driver_hash(curr_bin)
+            std_mtime, std_sha = get_sysroot_std_metadata(cas_key)
             res_scs = None
 
         is_invalid_config = not cas_key or (tc_target not in tc_ver)
@@ -312,7 +301,9 @@ def main():
         f_rec_b, f_prec_b = calc_route_acc(fallback_scs, "base_recall_pct", "base_precision_pct", "base_count")
 
         summary = {
-            "repo": slug, "toolchain": tc_ver, "sysroot_cas_key": cas_key, "invalid_config": is_invalid_config,
+            "repo": slug, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
+            "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha,
+            "invalid_config": is_invalid_config,
             "total_scenarios": len(scenarios_base),
             "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
             "closed_empty_responses": {"count": closed_cnt, "scenarios": closed_names},
@@ -362,7 +353,9 @@ def main():
         if not curr_data:
             published_records.append({
                 "repo": slug, "commit_ridx": curr_commit, "baseline_ra": ra_ver,
-                "toolchain": tc_ver, "sysroot_cas_key": cas_key, "invalid_config": is_invalid_config,
+                "toolchain": tc_ver, "sysroot_cas_key": cas_key,
+                "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha,
+                "invalid_config": is_invalid_config,
                 "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
                 "taskset": "24-31", "seed": 42,
                 "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
