@@ -9,7 +9,7 @@
  */
 
 use std::collections::{HashSet, VecDeque};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Instant;
 
 use ridx_format::{IndexWriter, RawDefinition};
@@ -19,38 +19,13 @@ use rustc_middle::ty::TyCtxt;
 use crate::map_def_kind;
 use crate::sanitize::sanitize_type_name;
 
-/// Remaps a compiler-internal span path (e.g. `/rustc/<commit>/library/...`)
-/// to a local `rust-src` source path if available, or returns the relative library path.
-pub fn remap_sysroot_path(raw_path: &str, sysroot_src: Option<&Path>) -> String {
-    if let Some(idx) = raw_path.find("/library/") {
-        let rel_part = &raw_path[idx + 1..];
-        if let Some(src_root) = sysroot_src {
-            let candidate = src_root.join(rel_part);
-            if candidate.exists() {
-                return candidate.to_string_lossy().into_owned();
-            }
-        }
-        return rel_part.to_string();
-    }
-    raw_path.to_string()
-}
+mod cas;
+mod primitives;
+pub mod util;
 
-/// Discovers the path to `library` inside `rust-src` for the current sysroot if installed.
-pub fn discover_rust_src_path() -> Option<PathBuf> {
-    if let Ok(output) = std::process::Command::new("rustc")
-        .args(["--print", "sysroot"])
-        .output()
-    {
-        if output.status.success() {
-            let sysroot = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            let candidate = PathBuf::from(sysroot).join("lib/rustlib/src/rust/library");
-            if candidate.is_dir() {
-                return Some(candidate);
-            }
-        }
-    }
-    None
-}
+pub use cas::{compute_sysroot_cas_key, ensure_sysroot_indexed};
+pub use primitives::extract_primitive_inherent_impls;
+pub use util::{discover_rust_src_path, is_publicly_visible, is_stable_api, remap_sysroot_path};
 
 /// Statistics collected during sysroot crate metadata extraction.
 #[derive(Debug, Clone, Default)]
@@ -99,13 +74,26 @@ pub fn extract_sysroot_crate<'tcx>(
                 continue;
             }
 
+            let name_str = child.ident.as_str();
+            if name_str.starts_with("__rust_") || name_str.starts_with("__") {
+                continue;
+            }
+
             if !visited.insert(did) {
                 continue;
             }
 
             let kind = tcx.def_kind(did);
             if kind == DefKind::Mod {
-                queue.push_back(did);
+                // Traverse module only if publicly visible
+                if is_publicly_visible(tcx, did) {
+                    queue.push_back(did);
+                }
+            }
+
+            // Filter out non-public or doc(hidden) definitions and unstable APIs
+            if !is_publicly_visible(tcx, did) || !is_stable_api(tcx, did) {
+                continue;
             }
 
             let item_span = tcx.def_ident_span(did).unwrap_or_else(|| tcx.def_span(did));
@@ -129,7 +117,7 @@ pub fn extract_sysroot_crate<'tcx>(
             let path = rustc_middle::ty::print::with_no_visible_paths!(
                 rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(did))
             );
-            let name = child.ident.as_str().to_string();
+            let name = name_str.to_string();
 
             let signature = match kind {
                 DefKind::Fn | DefKind::AssocFn => {
@@ -195,15 +183,21 @@ pub fn extract_sysroot_crate<'tcx>(
                     if !visited.insert(assoc_did) {
                         continue;
                     }
+                    if !is_publicly_visible(tcx, assoc_did) || !is_stable_api(tcx, assoc_did) {
+                        continue;
+                    }
+                    let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
+                        continue;
+                    };
+                    let a_name = name_sym.to_string();
+                    if a_name.starts_with("__rust_") || a_name.starts_with("__") {
+                        continue;
+                    }
                     let a_kind = tcx.def_kind(assoc_did);
                     let a_path = rustc_middle::ty::print::with_no_visible_paths!(
                         rustc_middle::ty::print::with_no_trimmed_paths!(tcx
                             .def_path_str(assoc_did))
                     );
-                    let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
-                        continue;
-                    };
-                    let a_name = name_sym.to_string();
                     let a_sig = match a_kind {
                         DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
                             &tcx.fn_sig(assoc_did).skip_binder().to_string(),
@@ -260,15 +254,21 @@ pub fn extract_sysroot_crate<'tcx>(
                             if !visited.insert(assoc_did) {
                                 continue;
                             }
+                            if !is_publicly_visible(tcx, assoc_did) || !is_stable_api(tcx, assoc_did) {
+                                continue;
+                            }
+                            let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
+                                continue;
+                            };
+                            let a_name = name_sym.to_string();
+                            if a_name.starts_with("__rust_") || a_name.starts_with("__") {
+                                continue;
+                            }
                             let a_kind = tcx.def_kind(assoc_did);
                             let a_path = rustc_middle::ty::print::with_no_visible_paths!(
                                 rustc_middle::ty::print::with_no_trimmed_paths!(tcx
                                     .def_path_str(assoc_did))
                             );
-                            let Some(name_sym) = tcx.opt_item_name(assoc_did) else {
-                                continue;
-                            };
-                            let a_name = name_sym.to_string();
                             let a_sig = match a_kind {
                                 DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
                                     &tcx.fn_sig(assoc_did).skip_binder().to_string(),
@@ -320,6 +320,16 @@ pub fn extract_sysroot_crate<'tcx>(
             }
         }
     }
+
+    // Extract primitive inherent impls (impl str, impl [T], impl u32, etc.)
+    extract_primitive_inherent_impls(
+        tcx,
+        cnum,
+        &mut writer,
+        &mut visited,
+        &mut total_definitions,
+        sysroot_src,
+    );
 
     let elapsed = start.elapsed();
     let stats = SysrootExtractStats {
