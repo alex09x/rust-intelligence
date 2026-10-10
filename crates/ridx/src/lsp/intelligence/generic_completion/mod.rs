@@ -102,7 +102,7 @@ pub fn resolve_generic_param_owners(
             for tname in &cur_trait_names {
                 let def_opt = ws.resolve_qualifier(file, tname);
                 let target_path = def_opt.as_ref().map(|d| d.path).unwrap_or(tname.as_str());
-                for def in ws.find_definitions_by_owner(target_path) {
+                for def in ws.find_definitions_by_owner_for_file(file, target_path) {
                     if def.name == seg && def.kind == DefKind::AssocTy {
                         // Inspect associated type bound: driver data signature/owners first,
                         // fallback to scope_cache parser only if missing

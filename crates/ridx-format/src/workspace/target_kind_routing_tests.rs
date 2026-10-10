@@ -256,3 +256,125 @@ fn test_loaded_file_metadata_extracts_manifest_dir_and_target_kind() {
     assert_eq!(meta.target_kind, Some(TargetKind::Lib));
     assert!(!meta.is_dependency);
 }
+
+#[test]
+fn test_candidate_reader_indices_filters_inaccessible_non_lib_targets() {
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    let ecs_lib_ridx = temp_dir.path().join("ecs_lib.ridx");
+    let mut ecs_lib_w = IndexWriter::new("bevy_ecs", "0.15.0");
+    let mut f = File::create(&ecs_lib_ridx).unwrap();
+    ecs_lib_w.write_to(&mut f).unwrap();
+    drop(f);
+
+    let ecs_bench_ridx = temp_dir.path().join("ecs_bench.ridx");
+    let mut ecs_bench_w = IndexWriter::new("bevy_ecs_bench", "0.15.0");
+    let mut f = File::create(&ecs_bench_ridx).unwrap();
+    ecs_bench_w.write_to(&mut f).unwrap();
+    drop(f);
+
+    let app_lib_ridx = temp_dir.path().join("app_lib.ridx");
+    let mut app_lib_w = IndexWriter::new("bevy_app", "0.15.0");
+    let mut f = File::create(&app_lib_ridx).unwrap();
+    app_lib_w.write_to(&mut f).unwrap();
+    drop(f);
+
+    let render_bench_ridx = temp_dir.path().join("render_bench.ridx");
+    let mut render_bench_w = IndexWriter::new("render_bench", "0.15.0");
+    let mut f = File::create(&render_bench_ridx).unwrap();
+    render_bench_w.write_to(&mut f).unwrap();
+    drop(f);
+
+    let ws = build_mock_workspace_with_kinds(
+        vec![
+            (&ecs_lib_ridx, Some(PathBuf::from("/repo/crates/bevy_ecs")), None, Some(TargetKind::Lib)),
+            (&ecs_bench_ridx, Some(PathBuf::from("/repo/crates/bevy_ecs")), None, Some(TargetKind::Bench)),
+            (&app_lib_ridx, Some(PathBuf::from("/repo/crates/bevy_app")), None, Some(TargetKind::Lib)),
+            (&render_bench_ridx, Some(PathBuf::from("/repo/crates/bevy_render")), None, Some(TargetKind::Bench)),
+        ],
+        PathBuf::from("/repo"),
+    );
+
+    // From app_lib (file in /repo/crates/bevy_app/src/lib.rs):
+    let candidates = ws.candidate_reader_indices_for_file("/repo/crates/bevy_app/src/lib.rs");
+    // Candidates must include app_lib (idx 2) and ecs_lib (idx 0), but NOT benches (idx 1, 3)!
+    assert!(candidates.contains(&2), "Must contain bevy_app (own lib)");
+    assert!(candidates.contains(&0), "Must contain bevy_ecs (other lib)");
+    assert!(!candidates.contains(&1), "Must NOT contain bevy_ecs bench");
+    assert!(!candidates.contains(&3), "Must NOT contain bevy_render bench");
+}
+
+#[test]
+fn test_find_definitions_by_owner_for_file_blocks_benchmark_leakage() {
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    let ecs_lib_ridx = temp_dir.path().join("ecs_lib.ridx");
+    let mut ecs_lib_w = IndexWriter::new("bevy_ecs", "0.15.0");
+    ecs_lib_w.add_definition_with_owners(
+        crate::writer::RawDefinition {
+            def_id: 1,
+            kind: crate::format::DefKind::Struct,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "World".to_string(),
+            path: "bevy_ecs::World".to_string(),
+            signature: None,
+            file: "src/world.rs".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 10,
+        },
+        vec!["bevy_ecs".to_string()],
+    );
+    let mut f = File::create(&ecs_lib_ridx).unwrap();
+    ecs_lib_w.write_to(&mut f).unwrap();
+    drop(f);
+
+    let ecs_bench_ridx = temp_dir.path().join("ecs_bench.ridx");
+    let mut ecs_bench_w = IndexWriter::new("change_detection", "0.15.0");
+    ecs_bench_w.add_definition_with_owners(
+        crate::writer::RawDefinition {
+            def_id: 2,
+            kind: crate::format::DefKind::Struct,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "ChaCha8Rng".to_string(),
+            path: "change_detection::ChaCha8Rng".to_string(),
+            signature: None,
+            file: "benches/change_detection.rs".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 10,
+        },
+        vec!["change_detection".to_string()],
+    );
+    let mut f = File::create(&ecs_bench_ridx).unwrap();
+    ecs_bench_w.write_to(&mut f).unwrap();
+    drop(f);
+
+    let ws = build_mock_workspace_with_kinds(
+        vec![
+            (&ecs_lib_ridx, Some(PathBuf::from("/repo/crates/bevy_ecs")), None, Some(TargetKind::Lib)),
+            (&ecs_bench_ridx, Some(PathBuf::from("/repo/crates/bevy_ecs")), None, Some(TargetKind::Bench)),
+        ],
+        PathBuf::from("/repo"),
+    );
+
+    // Query from lib file (/repo/crates/bevy_ecs/src/world.rs):
+    let defs = ws.find_definitions_by_owner_for_file(
+        "/repo/crates/bevy_ecs/src/world.rs",
+        "change_detection",
+    );
+    assert!(defs.is_empty(), "Benchmark symbols must NOT leak to library file queries");
+
+    // Query from inside the benchmark file (/repo/crates/bevy_ecs/benches/change_detection.rs):
+    let bench_defs = ws.find_definitions_by_owner_for_file(
+        "/repo/crates/bevy_ecs/benches/change_detection.rs",
+        "change_detection",
+    );
+    assert_eq!(bench_defs.len(), 1, "Benchmark file must see its own definitions");
+    assert_eq!(bench_defs[0].name, "ChaCha8Rng");
+}
+

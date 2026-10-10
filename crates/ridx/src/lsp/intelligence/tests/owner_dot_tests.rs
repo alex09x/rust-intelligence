@@ -189,3 +189,85 @@ fn test_completion_autoderef_chain() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_dot_fallback_completion_empty_prefix_finds_methods() {
+    let temp_dir = std::env::temp_dir().join(format!("ridx_dot_fallback_{}", std::process::id()));
+    let _ = fs::create_dir_all(temp_dir.join("src"));
+    let src_file = temp_dir.join("src/lib.rs");
+    let code = "struct Wrapper(fixedbitset::FixedBitSet);\nimpl Wrapper {\n    fn check(&self) {\n        self.0.\n    }\n}\n";
+    let _ = fs::write(&src_file, code);
+
+    let src_path = src_file.to_str().unwrap().to_string();
+    let mut writer = IndexWriter::new("fixedbitset", "0.4.0");
+
+    // Add methods on FixedBitSet without defs_by_owner so owner_completion falls through to fallback_completion
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::AssocFn,
+        visibility: 1,
+        is_macro_expansion: false,
+        file: src_path.clone(),
+        name: "is_disjoint".to_string(),
+        start_line: 10,
+        start_col: 5,
+        end_line: 10,
+        end_col: 20,
+        path: "fixedbitset::FixedBitSet::is_disjoint".to_string(),
+        signature: Some("fn is_disjoint(&self, other: &Self) -> bool".to_string()),
+    });
+    writer.add_definition(RawDefinition {
+        def_id: 2,
+        kind: DefKind::AssocFn,
+        visibility: 1,
+        is_macro_expansion: false,
+        file: src_path.clone(),
+        name: "insert".to_string(),
+        start_line: 20,
+        start_col: 5,
+        end_line: 20,
+        end_col: 20,
+        path: "fixedbitset::FixedBitSet::insert".to_string(),
+        signature: Some("fn insert(&mut self, bit: usize)".to_string()),
+    });
+
+    // Add type for `self.0` at line 4, col 9-15
+    writer.add_type_with_owner(
+        RawType {
+            file: src_path.clone(),
+            start_line: 4,
+            start_col: 9,
+            end_line: 4,
+            end_col: 15,
+            type_name: "fixedbitset::FixedBitSet".to_string(),
+        },
+        Some("fixedbitset::FixedBitSet".to_string()),
+    );
+
+    let ridx_file = temp_dir.join("index.ridx");
+    let mut f = fs::File::create(&ridx_file).unwrap();
+    writer.write_to(&mut f).unwrap();
+    drop(f);
+
+    let mut ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    // Query completion at `self.0.` (line 4 col 16, 0-based: line 3, character 15)
+    let uri = format!("file://{}", src_file.to_str().unwrap());
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 3, "character": 15 }
+        }
+    });
+
+    let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let items = res["items"].as_array().unwrap();
+    let labels: Vec<&str> = items.iter().filter_map(|it| it["label"].as_str()).collect();
+    assert!(labels.contains(&"is_disjoint"), "Fallback dot completion must find is_disjoint, got: {:?}", labels);
+    assert!(labels.contains(&"insert"), "Fallback dot completion must find insert, got: {:?}", labels);
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}

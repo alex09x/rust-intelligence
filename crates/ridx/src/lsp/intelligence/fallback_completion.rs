@@ -167,7 +167,7 @@ pub fn try_fallback_completion(
     let needle = if !ctx.prefix.is_empty() {
         ctx.prefix
     } else if let Some(ref cname) = target_crate {
-        if target_for_needle == *cname {
+        if target_for_needle == *cname || ctx.is_dot {
             ""
         } else {
             target_for_needle

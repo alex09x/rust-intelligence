@@ -177,7 +177,7 @@ pub fn try_owner_completion(
                 }
             }
 
-            for def in ws.find_definitions_by_owner(o) {
+            for def in ws.find_definitions_by_owner_for_file(ctx.file, o) {
                 if def.kind == DefKind::Field {
                     // Struct fields are always accessible via dot
                 } else if matches!(def.kind, DefKind::AssocFn | DefKind::Fn) {
@@ -282,7 +282,7 @@ pub fn try_owner_completion(
             if !has_sysroot && is_sysroot_path(target_owner) {
                 continue;
             }
-            for def in ws.find_definitions_by_owner(target_owner) {
+            for def in ws.find_definitions_by_owner_for_file(ctx.file, target_owner) {
                 if def.kind == DefKind::TyParam {
                     continue;
                 }

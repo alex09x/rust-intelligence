@@ -306,7 +306,28 @@ impl WorkspaceIndex {
     /// matching readers first (ordered with library targets before tests/benchmarks),
     /// followed by any remaining workspace readers.
     pub fn candidate_reader_indices_for_file(&self, file: &str) -> Vec<usize> {
-        let mut candidates = self.reader_indices_for_file(file);
+        let raw_candidates = self.reader_indices_for_file(file);
+        let mut candidates: Vec<usize> = raw_candidates
+            .into_iter()
+            .filter(|&idx| {
+                let is_non_lib = self
+                    .target_kinds
+                    .get(idx)
+                    .copied()
+                    .flatten()
+                    .map(|k| !k.is_lib())
+                    .unwrap_or(false);
+                if is_non_lib {
+                    if self.readers[idx].files_count() > 0 {
+                        self.target_file_for_reader(idx, file).is_some()
+                    } else {
+                        true
+                    }
+                } else {
+                    true
+                }
+            })
+            .collect();
         candidates.sort_by_key(|&idx| {
             if self
                 .target_kinds
@@ -323,7 +344,16 @@ impl WorkspaceIndex {
         });
         for idx in 0..self.readers.len() {
             if !candidates.contains(&idx) {
-                candidates.push(idx);
+                let is_inaccessible = self
+                    .target_kinds
+                    .get(idx)
+                    .copied()
+                    .flatten()
+                    .map(|k| !k.is_lib())
+                    .unwrap_or(false);
+                if !is_inaccessible {
+                    candidates.push(idx);
+                }
             }
         }
         candidates

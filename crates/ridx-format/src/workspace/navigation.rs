@@ -951,14 +951,40 @@ impl WorkspaceIndex {
 
     /// Finds all definitions belonging to an owner (canonical type path or module path) across the workspace.
     pub fn find_definitions_by_owner<'a>(&'a self, owner: &str) -> Vec<ResolvedDefinition<'a>> {
+        self.find_definitions_by_owner_internal(owner, None)
+    }
+
+    /// Finds all definitions belonging to an owner within the scope accessible from `file`.
+    ///
+    /// Non-library targets (benchmarks, tests, examples, binaries) that do not contain `file`
+    /// are excluded from the search to prevent symbol leakage into standard library and crate queries.
+    pub fn find_definitions_by_owner_for_file<'a>(
+        &'a self,
+        file: &str,
+        owner: &str,
+    ) -> Vec<ResolvedDefinition<'a>> {
+        self.find_definitions_by_owner_internal(owner, Some(file))
+    }
+
+    fn find_definitions_by_owner_internal<'a>(
+        &'a self,
+        owner: &str,
+        file_opt: Option<&str>,
+    ) -> Vec<ResolvedDefinition<'a>> {
         let mut results = Vec::new();
         let mut seen = std::collections::HashSet::new();
+
+        let reader_indices: Vec<usize> = match file_opt {
+            Some(file) => self.candidate_reader_indices_for_file(file),
+            None => (0..self.readers.len()).collect(),
+        };
 
         let candidates = super::std_map::std_path_candidates(owner);
         for cand in &candidates {
             let cand_str = cand.as_str();
             let prev_len = results.len();
-            for (i, reader) in self.readers.iter().enumerate() {
+            for &i in &reader_indices {
+                let reader = &self.readers[i];
                 let prefix = format!("{}::", reader.crate_name());
                 let sub = cand_str.strip_prefix(&prefix).unwrap_or(cand_str);
                 let with_prefix = format!("{prefix}{cand_str}");

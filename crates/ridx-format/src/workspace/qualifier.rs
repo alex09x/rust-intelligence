@@ -352,6 +352,17 @@ impl WorkspaceIndex {
             {
                 continue;
             }
+            let is_inaccessible = !reader_indices.contains(&i)
+                && self
+                    .target_kinds
+                    .get(i)
+                    .copied()
+                    .flatten()
+                    .map(|k| !k.is_lib())
+                    .unwrap_or(false);
+            if is_inaccessible {
+                continue;
+            }
             let prefix = format!("{}::", reader.crate_name());
             let sub = qual_trimmed.strip_prefix(&prefix).unwrap_or(qual_trimmed);
             if let Some(def) = reader
