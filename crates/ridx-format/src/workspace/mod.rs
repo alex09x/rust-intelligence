@@ -21,12 +21,16 @@ pub mod qualifier;
 pub mod reload;
 pub mod std_map;
 pub mod sysroot;
+pub mod target_kind;
 
 #[cfg(test)]
 mod routing_tests;
+#[cfg(test)]
+mod target_kind_routing_tests;
 
 pub use manifest::*;
 pub use prelude::is_prelude_trait;
+pub use target_kind::{classify_target, TargetKind};
 
 use crate::reader::IndexReader;
 use memmap2::Mmap;
@@ -42,6 +46,7 @@ pub struct WorkspaceIndex {
     pub(crate) mtimes: Vec<Option<std::time::SystemTime>>,
     pub(crate) source_roots: Vec<Option<PathBuf>>,
     pub(crate) unit_keys: Vec<Option<String>>,
+    pub(crate) target_kinds: Vec<Option<TargetKind>>,
     pub(crate) reader_generations: Vec<Option<String>>,
     pub(crate) reader_dependencies: Vec<Vec<String>>,
     pub(crate) reader_extern_units: Vec<HashMap<String, String>>,
@@ -81,16 +86,7 @@ impl WorkspaceIndex {
             let reader = IndexReader::open(p)?;
             let embedded = reader.embedded_file_hashes();
             let parent = p.parent().unwrap_or_else(|| Path::new(""));
-            let (
-                source_root,
-                unit_key,
-                gen,
-                dependencies,
-                extern_units,
-                file_hashes,
-                mpath,
-                mmtime,
-            ) = Self::load_file_metadata(
+            let meta = Self::load_file_metadata(
                 p,
                 parent,
                 reader.crate_name(),
@@ -98,7 +94,8 @@ impl WorkspaceIndex {
                 reader.generation(),
                 &embedded,
             );
-            let is_dep = source_root.is_some();
+            let is_dep = meta.source_root.is_some()
+                && meta.target_kind.map(|k| k.is_lib()).unwrap_or(true);
             let ws_root = p.parent().and_then(|parent| {
                 if parent.ends_with("target/ridx") {
                     parent
@@ -112,15 +109,16 @@ impl WorkspaceIndex {
             let readers = vec![reader];
             let paths = vec![p.to_path_buf()];
             let mtimes = vec![mtime];
-            let source_roots = vec![source_root];
-            let unit_keys = vec![unit_key];
-            let reader_generations = vec![gen];
-            let reader_dependencies = vec![dependencies];
-            let reader_extern_units = vec![extern_units];
-            let reader_file_hashes = vec![file_hashes];
+            let source_roots = vec![meta.source_root];
+            let unit_keys = vec![meta.unit_key];
+            let target_kinds = vec![meta.target_kind];
+            let reader_generations = vec![meta.generation];
+            let reader_dependencies = vec![meta.dependencies];
+            let reader_extern_units = vec![meta.extern_units];
+            let reader_file_hashes = vec![meta.file_hashes];
             let reader_is_dependency = vec![is_dep];
-            let meta_paths = vec![mpath];
-            let meta_mtimes = vec![mmtime];
+            let meta_paths = vec![meta.meta_path];
+            let meta_mtimes = vec![meta.meta_mtime];
 
             let ws = Self {
                 readers,
@@ -128,6 +126,7 @@ impl WorkspaceIndex {
                 mtimes,
                 source_roots,
                 unit_keys,
+                target_kinds,
                 reader_generations,
                 reader_dependencies,
                 reader_extern_units,
@@ -335,6 +334,7 @@ impl WorkspaceIndex {
         let mut mtimes = Vec::with_capacity(ridx_files.len());
         let mut source_roots = Vec::with_capacity(ridx_files.len());
         let mut unit_keys = Vec::with_capacity(ridx_files.len());
+        let mut target_kinds = Vec::with_capacity(ridx_files.len());
         let mut reader_generations = Vec::with_capacity(ridx_files.len());
         let mut reader_dependencies = Vec::with_capacity(ridx_files.len());
         let mut reader_extern_units = Vec::with_capacity(ridx_files.len());
@@ -348,28 +348,28 @@ impl WorkspaceIndex {
                 Ok(reader) => {
                     let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
                     let embedded = reader.embedded_file_hashes();
-                    let (sroot, ukey, gen, deps, ext_units, file_hashes, mpath, mmtime) =
-                        Self::load_file_metadata(
-                            &file_path,
-                            &scan_dir,
-                            reader.crate_name(),
-                            reader.unit_key(),
-                            reader.generation(),
-                            &embedded,
-                        );
-                    let is_dep = sroot.is_some();
+                    let meta = Self::load_file_metadata(
+                        &file_path,
+                        &scan_dir,
+                        reader.crate_name(),
+                        reader.unit_key(),
+                        reader.generation(),
+                        &embedded,
+                    );
+                    let is_dep = meta.is_dependency;
                     readers.push(reader);
                     paths.push(file_path);
                     mtimes.push(mtime);
-                    source_roots.push(sroot);
-                    unit_keys.push(ukey);
-                    reader_generations.push(gen);
-                    reader_dependencies.push(deps);
-                    reader_extern_units.push(ext_units);
-                    reader_file_hashes.push(file_hashes);
+                    source_roots.push(meta.source_root);
+                    unit_keys.push(meta.unit_key);
+                    target_kinds.push(meta.target_kind);
+                    reader_generations.push(meta.generation);
+                    reader_dependencies.push(meta.dependencies);
+                    reader_extern_units.push(meta.extern_units);
+                    reader_file_hashes.push(meta.file_hashes);
                     reader_is_dependency.push(is_dep);
-                    meta_paths.push(mpath);
-                    meta_mtimes.push(mmtime);
+                    meta_paths.push(meta.meta_path);
+                    meta_mtimes.push(meta.meta_mtime);
                 }
                 Err(e) => {
                     eprintln!("Warning: skipping invalid index {:?}: {e}", file_path);
@@ -412,6 +412,9 @@ impl WorkspaceIndex {
                         reader_is_dependency[idx] = true;
                         if source_roots[idx].is_none() {
                             source_roots[idx] = dep.source_root.as_ref().map(PathBuf::from);
+                        }
+                        if target_kinds[idx].is_none() && dep.target_kind.is_some() {
+                            target_kinds[idx] = dep.target_kind;
                         }
                         if reader_generations[idx].is_none() {
                             reader_generations[idx] = dep.generation.clone();
@@ -472,6 +475,7 @@ impl WorkspaceIndex {
                         mtimes.push(mtime);
                         source_roots.push(dep.source_root.as_ref().map(PathBuf::from));
                         unit_keys.push(Some(dep.unit_key.clone()));
+                        target_kinds.push(dep.target_kind);
                         reader_generations.push(gen);
                         let deps = if gen_valid {
                             dep.dependencies.clone()
@@ -534,6 +538,7 @@ impl WorkspaceIndex {
             mtimes,
             source_roots,
             unit_keys,
+            target_kinds,
             reader_generations,
             reader_dependencies,
             reader_extern_units,

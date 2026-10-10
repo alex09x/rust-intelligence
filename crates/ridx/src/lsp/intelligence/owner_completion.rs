@@ -78,8 +78,11 @@ pub(crate) use ridx_format::workspace::is_prelude_trait;
 /// Collects all trait names/paths referenced in the given file.
 fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> HashSet<String> {
     let mut set = HashSet::new();
-    for reader in ws.readers() {
-        if let Some(fid) = reader.find_file_id(file_path) {
+    for idx in ws.candidate_reader_indices_for_file(file_path) {
+        let reader = &ws.readers()[idx];
+        let target_file = ws.target_file_for_reader(idx, file_path);
+        let target_str = target_file.as_deref().unwrap_or(file_path);
+        if let Some(fid) = reader.find_file_id(target_str) {
             for r in reader.references() {
                 if r.span().file_id() == fid {
                     let path = reader.get_str(r.target_path_offset());
@@ -318,4 +321,3 @@ pub fn try_owner_completion(
         None
     }
 }
-

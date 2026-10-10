@@ -215,6 +215,14 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     cmd.env("RIDX_WORKSPACE_ROOT", &work_dir);
     cmd.env("CARGO_TARGET_DIR", &cargo_target_dir);
     cmd.env("RUSTC_BOOTSTRAP", "1");
+
+    let target_kinds_map = super::shards::extract_target_kinds(&manifest_path);
+    let target_kinds_file = variant_out_dir.join("target_kinds.json");
+    if let Ok(json) = serde_json::to_string(&target_kinds_map) {
+        let _ = fs::write(&target_kinds_file, json);
+    }
+    cmd.env("RIDX_TARGET_KINDS_FILE", &target_kinds_file);
+
     if std::env::var("RIDX_NO_DEPS").is_err() {
         cmd.env("RUSTC_WRAPPER", &driver_bin);
         cmd.env("RUSTC_WORKSPACE_WRAPPER", "");
@@ -257,63 +265,8 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
     let manifest_file = base_out_dir.join("ridx_manifest.json");
 
     // Collect external dependency shards recorded by compiler driver
-    let mut dep_shards: Vec<ridx_format::DependencyShardInfo> = Vec::new();
     let deps_dir = variant_out_dir.join(".deps");
-    if deps_dir.is_dir() {
-        if let Ok(entries) = fs::read_dir(&deps_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                    if let Ok(content) = fs::read(&path) {
-                        if let Ok(mut info) =
-                            serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content)
-                        {
-                            if info.is_dependency {
-                                let obj_p = Path::new(&info.object_path);
-                                if obj_p.is_file() {
-                                    if let Ok(r) = ridx_format::IndexReader::open(obj_p) {
-                                        let bin_gen = r.generation();
-                                        if !bin_gen.is_empty() {
-                                            let sidecar_gen =
-                                                info.generation.as_deref().unwrap_or("");
-                                            let gen_matches = if !sidecar_gen.is_empty() {
-                                                sidecar_gen == bin_gen
-                                            } else if !info.file_hashes.is_empty() {
-                                                let computed_digest =
-                                                    ridx_format::compute_source_snapshot_digest(
-                                                        &info.file_hashes,
-                                                    );
-                                                format!("{:016x}", computed_digest) == bin_gen
-                                            } else {
-                                                false
-                                            };
-                                            if !gen_matches {
-                                                info.file_hashes.clear();
-                                                info.dependencies.clear();
-                                                info.extern_units.clear();
-                                            }
-                                            info.generation = Some(bin_gen.to_string());
-                                        }
-                                        let embedded = r.embedded_file_hashes();
-                                        let sroot_path = info.source_root.as_deref().map(Path::new);
-                                        ridx_format::merge_embedded_hashes_authoritative(
-                                            &mut info.file_hashes,
-                                            &embedded,
-                                            sroot_path,
-                                        );
-                                    }
-                                }
-                                if !dep_shards.iter().any(|d| d.unit_key == info.unit_key) {
-                                    dep_shards.push(info);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    dep_shards.sort_by(|a, b| a.name.cmp(&b.name));
+    let (dep_shards, _ws_shards) = super::shards::collect_shards_from_deps_dir(&deps_dir);
 
     let config_files = find_cargo_configs(&work_dir);
     let mut config_target = None;

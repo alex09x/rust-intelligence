@@ -16,6 +16,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::path::PathBuf;
 
+#[allow(clippy::type_complexity)]
 fn build_mock_workspace(
     readers_info: Vec<(&PathBuf, Option<PathBuf>, Option<String>, HashMap<String, u64>)>,
     workspace_root: PathBuf,
@@ -48,12 +49,14 @@ fn build_mock_workspace(
         meta_mtimes.push(None);
     }
 
+    let count = readers.len();
     WorkspaceIndex {
         readers,
         paths,
         mtimes,
         source_roots,
         unit_keys,
+        target_kinds: vec![None; count],
         reader_generations,
         reader_dependencies,
         reader_extern_units,

@@ -1104,6 +1104,38 @@ fn write_sidecar_metadata(
     }
 }
 
+fn load_target_kind_from_env(entry_path: &Path) -> Option<String> {
+    let kinds_file_var = std::env::var("RIDX_TARGET_KINDS_FILE").ok()?;
+    let path = PathBuf::from(kinds_file_var);
+    if !path.is_file() {
+        return None;
+    }
+    let content = fs::read(&path).ok()?;
+    let map: std::collections::HashMap<PathBuf, String> = serde_json::from_slice(&content).ok()?;
+    if let Some(kind) = map.get(entry_path) {
+        return Some(kind.clone());
+    }
+    if let Ok(canon) = fs::canonicalize(entry_path) {
+        if let Some(kind) = map.get(&canon) {
+            return Some(kind.clone());
+        }
+    }
+    None
+}
+
+fn determine_target_kind(compiler_args: &[String]) -> ridx_format::TargetKind {
+    let entry_rs = compiler_args
+        .iter()
+        .find(|a| !a.starts_with('-') && a.ends_with(".rs"));
+
+    let base_kind = entry_rs.and_then(|entry| {
+        let p = Path::new(entry);
+        load_target_kind_from_env(p)
+    });
+
+    ridx_format::classify_target(base_kind.as_deref(), compiler_args)
+}
+
 fn build_crate_index(
     tcx: TyCtxt<'_>,
     out_dir: &Path,
@@ -1324,6 +1356,7 @@ fn build_crate_index(
                 "generation": generation,
                 "object_path": obj_path.display().to_string(),
                 "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+                "target_kind": "lib",
                 "is_dependency": true,
                 "dependencies": dep_keys_or_names,
                 "extern_units": extern_units,
@@ -1412,6 +1445,7 @@ fn build_crate_index(
                             "generation": generation,
                             "object_path": obj_path.display().to_string(),
                             "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+                            "target_kind": "lib",
                             "is_dependency": true,
                             "dependencies": dep_keys_or_names,
                             "extern_units": extern_units,
@@ -1557,13 +1591,15 @@ fn build_crate_index(
                     let sysroot_src = sysroot::discover_rust_src_path(tcx);
                     sysroot::ensure_sysroot_indexed(tcx, sysroot_src.as_deref());
 
+                    let target_kind = determine_target_kind(compiler_args);
                     let dep_info = serde_json::json!({
                         "name": crate_name,
                         "version": crate_version,
                         "unit_key": unit_key,
                         "generation": generation,
                         "object_path": out_file_path.display().to_string(),
-                        "source_root": serde_json::Value::Null,
+                        "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+                        "target_kind": target_kind.as_str(),
                         "is_dependency": false,
                         "dependencies": dep_keys_or_names,
                         "extern_units": extern_units,

@@ -309,6 +309,10 @@ pub fn try_direct_crate_indexing(
         cmd.env("RIDX_CACHE_DIR", cache_dir);
         cmd.env("RIDX_WORKSPACE_ROOT", work_dir);
         cmd.env("RUSTC_BOOTSTRAP", "1");
+        let target_kinds_file = variant_out_dir.join("target_kinds.json");
+        if target_kinds_file.is_file() {
+            cmd.env("RIDX_TARGET_KINDS_FILE", &target_kinds_file);
+        }
         for (k, v) in env_vars {
             cmd.env(k, v);
         }

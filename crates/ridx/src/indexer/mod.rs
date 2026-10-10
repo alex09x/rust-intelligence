@@ -15,6 +15,7 @@ pub mod direct;
 pub mod driver;
 pub mod manifest;
 pub mod orchestrate;
+pub mod shards;
 pub mod types;
 pub mod variant;
 
@@ -26,5 +27,6 @@ pub use direct::*;
 pub use driver::*;
 pub use manifest::*;
 pub use orchestrate::*;
+pub use shards::*;
 pub use types::*;
 pub use variant::*;

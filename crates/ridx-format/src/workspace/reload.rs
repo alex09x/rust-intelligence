@@ -143,6 +143,7 @@ impl WorkspaceIndex {
                                     let mut new_mtimes = Vec::with_capacity(new_files.len());
                                     let mut new_source_roots = Vec::with_capacity(new_files.len());
                                     let mut new_unit_keys = Vec::with_capacity(new_files.len());
+                                    let mut new_target_kinds = Vec::with_capacity(new_files.len());
                                     let mut new_reader_generations =
                                         Vec::with_capacity(new_files.len());
                                     let mut new_reader_dependencies =
@@ -161,16 +162,7 @@ impl WorkspaceIndex {
                                             let mt =
                                                 fs::metadata(&fp).and_then(|m| m.modified()).ok();
                                             let embedded = r.embedded_file_hashes();
-                                            let (
-                                                sroot,
-                                                ukey,
-                                                gen,
-                                                deps,
-                                                ext_units,
-                                                file_hashes,
-                                                mpath,
-                                                mmtime,
-                                            ) = Self::load_file_metadata(
+                                            let meta = Self::load_file_metadata(
                                                 &fp,
                                                 &new_vdir,
                                                 r.crate_name(),
@@ -178,19 +170,20 @@ impl WorkspaceIndex {
                                                 r.generation(),
                                                 &embedded,
                                             );
-                                            let is_dep = sroot.is_some();
+                                            let is_dep = meta.source_root.is_some();
                                             new_readers.push(r);
                                             new_paths.push(fp);
                                             new_mtimes.push(mt);
-                                            new_source_roots.push(sroot);
-                                            new_unit_keys.push(ukey);
-                                            new_reader_generations.push(gen);
-                                            new_reader_dependencies.push(deps);
-                                            new_reader_extern_units.push(ext_units);
-                                            new_reader_file_hashes.push(file_hashes);
+                                            new_source_roots.push(meta.source_root);
+                                            new_unit_keys.push(meta.unit_key);
+                                            new_target_kinds.push(meta.target_kind);
+                                            new_reader_generations.push(meta.generation);
+                                            new_reader_dependencies.push(meta.dependencies);
+                                            new_reader_extern_units.push(meta.extern_units);
+                                            new_reader_file_hashes.push(meta.file_hashes);
                                             new_reader_is_dependency.push(is_dep);
-                                            new_meta_paths.push(mpath);
-                                            new_meta_mtimes.push(mmtime);
+                                            new_meta_paths.push(meta.meta_path);
+                                            new_meta_mtimes.push(meta.meta_mtime);
                                         }
                                     }
 
@@ -232,6 +225,9 @@ impl WorkspaceIndex {
                                                 if new_source_roots[idx].is_none() {
                                                     new_source_roots[idx] =
                                                         dep.source_root.as_ref().map(PathBuf::from);
+                                                }
+                                                if new_target_kinds[idx].is_none() && dep.target_kind.is_some() {
+                                                    new_target_kinds[idx] = dep.target_kind;
                                                 }
                                                 if new_reader_generations[idx].is_none() {
                                                     new_reader_generations[idx] =
@@ -310,6 +306,7 @@ impl WorkspaceIndex {
                                                     dep.source_root.as_ref().map(PathBuf::from),
                                                 );
                                                 new_unit_keys.push(Some(dep.unit_key.clone()));
+                                                new_target_kinds.push(dep.target_kind);
                                                 new_reader_generations.push(gen);
                                                 let deps = if gen_valid {
                                                     dep.dependencies.clone()
@@ -349,6 +346,7 @@ impl WorkspaceIndex {
                                         self.mtimes = new_mtimes;
                                         self.source_roots = new_source_roots;
                                         self.unit_keys = new_unit_keys;
+                                        self.target_kinds = new_target_kinds;
                                         self.reader_generations = new_reader_generations;
                                         self.reader_dependencies = new_reader_dependencies;
                                         self.reader_extern_units = new_reader_extern_units;
@@ -384,6 +382,9 @@ impl WorkspaceIndex {
                 }
                 if i < self.unit_keys.len() {
                     self.unit_keys.remove(i);
+                }
+                if i < self.target_kinds.len() {
+                    self.target_kinds.remove(i);
                 }
                 if i < self.reader_generations.len() {
                     self.reader_generations.remove(i);
@@ -429,38 +430,40 @@ impl WorkspaceIndex {
                         .or_else(|| p.parent().map(PathBuf::from));
                     if let Some(dir) = meta_dir {
                         let embedded = self.readers[i].embedded_file_hashes();
-                        let (sroot, ukey, gen, deps, ext_units, file_hashes, mpath, mmtime) =
-                            Self::load_file_metadata(
-                                &p,
-                                &dir,
-                                self.readers[i].crate_name(),
-                                self.readers[i].unit_key(),
-                                self.readers[i].generation(),
-                                &embedded,
-                            );
+                        let meta = Self::load_file_metadata(
+                            &p,
+                            &dir,
+                            self.readers[i].crate_name(),
+                            self.readers[i].unit_key(),
+                            self.readers[i].generation(),
+                            &embedded,
+                        );
                         if let Some(sr) = self.source_roots.get_mut(i) {
-                            *sr = sroot;
+                            *sr = meta.source_root;
                         }
                         if let Some(uk) = self.unit_keys.get_mut(i) {
-                            *uk = ukey;
+                            *uk = meta.unit_key;
+                        }
+                        if let Some(tk) = self.target_kinds.get_mut(i) {
+                            *tk = meta.target_kind;
                         }
                         if let Some(g) = self.reader_generations.get_mut(i) {
-                            *g = gen;
+                            *g = meta.generation;
                         }
                         if let Some(dp) = self.reader_dependencies.get_mut(i) {
-                            *dp = deps;
+                            *dp = meta.dependencies;
                         }
                         if let Some(eu) = self.reader_extern_units.get_mut(i) {
-                            *eu = ext_units;
+                            *eu = meta.extern_units;
                         }
                         if let Some(fh) = self.reader_file_hashes.get_mut(i) {
-                            *fh = file_hashes;
+                            *fh = meta.file_hashes;
                         }
                         if let Some(mp) = self.meta_paths.get_mut(i) {
-                            *mp = mpath;
+                            *mp = meta.meta_path;
                         }
                         if let Some(mm) = self.meta_mtimes.get_mut(i) {
-                            *mm = mmtime;
+                            *mm = meta.meta_mtime;
                         }
                     }
                     self.record_reloaded_reader_files(i);
@@ -473,38 +476,40 @@ impl WorkspaceIndex {
                     .or_else(|| p.parent().map(PathBuf::from));
                 if let Some(dir) = meta_dir {
                     let embedded = self.readers[i].embedded_file_hashes();
-                    let (sroot, ukey, gen, deps, ext_units, file_hashes, mpath, mmtime) =
-                        Self::load_file_metadata(
-                            &p,
-                            &dir,
-                            self.readers[i].crate_name(),
-                            self.readers[i].unit_key(),
-                            self.readers[i].generation(),
-                            &embedded,
-                        );
+                    let meta = Self::load_file_metadata(
+                        &p,
+                        &dir,
+                        self.readers[i].crate_name(),
+                        self.readers[i].unit_key(),
+                        self.readers[i].generation(),
+                        &embedded,
+                    );
                     if let Some(sr) = self.source_roots.get_mut(i) {
-                        *sr = sroot;
+                        *sr = meta.source_root;
                     }
                     if let Some(uk) = self.unit_keys.get_mut(i) {
-                        *uk = ukey;
+                        *uk = meta.unit_key;
+                    }
+                    if let Some(tk) = self.target_kinds.get_mut(i) {
+                        *tk = meta.target_kind;
                     }
                     if let Some(g) = self.reader_generations.get_mut(i) {
-                        *g = gen;
+                        *g = meta.generation;
                     }
                     if let Some(dp) = self.reader_dependencies.get_mut(i) {
-                        *dp = deps;
+                        *dp = meta.dependencies;
                     }
                     if let Some(eu) = self.reader_extern_units.get_mut(i) {
-                        *eu = ext_units;
+                        *eu = meta.extern_units;
                     }
                     if let Some(fh) = self.reader_file_hashes.get_mut(i) {
-                        *fh = file_hashes;
+                        *fh = meta.file_hashes;
                     }
                     if let Some(mp) = self.meta_paths.get_mut(i) {
-                        *mp = mpath;
+                        *mp = meta.meta_path;
                     }
                     if let Some(mm) = self.meta_mtimes.get_mut(i) {
-                        *mm = mmtime;
+                        *mm = meta.meta_mtime;
                     }
                     self.record_reloaded_reader_files(i);
                     changed = true;
@@ -532,16 +537,15 @@ impl WorkspaceIndex {
                     if let Ok(reader) = IndexReader::open(&file_path) {
                         let mtime = fs::metadata(&file_path).and_then(|m| m.modified()).ok();
                         let embedded = reader.embedded_file_hashes();
-                        let (sroot, ukey, gen, deps, ext_units, file_hashes, mpath, mmtime) =
-                            Self::load_file_metadata(
-                                &file_path,
-                                &dir,
-                                reader.crate_name(),
-                                reader.unit_key(),
-                                reader.generation(),
-                                &embedded,
-                            );
-                        if let Some(ref uk) = ukey {
+                        let meta = Self::load_file_metadata(
+                            &file_path,
+                            &dir,
+                            reader.crate_name(),
+                            reader.unit_key(),
+                            reader.generation(),
+                            &embedded,
+                        );
+                        if let Some(ref uk) = meta.unit_key {
                             if self
                                 .unit_keys
                                 .iter()
@@ -550,19 +554,20 @@ impl WorkspaceIndex {
                                 continue;
                             }
                         }
-                        let is_dep = sroot.is_some();
+                        let is_dep = meta.source_root.is_some();
                         self.readers.push(reader);
                         self.paths.push(file_path);
                         self.mtimes.push(mtime);
-                        self.source_roots.push(sroot);
-                        self.unit_keys.push(ukey);
-                        self.reader_generations.push(gen);
-                        self.reader_dependencies.push(deps);
-                        self.reader_extern_units.push(ext_units);
-                        self.reader_file_hashes.push(file_hashes);
+                        self.source_roots.push(meta.source_root);
+                        self.unit_keys.push(meta.unit_key);
+                        self.target_kinds.push(meta.target_kind);
+                        self.reader_generations.push(meta.generation);
+                        self.reader_dependencies.push(meta.dependencies);
+                        self.reader_extern_units.push(meta.extern_units);
+                        self.reader_file_hashes.push(meta.file_hashes);
                         self.reader_is_dependency.push(is_dep);
-                        self.meta_paths.push(mpath);
-                        self.meta_mtimes.push(mmtime);
+                        self.meta_paths.push(meta.meta_path);
+                        self.meta_mtimes.push(meta.meta_mtime);
                         let new_idx = self.readers.len() - 1;
                         self.record_reloaded_reader_files(new_idx);
                         changed = true;

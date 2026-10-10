@@ -163,11 +163,23 @@ fn test_try_run_indexing_with_options_and_deps() {
         writer.write_to(&mut f).unwrap();
         drop(f);
 
+        let host_target = std::process::Command::new("rustc")
+            .args(["-vV"])
+            .output()
+            .ok()
+            .and_then(|out| {
+                let s = String::from_utf8_lossy(&out.stdout);
+                s.lines()
+                    .find(|l| l.starts_with("host: "))
+                    .map(|l| l.trim_start_matches("host: ").trim().to_string())
+            })
+            .unwrap_or_else(|| "x86_64-unknown-linux-gnu".to_string());
+
         let cargo_cfg_dir = test_dir.0.join(".cargo");
         fs::create_dir_all(&cargo_cfg_dir).unwrap();
         fs::write(
             cargo_cfg_dir.join("config.toml"),
-            "[build]\ntarget = \"x86_64-unknown-linux-gnu\"\n",
+            format!("[build]\ntarget = \"{}\"\n", host_target),
         )
         .unwrap();
 

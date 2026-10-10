@@ -17,18 +17,35 @@ impl WorkspaceIndex {
     /// Returns the index in `self.readers` for the crate that contains or owns the specified file path.
     pub fn reader_index_for_file(&self, file_path: &str) -> Option<usize> {
         let indices = self.reader_indices_for_file(file_path);
-        // Prefer a unit whose key indicates a library target or primary unit, if distinguishable
+        // 1. Prefer an explicit library target kind (Lib)
         indices
             .iter()
             .copied()
             .find(|&i| {
-                self.unit_keys
+                self.target_kinds
                     .get(i)
-                    .and_then(|u| u.as_deref())
-                    .map(|uk| uk.contains("(lib)"))
+                    .copied()
+                    .flatten()
+                    .map(|k| k.is_lib())
                     .unwrap_or(false)
             })
+            // 2. Fallback to unit_key containing "(lib)"
+            .or_else(|| {
+                indices.iter().copied().find(|&i| {
+                    self.unit_keys
+                        .get(i)
+                        .and_then(|u| u.as_deref())
+                        .map(|uk| uk.contains("(lib)"))
+                        .unwrap_or(false)
+                })
+            })
+            // 3. Fallback to first matching reader index
             .or_else(|| indices.into_iter().next())
+    }
+
+    /// Returns the target kind for the reader at index `idx` if known.
+    pub fn target_kind_at(&self, idx: usize) -> Option<super::target_kind::TargetKind> {
+        self.target_kinds.get(idx).copied().flatten()
     }
 
     /// Returns the indices in `self.readers` for all crate units that contain or own the specified file path.
@@ -48,7 +65,16 @@ impl WorkspaceIndex {
             if let Some(Some(root)) = self.source_roots.get(i) {
                 if !root.as_os_str().is_empty() {
                     let matches = p.starts_with(root)
-                        || abs_p.as_deref().map(|ap| ap.starts_with(root)).unwrap_or(false);
+                        || abs_p
+                            .as_deref()
+                            .map(|ap| ap.starts_with(root))
+                            .unwrap_or(false)
+                        || (p.is_absolute()
+                            && self
+                                .workspace_root
+                                .as_ref()
+                                .map(|ws| p.starts_with(ws.join(root)))
+                                .unwrap_or(false));
                     if matches {
                         matching_roots.push((i, root.components().count(), root.as_os_str().len()));
                     }
@@ -67,10 +93,10 @@ impl WorkspaceIndex {
                 .collect();
         }
 
-        // 2. reader_file_hashes exact match
+        // 2. reader.find_file_id match (direct index match)
         let mut indices = Vec::new();
-        for (i, hashes) in self.reader_file_hashes.iter().enumerate() {
-            if hashes.contains_key(file_path) {
+        for (i, reader) in self.readers.iter().enumerate() {
+            if reader.find_file_id(file_path).is_some() {
                 indices.push(i);
             }
         }
@@ -78,13 +104,25 @@ impl WorkspaceIndex {
             return indices;
         }
 
-        // 3. reader.find_file_id match
-        for (i, reader) in self.readers.iter().enumerate() {
-            if reader.find_file_id(file_path).is_some() {
+        // 3. reader_file_hashes exact match
+        for (i, hashes) in self.reader_file_hashes.iter().enumerate() {
+            if hashes.contains_key(file_path) {
                 indices.push(i);
             }
         }
         if !indices.is_empty() {
+            let cname_matches: Vec<usize> = indices
+                .iter()
+                .copied()
+                .filter(|&i| {
+                    let cname = self.readers[i].crate_name();
+                    file_path.contains(&format!("/{cname}/"))
+                        || file_path.contains(&format!("\\{cname}\\"))
+                })
+                .collect();
+            if !cname_matches.is_empty() {
+                return cname_matches;
+            }
             return indices;
         }
 
@@ -129,7 +167,9 @@ impl WorkspaceIndex {
         let cname = reader.crate_name();
 
         // 1. Inspect definitions declared directly in this file
-        if let Some(fid) = reader.find_file_id(file_path) {
+        let target_file = self.target_file_for_reader(idx, file_path);
+        let target_str = target_file.as_deref().unwrap_or(file_path);
+        if let Some(fid) = reader.find_file_id(target_str) {
             for def in reader.definitions() {
                 let span = def.span();
                 if span.file_id == fid {
@@ -177,5 +217,115 @@ impl WorkspaceIndex {
             segs.push(file_stem);
         }
         Some(segs.join("::"))
+    }
+
+    /// Resolves `file` (which may be absolute or relative) to the target file path
+    /// recognized by the reader at `reader_idx` (as verified by `reader.find_file_id`),
+    /// or `None` if this reader does not index the file.
+    pub fn target_file_for_reader<'a>(
+        &self,
+        reader_idx: usize,
+        file: &'a str,
+    ) -> Option<std::borrow::Cow<'a, str>> {
+        let reader = self.readers.get(reader_idx)?;
+
+        let p = Path::new(file);
+        if p.is_absolute() {
+            // Absolute path validation: must be within source_root (if defined) or workspace_root
+            let root_opt = self.source_roots.get(reader_idx).and_then(|r| r.as_deref());
+            if let Some(root) = root_opt {
+                let matches_root = if root.is_absolute() {
+                    p.starts_with(root)
+                } else if let Some(ws_root) = &self.workspace_root {
+                    p.starts_with(ws_root.join(root))
+                } else {
+                    false
+                };
+                if !matches_root {
+                    return None;
+                }
+            } else if let Some(ws_root) = &self.workspace_root {
+                if !p.starts_with(ws_root) {
+                    return None;
+                }
+            }
+
+            // A. Workspace root relative (workspace members indexed from workspace root)
+            if let Some(ws_root) = &self.workspace_root {
+                if let Ok(rel) = p.strip_prefix(ws_root) {
+                    if let Some(s) = rel.to_str() {
+                        if reader.find_file_id(s).is_some() {
+                            return Some(std::borrow::Cow::Owned(s.to_string()));
+                        }
+                    }
+                }
+            }
+
+            // B. Source root relative (external dependencies indexed from package root)
+            if let Some(root) = root_opt {
+                if let Ok(rel) = p.strip_prefix(root) {
+                    if let Some(s) = rel.to_str() {
+                        if reader.find_file_id(s).is_some() {
+                            return Some(std::borrow::Cow::Owned(s.to_string()));
+                        }
+                    }
+                }
+            }
+
+            // C. Direct absolute match (if index stored absolute paths)
+            if reader.find_file_id(file).is_some() {
+                return Some(std::borrow::Cow::Borrowed(file));
+            }
+        } else {
+            // Relative path
+            if reader.find_file_id(file).is_some() {
+                return Some(std::borrow::Cow::Borrowed(file));
+            }
+
+            if let Some(Some(root)) = self.source_roots.get(reader_idx) {
+                let joined = root.join(p);
+                if let Some(s) = joined.to_str() {
+                    if reader.find_file_id(s).is_some() {
+                        return Some(std::borrow::Cow::Owned(s.to_string()));
+                    }
+                }
+                if let Ok(rel) = p.strip_prefix(root) {
+                    if let Some(s) = rel.to_str() {
+                        if reader.find_file_id(s).is_some() {
+                            return Some(std::borrow::Cow::Owned(s.to_string()));
+                        }
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Returns reader indices prioritized for querying items in `file`:
+    /// matching readers first (ordered with library targets before tests/benchmarks),
+    /// followed by any remaining workspace readers.
+    pub fn candidate_reader_indices_for_file(&self, file: &str) -> Vec<usize> {
+        let mut candidates = self.reader_indices_for_file(file);
+        candidates.sort_by_key(|&idx| {
+            if self
+                .target_kinds
+                .get(idx)
+                .copied()
+                .flatten()
+                .map(|k| k.is_lib())
+                .unwrap_or(false)
+            {
+                0
+            } else {
+                1
+            }
+        });
+        for idx in 0..self.readers.len() {
+            if !candidates.contains(&idx) {
+                candidates.push(idx);
+            }
+        }
+        candidates
     }
 }

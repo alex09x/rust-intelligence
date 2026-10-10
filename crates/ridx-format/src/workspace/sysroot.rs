@@ -90,6 +90,7 @@ impl super::WorkspaceIndex {
                 self.mtimes.push(mtime);
                 self.source_roots.push(None);
                 self.unit_keys.push(Some(ukey));
+                self.target_kinds.push(Some(super::TargetKind::Lib));
                 self.reader_generations.push(gen);
                 self.reader_dependencies.push(Vec::new());
                 self.reader_extern_units.push(HashMap::new());

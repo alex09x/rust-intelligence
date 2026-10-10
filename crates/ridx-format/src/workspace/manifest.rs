@@ -140,6 +140,8 @@ pub struct DependencyShardInfo {
     #[serde(default)]
     pub source_root: Option<String>,
     #[serde(default)]
+    pub target_kind: Option<super::target_kind::TargetKind>,
+    #[serde(default)]
     pub is_dependency: bool,
     #[serde(default)]
     pub generation: Option<String>,
@@ -153,6 +155,10 @@ pub struct DependencyShardInfo {
     pub stable_crate_id: Option<String>,
     #[serde(default)]
     pub caught_panics: Option<usize>,
+    #[serde(default)]
+    pub compiler_args: Vec<String>,
+    #[serde(default)]
+    pub env: HashMap<String, String>,
 }
 
 pub(crate) fn default_format_version() -> u32 {

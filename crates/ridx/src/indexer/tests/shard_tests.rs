@@ -31,12 +31,24 @@ fn test_indexer_dependency_shards_and_cargo_config() {
     .unwrap();
     fs::write(src_dir.join("lib.rs"), "pub fn sample() {}\n").unwrap();
 
+    let host_target = std::process::Command::new("rustc")
+        .args(["-vV"])
+        .output()
+        .ok()
+        .and_then(|out| {
+            let s = String::from_utf8_lossy(&out.stdout);
+            s.lines()
+                .find(|l| l.starts_with("host: "))
+                .map(|l| l.trim_start_matches("host: ").trim().to_string())
+        })
+        .unwrap_or_else(|| "x86_64-unknown-linux-gnu".to_string());
+
     // 1. Cargo config with build target (lines 551-560)
     let dot_cargo = work_dir.join(".cargo");
     fs::create_dir_all(&dot_cargo).unwrap();
     fs::write(
         dot_cargo.join("config.toml"),
-        "[build]\ntarget = \"x86_64-unknown-linux-gnu\"\n",
+        format!("[build]\ntarget = \"{}\"\n", host_target),
     )
     .unwrap();
 
@@ -67,7 +79,7 @@ fn test_indexer_dependency_shards_and_cargo_config() {
     // Prepopulate .deps directory with DependencyShardInfo (lines 506-548)
     let variant_id = compute_variant_id(
         "dev",
-        Some("x86_64-unknown-linux-gnu"),
+        Some(&host_target),
         None,
         None,
         false,
@@ -85,12 +97,14 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         generation: Some("gen_alpha".to_string()),
         object_path: dep_file.display().to_string(),
         source_root: Some(temp.0.display().to_string()),
+        target_kind: None,
         is_dependency: true,
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
         stable_crate_id: None,
         caught_panics: None,
+        ..Default::default()
     };
     fs::write(
         deps_dir.join("dep_crate.json"),
@@ -106,12 +120,14 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         generation: Some("mismatched_gen".to_string()),
         object_path: dep_file.display().to_string(),
         source_root: Some(temp.0.display().to_string()),
+        target_kind: None,
         is_dependency: true,
         dependencies: vec!["some_dep".to_string()],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
         stable_crate_id: None,
         caught_panics: None,
+        ..Default::default()
     };
     fs::write(
         deps_dir.join("dep_mismatch.json"),
@@ -127,12 +143,14 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         generation: None,
         object_path: dep_file.display().to_string(),
         source_root: Some(temp.0.display().to_string()),
+        target_kind: None,
         is_dependency: true,
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
         stable_crate_id: None,
         caught_panics: None,
+        ..Default::default()
     };
     fs::write(
         deps_dir.join("dep_empty_h.json"),
@@ -161,12 +179,14 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         generation: None,
         object_path: dep_matching_file.display().to_string(),
         source_root: Some(temp.0.display().to_string()),
+        target_kind: None,
         is_dependency: true,
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: f_hashes.clone(),
         stable_crate_id: None,
         caught_panics: None,
+        ..Default::default()
     };
     fs::write(
         deps_dir.join("dep_matching.json"),
@@ -190,12 +210,14 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         generation: None,
         object_path: dep_mismatch_gen_file.display().to_string(),
         source_root: Some(temp.0.display().to_string()),
+        target_kind: None,
         is_dependency: true,
         dependencies: vec!["some_dep".to_string()],
         extern_units: std::collections::HashMap::new(),
         file_hashes: f_hashes.clone(),
         stable_crate_id: None,
         caught_panics: None,
+        ..Default::default()
     };
     fs::write(
         deps_dir.join("dep_mismatch_gen.json"),
@@ -211,12 +233,14 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         generation: None,
         object_path: dep_file.display().to_string(),
         source_root: Some(temp.0.display().to_string()),
+        target_kind: None,
         is_dependency: false,
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
         stable_crate_id: None,
         caught_panics: None,
+        ..Default::default()
     };
     fs::write(
         deps_dir.join("dep_not_dep.json"),
@@ -232,12 +256,14 @@ fn test_indexer_dependency_shards_and_cargo_config() {
         generation: None,
         object_path: "/nonexistent/object.ridx".to_string(),
         source_root: Some(temp.0.display().to_string()),
+        target_kind: None,
         is_dependency: true,
         dependencies: vec![],
         extern_units: std::collections::HashMap::new(),
         file_hashes: std::collections::HashMap::new(),
         stable_crate_id: None,
         caught_panics: None,
+        ..Default::default()
     };
     fs::write(
         deps_dir.join("dep_missing_obj.json"),

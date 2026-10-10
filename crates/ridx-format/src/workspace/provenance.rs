@@ -11,6 +11,7 @@
 //! Source provenance, hash resolution, and shard metadata loading.
 
 use super::manifest::DependencyShardInfo;
+use super::target_kind::TargetKind;
 use super::WorkspaceIndex;
 use std::collections::HashMap;
 use std::fs;
@@ -413,7 +414,6 @@ impl WorkspaceIndex {
         None
     }
 
-    #[allow(clippy::type_complexity)]
     pub(crate) fn load_file_metadata(
         file_path: &Path,
         base_dir: &Path,
@@ -421,16 +421,7 @@ impl WorkspaceIndex {
         expected_unit_key: &str,
         expected_generation: &str,
         embedded_hashes: &HashMap<String, u64>,
-    ) -> (
-        Option<PathBuf>,
-        Option<String>,
-        Option<String>,
-        Vec<String>,
-        HashMap<String, String>,
-        HashMap<String, u64>,
-        Option<PathBuf>,
-        Option<std::time::SystemTime>,
-    ) {
+    ) -> LoadedFileMetadata {
         let stem = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
         let stem_without_lib = stem.strip_prefix("lib").unwrap_or(stem);
         let deps_dir = base_dir.join(".deps");
@@ -475,16 +466,40 @@ impl WorkspaceIndex {
                         } else {
                             info.generation
                         };
-                        return (
-                            info.source_root.as_ref().map(PathBuf::from),
-                            Some(info.unit_key),
-                            gen,
-                            info.dependencies,
-                            info.extern_units,
-                            combined_hashes,
-                            Some(c.clone()),
-                            mtime,
-                        );
+                        let effective_source_root = info
+                            .source_root
+                            .as_ref()
+                            .map(PathBuf::from)
+                            .or_else(|| info.env.get("CARGO_MANIFEST_DIR").map(PathBuf::from));
+
+                        let effective_target_kind = info.target_kind.or_else(|| {
+                            let base_kind = if info.env.contains_key("CARGO_BIN_NAME") {
+                                Some("bin")
+                            } else {
+                                None
+                            };
+                            if base_kind.is_some() || !info.compiler_args.is_empty() {
+                                Some(super::target_kind::classify_target(
+                                    base_kind,
+                                    &info.compiler_args,
+                                ))
+                            } else {
+                                None
+                            }
+                        });
+
+                        return LoadedFileMetadata {
+                            source_root: effective_source_root,
+                            unit_key: Some(info.unit_key),
+                            target_kind: effective_target_kind,
+                            is_dependency: info.is_dependency,
+                            generation: gen,
+                            dependencies: info.dependencies,
+                            extern_units: info.extern_units,
+                            file_hashes: combined_hashes,
+                            meta_path: Some(c.clone()),
+                            meta_mtime: mtime,
+                        };
                     }
                 }
             }
@@ -499,17 +514,34 @@ impl WorkspaceIndex {
         } else {
             None
         };
-        (
-            None,
-            ukey,
-            gen,
-            Vec::new(),
-            HashMap::new(),
-            embedded_hashes.clone(),
-            Some(cand_json[0].clone()),
-            None,
-        )
+        LoadedFileMetadata {
+            source_root: None,
+            unit_key: ukey,
+            target_kind: None,
+            is_dependency: false,
+            generation: gen,
+            dependencies: Vec::new(),
+            extern_units: HashMap::new(),
+            file_hashes: embedded_hashes.clone(),
+            meta_path: Some(cand_json[0].clone()),
+            meta_mtime: None,
+        }
     }
+}
+
+/// Strongly-typed file metadata resolved from sidecar JSON files.
+#[derive(Debug, Clone)]
+pub(crate) struct LoadedFileMetadata {
+    pub source_root: Option<PathBuf>,
+    pub unit_key: Option<String>,
+    pub target_kind: Option<TargetKind>,
+    pub is_dependency: bool,
+    pub generation: Option<String>,
+    pub dependencies: Vec<String>,
+    pub extern_units: HashMap<String, String>,
+    pub file_hashes: HashMap<String, u64>,
+    pub meta_path: Option<PathBuf>,
+    pub meta_mtime: Option<std::time::SystemTime>,
 }
 
 #[cfg(test)]
@@ -767,25 +799,24 @@ mod tests {
         let meta_file = temp_dir.join("test.meta");
         fs::write(&meta_file, b"{ corrupted_json").unwrap();
         let embedded = HashMap::new();
-        let (sroot, ukey, gen, deps, ext, hashes, mpath, mmtime) =
-            WorkspaceIndex::load_file_metadata(
-                &test_idx,
-                &temp_dir,
-                "prov_crate",
-                "uk",
-                "gen",
-                &embedded,
-            );
-        assert_eq!(sroot, None);
-        assert_eq!(ukey, Some("uk".to_string()));
-        assert_eq!(gen, Some("gen".to_string()));
-        assert!(deps.is_empty());
-        assert!(ext.is_empty());
-        assert!(hashes.is_empty());
-        assert!(mpath.is_some());
-        assert_eq!(mmtime, None);
+        let meta = WorkspaceIndex::load_file_metadata(
+            &test_idx,
+            &temp_dir,
+            "prov_crate",
+            "uk",
+            "gen",
+            &embedded,
+        );
+        assert_eq!(meta.source_root, None);
+        assert_eq!(meta.unit_key, Some("uk".to_string()));
+        assert_eq!(meta.generation, Some("gen".to_string()));
+        assert!(meta.dependencies.is_empty());
+        assert!(meta.extern_units.is_empty());
+        assert!(meta.file_hashes.is_empty());
+        assert!(meta.meta_path.is_some());
+        assert_eq!(meta.meta_mtime, None);
 
-        let (_, ukey_empty, gen_empty, _, _, _, _, _) = WorkspaceIndex::load_file_metadata(
+        let meta_empty = WorkspaceIndex::load_file_metadata(
             &test_idx,
             &temp_dir,
             "prov_crate",
@@ -793,8 +824,8 @@ mod tests {
             "",
             &embedded,
         );
-        assert_eq!(ukey_empty, None);
-        assert_eq!(gen_empty, None);
+        assert_eq!(meta_empty.unit_key, None);
+        assert_eq!(meta_empty.generation, None);
 
         let _ = fs::remove_dir_all(&temp_dir);
 
@@ -893,12 +924,15 @@ mod tests {
             generation: None,
             object_path: abs_idx_file.display().to_string(),
             source_root: Some(temp2.display().to_string()),
+            target_kind: None,
             is_dependency: true,
             dependencies: vec![],
             extern_units: HashMap::new(),
             file_hashes: fhashes,
             stable_crate_id: None,
             caught_panics: None,
+            compiler_args: vec![],
+            env: HashMap::new(),
         };
         fs::write(
             deps_dir.join("computed_crate.json"),
@@ -907,7 +941,7 @@ mod tests {
         .unwrap();
 
         // Mismatching expected generation (lines 445-447)
-        let (sroot_mismatch, _, _, _, _, _, _, _) = WorkspaceIndex::load_file_metadata(
+        let meta_mismatch = WorkspaceIndex::load_file_metadata(
             &temp2.join("computed_crate.ridx"),
             &temp2,
             "computed_crate",
@@ -915,21 +949,20 @@ mod tests {
             "wrong_gen_12345678",
             &HashMap::new(),
         );
-        assert_eq!(sroot_mismatch, None);
+        assert_eq!(meta_mismatch.source_root, None);
 
         // Matching expected generation (lines 441-444, 463-472)
-        let (sroot_match, ukey_match, gen_match, _, _, _, _, _) =
-            WorkspaceIndex::load_file_metadata(
-                &temp2.join("computed_crate.ridx"),
-                &temp2,
-                "computed_crate",
-                "comp_uk",
-                &expected_gen_str,
-                &HashMap::new(),
-            );
-        assert_eq!(sroot_match, Some(temp2.clone()));
-        assert_eq!(ukey_match, Some("comp_uk".to_string()));
-        assert_eq!(gen_match, Some(expected_gen_str));
+        let meta_match = WorkspaceIndex::load_file_metadata(
+            &temp2.join("computed_crate.ridx"),
+            &temp2,
+            "computed_crate",
+            "comp_uk",
+            &expected_gen_str,
+            &HashMap::new(),
+        );
+        assert_eq!(meta_match.source_root, Some(temp2.clone()));
+        assert_eq!(meta_match.unit_key, Some("comp_uk".to_string()));
+        assert_eq!(meta_match.generation, Some(expected_gen_str));
 
         let _ = fs::remove_dir_all(&temp2);
     }
@@ -1058,12 +1091,15 @@ mod tests {
             generation: None,
             object_path: "".to_string(),
             source_root: None,
+            target_kind: None,
             is_dependency: true,
             dependencies: vec![],
             extern_units: HashMap::new(),
             file_hashes: fh,
             stable_crate_id: None,
             caught_panics: None,
+            compiler_args: vec![],
+            env: HashMap::new(),
         };
         fs::write(
             deps_dir.join("sample.json"),

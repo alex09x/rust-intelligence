@@ -151,41 +151,21 @@ impl WorkspaceIndex {
         line: u32,
         col: u32,
     ) -> Option<ResolvedDefinition<'a>> {
-        let p = Path::new(file);
-        let is_abs = p.is_absolute();
-        let belongs_to_dep = if is_abs {
-            self.source_roots.iter().any(|r| {
-                if let Some(r) = r.as_ref() {
-                    p.starts_with(r)
-                } else {
-                    false
-                }
-            })
-        } else {
-            false
-        };
-
-        for (i, reader) in self.readers.iter().enumerate() {
-            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
-                if is_abs {
-                    if let Ok(rel) = p.strip_prefix(root) {
-                        rel.to_str().unwrap_or(file)
-                    } else {
-                        // The queried file is absolute and outside this dependency's source_root.
-                        // Skip this reader to prevent suffix collision.
-                        continue;
-                    }
-                } else {
-                    file
-                }
-            } else {
-                if belongs_to_dep {
-                    continue;
-                }
-                file
+        let mut fallback_mod = None;
+        for i in self.candidate_reader_indices_for_file(file) {
+            let reader = &self.readers[i];
+            let Some(target_file) = self.target_file_for_reader(i, file) else {
+                continue;
             };
 
-            if let Some(mut res) = reader.find_definition_at(target_file, line, col) {
+            if let Some(mut res) = reader.find_definition_at(target_file.as_ref(), line, col) {
+                if res.kind == DefKind::Mod && (res.start_line != line || col < res.start_col) {
+                    if fallback_mod.is_none() {
+                        fallback_mod = Some(res);
+                    }
+                    continue;
+                }
+
                 let crate_prefix = format!("{}::", reader.crate_name());
                 let current_uk = self
                     .unit_keys
@@ -223,7 +203,7 @@ impl WorkspaceIndex {
             }
         }
 
-        None
+        fallback_mod
     }
 
     /// Finds a generic type parameter (`DefKind::TyParam`) in scope at `(file, line, col)`.
@@ -234,39 +214,15 @@ impl WorkspaceIndex {
         line: u32,
         col: u32,
     ) -> Option<ResolvedDefinition<'a>> {
-        let p = Path::new(file);
-        let is_abs = p.is_absolute();
-        let belongs_to_dep = if is_abs {
-            self.source_roots.iter().any(|r| {
-                if let Some(r) = r.as_ref() {
-                    p.starts_with(r)
-                } else {
-                    false
-                }
-            })
-        } else {
-            false
-        };
-
-        for (i, reader) in self.readers.iter().enumerate() {
-            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
-                if is_abs {
-                    if let Ok(rel) = p.strip_prefix(root) {
-                        rel.to_str().unwrap_or(file)
-                    } else {
-                        continue;
-                    }
-                } else {
-                    file
-                }
-            } else {
-                if belongs_to_dep {
-                    continue;
-                }
-                file
+        for i in self.candidate_reader_indices_for_file(file) {
+            let reader = &self.readers[i];
+            let Some(target_file) = self.target_file_for_reader(i, file) else {
+                continue;
             };
 
-            if let Some((def, _)) = reader.find_type_param_in_scope(target_file, name, line, col) {
+            if let Some((def, _)) =
+                reader.find_type_param_in_scope(target_file.as_ref(), name, line, col)
+            {
                 return Some(self.make_resolved_definition(i, def));
             }
         }
@@ -275,24 +231,13 @@ impl WorkspaceIndex {
 
     /// Finds all owners/bounds associated with a definition.
     pub fn find_owners_of_definition<'a>(&'a self, def: &ResolvedDefinition<'a>) -> Vec<&'a str> {
-        let p = Path::new(def.file);
-        let is_abs = p.is_absolute();
-        for (i, reader) in self.readers.iter().enumerate() {
-            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
-                if is_abs {
-                    if let Ok(rel) = p.strip_prefix(root) {
-                        rel.to_str().unwrap_or(def.file)
-                    } else {
-                        continue;
-                    }
-                } else {
-                    def.file
-                }
-            } else {
-                def.file
+        for i in self.candidate_reader_indices_for_file(def.file) {
+            let reader = &self.readers[i];
+            let Some(target_file) = self.target_file_for_reader(i, def.file) else {
+                continue;
             };
 
-            if let Some(_fid) = reader.find_file_id(target_file) {
+            if let Some(_fid) = reader.find_file_id(target_file.as_ref()) {
                 if let Some(def_entry) = reader.find_definition_by_path(def.path) {
                     let def_idx = (def_entry as *const _ as usize
                         - reader.definitions().as_ptr() as usize)
@@ -978,38 +923,12 @@ impl WorkspaceIndex {
 
     /// Inferred expression type at cursor location.
     pub fn type_at(&self, file: &str, line: u32, col: u32) -> Option<&str> {
-        let p = Path::new(file);
-        let is_abs = p.is_absolute();
-        let belongs_to_dep = if is_abs {
-            self.source_roots.iter().any(|r| {
-                if let Some(r) = r.as_ref() {
-                    p.starts_with(r)
-                } else {
-                    false
-                }
-            })
-        } else {
-            false
-        };
-
-        for (i, reader) in self.readers.iter().enumerate() {
-            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
-                if is_abs {
-                    if let Ok(rel) = p.strip_prefix(root) {
-                        rel.to_str().unwrap_or(file)
-                    } else {
-                        continue;
-                    }
-                } else {
-                    file
-                }
-            } else {
-                if belongs_to_dep {
-                    continue;
-                }
-                file
+        for i in self.candidate_reader_indices_for_file(file) {
+            let reader = &self.readers[i];
+            let Some(target_file) = self.target_file_for_reader(i, file) else {
+                continue;
             };
-            if let Some(ty) = reader.type_at(target_file, line, col) {
+            if let Some(ty) = reader.type_at(target_file.as_ref(), line, col) {
                 return Some(ty);
             }
         }
@@ -1018,38 +937,12 @@ impl WorkspaceIndex {
 
     /// Inferred expression type and optional canonical owner path at cursor location.
     pub fn type_entry_at(&self, file: &str, line: u32, col: u32) -> Option<(&str, Option<&str>)> {
-        let p = Path::new(file);
-        let is_abs = p.is_absolute();
-        let belongs_to_dep = if is_abs {
-            self.source_roots.iter().any(|r| {
-                if let Some(r) = r.as_ref() {
-                    p.starts_with(r)
-                } else {
-                    false
-                }
-            })
-        } else {
-            false
-        };
-
-        for (i, reader) in self.readers.iter().enumerate() {
-            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
-                if is_abs {
-                    if let Ok(rel) = p.strip_prefix(root) {
-                        rel.to_str().unwrap_or(file)
-                    } else {
-                        continue;
-                    }
-                } else {
-                    file
-                }
-            } else {
-                if belongs_to_dep {
-                    continue;
-                }
-                file
+        for i in self.candidate_reader_indices_for_file(file) {
+            let reader = &self.readers[i];
+            let Some(target_file) = self.target_file_for_reader(i, file) else {
+                continue;
             };
-            if let Some(res) = reader.type_entry_at(target_file, line, col) {
+            if let Some(res) = reader.type_entry_at(target_file.as_ref(), line, col) {
                 return Some(res);
             }
         }
@@ -1140,11 +1033,17 @@ impl WorkspaceIndex {
 
     /// Substring symbol search across non-dependency definitions in the workspace.
     pub fn search_local_symbols<'a>(&'a self, query: &str) -> Vec<WorkspaceSymbol<'a>> {
-        self.search_symbols_filtered(query, |i, _| !self.reader_is_dependency.get(i).copied().unwrap_or(false))
+        self.search_symbols_filtered(query, |i, _| {
+            !self.reader_is_dependency.get(i).copied().unwrap_or(false)
+        })
     }
 
     /// Substring symbol search with custom reader predicate.
-    pub fn search_symbols_filtered<'a, F>(&'a self, query: &str, mut filter: F) -> Vec<WorkspaceSymbol<'a>>
+    pub fn search_symbols_filtered<'a, F>(
+        &'a self,
+        query: &str,
+        mut filter: F,
+    ) -> Vec<WorkspaceSymbol<'a>>
     where
         F: FnMut(usize, &IndexReader<memmap2::Mmap>) -> bool,
     {
