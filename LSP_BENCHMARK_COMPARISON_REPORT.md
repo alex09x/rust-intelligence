@@ -799,6 +799,85 @@ In commit `4a2441f`, baseline recall was 79.3% (24 candidates). In commit `14d06
    - Implemented in `WorkspaceIndex::reader_indices_for_file` and `reader_index_for_file` by `(components().count(), root.as_os_str().len())`.
    - Verified via unit test `test_longest_prefix_matching_order_independence` across both reader insertion orders for nested crates.
 
+---
 
+## 11. Step 3 Bounded Fallback Symbol Search (`811a3dd`)
 
+*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)  
+*Toolchain Parity:* `rustc 1.98.1 (48a229cea 2026-09-01)` matching `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
+*Sysroot & Index CAS Key:* `0cee421fdfa9bc37` (`sysroot_transplanted: false`; driver hash: `89feb5a0e88f02c9`, driver build commit: `811a3dd7f409d62f85648d3212d1c933db7628e4` == `commit_ridx`)  
+*Baseline Provenance:* `base_source: "replay"`, `base_build_commit: "4a2441f"`, `base_driver_hash: "93f2d416218dfb1a"`, `base_sysroot_cas_key: "ad5e1980a489d231"`, `base_sysroot_transplanted: true`  
+*Scenario Validation:* Strict syntactic validation (`scenarios_validated`: `100/100` on Serde `69072f24`, `99/99` on Bevy `68c80f3b` with `comp_colon_10_Greater` excluded)  
+*Published Reports:*
+- Grounded Paired Report vs `4a2441f`: `bench/published/completion_regression_4a2441f_vs_811a3dd_v3.json`
+- Raw Telemetry: `bench/published/rerun_completion_811a3dd.jsonl`
 
+### Pre-Optimization Breakdown of 16 Bevy Fallback Scenarios (`53e8364`)
+
+Before optimization, Bevy fallback p95 was 10.91 ms (vs RA 6.53 ms). A fine-grained profiling analysis measured the exact readers and definition records examined across all 16 scenarios:
+
+| Scenario | Location | Warm RIDX | Warm RA | Readers Scanned | Records Checked | RIDX Count | RA Count | Diagnostics & Root Cause |
+|---|---|---|---|---|---|---|---|---|
+| `comp_colon_11_current` | `function_system.rs:834:48` | 1,357 µs | 537 µs | 0 | 0 | 0 | 0 | Unindexed crate prefix `subsecond::`, fast exit |
+| `comp_dot_25_insert` | `stepping.rs:1665:29` | 583 µs | 406 µs | 0 | 0 | 0 | 0 | Unresolved receiver `slotmap`, fast exit |
+| `comp_colon_16_backtrace` | `bevy_error.rs:279:21` | 401 µs | 2,024 µs | 0 | 0 | 100 | 104 | Crate qualifier `std::`, owner symbol match |
+| `comp_colon_7_fmt` | `maybe_location.rs:30:63` | 346 µs | 1,259 µs | 0 | 0 | 51 | 82 | Crate qualifier `core::`, owner symbol match |
+| `comp_dot_9_add_systems` | `stepping.rs:1620:20` | 540 µs | 503 µs | 0 | 0 | 0 | 0 | Unresolved receiver `schedule_a`, fast exit |
+| `comp_colon_2_slice` | `bundle/info.rs:510:68` | 389 µs | 2,155 µs | 0 | 0 | 82 | 82 | Crate qualifier `core::`, owner symbol match |
+| `comp_colon_33_default` | `index_set.rs:852:64` | 24 µs | 2,954 µs | 0 | 0 | 0 | 13 | UFCS qualifier `<&set::Slice<K>>::`, fast exit |
+| `comp_colon_32_new` | `query/state.rs:2493:53` | 24 µs | 3,393 µs | 0 | 0 | 0 | 74 | Generic type qualifier `QueryState::<...>::`, fast exit |
+| `comp_colon_22_derive` | `system_name.rs:11:18` | 444 µs | 717 µs | 1 | 112 | 40 | 22 | Targeted crate `derive_more`, 1 reader, 444 µs |
+| `comp_colon_26_Uninitialized` | `schedule.rs:1054:39` | 11,530 µs | 1,630 µs | 86 | 166,309 | 0 | 10 | Tail #1: Unresolved `ScheduleError::`, linear scan across all 86 readers |
+| `comp_colon_40_Reflect` | `entity_disabling.rs:111:19` | 551 µs | 747 µs | 1 | 117 | 100 | 78 | Targeted crate `bevy_reflect`, 1 reader, 100 cap |
+| `comp_dot_19_next_frame` | `stepping.rs:1421:18` | 10,699 µs | 292 µs | 86 | 166,309 | 0 | 0 | Tail #2: Variable `stepping: Stepping`, linear scan across all 86 readers |
+| `comp_colon_1_cell` | `system_registry.rs:910:15` | 457 µs | 1,859 µs | 0 | 0 | 82 | 83 | Crate qualifier `core::`, owner symbol match |
+| `comp_colon_24_default` | `command.rs:291:80` | 34 µs | 2,998 µs | 0 | 0 | 0 | 118 | Generic type qualifier, fast exit |
+| `comp_dot_17_expect` | `system_registry.rs:1007:14` | 10,496 µs | 11,220 µs | 86 | 166,309 | 0 | 141 | Tail #3: Inferred return type `Result`, linear scan across all 86 readers |
+| `comp_dot_33_in_set` | `schedule.rs:3282:42` | 1,284 µs | 4,968 µs | 1 | 12,204 | 0 | 37 | Targeted crate `bevy_ecs`, 1 reader, 1,284 µs |
+
+**Tail Root Cause Analysis**:
+13 of the 16 scenarios completed in 24–1,357 µs. The entire 10.91 ms p95 tail was caused by exactly 3 scenarios (`comp_colon_26_Uninitialized`, `comp_dot_19_next_frame`, `comp_dot_17_expect`). When `target_crate` was `None` and few or zero items matched `contains_ignore_case_ascii`, the candidate count never reached `max_scan_budget = 1500`. Consequently, `WorkspaceIndex::for_each_symbol_ascii` linearly iterated over every definition in all 86 readers (166,309 records), which took 10.5–11.5 ms on NVMe mmap pages.
+
+### Optimization Mechanism: Definition Record Budget (`811a3dd`)
+
+1. **`for_each_symbol_ascii_budgeted`**: Added to `IndexReader` and `WorkspaceIndex` with a global budget of `30,000` definition records.
+2. **Preferred Crate Prioritization**: Scans the target file's primary reader first (e.g. `bevy_ecs` with 28,018 definitions is completely searched without truncation).
+3. **Strict Early Exit & `isIncomplete` Compliance**: When definition records examined across readers reach 30,000, iteration halts immediately and returns `false`. `search_symbols_fallback` sets `is_capped = true`, which flags the LSP response with `"isIncomplete": true`.
+4. **Budget Semantics and Scope**:
+   If the preferred crate has more than 30,000 definitions, fallback search is bounded within the target crate. If fewer, subsequent workspace crates are examined only using the remaining record budget (e.g. `bevy_ecs` has 28,018 definitions, leaving ~2,000 records for neighboring workspace crates). Fallback completion effectively searches the current crate plus immediate neighbors with `isIncomplete: true` on exhaustion, avoiding full-workspace linear scans across all readers.
+5. **Latency Results on the 3 Tail Scenarios**:
+   - `comp_colon_26_Uninitialized`: 11,530 µs → 3,096 µs (`isIncomplete: true`)
+   - `comp_dot_19_next_frame`: 10,699 µs → 2,472 µs (`isIncomplete: true`)
+   - `comp_dot_17_expect`: 10,496 µs → 2,000 µs (`isIncomplete: true`)
+
+### Headline Comparison Table (`4a2441f` -> `811a3dd`)
+
+| Metric | `serde-rs/serde` (`4a2441f` → `811a3dd`) | `bevyengine/bevy` (`4a2441f` → `811a3dd`) | Combined Total |
+|---|---|---|---|
+| **Validated Scenarios** | 100 / 100 (0 excluded) | 99 / 99 (1 excluded: `comp_colon_10_Greater`) | 199 / 199 |
+| **Empty Responses** | 21 → 12 (11 closed, 2 regressions to empty) | 4 → 10 (0 closed, 6 regressions to empty) | 25 → 22 (11 closed, 8 regressions to empty) |
+| **Grounded Recall vs RA** (`ra_count > 0`) | 45.2% → 56.8% (+11.6 pp, n=98) | 48.1% → 48.0% (-0.1 pp, n=93) | 46.6% → 52.5% (+5.9 pp, n=191) |
+| **Grounded Precision vs RA** (`ridx_count > 0`, `ra_count > 0`) | 78.5% → 86.0% (+7.5 pp, n: 77 → 86) | 62.8% → 65.0% (+2.2 pp, n: 91 → 87) | 70.0% → 75.4% (+5.4 pp, n: 168 → 173) |
+| **Owner-Path Speedup (p50 / p95)** | 9.44x (307 µs vs 2,897 µs) / 8.44x (827 µs vs 6.98 ms) | 7.76x (407 µs vs 3,160 µs) / 9.17x (1.15 ms vs 10.50 ms) | 7.76x – 9.44x (p50) / 8.44x – 9.17x (p95) |
+| **Fallback Speedup (p50 / p95)** | 1.98x (661 µs vs 1,307 µs) / 4.52x (1.71 ms vs 7.72 ms) | 4.17x (459 µs vs 1,912 µs) / 2.87x (2.52 ms vs 7.23 ms) | 1.98x – 4.17x (p50) / 2.87x – 4.52x (p95) |
+| **Overall Speedup (p50 / p95)** | 7.44x (375 µs vs 2,791 µs) / 4.83x (1.58 ms vs 7.62 ms) | 7.35x (410 µs vs 3,015 µs) / 8.02x (1.31 ms vs 10.54 ms) | 7.35x – 7.44x (p50) / 4.83x – 8.02x (p95) |
+
+### Detailed Latency Breakdown (p50 and p95)
+
+| Route | Repository | Scenarios | RIDX p50 | RIDX p95 | RA p50 | RA p95 | Speedup p50 | Speedup p95 |
+|---|---|---|---|---|---|---|---|---|
+| **Owner Path** | `serde-rs/serde` | 85 | 307 µs | 827 µs | 2,897 µs | 6.98 ms | 9.44x | 8.44x |
+| | `bevyengine/bevy` | 83 | 407 µs | 1.15 ms | 3,160 µs | 10.50 ms | 7.76x | 9.17x |
+| **Fallback Path** | `serde-rs/serde` | 15 | 661 µs | 1.71 ms | 1,307 µs | 7.72 ms | 1.98x | 4.52x |
+| | `bevyengine/bevy` | 16 | 459 µs | 2.52 ms | 1,912 µs | 7.23 ms | 4.17x | 2.87x |
+| **Overall Combined** | `serde-rs/serde` | 100 | 375 µs | 1.58 ms | 2,791 µs | 7.62 ms | 7.44x | 4.83x |
+| | `bevyengine/bevy` | 99 | 410 µs | 1.31 ms | 3,015 µs | 10.54 ms | 7.35x | 8.02x |
+
+### Recall Regressions
+
+| Scenario | Repository | Base Recall (`4a2441f`) | Curr Recall (`811a3dd`) | Diff (pp) | Base Count | Curr Count | RA Count | Diagnosis / Notes |
+|---|---|---|---|---|---|---|---|---|
+| `comp_colon_14_error` | Serde | 98.0% | 97.1% | -0.9 | 100 | 100 | 105 | Minor ranking displacement at top 100 limit. |
+| `comp_dot_19_into_deserializer` | Serde | 5.0% | 0.0% | -5.0 | 100 | 0 | 20 | Unresolved receiver type; fallback scan filtered out non-matching candidates. |
+| `comp_dot_33_end` | Serde | 4.2% | 0.0% | -4.2 | 100 | 0 | 24 | Unresolved receiver type; fallback scan filtered out non-matching candidates. |
+| `comp_colon_33_default` | Bevy | 7.7% | 0.0% | -7.7 | 100 | 0 | 13 | Preceding qualifier is UFCS expression `<&set::Slice<K>>`. Fast guard `qual.is_empty()` returns 0 candidates until UFCS syntax is parsed. Zero candidates lost from budget cap. |
