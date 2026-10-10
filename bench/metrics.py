@@ -136,9 +136,11 @@ def classify_discrepancy(r_res, ra_res, target="", location=None):
     ra_span = (ra_res.get("span") or "").strip()
 
     is_r_core = "/library/core/" in r_span or "/library/alloc/" in r_span
-    is_ra_std_or_local = not is_r_core and ("/library/std/" in ra_span or not ra_span.startswith("/home/alex09x/.rustup/"))
+    is_ra_rustup = "/.rustup/" in ra_span or "/rustup/" in ra_span
+    is_ra_std_or_local = not is_r_core and ("/library/std/" in ra_span or not is_ra_rustup)
     is_ra_core = "/library/core/" in ra_span or "/library/alloc/" in ra_span
-    is_r_std_or_local = not is_ra_core and ("/library/std/" in r_span or not r_span.startswith("/home/alex09x/.rustup/"))
+    is_r_rustup = "/.rustup/" in r_span or "/rustup/" in r_span
+    is_r_std_or_local = not is_ra_core and ("/library/std/" in r_span or not is_r_rustup)
 
     if (is_r_core and is_ra_std_or_local) or (is_ra_core and is_r_std_or_local):
         return "core_vs_std_reexport"
