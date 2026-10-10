@@ -740,5 +740,65 @@ In commit `4a2441f`, baseline recall was 79.3% (24 candidates). In commit `14d06
    - Serde recall vs RA is 56.8% (up from 45.2% in `4a2441f`, +11.6 pp) and precision is 86.0% (up from 78.5%, +7.5 pp), closing 11 empty responses.
    - Bevy recall vs RA is 48.0% (vs 48.1% in `4a2441f`, -0.1 pp) and precision is 65.0% (up from 62.8%, +2.2 pp) across 99 scenarios.
 
+---
+
+## 10. Step 2 Clean Paired Benchmark with Matching Driver Build & Untransplanted Sysroot (`53e8364`)
+
+*Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)  
+*Toolchain Parity:* `rustc 1.98.1 (48a229cea 2026-09-01)` matching `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
+*Sysroot & Index CAS Key:* `0cee421fdfa9bc37` (`sysroot_transplanted: false`; driver hash: `89feb5a0e88f02c9`, driver build commit: `53e83649caba71a5bd60ae7b217f8b37dff69dbd` == `commit_ridx`)  
+*Baseline Provenance:* `base_source: "replay"`, `base_build_commit: "4a2441f"`, `base_driver_hash: "93f2d416218dfb1a"`, `base_sysroot_cas_key: "ad5e1980a489d231"`, `base_sysroot_transplanted: true`  
+*Scenario Validation:* Strict syntactic validation (`scenarios_validated`: `100/100` on Serde `69072f24`, `99/99` on Bevy `68c80f3b` with `comp_colon_10_Greater` excluded)  
+*Published Reports:*
+- Grounded Paired Report vs `4a2441f`: `bench/published/completion_regression_4a2441f_vs_53e8364_v3.json`
+- Raw Telemetry: `bench/published/rerun_completion_53e8364.jsonl`
+
+### Headline Comparison Table (`4a2441f` -> `53e8364`)
+
+| Metric | `serde-rs/serde` (`4a2441f` → `53e8364`) | `bevyengine/bevy` (`4a2441f` → `53e8364`) | Combined Total |
+|---|---|---|---|
+| **Validated Scenarios** | 100 / 100 (0 excluded) | 99 / 99 (1 excluded: `comp_colon_10_Greater`) | 199 / 199 |
+| **Empty Responses** | 21 → 12 (11 closed, 2 regressions to empty) | 4 → 10 (0 closed, 6 regressions to empty) | 25 → 22 (11 closed, 8 regressions to empty) |
+| **Grounded Recall vs RA** (`ra_count > 0`) | 45.2% → 56.8% (+11.6 pp, n=98) | 48.1% → 48.0% (-0.1 pp, n=93) | 46.6% → 52.5% (+5.9 pp, n=191) |
+| **Grounded Precision vs RA** (`ridx_count > 0`, `ra_count > 0`) | 78.5% → 86.0% (+7.5 pp, n: 77 → 86) | 62.8% → 65.0% (+2.2 pp, n: 91 → 87) | 70.0% → 75.4% (+5.4 pp, n: 168 → 173) |
+| **Owner-Path Speedup (p50 / p95)** | 9.05x (308 µs vs 2,788 µs) / 7.90x (907 µs vs 7.17 ms) | 7.00x (406 µs vs 2,844 µs) / 9.29x (1.15 ms vs 10.70 ms) | 7.00x – 9.05x (p50) / 7.90x – 9.29x (p95) |
+| **Fallback Speedup (p50 / p95)** | 2.11x (653 µs vs 1,378 µs) / 3.62x (1.93 ms vs 6.99 ms) | 3.50x (498 µs vs 1,744 µs) / 0.60x (10.91 ms vs 6.53 ms) | 2.11x – 3.50x (p50) / 0.60x – 3.62x (p95) |
+| **Overall Speedup (p50 / p95)** | 7.61x (357 µs vs 2,718 µs) / 4.44x (1.58 ms vs 7.01 ms) | 6.40x (414 µs vs 2,650 µs) / 7.95x (1.37 ms vs 10.87 ms) | 6.40x – 7.61x (p50) / 4.44x – 7.95x (p95) |
+
+### Detailed Latency Breakdown (p50 and p95)
+
+| Route | Repository | Scenarios | RIDX p50 | RIDX p95 | RA p50 | RA p95 | Speedup p50 | Speedup p95 |
+|---|---|---|---|---|---|---|---|---|
+| **Owner Path** | `serde-rs/serde` | 85 | 308 µs | 907 µs | 2,788 µs | 7.17 ms | 9.05x | 7.90x |
+| | `bevyengine/bevy` | 83 | 406 µs | 1.15 ms | 2,844 µs | 10.70 ms | 7.00x | 9.29x |
+| **Fallback Path** | `serde-rs/serde` | 15 | 653 µs | 1.93 ms | 1,378 µs | 6.99 ms | 2.11x | 3.62x |
+| | `bevyengine/bevy` | 16 | 498 µs | 10.91 ms | 1,744 µs | 6.53 ms | 3.50x | 0.60x |
+| **Overall Combined** | `serde-rs/serde` | 100 | 357 µs | 1.58 ms | 2,718 µs | 7.01 ms | 7.61x | 4.44x |
+| | `bevyengine/bevy` | 99 | 414 µs | 1.37 ms | 2,650 µs | 10.87 ms | 6.40x | 7.95x |
+
+### Recall Regressions
+
+| Scenario | Repository | Base Recall (`4a2441f`) | Curr Recall (`53e8364`) | Diff (pp) | Base Count | Curr Count | RA Count | Diagnosis / Notes |
+|---|---|---|---|---|---|---|---|---|
+| `comp_colon_14_error` | Serde | 98.0% | 97.1% | -0.9 | 100 | 100 | 105 | Minor ranking displacement at top 100 limit. |
+| `comp_dot_19_into_deserializer` | Serde | 5.0% | 0.0% | -5.0 | 100 | 0 | 20 | Unresolved receiver type; fallback scan filtered out non-matching candidates. |
+| `comp_dot_33_end` | Serde | 4.2% | 0.0% | -4.2 | 100 | 0 | 24 | Unresolved receiver type; fallback scan filtered out non-matching candidates. |
+| `comp_colon_33_default` | Bevy | 7.7% | 0.0% | -7.7 | 100 | 0 | 13 | Preceding qualifier is UFCS expression `<&set::Slice<K>>`. In base `4a2441f`, empty qualifier dump returned 100 random symbols matching `default` coincidentally. Fast guard `qual.is_empty()` returns 0 candidates until UFCS syntax is parsed. |
+
+### Provenance and Verification Rigor
+
+1. **Untransplanted Sysroot Proof (`sysroot_transplanted: false`)**:
+   - `ridx` binary and `ridx-driver` binary were built from commit `53e83649caba71a5bd60ae7b217f8b37dff69dbd` on `booster`.
+   - Driver binary hash is `89feb5a0e88f02c9`, computing active CAS key `0cee421fdfa9bc37`.
+   - Sysroot shards (`core.ridx`, `alloc.ridx`, `std.ridx`) were compiled freshly by this driver into `~/.cache/ridx/v3/sysroot/0cee421fdfa9bc37/`.
+   - Benchmark repositories (`serde-rs/serde` and `bevyengine/bevy`) were re-indexed with this driver, writing `sysroot_cas_key: 0cee421fdfa9bc37` into their respective `ridx_manifest.json`.
+   - Verification via `provenance.py::is_sysroot_transplanted()` confirms `sysroot_transplanted: false` for current commit across all repositories.
+2. **Baseline Provenance**:
+   - Base data is replayed from `bench/published/rerun_completion_4a2441f.jsonl` (driver hash `93f2d416218dfb1a`, build commit `4a2441f`, sysroot CAS key `ad5e1980a489d231`, `base_sysroot_transplanted: true`).
+3. **Longest Prefix Matching Invariant**:
+   - Implemented in `WorkspaceIndex::reader_indices_for_file` and `reader_index_for_file` by `(components().count(), root.as_os_str().len())`.
+   - Verified via unit test `test_longest_prefix_matching_order_independence` across both reader insertion orders for nested crates.
+
+
 
 
