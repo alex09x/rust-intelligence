@@ -168,3 +168,44 @@ fn test_v2_file_table_requires_full_16_byte_entry() {
 
     let _ = fs::remove_dir_all(&test_dir);
 }
+
+#[test]
+fn test_driver_hash_cache_by_path_size_mtime() {
+    let test_dir = unique_temp_dir("ridx_drv_hash_test");
+    let bin_path = test_dir.join("mock_driver");
+    let cache_dir = test_dir.join("cache");
+
+    // Write initial driver mock (20 bytes)
+    fs::write(&bin_path, b"driver mock binary 1").unwrap();
+
+    // Use explicit path and cache_dir parameter injection (no global env mutation)
+    ridx_format::clear_driver_hash_cache_in(Some(&cache_dir));
+
+    let h1 = ridx_format::get_driver_hash_with(Some(&bin_path), Some(&cache_dir));
+    assert_ne!(h1, 0);
+
+    // Call second time: should hit in-memory and disk cache
+    let h2 = ridx_format::get_driver_hash_with(Some(&bin_path), Some(&cache_dir));
+    assert_eq!(h1, h2);
+
+    // Verify disk cache file was created in isolated cache dir
+    assert!(cache_dir.join("driver_hash.cache").is_file());
+
+    // Test mtime branch with IDENTICAL size:
+    // Sleep >= 1.05s to ensure mtime_secs advances, then write content of exact same length (20 bytes)
+    std::thread::sleep(std::time::Duration::from_millis(1050));
+    fs::write(&bin_path, b"driver mock binary 2").unwrap();
+
+    let h3 = ridx_format::get_driver_hash_with(Some(&bin_path), Some(&cache_dir));
+    assert_ne!(
+        h1, h3,
+        "hash must update when driver mtime changes even if binary size is identical"
+    );
+
+    // Clean up isolated cache dir
+    ridx_format::clear_driver_hash_cache_in(Some(&cache_dir));
+    assert!(!cache_dir.join("driver_hash.cache").exists());
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+

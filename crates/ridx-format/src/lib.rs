@@ -5,6 +5,7 @@
 //! Provides ultra-low latency (<50 µs) code navigation (go to definition, find references,
 //! hover/type-at) using memory-mapped `.ridx` files without persistent background daemon RSS.
 
+pub mod driver_hash;
 pub mod format;
 pub mod reader;
 pub mod workspace;

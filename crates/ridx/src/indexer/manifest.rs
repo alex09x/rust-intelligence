@@ -112,40 +112,17 @@ pub fn publish_manifest(params: ManifestParams<'_>) -> Result<(), String> {
 }
 
 /// Deterministically resolves the sysroot CAS key for a variant:
-/// 1. Searches `.deps/*.json` sidecar files in the variant directory.
-/// 2. Falls back to reading `sysroot_cas_key` from the existing manifest file.
-/// 3. Falls back to querying the driver binary directly (`driver_bin --sysroot-cas-key`).
+/// 1. Authoritative: queries the active driver binary directly (`driver_bin --sysroot-cas-key`).
+///    Cross-checks against `.deps/*.json` sidecars in `deps_dir`, warning on divergence.
+/// 2. Fallback: inspects `.deps/*.json` sidecar files in the variant directory, failing closed if keys conflict.
+/// 3. Fallback: reads `sysroot_cas_key` from the existing manifest file.
 pub fn resolve_sysroot_cas_key(
     deps_dir: &Path,
     manifest_file: &Path,
     driver_bin: &Path,
     target: Option<&str>,
 ) -> Option<String> {
-    if deps_dir.is_dir() {
-        if let Ok(entries) = fs::read_dir(deps_dir) {
-            for entry in entries.flatten() {
-                let p = entry.path();
-                if p.extension().and_then(|s| s.to_str()) == Some("json") {
-                    if let Ok(content) = fs::read(&p) {
-                        if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
-                            if let Some(k) = val["sysroot_cas_key"].as_str() {
-                                return Some(k.to_string());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if let Ok(bytes) = fs::read(manifest_file) {
-        if let Ok(m) = serde_json::from_slice::<ridx_format::VariantManifest>(&bytes) {
-            if let Some(k) = m.sysroot_cas_key {
-                return Some(k);
-            }
-        }
-    }
-
+    // 1. Authoritative: query active driver binary directly
     let mut cmd = std::process::Command::new(driver_bin);
     cmd.arg("--sysroot-cas-key");
     if let Some(tgt) = target {
@@ -155,14 +132,84 @@ pub fn resolve_sysroot_cas_key(
         cmd.env("LD_LIBRARY_PATH", &ld);
         cmd.env("DYLD_FALLBACK_LIBRARY_PATH", &ld);
     }
-    if let Ok(out) = cmd.output() {
+    let driver_key = if let Ok(out) = cmd.output() {
         if out.status.success() {
             let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
             if !s.is_empty() {
-                return Some(s);
+                Some(s)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // 2. Inspect sidecars and verify key consistency
+    let mut sidecar_key: Option<String> = None;
+    let mut sidecar_conflict = false;
+    let mut driver_sidecar_mismatch = false;
+
+    if deps_dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(deps_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.extension().and_then(|s| s.to_str()) == Some("json") {
+                    if let Ok(content) = fs::read(&p) {
+                        if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&content) {
+                            if let Some(k) = val["sysroot_cas_key"].as_str() {
+                                if let Some(existing) = &sidecar_key {
+                                    if existing != k {
+                                        sidecar_conflict = true;
+                                    }
+                                } else {
+                                    sidecar_key = Some(k.to_string());
+                                }
+                                if let Some(dk) = &driver_key {
+                                    if dk != k {
+                                        driver_sidecar_mismatch = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if driver_sidecar_mismatch {
+        eprintln!(
+            "warning: sysroot_cas_key mismatch between driver ({:?}) and sidecars in {}",
+            driver_key,
+            deps_dir.display()
+        );
+    }
+
+    if let Some(dk) = driver_key {
+        return Some(dk);
+    }
+
+    if sidecar_conflict {
+        // Conflicting keys across sidecars without authoritative driver -> fail closed
+        return None;
+    }
+
+    if sidecar_key.is_some() {
+        return sidecar_key;
+    }
+
+    // 3. Fallback: read from existing manifest
+    if let Ok(bytes) = fs::read(manifest_file) {
+        if let Ok(m) = serde_json::from_slice::<ridx_format::VariantManifest>(&bytes) {
+            if let Some(k) = m.sysroot_cas_key {
+                return Some(k);
             }
         }
     }
 
     None
 }
+
