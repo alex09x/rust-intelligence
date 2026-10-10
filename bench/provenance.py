@@ -166,12 +166,28 @@ def get_sysroot_std_metadata(cas_key):
         return None, None
 
 
-def is_sysroot_transplanted(curr_bin, cas_key):
-    """Returns False if cas_key matches the active driver's computed sysroot CAS key, True otherwise."""
+def _get_driver_env():
+    env = dict(os.environ)
+    if "LD_LIBRARY_PATH" not in env or "DYLD_LIBRARY_PATH" not in env:
+        try:
+            import subprocess
+            out = subprocess.run(["rustc", "--print", "sysroot"], capture_output=True, text=True, check=False)
+            if out.returncode == 0 and out.stdout.strip():
+                lib_p = Path(out.stdout.strip()) / "lib"
+                if lib_p.is_dir():
+                    env.setdefault("LD_LIBRARY_PATH", str(lib_p))
+                    env.setdefault("DYLD_LIBRARY_PATH", str(lib_p))
+        except Exception:
+            pass
+    return env
+
+
+def is_driver_transplanted(cas_key: str, curr_bin: str = None) -> bool:
+    """Verifies that the driver binary can execute and matches the expected sysroot CAS key."""
     if not cas_key:
         return True
-    driver_bin = os.environ.get("RIDX_DRIVER_BIN")
-    if not driver_bin or not Path(driver_bin).is_file():
+    driver_bin = os.environ.get("RUSTC_WORKSPACE_WRAPPER") or os.environ.get("RIDX_DRIVER_BIN")
+    if not driver_bin and curr_bin:
         curr_path = Path(curr_bin)
         cand_driver = curr_path.parent / "ridx-driver"
         if cand_driver.is_file():
@@ -181,14 +197,7 @@ def is_sysroot_transplanted(curr_bin, cas_key):
     if not driver_bin or not Path(driver_bin).is_file():
         return True
     try:
-        env = dict(os.environ)
-        if "LD_LIBRARY_PATH" not in env:
-            import subprocess
-            out = subprocess.run(["rustc", "--print", "sysroot"], capture_output=True, text=True, check=False)
-            if out.returncode == 0 and out.stdout.strip():
-                lib_p = Path(out.stdout.strip()) / "lib"
-                if lib_p.is_dir():
-                    env["LD_LIBRARY_PATH"] = str(lib_p)
+        env = _get_driver_env()
         import subprocess
         res = subprocess.run([driver_bin, "--sysroot-cas-key"], capture_output=True, text=True, env=env, check=False)
         if res.returncode == 0 and res.stdout.strip():
@@ -198,22 +207,64 @@ def is_sysroot_transplanted(curr_bin, cas_key):
         return True
 
 
-def get_driver_build_commit(curr_bin=None):
-    """Returns 40-char git commit of the workspace that built the driver/ridx, or None."""
+def is_sysroot_transplanted(curr_bin, cas_key):
+    """Returns False if cas_key matches the active driver's computed sysroot CAS key, True otherwise."""
+    return is_driver_transplanted(cas_key, curr_bin)
+
+
+def get_binary_build_info(bin_path):
+    """Returns (commit, is_dirty) from binary via --ridx-version / --version, or (None, False)."""
+    if not bin_path:
+        return None, False
     try:
         import subprocess
-        ws_root = Path(__file__).resolve().parent.parent
-        res = subprocess.run(
-            ["git", "-C", str(ws_root), "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if res.returncode == 0 and res.stdout.strip():
-            return res.stdout.strip()
+        import re
+        env = _get_driver_env()
+        for flag in ["--ridx-version", "--version"]:
+            try:
+                res = subprocess.run([str(bin_path), flag], capture_output=True, text=True, env=env, check=False)
+                if res.returncode == 0 and res.stdout.strip():
+                    m = re.search(r"commit:\s*([0-9a-fA-F]{40}|unknown),\s*dirty:\s*(true|false)", res.stdout)
+                    if m:
+                        c = m.group(1)
+                        d = m.group(2).lower() == "true"
+                        return (c if c != "unknown" else None), d
+            except Exception:
+                continue
     except Exception:
         pass
-    return None
+    return None, False
+
+
+def get_driver_build_info(curr_bin=None):
+    """Returns (commit, is_dirty) for the driver and ridx binaries."""
+    driver_bin = os.environ.get("RIDX_DRIVER_BIN") or os.environ.get("RUSTC_WORKSPACE_WRAPPER")
+    if not driver_bin and curr_bin:
+        cand_driver = Path(curr_bin).parent / "ridx-driver"
+        if cand_driver.is_file():
+            driver_bin = str(cand_driver)
+
+    drv_commit, drv_dirty = get_binary_build_info(driver_bin) if driver_bin else (None, False)
+    curr_commit, curr_dirty = get_binary_build_info(curr_bin) if curr_bin else (None, False)
+
+    if driver_bin and curr_bin:
+        if not drv_commit or not curr_commit or drv_commit != curr_commit:
+            commit = None
+        else:
+            commit = drv_commit
+    elif driver_bin:
+        commit = drv_commit
+    else:
+        commit = curr_commit
+
+    dirty = drv_dirty or curr_dirty
+    return commit, dirty
+
+
+def get_driver_build_commit(curr_bin=None):
+    """Returns 40-char git commit of the workspace that built the driver/ridx, or None."""
+    commit, _ = get_driver_build_info(curr_bin)
+    return commit
 
 
 def get_node_info():
@@ -274,5 +325,13 @@ def get_taskset_affinity():
     except Exception:
         pass
     return "unknown"
+
+
+def get_node_source():
+    """Returns 'env' if BENCH_NODE or BENCH_TASKSET is explicitly set in environment, else 'detected'."""
+    if "BENCH_NODE" in os.environ or "BENCH_TASKSET" in os.environ:
+        return "env"
+    return "detected"
+
 
 

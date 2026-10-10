@@ -1622,6 +1622,17 @@ impl Callbacks for NoopCallbacks {}
 
 #[allow(clippy::result_unit_err)]
 pub fn run_driver(mut args: Vec<String>) -> Result<(), ()> {
+    let is_direct_version = args.len() == 2 && (args[1] == "--version" || args[1] == "-V");
+    if is_direct_version || args.iter().any(|a| a == "--ridx-version") {
+        println!(
+            "ridx-driver {} (commit: {}, dirty: {})",
+            env!("CARGO_PKG_VERSION"),
+            env!("RIDX_BUILD_COMMIT"),
+            env!("RIDX_BUILD_DIRTY"),
+        );
+        return Ok(());
+    }
+
     // Strip any leading compiler wrapper or rustc binary invocations passed by Cargo.
     // When Cargo chains wrappers or when multiple wrappers are configured, args may contain
     // multiple wrapper executable paths or rustc before the actual compiler flags.

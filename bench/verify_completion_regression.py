@@ -22,10 +22,10 @@ if str(bench_dir) not in sys.path:
 from lsp_process import SimpleLspProcess
 from metrics import calc_pct, calc_route_acc, percentile
 from provenance import (
-    EXCLUDED_SCENARIOS, REPO_SLUG_TO_NAME, ROOT_CAUSES, find_default_repo,
-    find_sysroot_cas_key, get_driver_build_commit, get_driver_hash, get_node_info,
-    get_repo_commit, get_sysroot_std_metadata, get_taskset_affinity,
-    is_sysroot_transplanted, load_baseline, verify_repo_commit,
+    EXCLUDED_SCENARIOS, REPO_SLUG_TO_NAME, ROOT_CAUSES, check_repo_clean, find_default_repo,
+    find_sysroot_cas_key, get_driver_build_commit, get_driver_build_info, get_driver_hash,
+    get_node_info, get_node_source, get_repo_commit, get_sysroot_std_metadata,
+    get_taskset_affinity, is_sysroot_transplanted, load_baseline, verify_repo_commit,
 )
 from validate_scenarios import validate_scenarios_for_repo
 
@@ -164,7 +164,8 @@ def main():
             c_rec = curr_data[slug]
             ra_ver, tc_ver, cas_key = c_rec.get("baseline_ra", ra_ver), c_rec.get("toolchain", tc_ver), c_rec.get("sysroot_cas_key")
             driver_hash = c_rec.get("driver_hash")
-            driver_build_commit = c_rec.get("driver_build_commit", curr_commit)
+            driver_build_commit = c_rec.get("driver_build_commit")
+            driver_is_dirty = c_rec.get("driver_is_dirty", False)
             std_mtime, std_sha = c_rec.get("std_ridx_mtime"), c_rec.get("std_ridx_hash")
             sysroot_transplanted = c_rec.get("sysroot_transplanted", False)
             res_scs = c_rec["scenarios"]
@@ -181,19 +182,29 @@ def main():
 
             cas_key = find_sysroot_cas_key(rpath)
             driver_hash = get_driver_hash(curr_bin)
-            driver_build_commit = get_driver_build_commit(curr_bin) or curr_commit
+            driver_build_commit, driver_is_dirty = get_driver_build_info(curr_bin)
             std_mtime, std_sha = get_sysroot_std_metadata(cas_key)
             sysroot_transplanted = is_sysroot_transplanted(curr_bin, cas_key)
+            if not check_repo_clean(bench_dir.parent):
+                driver_is_dirty = True
         repo_name = REPO_SLUG_TO_NAME.get(slug)
         if not repo_name:
             raise ValueError(f"Unknown benchmark repository slug: {slug}")
         repo_commit, repo_valid = verify_repo_commit(repo_name, rpath)
-        is_invalid_config = not cas_key or (tc_target not in tc_ver) or not repo_valid
+        is_invalid_config = (
+            not cas_key
+            or sysroot_transplanted
+            or (tc_target not in tc_ver)
+            or not repo_valid
+            or (not driver_build_commit or not driver_build_commit.startswith(curr_commit))
+            or driver_is_dirty
+        )
         if is_invalid_config and not args.allow_invalid_config:
             raise RuntimeError(
                 f"Invalid benchmark configuration for {slug}: toolchain={tc_ver!r} (expected {tc_target}), "
-                f"repo_commit={repo_commit!r}, sysroot_cas_key={cas_key!r}. "
-                "Use --allow-invalid-config to override."
+                f"repo_commit={repo_commit!r}, sysroot_cas_key={cas_key!r}, sysroot_transplanted={sysroot_transplanted}, "
+                f"driver_build_commit={driver_build_commit!r} (expected {curr_commit}), "
+                f"driver_is_dirty={driver_is_dirty}. Use --allow-invalid-config to override."
             )
 
         empty_b = empty_c = empty_ra = reg_empty = closed_cnt = ra_zero = tot_b = tot_c = tot_ra = migrated_to_owner = 0
@@ -291,7 +302,7 @@ def main():
 
         summary = {
             "repo": slug, "repo_commit": repo_commit, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
-            "driver_hash": driver_hash, "driver_build_commit": driver_build_commit,
+            "driver_hash": driver_hash, "driver_build_commit": driver_build_commit, "driver_is_dirty": driver_is_dirty,
             "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": sysroot_transplanted,
             "base_source": "replay" if base_file.is_file() else "live",
             "base_driver_hash": base_data[slug].get("driver_hash"),
@@ -299,7 +310,7 @@ def main():
             "base_sysroot_cas_key": base_data[slug].get("sysroot_cas_key"),
             "base_sysroot_transplanted": base_data[slug].get("sysroot_transplanted", True),
             "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
-            "excluded_scenarios": repo_excluded, "node": get_node_info(), "taskset": get_taskset_affinity(),
+            "excluded_scenarios": repo_excluded, "node": get_node_info(), "node_source": get_node_source(), "taskset": get_taskset_affinity(),
             "total_scenarios": len(scenarios_base),
             "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
             "closed_empty_responses": {"count": closed_cnt, "scenarios": closed_names},
@@ -330,23 +341,22 @@ def main():
         }
         all_comparisons[slug] = summary
 
-        print(f"\n--- Summary for {slug} ---\n"
-              f"  Empty responses:       {base_commit}: {empty_b} -> {curr_commit}: {empty_c} (closed: {closed_cnt})\n"
-              f"  Avg recall (ra>0):     {base_commit}: {avg_rec_b}% (n={len(recs_b)}) -> {curr_commit}: {avg_rec_c}% (n={len(recs_c)}) [ra_zero={ra_zero}]\n"
-              f"  Avg precision (cnt>0): {base_commit}: {avg_prec_b}% (n={len(precs_b)}) -> {curr_commit}: {avg_prec_c}% (n={len(precs_c)})\n"
-              f"  Owner accuracy:        recall {o_rec_b}% -> {o_rec_c}% | precision {o_prec_b}% -> {o_prec_c}% (n={len(owner_scs)})\n"
-              f"  Fallback accuracy:     recall {f_rec_b}% -> {f_rec_c}% | precision {f_prec_b}% -> {f_prec_c}% (n={len(fallback_scs)})\n"
-              f"  Recall regressions:    {len(recall_regs)} scenarios with recall drop")
+        print(
+            f"\n--- Summary for {slug} ---\n"
+            f"  Empty: {base_commit}: {empty_b} -> {curr_commit}: {empty_c} (closed: {closed_cnt}) | "
+            f"Avg recall: {base_commit}: {avg_rec_b}% -> {curr_commit}: {avg_rec_c}% | "
+            f"Avg prec: {base_commit}: {avg_prec_b}% -> {curr_commit}: {avg_prec_c}%\n"
+            f"  Owner: rec {o_rec_b}% -> {o_rec_c}%, prec {o_prec_b}% -> {o_prec_c}% (p50 {o_c_p50:.0f}µs vs {o_ra_p50:.0f}µs, {o_speedup}x)\n"
+            f"  Fallback: rec {f_rec_b}% -> {f_rec_c}%, prec {f_prec_b}% -> {f_prec_c}% (p50 {f_c_p50:.0f}µs vs {f_ra_p50:.0f}µs, {f_speedup}x)\n"
+            f"  Overall: p50 {all_c_p50:.0f}µs RIDX vs {all_ra_p50:.0f}µs RA ({tot_speedup}x) | p95 {all_c_p95:.0f}µs vs {all_ra_p95:.0f}µs | Regressions: {len(recall_regs)}"
+        )
         for r in recall_regs:
             print(f"    - {r['name']}: {r['base_recall_pct']}% -> {r['curr_recall_pct']}% (-{r['diff_pp']}pp) [ridx {r['curr_count']} vs ra {r['ra_count']}]")
-        print(f"  Owner:    p50 {o_c_p50:.0f}µs RIDX vs {o_ra_p50:.0f}µs RA ({o_speedup}x) | p95 {o_c_p95:.0f}µs vs {o_ra_p95:.0f}µs\n"
-              f"  Fallback: p50 {f_c_p50:.0f}µs RIDX vs {f_ra_p50:.0f}µs RA ({f_speedup}x) | p95 {f_c_p95:.0f}µs vs {f_ra_p95:.0f}µs\n"
-              f"  Overall:  p50 {all_c_p50:.0f}µs RIDX vs {all_ra_p50:.0f}µs RA ({tot_speedup}x) | p95 {all_c_p95:.0f}µs vs {all_ra_p95:.0f}µs")
 
         if not curr_data:
             published_records.append({
                 "repo": slug, "repo_commit": repo_commit, "commit_ridx": curr_commit,
-                "driver_build_commit": driver_build_commit,
+                "driver_build_commit": driver_build_commit, "driver_is_dirty": driver_is_dirty,
                 "baseline_ra": ra_ver, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
                 "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": sysroot_transplanted,
                 "base_source": "replay" if base_file.is_file() else "live",
@@ -356,7 +366,7 @@ def main():
                 "base_sysroot_transplanted": base_data[slug].get("sysroot_transplanted", True),
                 "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
                 "excluded_scenarios": repo_excluded,
-                "node": get_node_info(),
+                "node": get_node_info(), "node_source": get_node_source(),
                 "taskset": get_taskset_affinity(), "seed": 42,
                 "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
                 "sample_count": len(scenarios_base), "capability": "completion",

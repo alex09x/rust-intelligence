@@ -16,7 +16,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(
     name = "ridx",
-    version,
+    version = concat!(env!("CARGO_PKG_VERSION"), " (commit: ", env!("RIDX_BUILD_COMMIT"), ", dirty: ", env!("RIDX_BUILD_DIRTY"), ")"),
     about = "Ultra-fast code intelligence for Rust"
 )]
 pub struct Cli {
