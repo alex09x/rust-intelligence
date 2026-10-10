@@ -97,7 +97,9 @@ fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> HashS
     set
 }
 pub mod qualifier;
+pub mod ufcs;
 pub use qualifier::*;
+pub use ufcs::*;
 
 /// Context parameters for owner-based scoped completion.
 pub struct OwnerCompletionContext<'a> {

@@ -76,6 +76,12 @@ pub fn classify_colon_position(trimmed_before: &str) -> SyntaxPosition {
     let before_colon = trimmed_before[..colon_idx].trim_end();
     let prefix = if !qual.is_empty() && before_colon.ends_with(&qual) {
         before_colon[..before_colon.len() - qual.len()].trim_end()
+    } else if before_colon.ends_with('>') {
+        if let Some(ufcs_start) = super::owner_completion::find_ufcs_start(before_colon) {
+            before_colon[..ufcs_start].trim_end()
+        } else {
+            before_colon
+        }
     } else {
         before_colon
     };
@@ -288,6 +294,8 @@ mod tests {
         assert_eq!(classify_colon_position("dyn Self::"), SyntaxPosition::Type);
         assert_eq!(classify_colon_position("fn foo(x: Self::"), SyntaxPosition::Type);
         assert_eq!(classify_colon_position("let x: &Self::"), SyntaxPosition::Type);
+        assert_eq!(classify_colon_position("let x: <T as Tr>::"), SyntaxPosition::Type);
+        assert_eq!(classify_colon_position("type Target = <T as Tr>::"), SyntaxPosition::Type);
 
         // Expression / Pattern positions
         assert_eq!(classify_colon_position("let x = Self::"), SyntaxPosition::ExprOrPat);
@@ -305,6 +313,12 @@ mod tests {
         assert_eq!(classify_colon_position("world.trigger(&mut EventTriggerState::<E>::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("Foo::<T>::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("fn foo<T: Foo::<X>::"), SyntaxPosition::Type);
+        assert_eq!(
+            classify_colon_position("unsafe { Slice::from_slice_unchecked(<&set::Slice<K>>::"),
+            SyntaxPosition::ExprOrPat
+        );
+        assert_eq!(classify_colon_position("let x = <T as Tr>::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("<T as Tr>::"), SyntaxPosition::ExprOrPat);
 
         // Any / unconstrained
         assert_eq!(classify_colon_position("use core::cell::"), SyntaxPosition::Any);

@@ -100,8 +100,10 @@ pub fn strip_turbofish(s: &str) -> String {
     res
 }
 
-/// Extracts the path qualifier preceding `::`, accounting for turbofish generic arguments
-/// and nested `use` groups like `use alloc::{string::`.
+use super::ufcs::extract_ufcs_qualifier;
+
+/// Extracts the path qualifier preceding `::`, accounting for turbofish generic arguments,
+/// UFCS expressions (`<T as Tr>::`, `<&Type>::`), and nested `use` groups like `use alloc::{string::`.
 pub fn extract_colon_qualifier(trimmed_before: &str) -> String {
     let stripped;
     let s = if trimmed_before.contains("::<") {
@@ -116,6 +118,12 @@ pub fn extract_colon_qualifier(trimmed_before: &str) -> String {
         None => return String::new(),
     };
     let before_colon = s[..colon_idx].trim_end();
+
+    if before_colon.ends_with('>') {
+        if let Some(ufcs_qual) = extract_ufcs_qualifier(before_colon) {
+            return ufcs_qual;
+        }
+    }
 
     if let Some(brace_idx) = before_colon.rfind('{') {
         let before_brace = before_colon[..brace_idx].trim_end();
@@ -201,8 +209,23 @@ mod tests {
         assert_eq!(extract_colon_qualifier("QueryState::<&A, Without<C>>::"), "QueryState");
         assert_eq!(extract_colon_qualifier("EventTriggerState::<E>::"), "EventTriggerState");
 
+        // UFCS test cases
+        assert_eq!(extract_colon_qualifier("<T as Tr>::"), "Tr");
+        assert_eq!(extract_colon_qualifier("<T as my::Trait<U>>::"), "my::Trait");
+        assert_eq!(extract_colon_qualifier("<Option<<T as Other>::Item> as Trait>::"), "Trait");
+        assert_eq!(extract_colon_qualifier("<&set::Slice<K>>::"), "set::Slice");
+        assert_eq!(extract_colon_qualifier("<&'a mut Slice<K>>::"), "Slice");
+        assert_eq!(extract_colon_qualifier("<*const u8>::"), "u8");
+        assert_eq!(extract_colon_qualifier("<*mut u8>::"), "u8");
+        assert_eq!(extract_colon_qualifier("<T>::"), "T");
+        assert_eq!(extract_colon_qualifier("<Grüße>::"), "Grüße");
+        assert_eq!(extract_colon_qualifier("<T as Grüße>::"), "Grüße");
+        assert_eq!(
+            extract_colon_qualifier("unsafe { Slice::from_slice_unchecked(<&set::Slice<K>>::"),
+            "set::Slice"
+        );
+
         // Non-turbofish and negative tests
         assert_eq!(extract_colon_qualifier("a < b::"), "b");
-        assert_eq!(extract_colon_qualifier("<T as Tr>::"), "");
     }
 }
