@@ -53,7 +53,7 @@ pub fn resolve_generic_param_owners(
             }
             if bounds.is_empty() {
                 for owner in ws.find_owners_of_definition(&def) {
-                    if !owner.starts_with("scope:") && !bounds.contains(&owner.to_string()) {
+                    if !bounds.contains(&owner.to_string()) {
                         bounds.push(owner.to_string());
                     }
                 }

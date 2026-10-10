@@ -608,7 +608,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// verification against the interned canonical owner string.
     pub fn find_definitions_by_owner(&self, owner: &str) -> Vec<&DefEntry> {
         let owner_entries = self.defs_by_owner();
-        if owner_entries.is_empty() || owner.is_empty() {
+        if owner_entries.is_empty() || owner.is_empty() || owner.starts_with("scope:") {
             return Vec::new();
         }
         let hash = fnv1a_64(owner.as_bytes());
@@ -642,12 +642,34 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         for entry in self.defs_by_owner() {
             if entry.def_index() == def_index {
                 let s = self.get_str(entry.owner_path_offset());
-                if !s.is_empty() && !owners.contains(&s) {
+                if !s.is_empty() && !s.starts_with("scope:") && !owners.contains(&s) {
                     owners.push(s);
                 }
             }
         }
         owners
+    }
+
+    /// Returns the lexical enclosing scope coordinates `(start_line, start_col, end_line, end_col)`
+    /// for a definition index if recorded.
+    pub fn type_param_scope(&self, def_index: u32) -> Option<(u32, u32, u32, u32)> {
+        for entry in self.defs_by_owner() {
+            if entry.def_index() == def_index {
+                let s = self.get_str(entry.owner_path_offset());
+                if let Some(rest) = s.strip_prefix("scope:") {
+                    let mut parts = rest.split(':');
+                    if let (Some(sl), Some(sc), Some(el), Some(ec)) = (
+                        parts.next().and_then(|p| p.parse().ok()),
+                        parts.next().and_then(|p| p.parse().ok()),
+                        parts.next().and_then(|p| p.parse().ok()),
+                        parts.next().and_then(|p| p.parse().ok()),
+                    ) {
+                        return Some((sl, sc, el, ec));
+                    }
+                }
+            }
+        }
+        None
     }
 
     /// Finds a generic type parameter (`DefKind::TyParam`) in the specified file matching `name`
@@ -674,28 +696,15 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 continue;
             }
 
-            // 1. Check explicit enclosing scope recorded in owners (e.g. "scope:sl:sc:el:ec")
+            // 1. Check explicit enclosing scope recorded in owners
             let mut matched_scope = None;
-            for owner in self.find_owners_by_def_index(idx as u32) {
-                if let Some(rest) = owner.strip_prefix("scope:") {
-                    let parts: Vec<&str> = rest.split(':').collect();
-                    if parts.len() == 4 {
-                        if let (Ok(sl), Ok(sc), Ok(el), Ok(ec)) = (
-                            parts[0].parse::<u32>(),
-                            parts[1].parse::<u32>(),
-                            parts[2].parse::<u32>(),
-                            parts[3].parse::<u32>(),
-                        ) {
-                            let in_range = (line > sl || (line == sl && col >= sc))
-                                && (line < el || (line == el && col <= ec));
-                            if in_range {
-                                let size = ((el.saturating_sub(sl)) as u64) * 10_000
-                                    + ((ec.saturating_sub(sc)) as u64);
-                                matched_scope = Some(size);
-                                break;
-                            }
-                        }
-                    }
+            if let Some((sl, sc, el, ec)) = self.type_param_scope(idx as u32) {
+                let in_range = (line > sl || (line == sl && col >= sc))
+                    && (line < el || (line == el && col <= ec));
+                if in_range {
+                    let size = ((el.saturating_sub(sl)) as u64) * 10_000
+                        + ((ec.saturating_sub(sc)) as u64);
+                    matched_scope = Some(size);
                 }
             }
 
