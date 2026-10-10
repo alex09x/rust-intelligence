@@ -51,7 +51,7 @@ pub fn strip_turbofish(s: &str) -> String {
                 } else if b == b'\'' {
                     if j + 1 < n && bytes[j + 1] == b'\\' {
                         if let Some(pos) = s[j + 2..].find('\'') {
-                            if pos <= 8 {
+                            if pos <= 10 {
                                 j = j + 2 + pos + 1;
                                 continue;
                             }
@@ -73,6 +73,8 @@ pub fn strip_turbofish(s: &str) -> String {
                             j += 1;
                         }
                     }
+                } else if (b == b'-' || b == b'=') && j + 1 < n && bytes[j + 1] == b'>' {
+                    j += 2;
                 } else if b == b'<' {
                     depth += 1;
                     j += 1;
@@ -175,6 +177,10 @@ mod tests {
         assert_eq!(strip_turbofish("Foo::<'static, T>::"), "Foo::");
         assert_eq!(strip_turbofish("Foo::<\"hello\", T>::"), "Foo::");
         assert_eq!(strip_turbofish("Foo::<'c', T>::"), "Foo::");
+        assert_eq!(strip_turbofish("Foo::<fn() -> u8>::new"), "Foo::new");
+        assert_eq!(strip_turbofish("Foo::<fn(i32) -> Result<u8, ()>>::"), "Foo::");
+        assert_eq!(strip_turbofish(r"Foo::<'\u{10FFFF}', T>::"), "Foo::");
+        assert_eq!(strip_turbofish("Foo::<'🦀', T>::"), "Foo::");
         assert_eq!(strip_turbofish("QueryState::<&A, Without<C>>::"), "QueryState::");
         assert_eq!(strip_turbofish("EventTriggerState::<E>::"), "EventTriggerState::");
     }
