@@ -29,6 +29,16 @@ def percentile(vals, p):
     return s[f] * (1.0 - d) + s[c] * d
 
 
+def calc_pct(data, p):
+    return round(percentile(data, p), 1) if data else 0.0
+
+
+def calc_route_acc(scs, key_rec, key_prec, key_cnt):
+    recs = [s[key_rec] for s in scs if s["ra_count"] > 0]
+    precs = [s[key_prec] for s in scs if s[key_cnt] > 0 and s["ra_count"] > 0]
+    return (round(sum(recs) / len(recs), 1) if recs else 0.0, round(sum(precs) / len(precs), 1) if precs else 0.0)
+
+
 def get_local_load_avg():
     try:
         return os.getloadavg()

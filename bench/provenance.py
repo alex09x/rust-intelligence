@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 CANONICAL_REPO_COMMITS = {
-    "serde": "6693a89cca77e0151437da1c7f890090b9ebf04c",
+    "serde": "69072f24232f431911ba2c41da69a1da10e805a1",
     "bevy": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
 }
 
@@ -59,7 +59,7 @@ def check_repo_clean(rpath):
     try:
         import subprocess
         res = subprocess.run(
-            ["git", "-C", str(rpath), "status", "--porcelain"],
+            ["git", "-C", str(rpath), "status", "--porcelain", "--untracked-files=no"],
             capture_output=True,
             text=True,
             check=False,

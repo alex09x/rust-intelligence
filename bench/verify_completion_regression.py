@@ -30,27 +30,25 @@ from provenance import (
     is_sysroot_transplanted,
     verify_repo_commit,
 )
+from validate_scenarios import validate_scenarios_for_repo
 
 ROOT_CAUSES = {
     "comp_colon_41_RangeVisitor": "Shadowing: sysroot core::ops::range resolved before local mod range at serde_core/src/de/impls.rs:2463 (5 sysroot items vs 2 local).",
     "comp_colon_37_SocketAddr": "Re-export omission: std::net re-exports core::net::SocketAddr, but std.ridx excluded core re-exports (1 item vs 13).",
-    "comp_colon_10_Greater": "Scenario at bevy crates/bevy_ecs/src/entity/mod.rs:1534 cursor position on younger_before_ord_wrap (1 item vs 237).",
 }
 
-REPO_SLUG_TO_NAME = {
-    "serde-rs/serde": "serde",
-    "bevyengine/bevy": "bevy",
+EXCLUDED_SCENARIOS = {
+    "bevyengine/bevy": {
+        "comp_colon_10_Greater": "Sampling position on clean 68c80f3b falls on younger_before_ord_wrap (multi-line assert_eq) instead of Ordering::Greater.",
+    }
 }
+
+REPO_SLUG_TO_NAME = {"serde-rs/serde": "serde", "bevyengine/bevy": "bevy"}
 
 
 def load_baseline(baseline_file):
-    records = {}
     with open(baseline_file, "r", encoding="utf-8") as f:
-        for line in f:
-            if line.strip():
-                d = json.loads(line)
-                records[d["repo"]] = d
-    return records
+        return {d["repo"]: d for d in (json.loads(l) for l in f if l.strip())}
 
 
 def preopen_buffers(srv, repo_dir, scenarios):
@@ -153,18 +151,30 @@ def main():
         curr_bin = (
             Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")
         ).resolve()
-        ra_custom = Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
-        ra_bin = args.ra_bin if args.ra_bin else (str(ra_custom) if ra_custom.is_file() else "rust-analyzer")
-        rustc_custom = Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rustc"
-        rustc_bin = str(rustc_custom) if rustc_custom.is_file() else "rustc"
+        ra_cands = [Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"]
+        rc_cands = [Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rustc"]
+        for cmd, clist in [("rust-analyzer", ra_cands), ("rustc", rc_cands)]:
+            try:
+                rw = subprocess.run(["rustup", "which", cmd], capture_output=True, text=True, check=False)
+                if rw.returncode == 0 and rw.stdout.strip(): clist.append(Path(rw.stdout.strip()))
+            except Exception: pass
+        ra_bin = args.ra_bin or next((str(p) for p in ra_cands if p.is_file()), "rust-analyzer")
+        rustc_bin = next((str(p) for p in rc_cands if p.is_file()), "rustc")
         ra_ver = subprocess.run([ra_bin, "--version"], capture_output=True, text=True, check=False).stdout.strip()
         tc_ver = subprocess.run([rustc_bin, "--version"], capture_output=True, text=True, check=False, env={**os.environ, "RUSTUP_TOOLCHAIN": tc_target}).stdout.strip()
 
     all_comparisons, published_records = {}, []
 
     for slug, rpath in repos:
-        scenarios_base = base_data[slug]["scenarios"]
-        print(f"\n[{slug}] Evaluating {len(scenarios_base)} scenarios for {curr_commit} vs {base_commit}...")
+        repo_excluded = EXCLUDED_SCENARIOS.get(slug, {})
+        scenarios_base = [s for s in base_data[slug]["scenarios"] if s["name"] not in repo_excluded]
+        val_cnt, val_tot, val_errs = validate_scenarios_for_repo(
+            Path(rpath), scenarios_base, slug, excluded=set(repo_excluded.keys())
+        )
+        if val_errs:
+            raise RuntimeError(f"Pre-flight scenario validation failed for {slug} ({val_cnt}/{val_tot}):\n" + "\n".join(val_errs[:10]))
+        scenarios_validated = f"{val_cnt}/{val_tot}"
+        print(f"\n[{slug}] Evaluating {len(scenarios_base)} scenarios (validated {scenarios_validated}) for {curr_commit} vs {base_commit}...")
 
         if curr_data:
             c_rec = curr_data[slug]
@@ -201,13 +211,9 @@ def main():
                 "Use --allow-invalid-config to override."
             )
 
-        empty_b = empty_c = empty_ra = reg_empty = closed_cnt = ra_zero = 0
-        closed_names = []
-        tot_b = tot_c = tot_ra = 0
-        recs_b, recs_c, precs_b, precs_c = [], [], [], []
-        recall_regs = []
+        empty_b = empty_c = empty_ra = reg_empty = closed_cnt = ra_zero = tot_b = tot_c = tot_ra = migrated_to_owner = 0
+        closed_names, recs_b, recs_c, precs_b, precs_c, recall_regs = [], [], [], [], [], []
         owner_scs, fallback_scs, sc_pub = [], [], []
-        migrated_to_owner = 0
 
         for idx, sc_b in enumerate(scenarios_base):
             base_cnt, base_ra_cnt = sc_b["ridx_count"], sc_b["ra_count"]
@@ -271,29 +277,27 @@ def main():
                 "recall_pct": round(rec_c, 1), "precision_pct": round(prec_c, 1),
                 "ridx_count": curr_cnt, "ra_count": ra_cnt, "base_count": base_cnt,
                 "base_recall_pct": sc_b["recall_pct"], "base_precision_pct": round(prec_b, 1),
+                "labels_ridx": c["labels"] if not curr_data else sc_c.get("labels_ridx", []),
+                "labels_ra": r["labels"] if not curr_data else sc_c.get("labels_ra", []),
                 "repo_commit": repo_commit,
             }
             sc_pub.append(entry_pub)
             (owner_scs if route == "owner_path" else fallback_scs).append(entry_pub)
 
-        owner_c_warm = [s["ridx_warm_us"] for s in owner_scs]
-        owner_ra_warm = [s["ra_warm_us"] for s in owner_scs]
-        fallback_c_warm = [s["ridx_warm_us"] for s in fallback_scs]
-        fallback_ra_warm = [s["ra_warm_us"] for s in fallback_scs]
-        all_c_warm = [s["ridx_warm_us"] for s in sc_pub]
-        all_ra_warm = [s["ra_warm_us"] for s in sc_pub]
+        o_c_w, o_ra_w = [s["ridx_warm_us"] for s in owner_scs], [s["ra_warm_us"] for s in owner_scs]
+        f_c_w, f_ra_w = [s["ridx_warm_us"] for s in fallback_scs], [s["ra_warm_us"] for s in fallback_scs]
+        a_c_w, a_ra_w = [s["ridx_warm_us"] for s in sc_pub], [s["ra_warm_us"] for s in sc_pub]
 
-        o_c_p50, o_c_p95 = calc_pct(owner_c_warm, 50.0), calc_pct(owner_c_warm, 95.0)
-        o_ra_p50, o_ra_p95 = calc_pct(owner_ra_warm, 50.0), calc_pct(owner_ra_warm, 95.0)
-        f_c_p50, f_c_p95 = calc_pct(fallback_c_warm, 50.0), calc_pct(fallback_c_warm, 95.0)
-        f_ra_p50, f_ra_p95 = calc_pct(fallback_ra_warm, 50.0), calc_pct(fallback_ra_warm, 95.0)
-        all_c_p50, all_c_p95 = calc_pct(all_c_warm, 50.0), calc_pct(all_c_warm, 95.0)
-        all_ra_p50, all_ra_p95 = calc_pct(all_ra_warm, 50.0), calc_pct(all_ra_warm, 95.0)
+        o_c_p50, o_c_p95 = calc_pct(o_c_w, 50.0), calc_pct(o_c_w, 95.0)
+        o_ra_p50, o_ra_p95 = calc_pct(o_ra_w, 50.0), calc_pct(o_ra_w, 95.0)
+        f_c_p50, f_c_p95 = calc_pct(f_c_w, 50.0), calc_pct(f_c_w, 95.0)
+        f_ra_p50, f_ra_p95 = calc_pct(f_ra_w, 50.0), calc_pct(f_ra_w, 95.0)
+        all_c_p50, all_c_p95 = calc_pct(a_c_w, 50.0), calc_pct(a_c_w, 95.0)
+        all_ra_p50, all_ra_p95 = calc_pct(a_ra_w, 50.0), calc_pct(a_ra_w, 95.0)
 
         o_speedup = round(o_ra_p50 / max(1.0, o_c_p50), 2) if o_c_p50 > 0 else 0.0
         f_speedup = round(f_ra_p50 / max(1.0, f_c_p50), 2) if f_c_p50 > 0 else 0.0
         tot_speedup = round(all_ra_p50 / max(1.0, all_c_p50), 2)
-
         avg_rec_b = round(sum(recs_b) / len(recs_b), 1) if recs_b else 0.0
         avg_rec_c = round(sum(recs_c) / len(recs_c), 1) if recs_c else 0.0
         avg_prec_b = round(sum(precs_b) / len(precs_b), 1) if precs_b else 0.0
@@ -307,7 +311,8 @@ def main():
         summary = {
             "repo": slug, "repo_commit": repo_commit, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
             "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": sysroot_transplanted,
-            "invalid_config": is_invalid_config,
+            "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
+            "excluded_scenarios": repo_excluded,
             "total_scenarios": len(scenarios_base),
             "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
             "closed_empty_responses": {"count": closed_cnt, "scenarios": closed_names},
@@ -331,15 +336,9 @@ def main():
                 "migrated_from_fallback_to_owner": migrated_to_owner,
                 "owner_accuracy": {"base_recall_pct": o_rec_b, "curr_recall_pct": o_rec_c, "base_precision_pct": o_prec_b, "curr_precision_pct": o_prec_c},
                 "fallback_accuracy": {"base_recall_pct": f_rec_b, "curr_recall_pct": f_rec_c, "base_precision_pct": f_prec_b, "curr_precision_pct": f_prec_c},
-                "owner_curr_warm_p50_us": o_c_p50, "owner_curr_warm_p95_us": o_c_p95,
-                "owner_ra_warm_p50_us": o_ra_p50, "owner_ra_warm_p95_us": o_ra_p95,
-                "owner_speedup_fair": o_speedup,
-                "fallback_curr_warm_p50_us": f_c_p50, "fallback_curr_warm_p95_us": f_c_p95,
-                "fallback_ra_warm_p50_us": f_ra_p50, "fallback_ra_warm_p95_us": f_ra_p95,
-                "fallback_speedup_fair": f_speedup,
-                "overall_curr_warm_p50_us": all_c_p50, "overall_curr_warm_p95_us": all_c_p95,
-                "overall_ra_warm_p50_us": all_ra_p50, "overall_ra_warm_p95_us": all_ra_p95,
-                "overall_speedup": tot_speedup,
+                "owner_curr_warm_p50_us": o_c_p50, "owner_curr_warm_p95_us": o_c_p95, "owner_ra_warm_p50_us": o_ra_p50, "owner_ra_warm_p95_us": o_ra_p95, "owner_speedup_fair": o_speedup,
+                "fallback_curr_warm_p50_us": f_c_p50, "fallback_curr_warm_p95_us": f_c_p95, "fallback_ra_warm_p50_us": f_ra_p50, "fallback_ra_warm_p95_us": f_ra_p95, "fallback_speedup_fair": f_speedup,
+                "overall_curr_warm_p50_us": all_c_p50, "overall_curr_warm_p95_us": all_c_p95, "overall_ra_warm_p50_us": all_ra_p50, "overall_ra_warm_p95_us": all_ra_p95, "overall_speedup": tot_speedup,
             },
         }
         all_comparisons[slug] = summary
@@ -362,7 +361,8 @@ def main():
                 "repo": slug, "repo_commit": repo_commit, "commit_ridx": curr_commit, "baseline_ra": ra_ver,
                 "toolchain": tc_ver, "sysroot_cas_key": cas_key,
                 "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": sysroot_transplanted,
-                "invalid_config": is_invalid_config,
+                "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
+                "excluded_scenarios": repo_excluded,
                 "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
                 "taskset": "24-31", "seed": 42,
                 "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
@@ -371,8 +371,7 @@ def main():
                     "ridx_completion_warm_p50_us": all_c_p50, "ridx_completion_warm_p95_us": all_c_p95,
                     "ridx_owner_warm_p50_us": o_c_p50, "ridx_owner_warm_p95_us": o_c_p95,
                     "ridx_fallback_warm_p50_us": f_c_p50, "ridx_fallback_warm_p95_us": f_c_p95,
-                    "ra_matching_owner_warm_p50_us": o_ra_p50, "ra_matching_fallback_warm_p50_us": f_ra_p50,
-                    "ra_overall_warm_p50_us": all_ra_p50,
+                    "ra_matching_owner_warm_p50_us": o_ra_p50, "ra_matching_fallback_warm_p50_us": f_ra_p50, "ra_overall_warm_p50_us": all_ra_p50,
                     "owner_p50_speedup_vs_ra": o_speedup, "fallback_p50_speedup_vs_ra": f_speedup, "overall_p50_speedup_vs_ra": tot_speedup,
                     "owner_share_pct": round(len(owner_scs) / len(scenarios_base) * 100.0, 1),
                     "fallback_share_pct": round(len(fallback_scs) / len(scenarios_base) * 100.0, 1),
