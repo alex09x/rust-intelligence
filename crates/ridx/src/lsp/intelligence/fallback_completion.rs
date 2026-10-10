@@ -78,7 +78,7 @@ pub fn try_fallback_completion(
     } else {
         false
     };
-    let max_scan_budget: usize = if is_unresolved { 5_000 } else { 25_000 };
+    let max_scan_budget: usize = if is_unresolved { 500 } else { 1_500 };
     let mut scanned_count: usize = 0;
 
     let (target_prefix, target_suffix, target_for_needle, target_crate) = if ctx.is_dot {
@@ -93,11 +93,14 @@ pub fn try_fallback_completion(
             .collect();
         let rstart = before_dot.len().saturating_sub(rname.len());
         let rcol = ctx.line_slice[..rstart].chars().count() as u32 + 1;
+        let rend_col = ctx.line_slice[..before_dot.len()].chars().count() as u32;
         let rtype = ws
-            .type_at(ctx.file, ctx.line_1based, rcol)
+            .type_at(ctx.file, ctx.line_1based, rend_col)
+            .or_else(|| ws.type_at(ctx.file, ctx.line_1based, rcol))
             .map(|t| t.to_string())
             .or_else(|| {
-                ws.find_definition_at(ctx.file, ctx.line_1based, rcol)
+                ws.find_definition_at(ctx.file, ctx.line_1based, rend_col)
+                    .or_else(|| ws.find_definition_at(ctx.file, ctx.line_1based, rcol))
                     .and_then(|d| d.signature.map(|s| s.to_string()))
             })
             .or_else(|| {
@@ -109,19 +112,43 @@ pub fn try_fallback_completion(
                 })
             });
         let norm = rtype.as_deref().map(normalize_type).unwrap_or("");
+        if norm.is_empty() {
+            // Unresolved receiver type: in Rust, dot methods cannot be resolved on an unknown receiver.
+            // Early return prevents sweeping all workspace crates and eliminates tail latency spikes.
+            return (Vec::new(), false);
+        }
+        let target_crate = norm
+            .split("::")
+            .next()
+            .filter(|&first_seg| ws.has_crate(first_seg))
+            .map(|s| s.to_string());
         (
             format!("{norm}::"),
             format!("::{norm}::"),
             norm.to_string(),
-            None,
+            target_crate,
         )
     } else {
         let qual = extract_colon_qualifier(ctx.trimmed_before);
+        if qual.is_empty() {
+            return (Vec::new(), false);
+        }
+        if qual.contains("::") {
+            let first_seg = qual.split("::").next().unwrap_or(&qual);
+            if !ws.has_crate(first_seg) && ws.resolve_qualifier(ctx.file, first_seg).is_none() {
+                // The root qualifier is not an indexed crate or resolvable module.
+                // Scanning all workspace crates for unindexed external crates cannot yield results.
+                return (Vec::new(), false);
+            }
+        }
         let def_opt = ws.resolve_qualifier(ctx.file, &qual);
         let target = def_opt.as_ref().map(|d| d.path).unwrap_or(&qual);
-        let first_seg = qual.split("::").next().unwrap_or(&qual);
-        let target_crate = if ws.has_crate(first_seg) {
-            Some(first_seg.to_string())
+        let target_first_seg = target.split("::").next().unwrap_or(target);
+        let qual_first_seg = qual.split("::").next().unwrap_or(&qual);
+        let target_crate = if ws.has_crate(target_first_seg) {
+            Some(target_first_seg.to_string())
+        } else if ws.has_crate(qual_first_seg) {
+            Some(qual_first_seg.to_string())
         } else {
             None
         };
@@ -226,11 +253,14 @@ pub fn try_fallback_completion(
         true
     };
 
-    if let Some(ref cname) = target_crate {
-        ws.for_each_symbol_in_crate(cname, needle_lower.as_bytes(), &mut collector);
+    let completed = if let Some(ref cname) = target_crate {
+        ws.for_each_symbol_in_crate(cname, needle_lower.as_bytes(), &mut collector)
     } else {
         let preferred_crate = ws.crate_name_for_file(ctx.file);
-        ws.for_each_symbol_ascii(needle_lower.as_bytes(), preferred_crate, &mut collector);
+        ws.for_each_symbol_ascii(needle_lower.as_bytes(), preferred_crate, &mut collector)
+    };
+    if !completed {
+        is_capped = true;
     }
 
     (items, is_capped)

@@ -163,3 +163,36 @@ fn test_hover_empty_parts_and_unmapped_dirty() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_fallback_completion_fast_exits() {
+    let (temp_dir, ws, mut overlay_mgr, mut conv) = setup_test_intelligence();
+    let file_path = temp_dir.join("src/lib.rs");
+    let uri = format!("file://{}", file_path.to_str().unwrap());
+
+    // 1. Dot on unresolved receiver returns empty without scanning
+    let dot_code = "fn test() { unknown_var. }";
+    overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 1, dot_code.to_string());
+    let req_dot = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 0, "character": 25 }
+        }
+    });
+    let res_dot = handle_completion(&req_dot, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    assert_eq!(res_dot["items"].as_array().unwrap().len(), 0);
+
+    // 2. Colon with unindexed multi-segment qualifier returns empty without scanning
+    let colon_code = "fn test() { nonexistent_crate::Item:: }";
+    overlay_mgr.open_document(&uri, file_path.to_str().unwrap(), 2, colon_code.to_string());
+    let req_colon = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 0, "character": 37 }
+        }
+    });
+    let res_colon = handle_completion(&req_colon, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    assert_eq!(res_colon["items"].as_array().unwrap().len(), 0);
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}

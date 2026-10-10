@@ -1207,21 +1207,23 @@ impl WorkspaceIndex {
     }
 
     /// Iterates over matching definitions across workspace readers without eager allocation,
-    /// searching preferred crate first and stopping when `cb` returns false.
+    /// searching preferred crate first and stopping when `cb` returns false or scan budget is exhausted.
     pub fn for_each_symbol_ascii<F>(
         &self,
         needle_lower: &[u8],
         preferred_crate: Option<&str>,
         mut cb: F,
-    ) where
+    ) -> bool
+    where
         F: FnMut(&IndexReader<memmap2::Mmap>, &DefEntry) -> bool,
     {
+        let mut budget: usize = 2_000;
         if let Some(pref) = preferred_crate {
             for reader in &self.readers {
                 if reader.crate_name() == pref
-                    && !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def))
+                    && !reader.for_each_symbol_ascii(needle_lower, &mut budget, |def| cb(reader, def))
                 {
-                    return;
+                    return false;
                 }
             }
         }
@@ -1229,24 +1231,27 @@ impl WorkspaceIndex {
             if preferred_crate.is_some_and(|pref| reader.crate_name() == pref) {
                 continue;
             }
-            if !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def)) {
-                return;
+            if !reader.for_each_symbol_ascii(needle_lower, &mut budget, |def| cb(reader, def)) {
+                return false;
             }
         }
+        true
     }
 
     /// Iterates over matching definitions specifically for a single target crate without eager allocation.
-    pub fn for_each_symbol_in_crate<F>(&self, target_crate: &str, needle_lower: &[u8], mut cb: F)
+    pub fn for_each_symbol_in_crate<F>(&self, target_crate: &str, needle_lower: &[u8], mut cb: F) -> bool
     where
         F: FnMut(&IndexReader<memmap2::Mmap>, &DefEntry) -> bool,
     {
+        let mut budget: usize = 2_000;
         for reader in &self.readers {
             if reader.crate_name() == target_crate
-                && !reader.for_each_symbol_ascii(needle_lower, |def| cb(reader, def))
+                && !reader.for_each_symbol_ascii(needle_lower, &mut budget, |def| cb(reader, def))
             {
-                return;
+                return false;
             }
         }
+        true
     }
 
     /// Returns true if any index reader in the workspace has the given crate name.
