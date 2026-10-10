@@ -84,7 +84,10 @@ fn test_completion_root_crate_qualifier_core_cell() {
     });
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
-    assert!(items.iter().any(|it| it["label"] == "cell"), "Should complete cell after core::");
+    assert!(
+        items.iter().any(|it| it["label"] == "cell"),
+        "Should complete cell after core::"
+    );
 
     // 2. Completion after core::cell:: returns Cell
     let code_cell = "fn main() {\n    core::cell::\n}\n";
@@ -97,7 +100,10 @@ fn test_completion_root_crate_qualifier_core_cell() {
     });
     let res_cell = handle_completion(&req_cell, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items_cell = res_cell["items"].as_array().unwrap();
-    assert!(items_cell.iter().any(|it| it["label"] == "Cell"), "Should complete Cell after core::cell::");
+    assert!(
+        items_cell.iter().any(|it| it["label"] == "Cell"),
+        "Should complete Cell after core::cell::"
+    );
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -186,9 +192,141 @@ fn test_completion_dep_crate_qualifier_with_synthetic_span() {
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
     assert!(
-        items.iter().any(|it| it["label"] == "forward_to_deserialize_any"),
+        items
+            .iter()
+            .any(|it| it["label"] == "forward_to_deserialize_any"),
         "Should complete dep_lib items without falling into synthetic span or enclosing module"
     );
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_multi_target_use_import_and_foreign_use_guard() {
+    let temp_dir = std::env::temp_dir().join(format!("ridx_multi_target_qual_{}", std::process::id()));
+    let app_dir = temp_dir.join("app_crate");
+    let _ = fs::create_dir_all(app_dir.join("src"));
+    let src_file = app_dir.join("src/system.rs");
+    let _ = fs::write(&src_file, "use crate::schedule::Schedule;\nfn test() { Schedule::default(); }\n");
+    let src_path = src_file.to_str().unwrap().to_string();
+
+    // 1. Foreign dependency crate `async_dep` with bare `Use` at root
+    let mut dep_writer = IndexWriter::new("async_dep", "1.98.1");
+    dep_writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 1,
+            kind: DefKind::Use,
+            visibility: 0,
+            is_macro_expansion: false,
+            file: "async_dep/src/lib.rs".to_string(),
+            name: "Schedule".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 10,
+            path: "Schedule".to_string(),
+            signature: Some("async_dep::runnable::Schedule".to_string()),
+        },
+        vec!["async_dep".to_string()],
+    );
+    dep_writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 2,
+            kind: DefKind::Struct,
+            visibility: 0,
+            is_macro_expansion: false,
+            file: "async_dep/src/runnable.rs".to_string(),
+            name: "Schedule".to_string(),
+            start_line: 5,
+            start_col: 1,
+            end_line: 5,
+            end_col: 15,
+            path: "async_dep::runnable::Schedule".to_string(),
+            signature: None,
+        },
+        vec!["async_dep::runnable".to_string()],
+    );
+    let dep_ridx = temp_dir.join("async_dep.ridx");
+    let mut f_dep = fs::File::create(&dep_ridx).unwrap();
+    dep_writer.write_to(&mut f_dep).unwrap();
+    drop(f_dep);
+
+    // 2. Primary crate `app_crate` target 0 (lib unit): contains schedule definition, but no test module
+    let mut lib_writer = IndexWriter::new("app_crate", "1.98.1");
+    lib_writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 10,
+            kind: DefKind::Struct,
+            visibility: 0,
+            is_macro_expansion: false,
+            file: app_dir.join("src/schedule.rs").to_str().unwrap().to_string(),
+            name: "Schedule".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 15,
+            path: "app_crate::schedule::Schedule".to_string(),
+            signature: None,
+        },
+        vec!["app_crate::schedule".to_string()],
+    );
+    lib_writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 11,
+            kind: DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            file: src_path.clone(),
+            name: "run".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 10,
+            path: "app_crate::system::run".to_string(),
+            signature: None,
+        },
+        vec!["app_crate::system".to_string()],
+    );
+    let lib_ridx = temp_dir.join("app_crate_lib.ridx");
+    let mut f_lib = fs::File::create(&lib_ridx).unwrap();
+    lib_writer.write_to(&mut f_lib).unwrap();
+    drop(f_lib);
+
+    // 3. Primary crate `app_crate` target 1 (test unit): contains test module with `use crate::schedule::Schedule`
+    let mut test_writer = IndexWriter::new("app_crate", "1.98.1");
+    test_writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 20,
+            kind: DefKind::Use,
+            visibility: 0,
+            is_macro_expansion: false,
+            file: src_path.clone(),
+            name: "Schedule".to_string(),
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 30,
+            path: "app_crate::system::tests::Schedule".to_string(),
+            signature: Some("app_crate::schedule::Schedule".to_string()),
+        },
+        vec!["app_crate::system::tests".to_string()],
+    );
+    let test_ridx = temp_dir.join("app_crate_test.ridx");
+    let mut f_test = fs::File::create(&test_ridx).unwrap();
+    test_writer.write_to(&mut f_test).unwrap();
+    drop(f_test);
+
+    let ws = WorkspaceIndex::open(&temp_dir).unwrap();
+
+    // Resolving `Schedule` from `system.rs` should check all target readers for `app_crate`,
+    // find the `use` declaration in target 1, and resolve to `app_crate::schedule::Schedule`
+    // instead of mistakenly picking `async_dep`'s foreign bare `Use`.
+    let res = ws.resolve_qualifier(&src_path, "Schedule");
+    assert!(res.is_some(), "Should resolve Schedule via multi-target unit scan");
+    let resolved = res.unwrap();
+    assert_eq!(resolved.name, "Schedule");
+    assert_eq!(resolved.path, "app_crate::schedule::Schedule");
+    assert_eq!(resolved.kind, DefKind::Struct);
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

@@ -59,6 +59,54 @@ impl WorkspaceIndex {
         None
     }
 
+    /// Returns the indices in `self.readers` for all crate units that contain or own the specified file path.
+    pub fn reader_indices_for_file(&self, file_path: &str) -> Vec<usize> {
+        let p = Path::new(file_path);
+        let is_abs = p.is_absolute();
+        let mut indices = Vec::new();
+        for (i, _) in self.readers.iter().enumerate() {
+            if let Some(Some(root)) = self.source_roots.get(i) {
+                if is_abs && p.starts_with(root) {
+                    indices.push(i);
+                }
+            }
+        }
+        if !indices.is_empty() {
+            return indices;
+        }
+        for (i, hashes) in self.reader_file_hashes.iter().enumerate() {
+            if hashes.contains_key(file_path) {
+                indices.push(i);
+            }
+        }
+        if !indices.is_empty() {
+            return indices;
+        }
+        for (i, reader) in self.readers.iter().enumerate() {
+            if reader.find_file_id(file_path).is_some() {
+                indices.push(i);
+            }
+        }
+        if !indices.is_empty() {
+            return indices;
+        }
+        for (i, reader) in self.readers.iter().enumerate() {
+            let cname = reader.crate_name();
+            if file_path.contains(&format!("/{cname}/"))
+                || file_path.contains(&format!("\\{cname}\\"))
+            {
+                indices.push(i);
+            }
+        }
+        if !indices.is_empty() {
+            return indices;
+        }
+        if let Some(idx) = self.reader_index_for_file(file_path) {
+            indices.push(idx);
+        }
+        indices
+    }
+
     /// Returns the canonical module path corresponding to `file_path` in the owning crate
     /// (e.g. `serde::de::impls` for `serde/src/de/impls.rs`).
     pub fn module_path_for_file(&self, file_path: &str) -> Option<String> {

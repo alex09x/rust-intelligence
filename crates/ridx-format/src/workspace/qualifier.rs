@@ -133,14 +133,15 @@ impl WorkspaceIndex {
             None
         };
 
-        let crate_idx = self.reader_index_for_file(file);
+        let reader_indices = self.reader_indices_for_file(file);
+        let crate_idx = reader_indices.first().copied();
         let mod_path_opt = self.module_path_for_file(file);
 
         let is_sysroot = matches!(first_seg, "core" | "alloc" | "std");
         let is_dep_crate = !is_sysroot && self.has_crate(first_seg);
 
-        // 1. File scope: check definitions and imports declared directly in `file`
-        if let Some(idx) = crate_idx {
+        // 1. File scope: check definitions and imports declared directly in `file` across matching readers
+        for &idx in &reader_indices {
             let reader = &self.readers[idx];
             if let Some(fid) = reader.find_file_id(file) {
                 // Fast path: check if local item exists with path `<mod_path>::<first_seg>`
@@ -176,101 +177,102 @@ impl WorkspaceIndex {
                 if !is_sysroot && !is_dep_crate {
                     let cname = reader.crate_name();
                     for def in reader.definitions() {
-                    let span = def.span();
-                    if span.file_id == fid && DefKind::from(def.kind) == DefKind::Use {
-                        let name = reader.get_str(def.name_offset());
-                        let path = reader.get_str(def.path_offset());
-                        let is_glob = name == "*"
-                            || name == "{{glob}}"
-                            || name.starts_with("{{use}}")
-                            || path.ends_with("::*");
-                        if is_glob {
-                            let raw_target = if def.sig_offset() != 0 {
-                                let sig = reader.get_str(def.sig_offset());
-                                sig.strip_suffix("::*").unwrap_or(sig).to_string()
-                            } else {
-                                let resolved = self.make_resolved_definition(idx, def);
-                                if let Some(target) = self.find_definition_at(
-                                    resolved.file,
-                                    resolved.start_line,
-                                    resolved.start_col,
-                                ) {
-                                    target.path.to_string()
-                                } else if let Some(stripped) = path.strip_suffix("::*") {
-                                    stripped.to_string()
+                        let span = def.span();
+                        if span.file_id == fid && DefKind::from(def.kind) == DefKind::Use {
+                            let name = reader.get_str(def.name_offset());
+                            let path = reader.get_str(def.path_offset());
+                            let is_glob = name == "*"
+                                || name == "{{glob}}"
+                                || name.starts_with("{{use}}")
+                                || path.ends_with("::*");
+                            if is_glob {
+                                let raw_target = if def.sig_offset() != 0 {
+                                    let sig = reader.get_str(def.sig_offset());
+                                    sig.strip_suffix("::*").unwrap_or(sig).to_string()
                                 } else {
-                                    String::new()
-                                }
-                            };
-
-                            let glob_target = if raw_target == "super"
-                                || raw_target.starts_with("super::")
-                            {
-                                if let Some(ref mod_path) = mod_path_opt {
-                                    let mut parts: Vec<&str> = mod_path.split("::").collect();
-                                    let mut cur = raw_target.as_str();
-                                    while let Some(rest) = cur.strip_prefix("super::") {
-                                        if parts.len() > 1 {
-                                            parts.pop();
-                                        }
-                                        cur = rest;
-                                    }
-                                    if cur == "super" && parts.len() > 1 {
-                                        parts.pop();
-                                        parts.join("::")
-                                    } else if cur != "super" {
-                                        format!("{}::{cur}", parts.join("::"))
+                                    let resolved = self.make_resolved_definition(idx, def);
+                                    if let Some(target) = self.find_definition_at(
+                                        resolved.file,
+                                        resolved.start_line,
+                                        resolved.start_col,
+                                    ) {
+                                        target.path.to_string()
+                                    } else if let Some(stripped) = path.strip_suffix("::*") {
+                                        stripped.to_string()
                                     } else {
-                                        parts.join("::")
+                                        String::new()
                                     }
+                                };
+
+                                let glob_target = if raw_target == "super"
+                                    || raw_target.starts_with("super::")
+                                {
+                                    if let Some(ref mod_path) = mod_path_opt {
+                                        let mut parts: Vec<&str> = mod_path.split("::").collect();
+                                        let mut cur = raw_target.as_str();
+                                        while let Some(rest) = cur.strip_prefix("super::") {
+                                            if parts.len() > 1 {
+                                                parts.pop();
+                                            }
+                                            cur = rest;
+                                        }
+                                        if cur == "super" && parts.len() > 1 {
+                                            parts.pop();
+                                            parts.join("::")
+                                        } else if cur != "super" {
+                                            format!("{}::{cur}", parts.join("::"))
+                                        } else {
+                                            parts.join("::")
+                                        }
+                                    } else {
+                                        raw_target
+                                    }
+                                } else if let Some(rest) = raw_target.strip_prefix("crate::") {
+                                    format!("{cname}::{rest}")
                                 } else {
                                     raw_target
-                                }
-                            } else if let Some(rest) = raw_target.strip_prefix("crate::") {
-                                format!("{cname}::{rest}")
-                            } else {
-                                raw_target
-                            };
+                                };
 
-                            if !glob_target.is_empty() {
-                                let probe = format!("{glob_target}::{first_seg}");
-                                if let Some(mut found) = self.find_definition_by_path(&probe) {
-                                    if found.kind == DefKind::Use {
-                                        let target = found
-                                            .signature
-                                            .and_then(|sig| self.find_definition_by_path(sig))
-                                            .or_else(|| {
-                                                self.find_definition_at(
-                                                    found.file,
-                                                    found.start_line,
-                                                    found.start_col,
-                                                )
-                                            });
-                                        if let Some(target) = target {
-                                            if target.kind != DefKind::Local && target.kind != DefKind::Use {
-                                                found = target;
+                                if !glob_target.is_empty() {
+                                    let probe = format!("{glob_target}::{first_seg}");
+                                    if let Some(mut found) = self.find_definition_by_path(&probe) {
+                                        if found.kind == DefKind::Use {
+                                            let target = found
+                                                .signature
+                                                .and_then(|sig| self.find_definition_by_path(sig))
+                                                .or_else(|| {
+                                                    self.find_definition_at(
+                                                        found.file,
+                                                        found.start_line,
+                                                        found.start_col,
+                                                    )
+                                                });
+                                            if let Some(target) = target {
+                                                if target.kind != DefKind::Local
+                                                    && target.kind != DefKind::Use
+                                                {
+                                                    found = target;
+                                                } else {
+                                                    continue;
+                                                }
                                             } else {
                                                 continue;
                                             }
+                                        }
+                                        if let Some(rest) = rest_opt {
+                                            if let Some(sub) = self.find_definition_by_path(
+                                                &format!("{}::{rest}", found.path),
+                                            ) {
+                                                return Some(sub);
+                                            }
                                         } else {
-                                            continue;
+                                            return Some(found);
                                         }
-                                    }
-                                    if let Some(rest) = rest_opt {
-                                        if let Some(sub) = self.find_definition_by_path(&format!(
-                                            "{}::{rest}",
-                                            found.path
-                                        )) {
-                                            return Some(sub);
-                                        }
-                                    } else {
-                                        return Some(found);
                                     }
                                 }
                             }
                         }
                     }
-                }
                 }
             }
         }
@@ -292,7 +294,8 @@ impl WorkspaceIndex {
                 }
 
                 // Try crate root
-                if let Some(def) = self.find_definition_by_path(&format!("{cname}::{qual_trimmed}")) {
+                if let Some(def) = self.find_definition_by_path(&format!("{cname}::{qual_trimmed}"))
+                {
                     if def.kind != DefKind::Use {
                         return Some(def);
                     }
@@ -344,12 +347,21 @@ impl WorkspaceIndex {
         // 6. Fallback: single unique match across workspace readers (reject ambiguous matches)
         let mut matched: Option<ResolvedDefinition<'a>> = None;
         for (i, reader) in self.readers.iter().enumerate() {
+            if !qual_trimmed.contains("::")
+                && Some(i) != crate_idx
+                && reader.crate_name() != qual_trimmed
+            {
+                continue;
+            }
             let prefix = format!("{}::", reader.crate_name());
             let sub = qual_trimmed.strip_prefix(&prefix).unwrap_or(qual_trimmed);
             if let Some(def) = reader
                 .find_definition_by_path(qual_trimmed)
                 .or_else(|| reader.find_definition_by_path(sub))
             {
+                if DefKind::from(def.kind) == DefKind::Use {
+                    continue;
+                }
                 if matched.is_some() {
                     return None;
                 }
