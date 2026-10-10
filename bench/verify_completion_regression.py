@@ -22,33 +22,20 @@ if str(bench_dir) not in sys.path:
 from lsp_process import SimpleLspProcess
 from metrics import calc_pct, calc_route_acc, percentile
 from provenance import (
+    EXCLUDED_SCENARIOS,
+    REPO_SLUG_TO_NAME,
+    ROOT_CAUSES,
     find_default_repo,
     find_sysroot_cas_key,
+    get_driver_build_commit,
     get_driver_hash,
     get_repo_commit,
     get_sysroot_std_metadata,
     is_sysroot_transplanted,
+    load_baseline,
     verify_repo_commit,
 )
 from validate_scenarios import validate_scenarios_for_repo
-
-ROOT_CAUSES = {
-    "comp_colon_41_RangeVisitor": "Shadowing: sysroot core::ops::range resolved before local mod range at serde_core/src/de/impls.rs:2463 (5 sysroot items vs 2 local).",
-    "comp_colon_37_SocketAddr": "Re-export omission: std::net re-exports core::net::SocketAddr, but std.ridx excluded core re-exports (1 item vs 13).",
-}
-
-EXCLUDED_SCENARIOS = {
-    "bevyengine/bevy": {
-        "comp_colon_10_Greater": "Sampling position on clean 68c80f3b falls on younger_before_ord_wrap (multi-line assert_eq) instead of Ordering::Greater.",
-    }
-}
-
-REPO_SLUG_TO_NAME = {"serde-rs/serde": "serde", "bevyengine/bevy": "bevy"}
-
-
-def load_baseline(baseline_file):
-    with open(baseline_file, "r", encoding="utf-8") as f:
-        return {d["repo"]: d for d in (json.loads(l) for l in f if l.strip())}
 
 
 def preopen_buffers(srv, repo_dir, scenarios):
@@ -94,23 +81,32 @@ def run_scenarios(srv, repo_dir, scenarios, is_ra=False, timeout=5.0):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Empirical regression and parity verification")
-    p.add_argument("--base-commit", default="b05240a", help="Baseline commit SHA")
-    p.add_argument("--curr-commit", default="c308792", help="Current commit SHA under test")
-    p.add_argument("--commit-ridx", help="Alias for --curr-commit")
-    p.add_argument("--base-jsonl", help="Explicit path to baseline rerun jsonl")
-    p.add_argument("--curr-jsonl", help="Explicit path to current rerun jsonl (replay mode)")
-    p.add_argument("--replay", action="store_true", help="Replay directly from existing published jsonl")
-    p.add_argument("--v2", action="store_true", help="Format and name report with v2 methodology")
-    p.add_argument("--v3", action="store_true", help="Format and name report with v3 methodology")
-    p.add_argument("--ridx-bin", help="Path to current ridx binary")
-    p.add_argument("--ra-bin", help="Path to rust-analyzer binary")
-    p.add_argument("--serde-dir", help="Path to serde repo")
-    p.add_argument("--bevy-dir", help="Path to bevy repo")
-    p.add_argument("--output-json", help="Path for comparison report json")
-    p.add_argument("--output-jsonl", help="Path for output rerun jsonl")
-    p.add_argument("--force", action="store_true", help="Allow overwriting existing published benchmark files")
-    p.add_argument("--toolchain", default="1.98.1", help="Expected compiler and rust-analyzer toolchain version")
-    p.add_argument("--allow-invalid-config", action="store_true", help="Allow running even if toolchain or sysroot invalid")
+    for f, d, h in [
+        ("--base-commit", "b05240a", "Baseline commit SHA"),
+        ("--curr-commit", "c308792", "Current commit SHA under test"),
+        ("--toolchain", "1.98.1", "Expected compiler and rust-analyzer toolchain version"),
+    ]:
+        p.add_argument(f, default=d, help=h)
+    for opt, h in [
+        ("--commit-ridx", "Alias for --curr-commit"),
+        ("--base-jsonl", "Explicit path to baseline rerun jsonl"),
+        ("--curr-jsonl", "Explicit path to current rerun jsonl (replay mode)"),
+        ("--ridx-bin", "Path to current ridx binary"),
+        ("--ra-bin", "Path to rust-analyzer binary"),
+        ("--serde-dir", "Path to serde repo"),
+        ("--bevy-dir", "Path to bevy repo"),
+        ("--output-json", "Path for comparison report json"),
+        ("--output-jsonl", "Path for output rerun jsonl"),
+    ]:
+        p.add_argument(opt, help=h)
+    for fl, h in [
+        ("--replay", "Replay directly from existing published jsonl"),
+        ("--v2", "Format and name report with v2 methodology"),
+        ("--v3", "Format and name report with v3 methodology"),
+        ("--force", "Allow overwriting existing published benchmark files"),
+        ("--allow-invalid-config", "Allow running even if toolchain or sysroot invalid"),
+    ]:
+        p.add_argument(fl, action="store_true", help=h)
     return p.parse_args()
 
 
@@ -136,11 +132,9 @@ def main():
     base_data = load_baseline(base_file)
     curr_data = load_baseline(curr_file) if (curr_file and curr_file.is_file()) else None
 
-    if not args.force:
-        if out_json.exists():
-            raise FileExistsError(f"Refusing to overwrite existing file without --force: {out_json}")
-        if not curr_data and out_jsonl.exists():
-            raise FileExistsError(f"Refusing to overwrite existing file without --force: {out_jsonl}")
+    if not args.force and (out_json.exists() or (not curr_data and out_jsonl.exists())):
+        target = out_json if out_json.exists() else out_jsonl
+        raise FileExistsError(f"Refusing to overwrite existing file without --force: {target}")
 
     serde_dir = Path(args.serde_dir) if args.serde_dir else find_default_repo("serde")
     bevy_dir = Path(args.bevy_dir) if args.bevy_dir else find_default_repo("bevy")
@@ -148,11 +142,9 @@ def main():
 
     ra_ver, tc_ver = f"rust-analyzer {tc_target}", f"rustc {tc_target}"
     if not curr_data:
-        curr_bin = (
-            Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")
-        ).resolve()
-        ra_cands = [Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"]
-        rc_cands = [Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin" / "rustc"]
+        curr_bin = (Path(args.ridx_bin) if args.ridx_bin else (bench_dir.parent / "target" / "release" / "ridx")).resolve()
+        base_tc_p = Path.home() / ".rustup" / "toolchains" / f"{tc_target}-x86_64-unknown-linux-gnu" / "bin"
+        ra_cands, rc_cands = [base_tc_p / "rust-analyzer"], [base_tc_p / "rustc"]
         for cmd, clist in [("rust-analyzer", ra_cands), ("rustc", rc_cands)]:
             try:
                 rw = subprocess.run(["rustup", "which", cmd], capture_output=True, text=True, check=False)
@@ -180,8 +172,8 @@ def main():
             c_rec = curr_data[slug]
             ra_ver, tc_ver, cas_key = c_rec.get("baseline_ra", ra_ver), c_rec.get("toolchain", tc_ver), c_rec.get("sysroot_cas_key")
             driver_hash = c_rec.get("driver_hash")
-            std_mtime = c_rec.get("std_ridx_mtime")
-            std_sha = c_rec.get("std_ridx_hash")
+            driver_build_commit = c_rec.get("driver_build_commit", curr_commit)
+            std_mtime, std_sha = c_rec.get("std_ridx_mtime"), c_rec.get("std_ridx_hash")
             sysroot_transplanted = c_rec.get("sysroot_transplanted", False)
             res_scs = c_rec["scenarios"]
         else:
@@ -197,6 +189,7 @@ def main():
 
             cas_key = find_sysroot_cas_key(rpath)
             driver_hash = get_driver_hash(curr_bin)
+            driver_build_commit = get_driver_build_commit(curr_bin) or curr_commit
             std_mtime, std_sha = get_sysroot_std_metadata(cas_key)
             sysroot_transplanted = is_sysroot_transplanted(curr_bin, cas_key)
         repo_name = REPO_SLUG_TO_NAME.get(slug)
@@ -284,16 +277,12 @@ def main():
             sc_pub.append(entry_pub)
             (owner_scs if route == "owner_path" else fallback_scs).append(entry_pub)
 
-        o_c_w, o_ra_w = [s["ridx_warm_us"] for s in owner_scs], [s["ra_warm_us"] for s in owner_scs]
-        f_c_w, f_ra_w = [s["ridx_warm_us"] for s in fallback_scs], [s["ra_warm_us"] for s in fallback_scs]
-        a_c_w, a_ra_w = [s["ridx_warm_us"] for s in sc_pub], [s["ra_warm_us"] for s in sc_pub]
-
-        o_c_p50, o_c_p95 = calc_pct(o_c_w, 50.0), calc_pct(o_c_w, 95.0)
-        o_ra_p50, o_ra_p95 = calc_pct(o_ra_w, 50.0), calc_pct(o_ra_w, 95.0)
-        f_c_p50, f_c_p95 = calc_pct(f_c_w, 50.0), calc_pct(f_c_w, 95.0)
-        f_ra_p50, f_ra_p95 = calc_pct(f_ra_w, 50.0), calc_pct(f_ra_w, 95.0)
-        all_c_p50, all_c_p95 = calc_pct(a_c_w, 50.0), calc_pct(a_c_w, 95.0)
-        all_ra_p50, all_ra_p95 = calc_pct(a_ra_w, 50.0), calc_pct(a_ra_w, 95.0)
+        o_c_p50, o_c_p95 = calc_pct([s["ridx_warm_us"] for s in owner_scs], 50.0), calc_pct([s["ridx_warm_us"] for s in owner_scs], 95.0)
+        o_ra_p50, o_ra_p95 = calc_pct([s["ra_warm_us"] for s in owner_scs], 50.0), calc_pct([s["ra_warm_us"] for s in owner_scs], 95.0)
+        f_c_p50, f_c_p95 = calc_pct([s["ridx_warm_us"] for s in fallback_scs], 50.0), calc_pct([s["ridx_warm_us"] for s in fallback_scs], 95.0)
+        f_ra_p50, f_ra_p95 = calc_pct([s["ra_warm_us"] for s in fallback_scs], 50.0), calc_pct([s["ra_warm_us"] for s in fallback_scs], 95.0)
+        all_c_p50, all_c_p95 = calc_pct([s["ridx_warm_us"] for s in sc_pub], 50.0), calc_pct([s["ridx_warm_us"] for s in sc_pub], 95.0)
+        all_ra_p50, all_ra_p95 = calc_pct([s["ra_warm_us"] for s in sc_pub], 50.0), calc_pct([s["ra_warm_us"] for s in sc_pub], 95.0)
 
         o_speedup = round(o_ra_p50 / max(1.0, o_c_p50), 2) if o_c_p50 > 0 else 0.0
         f_speedup = round(f_ra_p50 / max(1.0, f_c_p50), 2) if f_c_p50 > 0 else 0.0
@@ -310,7 +299,13 @@ def main():
 
         summary = {
             "repo": slug, "repo_commit": repo_commit, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
-            "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": sysroot_transplanted,
+            "driver_hash": driver_hash, "driver_build_commit": driver_build_commit,
+            "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": sysroot_transplanted,
+            "base_source": "replay" if base_file.is_file() else "live",
+            "base_driver_hash": base_data[slug].get("driver_hash"),
+            "base_build_commit": base_data[slug].get("commit_ridx", base_commit),
+            "base_sysroot_cas_key": base_data[slug].get("sysroot_cas_key"),
+            "base_sysroot_transplanted": base_data[slug].get("sysroot_transplanted", True),
             "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
             "excluded_scenarios": repo_excluded,
             "total_scenarios": len(scenarios_base),
@@ -343,24 +338,30 @@ def main():
         }
         all_comparisons[slug] = summary
 
-        print(f"\n--- Summary for {slug} ---")
-        print(f"  Empty responses:       {base_commit}: {empty_b} -> {curr_commit}: {empty_c} (closed: {closed_cnt})")
-        print(f"  Avg recall (ra>0):     {base_commit}: {avg_rec_b}% (n={len(recs_b)}) -> {curr_commit}: {avg_rec_c}% (n={len(recs_c)}) [ra_zero={ra_zero}]")
-        print(f"  Avg precision (cnt>0, ra>0): {base_commit}: {avg_prec_b}% (n={len(precs_b)}) -> {curr_commit}: {avg_prec_c}% (n={len(precs_c)})")
-        print(f"  Owner accuracy:        recall {o_rec_b}% -> {o_rec_c}% | precision {o_prec_b}% -> {o_prec_c}% (n={len(owner_scs)})")
-        print(f"  Fallback accuracy:     recall {f_rec_b}% -> {f_rec_c}% | precision {f_prec_b}% -> {f_prec_c}% (n={len(fallback_scs)})")
-        print(f"  Recall regressions:    {len(recall_regs)} scenarios with recall drop")
+        print(f"\n--- Summary for {slug} ---\n"
+              f"  Empty responses:       {base_commit}: {empty_b} -> {curr_commit}: {empty_c} (closed: {closed_cnt})\n"
+              f"  Avg recall (ra>0):     {base_commit}: {avg_rec_b}% (n={len(recs_b)}) -> {curr_commit}: {avg_rec_c}% (n={len(recs_c)}) [ra_zero={ra_zero}]\n"
+              f"  Avg precision (cnt>0): {base_commit}: {avg_prec_b}% (n={len(precs_b)}) -> {curr_commit}: {avg_prec_c}% (n={len(precs_c)})\n"
+              f"  Owner accuracy:        recall {o_rec_b}% -> {o_rec_c}% | precision {o_prec_b}% -> {o_prec_c}% (n={len(owner_scs)})\n"
+              f"  Fallback accuracy:     recall {f_rec_b}% -> {f_rec_c}% | precision {f_prec_b}% -> {f_prec_c}% (n={len(fallback_scs)})\n"
+              f"  Recall regressions:    {len(recall_regs)} scenarios with recall drop")
         for r in recall_regs:
             print(f"    - {r['name']}: {r['base_recall_pct']}% -> {r['curr_recall_pct']}% (-{r['diff_pp']}pp) [ridx {r['curr_count']} vs ra {r['ra_count']}]")
-        print(f"  Owner:    p50 {o_c_p50:.0f}µs RIDX vs {o_ra_p50:.0f}µs RA ({o_speedup}x) | p95 {o_c_p95:.0f}µs vs {o_ra_p95:.0f}µs")
-        print(f"  Fallback: p50 {f_c_p50:.0f}µs RIDX vs {f_ra_p50:.0f}µs RA ({f_speedup}x) | p95 {f_c_p95:.0f}µs vs {f_ra_p95:.0f}µs")
-        print(f"  Overall:  p50 {all_c_p50:.0f}µs RIDX vs {all_ra_p50:.0f}µs RA ({tot_speedup}x) | p95 {all_c_p95:.0f}µs vs {all_ra_p95:.0f}µs")
+        print(f"  Owner:    p50 {o_c_p50:.0f}µs RIDX vs {o_ra_p50:.0f}µs RA ({o_speedup}x) | p95 {o_c_p95:.0f}µs vs {o_ra_p95:.0f}µs\n"
+              f"  Fallback: p50 {f_c_p50:.0f}µs RIDX vs {f_ra_p50:.0f}µs RA ({f_speedup}x) | p95 {f_c_p95:.0f}µs vs {f_ra_p95:.0f}µs\n"
+              f"  Overall:  p50 {all_c_p50:.0f}µs RIDX vs {all_ra_p50:.0f}µs RA ({tot_speedup}x) | p95 {all_c_p95:.0f}µs vs {all_ra_p95:.0f}µs")
 
         if not curr_data:
             published_records.append({
-                "repo": slug, "repo_commit": repo_commit, "commit_ridx": curr_commit, "baseline_ra": ra_ver,
-                "toolchain": tc_ver, "sysroot_cas_key": cas_key,
+                "repo": slug, "repo_commit": repo_commit, "commit_ridx": curr_commit,
+                "driver_build_commit": driver_build_commit,
+                "baseline_ra": ra_ver, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
                 "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": sysroot_transplanted,
+                "base_source": "replay" if base_file.is_file() else "live",
+                "base_driver_hash": base_data[slug].get("driver_hash"),
+                "base_build_commit": base_data[slug].get("commit_ridx", base_commit),
+                "base_sysroot_cas_key": base_data[slug].get("sysroot_cas_key"),
+                "base_sysroot_transplanted": base_data[slug].get("sysroot_transplanted", True),
                 "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
                 "excluded_scenarios": repo_excluded,
                 "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
