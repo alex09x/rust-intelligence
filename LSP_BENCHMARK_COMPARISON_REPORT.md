@@ -881,3 +881,50 @@ Before optimization, Bevy fallback p95 was 10.91 ms (vs RA 6.53 ms). A fine-grai
 | `comp_dot_19_into_deserializer` | Serde | 5.0% | 0.0% | -5.0 | 100 | 0 | 20 | Unresolved receiver type; fallback scan filtered out non-matching candidates. |
 | `comp_dot_33_end` | Serde | 4.2% | 0.0% | -4.2 | 100 | 0 | 24 | Unresolved receiver type; fallback scan filtered out non-matching candidates. |
 | `comp_colon_33_default` | Bevy | 7.7% | 0.0% | -7.7 | 100 | 0 | 13 | Preceding qualifier is UFCS expression `<&set::Slice<K>>`. Fast guard `qual.is_empty()` returns 0 candidates until UFCS syntax is parsed. Zero candidates lost from budget cap. |
+
+---
+
+## Step 4 Benchmark: Turbofish Generic Qualifier Extraction (`30b197f`)
+
+- Date: Sat Oct 10 03:44:00 2026 -0700
+- Commit Under Test: `30b197f4a859559de9e12e9287302c045a879dd2`
+- Baseline Commit: `4a2441f3918a38a9bc69fe31e05d0505191f6534` (paired evaluation)
+- Preceding Commit: `811a3dd6c321ae85da01ae3f50800fa06bc66a40`
+- Methodology: v3 paired empirical rerun (`bench/verify_completion_regression.py --base-commit 4a2441f --commit-ridx 30b197f --v3`)
+- Raw Telemetry: `bench/published/rerun_completion_30b197f.jsonl`
+- Comparison JSON: `bench/published/completion_regression_4a2441f_vs_30b197f_v3.json`
+
+### Turbofish Qualifier Parsing Impact
+
+Stripping turbofish generic arguments (`::<...>` -> `::`) in `extract_colon_qualifier` and `classify_colon_position` recovers owner-path completion for generic types preceding `::`:
+
+- **`comp_colon_32_new`** (`crates/bevy_ecs/src/query/state.rs:2493:53`):
+  `QueryState::<&A, Without<C>>::new`
+  - Route: `fallback` -> `owner_path`
+  - Count: `0` (in `811a3dd`) -> `70` (RA: `74`)
+  - Grounded Recall: `0.0%` -> `87.8%` (+87.8 pp)
+  - Grounded Precision: `0.0%` -> `92.9%` (+92.9 pp)
+  - Warm latency: 457 µs (rust-analyzer 4,674 µs)
+
+- **`comp_colon_24_default`** (`crates/bevy_ecs/src/system/commands/command.rs:291:80`):
+  `&mut EventTriggerState::<E>::default()`
+  - Qualifier `EventTriggerState` successfully extracted as `EventTriggerState`.
+  - In `bevy_ecs`, `EventTriggerState` is defined as a type alias projection (`pub type EventTriggerState<'a, E> = <<E as Event>::Trigger as Trigger<E>>::State<'a>;`) rather than a concrete struct/enum with inherent impl blocks. It correctly exits with 0 candidates and zero noise.
+
+### Isolation Verification vs `811a3dd`
+
+Across all 199 scenarios in Serde (100) and Bevy (99), exactly **1 scenario changed**:
+`comp_colon_32_new`: count 0 -> 70, recall 0.0% -> 87.8%, precision 0.0% -> 92.9%.
+All other 198 scenarios had zero changes in count, recall, precision, or label sets. Zero regressions.
+
+### Headline Comparison Table (`4a2441f` -> `30b197f`)
+
+| Metric | `serde-rs/serde` (`4a2441f` → `30b197f`) | `bevyengine/bevy` (`4a2441f` → `30b197f`) | Combined Total |
+|---|---|---|---|
+| **Validated Scenarios** | 100 / 100 (0 excluded) | 99 / 99 (1 excluded: `comp_colon_10_Greater`) | 199 / 199 |
+| **Empty Responses** | 21 → 12 (11 closed, 2 regressions to empty) | 4 → 9 (0 closed, 5 regressions to empty: -1 empty) | 25 → 21 (11 closed, 7 regressions to empty) |
+| **Grounded Recall vs RA** (`ra_count > 0`) | 45.2% → 56.8% (+11.6 pp, n=98) | 48.1% → 49.0% (+0.9 pp, n=93) | 46.6% → 53.0% (+6.4 pp, n=191) |
+| **Grounded Precision vs RA** (`ridx_count > 0`, `ra_count > 0`) | 78.5% → 86.0% (+7.5 pp, n: 77 → 86) | 62.8% → 65.3% (+2.5 pp, n: 91 → 88) | 70.0% → 75.5% (+5.5 pp, n: 168 → 174) |
+| **Owner-Path Speedup (p50 / p95)** | 8.25x (334 µs vs 2,754 µs) / 7.27x (944 µs vs 6.86 ms) | 7.12x (411 µs vs 2,927 µs) / 10.11x (1.15 ms vs 11.58 ms) | 7.12x – 8.25x (p50) / 7.27x – 10.11x (p95) |
+| **Fallback Speedup (p50 / p95)** | 1.78x (681 µs vs 1,214 µs) / 3.78x (1.90 ms vs 7.19 ms) | 3.35x (499 µs vs 1,674 µs) / 4.47x (2.61 ms vs 11.63 ms) | 1.78x – 3.35x (p50) / 3.78x – 4.47x (p95) |
+| **Overall Speedup (p50 / p95)** | 7.24x (378 µs vs 2,742 µs) / 4.29x (1.65 ms vs 7.08 ms) | 5.99x (451 µs vs 2,702 µs) / 7.95x (1.48 ms vs 11.73 ms) | 5.99x – 7.24x (p50) / 4.29x – 7.95x (p95) |
