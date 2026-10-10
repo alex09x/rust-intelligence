@@ -182,3 +182,83 @@ fn test_l2_rich_type_completion_latency_benchmark() {
         pt_p50
     );
 }
+
+
+#[test]
+fn test_l2_generic_param_completion_in_fn_and_impl_body() {
+    let ws = get_or_index_l2_fixture("traits_and_generics");
+    let lib_file = fixture_dir("traits_and_generics").join("src/lib.rs");
+    let uri = path_to_uri(lib_file.to_str().unwrap());
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    // 1. Function body: call_generic<G: Greeter>
+    let (g_line, g_col) = pos_in_file(&lib_file, "let _ = G::default_greet;", "G::");
+    let g_param = ws.find_type_param_in_scope("src/lib.rs", "G", g_line + 1, g_col + 1);
+    assert!(
+        g_param.is_some(),
+        "Generic parameter 'G' must be in scope inside call_generic fn body"
+    );
+    let g_def = g_param.unwrap();
+    assert_eq!(g_def.name, "G");
+    assert_eq!(g_def.signature, Some("Greeter"));
+
+    // Completion at G:: inside function body (cursor right after 'G::')
+    let g_req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": g_line, "character": g_col + 3 }
+        }
+    });
+    let g_res = handle_completion(&g_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
+    let g_items: Vec<&str> = g_res["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|it| it["label"].as_str())
+        .collect();
+    assert!(
+        g_items.contains(&"greet"),
+        "Completion on G:: in fn body must include 'greet', got: {g_items:?}"
+    );
+    assert!(
+        g_items.contains(&"default_greet"),
+        "Completion on G:: in fn body must include 'default_greet', got: {g_items:?}"
+    );
+
+    // 2. Impl body: impl<W: Greeter> Wrapper<W>
+    let (w_line, w_col) = pos_in_file(&lib_file, "let _ = W::default_greet;", "W::");
+    let w_param = ws.find_type_param_in_scope("src/lib.rs", "W", w_line + 1, w_col + 1);
+    assert!(
+        w_param.is_some(),
+        "Generic parameter 'W' must be in scope inside Wrapper<W> impl body"
+    );
+    let w_def = w_param.unwrap();
+    assert_eq!(w_def.name, "W");
+    assert_eq!(w_def.signature, Some("Greeter"));
+
+    // Completion at W:: inside impl body (cursor right after 'W::')
+    let w_req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": w_line, "character": w_col + 3 }
+        }
+    });
+    let w_res = handle_completion(&w_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
+    let w_items: Vec<&str> = w_res["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|it| it["label"].as_str())
+        .collect();
+    assert!(
+        w_items.contains(&"greet"),
+        "Completion on W:: in impl body must include 'greet', got: {w_items:?}"
+    );
+    assert!(
+        w_items.contains(&"default_greet"),
+        "Completion on W:: in impl body must include 'default_greet', got: {w_items:?}"
+    );
+}
+
+

@@ -12,7 +12,7 @@
 
 use super::protocol::{lsp_symbol_kind, path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
-use ridx_format::WorkspaceIndex;
+use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 
 pub fn handle_document_symbol(
@@ -27,6 +27,9 @@ pub fn handle_document_symbol(
 
     if let Some(symbols) = overlay_mgr.document_symbols(&file) {
         for s in symbols {
+            if s.kind == DefKind::TyParam {
+                continue;
+            }
             let start_char = conv.char_col_to_utf16_col(&file, s.start_line, s.start_col);
             let end_char = conv.char_col_to_utf16_col(&file, s.end_line, s.end_col);
             let range = json!({

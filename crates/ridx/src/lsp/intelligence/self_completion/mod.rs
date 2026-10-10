@@ -62,19 +62,35 @@ pub(crate) fn collect_trait_and_supertraits(
         owners.push(trait_name.to_string());
     }
 
-    if let Some(def) = def_opt {
-        if def.kind == DefKind::Trait {
-            let supertraits =
-                super::scope_cache::get_or_resolve_trait_supertraits(def.file, def.start_line);
-            for st_clean in supertraits {
-                collect_trait_and_supertraits(
-                    ws,
+    // 1. Fast path: resolve supertraits from index deref graph
+    let indexed_supertraits = ws.resolve_deref_chain(target, 4);
+    for st in &indexed_supertraits {
+        if seen.insert(st.to_string()) {
+            owners.push(st.to_string());
+        }
+    }
+
+    // 2. Fallback to lexical source parse only if no indexed supertraits found
+    if indexed_supertraits.is_empty() {
+        if let Some(def) = def_opt {
+            if def.kind == DefKind::Trait {
+                let abs_file = ws.resolve_path_for_crate(
+                    ws.crate_name_for_file(file).unwrap_or(""),
                     def.file,
-                    &st_clean,
-                    owners,
-                    seen,
-                    depth + 1,
                 );
+                let file_str = abs_file.to_str().unwrap_or(def.file);
+                let supertraits =
+                    super::scope_cache::get_or_resolve_trait_supertraits(file_str, def.start_line);
+                for st_clean in supertraits {
+                    collect_trait_and_supertraits(
+                        ws,
+                        file_str,
+                        &st_clean,
+                        owners,
+                        seen,
+                        depth + 1,
+                    );
+                }
             }
         }
     }

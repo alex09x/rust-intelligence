@@ -208,4 +208,107 @@ fn test_driver_hash_cache_by_path_size_mtime() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
+#[test]
+fn test_find_type_param_in_scope_and_owners() {
+    let test_dir = unique_temp_dir("ridx_typaram_test");
+    let var_dir = test_dir.join("variants/var_tp");
+    fs::create_dir_all(&var_dir).unwrap();
+
+    let mut writer = IndexWriter::new("tp_crate", "0.1.0");
+
+    // 1. Function enclosing span: lines 10..30
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "foo".to_string(),
+        path: "tp_crate::foo".to_string(),
+        signature: Some("fn<F: MyTrait>(f: F)".to_string()),
+        file: "src/lib.rs".to_string(),
+        start_line: 10,
+        start_col: 1,
+        end_line: 30,
+        end_col: 2,
+    });
+
+    // 2. TyParam F valid across lines 10..30 with owner bound MyTrait
+    writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 2,
+            kind: DefKind::TyParam,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "F".to_string(),
+            path: "tp_crate::foo::F".to_string(),
+            signature: Some("tp_crate::MyTrait".to_string()),
+            file: "src/lib.rs".to_string(),
+            start_line: 10,
+            start_col: 8,
+            end_line: 10,
+            end_col: 9,
+        },
+        vec!["tp_crate::MyTrait".to_string()],
+    );
+
+    // 3. AssocTy Item in MyTrait with bound Debug
+    writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: 3,
+            kind: DefKind::AssocTy,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "Item".to_string(),
+            path: "tp_crate::MyTrait::Item".to_string(),
+            signature: Some("core::fmt::Debug".to_string()),
+            file: "src/lib.rs".to_string(),
+            start_line: 5,
+            start_col: 5,
+            end_line: 5,
+            end_col: 25,
+        },
+        vec!["tp_crate::MyTrait".to_string(), "core::fmt::Debug".to_string()],
+    );
+
+    let idx_file = File::create(var_dir.join("tp_crate.ridx")).unwrap();
+    writer.write_to(&mut BufWriter::new(idx_file)).unwrap();
+
+    let manifest = serde_json::json!({
+        "version": "2.0",
+        "format_version": 3,
+        "extractor_version": ridx_format::EXTRACTOR_VERSION,
+        "active_variant_id": "var_tp",
+        "variant_dir": "variants/var_tp",
+        "workspace_root": test_dir.display().to_string(),
+        "manifest_path": test_dir.join("Cargo.toml").display().to_string(),
+        "profile": "dev",
+    });
+    fs::write(
+        test_dir.join("ridx_manifest.json"),
+        serde_json::to_string_pretty(&manifest).unwrap(),
+    )
+    .unwrap();
+
+    let ws = WorkspaceIndex::open(&test_dir).unwrap();
+
+    // Query cursor inside foo at line 15
+    let tp = ws.find_type_param_in_scope("src/lib.rs", "F", 15, 10);
+    assert!(tp.is_some(), "should find TyParam F at line 15");
+    let tp_def = tp.unwrap();
+    assert_eq!(tp_def.name, "F");
+    assert_eq!(tp_def.kind, DefKind::TyParam);
+    assert_eq!(tp_def.start_col, 8);
+    assert_eq!(tp_def.signature, Some("tp_crate::MyTrait"));
+
+    let owners = ws.find_owners_of_definition(&tp_def);
+    assert!(owners.contains(&"tp_crate::MyTrait"));
+
+    // Query cursor outside foo at line 35
+    let tp_outside = ws.find_type_param_in_scope("src/lib.rs", "F", 35, 10);
+    assert!(tp_outside.is_none(), "TyParam F should not be in scope at line 35");
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+
 

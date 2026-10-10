@@ -647,8 +647,41 @@ fn extract_crate_items<'tcx>(
     visitor: &mut HirVisitor<'tcx>,
     package_root: Option<&Path>,
 ) {
+    let mut items: Vec<rustc_hir::def_id::LocalDefId> =
+        tcx.hir_crate_items(()).definitions().collect();
+    for &def_id in &items.clone() {
+        let kind = tcx.def_kind(def_id);
+        if matches!(
+            kind,
+            hir::def::DefKind::Fn
+                | hir::def::DefKind::AssocFn
+                | hir::def::DefKind::Struct
+                | hir::def::DefKind::Enum
+                | hir::def::DefKind::Union
+                | hir::def::DefKind::Trait
+                | hir::def::DefKind::TraitAlias
+                | hir::def::DefKind::Impl { .. }
+                | hir::def::DefKind::TyAlias
+                | hir::def::DefKind::AssocTy
+        ) {
+            let generics = tcx.generics_of(def_id.to_def_id());
+            for param in &generics.own_params {
+                if let rustc_middle::ty::GenericParamDefKind::Type { .. } = param.kind {
+                    if param.name != rustc_span::symbol::kw::SelfUpper {
+                        if let Some(local_did) = param.def_id.as_local() {
+                            if tcx.def_kind(local_did) == hir::def::DefKind::TyParam {
+                                items.push(local_did);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Extract all crate item definitions
-    for def_id in tcx.hir_crate_items(()).definitions() {
+    for def_id in items {
+        let kind = tcx.def_kind(def_id);
         let item_span = tcx
             .def_ident_span(def_id)
             .unwrap_or_else(|| tcx.def_span(def_id));
@@ -658,7 +691,6 @@ fn extract_crate_items<'tcx>(
             continue;
         };
 
-        let kind = tcx.def_kind(def_id);
         let mut path = rustc_middle::ty::print::with_no_visible_paths!(
             rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(def_id))
         );
@@ -678,33 +710,33 @@ fn extract_crate_items<'tcx>(
             let mut is_glob = false;
             if let hir::Node::Item(item) = tcx.hir_node_by_def_id(def_id) {
                 if let hir::ItemKind::Use(use_path, use_kind) = &item.kind {
+                    let target_path = use_path
+                        .res
+                        .iter()
+                        .flatten()
+                        .find_map(|r| {
+                            r.opt_def_id().map(|target_did| {
+                                rustc_middle::ty::print::with_no_visible_paths!(
+                                    rustc_middle::ty::print::with_no_trimmed_paths!(
+                                        tcx.def_path_str(target_did)
+                                    )
+                                )
+                            })
+                        })
+                        .unwrap_or_else(|| {
+                            use_path
+                                .segments
+                                .iter()
+                                .map(|s| s.ident.as_str())
+                                .collect::<Vec<_>>()
+                                .join("::")
+                        });
+
                     if matches!(use_kind, hir::UseKind::Glob) {
                         is_glob = true;
                         name = "*".to_string();
-                        let target_path = use_path
-                            .res
-                            .iter()
-                            .flatten()
-                            .find_map(|r| {
-                                r.opt_def_id().map(|target_did| {
-                                    rustc_middle::ty::print::with_no_visible_paths!(
-                                        rustc_middle::ty::print::with_no_trimmed_paths!(
-                                            tcx.def_path_str(target_did)
-                                        )
-                                    )
-                                })
-                            })
-                            .unwrap_or_else(|| {
-                                use_path
-                                    .segments
-                                    .iter()
-                                    .map(|s| s.ident.as_str())
-                                    .collect::<Vec<_>>()
-                                    .join("::")
-                            });
                         path = format!("{path}::*");
                         signature = Some(target_path);
-                    }
                 }
             }
 
@@ -733,6 +765,58 @@ fn extract_crate_items<'tcx>(
 
         #[allow(clippy::collapsible_match)]
         match kind {
+            hir::def::DefKind::TyParam => {
+                let parent_did = tcx.parent(did);
+                let param_name = tcx.item_name(did);
+                let mut bounds = Vec::new();
+                let mut cur_preds = Some(tcx.predicates_of(parent_did));
+                while let Some(preds) = cur_preds {
+                    for &(clause, _) in preds.predicates {
+                        if let rustc_middle::ty::ClauseKind::Trait(trait_pred) =
+                            clause.kind().skip_binder()
+                        {
+                            let self_ty = trait_pred.self_ty();
+                            if let rustc_middle::ty::TyKind::Param(param_ty) = self_ty.kind() {
+                                if param_ty.name == param_name {
+                                    let bound_did = trait_pred.trait_ref.def_id;
+                                    if tcx.lang_items().sized_trait() != Some(bound_did)
+                                        && !tcx.trait_is_auto(bound_did)
+                                    {
+                                        let bound_path =
+                                            rustc_middle::ty::print::with_no_visible_paths!(
+                                                rustc_middle::ty::print::with_no_trimmed_paths!(
+                                                    tcx.def_path_str(bound_did)
+                                                )
+                                            );
+                                        if !bound_path.starts_with("core::marker::")
+                                            && !bounds.contains(&bound_path)
+                                        {
+                                            bounds.push(bound_path);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    cur_preds = preds.parent.map(|p| tcx.predicates_of(p));
+                }
+                if !bounds.is_empty() {
+                    signature = Some(bounds.join(" + "));
+                }
+
+                // Record enclosing item scope coordinates in owners
+                let parent_span = if let Some(local_did) = parent_did.as_local() {
+                    let hir_id = tcx.local_def_id_to_hir_id(local_did);
+                    tcx.hir_span_with_body(hir_id)
+                } else {
+                    tcx.def_span(parent_did)
+                };
+                if let Some((_, p_sl, p_sc, p_el, p_ec, _)) =
+                    resolve_span_coords(tcx, parent_span, package_root)
+                {
+                    owners.push(format!("scope:{}:{}:{}:{}", p_sl, p_sc, p_el, p_ec));
+                }
+            }
             hir::def::DefKind::AssocFn
             | hir::def::DefKind::AssocConst { .. }
             | hir::def::DefKind::AssocTy => {
@@ -754,6 +838,34 @@ fn extract_crate_items<'tcx>(
                         )
                     );
                     owners.push(trait_path);
+                }
+                if kind == hir::def::DefKind::AssocTy && parent_kind == hir::def::DefKind::Trait {
+                    let mut assoc_bounds = Vec::new();
+                    for (clause, _) in tcx.explicit_item_bounds(did).skip_binder() {
+                        if let rustc_middle::ty::ClauseKind::Trait(trait_pred) =
+                            clause.kind().skip_binder()
+                        {
+                            let bound_did = trait_pred.trait_ref.def_id;
+                            if tcx.lang_items().sized_trait() != Some(bound_did)
+                                && !tcx.trait_is_auto(bound_did)
+                            {
+                                let bound_path =
+                                    rustc_middle::ty::print::with_no_visible_paths!(
+                                        rustc_middle::ty::print::with_no_trimmed_paths!(
+                                            tcx.def_path_str(bound_did)
+                                        )
+                                    );
+                                if !bound_path.starts_with("core::marker::")
+                                    && !assoc_bounds.contains(&bound_path)
+                                {
+                                    assoc_bounds.push(bound_path);
+                                }
+                            }
+                        }
+                    }
+                    if !assoc_bounds.is_empty() {
+                        signature = Some(assoc_bounds.join(" + "));
+                    }
                 }
             }
             hir::def::DefKind::Variant => {

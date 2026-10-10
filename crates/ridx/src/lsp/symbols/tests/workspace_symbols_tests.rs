@@ -165,3 +165,88 @@ fn test_workspace_symbols_missing_params() {
     // Empty query defaults to returning symbols up to 100
     assert!(!items.is_empty());
 }
+
+#[test]
+fn test_workspace_symbols_generic_fn_excludes_typaram() {
+    let mut h = setup_test_symbols();
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_gen_syms_{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&temp_dir);
+    let _ = std::fs::create_dir_all(&temp_dir);
+    let ridx_file = temp_dir.join("index.ridx");
+
+    let mut writer = IndexWriter::new("test_gen_crate", "0.1.0");
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: "src/lib.rs".to_string(),
+        name: "deserialize".to_string(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 19,
+        path: "test_gen_crate::deserialize".to_string(),
+        signature: Some("fn deserialize<X, Y>()".to_string()),
+    });
+    writer.add_definition(RawDefinition {
+        def_id: 2,
+        kind: DefKind::TyParam,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: "src/lib.rs".to_string(),
+        name: "X".to_string(),
+        start_line: 1,
+        start_col: 23,
+        end_line: 1,
+        end_col: 24,
+        path: "test_gen_crate::deserialize::X".to_string(),
+        signature: None,
+    });
+    writer.add_definition(RawDefinition {
+        def_id: 3,
+        kind: DefKind::TyParam,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: "src/lib.rs".to_string(),
+        name: "Y".to_string(),
+        start_line: 1,
+        start_col: 20,
+        end_line: 1,
+        end_col: 21,
+        path: "test_gen_crate::deserialize::Y".to_string(),
+        signature: None,
+    });
+
+    let mut f = std::fs::File::create(&ridx_file).unwrap();
+    writer.write_to(&mut f).unwrap();
+    drop(f);
+
+    let ws = WorkspaceIndex::open(&ridx_file).unwrap();
+
+    // Query "deserialize" should only return the function, not the type parameters X or Y
+    // even though their canonical paths contain "deserialize"
+    let req = json!({
+        "params": {
+            "query": "deserialize"
+        }
+    });
+    let res = handle_workspace_symbol(&req, std::iter::once(&ws), &mut h.conv);
+    let items = res.as_array().expect("expected array");
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["name"], "deserialize");
+    assert_eq!(items[0]["kind"], 12); // SymbolKind::Function = 12
+
+    // Query "X" should return empty because X is TyParam and function name doesn't contain x
+    let req_x = json!({
+        "params": {
+            "query": "X"
+        }
+    });
+    let res_x = handle_workspace_symbol(&req_x, std::iter::once(&ws), &mut h.conv);
+    let items_x = res_x.as_array().expect("expected array");
+    assert!(items_x.is_empty(), "TyParam X must not be returned by workspace/symbol");
+
+    let _ = std::fs::remove_dir_all(&temp_dir);
+}
+

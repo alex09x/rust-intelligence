@@ -155,6 +155,7 @@ pub struct OwnerCompletionContext<'a> {
     pub is_colon: bool,
     pub trimmed_before: &'a str,
     pub overlay_text: Option<&'a str>,
+    pub is_dirty: bool,
 }
 
 /// Attempts high-speed owner-based completion for dot- (`receiver.`) or colon- (`path::`) trigger.
@@ -280,6 +281,7 @@ pub fn try_owner_completion(
             ctx.line_1based,
             ctx.line_slice,
             ctx.overlay_text,
+            ctx.is_dirty,
             &qual,
         ) {
             owners
@@ -321,6 +323,9 @@ pub fn try_owner_completion(
                 continue;
             }
             for def in ws.find_definitions_by_owner(target_owner) {
+                if def.kind == DefKind::TyParam {
+                    continue;
+                }
                 if !super::syntax_pos::is_def_allowed_in_position(def.kind, syntax_pos) {
                     continue;
                 }

@@ -78,6 +78,7 @@ pub fn handle_completion(
     if is_dot || is_colon {
         if let Some(ws) = workspace {
             // Fast path: try O(1) owner-index and autoderef lookup (<100 µs)
+            let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
             let owner_ctx = super::owner_completion::OwnerCompletionContext {
                 file: &file,
                 line_1based,
@@ -87,6 +88,7 @@ pub fn handle_completion(
                 is_colon,
                 trimmed_before,
                 overlay_text: overlay_opt.map(|o| o.text.as_str()),
+                is_dirty,
             };
             if let Some(owner_items) = super::owner_completion::try_owner_completion(ws, &owner_ctx) {
                 return Ok(json!({

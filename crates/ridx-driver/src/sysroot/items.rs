@@ -130,12 +130,43 @@ pub fn extract_trait_items<'tcx>(
         let a_path = rustc_middle::ty::print::with_no_visible_paths!(
             rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(assoc_did))
         );
-        let a_sig = match a_kind {
+        let mut a_sig = match a_kind {
             DefKind::Fn | DefKind::AssocFn => Some(sanitize_type_name(
                 &tcx.fn_sig(assoc_did).skip_binder().to_string(),
             )),
             _ => None,
         };
+        let mut a_owners = vec![path.to_string()];
+        if a_kind == DefKind::AssocTy {
+            let mut assoc_bounds = Vec::new();
+            for (clause, _) in tcx.explicit_item_bounds(assoc_did).skip_binder() {
+                if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder() {
+                    let bound_did = trait_pred.trait_ref.def_id;
+                    if tcx.lang_items().sized_trait() != Some(bound_did)
+                        && !tcx.trait_is_auto(bound_did)
+                    {
+                        let bound_path = rustc_middle::ty::print::with_no_visible_paths!(
+                            rustc_middle::ty::print::with_no_trimmed_paths!(
+                                tcx.def_path_str(bound_did)
+                            )
+                        );
+                        if !bound_path.starts_with("core::marker::")
+                            && !assoc_bounds.contains(&bound_path)
+                        {
+                            assoc_bounds.push(bound_path);
+                        }
+                    }
+                }
+            }
+            if !assoc_bounds.is_empty() {
+                a_sig = Some(assoc_bounds.join(" + "));
+                for b in assoc_bounds {
+                    if !a_owners.contains(&b) {
+                        a_owners.push(b);
+                    }
+                }
+            }
+        }
         let (a_file, a_sl, a_sc, a_el, a_ec) = extract_def_span(tcx, assoc_did, sysroot_src);
 
         writer.add_definition_with_owners(
@@ -153,7 +184,7 @@ pub fn extract_trait_items<'tcx>(
                 end_line: a_el,
                 end_col: a_ec,
             },
-            vec![path.to_string()],
+            a_owners,
         );
         *total_definitions += 1;
     }

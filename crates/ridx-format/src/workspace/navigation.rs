@@ -217,6 +217,87 @@ impl WorkspaceIndex {
         None
     }
 
+    /// Finds a generic type parameter (`DefKind::TyParam`) in scope at `(file, line, col)`.
+    pub fn find_type_param_in_scope<'a>(
+        &'a self,
+        file: &str,
+        name: &str,
+        line: u32,
+        col: u32,
+    ) -> Option<ResolvedDefinition<'a>> {
+        let p = Path::new(file);
+        let is_abs = p.is_absolute();
+        let belongs_to_dep = if is_abs {
+            self.source_roots.iter().any(|r| {
+                if let Some(r) = r.as_ref() {
+                    p.starts_with(r)
+                } else {
+                    false
+                }
+            })
+        } else {
+            false
+        };
+
+        for (i, reader) in self.readers.iter().enumerate() {
+            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
+                if is_abs {
+                    if let Ok(rel) = p.strip_prefix(root) {
+                        rel.to_str().unwrap_or(file)
+                    } else {
+                        continue;
+                    }
+                } else {
+                    file
+                }
+            } else {
+                if belongs_to_dep {
+                    continue;
+                }
+                file
+            };
+
+            if let Some((def, _)) = reader.find_type_param_in_scope(target_file, name, line, col) {
+                return Some(self.make_resolved_definition(i, def));
+            }
+        }
+        None
+    }
+
+    /// Finds all owners/bounds associated with a definition.
+    pub fn find_owners_of_definition<'a>(&'a self, def: &ResolvedDefinition<'a>) -> Vec<&'a str> {
+        let p = Path::new(def.file);
+        let is_abs = p.is_absolute();
+        for (i, reader) in self.readers.iter().enumerate() {
+            let target_file = if let Some(Some(root)) = self.source_roots.get(i) {
+                if is_abs {
+                    if let Ok(rel) = p.strip_prefix(root) {
+                        rel.to_str().unwrap_or(def.file)
+                    } else {
+                        continue;
+                    }
+                } else {
+                    def.file
+                }
+            } else {
+                def.file
+            };
+
+            if let Some(_fid) = reader.find_file_id(target_file) {
+                if let Some(def_entry) = reader.find_definition_by_path(def.path) {
+                    let def_idx = (def_entry as *const _ as usize
+                        - reader.definitions().as_ptr() as usize)
+                        / std::mem::size_of::<DefEntry>();
+                    let owners = reader.find_owners_by_def_index(def_idx as u32);
+                    if !owners.is_empty() {
+                        return owners;
+                    }
+                }
+            }
+        }
+        Vec::new()
+    }
+
     /// Resolves a cross-crate definition target with compilation-unit and path/signature awareness.
     fn find_cross_definition<'a>(
         &'a self,

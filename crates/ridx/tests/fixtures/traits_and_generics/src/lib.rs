@@ -48,6 +48,7 @@ pub fn call_concrete(r: &Robot) -> &'static str {
 }
 
 pub fn call_generic<G: Greeter>(g: &G) -> &'static str {
+    let _ = G::default_greet;
     g.greet()
 }
 
@@ -61,3 +62,13 @@ pub fn process_bytes(b: [u8; 4]) -> i32 {
     let c = BoxContainer(b[0] as i32);
     c.extract()
 }
+
+pub struct Wrapper<W>(pub W);
+
+impl<W: Greeter> Wrapper<W> {
+    pub fn wrap_greet(&self) -> &'static str {
+        let _ = W::default_greet;
+        self.0.greet()
+    }
+}
+

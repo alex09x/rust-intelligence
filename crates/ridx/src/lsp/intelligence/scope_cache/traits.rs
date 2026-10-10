@@ -36,6 +36,10 @@ pub fn parse_trait_supertraits_from_source(src: &str, start_line: u32) -> Vec<St
         header.push_str(line.trim());
     }
 
+    if !header.contains("trait ") {
+        return Vec::new();
+    }
+
     let Some(colon_pos) = header.find(':') else {
         return Vec::new();
     };

@@ -636,6 +636,107 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         results
     }
 
+    /// Find all canonical owners associated with a definition index.
+    pub fn find_owners_by_def_index(&self, def_index: u32) -> Vec<&str> {
+        let mut owners = Vec::new();
+        for entry in self.defs_by_owner() {
+            if entry.def_index() == def_index {
+                let s = self.get_str(entry.owner_path_offset());
+                if !s.is_empty() && !owners.contains(&s) {
+                    owners.push(s);
+                }
+            }
+        }
+        owners
+    }
+
+    /// Finds a generic type parameter (`DefKind::TyParam`) in the specified file matching `name`
+    /// whose enclosing item span contains `(line, col)`.
+    pub fn find_type_param_in_scope(
+        &self,
+        file: &str,
+        name: &str,
+        line: u32,
+        col: u32,
+    ) -> Option<(&DefEntry, u32)> {
+        let file_id = self.find_file_id(file)?;
+        let mut best: Option<(&DefEntry, u32, u64)> = None;
+
+        for (idx, def) in self.definitions().iter().enumerate() {
+            if def.kind != DefKind::TyParam as u8 {
+                continue;
+            }
+            if self.get_str(def.name_offset()) != name {
+                continue;
+            }
+            let span = def.span();
+            if span.file_id() != file_id {
+                continue;
+            }
+
+            // 1. Check explicit enclosing scope recorded in owners (e.g. "scope:sl:sc:el:ec")
+            let mut matched_scope = None;
+            for owner in self.find_owners_by_def_index(idx as u32) {
+                if let Some(rest) = owner.strip_prefix("scope:") {
+                    let parts: Vec<&str> = rest.split(':').collect();
+                    if parts.len() == 4 {
+                        if let (Ok(sl), Ok(sc), Ok(el), Ok(ec)) = (
+                            parts[0].parse::<u32>(),
+                            parts[1].parse::<u32>(),
+                            parts[2].parse::<u32>(),
+                            parts[3].parse::<u32>(),
+                        ) {
+                            let in_range = (line > sl || (line == sl && col >= sc))
+                                && (line < el || (line == el && col <= ec));
+                            if in_range {
+                                let size = ((el.saturating_sub(sl)) as u64) * 10_000
+                                    + ((ec.saturating_sub(sc)) as u64);
+                                matched_scope = Some(size);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Fallback: check parent definition by path or def span
+            let (in_scope, size) = if let Some(scope_size) = matched_scope {
+                (true, scope_size)
+            } else {
+                let path = self.get_str(def.path_offset());
+                if let Some((parent_path, _)) = path.rsplit_once("::") {
+                    if let Some(parent_def) = self.find_definition_by_path(parent_path) {
+                        let p_span = parent_def.span();
+                        let in_range = p_span.file_id() == file_id
+                            && (line > p_span.start_line()
+                                || (line == p_span.start_line() && col >= p_span.start_col()))
+                            && (line < p_span.end_line()
+                                || (line == p_span.end_line() && col <= p_span.end_col()));
+                        (in_range, p_span.approximate_size())
+                    } else {
+                        let in_range = line >= span.start_line() && line <= span.end_line();
+                        (in_range, span.approximate_size())
+                    }
+                } else {
+                    let in_range = line >= span.start_line() && line <= span.end_line();
+                    (in_range, span.approximate_size())
+                }
+            };
+
+            if in_scope {
+                match best {
+                    None => best = Some((def, idx as u32, size)),
+                    Some((_, _, best_size)) if size < best_size => {
+                        best = Some((def, idx as u32, size))
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        best.map(|(d, idx, _)| (d, idx))
+    }
+
     /// Look up all direct Deref or supertrait targets for a canonical type path.
     pub fn find_deref_targets(&self, source: &str) -> Vec<&str> {
         let mut targets = Vec::new();
@@ -704,6 +805,9 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             let mut matches = Vec::new();
             let q = query.to_lowercase();
             for def in self.definitions() {
+                if def.kind == DefKind::TyParam as u8 {
+                    continue;
+                }
                 let name = self.get_str(def.name_offset());
                 let path = self.get_str(def.path_offset());
                 if name.to_lowercase().contains(&q) || path.to_lowercase().contains(&q) {
@@ -718,6 +822,9 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     pub fn search_symbols_ascii(&self, needle_lower: &[u8]) -> Vec<&DefEntry> {
         let mut matches = Vec::new();
         for def in self.definitions() {
+            if def.kind == DefKind::TyParam as u8 {
+                continue;
+            }
             let name = self.get_str(def.name_offset());
             let path = self.get_str(def.path_offset());
             if contains_ignore_case_ascii(name, needle_lower)
@@ -729,19 +836,28 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         matches
     }
 
-    /// Iterates over matching definitions without heap allocation, stopping when `cb` returns false.
-    pub fn for_each_symbol_ascii<F>(&self, needle_lower: &[u8], mut cb: F) -> bool
+    /// Iterates over matching definitions without heap allocation, stopping when `cb` returns false
+    /// or when `budget` is exhausted.
+    pub fn for_each_symbol_ascii<F>(&self, needle_lower: &[u8], budget: &mut usize, mut cb: F) -> bool
     where
         F: FnMut(&DefEntry) -> bool,
     {
         for def in self.definitions() {
+            if def.kind == DefKind::TyParam as u8 {
+                continue;
+            }
             let name = self.get_str(def.name_offset());
             let path = self.get_str(def.path_offset());
-            if (contains_ignore_case_ascii(name, needle_lower)
-                || contains_ignore_case_ascii(path, needle_lower))
-                && !cb(def)
+            if contains_ignore_case_ascii(name, needle_lower)
+                || contains_ignore_case_ascii(path, needle_lower)
             {
-                return false;
+                if *budget == 0 {
+                    return false;
+                }
+                *budget -= 1;
+                if !cb(def) {
+                    return false;
+                }
             }
         }
         true
@@ -1932,6 +2048,108 @@ mod tests {
             dur_new,
             dur_old.as_nanos() as f64 / dur_new.as_nanos().max(1) as f64
         );
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_search_symbols_and_fallback_ignore_typaram() {
+        let temp_dir = std::env::temp_dir().join(format!("ridx_typaram_search_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        let idx_path = temp_dir.join("test.ridx");
+
+        let mut writer = crate::writer::IndexWriter::new("serde", "1.0.0");
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 1,
+            kind: crate::format::DefKind::Fn,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "deserialize".to_string(),
+            path: "serde::de::deserialize".to_string(),
+            file: "src/de.rs".to_string(),
+            start_line: 10,
+            start_col: 1,
+            end_line: 10,
+            end_col: 20,
+            signature: Some("fn deserialize<'de, D>(deserializer: D) -> Result<T, D::Error>".to_string()),
+        });
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 2,
+            kind: crate::format::DefKind::TyParam,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "D".to_string(),
+            path: "serde::de::deserialize::D".to_string(),
+            file: "src/de.rs".to_string(),
+            start_line: 10,
+            start_col: 21,
+            end_line: 10,
+            end_col: 22,
+            signature: None,
+        });
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 3,
+            kind: crate::format::DefKind::TyParam,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "T".to_string(),
+            path: "serde::de::deserialize::T".to_string(),
+            file: "src/de.rs".to_string(),
+            start_line: 10,
+            start_col: 23,
+            end_line: 10,
+            end_col: 24,
+            signature: None,
+        });
+        writer.add_definition(crate::writer::RawDefinition {
+            def_id: 4,
+            kind: crate::format::DefKind::Struct,
+            visibility: 0,
+            is_macro_expansion: false,
+            name: "Deserializer".to_string(),
+            path: "serde::de::Deserializer".to_string(),
+            file: "src/de.rs".to_string(),
+            start_line: 30,
+            start_col: 1,
+            end_line: 30,
+            end_col: 25,
+            signature: None,
+        });
+
+        let mut f = std::fs::File::create(&idx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+
+        let reader = IndexReader::open(&idx_path).unwrap();
+
+        // 1. search_symbols for "deserialize" must return Fn and Struct, but NOT TyParam D or T
+        let matches = reader.search_symbols("deserialize");
+        let matched_names: Vec<&str> = matches.iter().map(|d| reader.get_str(d.name_offset())).collect();
+        assert_eq!(matched_names, vec!["deserialize", "Deserializer"]);
+
+        // 2. search_symbols_ascii for "d" must return "deserialize" and "Deserializer", NOT "D"
+        let matches_d = reader.search_symbols_ascii(b"d");
+        let names_d: Vec<&str> = matches_d.iter().map(|d| reader.get_str(d.name_offset())).collect();
+        assert!(!names_d.contains(&"D"), "TyParam D must not be returned in symbol search");
+        assert!(names_d.contains(&"deserialize"));
+        assert!(names_d.contains(&"Deserializer"));
+
+        // 3. search_symbols for "T" must return empty, NOT TyParam T
+        let matches_t = reader.search_symbols("T");
+        assert!(matches_t.is_empty(), "TyParam T must not be returned in symbol search");
+
+        // 4. for_each_symbol_ascii with needle "deserialize":
+        // Budget must NOT be consumed by TyParam entries
+        let mut budget = 10usize;
+        let mut collected = Vec::new();
+        reader.for_each_symbol_ascii(b"deserialize", &mut budget, |def| {
+            collected.push(reader.get_str(def.name_offset()).to_string());
+            true
+        });
+        assert_eq!(collected, vec!["deserialize", "Deserializer"]);
+        // Only 2 real items consumed budget: 10 - 2 = 8. TyParam entries did NOT consume budget!
+        assert_eq!(budget, 8, "TyParam entries must not consume search budget");
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
