@@ -37,6 +37,23 @@ pub fn handle_completion(
     let mut items = Vec::new();
     let mut seen_names = HashSet::new();
 
+    // Guard against out-of-bounds positions beyond end-of-file
+    if let Some(overlay) = overlay_opt {
+        if line_0based as usize >= overlay.line_starts.len() {
+            return Ok(json!({
+                "isIncomplete": false,
+                "items": []
+            }));
+        }
+    } else if let Some(scopes) = super::scope_cache::get_or_parse_file_scopes(&file, None) {
+        if line_0based as usize >= scopes.line_starts.len() {
+            return Ok(json!({
+                "isIncomplete": false,
+                "items": []
+            }));
+        }
+    }
+
     // Extract line slice up to cursor
     let line_slice = if let Some(overlay) = overlay_opt {
         let idx = line_0based as usize;

@@ -183,6 +183,37 @@ fn test_l2_rich_type_completion_latency_benchmark() {
     );
 }
 
+#[test]
+fn test_out_of_bounds_line_completion_returns_empty() {
+    let ws = get_or_index_l2_fixture("shorthand_and_reexports");
+    let lib_file = fixture_dir("shorthand_and_reexports").join("src/lib.rs");
+    let uri = path_to_uri(lib_file.to_str().unwrap());
+    let mut overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    // 1. Without overlay: position far beyond EOF returns empty list without panicking
+    let oob_req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 99999, "character": 0 }
+        }
+    });
+    let res = handle_completion(&oob_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
+    assert_eq!(res["items"].as_array().unwrap().len(), 0);
+    assert_eq!(res["isIncomplete"], false);
+
+    // 2. With overlay: position beyond overlay line count returns empty list without panicking
+    overlay_mgr.open_document(&uri, lib_file.to_str().unwrap(), 1, "fn main() {}\n".to_string());
+    let oob_overlay_req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 50, "character": 0 }
+        }
+    });
+    let res_ov = handle_completion(&oob_overlay_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
+    assert_eq!(res_ov["items"].as_array().unwrap().len(), 0);
+    assert_eq!(res_ov["isIncomplete"], false);
+}
 
 #[test]
 fn test_l2_generic_param_completion_in_fn_and_impl_body() {
@@ -260,5 +291,3 @@ fn test_l2_generic_param_completion_in_fn_and_impl_body() {
         "Completion on W:: in impl body must include 'default_greet', got: {w_items:?}"
     );
 }
-
-
