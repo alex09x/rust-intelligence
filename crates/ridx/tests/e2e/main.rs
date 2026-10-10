@@ -31,6 +31,7 @@ mod ntm_domain10_l2_multiroot;
 mod ntm_domain4_actions_stress;
 mod ntm_domain5_intelligence_stress;
 mod ntm_domain5_l2_cas_and_macros;
+mod ntm_domain5_l2_cfg_test;
 mod ntm_domain5_l2_intelligence;
 mod ntm_domain5_scoping;
 mod ntm_domain5_shadowing;

@@ -82,3 +82,25 @@ pub fn invoke_prelude_types() {
     let _: Vec<i32> = Vec::new();
     let _ = String::from("hello");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct LocalTestHelper {
+        pub multiplier: i32,
+    }
+
+    impl LocalTestHelper {
+        pub fn compute(&self, val: i32) -> i32 {
+            val * self.multiplier
+        }
+    }
+
+    #[test]
+    fn sample_unit_test() {
+        let helper = LocalTestHelper { multiplier: 3 };
+        let res = helper.compute(10);
+        let _ = (helper, res);
+    }
+}
