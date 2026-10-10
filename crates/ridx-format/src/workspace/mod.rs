@@ -22,6 +22,9 @@ pub mod reload;
 pub mod std_map;
 pub mod sysroot;
 
+#[cfg(test)]
+mod routing_tests;
+
 pub use manifest::*;
 pub use prelude::is_prelude_trait;
 
