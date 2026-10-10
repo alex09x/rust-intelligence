@@ -63,8 +63,17 @@ pub fn classify_colon_position(trimmed_before: &str) -> SyntaxPosition {
         return SyntaxPosition::Any;
     }
 
+    let stripped;
+    let trimmed_before = if trimmed_before.contains("::<") {
+        stripped = super::owner_completion::strip_turbofish(trimmed_before);
+        &stripped
+    } else {
+        trimmed_before
+    };
+
     let qual = super::owner_completion::extract_colon_qualifier(trimmed_before);
-    let before_colon = trimmed_before[..trimmed_before.len().saturating_sub(2)].trim_end();
+    let colon_idx = trimmed_before.rfind("::").unwrap_or(trimmed_before.len());
+    let before_colon = trimmed_before[..colon_idx].trim_end();
     let prefix = if !qual.is_empty() && before_colon.ends_with(&qual) {
         before_colon[..before_colon.len() - qual.len()].trim_end()
     } else {
@@ -292,6 +301,10 @@ mod tests {
         assert_eq!(classify_colon_position("match x { Some(v) => Foo::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("foo(1, 2, Bar::"), SyntaxPosition::ExprOrPat);
         assert_eq!(classify_colon_position("Self::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("let query_1 = QueryState::<&A, Without<C>>::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("world.trigger(&mut EventTriggerState::<E>::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("Foo::<T>::"), SyntaxPosition::ExprOrPat);
+        assert_eq!(classify_colon_position("fn foo<T: Foo::<X>::"), SyntaxPosition::Type);
 
         // Any / unconstrained
         assert_eq!(classify_colon_position("use core::cell::"), SyntaxPosition::Any);
