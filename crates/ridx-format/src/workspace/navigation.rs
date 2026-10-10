@@ -53,10 +53,17 @@ impl WorkspaceIndex {
     pub fn find_definition_by_path<'a>(&'a self, path: &str) -> Option<ResolvedDefinition<'a>> {
         let resolve_def = |res: ResolvedDefinition<'a>| -> ResolvedDefinition<'a> {
             if res.kind == DefKind::Use {
+                if let Some(sig) = res.signature {
+                    if let Some(target) = self.find_definition_by_path(sig) {
+                        if target.kind != DefKind::Use && target.kind != DefKind::Local {
+                            return target;
+                        }
+                    }
+                }
                 if let Some(target) =
                     self.find_definition_at(res.file, res.start_line, res.start_col)
                 {
-                    if target.kind != DefKind::Use {
+                    if target.kind != DefKind::Use && target.kind != DefKind::Local {
                         return target;
                     }
                 }
@@ -67,11 +74,11 @@ impl WorkspaceIndex {
         for candidate in super::std_map::std_path_candidates(path) {
             let candidate_str = candidate.as_str();
 
-            // Fast path: if path starts with `<crate_name>::`, check that crate first
+            // Fast path: if path starts with `<crate_name>::` or equals `<crate_name>`, check that crate first
             for (i, reader) in self.readers.iter().enumerate() {
                 let prefix = format!("{}::", reader.crate_name());
-                if candidate_str.starts_with(&prefix) {
-                    let sub = &candidate_str[prefix.len()..];
+                if candidate_str.starts_with(&prefix) || candidate_str == reader.crate_name() {
+                    let sub = candidate_str.strip_prefix(&prefix).unwrap_or(candidate_str);
                     if let Some(def) = reader
                         .find_definition_by_path(candidate_str)
                         .or_else(|| reader.find_definition_by_path(sub))

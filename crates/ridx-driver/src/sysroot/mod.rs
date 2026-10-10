@@ -74,6 +74,28 @@ pub fn extract_sysroot_crate<'tcx>(
     let mut total_definitions = 0usize;
     let mut total_derefs = 0usize;
 
+    // Record the crate root definition (e.g. `core`, `alloc`, `std`)
+    let (root_file, root_sl, root_sc, root_el, root_ec) =
+        items::extract_def_span(tcx, root_did, sysroot_src);
+    writer.add_definition_with_owners(
+        RawDefinition {
+            def_id: total_definitions as u32,
+            kind: map_def_kind(DefKind::Mod),
+            visibility: 0,
+            is_macro_expansion: false,
+            name: target_crate.to_string(),
+            path: target_crate.to_string(),
+            signature: None,
+            file: root_file,
+            start_line: root_sl,
+            start_col: root_sc,
+            end_line: root_el,
+            end_col: root_ec,
+        },
+        vec![target_crate.to_string()],
+    );
+    total_definitions += 1;
+
     while let Some(mod_did) = queue.pop_front() {
         let mod_path = rustc_middle::ty::print::with_no_visible_paths!(
             rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(mod_did))
@@ -228,6 +250,18 @@ pub fn extract_sysroot_crate<'tcx>(
                     &mut visited,
                     &mut total_definitions,
                     &mut total_derefs,
+                );
+            }
+
+            if kind == DefKind::Enum {
+                items::extract_enum_variants(
+                    tcx,
+                    did,
+                    &canonical_path,
+                    sysroot_src,
+                    &mut writer,
+                    &mut visited,
+                    &mut total_definitions,
                 );
             }
 

@@ -31,6 +31,7 @@ from provenance import (
 ROOT_CAUSES = {
     "comp_colon_41_RangeVisitor": "Shadowing: sysroot core::ops::range resolved before local mod range at serde_core/src/de/impls.rs:2463 (5 sysroot items vs 2 local).",
     "comp_colon_37_SocketAddr": "Re-export omission: std::net re-exports core::net::SocketAddr, but std.ridx excluded core re-exports (1 item vs 13).",
+    "comp_colon_10_Greater": "Line offset drift: Scenario sampled at line 1534 when entity/mod.rs had 2 extra lines; at line 1534 on current HEAD, cursor lands on younger_before_ord_wrap (1 item vs 237). Ordering::Greater is at line 1532 (12 items, 38.7% recall matching baseline).",
 }
 
 

@@ -251,3 +251,46 @@ pub fn extract_inherent_impl_items<'tcx>(
         }
     }
 }
+
+/// Extracts variants for an enum definition, registering each variant with the enum path as owner.
+pub fn extract_enum_variants<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    did: DefId,
+    path: &str,
+    sysroot_src: Option<&Path>,
+    writer: &mut IndexWriter,
+    visited: &mut HashSet<DefId>,
+    total_definitions: &mut usize,
+) {
+    let adt_def = tcx.adt_def(did);
+    for variant in adt_def.variants() {
+        let var_did = variant.def_id;
+        if !visited.insert(var_did) {
+            continue;
+        }
+        let v_name = variant.name.to_string();
+        let v_path = rustc_middle::ty::print::with_no_visible_paths!(
+            rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(var_did))
+        );
+        let (v_file, v_sl, v_sc, v_el, v_ec) = extract_def_span(tcx, var_did, sysroot_src);
+        writer.add_definition_with_owners(
+            RawDefinition {
+                def_id: *total_definitions as u32,
+                kind: map_def_kind(DefKind::Variant),
+                visibility: 0,
+                is_macro_expansion: false,
+                name: v_name,
+                path: v_path,
+                signature: None,
+                file: v_file,
+                start_line: v_sl,
+                start_col: v_sc,
+                end_line: v_el,
+                end_col: v_ec,
+            },
+            vec![path.to_string()],
+        );
+        *total_definitions += 1;
+    }
+}
+

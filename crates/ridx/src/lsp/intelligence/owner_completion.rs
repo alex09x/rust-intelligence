@@ -289,13 +289,14 @@ pub fn try_owner_completion(
             let def_opt = ws.resolve_qualifier(ctx.file, &qual);
             let target_owner = def_opt
                 .as_ref()
-                .map(|d| {
-                    if d.is_reexport {
+                .and_then(|d| {
+                    if d.is_reexport || d.kind == DefKind::Use {
                         if let Some(sig) = d.signature {
-                            return sig.to_string();
+                            return Some(sig.to_string());
                         }
+                        return None;
                     }
-                    d.path.to_string()
+                    Some(d.path.to_string())
                 })
                 .unwrap_or_else(|| {
                     if qual == "crate" {

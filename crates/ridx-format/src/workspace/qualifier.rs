@@ -32,10 +32,15 @@ impl WorkspaceIndex {
         let kind = DefKind::from(def.kind);
         if kind == DefKind::Use {
             let resolved = self.make_resolved_definition(idx, def);
-            if let Some(target) =
-                self.find_definition_at(resolved.file, resolved.start_line, resolved.start_col)
-            {
+            let target_opt = resolved
+                .signature
+                .and_then(|sig| self.find_definition_by_path(sig))
+                .or_else(|| {
+                    self.find_definition_at(resolved.file, resolved.start_line, resolved.start_col)
+                });
+            if let Some(target) = target_opt {
                 if target.kind == DefKind::Use
+                    || target.kind == DefKind::Local
                     || (target.file == resolved.file
                         && target.start_line == resolved.start_line
                         && target.start_col == resolved.start_col)
@@ -168,8 +173,9 @@ impl WorkspaceIndex {
 
                 // Glob imports declared in `file`: `use X::*` (and `use super::*`)
                 // Probing `<X>::<first_seg>` via O(log N) path lookup
-                let cname = reader.crate_name();
-                for def in reader.definitions() {
+                if !is_sysroot && !is_dep_crate {
+                    let cname = reader.crate_name();
+                    for def in reader.definitions() {
                     let span = def.span();
                     if span.file_id == fid && DefKind::from(def.kind) == DefKind::Use {
                         let name = reader.get_str(def.name_offset());
@@ -230,12 +236,24 @@ impl WorkspaceIndex {
                                 let probe = format!("{glob_target}::{first_seg}");
                                 if let Some(mut found) = self.find_definition_by_path(&probe) {
                                     if found.kind == DefKind::Use {
-                                        if let Some(target) = self.find_definition_at(
-                                            found.file,
-                                            found.start_line,
-                                            found.start_col,
-                                        ) {
-                                            found = target;
+                                        let target = found
+                                            .signature
+                                            .and_then(|sig| self.find_definition_by_path(sig))
+                                            .or_else(|| {
+                                                self.find_definition_at(
+                                                    found.file,
+                                                    found.start_line,
+                                                    found.start_col,
+                                                )
+                                            });
+                                        if let Some(target) = target {
+                                            if target.kind != DefKind::Local && target.kind != DefKind::Use {
+                                                found = target;
+                                            } else {
+                                                continue;
+                                            }
+                                        } else {
+                                            continue;
                                         }
                                     }
                                     if let Some(rest) = rest_opt {
@@ -252,6 +270,7 @@ impl WorkspaceIndex {
                             }
                         }
                     }
+                }
                 }
             }
         }

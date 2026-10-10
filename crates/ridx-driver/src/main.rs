@@ -737,6 +737,9 @@ fn extract_crate_items<'tcx>(
                         name = "*".to_string();
                         path = format!("{path}::*");
                         signature = Some(target_path);
+                    } else if !target_path.is_empty() {
+                        signature = Some(target_path);
+                    }
                 }
             }
 
