@@ -675,63 +675,70 @@ Across all benchmark comparisons against `558c448`:
 
 ---
 
-## 9. Milestone 2: Multi-Crate Indexing, Strict Scenario Validation & Provenance Verification (`14d065a`)
+## 9. Milestone 2: Scenario Validation, Provenance Tracking and Benchmark Verification (`2610ad6`)
 
 *Target Node:* `booster` (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)  
 *Toolchain Parity:* `rustc 1.98.1 (48a229cea 2026-09-01)` matching `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
-*Sysroot CAS Key:* `00d5aa9f3436ddf7` (`sysroot_transplanted: false`, driver hash `24e3b942204ab377`)  
+*Sysroot & Index CAS Key:* `00d5aa9f3436ddf7` (reused from `14d065a` driver `24e3b942204ab377`; `sysroot_transplanted: true`; active driver hash: `4ca08a2c36d9eb7b`, build commit: `fca1f15e60ca241a2df4cec7d8de4b2841bf8e63`)  
+*Baseline Provenance:* `base_source: "replay"`, `base_build_commit: "4a2441f"`, `base_driver_hash: "93f2d416218dfb1a"`, `base_sysroot_cas_key: "ad5e1980a489d231"`, `base_sysroot_transplanted: true`  
 *Scenario Validation:* Strict syntactic validation (`scenarios_validated`: `100/100` on Serde `69072f24`, `99/99` on Bevy `68c80f3b` with `comp_colon_10_Greater` excluded)  
 *Published Reports:*
-- Grounded Paired Report vs `4a2441f`: `bench/published/completion_regression_4a2441f_vs_14d065a_v3.json`
-- Raw Telemetry: `bench/published/rerun_completion_14d065a.jsonl`
+- Grounded Paired Report vs `4a2441f`: `bench/published/completion_regression_4a2441f_vs_2610ad6_v3.json`
+- Raw Telemetry: `bench/published/rerun_completion_2610ad6.jsonl`
 
-### Headline Comparison Table (`4a2441f` -> `14d065a`)
+### Headline Comparison Table (`4a2441f` -> `2610ad6`)
 
-| Metric | `serde-rs/serde` (`4a2441f` → `14d065a`) | `bevyengine/bevy` (`4a2441f` → `14d065a`) | Combined Total |
+| Metric | `serde-rs/serde` (`4a2441f` → `2610ad6`) | `bevyengine/bevy` (`4a2441f` → `2610ad6`) | Combined Total |
 |---|---|---|---|
-| **Validated Scenarios** | **100 / 100** (0 excluded) | **99 / 99** (1 excluded: `comp_colon_10_Greater`) | **199 / 199** |
-| **Empty Responses** | **21 → 12** (**11 closed**) | 4 → 10 | **25 → 22** (**11 closed**) |
-| **Grounded Recall vs RA** (`ra_count > 0`) | **45.2% → 56.8%** (+11.6 pp, n=98) | **48.1% → 47.1%** (-1.0 pp, n=93) | **46.6% → 52.1%** (+5.5 pp, n=191) |
-| **Grounded Precision vs RA** (`ridx_count > 0`, `ra_count > 0`) | **78.5% → 86.0%** (+7.5 pp, n: 77 → 86) | **62.8% → 63.8%** (+1.0 pp, n: 91 → 87) | **70.0% → 74.9%** (+4.9 pp, n: 168 → 173) |
-| **Owner-Path Speedup (p50 / p95)** | **9.09x** (317 µs vs 2,881 µs) / **7.11x** (950 µs vs 6.75 ms) | **7.82x** (408 µs vs 3,191 µs) / **9.59x** (1.20 ms vs 11.48 ms) | **7.8x – 9.1x** (p50) / **7.1x – 9.6x** (p95) |
-| **Fallback Speedup (p50 / p95)** | **1.71x** (671 µs vs 1,149 µs) / **3.70x** (2.01 ms vs 7.45 ms) | **4.03x** (480 µs vs 1,932 µs) / **0.56x** (12.09 ms vs 6.76 ms) | **1.7x – 4.0x** (p50) |
-| **Overall Speedup (p50 / p95)** | **7.42x** (366 µs vs 2,716 µs) / **4.46x** (1.63 ms vs 7.25 ms) | **7.32x** (408 µs vs 2,985 µs) / **8.59x** (1.35 ms vs 11.56 ms) | **7.3x – 7.4x** (p50) / **4.5x – 8.6x** (p95) |
+| **Validated Scenarios** | 100 / 100 (0 excluded) | 99 / 99 (1 excluded: `comp_colon_10_Greater`) | 199 / 199 |
+| **Empty Responses** | 21 → 12 (11 closed, 2 regressions to empty) | 4 → 10 (0 closed, 6 regressions to empty) | 25 → 22 (11 closed, 8 regressions to empty) |
+| **Grounded Recall vs RA** (`ra_count > 0`) | 45.2% → 56.8% (+11.6 pp, n=98) | 48.1% → 48.0% (-0.1 pp, n=93) | 46.6% → 52.5% (+5.9 pp, n=191) |
+| **Grounded Precision vs RA** (`ridx_count > 0`, `ra_count > 0`) | 78.5% → 86.0% (+7.5 pp, n: 77 → 86) | 62.8% → 65.0% (+2.2 pp, n: 91 → 87) | 70.0% → 75.4% (+5.4 pp, n: 168 → 173) |
+| **Owner-Path Speedup (p50 / p95)** | 9.10x (306 µs vs 2,786 µs) / 7.84x (896 µs vs 7.02 ms) | 8.23x (405 µs vs 3,335 µs) / 9.48x (1.15 ms vs 10.93 ms) | 8.23x – 9.10x (p50) / 7.84x – 9.48x (p95) |
+| **Fallback Speedup (p50 / p95)** | 1.95x (648 µs vs 1,262 µs) / 4.32x (1.80 ms vs 7.78 ms) | 4.48x (451 µs vs 2,016 µs) / 0.60x (11.14 ms vs 6.64 ms) | 1.95x – 4.48x (p50) / 0.60x – 4.32x (p95) |
+| **Overall Speedup (p50 / p95)** | 7.22x (383 µs vs 2,765 µs) / 4.75x (1.60 ms vs 7.59 ms) | 6.66x (433 µs vs 2,882 µs) / 8.04x (1.37 ms vs 11.01 ms) | 6.66x – 7.22x (p50) / 4.75x – 8.04x (p95) |
 
 ### Detailed Latency Breakdown (p50 and p95)
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                             RIDX vs rust-analyzer 1.98.1 Latency                            │
-├──────────────────────┬───────────────────────────────┬──────────────────────────────────────┤
-│ Route                │ serde-rs/serde (p50 / p95)    │ bevyengine/bevy (p50 / p95)          │
-├──────────────────────┼───────────────────────────────┼──────────────────────────────────────┤
-│ Owner Path (84.4%)   │ RIDX:   317 µs /   950 µs     │ RIDX:   408 µs /  1.20 ms            │
-│                      │ RA:   2,881 µs /  6.75 ms     │ RA:   3,191 µs / 11.48 ms            │
-│                      │ Speedup:  9.09x (p50) / 7.11x │ Speedup:  7.82x (p50) /  9.59x (p95) │
-├──────────────────────┼───────────────────────────────┼──────────────────────────────────────┤
-│ Fallback Path (15.6%)│ RIDX:   671 µs /  2.01 ms     │ RIDX:   480 µs / 12.09 ms            │
-│                      │ RA:   1,149 µs /  7.45 ms     │ RA:   1,932 µs /  6.76 ms            │
-│                      │ Speedup:  1.71x (p50) / 3.70x │ Speedup:  4.03x (p50) /  0.56x (p95) │
-├──────────────────────┼───────────────────────────────┼──────────────────────────────────────┤
-│ Overall Combined     │ RIDX:   366 µs /  1.63 ms     │ RIDX:   408 µs /  1.35 ms            │
-│                      │ RA:   2,716 µs /  7.25 ms     │ RA:   2,985 µs / 11.56 ms            │
-│                      │ Speedup:  7.42x (p50) / 4.46x │ Speedup:  7.32x (p50) /  8.59x (p95) │
-└──────────────────────┴───────────────────────────────┴──────────────────────────────────────┘
-```
+| Route | Repository | Scenarios | RIDX p50 | RIDX p95 | RA p50 | RA p95 | Speedup p50 | Speedup p95 |
+|---|---|---|---|---|---|---|---|---|
+| **Owner Path** | `serde-rs/serde` | 85 | 306 µs | 896 µs | 2,786 µs | 7.02 ms | 9.10x | 7.84x |
+| | `bevyengine/bevy` | 83 | 405 µs | 1.15 ms | 3,335 µs | 10.93 ms | 8.23x | 9.48x |
+| **Fallback Path** | `serde-rs/serde` | 15 | 648 µs | 1.80 ms | 1,262 µs | 7.78 ms | 1.95x | 4.32x |
+| | `bevyengine/bevy` | 16 | 451 µs | 11.14 ms | 2,016 µs | 6.64 ms | 4.48x | 0.60x |
+| **Overall Combined** | `serde-rs/serde` | 100 | 383 µs | 1.60 ms | 2,765 µs | 7.59 ms | 7.22x | 4.75x |
+| | `bevyengine/bevy` | 99 | 433 µs | 1.37 ms | 2,882 µs | 11.01 ms | 6.66x | 8.04x |
+
+#### Bevy Fallback Path Tail Latency Analysis
+On `bevyengine/bevy`, the fallback path p95 latency is 11,138 µs (11.14 ms) for RIDX compared to 6,640 µs (6.64 ms) for rust-analyzer (speedup 0.60x, or 1.68x slower than RA at p95). While the median fallback latency remains faster (451 µs vs 2,016 µs, 4.48x speedup), multi-crate symbol scanning across 42 Bevy crate indices on un-narrowed fallback queries incurs a tail penalty. This tail latency is not masked by overall figures.
+
+### Recall Regressions
+
+| Scenario | Repository | Base Recall (`4a2441f`) | Curr Recall (`2610ad6`) | Diff (pp) | Base Count | Curr Count | RA Count | Diagnosis / Notes |
+|---|---|---|---|---|---|---|---|---|
+| `comp_colon_14_error` | Serde | 98.0% | 97.1% | -0.9 | 100 | 100 | 105 | Minor ranking displacement at top 100 limit. |
+| `comp_dot_19_into_deserializer` | Serde | 5.0% | 0.0% | -5.0 | 100 | 0 | 20 | Unresolved receiver type; fallback scan filtered out non-matching candidates. |
+| `comp_dot_33_end` | Serde | 4.2% | 0.0% | -4.2 | 100 | 0 | 24 | Unresolved receiver type; fallback scan filtered out non-matching candidates. |
+| `comp_colon_33_default` | Bevy | 7.7% | 0.0% | -7.7 | 100 | 0 | 13 | Preceding qualifier is UFCS expression `<&set::Slice<K>>`. In base `4a2441f`, empty qualifier dump returned 100 random symbols matching `default` coincidentally. Fast guard `qual.is_empty()` returns 0 candidates until UFCS syntax is parsed. |
+
+*Note on `comp_colon_44_default` (`bevy_ecs/src/system/mod.rs:1948:38`):*
+In commit `4a2441f`, baseline recall was 79.3% (24 candidates). In commit `14d065a`, `Schedule::` regressed to 0.0% (1 candidate) because Step 6 fallback resolved `Schedule` to foreign `async_task::runnable::Schedule` (`DefKind::Use`). In commit `2610ad6`, `reader_indices_for_file` was implemented to search all crate unit readers for `system/mod.rs` (checking both `lib` and `test` targets where `use crate::schedule::Schedule` is defined), and Step 6 fallback was guarded from foreign `DefKind::Use` items. Recall is now 82.8% (24 candidates, `default` rank 1), completely resolving the regression.
 
 ### Provenance and Verification Rigor
 
 1. **Sysroot CAS Key Proof**:
    - CAS key is computed strictly as: `fnv1a_64(rustc_version, target_triple, CURRENT_FORMAT_VERSION, get_driver_hash())`.
-   - On `booster`: `rustc_version` is `"1.98.1 (48a229cea 2026-09-01)"`, `target_triple` is `"x86_64-unknown-linux-gnu"`, `CURRENT_FORMAT_VERSION` is `3`, and driver hash is `24e3b942204ab377`.
-   - Result: `00d5aa9f3436ddf7`. Both workspace index variants and sysroot shards match this CAS key (`sysroot_transplanted: false`).
+   - On `booster`: `rustc_version` is `"1.98.1 (48a229cea 2026-09-01)"`, `target_triple` is `"x86_64-unknown-linux-gnu"`, and `CURRENT_FORMAT_VERSION` is `3`.
+   - The workspace index and sysroot shards were built by `14d065a` driver (`24e3b942204ab377`), yielding CAS key `00d5aa9f3436ddf7`.
+   - Because `2610ad6` modifies only LSP-side qualifier resolution and file module mapping (`crates/ridx-format/src/workspace/`), the existing index and sysroot artifacts were reused (`sysroot_transplanted: true`). Active driver binary hash is `4ca08a2c36d9eb7b`.
 2. **Strict Scenario Validation**:
    - `validate_scenarios.py` verifies 1-based character positions against clean repo commits (`69072f24` for Serde, `68c80f3b` for Bevy).
    - Validates prefix ends with `.` for `dot` or `::` for `colon`, and suffix starts with `target`.
    - Serde: 100/100 valid (0 errors).
    - Bevy: 99/99 valid (1 scenario `comp_colon_10_Greater` excluded due to landing inside a multi-line `assert_eq!` on `68c80f3b`).
-3. **Accuracy Gains**:
-   - Serde recall vs RA climbed from 45.2% to **56.8%** (+11.6 pp) and precision reached **86.0%** (+7.5 pp), closing 11 empty responses (e.g. `Value` and `default`).
-   - Bevy precision rose to **63.8%** (+1.0 pp), maintaining solid ~47.1% recall across 99 multi-crate scenarios.
+3. **Accuracy Comparison**:
+   - Serde recall vs RA is 56.8% (up from 45.2% in `4a2441f`, +11.6 pp) and precision is 86.0% (up from 78.5%, +7.5 pp), closing 11 empty responses.
+   - Bevy recall vs RA is 48.0% (vs 48.1% in `4a2441f`, -0.1 pp) and precision is 65.0% (up from 62.8%, +2.2 pp) across 99 scenarios.
+
 
 
