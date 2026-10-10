@@ -279,7 +279,7 @@ impl WorkspaceIndex {
         if let Some(idx) = crate_idx {
             let cname = self.readers[idx].crate_name();
 
-            if !is_sysroot {
+            if !is_sysroot && !is_dep_crate {
                 // Try enclosing module
                 if let Some(ref mod_path) = mod_path_opt {
                     if let Some(def) =
@@ -321,8 +321,12 @@ impl WorkspaceIndex {
             && first_seg != "alloc"
             && first_seg != "std"
         {
-            if let Some(def) = self.find_definition_by_path(qual_trimmed) {
-                return Some(def);
+            if let Some(rest) = rest_opt {
+                if let Some(def) = self.find_definition_by_path(&format!("{first_seg}::{rest}")) {
+                    return Some(def);
+                }
+            } else {
+                return None;
             }
         }
 

@@ -60,11 +60,13 @@ impl WorkspaceIndex {
                         }
                     }
                 }
-                if let Some(target) =
-                    self.find_definition_at(res.file, res.start_line, res.start_col)
-                {
-                    if target.kind != DefKind::Use && target.kind != DefKind::Local {
-                        return target;
+                if res.start_line > 1 || res.start_col > 1 {
+                    if let Some(target) =
+                        self.find_definition_at(res.file, res.start_line, res.start_col)
+                    {
+                        if target.kind != DefKind::Use && target.kind != DefKind::Local {
+                            return target;
+                        }
                     }
                 }
             }

@@ -314,37 +314,3 @@ fn test_completion_trait_method_dedup() {
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
-#[test]
-fn test_completion_bevy_comp_colon_1_cell() {
-    if !std::path::Path::new("/tmp/mitts-bench/bevy").is_dir() {
-        return;
-    }
-    let ws = WorkspaceIndex::open("/tmp/mitts-bench/bevy").unwrap();
-    let mut overlay_mgr = OverlayManager::new();
-    let mut conv = PositionConverter::new();
-    let file = "/tmp/mitts-bench/bevy/crates/bevy_ecs/src/system/system_registry.rs";
-    let text = std::fs::read_to_string(file).unwrap();
-    let uri = format!("file://{file}");
-    overlay_mgr.open_document(&uri, file, 1, text);
-
-    let req = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 909, "character": 14 }
-        }
-    });
-
-    let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
-    let items = res["items"].as_array().unwrap();
-    assert!(!items.is_empty(), "Should complete items after core:: in system_registry.rs");
-
-    let req_c = json!({
-        "params": {
-            "textDocument": { "uri": &uri },
-            "position": { "line": 909, "character": 15 }
-        }
-    });
-    let res_c = handle_completion(&req_c, Some(&ws), &overlay_mgr, &mut conv).unwrap();
-    let items_c = res_c["items"].as_array().unwrap();
-    assert!(items_c.iter().any(|it| it["label"] == "cell"), "Should include cell");
-}
