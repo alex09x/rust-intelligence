@@ -14,6 +14,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+CANONICAL_REPO_COMMITS = {
+    "serde": "6693a89cca77e0151437da1c7f890090b9ebf04c",
+    "bevy": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+}
+
+
 def find_default_repo(name, bench_dir=None):
     """Discovers local or booster benchmark repository paths by precedence."""
     env_key = f"BENCH_{name.upper()}_DIR"
@@ -28,7 +34,50 @@ def find_default_repo(name, bench_dir=None):
     for c in candidates:
         if c.is_dir():
             return c
-    return Path("/tmp") / name
+    return Path.home() / "prod-code-storage" / "bench_repos" / name
+
+
+def get_repo_commit(rpath):
+    """Returns 40-char git commit hash of the benchmark repository."""
+    try:
+        import subprocess
+        res = subprocess.run(
+            ["git", "-C", str(rpath), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            return res.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def check_repo_clean(rpath):
+    """Checks whether the git repository has no uncommitted changes."""
+    try:
+        import subprocess
+        res = subprocess.run(
+            ["git", "-C", str(rpath), "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return res.returncode == 0 and not res.stdout.strip()
+    except Exception:
+        return False
+
+
+def verify_repo_commit(name, rpath):
+    """Returns (commit, is_valid_canonical_checkout)."""
+    commit = get_repo_commit(rpath)
+    expected = CANONICAL_REPO_COMMITS.get(name)
+    if not commit or not expected or commit.lower() != expected.lower():
+        return commit, False
+    if not check_repo_clean(rpath):
+        return commit, False
+    return commit, True
 
 
 def find_sysroot_cas_key(rpath):
@@ -96,3 +145,35 @@ def get_sysroot_std_metadata(cas_key):
         return mtime, sha
     except Exception:
         return None, None
+
+
+def is_sysroot_transplanted(curr_bin, cas_key):
+    """Returns False if cas_key matches the active driver's computed sysroot CAS key, True otherwise."""
+    if not cas_key:
+        return True
+    driver_bin = os.environ.get("RIDX_DRIVER_BIN")
+    if not driver_bin or not Path(driver_bin).is_file():
+        curr_path = Path(curr_bin)
+        cand_driver = curr_path.parent / "ridx-driver"
+        if cand_driver.is_file():
+            driver_bin = str(cand_driver)
+        elif curr_path.is_file():
+            driver_bin = str(curr_path)
+    if not driver_bin or not Path(driver_bin).is_file():
+        return True
+    try:
+        env = dict(os.environ)
+        if "LD_LIBRARY_PATH" not in env:
+            import subprocess
+            out = subprocess.run(["rustc", "--print", "sysroot"], capture_output=True, text=True, check=False)
+            if out.returncode == 0 and out.stdout.strip():
+                lib_p = Path(out.stdout.strip()) / "lib"
+                if lib_p.is_dir():
+                    env["LD_LIBRARY_PATH"] = str(lib_p)
+        import subprocess
+        res = subprocess.run([driver_bin, "--sysroot-cas-key"], capture_output=True, text=True, env=env, check=False)
+        if res.returncode == 0 and res.stdout.strip():
+            return res.stdout.strip() != cas_key
+        return True
+    except Exception:
+        return True

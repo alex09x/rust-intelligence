@@ -20,18 +20,26 @@ if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
 
 from lsp_process import SimpleLspProcess
-from metrics import percentile
+from metrics import calc_pct, calc_route_acc, percentile
 from provenance import (
     find_default_repo,
     find_sysroot_cas_key,
     get_driver_hash,
+    get_repo_commit,
     get_sysroot_std_metadata,
+    is_sysroot_transplanted,
+    verify_repo_commit,
 )
 
 ROOT_CAUSES = {
     "comp_colon_41_RangeVisitor": "Shadowing: sysroot core::ops::range resolved before local mod range at serde_core/src/de/impls.rs:2463 (5 sysroot items vs 2 local).",
     "comp_colon_37_SocketAddr": "Re-export omission: std::net re-exports core::net::SocketAddr, but std.ridx excluded core re-exports (1 item vs 13).",
-    "comp_colon_10_Greater": "Line offset drift: Scenario sampled at line 1534 when entity/mod.rs had 2 extra lines; at line 1534 on current HEAD, cursor lands on younger_before_ord_wrap (1 item vs 237). Ordering::Greater is at line 1532 (12 items, 38.7% recall matching baseline).",
+    "comp_colon_10_Greater": "Scenario at bevy crates/bevy_ecs/src/entity/mod.rs:1534 cursor position on younger_before_ord_wrap (1 item vs 237).",
+}
+
+REPO_SLUG_TO_NAME = {
+    "serde-rs/serde": "serde",
+    "bevyengine/bevy": "bevy",
 }
 
 
@@ -79,20 +87,11 @@ def run_scenarios(srv, repo_dir, scenarios, is_ra=False, timeout=5.0):
             "name": sc["name"], "location": sc["location"], "cold_us": durs[0],
             "warm_us": sorted(durs[1:])[len(durs[1:]) // 2] if len(durs) > 1 else durs[0],
             "count": len(items), "labels": [it.get("label", "").split("(")[0].strip() for it in items],
-            "first_detail": items[0].get("detail", "") if items else "",
+            "first_detail": (items[0].get("detail") or "") if items else "",
         })
         if (idx + 1) % 25 == 0:
             print(f"    Completed {idx + 1}/{len(scenarios)} scenarios...")
     return results
-
-
-
-
-
-def calc_route_acc(scs, key_rec, key_prec, key_cnt):
-    recs = [s[key_rec] for s in scs if s["ra_count"] > 0]
-    precs = [s[key_prec] for s in scs if s[key_cnt] > 0 and s["ra_count"] > 0]
-    return (round(sum(recs) / len(recs), 1) if recs else 0.0, round(sum(precs) / len(precs), 1) if precs else 0.0)
 
 
 def parse_args():
@@ -115,10 +114,6 @@ def parse_args():
     p.add_argument("--toolchain", default="1.98.1", help="Expected compiler and rust-analyzer toolchain version")
     p.add_argument("--allow-invalid-config", action="store_true", help="Allow running even if toolchain or sysroot invalid")
     return p.parse_args()
-
-
-def calc_pct(data, p):
-    return round(percentile(data, p), 1) if data else 0.0
 
 
 def main():
@@ -177,6 +172,7 @@ def main():
             driver_hash = c_rec.get("driver_hash")
             std_mtime = c_rec.get("std_ridx_mtime")
             std_sha = c_rec.get("std_ridx_hash")
+            sysroot_transplanted = c_rec.get("sysroot_transplanted", False)
             res_scs = c_rec["scenarios"]
         else:
             srv_curr = SimpleLspProcess([str(curr_bin), "lsp"], rpath)
@@ -192,12 +188,16 @@ def main():
             cas_key = find_sysroot_cas_key(rpath)
             driver_hash = get_driver_hash(curr_bin)
             std_mtime, std_sha = get_sysroot_std_metadata(cas_key)
-            res_scs = None
-
-        is_invalid_config = not cas_key or (tc_target not in tc_ver)
+            sysroot_transplanted = is_sysroot_transplanted(curr_bin, cas_key)
+        repo_name = REPO_SLUG_TO_NAME.get(slug)
+        if not repo_name:
+            raise ValueError(f"Unknown benchmark repository slug: {slug}")
+        repo_commit, repo_valid = verify_repo_commit(repo_name, rpath)
+        is_invalid_config = not cas_key or (tc_target not in tc_ver) or not repo_valid
         if is_invalid_config and not args.allow_invalid_config:
             raise RuntimeError(
-                f"Invalid benchmark configuration for {slug}: toolchain={tc_ver!r} (expected {tc_target}), sysroot_cas_key={cas_key!r}. "
+                f"Invalid benchmark configuration for {slug}: toolchain={tc_ver!r} (expected {tc_target}), "
+                f"repo_commit={repo_commit!r}, sysroot_cas_key={cas_key!r}. "
                 "Use --allow-invalid-config to override."
             )
 
@@ -225,7 +225,7 @@ def main():
                 rec_c = (matched_c / len(labels_r) * 100.0) if labels_r else 0.0
                 prec_c = (matched_c / len(labels_c) * 100.0) if labels_c else 0.0
                 warm_c, cold_c, warm_r, cold_r = round(c["warm_us"]), round(c["cold_us"]), round(r["warm_us"]), round(r["cold_us"])
-                first_det = c["first_detail"]
+                first_det = c.get("first_detail") or ""
                 is_owner = "::" in first_det.rsplit(" (in ", 1)[1].rstrip(")") if " (in " in first_det else False
                 route = "owner_path" if is_owner else "fallback"
 
@@ -271,6 +271,7 @@ def main():
                 "recall_pct": round(rec_c, 1), "precision_pct": round(prec_c, 1),
                 "ridx_count": curr_cnt, "ra_count": ra_cnt, "base_count": base_cnt,
                 "base_recall_pct": sc_b["recall_pct"], "base_precision_pct": round(prec_b, 1),
+                "repo_commit": repo_commit,
             }
             sc_pub.append(entry_pub)
             (owner_scs if route == "owner_path" else fallback_scs).append(entry_pub)
@@ -304,8 +305,8 @@ def main():
         f_rec_b, f_prec_b = calc_route_acc(fallback_scs, "base_recall_pct", "base_precision_pct", "base_count")
 
         summary = {
-            "repo": slug, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
-            "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": True,
+            "repo": slug, "repo_commit": repo_commit, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
+            "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": sysroot_transplanted,
             "invalid_config": is_invalid_config,
             "total_scenarios": len(scenarios_base),
             "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
@@ -358,9 +359,9 @@ def main():
 
         if not curr_data:
             published_records.append({
-                "repo": slug, "commit_ridx": curr_commit, "baseline_ra": ra_ver,
+                "repo": slug, "repo_commit": repo_commit, "commit_ridx": curr_commit, "baseline_ra": ra_ver,
                 "toolchain": tc_ver, "sysroot_cas_key": cas_key,
-                "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": True,
+                "driver_hash": driver_hash, "std_ridx_mtime": std_mtime, "std_ridx_hash": std_sha, "sysroot_transplanted": sysroot_transplanted,
                 "invalid_config": is_invalid_config,
                 "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
                 "taskset": "24-31", "seed": 42,
