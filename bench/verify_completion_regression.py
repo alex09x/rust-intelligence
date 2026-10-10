@@ -22,18 +22,10 @@ if str(bench_dir) not in sys.path:
 from lsp_process import SimpleLspProcess
 from metrics import calc_pct, calc_route_acc, percentile
 from provenance import (
-    EXCLUDED_SCENARIOS,
-    REPO_SLUG_TO_NAME,
-    ROOT_CAUSES,
-    find_default_repo,
-    find_sysroot_cas_key,
-    get_driver_build_commit,
-    get_driver_hash,
-    get_repo_commit,
-    get_sysroot_std_metadata,
-    is_sysroot_transplanted,
-    load_baseline,
-    verify_repo_commit,
+    EXCLUDED_SCENARIOS, REPO_SLUG_TO_NAME, ROOT_CAUSES, find_default_repo,
+    find_sysroot_cas_key, get_driver_build_commit, get_driver_hash, get_node_info,
+    get_repo_commit, get_sysroot_std_metadata, get_taskset_affinity,
+    is_sysroot_transplanted, load_baseline, verify_repo_commit,
 )
 from validate_scenarios import validate_scenarios_for_repo
 
@@ -307,7 +299,7 @@ def main():
             "base_sysroot_cas_key": base_data[slug].get("sysroot_cas_key"),
             "base_sysroot_transplanted": base_data[slug].get("sysroot_transplanted", True),
             "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
-            "excluded_scenarios": repo_excluded,
+            "excluded_scenarios": repo_excluded, "node": get_node_info(), "taskset": get_taskset_affinity(),
             "total_scenarios": len(scenarios_base),
             "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
             "closed_empty_responses": {"count": closed_cnt, "scenarios": closed_names},
@@ -364,8 +356,8 @@ def main():
                 "base_sysroot_transplanted": base_data[slug].get("sysroot_transplanted", True),
                 "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
                 "excluded_scenarios": repo_excluded,
-                "node": "booster (AMD Ryzen 9 7950X, 16 cores / 32 threads, 128 GB RAM)",
-                "taskset": "24-31", "seed": 42,
+                "node": get_node_info(),
+                "taskset": get_taskset_affinity(), "seed": 42,
                 "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
                 "sample_count": len(scenarios_base), "capability": "completion",
                 "metrics": {

@@ -215,3 +215,64 @@ def get_driver_build_commit(curr_bin=None):
         pass
     return None
 
+
+def get_node_info():
+    """Detects host node hostname, CPU model, core/thread count, and RAM."""
+    if "BENCH_NODE" in os.environ:
+        return os.environ["BENCH_NODE"]
+    import socket
+    hostname = socket.gethostname()
+    cpu_model = "unknown"
+    threads = os.cpu_count() or 0
+    try:
+        with open("/proc/cpuinfo", "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if "model name" in line:
+                    cpu_model = line.split(":", 1)[1].strip()
+                    break
+    except Exception:
+        import platform
+        cpu_model = platform.processor() or "unknown"
+
+    ram_str = "unknown"
+    try:
+        with open("/proc/meminfo", "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    kb = int(line.split(":", 1)[1].strip().split()[0])
+                    ram_str = f"{round(kb / (1024 * 1024))} GB RAM"
+                    break
+    except Exception:
+        pass
+
+    parts = [cpu_model]
+    if threads:
+        parts.append(f"{threads} threads")
+    if ram_str != "unknown":
+        parts.append(ram_str)
+    return f"{hostname} ({', '.join(parts)})"
+
+
+def get_taskset_affinity():
+    """Detects CPU affinity / taskset for the current process."""
+    if "BENCH_TASKSET" in os.environ:
+        return os.environ["BENCH_TASKSET"]
+    try:
+        if hasattr(os, "sched_getaffinity"):
+            aff = sorted(os.sched_getaffinity(0))
+            if aff:
+                if len(aff) > 1 and aff == list(range(aff[0], aff[-1] + 1)):
+                    return f"{aff[0]}-{aff[-1]}"
+                return ",".join(map(str, aff))
+    except Exception:
+        pass
+    try:
+        with open("/proc/self/status", "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if line.startswith("Cpus_allowed_list:"):
+                    return line.split(":", 1)[1].strip()
+    except Exception:
+        pass
+    return "unknown"
+
+
