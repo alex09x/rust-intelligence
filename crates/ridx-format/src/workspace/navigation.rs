@@ -1220,10 +1220,16 @@ impl WorkspaceIndex {
         F: FnMut(&IndexReader<memmap2::Mmap>, &DefEntry) -> bool,
     {
         let mut budget: usize = 2_000;
+        let mut record_budget: usize = 30_000;
         if let Some(pref) = preferred_crate {
             for reader in &self.readers {
                 if reader.crate_name() == pref
-                    && !reader.for_each_symbol_ascii(needle_lower, &mut budget, |def| cb(reader, def))
+                    && !reader.for_each_symbol_ascii_budgeted(
+                        needle_lower,
+                        &mut budget,
+                        &mut record_budget,
+                        |def| cb(reader, def),
+                    )
                 {
                     return false;
                 }
@@ -1233,7 +1239,12 @@ impl WorkspaceIndex {
             if preferred_crate.is_some_and(|pref| reader.crate_name() == pref) {
                 continue;
             }
-            if !reader.for_each_symbol_ascii(needle_lower, &mut budget, |def| cb(reader, def)) {
+            if !reader.for_each_symbol_ascii_budgeted(
+                needle_lower,
+                &mut budget,
+                &mut record_budget,
+                |def| cb(reader, def),
+            ) {
                 return false;
             }
         }
@@ -1241,14 +1252,25 @@ impl WorkspaceIndex {
     }
 
     /// Iterates over matching definitions specifically for a single target crate without eager allocation.
-    pub fn for_each_symbol_in_crate<F>(&self, target_crate: &str, needle_lower: &[u8], mut cb: F) -> bool
+    pub fn for_each_symbol_in_crate<F>(
+        &self,
+        target_crate: &str,
+        needle_lower: &[u8],
+        mut cb: F,
+    ) -> bool
     where
         F: FnMut(&IndexReader<memmap2::Mmap>, &DefEntry) -> bool,
     {
         let mut budget: usize = 2_000;
+        let mut record_budget: usize = 30_000;
         for reader in &self.readers {
             if reader.crate_name() == target_crate
-                && !reader.for_each_symbol_ascii(needle_lower, &mut budget, |def| cb(reader, def))
+                && !reader.for_each_symbol_ascii_budgeted(
+                    needle_lower,
+                    &mut budget,
+                    &mut record_budget,
+                    |def| cb(reader, def),
+                )
             {
                 return false;
             }

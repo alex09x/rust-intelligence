@@ -847,11 +847,31 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
     /// Iterates over matching definitions without heap allocation, stopping when `cb` returns false
     /// or when `budget` is exhausted.
-    pub fn for_each_symbol_ascii<F>(&self, needle_lower: &[u8], budget: &mut usize, mut cb: F) -> bool
+    pub fn for_each_symbol_ascii<F>(&self, needle_lower: &[u8], budget: &mut usize, cb: F) -> bool
+    where
+        F: FnMut(&DefEntry) -> bool,
+    {
+        let mut record_budget = usize::MAX;
+        self.for_each_symbol_ascii_budgeted(needle_lower, budget, &mut record_budget, cb)
+    }
+
+    /// Iterates over matching definitions without heap allocation, stopping when `cb` returns false,
+    /// when match `budget` is exhausted, or when `record_budget` of inspected definitions is reached.
+    pub fn for_each_symbol_ascii_budgeted<F>(
+        &self,
+        needle_lower: &[u8],
+        match_budget: &mut usize,
+        record_budget: &mut usize,
+        mut cb: F,
+    ) -> bool
     where
         F: FnMut(&DefEntry) -> bool,
     {
         for def in self.definitions() {
+            if *record_budget == 0 {
+                return false;
+            }
+            *record_budget -= 1;
             if def.kind == DefKind::TyParam as u8 {
                 continue;
             }
@@ -860,10 +880,10 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             if contains_ignore_case_ascii(name, needle_lower)
                 || contains_ignore_case_ascii(path, needle_lower)
             {
-                if *budget == 0 {
+                if *match_budget == 0 {
                     return false;
                 }
-                *budget -= 1;
+                *match_budget -= 1;
                 if !cb(def) {
                     return false;
                 }
@@ -2159,6 +2179,23 @@ mod tests {
         assert_eq!(collected, vec!["deserialize", "Deserializer"]);
         // Only 2 real items consumed budget: 10 - 2 = 8. TyParam entries did NOT consume budget!
         assert_eq!(budget, 8, "TyParam entries must not consume search budget");
+
+        // 5. for_each_symbol_ascii_budgeted:
+        // When record_budget is strictly smaller than total definitions, it stops early and returns false.
+        let mut match_budget = 10usize;
+        let mut record_budget = 1usize;
+        let mut collected_budgeted = Vec::new();
+        let completed = reader.for_each_symbol_ascii_budgeted(
+            b"deserialize",
+            &mut match_budget,
+            &mut record_budget,
+            |def| {
+                collected_budgeted.push(reader.get_str(def.name_offset()).to_string());
+                true
+            },
+        );
+        assert!(!completed, "Must return false when record budget is exhausted");
+        assert_eq!(record_budget, 0, "Record budget must be fully exhausted");
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
