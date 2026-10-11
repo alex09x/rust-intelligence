@@ -18,7 +18,7 @@ use serde_json::{json, Value};
 pub fn handle_document_symbol(
     msg: &Value,
     overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
+    _conv: &mut PositionConverter,
 ) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
