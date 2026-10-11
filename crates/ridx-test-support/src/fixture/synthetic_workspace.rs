@@ -10,6 +10,7 @@
 
 //! Synthetic multi-crate workspace fixture for hermetic integration tests.
 
+use crate::cursor_dsl::parse_spans;
 use crate::fixture::FixtureIndexBuilder;
 use ridx_format::DefKind;
 use std::collections::HashMap;
@@ -185,6 +186,104 @@ impl SyntheticWorkspaceFixture {
 
         let uri = format!("file://{}", file_path.display());
         crate_state.files.insert(rel_path.to_string(), clean_code.clone());
+        crate_state.file_uris.insert(rel_path.to_string(), uri);
+
+        Ok(clean_code)
+    }
+
+    /// Adds an inferred type mapping for a cursor range in a crate's file.
+    pub fn add_type_at(
+        &mut self,
+        crate_name: &str,
+        rel_path: &str,
+        start_line: u32,
+        start_col: u32,
+        end_line: u32,
+        end_col: u32,
+        type_name: &str,
+    ) -> io::Result<()> {
+        let crate_state = self.crates.get_mut(crate_name).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("Crate {} not found", crate_name),
+            )
+        })?;
+        let file_path = crate_state.crate_dir.join(rel_path);
+        let abs_str = file_path
+            .to_str()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 file path"))?;
+        crate_state
+            .builder
+            .add_type(abs_str, start_line, start_col, end_line, end_col, type_name);
+        Ok(())
+    }
+
+    /// Adds references with `DefKind::Impl` targeting an existing trait or struct definition.
+    pub fn add_source_file_with_impl_refs(
+        &mut self,
+        crate_name: &str,
+        rel_path: &str,
+        annotated_code: &str,
+        target_crate: &str,
+        target_def_id: u32,
+    ) -> io::Result<String> {
+        let target_def = {
+            let target_state = self.crates.get(target_crate).ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("Target crate {} not found", target_crate),
+                )
+            })?;
+            target_state
+                .builder
+                .get_def(target_def_id)
+                .cloned()
+                .ok_or_else(|| {
+                    io::Error::new(
+                        io::ErrorKind::NotFound,
+                        format!("Def {} not found in crate {}", target_def_id, target_crate),
+                    )
+                })?
+        };
+
+        let crate_state = self.crates.get_mut(crate_name).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("Crate {} not found", crate_name),
+            )
+        })?;
+
+        let file_path = crate_state.crate_dir.join(rel_path);
+        if let Some(parent) = file_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        let abs_str = file_path
+            .to_str()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 file path"))?;
+
+        let (clean_code, spans) = parse_spans(annotated_code);
+        for span in spans {
+            crate_state.builder.add_ref(
+                &target_def.path,
+                abs_str,
+                span.start_line + 1,
+                span.start_col_char + 1,
+                span.end_line + 1,
+                span.end_col_char + 1,
+                Some(target_def_id),
+                Some(&target_def.file),
+                target_def.start_line,
+                target_def.start_col,
+                DefKind::Impl,
+            );
+        }
+        fs::write(&file_path, &clean_code)?;
+
+        let uri = format!("file://{}", file_path.display());
+        crate_state
+            .files
+            .insert(rel_path.to_string(), clean_code.clone());
         crate_state.file_uris.insert(rel_path.to_string(), uri);
 
         Ok(clean_code)

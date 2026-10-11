@@ -11,7 +11,7 @@
 //! Index FixtureBuilder for creating test `.ridx` shards with driver-matching coordinates.
 
 use crate::cursor_dsl::{parse_fixture, parse_spans, ParsedFixture};
-use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference};
+use ridx_format::{DefKind, IndexWriter, RawDefinition, RawReference, RawType};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -24,6 +24,7 @@ pub struct FixtureIndexBuilder {
     defs: HashMap<u32, RawDefinition>,
     defs_list: Vec<RawDefinition>,
     refs_list: Vec<RawReference>,
+    types_list: Vec<RawType>,
 }
 
 impl FixtureIndexBuilder {
@@ -35,6 +36,7 @@ impl FixtureIndexBuilder {
             defs: HashMap::new(),
             defs_list: Vec::new(),
             refs_list: Vec::new(),
+            types_list: Vec::new(),
         }
     }
 
@@ -44,6 +46,38 @@ impl FixtureIndexBuilder {
 
     pub fn crate_version(&self) -> &str {
         &self.crate_version
+    }
+
+    /// Returns definition span coordinates `(start_line, start_col, end_line, end_col)` if recorded.
+    pub fn def_span(&self, def_id: u32) -> Option<(u32, u32, u32, u32)> {
+        self.defs
+            .get(&def_id)
+            .map(|d| (d.start_line, d.start_col, d.end_line, d.end_col))
+    }
+
+    /// Looks up a recorded definition by its ID.
+    pub fn get_def(&self, def_id: u32) -> Option<&RawDefinition> {
+        self.defs.get(&def_id)
+    }
+
+    /// Adds an inferred expression type at 1-based coordinates.
+    pub fn add_type(
+        &mut self,
+        file: &str,
+        start_line: u32,
+        start_col: u32,
+        end_line: u32,
+        end_col: u32,
+        type_name: &str,
+    ) {
+        self.types_list.push(RawType {
+            file: file.to_string(),
+            start_line,
+            start_col,
+            end_line,
+            end_col,
+            type_name: type_name.to_string(),
+        });
     }
 
     /// Adds a raw definition with 1-based char coordinates (matching ridx-driver).
@@ -289,6 +323,9 @@ impl FixtureIndexBuilder {
         }
         for r in &self.refs_list {
             writer.add_reference(r.clone());
+        }
+        for t in &self.types_list {
+            writer.add_type(t.clone());
         }
         let mut file = fs::File::create(out_path).expect("Failed to create fixture file");
         writer
