@@ -53,18 +53,94 @@ pub fn ensure_fresh_driver() -> PathBuf {
     DRIVER_BIN
         .get_or_init(|| {
             let root = repo_root();
-            let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+            let toolchain =
+                std::env::var("RIDX_L2_TOOLCHAIN").unwrap_or_else(|_| "1.98.1".to_string());
+            let rustup = std::env::var("RUSTUP").unwrap_or_else(|_| "rustup".to_string());
             let base_target = std::env::var_os("CARGO_TARGET_DIR")
                 .map(PathBuf::from)
                 .unwrap_or_else(|| root.join("target"));
             let target_dir = base_target.join("ridx-l2-driver");
-            let status = std::process::Command::new(cargo)
-                .args(["build", "-p", "ridx-driver", "--target-dir"])
-                .arg(&target_dir)
-                .current_dir(&root)
+
+            // Query sysroot via rustup for the pinned toolchain and verify existence
+            let sysroot_out = std::process::Command::new(&rustup)
+                .args(["run", &toolchain, "rustc", "--print", "sysroot"])
+                .output()
+                .expect("Failed to query sysroot via rustup for pinned toolchain");
+            assert!(
+                sysroot_out.status.success(),
+                "Failed to query sysroot for pinned toolchain {}",
+                toolchain
+            );
+            let sysroot_str = String::from_utf8_lossy(&sysroot_out.stdout)
+                .trim()
+                .to_string();
+            let sysroot = PathBuf::from(&sysroot_str);
+            assert!(
+                sysroot.is_dir(),
+                "Sysroot directory {:?} does not exist for toolchain {}",
+                sysroot,
+                toolchain
+            );
+            let sysroot_lib = sysroot.join("lib");
+            assert!(
+                sysroot_lib.is_dir(),
+                "Sysroot lib directory {:?} does not exist for toolchain {}",
+                sysroot_lib,
+                toolchain
+            );
+
+            // Platform-specific library path variable (LD_LIBRARY_PATH on Linux, DYLD_LIBRARY_PATH on macOS)
+            let env_var_name = if cfg!(target_os = "macos") {
+                "DYLD_LIBRARY_PATH"
+            } else {
+                "LD_LIBRARY_PATH"
+            };
+
+            let existing = std::env::var(env_var_name).unwrap_or_default();
+            let new_ld = if existing.is_empty() {
+                sysroot_lib.to_string_lossy().to_string()
+            } else {
+                format!("{}:{}", sysroot_lib.to_string_lossy(), existing)
+            };
+
+            // Compile driver strictly through rustup run to bypass local CARGO toolchain overrides
+            let mut cmd = std::process::Command::new(&rustup);
+            cmd.args([
+                "run",
+                &toolchain,
+                "cargo",
+                "build",
+                "-p",
+                "ridx-driver",
+                "--target-dir",
+            ])
+            .arg(&target_dir)
+            .current_dir(&root)
+            .env(env_var_name, &new_ld);
+
+            // Documented safety rationale: mutating LD_LIBRARY_PATH affects the test process,
+            // but is strictly isolated inside OnceLock initialization run once per process before
+            // any L2 test worker spawns the ridx-driver binary.
+            if !existing.contains(&sysroot_lib.to_string_lossy().to_string()) {
+                std::env::set_var(env_var_name, &new_ld);
+            }
+
+            let status = cmd
                 .status()
-                .expect("Failed to execute cargo build -p ridx-driver");
+                .expect("Failed to execute rustup run cargo build -p ridx-driver");
             assert!(status.success(), "Failed to build ridx-driver for L2 tests");
+
+            let ver_out = std::process::Command::new(&rustup)
+                .args(["run", &toolchain, "rustc", "--version"])
+                .output()
+                .ok();
+            if let Some(ref v) = ver_out {
+                eprintln!(
+                    "[ridx-l2-harness] Compiled ridx-driver with {}",
+                    String::from_utf8_lossy(&v.stdout).trim()
+                );
+            }
+
             let bin = target_dir.join("debug/ridx-driver");
             assert!(bin.is_file(), "ridx-driver binary not found at {:?}", bin);
             bin
