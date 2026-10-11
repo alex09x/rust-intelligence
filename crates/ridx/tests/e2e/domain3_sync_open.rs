@@ -226,3 +226,34 @@ fn test_did_open_invalidates_position_cache() {
     lifecycle.conv.invalidate(file);
     assert_eq!(lifecycle.conv.get_line(file, 1), None);
 }
+
+#[test]
+fn test_did_open_rapid_burst_performance() {
+    let mut lifecycle = LifecycleManager::new();
+    let mut multi_root = MultiRootWorkspace::new();
+    let mut overlay_mgr = OverlayManager::new();
+
+    let t0 = std::time::Instant::now();
+    for i in 0..50 {
+        let uri = format!("file:///tmp/burst_doc_{i}.rs");
+        let code = format!("pub fn func_{i}() -> usize {{ {i} }}\n");
+        dispatch_msg(
+            json!({
+                "jsonrpc": "2.0",
+                "method": "textDocument/didOpen",
+                "params": { "textDocument": { "uri": uri, "version": 1, "text": code } }
+            }),
+            &mut lifecycle,
+            &mut multi_root,
+            &mut overlay_mgr,
+        );
+    }
+    let elapsed = t0.elapsed();
+    assert_eq!(overlay_mgr.open_count(), 50);
+    // 50 documents must open in less than 50 milliseconds (sub-millisecond per didOpen)
+    assert!(
+        elapsed < std::time::Duration::from_millis(50),
+        "Rapid didOpen burst took too long: {:?}",
+        elapsed
+    );
+}

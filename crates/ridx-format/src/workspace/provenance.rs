@@ -79,6 +79,11 @@ fn file_entry_matches(
         return false;
     }
 
+    // 0. Fast literal string match before any filesystem syscalls
+    if entry_str == req_path.to_str().unwrap_or("") {
+        return true;
+    }
+
     let entry_p = Path::new(entry_str);
 
     // 1. Resolve original uncollapsed entry path under reader's origin
@@ -89,6 +94,11 @@ fn file_entry_matches(
     } else {
         entry_p.to_path_buf()
     };
+
+    // 1b. Fast path equality before filesystem syscalls
+    if entry_orig == req_path {
+        return true;
+    }
 
     // 2. Resolve canonical identities on the filesystem before any lexical collapse
     let entry_canon = entry_orig.canonicalize().ok();
@@ -160,6 +170,26 @@ fn file_entry_matches(
 impl WorkspaceIndex {
     /// Returns the file modification timestamp of the index shard containing the given source file.
     pub fn shard_mtime_for_file(&self, file_path: &str) -> Option<std::time::SystemTime> {
+        // Fast path: query candidate readers prioritized for this file using in-memory indices
+        for idx in self.candidate_reader_indices_for_file(file_path) {
+            if let Some(target_file) = self.target_file_for_reader(idx, file_path) {
+                let reader = &self.readers[idx];
+                if reader.find_file_id(target_file.as_ref()).is_some() {
+                    return self.mtimes.get(idx).copied().flatten();
+                }
+                if let Some(hashes) = self.reader_file_hashes.get(idx) {
+                    if hashes.contains_key(target_file.as_ref()) {
+                        return self.mtimes.get(idx).copied().flatten();
+                    }
+                }
+            }
+            if let Some(hashes) = self.reader_file_hashes.get(idx) {
+                if hashes.contains_key(file_path) {
+                    return self.mtimes.get(idx).copied().flatten();
+                }
+            }
+        }
+
         let p = Path::new(file_path);
         let explicit_origin = self
             .workspace_root
@@ -284,6 +314,33 @@ impl WorkspaceIndex {
 
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
     pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
+        // Fast path: query candidate readers prioritized for this file using in-memory indices
+        for idx in self.candidate_reader_indices_for_file(file_path) {
+            if let Some(target_file) = self.target_file_for_reader(idx, file_path) {
+                let reader = &self.readers[idx];
+                if let Some(fid) = reader.find_file_id(target_file.as_ref()) {
+                    let h = reader.file_source_hash(fid);
+                    if h != 0 {
+                        return Some(h);
+                    }
+                }
+                if let Some(hashes) = self.reader_file_hashes.get(idx) {
+                    if let Some(&h) = hashes.get(target_file.as_ref()) {
+                        if h != 0 {
+                            return Some(h);
+                        }
+                    }
+                }
+            }
+            if let Some(hashes) = self.reader_file_hashes.get(idx) {
+                if let Some(&h) = hashes.get(file_path) {
+                    if h != 0 {
+                        return Some(h);
+                    }
+                }
+            }
+        }
+
         let p = Path::new(file_path);
         let explicit_origin = self
             .workspace_root
@@ -1157,5 +1214,33 @@ mod tests {
         assert!(mtime_p2.is_some());
         let hash_p2 = ws_abs_idx.source_hash_for_file("sub_pkg/src/virtual_sidecar.rs");
         assert_eq!(hash_p2, Some(55555u64));
+    }
+
+    #[test]
+    fn test_provenance_fast_path_in_memory() {
+        let td = new_test_dir("fast_path_test");
+        let idx_path = td.0.join("sample.ridx");
+        let mut writer = IndexWriter::new("sample", "0.1.0");
+        let fid = writer.get_or_insert_file("src/lib.rs");
+        assert_eq!(fid, 0);
+        writer.add_file_hash("src/lib.rs", 0x1234_5678_u64);
+        let mut f = fs::File::create(&idx_path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+
+        let mut ws = WorkspaceIndex::open(&idx_path).unwrap();
+        let now = std::time::SystemTime::now();
+        ws.mtimes = vec![Some(now)];
+
+        // Test fast path on relative path
+        assert_eq!(ws.source_hash_for_file("src/lib.rs"), Some(0x1234_5678_u64));
+        assert_eq!(ws.shard_mtime_for_file("src/lib.rs"), Some(now));
+
+        // Test fast path on absolute path when workspace root is configured
+        ws.workspace_root = Some(td.0.clone());
+        let abs_lib = td.0.join("src/lib.rs");
+        let abs_str = abs_lib.to_string_lossy();
+        assert_eq!(ws.source_hash_for_file(&abs_str), Some(0x1234_5678_u64));
+        assert_eq!(ws.shard_mtime_for_file(&abs_str), Some(now));
     }
 }
