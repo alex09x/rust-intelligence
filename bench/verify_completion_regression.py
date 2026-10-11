@@ -266,8 +266,8 @@ def main():
                 "recall_pct": round(rec_c, 1), "precision_pct": round(prec_c, 1),
                 "ridx_count": curr_cnt, "ra_count": ra_cnt, "base_count": base_cnt,
                 "base_recall_pct": sc_b["recall_pct"], "base_precision_pct": round(prec_b, 1),
-                "labels_ridx": c["labels"] if not curr_data else sc_c.get("labels_ridx", []),
-                "labels_ra": r["labels"] if not curr_data else sc_c.get("labels_ra", []),
+                "labels_ridx": c["labels"] if not curr_data else c_sc.get("labels_ridx", []),
+                "labels_ra": r["labels"] if not curr_data else c_sc.get("labels_ra", []),
                 "repo_commit": repo_commit,
                 "attempt_used": c.get("attempt_used", 0) if not curr_data else c_sc.get("attempt_used", 0),
             }
