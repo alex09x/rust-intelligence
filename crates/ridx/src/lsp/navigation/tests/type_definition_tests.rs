@@ -12,6 +12,9 @@
 
 use super::setup_test_navigation;
 use crate::lsp::navigation::handle_type_definition;
+use crate::lsp::protocol::PositionConverter;
+use crate::overlay::OverlayManager;
+use ridx_format::{DefKind, IndexWriter, RawDefinition, RawType, WorkspaceIndex};
 use serde_json::json;
 use std::fs;
 
@@ -191,6 +194,79 @@ fn test_typedef_out_of_bounds_character_clamped() {
     let res = handle_type_definition(&req, Some(&ws), &overlay_mgr, &mut conv);
     // Large character offset does not panic and returns null or closest type
     let _ = res;
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_typedef_prefers_exact_name_over_substring() {
+    let id = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_typedef_exact_{}", id));
+    let _ = fs::create_dir_all(temp_dir.join("src"));
+    let src_file = temp_dir.join("src/lib.rs");
+    let code = "pub struct AppConfig;\npub struct Config;\npub fn run() { let cfg = Config; }\n";
+    let _ = fs::write(&src_file, code);
+
+    let src_path_str = src_file.to_str().unwrap().to_string();
+    let mut writer = IndexWriter::new("test_exact", "0.1.0");
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: src_path_str.clone(),
+        name: "AppConfig".to_string(),
+        start_line: 1,
+        start_col: 12,
+        end_line: 1,
+        end_col: 21,
+        path: "test_exact::AppConfig".to_string(),
+        signature: None,
+    });
+    writer.add_definition(RawDefinition {
+        def_id: 2,
+        kind: DefKind::Struct,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: src_path_str.clone(),
+        name: "Config".to_string(),
+        start_line: 2,
+        start_col: 12,
+        end_line: 2,
+        end_col: 18,
+        path: "test_exact::Config".to_string(),
+        signature: None,
+    });
+    writer.add_type(RawType {
+        file: src_path_str.clone(),
+        start_line: 3,
+        start_col: 20,
+        end_line: 3,
+        end_col: 23,
+        type_name: "Config".to_string(),
+    });
+
+    let index_path = temp_dir.join("test.ridx");
+    let mut f = fs::File::create(&index_path).unwrap();
+    writer.write_to(&mut f).unwrap();
+    let ws = WorkspaceIndex::open(&index_path).unwrap();
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+    let uri = format!("file://{}", src_path_str);
+
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 2, "character": 20 }
+        }
+    });
+    let res = handle_type_definition(&req, Some(&ws), &overlay_mgr, &mut conv);
+    assert_eq!(res["range"]["start"]["line"], 1);
+    assert_eq!(res["range"]["start"]["character"], 11);
+    assert_eq!(res["range"]["end"]["character"], 17);
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

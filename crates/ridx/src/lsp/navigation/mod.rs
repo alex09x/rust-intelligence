@@ -19,8 +19,9 @@ pub use references::*;
 
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
-use ridx_format::{DefKind, WorkspaceIndex};
+use ridx_format::{DefKind, WorkspaceIndex, WorkspaceSymbol};
 use serde_json::{json, Value};
+use std::path::Path;
 
 pub fn handle_definition(
     msg: &Value,
@@ -239,7 +240,52 @@ pub fn handle_type_definition(
     }
 
     if let Some(ty) = ws.type_at(&file, line_1based, col_1based) {
-        if let Some(def) = ws.search_symbols(ty).into_iter().next() {
+        let syms = ws.search_symbols(ty);
+        let file_path = Path::new(&file);
+
+        let current_crate_units: Vec<(&str, &str)> = ws
+            .reader_indices_for_file(&file)
+            .into_iter()
+            .filter_map(|idx| ws.readers().get(idx))
+            .map(|r| (r.crate_name(), r.unit_key()))
+            .collect();
+
+        let in_same_crate = |sym: &WorkspaceSymbol<'_>| -> bool {
+            current_crate_units.iter().any(|(cr, uk)| {
+                (!cr.is_empty() && sym.crate_name == *cr)
+                    || (!uk.is_empty() && sym.unit_key == Some(*uk))
+            })
+        };
+
+        // 1. Exact symbol name match: same file -> same crate -> any in shard
+        let exact_name_syms: Vec<&WorkspaceSymbol<'_>> =
+            syms.iter().filter(|sym| sym.name == ty).collect();
+
+        let def_opt = exact_name_syms
+            .iter()
+            .copied()
+            .find(|sym| sym.resolved_path() == file_path)
+            .or_else(|| exact_name_syms.iter().copied().find(|sym| in_same_crate(sym)))
+            .or_else(|| exact_name_syms.into_iter().next())
+            .cloned()
+            .or_else(|| {
+                // 2. Exact path match fallback: when type_at returns a qualified path
+                // (e.g. core_lib::types::Config or ty.ends_with("::Config"))
+                let path_matches: Vec<&WorkspaceSymbol<'_>> = syms
+                    .iter()
+                    .filter(|sym| sym.path == ty || ty.ends_with(&format!("::{}", sym.name)))
+                    .collect();
+
+                path_matches
+                    .iter()
+                    .copied()
+                    .find(|sym| sym.resolved_path() == file_path)
+                    .or_else(|| path_matches.iter().copied().find(|sym| in_same_crate(sym)))
+                    .or_else(|| path_matches.into_iter().next())
+                    .cloned()
+            });
+
+        if let Some(def) = def_opt {
             let resolved_path = def.resolved_path();
             let path_str = resolved_path.to_str().unwrap_or(def.file);
             let uri = path_to_uri(path_str);
