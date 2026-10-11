@@ -147,10 +147,16 @@ pub fn get_or_collect_file_referenced_traits(
         }
         h
     };
+    let profile_active = std::env::var_os("RIDX_PROFILE_COMPLETION").is_some();
+    let t_traits0 = profile_active.then(std::time::Instant::now);
+
     let cache = file_traits_cache();
     if let Ok(guard) = cache.read() {
         if let Some((cached_key, cached_fp, traits)) = guard.get(file) {
             if *cached_key == key && *cached_fp == ws_fingerprint {
+                if let Some(t) = t_traits0 {
+                    eprintln!("[RIDX_PROFILE_TRAITS] hit=true us={}", t.elapsed().as_micros());
+                }
                 return Arc::clone(traits);
             }
         }
@@ -163,6 +169,10 @@ pub fn get_or_collect_file_referenced_traits(
             guard.clear();
         }
         guard.insert(file.to_string(), (key, ws_fingerprint, Arc::clone(&collected)));
+    }
+
+    if let Some(t) = t_traits0 {
+        eprintln!("[RIDX_PROFILE_TRAITS] hit=false us={}", t.elapsed().as_micros());
     }
 
     collected

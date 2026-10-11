@@ -35,22 +35,8 @@ pub(crate) fn is_sysroot_path(path: &str) -> bool {
         || path == "pointer"
         || matches!(
             path,
-            "bool"
-                | "char"
-                | "i8"
-                | "i16"
-                | "i32"
-                | "i64"
-                | "i128"
-                | "isize"
-                | "u8"
-                | "u16"
-                | "u32"
-                | "u64"
-                | "u128"
-                | "usize"
-                | "f32"
-                | "f64"
+            "bool" | "char" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
+                | "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "f32" | "f64"
         )
 }
 
@@ -162,8 +148,16 @@ pub fn try_owner_completion(
         let mut in_scope_traits = Vec::new();
         let mut file_traits: Option<Arc<HashSet<String>>> = None;
 
+        let profile_active = std::env::var_os("RIDX_PROFILE_COMPLETION").is_some();
+        let t_start_all = profile_active.then(std::time::Instant::now);
+        let mut t_deref = std::time::Duration::ZERO;
+        let mut t_find = std::time::Duration::ZERO;
+        let mut t_cat = std::time::Duration::ZERO;
+        let mut defs_count = 0usize;
+
         let mut owners = vec![owner.to_string()];
         if is_smart_pointer(owner) {
+            let t_d0 = profile_active.then(std::time::Instant::now);
             if let Some(inner) = extract_smart_pointer_inner_type(_ty_name) {
                 if !owners.contains(&inner.to_string()) {
                     owners.push(inner.to_string());
@@ -175,7 +169,9 @@ pub fn try_owner_completion(
                     }
                 }
             }
+            if let Some(t) = t_d0 { t_deref = t.elapsed(); }
         } else if !is_non_deref_type(owner) {
+            let t_d0 = profile_active.then(std::time::Instant::now);
             for deref_target in ws.resolve_deref_chain(owner, 2) {
                 let is_trait = ws
                     .find_definition_by_path(deref_target)
@@ -195,10 +191,20 @@ pub fn try_owner_completion(
                     }
                 }
             }
+            if let Some(t) = t_d0 { t_deref = t.elapsed(); }
         }
 
+        let mut seen_labels = HashSet::new();
         for o in &owners {
-            for def in ws.find_definitions_by_owner_for_file(ctx.file, o) {
+            let t_f0 = profile_active.then(std::time::Instant::now);
+            let defs = ws.find_definitions_by_owner_for_file(ctx.file, o);
+            if let Some(t) = t_f0 {
+                t_find += t.elapsed();
+                defs_count += defs.len();
+            }
+
+            for def in defs {
+                let t_c0 = profile_active.then(std::time::Instant::now);
                 if def.kind == DefKind::Field {
                     // Struct fields are always accessible via dot
                 } else if matches!(def.kind, DefKind::AssocFn | DefKind::Fn) {
@@ -207,12 +213,15 @@ pub fn try_owner_completion(
                         .as_ref()
                         .is_some_and(|sig| signature_takes_receiver(sig));
                     if !has_receiver {
+                        if let Some(t) = t_c0 { t_cat += t.elapsed(); }
                         continue;
                     }
                 } else {
+                    if let Some(t) = t_c0 { t_cat += t.elapsed(); }
                     continue;
                 }
                 if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
+                    if let Some(t) = t_c0 { t_cat += t.elapsed(); }
                     continue;
                 }
 
@@ -222,6 +231,7 @@ pub fn try_owner_completion(
                 let category = categorize_definition(def.kind, def.path, o, owner, f_traits.as_ref());
 
                 if category == DefScopeCategory::OutOfScopeTrait {
+                    if let Some(t) = t_c0 { t_cat += t.elapsed(); }
                     continue;
                 }
 
@@ -236,16 +246,39 @@ pub fn try_owner_completion(
                 });
 
                 match category {
-                    DefScopeCategory::Field => fields.push(item),
-                    DefScopeCategory::Inherent => inherent.push(item),
+                    DefScopeCategory::Field => { seen_labels.insert(def.name); fields.push(item); }
+                    DefScopeCategory::Inherent => { if seen_labels.insert(def.name) { inherent.push(item); } }
                     DefScopeCategory::PreludeTrait => prelude_traits.push(item),
                     DefScopeCategory::InScopeTrait => in_scope_traits.push(item),
                     DefScopeCategory::OutOfScopeTrait => {}
                 }
+                if let Some(t) = t_c0 { t_cat += t.elapsed(); }
+                if fields.len() + inherent.len() >= 100 {
+                    break;
+                }
+            }
+            if fields.len() + inherent.len() >= 100 {
+                break;
             }
         }
 
-        collect_prioritized_items([fields, inherent, prelude_traits, in_scope_traits])
+        let t_col0 = profile_active.then(std::time::Instant::now);
+        let res = collect_prioritized_items([fields, inherent, prelude_traits, in_scope_traits]);
+        let t_collect = t_col0.map(|t| t.elapsed()).unwrap_or_default();
+
+        if let Some(t_all) = t_start_all {
+            eprintln!(
+                "[RIDX_PROFILE] deref_us={} find_defs_us={} (defs={}) cat_us={} collect_us={} total_us={}",
+                t_deref.as_micros(),
+                t_find.as_micros(),
+                defs_count,
+                t_cat.as_micros(),
+                t_collect.as_micros(),
+                t_all.elapsed().as_micros()
+            );
+        }
+
+        res
     } else if ctx.is_colon {
         let qual = extract_colon_qualifier(ctx.trimmed_before);
 
