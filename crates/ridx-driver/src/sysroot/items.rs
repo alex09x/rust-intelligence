@@ -191,6 +191,34 @@ pub fn extract_trait_items<'tcx>(
     }
 }
 
+fn is_applicable_inherent_impl<'tcx>(
+    impl_ty: rustc_middle::ty::Ty<'tcx>,
+    ty: rustc_middle::ty::Ty<'tcx>,
+    adt_did: DefId,
+) -> bool {
+    if impl_ty == ty {
+        return true;
+    }
+    match (impl_ty.kind(), ty.kind()) {
+        (rustc_middle::ty::TyKind::Adt(i_adt, i_args), rustc_middle::ty::TyKind::Adt(t_adt, t_args)) => {
+            if i_adt.did() != adt_did || t_adt.did() != adt_did || i_args.len() != t_args.len() {
+                return false;
+            }
+            i_args.iter().zip(t_args.iter()).all(|(ia, ta)| {
+                if ia == ta {
+                    return true;
+                }
+                if let Some(it) = ia.as_type() {
+                    matches!(it.kind(), rustc_middle::ty::TyKind::Param(_))
+                } else {
+                    false
+                }
+            })
+        }
+        _ => false,
+    }
+}
+
 /// Extracts inherent methods and constants for struct, enum, union, and type aliases.
 pub fn extract_inherent_impl_items<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -212,7 +240,10 @@ pub fn extract_inherent_impl_items<'tcx>(
                     .inherent_impls(adt_def.did())
                     .iter()
                     .copied()
-                    .filter(|&impl_did| tcx.type_of(impl_did).skip_binder() == ty)
+                    .filter(|&impl_did| {
+                        let impl_ty = tcx.type_of(impl_did).skip_binder();
+                        is_applicable_inherent_impl(impl_ty, ty, adt_def.did())
+                    })
                     .collect();
                 (impls, Some(a_path))
             } else {

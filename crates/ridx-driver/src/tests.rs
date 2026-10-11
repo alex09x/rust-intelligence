@@ -1377,6 +1377,15 @@ fn test_sysroot_core_metadata_prototype() {
         nonzero_usize_defs.iter().any(|d| core_reader.get_str(d.name_offset) == "leading_zeros"),
         "NonZeroUsize owner must contain leading_zeros method"
     );
+    assert!(
+        nonzero_usize_defs.iter().any(|d| core_reader.get_str(d.name_offset) == "get"),
+        "NonZeroUsize owner must contain get method"
+    );
+
+    let ws_nonzero_get = ws
+        .find_definition_by_path("core::num::nonzero::NonZeroUsize::get")
+        .expect("NonZeroUsize::get must resolve via WorkspaceIndex owner fallback");
+    assert_eq!(ws_nonzero_get.name, "get");
 
     let ws_atomic_load = ws
         .find_definition_by_path("core::sync::atomic::AtomicBool::load")
