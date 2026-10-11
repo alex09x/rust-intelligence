@@ -20,7 +20,7 @@
     "excluded_scenarios": {},
     "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
     "node_source": "detected",
-    "taskset": "0-31",
+    "taskset": "24-31",
     "shard_provenance": {
       "total_dependencies": 0,
       "broken_paths": 0,
@@ -118,7 +118,7 @@
     },
     "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
     "node_source": "detected",
-    "taskset": "0-31",
+    "taskset": "24-31",
     "shard_provenance": {
       "total_dependencies": 611,
       "broken_paths": 0,
