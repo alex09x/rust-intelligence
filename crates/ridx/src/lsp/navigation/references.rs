@@ -43,7 +43,13 @@ pub fn handle_references(
     if let Some(overlay) = overlay_opt {
         let local_refs = overlay.find_local_binding_references(line_1based, col_1based);
         if !local_refs.is_empty() {
+            let decl_pos = overlay
+                .find_definition_at(line_1based, col_1based)
+                .map(|d| (d.start_line, d.start_col));
             for (sl, sc, el, ec) in local_refs {
+                if !include_decl && decl_pos == Some((sl, sc)) {
+                    continue;
+                }
                 let start_char = overlay.char_col_to_utf16_col(sl, sc);
                 let end_char = overlay.char_col_to_utf16_col(el, ec);
                 results.push(json!({
