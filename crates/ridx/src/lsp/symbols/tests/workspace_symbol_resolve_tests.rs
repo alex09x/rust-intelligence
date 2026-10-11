@@ -31,6 +31,28 @@ fn test_workspace_symbol_resolve_item_without_location() {
 }
 
 #[test]
+fn test_workspace_symbol_resolve_item_with_null_location() {
+    let mut h = setup_test_symbols();
+    let req = json!({
+        "params": {
+            "name": "my_symbol",
+            "kind": 12,
+            "location": Value::Null
+        }
+    });
+
+    let res = handle_workspace_symbol_resolve(&req, std::iter::once(&h.ws), &mut h.conv);
+    assert_eq!(res["name"], "my_symbol");
+    assert_eq!(res["kind"], 12);
+    let loc = &res["location"];
+    assert_eq!(loc["uri"], crate::lsp::protocol::path_to_uri("src/lib.rs"));
+    assert_eq!(loc["range"]["start"]["line"], 0);
+    assert_eq!(loc["range"]["start"]["character"], 7);
+    assert_eq!(loc["range"]["end"]["line"], 0);
+    assert_eq!(loc["range"]["end"]["character"], 16);
+}
+
+#[test]
 fn test_workspace_symbol_resolve_item_with_existing_location() {
     let mut h = setup_test_symbols();
     let existing_loc = json!({

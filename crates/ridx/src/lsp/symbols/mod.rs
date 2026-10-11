@@ -115,8 +115,8 @@ pub fn handle_workspace_symbol_resolve<'a>(
         return Value::Null;
     }
 
-    // If location is already present, ensure containerName / detail are resolved
-    if item.get("location").is_none() {
+    // If location is missing or explicitly null, resolve it and populate containerName
+    if item.get("location").is_none_or(Value::is_null) {
         let name = item.get("name").and_then(|n| n.as_str()).unwrap_or("");
         for ws in workspaces {
             let symbols = ws.search_symbols(name);
