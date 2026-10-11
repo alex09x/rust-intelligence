@@ -126,7 +126,27 @@ pub fn get_or_collect_file_referenced_traits(
         }
     };
 
-    let ws_fingerprint = ws.readers().len() as u64;
+    let ws_fingerprint = {
+        let mut h: u64 = 0xcbf29ce484222325;
+        h ^= ws.readers().len() as u64;
+        h = h.wrapping_mul(0x100000001b3);
+        if let Some(mt) = ws.shard_mtime_for_file(file) {
+            let nanos = mt.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_nanos();
+            h ^= nanos as u64;
+            h = h.wrapping_mul(0x100000001b3);
+            h ^= (nanos >> 64) as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        for idx in ws.candidate_reader_indices_for_file(file) {
+            if let Some(r) = ws.readers().get(idx) {
+                h ^= r.references().len() as u64;
+                h = h.wrapping_mul(0x100000001b3);
+                h ^= r.definitions().len() as u64;
+                h = h.wrapping_mul(0x100000001b3);
+            }
+        }
+        h
+    };
     let cache = file_traits_cache();
     if let Ok(guard) = cache.read() {
         if let Some((cached_key, cached_fp, traits)) = guard.get(file) {

@@ -91,6 +91,41 @@ fn collect_prioritized_items(buckets: [Vec<Value>; 4]) -> Option<Vec<Value>> {
     }
 }
 
+pub fn is_smart_pointer(owner: &str) -> bool {
+    let b = base_type_path(owner);
+    let short = b.rsplit("::").next().unwrap_or(b);
+    matches!(short, "Box" | "Arc" | "Rc")
+}
+
+pub fn extract_smart_pointer_inner_type(ty_name: &str) -> Option<&str> {
+    let start = ty_name.find('<')?;
+    let end = ty_name.rfind('>')?;
+    if start >= end {
+        return None;
+    }
+    let mut inner = ty_name[start + 1..end].trim();
+    if let Some(rest) = inner.strip_prefix("dyn ") {
+        inner = rest.trim();
+    }
+    let bytes = inner.as_bytes();
+    let mut depth = 0usize;
+    for (i, &b) in bytes.iter().enumerate() {
+        if b == b'<' {
+            depth += 1;
+        } else if b == b'>' {
+            depth = depth.saturating_sub(1);
+        } else if b == b',' && depth == 0 {
+            inner = inner[..i].trim();
+            break;
+        }
+    }
+    if inner.is_empty() {
+        None
+    } else {
+        Some(inner)
+    }
+}
+
 /// Attempts high-speed owner-based completion for dot- (`receiver.`) or colon- (`path::`) trigger.
 ///
 /// Returns `Some(items)` if the owner index resolved candidate items directly (sub-100 µs),
@@ -128,7 +163,19 @@ pub fn try_owner_completion(
         let mut file_traits: Option<Arc<HashSet<String>>> = None;
 
         let mut owners = vec![owner.to_string()];
-        if !is_non_deref_type(owner) {
+        if is_smart_pointer(owner) {
+            if let Some(inner) = extract_smart_pointer_inner_type(_ty_name) {
+                if !owners.contains(&inner.to_string()) {
+                    owners.push(inner.to_string());
+                }
+                if let Some(target) = ws.find_definition_by_path(inner) {
+                    let t_path = target.path;
+                    if !owners.iter().any(|o| o == t_path) {
+                        owners.push(t_path.to_string());
+                    }
+                }
+            }
+        } else if !is_non_deref_type(owner) {
             for deref_target in ws.resolve_deref_chain(owner, 2) {
                 let is_trait = ws
                     .find_definition_by_path(deref_target)

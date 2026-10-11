@@ -154,9 +154,11 @@ fn test_signature_receiver_detection() {
     assert!(signature_takes_receiver("fn(&Self)"));
     assert!(signature_takes_receiver("fn(&mut Self)"));
 
-    // Non-receiver methods (including by-value Self parameter)
-    assert!(!signature_takes_receiver("fn(Self)"));
-    assert!(!signature_takes_receiver("fn(Self, Self)"));
+    // By-value Self receiver (sysroot compiler consuming trait methods)
+    assert!(signature_takes_receiver("fn(Self) -> Vec<Self::Item>"));
+    assert!(signature_takes_receiver("fn(Self, Self) -> Self"));
+
+    // Non-receiver methods
     assert!(!signature_takes_receiver("fn(ComponentId, &mut Registrator)"));
     assert!(!signature_takes_receiver("fn(self_param: i32)"));
     assert!(!signature_takes_receiver("fn() -> i32"));

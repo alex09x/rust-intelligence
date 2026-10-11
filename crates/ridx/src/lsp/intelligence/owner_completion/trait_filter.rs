@@ -257,9 +257,7 @@ pub fn signature_takes_receiver(sig: &str) -> bool {
         return false;
     };
     let mut p = sig[i + 1..].trim_start();
-    let mut has_ref = false;
     if let Some(rest) = p.strip_prefix('&') {
-        has_ref = true;
         p = rest.trim_start();
         // Skip optional lifetime like 'a, '_, 'static
         if p.starts_with('\'') {
@@ -274,7 +272,7 @@ pub fn signature_takes_receiver(sig: &str) -> bool {
         }
     }
     let is_lowercase_self = p.starts_with("self");
-    let is_capital_self = p.starts_with("Self") && has_ref;
+    let is_capital_self = p.starts_with("Self");
     let is_self = is_lowercase_self || is_capital_self;
     is_self
         && (p.len() == 4

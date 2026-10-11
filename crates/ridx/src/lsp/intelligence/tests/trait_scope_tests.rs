@@ -308,3 +308,85 @@ fn test_signature_takes_receiver_lifetimes() {
     assert!(!signature_takes_receiver("fn(new_val: i32)"));
 }
 
+#[test]
+fn test_collect_file_referenced_traits_single_use() {
+    use crate::lsp::intelligence::scope_cache::collect_file_referenced_traits;
+
+    let temp_dir = std::env::temp_dir().join(format!("ridx_single_use_test_{}", std::process::id()));
+    let _ = fs::create_dir_all(&temp_dir);
+    let ridx_file = temp_dir.join("test.ridx");
+
+    let mut writer = IndexWriter::new("test_single_use_crate", "0.1.0");
+
+    // Add trait definition
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Trait,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: "src/traits.rs".to_string(),
+        name: "MyCustomTrait".to_string(),
+        start_line: 5,
+        start_col: 1,
+        end_line: 5,
+        end_col: 20,
+        path: "test_single_use_crate::traits::MyCustomTrait".to_string(),
+        signature: None,
+    });
+
+    // Add single Use reference in src/main.rs (not a glob, DefKind::Use)
+    writer.add_reference(RawReference {
+        file: "src/main.rs".to_string(),
+        start_line: 1,
+        start_col: 5,
+        end_line: 1,
+        end_col: 30,
+        target_def_id: None,
+        target_path: "test_single_use_crate::traits::MyCustomTrait".to_string(),
+        target_file: None,
+        target_unit: None,
+        target_line: 0,
+        target_col: 0,
+        kind: DefKind::Use,
+        is_write: false,
+        is_macro_expansion: false,
+    });
+
+    // Add macro expansion reference in src/main.rs (must be ignored)
+    writer.add_reference(RawReference {
+        file: "src/main.rs".to_string(),
+        start_line: 2,
+        start_col: 5,
+        end_line: 2,
+        end_col: 30,
+        target_def_id: None,
+        target_path: "test_single_use_crate::traits::MacroExpandedTrait".to_string(),
+        target_file: None,
+        target_unit: None,
+        target_line: 0,
+        target_col: 0,
+        kind: DefKind::Trait,
+        is_write: false,
+        is_macro_expansion: true,
+    });
+
+    let mut f = fs::File::create(&ridx_file).unwrap();
+    writer.write_to(&mut f).unwrap();
+    drop(f);
+
+    let ws = WorkspaceIndex::open(&ridx_file).unwrap();
+    let traits = collect_file_referenced_traits(&ws, "src/main.rs");
+
+    assert!(traits.contains("MyCustomTrait"), "Expected MyCustomTrait from single use reference");
+    assert!(
+        traits.contains("test_single_use_crate::traits::MyCustomTrait"),
+        "Expected full trait path from single use reference"
+    );
+    assert!(
+        !traits.contains("MacroExpandedTrait"),
+        "Macro expanded reference must NOT be collected into file_traits"
+    );
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
