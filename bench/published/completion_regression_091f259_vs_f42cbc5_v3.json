@@ -1,0 +1,226 @@
+{
+  "serde-rs/serde": {
+    "repo": "serde-rs/serde",
+    "repo_commit": "69072f24232f431911ba2c41da69a1da10e805a1",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "820e80e2ee3ac5ec",
+    "driver_hash": "a2b53a12fdb9a725",
+    "driver_build_commit": "f42cbc5f966c64c0468bde28da39e2cc782105aa",
+    "driver_is_dirty": false,
+    "std_ridx_mtime": "2026-10-11T06:48:59.478737+00:00",
+    "std_ridx_hash": "b312e45ead358721",
+    "sysroot_transplanted": false,
+    "base_source": "replay",
+    "base_driver_hash": "08e032d15dcfa9f5",
+    "base_build_commit": "091f259",
+    "base_sysroot_cas_key": "52ae7a04d100fc08",
+    "base_sysroot_transplanted": false,
+    "invalid_config": false,
+    "scenarios_validated": "100/100",
+    "excluded_scenarios": {},
+    "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
+    "node_source": "detected",
+    "taskset": "24-31",
+    "shard_provenance": {
+      "total_dependencies": 0,
+      "broken_paths": 0,
+      "loaded_via_object_path": 0,
+      "loaded_via_unit_key": 0,
+      "loaded_via_resilient": 0,
+      "missing_dependencies": 0
+    },
+    "total_scenarios": 100,
+    "empty_responses": {
+      "091f259": 12,
+      "f42cbc5": 11,
+      "rust_analyzer_1_98_1": 2
+    },
+    "closed_empty_responses": {
+      "count": 1,
+      "scenarios": [
+        "comp_dot_48_clone"
+      ]
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "091f259": 2191,
+      "f42cbc5": 2142,
+      "rust_analyzer_1_98_1": 4675
+    },
+    "ra_zero_oracle_count": 2,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "091f259": 56.8,
+      "091f259_n": 98,
+      "f42cbc5": 57.9,
+      "f42cbc5_n": 98
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "091f259": 86.0,
+      "091f259_n": 86,
+      "f42cbc5": 89.3,
+      "f42cbc5_n": 87
+    },
+    "recall_regressions": [],
+    "recall_regressions_gt_5pp": [],
+    "routes": {
+      "owner_count": 86,
+      "fallback_count": 14,
+      "migrated_from_fallback_to_owner": 1,
+      "owner_accuracy": {
+        "base_recall_pct": 64.0,
+        "curr_recall_pct": 65.3,
+        "base_precision_pct": 86.9,
+        "curr_precision_pct": 90.2
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 10.0,
+        "curr_recall_pct": 10.0,
+        "base_precision_pct": 50.0,
+        "curr_precision_pct": 50.0
+      },
+      "owner_curr_warm_p50_us": 188.5,
+      "owner_curr_warm_p95_us": 956.5,
+      "owner_ra_warm_p50_us": 2814.0,
+      "owner_ra_warm_p95_us": 6464.5,
+      "owner_speedup_fair": 14.93,
+      "fallback_curr_warm_p50_us": 680.0,
+      "fallback_curr_warm_p95_us": 2014.8,
+      "fallback_ra_warm_p50_us": 1428.5,
+      "fallback_ra_warm_p95_us": 7164.2,
+      "fallback_speedup_fair": 2.1,
+      "overall_curr_warm_p50_us": 223.0,
+      "overall_curr_warm_p95_us": 1736.6,
+      "overall_ra_warm_p50_us": 2578.0,
+      "overall_ra_warm_p95_us": 6963.4,
+      "overall_speedup": 11.56
+    }
+  },
+  "bevyengine/bevy": {
+    "repo": "bevyengine/bevy",
+    "repo_commit": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "820e80e2ee3ac5ec",
+    "driver_hash": "a2b53a12fdb9a725",
+    "driver_build_commit": "f42cbc5f966c64c0468bde28da39e2cc782105aa",
+    "driver_is_dirty": false,
+    "std_ridx_mtime": "2026-10-11T06:48:59.478737+00:00",
+    "std_ridx_hash": "b312e45ead358721",
+    "sysroot_transplanted": false,
+    "base_source": "replay",
+    "base_driver_hash": "08e032d15dcfa9f5",
+    "base_build_commit": "091f259",
+    "base_sysroot_cas_key": "52ae7a04d100fc08",
+    "base_sysroot_transplanted": false,
+    "invalid_config": false,
+    "scenarios_validated": "99/99",
+    "excluded_scenarios": {
+      "comp_colon_10_Greater": "Sampling position on clean 68c80f3b falls on younger_before_ord_wrap (multi-line assert_eq) instead of Ordering::Greater."
+    },
+    "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
+    "node_source": "detected",
+    "taskset": "24-31",
+    "shard_provenance": {
+      "total_dependencies": 69,
+      "broken_paths": 0,
+      "loaded_via_object_path": 69,
+      "loaded_via_unit_key": 0,
+      "loaded_via_resilient": 0,
+      "missing_dependencies": 0
+    },
+    "total_scenarios": 99,
+    "empty_responses": {
+      "091f259": 8,
+      "f42cbc5": 8,
+      "rust_analyzer_1_98_1": 6
+    },
+    "closed_empty_responses": {
+      "count": 0,
+      "scenarios": []
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "091f259": 4464,
+      "f42cbc5": 3975,
+      "rust_analyzer_1_98_1": 6801
+    },
+    "ra_zero_oracle_count": 6,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "091f259": 49.9,
+      "091f259_n": 93,
+      "f42cbc5": 52.9,
+      "f42cbc5_n": 93
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "091f259": 65.5,
+      "091f259_n": 89,
+      "f42cbc5": 72.9,
+      "f42cbc5_n": 89
+    },
+    "recall_regressions": [
+      {
+        "name": "comp_dot_30_is_some",
+        "base_recall_pct": 53.9,
+        "curr_recall_pct": 52.6,
+        "diff_pp": 1.3,
+        "base_count": 100,
+        "curr_count": 70,
+        "ra_count": 150
+      },
+      {
+        "name": "comp_dot_26_as_ref",
+        "base_recall_pct": 61.2,
+        "curr_recall_pct": 59.7,
+        "diff_pp": 1.5,
+        "base_count": 100,
+        "curr_count": 70,
+        "ra_count": 141
+      },
+      {
+        "name": "comp_colon_32_new",
+        "base_recall_pct": 87.8,
+        "curr_recall_pct": 86.5,
+        "diff_pp": 1.3,
+        "base_count": 70,
+        "curr_count": 65,
+        "ra_count": 74
+      }
+    ],
+    "recall_regressions_gt_5pp": [],
+    "routes": {
+      "owner_count": 85,
+      "fallback_count": 14,
+      "migrated_from_fallback_to_owner": 0,
+      "owner_accuracy": {
+        "base_recall_pct": 53.5,
+        "curr_recall_pct": 56.8,
+        "base_precision_pct": 68.3,
+        "curr_precision_pct": 76.3
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 19.7,
+        "curr_recall_pct": 19.7,
+        "base_precision_pct": 26.2,
+        "curr_precision_pct": 26.2
+      },
+      "owner_curr_warm_p50_us": 530.0,
+      "owner_curr_warm_p95_us": 1155.6,
+      "owner_ra_warm_p50_us": 2905.0,
+      "owner_ra_warm_p95_us": 10268.2,
+      "owner_speedup_fair": 5.48,
+      "fallback_curr_warm_p50_us": 637.0,
+      "fallback_curr_warm_p95_us": 4301.9,
+      "fallback_ra_warm_p50_us": 1588.0,
+      "fallback_ra_warm_p95_us": 7644.5,
+      "fallback_speedup_fair": 2.49,
+      "overall_curr_warm_p50_us": 561.0,
+      "overall_curr_warm_p95_us": 1945.1,
+      "overall_ra_warm_p50_us": 2712.0,
+      "overall_ra_warm_p95_us": 10640.3,
+      "overall_speedup": 4.83
+    }
+  }
+}
