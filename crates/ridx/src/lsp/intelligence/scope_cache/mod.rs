@@ -23,7 +23,8 @@ pub use parse::*;
 pub use traits::*;
 pub use types::*;
 
-use std::collections::HashMap;
+use ridx_format::WorkspaceIndex;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::{Arc, OnceLock, RwLock};
 use std::time::SystemTime;
@@ -85,4 +86,64 @@ pub fn get_or_parse_file_scopes(
     }
 
     Some(parsed)
+}
+
+type FileTraitsCacheMap = HashMap<String, (FileCacheKey, u64, Arc<HashSet<String>>)>;
+
+static FILE_TRAITS_CACHE: OnceLock<RwLock<FileTraitsCacheMap>> = OnceLock::new();
+
+fn file_traits_cache() -> &'static RwLock<FileTraitsCacheMap> {
+    FILE_TRAITS_CACHE.get_or_init(|| RwLock::new(HashMap::new()))
+}
+
+/// Retrieves or collects referenced traits in `file` using scope cache.
+pub fn get_or_collect_file_referenced_traits(
+    ws: &WorkspaceIndex,
+    file: &str,
+    overlay_text: Option<&str>,
+) -> Arc<HashSet<String>> {
+    let key = if let Some(text) = overlay_text {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in text.as_bytes() {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        FileCacheKey::Overlay {
+            path: file.to_string(),
+            full_hash: h,
+        }
+    } else if let Ok(meta) = Path::new(file).metadata() {
+        FileCacheKey::Disk {
+            path: file.to_string(),
+            mtime: meta.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+            len: meta.len(),
+        }
+    } else {
+        FileCacheKey::Disk {
+            path: file.to_string(),
+            mtime: SystemTime::UNIX_EPOCH,
+            len: 0,
+        }
+    };
+
+    let ws_fingerprint = ws.readers().len() as u64;
+    let cache = file_traits_cache();
+    if let Ok(guard) = cache.read() {
+        if let Some((cached_key, cached_fp, traits)) = guard.get(file) {
+            if *cached_key == key && *cached_fp == ws_fingerprint {
+                return Arc::clone(traits);
+            }
+        }
+    }
+
+    let collected = Arc::new(collect_file_referenced_traits(ws, file));
+
+    if let Ok(mut guard) = cache.write() {
+        if guard.len() >= 64 {
+            guard.clear();
+        }
+        guard.insert(file.to_string(), (key, ws_fingerprint, Arc::clone(&collected)));
+    }
+
+    collected
 }

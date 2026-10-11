@@ -11,7 +11,8 @@
 //! Trait supertrait and associated type bound parsing with thread-safe caching.
 
 use super::super::self_completion::clean_trait_name;
-use std::collections::HashMap;
+use ridx_format::{DefKind, WorkspaceIndex};
+use std::collections::{HashMap, HashSet};
 use std::sync::{OnceLock, RwLock};
 
 type TraitCacheMap = HashMap<(String, u32), Vec<String>>;
@@ -161,4 +162,63 @@ pub fn get_or_resolve_assoc_bounds(file: &str, start_line: u32) -> Vec<String> {
     }
 
     bounds
+}
+
+/// Collects all trait names/paths referenced in the given file, expanding glob imports.
+pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> HashSet<String> {
+    let mut set = HashSet::new();
+    for idx in ws.candidate_reader_indices_for_file(file_path) {
+        let reader = &ws.readers()[idx];
+        let target_file = ws.target_file_for_reader(idx, file_path);
+        let target_str = target_file.as_deref().unwrap_or(file_path);
+        if let Some(fid) = reader.find_file_id(target_str) {
+            let refs = reader.references();
+            let start = refs.partition_point(|r| r.span().file_id() < fid);
+            let count = refs[start..].partition_point(|r| r.span().file_id() == fid);
+            let file_refs = &refs[start..start + count];
+
+            for r in file_refs {
+                let r_kind = DefKind::from(r.kind);
+                let path = reader.get_str(r.target_path_offset());
+                if path.is_empty() {
+                    continue;
+                }
+
+                if r_kind == DefKind::Use && path.ends_with("::*") {
+                    let prefix = path.trim_end_matches("::*");
+                    let prefix_colon = format!("{prefix}::");
+                    let target_crate = prefix.split("::").next().unwrap_or(prefix);
+                    let is_local = matches!(target_crate, "crate" | "self" | "super") || !prefix.contains("::");
+
+                    for candidate_reader in ws.readers() {
+                        if is_local {
+                            if candidate_reader.crate_name() != reader.crate_name() {
+                                continue;
+                            }
+                        } else if candidate_reader.crate_name() != target_crate && candidate_reader.crate_name() != reader.crate_name() {
+                            continue;
+                        }
+
+                        for def in candidate_reader.definitions() {
+                            if DefKind::from(def.kind) == DefKind::Trait {
+                                let d_path = candidate_reader.get_str(def.path_offset());
+                                if d_path.starts_with(&prefix_colon) {
+                                    let d_name = candidate_reader.get_str(def.name_offset());
+                                    set.insert(d_name.to_string());
+                                    set.insert(d_path.to_string());
+                                }
+                            }
+                        }
+                    }
+                } else if r_kind == DefKind::Trait {
+                    if let Some(short) = path.rsplit("::").next() {
+                        set.insert(short.to_string());
+                    }
+                    set.insert(path.to_string());
+                }
+            }
+            break;
+        }
+    }
+    set
 }

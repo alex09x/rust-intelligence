@@ -20,6 +20,7 @@ pub mod owner_fallback_tests;
 pub mod qualifier_tests;
 pub mod signature_help_tests;
 pub mod suite;
+pub mod trait_filter_tests;
 pub mod trait_scope_tests;
 
 use crate::lsp::protocol::PositionConverter;

@@ -12,8 +12,17 @@
 
 use super::super::protocol::lsp_completion_kind;
 use ridx_format::{DefKind, WorkspaceIndex};
+use super::scope_cache::get_or_collect_file_referenced_traits;
 use serde_json::{json, Value};
 use std::collections::HashSet;
+use std::sync::Arc;
+
+pub mod qualifier;
+pub mod trait_filter;
+pub mod ufcs;
+pub use qualifier::*;
+pub use trait_filter::*;
+pub use ufcs::*;
 
 /// Returns true if the path belongs to standard/sysroot crates not yet indexed in `.ridx`.
 pub(crate) fn is_sysroot_path(path: &str) -> bool {
@@ -45,65 +54,6 @@ pub(crate) fn is_sysroot_path(path: &str) -> bool {
         )
 }
 
-/// Checks if a function signature takes a receiver argument (`self`, `&self`, `&'a self`, `&'a mut self`, `&mut self`, `mut self`).
-pub(crate) fn signature_takes_receiver(sig: &str) -> bool {
-    let Some(i) = sig.find('(') else {
-        return false;
-    };
-    let mut p = sig[i + 1..].trim_start();
-    if let Some(rest) = p.strip_prefix('&') {
-        p = rest.trim_start();
-        // Skip optional lifetime like 'a, '_, 'static
-        if p.starts_with('\'') {
-            if let Some(sp) = p.find(|c: char| c.is_whitespace() || c == ',' || c == ')') {
-                p = p[sp..].trim_start();
-            }
-        }
-    }
-    if let Some(rest) = p.strip_prefix("mut") {
-        if rest.starts_with(' ') || rest.starts_with('\t') {
-            p = rest.trim_start();
-        }
-    }
-    p.starts_with("self")
-        && (p.len() == 4
-            || p[4..].starts_with(',')
-            || p[4..].starts_with(')')
-            || p[4..].starts_with(':')
-            || p[4..].starts_with(' '))
-}
-
-pub(crate) use ridx_format::workspace::is_prelude_trait;
-
-/// Collects all trait names/paths referenced in the given file.
-fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> HashSet<String> {
-    let mut set = HashSet::new();
-    for idx in ws.candidate_reader_indices_for_file(file_path) {
-        let reader = &ws.readers()[idx];
-        let target_file = ws.target_file_for_reader(idx, file_path);
-        let target_str = target_file.as_deref().unwrap_or(file_path);
-        if let Some(fid) = reader.find_file_id(target_str) {
-            for r in reader.references() {
-                if r.span().file_id() == fid {
-                    let path = reader.get_str(r.target_path_offset());
-                    if !path.is_empty() {
-                        if let Some(short) = path.rsplit("::").next() {
-                            set.insert(short.to_string());
-                        }
-                        set.insert(path.to_string());
-                    }
-                }
-            }
-            break;
-        }
-    }
-    set
-}
-pub mod qualifier;
-pub mod ufcs;
-pub use qualifier::*;
-pub use ufcs::*;
-
 /// Context parameters for owner-based scoped completion.
 pub struct OwnerCompletionContext<'a> {
     pub file: &'a str,
@@ -115,6 +65,30 @@ pub struct OwnerCompletionContext<'a> {
     pub trimmed_before: &'a str,
     pub overlay_text: Option<&'a str>,
     pub is_dirty: bool,
+}
+
+fn collect_prioritized_items(buckets: [Vec<Value>; 4]) -> Option<Vec<Value>> {
+    let mut items = Vec::with_capacity(100);
+    let mut seen = HashSet::new();
+    for bucket in buckets {
+        for item in bucket {
+            let name = item["label"].as_str().unwrap_or_default();
+            if seen.insert(name.to_string()) {
+                items.push(item);
+                if items.len() >= 100 {
+                    break;
+                }
+            }
+        }
+        if items.len() >= 100 {
+            break;
+        }
+    }
+    if items.is_empty() {
+        None
+    } else {
+        Some(items)
+    }
 }
 
 /// Attempts high-speed owner-based completion for dot- (`receiver.`) or colon- (`path::`) trigger.
@@ -147,36 +121,36 @@ pub fn try_owner_completion(
             return None;
         };
 
-        let has_sysroot = ws.has_sysroot();
-        if !has_sysroot && is_sysroot_path(owner) {
-            return None;
-        }
+        let mut fields = Vec::new();
+        let mut inherent = Vec::new();
+        let mut prelude_traits = Vec::new();
+        let mut in_scope_traits = Vec::new();
+        let mut file_traits: Option<Arc<HashSet<String>>> = None;
 
         let mut owners = vec![owner.to_string()];
-        for deref_target in ws.resolve_deref_chain(owner, 8) {
-            owners.push(deref_target.to_string());
-        }
-
-        let mut items = Vec::new();
-        let mut seen = HashSet::new();
-        let mut file_traits: Option<HashSet<String>> = None;
-
-        for o in &owners {
-            if o != owner && !is_prelude_trait(o) {
+        if !is_non_deref_type(owner) {
+            for deref_target in ws.resolve_deref_chain(owner, 2) {
                 let is_trait = ws
-                    .find_definition_by_path(o)
-                    .map(|d| d.kind == DefKind::Trait)
-                    .unwrap_or(false);
-                if is_trait {
-                    let file_set = file_traits
-                        .get_or_insert_with(|| collect_file_referenced_traits(ws, ctx.file));
-                    let short_name = o.rsplit("::").next().unwrap_or(o);
-                    if !file_set.contains(short_name) && !file_set.contains(o) {
-                        continue;
+                    .find_definition_by_path(deref_target)
+                    .is_some_and(|d| d.kind == DefKind::Trait);
+                if !is_trait {
+                    owners.push(deref_target.to_string());
+                } else {
+                    let f_traits = file_traits.get_or_insert_with(|| {
+                        get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text)
+                    });
+                    if is_in_prelude(deref_target)
+                        || f_traits.contains(deref_target)
+                        || f_traits.contains(trait_short_name(deref_target))
+                        || f_traits.contains(base_trait_path(deref_target))
+                    {
+                        owners.push(deref_target.to_string());
                     }
                 }
             }
+        }
 
+        for o in &owners {
             for def in ws.find_definitions_by_owner_for_file(ctx.file, o) {
                 if def.kind == DefKind::Field {
                     // Struct fields are always accessible via dot
@@ -194,31 +168,37 @@ pub fn try_owner_completion(
                 if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
                     continue;
                 }
-                if seen.insert(def.name.to_string()) {
-                    let detail = def
-                        .signature
-                        .map(|sig| format!("{sig} (in {})", def.path))
-                        .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
-                    items.push(json!({
-                        "label": def.name,
-                        "kind": lsp_completion_kind(def.kind),
-                        "detail": detail
-                    }));
-                    if items.len() >= 100 {
-                        break;
-                    }
+
+                let f_traits = file_traits.get_or_insert_with(|| {
+                    get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text)
+                });
+                let category = categorize_definition(def.kind, def.path, o, owner, f_traits.as_ref());
+
+                if category == DefScopeCategory::OutOfScopeTrait {
+                    continue;
                 }
-            }
-            if items.len() >= 100 {
-                break;
+
+                let detail = def
+                    .signature
+                    .map(|sig| format!("{sig} (in {})", def.path))
+                    .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
+                let item = json!({
+                    "label": def.name,
+                    "kind": lsp_completion_kind(def.kind),
+                    "detail": detail
+                });
+
+                match category {
+                    DefScopeCategory::Field => fields.push(item),
+                    DefScopeCategory::Inherent => inherent.push(item),
+                    DefScopeCategory::PreludeTrait => prelude_traits.push(item),
+                    DefScopeCategory::InScopeTrait => in_scope_traits.push(item),
+                    DefScopeCategory::OutOfScopeTrait => {}
+                }
             }
         }
 
-        if items.is_empty() {
-            None
-        } else {
-            Some(items)
-        }
+        collect_prioritized_items([fields, inherent, prelude_traits, in_scope_traits])
     } else if ctx.is_colon {
         let qual = extract_colon_qualifier(ctx.trimmed_before);
 
@@ -275,8 +255,11 @@ pub fn try_owner_completion(
 
         let has_sysroot = ws.has_sysroot();
         let syntax_pos = super::syntax_pos::classify_colon_position(ctx.trimmed_before);
-        let mut items = Vec::new();
-        let mut seen = HashSet::new();
+        let mut fields = Vec::new();
+        let mut inherent = Vec::new();
+        let mut prelude_traits = Vec::new();
+        let mut in_scope_traits = Vec::new();
+        let mut file_traits: Option<Arc<HashSet<String>>> = None;
 
         for target_owner in &target_owners {
             if !has_sysroot && is_sysroot_path(target_owner) {
@@ -292,31 +275,43 @@ pub fn try_owner_completion(
                 if !ctx.prefix.is_empty() && !def.name.starts_with(ctx.prefix) {
                     continue;
                 }
-                if seen.insert(def.name.to_string()) {
-                    let detail = def
-                        .signature
-                        .map(|sig| format!("{sig} (in {})", def.path))
-                        .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
-                    items.push(json!({
-                        "label": def.name,
-                        "kind": lsp_completion_kind(def.kind),
-                        "detail": detail
-                    }));
-                    if items.len() >= 100 {
-                        break;
-                    }
+
+                let f_traits = file_traits.get_or_insert_with(|| {
+                    get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text)
+                });
+                let category = categorize_definition(
+                    def.kind,
+                    def.path,
+                    target_owner,
+                    target_owner,
+                    f_traits.as_ref(),
+                );
+
+                if category == DefScopeCategory::OutOfScopeTrait {
+                    continue;
                 }
-            }
-            if items.len() >= 100 {
-                break;
+
+                let detail = def
+                    .signature
+                    .map(|sig| format!("{sig} (in {})", def.path))
+                    .unwrap_or_else(|| format!("{} (in {})", def.name, def.path));
+                let item = json!({
+                    "label": def.name,
+                    "kind": lsp_completion_kind(def.kind),
+                    "detail": detail
+                });
+
+                match category {
+                    DefScopeCategory::Field => fields.push(item),
+                    DefScopeCategory::Inherent => inherent.push(item),
+                    DefScopeCategory::PreludeTrait => prelude_traits.push(item),
+                    DefScopeCategory::InScopeTrait => in_scope_traits.push(item),
+                    DefScopeCategory::OutOfScopeTrait => {}
+                }
             }
         }
 
-        if items.is_empty() {
-            None
-        } else {
-            Some(items)
-        }
+        collect_prioritized_items([fields, inherent, prelude_traits, in_scope_traits])
     } else {
         None
     }
