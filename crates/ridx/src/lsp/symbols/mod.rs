@@ -26,12 +26,15 @@ pub fn handle_document_symbol(
     let mut results = Vec::new();
 
     if let Some(symbols) = overlay_mgr.document_symbols(&file) {
+        let overlay = overlay_mgr
+            .get(&file)
+            .expect("overlay must be present when document_symbols returns Some");
         for s in symbols {
             if s.kind == DefKind::TyParam {
                 continue;
             }
-            let start_char = conv.char_col_to_utf16_col(&file, s.start_line, s.start_col);
-            let end_char = conv.char_col_to_utf16_col(&file, s.end_line, s.end_col);
+            let start_char = overlay.char_col_to_utf16_col(s.start_line, s.start_col);
+            let end_char = overlay.char_col_to_utf16_col(s.end_line, s.end_col);
             let range = json!({
                 "start": { "line": s.start_line.saturating_sub(1), "character": start_char },
                 "end": { "line": s.end_line.saturating_sub(1), "character": end_char }
