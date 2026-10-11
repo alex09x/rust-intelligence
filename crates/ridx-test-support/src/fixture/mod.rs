@@ -20,9 +20,10 @@ use std::path::Path;
 pub struct FixtureIndexBuilder {
     crate_name: String,
     crate_version: String,
-    writer: IndexWriter,
     next_def_id: u32,
     defs: HashMap<u32, RawDefinition>,
+    defs_list: Vec<RawDefinition>,
+    refs_list: Vec<RawReference>,
 }
 
 impl FixtureIndexBuilder {
@@ -30,9 +31,10 @@ impl FixtureIndexBuilder {
         Self {
             crate_name: crate_name.to_string(),
             crate_version: crate_version.to_string(),
-            writer: IndexWriter::new(crate_name, crate_version),
             next_def_id: 1,
             defs: HashMap::new(),
+            defs_list: Vec::new(),
+            refs_list: Vec::new(),
         }
     }
 
@@ -75,7 +77,7 @@ impl FixtureIndexBuilder {
             signature: Some(format!("pub {} {}", kind.as_str(), name)),
         };
         self.defs.insert(def_id, raw.clone());
-        self.writer.add_definition(raw);
+        self.defs_list.push(raw);
 
         def_id
     }
@@ -226,7 +228,7 @@ impl FixtureIndexBuilder {
         target_col: u32,
         kind: DefKind,
     ) {
-        self.writer.add_reference(RawReference {
+        self.refs_list.push(RawReference {
             file: file.to_string(),
             start_line,
             start_col,
@@ -276,17 +278,28 @@ impl FixtureIndexBuilder {
         clean_code
     }
 
-    /// Writes the `.ridx` binary file to disk.
-    pub fn write_to_file(mut self, out_path: &Path) {
+    /// Writes the `.ridx` binary file to disk. Callable multiple times without losing state.
+    pub fn write_to_file(&self, out_path: &Path) {
         if let Some(parent) = out_path.parent() {
             let _ = fs::create_dir_all(parent);
         }
+        let mut writer = IndexWriter::new(&self.crate_name, &self.crate_version);
+        for def in &self.defs_list {
+            writer.add_definition(def.clone());
+        }
+        for r in &self.refs_list {
+            writer.add_reference(r.clone());
+        }
         let mut file = fs::File::create(out_path).expect("Failed to create fixture file");
-        self.writer
+        writer
             .write_to(&mut file)
             .expect("Failed to write fixture .ridx file");
     }
 }
 
+pub mod synthetic_workspace;
+pub use synthetic_workspace::SyntheticWorkspaceFixture;
+
 #[cfg(test)]
 mod tests;
+
