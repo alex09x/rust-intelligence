@@ -229,8 +229,20 @@ mod tests {
             "\n",
             "make_widget!(foo);\n",
         );
+        let expected_clean = concat!(
+            "/* 🦀 */ trait Zeigbar {}\n",
+            "struct Widget;\n",
+            "impl Zeigbar for Widget {}\n",
+            "\n",
+            "fn compute() {}\n",
+            "\n",
+            "\n",
+            "    compute();\n",
+            "\n",
+            "make_widget!(foo);\n",
+        );
         let (clean, def_ids) = fixture.add_defs_from_fixture(code, DefKind::Trait);
-        assert!(clean.starts_with("/* 🦀 */ trait Zeigbar {}\n"));
+        assert_eq!(clean, expected_clean);
         assert_eq!(def_ids.len(), 1);
 
         // 2. Struct implementing the trait
