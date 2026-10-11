@@ -93,48 +93,49 @@ impl WorkspaceIndex {
                 .collect();
         }
 
-        // 2. reader.find_file_id match (direct index match)
-        let mut indices = Vec::new();
-        for (i, reader) in self.readers.iter().enumerate() {
-            if reader.find_file_id(file_path).is_some() {
-                indices.push(i);
-            }
-        }
-        if !indices.is_empty() {
-            return indices;
-        }
+        let abs_str = abs_p.as_deref().and_then(|ap| ap.to_str());
 
-        // 3. reader_file_hashes exact match
-        for (i, hashes) in self.reader_file_hashes.iter().enumerate() {
-            if hashes.contains_key(file_path) {
-                indices.push(i);
-            }
-        }
-        if !indices.is_empty() {
-            let cname_matches: Vec<usize> = indices
-                .iter()
-                .copied()
-                .filter(|&i| {
-                    let cname = self.readers[i].crate_name();
-                    file_path.contains(&format!("/{cname}/"))
-                        || file_path.contains(&format!("\\{cname}\\"))
+        // 2. Exact match for workspace-anchored path if relative
+        if let Some(ap) = abs_str {
+            let indices: Vec<usize> = self.readers.iter().enumerate()
+                .filter(|&(i, r)| {
+                    r.find_file_id(ap).is_some()
+                        || self.reader_file_hashes.get(i).map_or(false, |h| h.contains_key(ap))
                 })
+                .map(|(i, _)| i)
                 .collect();
-            if !cname_matches.is_empty() {
-                return cname_matches;
+            if !indices.is_empty() {
+                return indices;
             }
+        }
+
+        // 3. reader.find_file_id match (direct index match)
+        let indices: Vec<usize> = self.readers.iter().enumerate()
+            .filter(|&(_, r)| r.find_file_id(file_path).is_some())
+            .map(|(i, _)| i)
+            .collect();
+        if !indices.is_empty() {
             return indices;
         }
 
-        // 4. Crate name contained in path
-        for (i, reader) in self.readers.iter().enumerate() {
-            let cname = reader.crate_name();
-            if file_path.contains(&format!("/{cname}/"))
-                || file_path.contains(&format!("\\{cname}\\"))
-            {
-                indices.push(i);
-            }
+        // 4. reader_file_hashes exact match
+        let indices: Vec<usize> = self.reader_file_hashes.iter().enumerate()
+            .filter(|&(_, h)| h.contains_key(file_path))
+            .map(|(i, _)| i)
+            .collect();
+        if !indices.is_empty() {
+            let cname_matches: Vec<usize> = indices.iter().copied().filter(|&i| {
+                let c = self.readers[i].crate_name();
+                file_path.contains(&format!("/{c}/")) || file_path.contains(&format!("\\{c}\\"))
+            }).collect();
+            return if cname_matches.is_empty() { indices } else { cname_matches };
         }
+
+        // 5. Crate name contained in path
+        let indices: Vec<usize> = self.readers.iter().enumerate().filter(|&(_, r)| {
+            let c = r.crate_name();
+            file_path.contains(&format!("/{c}/")) || file_path.contains(&format!("\\{c}\\"))
+        }).map(|(i, _)| i).collect();
         if !indices.is_empty() {
             return indices;
         }
@@ -278,14 +279,24 @@ impl WorkspaceIndex {
             }
         } else {
             // Relative path
-            if reader.find_file_id(file).is_some() {
-                return Some(std::borrow::Cow::Borrowed(file));
+            let has_file = |s: &str| {
+                reader.find_file_id(s).is_some()
+                    || self.reader_file_hashes.get(reader_idx).map_or(false, |h| h.contains_key(s))
+            };
+
+            if let Some(ws_root) = &self.workspace_root {
+                let joined = ws_root.join(p);
+                if let Some(s) = joined.to_str() {
+                    if has_file(s) {
+                        return Some(std::borrow::Cow::Owned(s.to_string()));
+                    }
+                }
             }
 
             if let Some(Some(root)) = self.source_roots.get(reader_idx) {
                 let joined = root.join(p);
                 if let Some(s) = joined.to_str() {
-                    if reader.find_file_id(s).is_some() {
+                    if has_file(s) {
                         return Some(std::borrow::Cow::Owned(s.to_string()));
                     }
                 }
@@ -296,6 +307,10 @@ impl WorkspaceIndex {
                         }
                     }
                 }
+            }
+
+            if reader.find_file_id(file).is_some() {
+                return Some(std::borrow::Cow::Borrowed(file));
             }
         }
 
