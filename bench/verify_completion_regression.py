@@ -156,12 +156,12 @@ def main():
         if curr_data:
             c_rec = curr_data[slug]
             ra_ver, tc_ver, cas_key = c_rec.get("baseline_ra", ra_ver), c_rec.get("toolchain", tc_ver), c_rec.get("sysroot_cas_key")
-            driver_hash = c_rec.get("driver_hash")
-            driver_build_commit = c_rec.get("driver_build_commit")
+            driver_hash, driver_build_commit = c_rec.get("driver_hash"), c_rec.get("driver_build_commit")
             driver_is_dirty = c_rec.get("driver_is_dirty", False)
             std_mtime, std_sha = c_rec.get("std_ridx_mtime"), c_rec.get("std_ridx_hash")
-            sysroot_transplanted = c_rec.get("sysroot_transplanted", False)
-            res_scs = c_rec["scenarios"]
+            sysroot_transplanted, res_scs = c_rec.get("sysroot_transplanted", False), c_rec["scenarios"]
+            node_info, node_src = c_rec.get("node", get_node_info()), c_rec.get("node_source", get_node_source())
+            taskset_aff = c_rec.get("taskset", get_taskset_affinity())
         else:
             srv_curr = SimpleLspProcess([str(curr_bin), "lsp"], rpath)
             preopen_buffers(srv_curr, rpath, scenarios_base)
@@ -173,11 +173,11 @@ def main():
             res_ra = run_scenarios(srv_ra, rpath, scenarios_base, is_ra=True, timeout=10.0)
             srv_ra.notify("exit", {})
 
-            cas_key = find_sysroot_cas_key(rpath)
-            driver_hash = get_driver_hash(curr_bin)
+            cas_key, driver_hash = find_sysroot_cas_key(rpath), get_driver_hash(curr_bin)
             driver_build_commit, driver_is_dirty = get_driver_build_info(curr_bin)
             std_mtime, std_sha = get_sysroot_std_metadata(cas_key)
             sysroot_transplanted = is_sysroot_transplanted(curr_bin, cas_key)
+            node_info, node_src, taskset_aff = get_node_info(), get_node_source(), get_taskset_affinity()
             if not check_repo_clean(bench_dir.parent):
                 driver_is_dirty = True
         repo_name = REPO_SLUG_TO_NAME.get(slug)
@@ -307,8 +307,8 @@ def main():
             "base_sysroot_cas_key": base_data[slug].get("sysroot_cas_key"),
             "base_sysroot_transplanted": base_data[slug].get("sysroot_transplanted", True),
             "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
-            "excluded_scenarios": repo_excluded, "node": get_node_info(), "node_source": get_node_source(),
-            "taskset": get_taskset_affinity(), "shard_provenance": shard_prov,
+            "excluded_scenarios": repo_excluded, "node": node_info, "node_source": node_src,
+            "taskset": taskset_aff, "shard_provenance": shard_prov,
             "total_scenarios": len(scenarios_base),
             "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
             "closed_empty_responses": {"count": closed_cnt, "scenarios": closed_names},
