@@ -23,6 +23,7 @@ pub use edit::{
     position_to_byte_offset, utf16_col_to_char_slice,
 };
 pub use fixture::{
-    FixtureIndexBuilder, OverlayLifecycleFixture, SyntheticWorkspaceFixture,
+    FixtureIndexBuilder, MacroAndTraitHierarchyFixture, OverlayLifecycleFixture,
+    SyntheticWorkspaceFixture,
 };
 pub use framing::{make_lsp_msg, parse_lsp_responses, parse_lsp_responses_strict, TestLspSession};

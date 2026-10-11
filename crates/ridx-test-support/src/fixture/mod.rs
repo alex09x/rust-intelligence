@@ -297,9 +297,10 @@ impl FixtureIndexBuilder {
     }
 }
 
+pub mod hierarchy_mock;
 pub mod overlay_lifecycle;
 pub mod synthetic_workspace;
-
+pub use hierarchy_mock::MacroAndTraitHierarchyFixture;
 pub use overlay_lifecycle::OverlayLifecycleFixture;
 pub use synthetic_workspace::SyntheticWorkspaceFixture;
 
