@@ -312,3 +312,75 @@ fn test_l1_type_definition_missing_from_type_table_returns_null() {
 
     assert_eq!(res, Value::Null);
 }
+
+#[test]
+fn test_l1_type_definition_prefers_exact_name_over_substring_match() {
+    let mut ws = SyntheticWorkspaceFixture::new().unwrap();
+    ws.add_crate("pkg_exact_match", "0.1.0").unwrap();
+    let template = "pub struct «AppConfig»;\npub struct «Config»;\npub fn run() { let cfg = Config; }\n";
+    let (_, ids) = ws
+        .add_source_file_with_defs("pkg_exact_match", "src/lib.rs", template, DefKind::Struct)
+        .unwrap();
+    assert_eq!(ids.len(), 2);
+    // Line 3 (1-based), cols 20..23 is `cfg` with type "Config"
+    ws.add_type_at("pkg_exact_match", "src/lib.rs", 3, 20, 3, 23, "Config")
+        .unwrap();
+    let shard = ws.build_crate_index("pkg_exact_match").unwrap();
+    let index = WorkspaceIndex::open(&shard).unwrap();
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+    let uri = ws.file_uri("pkg_exact_match", "src/lib.rs").unwrap();
+    // Query on `cfg` at line 2, character 20
+    let req = make_pos_req(&uri, 2, 20);
+    let res = handle_type_definition(&req, Some(&index), &overlay_mgr, &mut conv);
+    assert_eq!(res["uri"], uri);
+    assert_eq!(res["range"]["start"]["line"], 1);
+    assert_eq!(res["range"]["start"]["character"], 11);
+    assert_eq!(res["range"]["end"]["line"], 1);
+    assert_eq!(res["range"]["end"]["character"], 17);
+}
+
+#[test]
+fn test_l1_type_definition_no_exact_match_returns_null() {
+    let mut ws = SyntheticWorkspaceFixture::new().unwrap();
+    ws.add_crate("pkg_no_match", "0.1.0").unwrap();
+    let template = "pub struct «AppConfig»;\npub fn run() { let cfg = 42; }\n";
+    let (_, ids) = ws
+        .add_source_file_with_defs("pkg_no_match", "src/lib.rs", template, DefKind::Struct)
+        .unwrap();
+    assert_eq!(ids.len(), 1);
+    // Line 2 (1-based), cols 20..23 is `cfg` with unindexed alias type "Conf"
+    ws.add_type_at("pkg_no_match", "src/lib.rs", 2, 20, 2, 23, "Conf")
+        .unwrap();
+    let shard = ws.build_crate_index("pkg_no_match").unwrap();
+    let index = WorkspaceIndex::open(&shard).unwrap();
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+    let uri = ws.file_uri("pkg_no_match", "src/lib.rs").unwrap();
+    let req = make_pos_req(&uri, 1, 20);
+    let res = handle_type_definition(&req, Some(&index), &overlay_mgr, &mut conv);
+    // Unindexed alias Conf must not match substring AppConfig, returns null
+    assert_eq!(res, Value::Null);
+}
+
+#[test]
+fn test_l1_type_definition_same_file_wins_over_other_file() {
+    let mut ws = SyntheticWorkspaceFixture::new().unwrap();
+    ws.add_crate("pkg_same_file", "0.1.0").unwrap();
+    ws.add_source_file_with_defs("pkg_same_file", "src/a.rs", "pub struct «Config»;\n", DefKind::Struct).unwrap();
+    let b_code = "pub struct «Config»;\npub fn run() { let cfg = Config; }\n";
+    ws.add_source_file_with_defs("pkg_same_file", "src/b.rs", b_code, DefKind::Struct).unwrap();
+    ws.add_type_at("pkg_same_file", "src/b.rs", 2, 20, 2, 23, "Config").unwrap();
+    let shard = ws.build_crate_index("pkg_same_file").unwrap();
+    let index = WorkspaceIndex::open(&shard).unwrap();
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+    let uri_b = ws.file_uri("pkg_same_file", "src/b.rs").unwrap();
+    let req = make_pos_req(&uri_b, 1, 20);
+    let res = handle_type_definition(&req, Some(&index), &overlay_mgr, &mut conv);
+    // Config in b.rs must win over Config in a.rs due to same-file priority
+    assert_eq!(res["uri"], uri_b);
+    assert_eq!(res["range"]["start"]["line"], 0);
+    assert_eq!(res["range"]["start"]["character"], 11);
+    assert_eq!(res["range"]["end"]["character"], 17);
+}
