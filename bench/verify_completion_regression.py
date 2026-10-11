@@ -53,20 +53,27 @@ def run_scenarios(srv, repo_dir, scenarios, is_ra=False, timeout=15.0):
     for idx, sc in enumerate(scenarios):
         full_path = Path(repo_dir) / sc["location"][0]
         params = {"textDocument": {"uri": f"file://{full_path}"}, "position": {"line": sc["location"][1] - 1, "character": sc["location"][2] - 1}}
-        durs, first_res = [], None
+        durs = []
+        first_attempt_res = None
+        attempt_used = 0
         for it in range(3):
             res, dur, _ = srv.request("textDocument/completion", params, timeout=timeout)
             durs.append(dur)
-            if first_res is None and res:
-                first_res = res
-            elif it == 0 and first_res is None:
-                first_res = res
-        items = first_res.get("items", []) if first_res else []
+            if it == 0:
+                first_attempt_res = res
+            elif res and attempt_used == 0 and not first_attempt_res:
+                attempt_used = it
+
+        # Ensure strict consistency between count, labels, and first_detail
+        # by taking all of them from the initial attempt (iteration 0):
+        initial_items = first_attempt_res.get("items", []) if first_attempt_res else []
         results.append({
             "name": sc["name"], "location": sc["location"], "cold_us": durs[0],
             "warm_us": sorted(durs[1:])[len(durs[1:]) // 2] if len(durs) > 1 else durs[0],
-            "count": len(items), "labels": [it.get("label", "").split("(")[0].strip() for it in items],
-            "first_detail": (items[0].get("detail") or "") if items else "",
+            "count": len(initial_items),
+            "labels": [it.get("label", "").split("(")[0].strip() for it in initial_items],
+            "first_detail": (initial_items[0].get("detail") or "") if initial_items else "",
+            "attempt_used": attempt_used,
         })
         if (idx + 1) % 25 == 0:
             print(f"    Completed {idx + 1}/{len(scenarios)} scenarios...")
@@ -262,6 +269,7 @@ def main():
                 "labels_ridx": c["labels"] if not curr_data else sc_c.get("labels_ridx", []),
                 "labels_ra": r["labels"] if not curr_data else sc_c.get("labels_ra", []),
                 "repo_commit": repo_commit,
+                "attempt_used": c.get("attempt_used", 0) if not curr_data else c_sc.get("attempt_used", 0),
             }
             sc_pub.append(entry_pub)
             (owner_scs if route == "owner_path" else fallback_scs).append(entry_pub)
