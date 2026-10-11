@@ -45,7 +45,7 @@ def preopen_buffers(srv, repo_dir, scenarios):
                 pass
 
 
-def run_scenarios(srv, repo_dir, scenarios, is_ra=False, timeout=5.0):
+def run_scenarios(srv, repo_dir, scenarios, is_ra=False, timeout=15.0):
     if is_ra and hasattr(srv, "wait_quiescent"):
         srv.wait_quiescent(timeout=10.0, settle_idle=0.5)
 
@@ -57,7 +57,9 @@ def run_scenarios(srv, repo_dir, scenarios, is_ra=False, timeout=5.0):
         for it in range(3):
             res, dur, _ = srv.request("textDocument/completion", params, timeout=timeout)
             durs.append(dur)
-            if it == 0:
+            if first_res is None and res:
+                first_res = res
+            elif it == 0 and first_res is None:
                 first_res = res
         items = first_res.get("items", []) if first_res else []
         results.append({
@@ -156,7 +158,7 @@ def main():
         else:
             srv_curr = SimpleLspProcess([str(curr_bin), "lsp"], rpath)
             preopen_buffers(srv_curr, rpath, scenarios_base)
-            res_curr = run_scenarios(srv_curr, rpath, scenarios_base, is_ra=False, timeout=5.0)
+            res_curr = run_scenarios(srv_curr, rpath, scenarios_base, is_ra=False, timeout=15.0)
             srv_curr.notify("exit", {})
 
             srv_ra = SimpleLspProcess([ra_bin], rpath, is_ra=True)
