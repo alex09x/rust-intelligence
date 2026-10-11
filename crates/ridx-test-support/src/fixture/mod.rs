@@ -297,7 +297,10 @@ impl FixtureIndexBuilder {
     }
 }
 
+pub mod overlay_lifecycle;
 pub mod synthetic_workspace;
+
+pub use overlay_lifecycle::OverlayLifecycleFixture;
 pub use synthetic_workspace::SyntheticWorkspaceFixture;
 
 #[cfg(test)]
