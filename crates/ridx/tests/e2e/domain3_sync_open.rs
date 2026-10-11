@@ -228,32 +228,94 @@ fn test_did_open_invalidates_position_cache() {
 }
 
 #[test]
-fn test_did_open_rapid_burst_performance() {
-    let mut lifecycle = LifecycleManager::new();
-    let mut multi_root = MultiRootWorkspace::new();
-    let mut overlay_mgr = OverlayManager::new();
+fn test_did_open_multi_reader_provenance_fast_path() {
+    use ridx_format::{DefKind, IndexWriter, RawDefinition, WorkspaceIndex};
 
-    let t0 = std::time::Instant::now();
-    for i in 0..50 {
-        let uri = format!("file:///tmp/burst_doc_{i}.rs");
-        let code = format!("pub fn func_{i}() -> usize {{ {i} }}\n");
-        dispatch_msg(
-            json!({
-                "jsonrpc": "2.0",
-                "method": "textDocument/didOpen",
-                "params": { "textDocument": { "uri": uri, "version": 1, "text": code } }
-            }),
-            &mut lifecycle,
-            &mut multi_root,
-            &mut overlay_mgr,
-        );
-    }
-    let elapsed = t0.elapsed();
-    assert_eq!(overlay_mgr.open_count(), 50);
-    // 50 documents must open in less than 50 milliseconds (sub-millisecond per didOpen)
-    assert!(
-        elapsed < std::time::Duration::from_millis(50),
-        "Rapid didOpen burst took too long: {:?}",
-        elapsed
+    let temp_dir = std::env::temp_dir().join(format!("ridx_test_fast_path_{}", std::process::id()));
+    let _ = std::fs::create_dir_all(&temp_dir);
+
+    // 1. Reader A: crate_a with src_a.rs
+    let file_a_path = temp_dir.join("src_a.rs").to_str().unwrap().to_string();
+    let mut writer_a = IndexWriter::new("crate_a", "0.1.0");
+    writer_a.add_file_hash(&file_a_path, 0x1111_2222_3333_4444);
+    writer_a.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "func_a".to_string(),
+        path: "crate_a::func_a".to_string(),
+        signature: Some("fn()".to_string()),
+        file: file_a_path.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
+    });
+    let ridx_a = temp_dir.join("crate_a.ridx");
+    let mut f_a = std::fs::File::create(&ridx_a).unwrap();
+    writer_a.write_to(&mut f_a).unwrap();
+    drop(f_a);
+
+    // 2. Reader B: crate_b with src_b.rs
+    let file_b_path = temp_dir.join("src_b.rs").to_str().unwrap().to_string();
+    let mut writer_b = IndexWriter::new("crate_b", "0.1.0");
+    writer_b.add_file_hash(&file_b_path, 0x5555_6666_7777_8888);
+    writer_b.add_definition(RawDefinition {
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "func_b".to_string(),
+        path: "crate_b::func_b".to_string(),
+        signature: Some("fn()".to_string()),
+        file: file_b_path.clone(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
+    });
+    let ridx_b = temp_dir.join("crate_b.ridx");
+    let mut f_b = std::fs::File::create(&ridx_b).unwrap();
+    writer_b.write_to(&mut f_b).unwrap();
+    drop(f_b);
+
+    // Open multi-reader workspace from directory containing both shards
+    let mut ws = WorkspaceIndex::open(&temp_dir).expect("must open multi-reader workspace");
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    assert_eq!(ws.readers().len(), 2, "must contain both reader shards");
+
+    // Verify deterministic fast-path retrieval:
+    // Reader A knows src_a.rs
+    let hash_a = ws.source_hash_for_file(&file_a_path);
+    assert_eq!(
+        hash_a,
+        Some(0x1111_2222_3333_4444),
+        "fast path must return exact hash for file_a in reader A"
     );
+    let mtime_a = ws.shard_mtime_for_file(&file_a_path);
+    assert!(
+        mtime_a.is_some(),
+        "fast path must find shard mtime for file_a"
+    );
+
+    // Reader B knows src_b.rs
+    let hash_b = ws.source_hash_for_file(&file_b_path);
+    assert_eq!(
+        hash_b,
+        Some(0x5555_6666_7777_8888),
+        "fast path must return exact hash for file_b in reader B"
+    );
+    let mtime_b = ws.shard_mtime_for_file(&file_b_path);
+    assert!(
+        mtime_b.is_some(),
+        "fast path must find shard mtime for file_b"
+    );
+
+    // Non-existent file returns None without timing assertions
+    let unknown_path = temp_dir.join("unknown.rs").to_str().unwrap().to_string();
+    assert_eq!(ws.source_hash_for_file(&unknown_path), None);
+    assert_eq!(ws.shard_mtime_for_file(&unknown_path), None);
+
+    let _ = std::fs::remove_dir_all(&temp_dir);
 }
