@@ -27,6 +27,8 @@ pub mod target_kind;
 #[cfg(test)]
 mod cache_resolver_tests;
 #[cfg(test)]
+mod file_module_tests;
+#[cfg(test)]
 mod routing_tests;
 #[cfg(test)]
 mod target_kind_routing_tests;
