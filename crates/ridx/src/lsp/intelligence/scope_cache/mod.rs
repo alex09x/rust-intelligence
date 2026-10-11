@@ -215,8 +215,8 @@ pub fn workspace_deref_fingerprint(ws: &WorkspaceIndex) -> u64 {
             h = h.wrapping_mul(0x100000001b3);
         }
     }
-    if let Some(first) = ws.readers().first() {
-        let hdr = first.header();
+    for r in ws.readers() {
+        let hdr = r.header();
         h ^= hdr.defs_count as u64;
         h = h.wrapping_mul(0x100000001b3);
         h ^= hdr.derefs_count as u64;

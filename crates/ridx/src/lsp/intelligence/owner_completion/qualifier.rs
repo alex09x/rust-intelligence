@@ -169,41 +169,6 @@ pub fn extract_colon_qualifier(trimmed_before: &str) -> String {
         .collect()
 }
 
-pub fn is_smart_pointer(owner: &str) -> bool {
-    let b = super::trait_filter::base_type_path(owner);
-    let short = b.rsplit("::").next().unwrap_or(b);
-    matches!(short, "Box" | "Arc" | "Rc")
-}
-
-pub fn extract_smart_pointer_inner_type(ty_name: &str) -> Option<&str> {
-    let start = ty_name.find('<')?;
-    let end = ty_name.rfind('>')?;
-    if start >= end {
-        return None;
-    }
-    let mut inner = ty_name[start + 1..end].trim();
-    if let Some(rest) = inner.strip_prefix("dyn ") {
-        inner = rest.trim();
-    }
-    let bytes = inner.as_bytes();
-    let mut depth = 0usize;
-    for (i, &b) in bytes.iter().enumerate() {
-        if b == b'<' {
-            depth += 1;
-        } else if b == b'>' {
-            depth = depth.saturating_sub(1);
-        } else if b == b',' && depth == 0 {
-            inner = inner[..i].trim();
-            break;
-        }
-    }
-    if inner.is_empty() {
-        None
-    } else {
-        Some(inner)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

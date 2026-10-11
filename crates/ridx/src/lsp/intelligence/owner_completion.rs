@@ -21,9 +21,11 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 pub mod qualifier;
+pub mod smart_pointer;
 pub mod trait_filter;
 pub mod ufcs;
 pub use qualifier::*;
+pub use smart_pointer::*;
 pub use trait_filter::*;
 pub use ufcs::*;
 
