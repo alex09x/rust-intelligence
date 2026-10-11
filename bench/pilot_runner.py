@@ -320,13 +320,14 @@ def main():
     default_discrepancies = script_dir / "results" / "discrepancies.jsonl"
     default_ridx = script_dir.parent / "target" / "release" / "ridx"
 
+    default_storage = os.environ.get("BENCH_STORAGE_DIR") or str(Path.home() / "prod-code-storage" / "bench_repos")
     parser = argparse.ArgumentParser(description="Pilot and Corpus Benchmark Runner")
     parser.add_argument("--corpus", default=str(default_corpus))
     parser.add_argument("--results", default=str(default_results))
     parser.add_argument("--discrepancies", default=str(default_discrepancies))
-    parser.add_argument("--storage", default="/home/alex09x/prod-code-storage/bench_repos")
+    parser.add_argument("--storage", default=default_storage)
     parser.add_argument("--ridx", default=str(default_ridx))
-    ra_198 = Path("/home/alex09x/.rustup/toolchains/1.98.1-x86_64-unknown-linux-gnu/bin/rust-analyzer")
+    ra_198 = Path.home() / ".rustup" / "toolchains" / "1.98.1-x86_64-unknown-linux-gnu" / "bin" / "rust-analyzer"
     default_ra = str(ra_198) if ra_198.exists() else "rust-analyzer"
     parser.add_argument("--ra", default=default_ra)
     parser.add_argument("--taskset", default="24-31")
