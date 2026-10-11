@@ -574,11 +574,46 @@ impl WorkspaceIndex {
         }
 
         let cur = std::env::current_dir()?;
-        let candidates = [
-            cur.join("target/ridx"),
-            cur.clone(),
-            cur.join("../target/ridx"),
-        ];
+        let mut candidates = vec![cur.join("target/ridx"), cur.join("../target/ridx")];
+
+        let mut nearest_pkg = None;
+        let mut enclosing_ws = None;
+        for anc in cur.ancestors() {
+            let cargo_toml = anc.join("Cargo.toml");
+            if cargo_toml.is_file() {
+                if nearest_pkg.is_none() {
+                    nearest_pkg = Some(anc.to_path_buf());
+                }
+                if let Ok(content) = fs::read_to_string(&cargo_toml) {
+                    if content.contains("[workspace]") {
+                        enclosing_ws = Some(anc.to_path_buf());
+                        break;
+                    }
+                }
+            }
+        }
+        if let Some(ws_root) = enclosing_ws.or(nearest_pkg) {
+            let ws_target = ws_root.join("target/ridx");
+            if !candidates.contains(&ws_target) {
+                candidates.push(ws_target);
+            }
+        }
+
+        let has_ridx_indicators = cur.join("ridx_manifest.json").is_file()
+            || cur.join("variant_manifest.json").is_file()
+            || fs::read_dir(&cur)
+                .ok()
+                .map(|mut rd| {
+                    rd.any(|e| {
+                        e.map(|e| e.path().extension().is_some_and(|ext| ext == "ridx"))
+                            .unwrap_or(false)
+                    })
+                })
+                .unwrap_or(false);
+
+        if has_ridx_indicators {
+            candidates.push(cur.clone());
+        }
 
         for cand in candidates {
             if cand.is_dir() {
@@ -775,6 +810,18 @@ pub fn is_external_dependency_path(path: &Path) -> bool {
 }
 
 pub(crate) fn collect_ridx_files(dir: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
+    collect_ridx_files_bounded(dir, files, 0, 2)
+}
+
+fn collect_ridx_files_bounded(
+    dir: &Path,
+    files: &mut Vec<PathBuf>,
+    depth: usize,
+    max_depth: usize,
+) -> io::Result<()> {
+    if depth > max_depth {
+        return Ok(());
+    }
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let p = entry.path();
@@ -783,10 +830,17 @@ pub(crate) fn collect_ridx_files(dir: &Path, files: &mut Vec<PathBuf>) -> io::Re
                 files.push(p);
             }
         } else if p.is_dir() {
-            // Do not descend into "variants" subdirectory if scanning root target/ridx directly
-            if p.file_name().and_then(|s| s.to_str()) != Some("variants") {
-                let _ = collect_ridx_files(&p, files);
+            if let Some(name) = p.file_name().and_then(|s| s.to_str()) {
+                if name.starts_with('.')
+                    || name == "variants"
+                    || name == "target"
+                    || name == "node_modules"
+                    || name == "vendor"
+                {
+                    continue;
+                }
             }
+            let _ = collect_ridx_files_bounded(&p, files, depth + 1, max_depth);
         }
     }
     Ok(())
@@ -816,6 +870,47 @@ mod tests {
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path).unwrap();
         TestDir(path)
+    }
+
+    #[test]
+    fn test_collect_ridx_files_depth_bounding_and_exclusions() {
+        let test_dir = new_test_dir("collect_depth_test");
+        let root = &test_dir.0;
+        let d1 = root.join("lvl1");
+        let d2 = d1.join("lvl2");
+        let d3 = d2.join("lvl3");
+        let hidden = root.join(".hidden");
+        let target = root.join("target");
+        let node_modules = root.join("node_modules");
+
+        fs::create_dir_all(&d3).unwrap();
+        fs::create_dir_all(&hidden).unwrap();
+        fs::create_dir_all(&target).unwrap();
+        fs::create_dir_all(&node_modules).unwrap();
+
+        fs::write(root.join("root.ridx"), b"").unwrap();
+        fs::write(d1.join("lvl1.ridx"), b"").unwrap();
+        fs::write(d2.join("lvl2.ridx"), b"").unwrap();
+        fs::write(d3.join("lvl3.ridx"), b"").unwrap();
+        fs::write(hidden.join("hidden.ridx"), b"").unwrap();
+        fs::write(target.join("target.ridx"), b"").unwrap();
+        fs::write(node_modules.join("nm.ridx"), b"").unwrap();
+
+        let mut collected = Vec::new();
+        collect_ridx_files(root, &mut collected).unwrap();
+
+        let names: Vec<String> = collected
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
+            .collect();
+
+        assert!(names.contains(&"root.ridx".to_string()));
+        assert!(names.contains(&"lvl1.ridx".to_string()));
+        assert!(names.contains(&"lvl2.ridx".to_string()));
+        assert!(!names.contains(&"lvl3.ridx".to_string()));
+        assert!(!names.contains(&"hidden.ridx".to_string()));
+        assert!(!names.contains(&"target.ridx".to_string()));
+        assert!(!names.contains(&"nm.ridx".to_string()));
     }
 
     #[test]

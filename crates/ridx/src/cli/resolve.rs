@@ -34,13 +34,22 @@ pub(crate) fn find_enclosing_workspace(start: &Path) -> Option<PathBuf> {
     } else {
         start.parent()
     };
+    let mut nearest_package = None;
     while let Some(dir) = cur {
-        if dir.join("Cargo.toml").is_file() {
-            return Some(dir.to_path_buf());
+        let cargo_toml = dir.join("Cargo.toml");
+        if cargo_toml.is_file() {
+            if nearest_package.is_none() {
+                nearest_package = Some(dir.to_path_buf());
+            }
+            if let Ok(content) = fs::read_to_string(&cargo_toml) {
+                if content.contains("[workspace]") {
+                    return Some(dir.to_path_buf());
+                }
+            }
         }
         cur = dir.parent();
     }
-    None
+    nearest_package
 }
 
 pub(crate) fn find_manifest_for_path(p: &Path) -> Option<(PathBuf, ridx_format::VariantManifest)> {
@@ -327,7 +336,42 @@ pub(crate) fn try_resolve_index_and_target(
 ) -> Result<(WorkspaceIndex, String), String> {
     match arg2 {
         Some(target) => Ok((try_resolve_workspace(Some(PathBuf::from(arg1)))?, target)),
-        None => Ok((try_resolve_workspace(None)?, arg1)),
+        None => {
+            let ws_opt = if std::env::var("RIDX_INDEX_DIR").is_ok() {
+                None
+            } else {
+                let path_cand = if let Some((file, _, _)) = parse_location(&arg1) {
+                    let p = PathBuf::from(file);
+                    if p.is_absolute() || p.exists() {
+                        Some(p)
+                    } else {
+                        None
+                    }
+                } else {
+                    let p = PathBuf::from(&arg1);
+                    if p.is_absolute() || p.exists() {
+                        Some(p)
+                    } else {
+                        None
+                    }
+                };
+                if let Some(p) = path_cand {
+                    if let Some(enclosing) = find_enclosing_workspace(&p) {
+                        let target_ridx = enclosing.join("target/ridx");
+                        if target_ridx.exists() {
+                            Some(target_ridx)
+                        } else {
+                            Some(enclosing)
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            };
+            Ok((try_resolve_workspace(ws_opt)?, arg1))
+        }
     }
 }
 

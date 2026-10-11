@@ -97,3 +97,29 @@ fn test_find_manifest_for_path_variants() {
     fs::write(inv_r_dir.join("ridx_manifest.json"), b"invalid json").unwrap();
     let _ = find_manifest_for_path(&inv_r_dir);
 }
+
+#[test]
+fn test_try_resolve_index_and_target_from_file_location() {
+    let (test_dir, _) = create_indexed_workspace();
+    let cargo = test_dir.0.join("Cargo.toml");
+    fs::write(&cargo, "[workspace]\n").unwrap();
+
+    let target_ridx = test_dir.0.join("target/ridx");
+    fs::create_dir_all(&target_ridx).unwrap();
+    fs::rename(
+        test_dir.0.join("test_crate.ridx"),
+        target_ridx.join("test_crate.ridx"),
+    )
+    .unwrap();
+
+    let src_file = test_dir.0.join("src/lib.rs");
+    fs::create_dir_all(src_file.parent().unwrap()).unwrap();
+    fs::write(&src_file, "fn foo() {}\n").unwrap();
+
+    let loc = format!("{}:10:5", src_file.display());
+    let res = try_resolve_index_and_target(loc.clone(), None);
+    assert!(res.is_ok());
+    let (ws, target) = res.unwrap();
+    assert_eq!(target, loc);
+    assert_eq!(ws.crate_count(), 1);
+}
