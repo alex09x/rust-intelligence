@@ -40,8 +40,7 @@ fn main() {
                 .output()
                 .ok()
                 .map(|out| {
-                    out.status.success()
-                        && !String::from_utf8_lossy(&out.stdout).trim().is_empty()
+                    out.status.success() && !String::from_utf8_lossy(&out.stdout).trim().is_empty()
                 })
                 .unwrap_or(false)
         });
@@ -50,4 +49,25 @@ fn main() {
     println!("cargo:rustc-env=RIDX_BUILD_DIRTY={dirty}");
     println!("cargo:rerun-if-env-changed=RIDX_BUILD_COMMIT");
     println!("cargo:rerun-if-env-changed=RIDX_BUILD_DIRTY");
+
+    if let Ok(out) = Command::new("git")
+        .args(["rev-parse", "--git-dir"])
+        .output()
+    {
+        if out.status.success() {
+            let git_dir = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            let p = std::path::Path::new(&git_dir);
+            println!("cargo:rerun-if-changed={}", p.join("HEAD").display());
+            println!("cargo:rerun-if-changed={}", p.join("index").display());
+        }
+    }
+
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::path::PathBuf::from("."));
+    let ws_root = manifest_dir
+        .parent()
+        .and_then(|p| p.parent())
+        .unwrap_or(&manifest_dir);
+    println!("cargo:rerun-if-changed={}", ws_root.join("crates").display());
 }

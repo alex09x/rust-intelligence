@@ -785,12 +785,11 @@ fn extract_crate_items<'tcx>(
                                     if tcx.lang_items().sized_trait() != Some(bound_did)
                                         && !tcx.trait_is_auto(bound_did)
                                     {
-                                        let bound_path =
-                                            rustc_middle::ty::print::with_no_visible_paths!(
-                                                rustc_middle::ty::print::with_no_trimmed_paths!(
-                                                    tcx.def_path_str(bound_did)
-                                                )
-                                            );
+                                        let bound_path = rustc_middle::ty::print::with_no_visible_paths!(
+                                            rustc_middle::ty::print::with_no_trimmed_paths!(
+                                                tcx.def_path_str(bound_did)
+                                            )
+                                        );
                                         if !bound_path.starts_with("core::marker::")
                                             && !bounds.contains(&bound_path)
                                         {
@@ -852,12 +851,11 @@ fn extract_crate_items<'tcx>(
                             if tcx.lang_items().sized_trait() != Some(bound_did)
                                 && !tcx.trait_is_auto(bound_did)
                             {
-                                let bound_path =
-                                    rustc_middle::ty::print::with_no_visible_paths!(
-                                        rustc_middle::ty::print::with_no_trimmed_paths!(
-                                            tcx.def_path_str(bound_did)
-                                        )
-                                    );
+                                let bound_path = rustc_middle::ty::print::with_no_visible_paths!(
+                                    rustc_middle::ty::print::with_no_trimmed_paths!(
+                                        tcx.def_path_str(bound_did)
+                                    )
+                                );
                                 if !bound_path.starts_with("core::marker::")
                                     && !assoc_bounds.contains(&bound_path)
                                 {
@@ -1692,6 +1690,16 @@ pub fn run_driver(mut args: Vec<String>) -> Result<(), ()> {
             .unwrap_or_else(|| rustc_session::config::host_tuple());
         let cas_key = sysroot::compute_sysroot_cas_key_str(None, target);
         println!("{cas_key}");
+        return Ok(());
+    }
+
+    if args.iter().any(|a| a == "--ridx-version") {
+        println!(
+            "ridx-driver {} (commit: {}, dirty: {})",
+            env!("CARGO_PKG_VERSION"),
+            env!("RIDX_BUILD_COMMIT"),
+            env!("RIDX_BUILD_DIRTY")
+        );
         return Ok(());
     }
 
