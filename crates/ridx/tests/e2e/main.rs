@@ -44,6 +44,7 @@ mod ntm_domain9_l1_symbols_highlight;
 mod ntm_domain9_l1_symbols_part2;
 mod ntm_domain9_l1_type_and_impl;
 mod ntm_domain9_l1_workspace_symbols;
+mod ntm_domain9_l1_workspace_symbols_part2;
 mod ntm_domain9_l2_compiler_nav;
 mod ntm_domain9_l2_workspace;
 mod ntm_e2e;
