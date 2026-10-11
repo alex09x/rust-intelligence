@@ -137,3 +137,12 @@ fn test_overlay_cache_key_change_after_64_bytes() {
     );
 }
 
+#[test]
+fn test_get_or_resolve_deref_chain_caching() {
+    let (_tmp, ws, _overlay, _conv) = crate::lsp::intelligence::tests::setup_test_intelligence();
+    let res1 = get_or_resolve_deref_chain(&ws, "test_intel::User", 2);
+    let res2 = get_or_resolve_deref_chain(&ws, "test_intel::User", 2);
+    assert!(Arc::ptr_eq(&res1, &res2));
+    assert!(res1.is_empty());
+}
+

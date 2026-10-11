@@ -147,7 +147,7 @@ pub fn get_or_collect_file_referenced_traits(
         }
         h
     };
-    let profile_active = std::env::var_os("RIDX_PROFILE_COMPLETION").is_some();
+    let profile_active = is_profile_completion_enabled();
     let t_traits0 = profile_active.then(std::time::Instant::now);
 
     let cache = file_traits_cache();
@@ -176,4 +176,94 @@ pub fn get_or_collect_file_referenced_traits(
     }
 
     collected
+}
+
+/// Checks whether completion latency breakdown profiling is active.
+pub fn is_profile_completion_enabled() -> bool {
+    static PROFILE: OnceLock<bool> = OnceLock::new();
+    *PROFILE.get_or_init(|| std::env::var_os("RIDX_PROFILE_COMPLETION").is_some())
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DerefChainItem {
+    pub target: String,
+    pub is_trait: bool,
+}
+
+type DerefChainCacheMap = HashMap<(String, usize), (u64, Arc<[DerefChainItem]>)>;
+
+static DEREF_CHAIN_CACHE: OnceLock<RwLock<DerefChainCacheMap>> = OnceLock::new();
+
+fn deref_chain_cache() -> &'static RwLock<DerefChainCacheMap> {
+    DEREF_CHAIN_CACHE.get_or_init(|| RwLock::new(HashMap::new()))
+}
+
+/// Computes a lightweight fingerprint of the workspace index state for deref resolution.
+pub fn workspace_deref_fingerprint(ws: &WorkspaceIndex) -> u64 {
+    let mut h: u64 = 0xcbf29ce484222325;
+    h ^= ws.readers().len() as u64;
+    h = h.wrapping_mul(0x100000001b3);
+    if let Some(avid) = ws.active_variant_id() {
+        for &b in avid.as_bytes() {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+    }
+    if let Some(cas) = ws.sysroot_cas_key() {
+        for &b in cas.as_bytes() {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+    }
+    if let Some(first) = ws.readers().first() {
+        let hdr = first.header();
+        h ^= hdr.defs_count as u64;
+        h = h.wrapping_mul(0x100000001b3);
+        h ^= hdr.derefs_count as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
+    h
+}
+
+/// Retrieves or computes the autoderef chain for `owner` up to `max_depth` across workspace readers.
+pub fn get_or_resolve_deref_chain(
+    ws: &WorkspaceIndex,
+    owner: &str,
+    max_depth: usize,
+) -> Arc<[DerefChainItem]> {
+    let ws_fp = workspace_deref_fingerprint(ws);
+    let cache = deref_chain_cache();
+
+    if let Ok(guard) = cache.read() {
+        if let Some((cached_fp, targets)) = guard.get(&(owner.to_string(), max_depth)) {
+            if *cached_fp == ws_fp {
+                return Arc::clone(targets);
+            }
+        }
+    }
+
+    let raw_targets = ws.resolve_deref_chain(owner, max_depth);
+    let mut resolved = Vec::with_capacity(raw_targets.len());
+    for target in raw_targets {
+        let is_trait = ws
+            .find_definition_by_path(target)
+            .is_some_and(|d| d.kind == ridx_format::DefKind::Trait);
+        resolved.push(DerefChainItem {
+            target: target.to_string(),
+            is_trait,
+        });
+    }
+    let arc_resolved: Arc<[DerefChainItem]> = Arc::from(resolved);
+
+    if let Ok(mut guard) = cache.write() {
+        if guard.len() >= 512 {
+            guard.clear();
+        }
+        guard.insert(
+            (owner.to_string(), max_depth),
+            (ws_fp, Arc::clone(&arc_resolved)),
+        );
+    }
+
+    arc_resolved
 }

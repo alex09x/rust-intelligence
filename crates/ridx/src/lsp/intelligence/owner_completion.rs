@@ -12,7 +12,10 @@
 
 use super::super::protocol::lsp_completion_kind;
 use ridx_format::{DefKind, WorkspaceIndex};
-use super::scope_cache::get_or_collect_file_referenced_traits;
+use super::scope_cache::{
+    get_or_collect_file_referenced_traits, get_or_resolve_deref_chain,
+    is_profile_completion_enabled,
+};
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -35,8 +38,22 @@ pub(crate) fn is_sysroot_path(path: &str) -> bool {
         || path == "pointer"
         || matches!(
             path,
-            "bool" | "char" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-                | "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "f32" | "f64"
+            "bool"
+                | "char"
+                | "i8"
+                | "i16"
+                | "i32"
+                | "i64"
+                | "i128"
+                | "isize"
+                | "u8"
+                | "u16"
+                | "u32"
+                | "u64"
+                | "u128"
+                | "usize"
+                | "f32"
+                | "f64"
         )
 }
 
@@ -77,41 +94,6 @@ fn collect_prioritized_items(buckets: [Vec<Value>; 4]) -> Option<Vec<Value>> {
     }
 }
 
-pub fn is_smart_pointer(owner: &str) -> bool {
-    let b = base_type_path(owner);
-    let short = b.rsplit("::").next().unwrap_or(b);
-    matches!(short, "Box" | "Arc" | "Rc")
-}
-
-pub fn extract_smart_pointer_inner_type(ty_name: &str) -> Option<&str> {
-    let start = ty_name.find('<')?;
-    let end = ty_name.rfind('>')?;
-    if start >= end {
-        return None;
-    }
-    let mut inner = ty_name[start + 1..end].trim();
-    if let Some(rest) = inner.strip_prefix("dyn ") {
-        inner = rest.trim();
-    }
-    let bytes = inner.as_bytes();
-    let mut depth = 0usize;
-    for (i, &b) in bytes.iter().enumerate() {
-        if b == b'<' {
-            depth += 1;
-        } else if b == b'>' {
-            depth = depth.saturating_sub(1);
-        } else if b == b',' && depth == 0 {
-            inner = inner[..i].trim();
-            break;
-        }
-    }
-    if inner.is_empty() {
-        None
-    } else {
-        Some(inner)
-    }
-}
-
 /// Attempts high-speed owner-based completion for dot- (`receiver.`) or colon- (`path::`) trigger.
 ///
 /// Returns `Some(items)` if the owner index resolved candidate items directly (sub-100 µs),
@@ -138,7 +120,7 @@ pub fn try_owner_completion(
             .type_entry_at(ctx.file, ctx.line_1based, rend_col)
             .or_else(|| ws.type_entry_at(ctx.file, ctx.line_1based, rcol));
 
-        let Some((_ty_name, Some(owner))) = type_entry else {
+        let Some((ty_name, Some(owner))) = type_entry else {
             return None;
         };
 
@@ -148,7 +130,7 @@ pub fn try_owner_completion(
         let mut in_scope_traits = Vec::new();
         let mut file_traits: Option<Arc<HashSet<String>>> = None;
 
-        let profile_active = std::env::var_os("RIDX_PROFILE_COMPLETION").is_some();
+        let profile_active = is_profile_completion_enabled();
         let t_start_all = profile_active.then(std::time::Instant::now);
         let mut t_deref = std::time::Duration::ZERO;
         let mut t_find = std::time::Duration::ZERO;
@@ -158,7 +140,7 @@ pub fn try_owner_completion(
         let mut owners = vec![owner.to_string()];
         if is_smart_pointer(owner) {
             let t_d0 = profile_active.then(std::time::Instant::now);
-            if let Some(inner) = extract_smart_pointer_inner_type(_ty_name) {
+            if let Some(inner) = extract_smart_pointer_inner_type(ty_name) {
                 if !owners.contains(&inner.to_string()) {
                     owners.push(inner.to_string());
                 }
@@ -172,22 +154,20 @@ pub fn try_owner_completion(
             if let Some(t) = t_d0 { t_deref = t.elapsed(); }
         } else if !is_non_deref_type(owner) {
             let t_d0 = profile_active.then(std::time::Instant::now);
-            for deref_target in ws.resolve_deref_chain(owner, 2) {
-                let is_trait = ws
-                    .find_definition_by_path(deref_target)
-                    .is_some_and(|d| d.kind == DefKind::Trait);
-                if !is_trait {
-                    owners.push(deref_target.to_string());
+            for item in get_or_resolve_deref_chain(ws, owner, 2).iter() {
+                if !item.is_trait {
+                    owners.push(item.target.clone());
                 } else {
                     let f_traits = file_traits.get_or_insert_with(|| {
                         get_or_collect_file_referenced_traits(ws, ctx.file, ctx.overlay_text)
                     });
-                    if is_in_prelude(deref_target)
-                        || f_traits.contains(deref_target)
-                        || f_traits.contains(trait_short_name(deref_target))
-                        || f_traits.contains(base_trait_path(deref_target))
+                    let target_str = item.target.as_str();
+                    if is_in_prelude(target_str)
+                        || f_traits.contains(target_str)
+                        || f_traits.contains(trait_short_name(target_str))
+                        || f_traits.contains(base_trait_path(target_str))
                     {
-                        owners.push(deref_target.to_string());
+                        owners.push(item.target.clone());
                     }
                 }
             }
