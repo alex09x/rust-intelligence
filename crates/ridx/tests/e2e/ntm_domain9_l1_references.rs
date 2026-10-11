@@ -240,3 +240,45 @@ fn test_l1_references_on_callsite_finds_all_references() {
         "Query on callsite must find definition and all sibling usages"
     );
 }
+
+#[test]
+fn test_l1_references_local_parameter_without_overlay_returns_empty() {
+    let mut ws = SyntheticWorkspaceFixture::new().unwrap();
+    ws.add_crate("pkg_param", "0.1.0").unwrap();
+    let (_, ids) = ws
+        .add_source_file_with_defs(
+            "pkg_param",
+            "src/lib.rs",
+            "pub fn «compute»(param_x: i32) -> i32 {\n    param_x * 2\n}\n",
+            DefKind::Fn,
+        )
+        .unwrap();
+    assert_eq!(ids.len(), 1);
+
+    let shard = ws.build_crate_index("pkg_param").unwrap();
+    let index = WorkspaceIndex::open(&shard).unwrap();
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+    let uri = ws.file_uri("pkg_param", "src/lib.rs").unwrap();
+
+    // Verify indexed function itself can be resolved
+    let fn_req = make_ref_req(&uri, 0, 8, true);
+    let fn_res = handle_references(&fn_req, Some(&index), &overlay_mgr, &mut conv);
+    assert_eq!(
+        fn_res.as_array().map(|a| a.len()),
+        Some(1),
+        "Querying the indexed function itself must find its definition"
+    );
+
+    // Query on `param_x` on line 0, col 16 without an open overlay.
+    // Position lies inside indexed function, but unindexed parameter without overlay
+    // must return empty list rather than falling through to enclosing definition.
+    let req = make_ref_req(&uri, 0, 16, true);
+    let res = handle_references(&req, Some(&index), &overlay_mgr, &mut conv);
+    let arr = res.as_array().expect("references array");
+    assert!(
+        arr.is_empty(),
+        "Querying references on local parameter without overlay must return empty array, got: {:?}",
+        arr
+    );
+}

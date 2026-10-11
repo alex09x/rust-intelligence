@@ -62,3 +62,9 @@ pub fn use_other_thing() -> usize {
     let t = other::Thing { count: 5 };
     t.other_fn()
 }
+
+pub fn invoke_atomic_load() -> usize {
+    use core::sync::atomic::{AtomicUsize, Ordering};
+    let a = AtomicUsize::new(42);
+    a.load(Ordering::Relaxed)
+}

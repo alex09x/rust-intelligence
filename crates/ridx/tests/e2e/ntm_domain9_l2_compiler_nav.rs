@@ -357,3 +357,28 @@ fn test_l2_traits_default_method_references() {
     assert_eq!(arr[2]["range"]["start"]["line"], call_line);
     assert_eq!(arr[3]["range"]["start"]["line"], wrap_line);
 }
+
+#[test]
+fn test_l2_sysroot_atomic_load_definition() {
+    let ws = get_or_index_l2_fixture("multi_crate");
+    let core_file = fixture_dir("multi_crate").join("crates/core_lib/src/lib.rs");
+    let core_uri = path_to_uri(core_file.to_str().unwrap());
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    let (load_line, load_col) = pos_in_file(&core_file, "a.load(Ordering::Relaxed)", "load");
+    let req = nav_req(&core_uri, load_line, load_col);
+    let def_res = handle_definition(&req, Some(ws), &overlay_mgr, &mut conv);
+    let decl_res = handle_declaration(&req, Some(ws), &overlay_mgr, &mut conv);
+    assert!(
+        !def_res.is_null(),
+        "AtomicUsize::load must resolve via sysroot alias fallback in handle_definition"
+    );
+    assert_eq!(def_res, decl_res);
+    let uri_str = def_res["uri"].as_str().unwrap_or("");
+    assert!(
+        uri_str.contains("atomic.rs"),
+        "Definition URI must point to sysroot atomic.rs, got: {}",
+        uri_str
+    );
+}
