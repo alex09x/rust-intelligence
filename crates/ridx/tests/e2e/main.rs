@@ -41,6 +41,7 @@ mod ntm_domain8_l2_editing;
 mod ntm_domain9_l1_definition;
 mod ntm_domain9_l1_definition_part2;
 mod ntm_domain9_l1_highlight_and_resolve;
+mod ntm_domain9_l1_highlight_part2;
 mod ntm_domain9_l1_implementation_part2;
 mod ntm_domain9_l1_implementation_part3;
 mod ntm_domain9_l1_references;
