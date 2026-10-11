@@ -1,0 +1,198 @@
+{
+  "serde-rs/serde": {
+    "repo": "serde-rs/serde",
+    "repo_commit": "69072f24232f431911ba2c41da69a1da10e805a1",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "52ae7a04d100fc08",
+    "driver_hash": "08e032d15dcfa9f5",
+    "driver_build_commit": "091f2595fd3904442db132fa81342085e10084c6",
+    "driver_is_dirty": false,
+    "std_ridx_mtime": "2026-10-11T06:48:59.478737+00:00",
+    "std_ridx_hash": "b312e45ead358721",
+    "sysroot_transplanted": false,
+    "base_source": "replay",
+    "base_driver_hash": "89feb5a0e88f02c9",
+    "base_build_commit": "30b197f",
+    "base_sysroot_cas_key": "0cee421fdfa9bc37",
+    "base_sysroot_transplanted": false,
+    "invalid_config": false,
+    "scenarios_validated": "100/100",
+    "excluded_scenarios": {},
+    "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
+    "node_source": "detected",
+    "taskset": "24-31",
+    "shard_provenance": {
+      "total_dependencies": 0,
+      "broken_paths": 0,
+      "loaded_via_object_path": 0,
+      "loaded_via_unit_key": 0,
+      "loaded_via_resilient": 0,
+      "missing_dependencies": 0
+    },
+    "total_scenarios": 100,
+    "empty_responses": {
+      "30b197f": 12,
+      "091f259": 12,
+      "rust_analyzer_1_98_1": 2
+    },
+    "closed_empty_responses": {
+      "count": 0,
+      "scenarios": []
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "30b197f": 2191,
+      "091f259": 2191,
+      "rust_analyzer_1_98_1": 4675
+    },
+    "ra_zero_oracle_count": 2,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "30b197f": 56.8,
+      "30b197f_n": 98,
+      "091f259": 56.8,
+      "091f259_n": 98
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "30b197f": 86.0,
+      "30b197f_n": 86,
+      "091f259": 86.0,
+      "091f259_n": 86
+    },
+    "recall_regressions": [],
+    "recall_regressions_gt_5pp": [],
+    "routes": {
+      "owner_count": 85,
+      "fallback_count": 15,
+      "migrated_from_fallback_to_owner": 0,
+      "owner_accuracy": {
+        "base_recall_pct": 64.8,
+        "curr_recall_pct": 64.8,
+        "base_precision_pct": 86.9,
+        "curr_precision_pct": 86.9
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 9.3,
+        "curr_recall_pct": 9.3,
+        "base_precision_pct": 50.0,
+        "curr_precision_pct": 50.0
+      },
+      "owner_curr_warm_p50_us": 344.0,
+      "owner_curr_warm_p95_us": 901.0,
+      "owner_ra_warm_p50_us": 2901.0,
+      "owner_ra_warm_p95_us": 6967.2,
+      "owner_speedup_fair": 8.43,
+      "fallback_curr_warm_p50_us": 654.0,
+      "fallback_curr_warm_p95_us": 2045.0,
+      "fallback_ra_warm_p50_us": 1339.0,
+      "fallback_ra_warm_p95_us": 7493.3,
+      "fallback_speedup_fair": 2.05,
+      "overall_curr_warm_p50_us": 411.5,
+      "overall_curr_warm_p95_us": 1696.1,
+      "overall_ra_warm_p50_us": 2883.5,
+      "overall_ra_warm_p95_us": 7314.3,
+      "overall_speedup": 7.01
+    }
+  },
+  "bevyengine/bevy": {
+    "repo": "bevyengine/bevy",
+    "repo_commit": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+    "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "sysroot_cas_key": "52ae7a04d100fc08",
+    "driver_hash": "08e032d15dcfa9f5",
+    "driver_build_commit": "091f2595fd3904442db132fa81342085e10084c6",
+    "driver_is_dirty": false,
+    "std_ridx_mtime": "2026-10-11T06:48:59.478737+00:00",
+    "std_ridx_hash": "b312e45ead358721",
+    "sysroot_transplanted": false,
+    "base_source": "replay",
+    "base_driver_hash": "89feb5a0e88f02c9",
+    "base_build_commit": "30b197f",
+    "base_sysroot_cas_key": "0cee421fdfa9bc37",
+    "base_sysroot_transplanted": false,
+    "invalid_config": false,
+    "scenarios_validated": "99/99",
+    "excluded_scenarios": {
+      "comp_colon_10_Greater": "Sampling position on clean 68c80f3b falls on younger_before_ord_wrap (multi-line assert_eq) instead of Ordering::Greater."
+    },
+    "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
+    "node_source": "detected",
+    "taskset": "24-31",
+    "shard_provenance": {
+      "total_dependencies": 69,
+      "broken_paths": 0,
+      "loaded_via_object_path": 69,
+      "loaded_via_unit_key": 0,
+      "loaded_via_resilient": 0,
+      "missing_dependencies": 0
+    },
+    "total_scenarios": 99,
+    "empty_responses": {
+      "30b197f": 9,
+      "091f259": 8,
+      "rust_analyzer_1_98_1": 6
+    },
+    "closed_empty_responses": {
+      "count": 1,
+      "scenarios": [
+        "comp_colon_33_default"
+      ]
+    },
+    "regressions_to_empty": 0,
+    "total_candidates": {
+      "30b197f": 4430,
+      "091f259": 4464,
+      "rust_analyzer_1_98_1": 6801
+    },
+    "ra_zero_oracle_count": 6,
+    "avg_recall_vs_ra": {
+      "description": "Calculated strictly over scenarios where ra_count > 0",
+      "30b197f": 49.0,
+      "30b197f_n": 93,
+      "091f259": 49.9,
+      "091f259_n": 93
+    },
+    "avg_precision_vs_ra": {
+      "description": "Calculated strictly over non-empty responses where ra_count > 0",
+      "30b197f": 65.3,
+      "30b197f_n": 88,
+      "091f259": 65.5,
+      "091f259_n": 89
+    },
+    "recall_regressions": [],
+    "recall_regressions_gt_5pp": [],
+    "routes": {
+      "owner_count": 85,
+      "fallback_count": 14,
+      "migrated_from_fallback_to_owner": 1,
+      "owner_accuracy": {
+        "base_recall_pct": 52.5,
+        "curr_recall_pct": 53.5,
+        "base_precision_pct": 68.2,
+        "curr_precision_pct": 68.3
+      },
+      "fallback_accuracy": {
+        "base_recall_pct": 19.7,
+        "curr_recall_pct": 19.7,
+        "base_precision_pct": 26.2,
+        "curr_precision_pct": 26.2
+      },
+      "owner_curr_warm_p50_us": 528.0,
+      "owner_curr_warm_p95_us": 1440.2,
+      "owner_ra_warm_p50_us": 3158.0,
+      "owner_ra_warm_p95_us": 12055.4,
+      "owner_speedup_fair": 5.98,
+      "fallback_curr_warm_p50_us": 711.5,
+      "fallback_curr_warm_p95_us": 4319.9,
+      "fallback_ra_warm_p50_us": 1416.5,
+      "fallback_ra_warm_p95_us": 7202.4,
+      "fallback_speedup_fair": 1.99,
+      "overall_curr_warm_p50_us": 554.0,
+      "overall_curr_warm_p95_us": 1904.9,
+      "overall_ra_warm_p50_us": 2914.0,
+      "overall_ra_warm_p95_us": 11000.5,
+      "overall_speedup": 5.26
+    }
+  }
+}
