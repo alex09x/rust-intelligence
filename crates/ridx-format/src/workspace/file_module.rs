@@ -342,6 +342,10 @@ impl WorkspaceIndex {
                 1
             }
         });
+        let mut non_dep_others = Vec::new();
+        let mut sysroot_others = Vec::new();
+        let mut dep_others = Vec::new();
+
         for idx in 0..self.readers.len() {
             if !candidates.contains(&idx) {
                 let is_inaccessible = self
@@ -352,10 +356,22 @@ impl WorkspaceIndex {
                     .map(|k| !k.is_lib())
                     .unwrap_or(false);
                 if !is_inaccessible {
-                    candidates.push(idx);
+                    let is_sysroot =
+                        matches!(self.readers[idx].crate_name(), "core" | "alloc" | "std");
+                    let is_dep = self.reader_is_dependency.get(idx).copied().unwrap_or(false);
+                    if is_sysroot {
+                        sysroot_others.push(idx);
+                    } else if !is_dep {
+                        non_dep_others.push(idx);
+                    } else {
+                        dep_others.push(idx);
+                    }
                 }
             }
         }
+        candidates.extend(non_dep_others);
+        candidates.extend(sysroot_others);
+        candidates.extend(dep_others);
         candidates
     }
 }

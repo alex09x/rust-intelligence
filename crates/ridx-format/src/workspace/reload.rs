@@ -189,21 +189,10 @@ impl WorkspaceIndex {
 
                                     // Load dependency shards for new variant if any
                                     let cache_dir = crate::format::resolve_cache_dir();
+                                    let mut cache_resolver =
+                                        super::cache_resolver::CacheObjectResolver::new(cache_dir);
                                     for dep in &manifest.dependency_shards {
-                                        let obj_path = PathBuf::from(&dep.object_path);
-                                        let cand = if obj_path.is_file() {
-                                            Some(obj_path)
-                                        } else {
-                                            let fallback = crate::format::cache_object_path(
-                                                &cache_dir,
-                                                &dep.unit_key,
-                                            );
-                                            if fallback.is_file() {
-                                                Some(fallback)
-                                            } else {
-                                                None
-                                            }
-                                        };
+                                        let cand = cache_resolver.resolve(dep);
                                         if let Some(dep_file) = cand {
                                             let canon_cand = fs::canonicalize(&dep_file)
                                                 .unwrap_or_else(|_| dep_file.clone());
@@ -226,7 +215,9 @@ impl WorkspaceIndex {
                                                     new_source_roots[idx] =
                                                         dep.source_root.as_ref().map(PathBuf::from);
                                                 }
-                                                if new_target_kinds[idx].is_none() && dep.target_kind.is_some() {
+                                                if new_target_kinds[idx].is_none()
+                                                    && dep.target_kind.is_some()
+                                                {
                                                     new_target_kinds[idx] = dep.target_kind;
                                                 }
                                                 if new_reader_generations[idx].is_none() {
@@ -262,11 +253,41 @@ impl WorkspaceIndex {
                                             }
 
                                             if let Ok(r) = IndexReader::open(&dep_file) {
+                                                if !dep.name.is_empty()
+                                                    && r.crate_name() != dep.name
+                                                {
+                                                    continue;
+                                                }
+                                                if !dep.version.is_empty()
+                                                    && !r.crate_version().is_empty()
+                                                    && r.crate_version() != dep.version
+                                                {
+                                                    continue;
+                                                }
                                                 if !dep.unit_key.is_empty()
                                                     && !r.unit_key().is_empty()
                                                     && dep.unit_key != r.unit_key()
                                                 {
-                                                    continue;
+                                                    let dep_gen =
+                                                        dep.generation.as_deref().unwrap_or("");
+                                                    let gen_matches = if !dep_gen.is_empty() {
+                                                        dep_gen == r.generation()
+                                                    } else if !dep.file_hashes.is_empty()
+                                                        && !r.generation().is_empty()
+                                                    {
+                                                        let computed_digest =
+                                                            crate::format::compute_source_snapshot_digest(
+                                                                &dep.file_hashes,
+                                                            );
+                                                        let computed_gen =
+                                                            format!("{:016x}", computed_digest);
+                                                        computed_gen == r.generation()
+                                                    } else {
+                                                        false
+                                                    };
+                                                    if !gen_matches {
+                                                        continue;
+                                                    }
                                                 }
                                                 let mt = fs::metadata(&dep_file)
                                                     .and_then(|m| m.modified())

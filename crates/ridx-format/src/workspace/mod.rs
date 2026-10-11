@@ -12,6 +12,7 @@
 //!
 //! Provides unified zero-copy queries across all crates in a cargo workspace.
 
+pub mod cache_resolver;
 pub mod file_module;
 pub mod manifest;
 pub mod navigation;
@@ -24,13 +25,15 @@ pub mod sysroot;
 pub mod target_kind;
 
 #[cfg(test)]
+mod cache_resolver_tests;
+#[cfg(test)]
 mod routing_tests;
 #[cfg(test)]
 mod target_kind_routing_tests;
 
 pub use manifest::*;
 pub use prelude::is_prelude_trait;
-pub use target_kind::{classify_target, TargetKind};
+pub use target_kind::{classify_target, classify_target_with_manifest, TargetKind};
 
 use crate::reader::IndexReader;
 use memmap2::Mmap;
@@ -94,8 +97,8 @@ impl WorkspaceIndex {
                 reader.generation(),
                 &embedded,
             );
-            let is_dep = meta.source_root.is_some()
-                && meta.target_kind.map(|k| k.is_lib()).unwrap_or(true);
+            let is_dep =
+                meta.source_root.is_some() && meta.target_kind.map(|k| k.is_lib()).unwrap_or(true);
             let ws_root = p.parent().and_then(|parent| {
                 if parent.ends_with("target/ridx") {
                     parent
@@ -380,18 +383,9 @@ impl WorkspaceIndex {
         // Load external dependency shards from global cache if specified in manifest
         if let Some((_, _, _, ref dep_shards, _, _)) = manifest_info {
             let cache_dir = crate::format::resolve_cache_dir();
+            let mut cache_resolver = cache_resolver::CacheObjectResolver::new(cache_dir);
             for dep in dep_shards {
-                let obj_path = PathBuf::from(&dep.object_path);
-                let cand = if obj_path.is_file() {
-                    Some(obj_path)
-                } else {
-                    let fallback = crate::format::cache_object_path(&cache_dir, &dep.unit_key);
-                    if fallback.is_file() {
-                        Some(fallback)
-                    } else {
-                        None
-                    }
-                };
+                let cand = cache_resolver.resolve(dep);
 
                 if let Some(dep_file) = cand {
                     let canon_cand =
@@ -440,11 +434,34 @@ impl WorkspaceIndex {
                     }
 
                     if let Ok(reader) = IndexReader::open(&dep_file) {
+                        if !dep.name.is_empty() && reader.crate_name() != dep.name {
+                            continue;
+                        }
+                        if !dep.version.is_empty()
+                            && !reader.crate_version().is_empty()
+                            && reader.crate_version() != dep.version
+                        {
+                            continue;
+                        }
                         if !dep.unit_key.is_empty()
                             && !reader.unit_key().is_empty()
                             && dep.unit_key != reader.unit_key()
                         {
-                            continue;
+                            let dep_gen = dep.generation.as_deref().unwrap_or("");
+                            let gen_matches = if !dep_gen.is_empty() {
+                                dep_gen == reader.generation()
+                            } else if !dep.file_hashes.is_empty() && !reader.generation().is_empty()
+                            {
+                                let computed_digest =
+                                    crate::format::compute_source_snapshot_digest(&dep.file_hashes);
+                                let computed_gen = format!("{:016x}", computed_digest);
+                                computed_gen == reader.generation()
+                            } else {
+                                false
+                            };
+                            if !gen_matches {
+                                continue;
+                            }
                         }
                         let embedded = reader.embedded_file_hashes();
                         let reader_gen = reader.generation();

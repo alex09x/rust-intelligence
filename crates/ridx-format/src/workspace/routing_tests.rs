@@ -18,7 +18,12 @@ use std::path::PathBuf;
 
 #[allow(clippy::type_complexity)]
 fn build_mock_workspace(
-    readers_info: Vec<(&PathBuf, Option<PathBuf>, Option<String>, HashMap<String, u64>)>,
+    readers_info: Vec<(
+        &PathBuf,
+        Option<PathBuf>,
+        Option<String>,
+        HashMap<String, u64>,
+    )>,
     workspace_root: PathBuf,
 ) -> WorkspaceIndex {
     let mut readers = Vec::with_capacity(readers_info.len());
@@ -105,18 +110,48 @@ fn test_longest_prefix_matching_order_independence() {
 
     let ws_a = build_mock_workspace(
         vec![
-            (&root_ridx, Some(root_src.clone()), Some("root_pkg 0.1.0 (lib)".into()), HashMap::new()),
-            (&x_lib_ridx, Some(x_src.clone()), Some("x 0.1.0 (lib)".into()), HashMap::new()),
-            (&x_test_ridx, Some(x_src.clone()), Some("x 0.1.0 (test)".into()), HashMap::new()),
+            (
+                &root_ridx,
+                Some(root_src.clone()),
+                Some("root_pkg 0.1.0 (lib)".into()),
+                HashMap::new(),
+            ),
+            (
+                &x_lib_ridx,
+                Some(x_src.clone()),
+                Some("x 0.1.0 (lib)".into()),
+                HashMap::new(),
+            ),
+            (
+                &x_test_ridx,
+                Some(x_src.clone()),
+                Some("x 0.1.0 (test)".into()),
+                HashMap::new(),
+            ),
         ],
         root_src.clone(),
     );
 
     let ws_b = build_mock_workspace(
         vec![
-            (&x_lib_ridx, Some(x_src.clone()), Some("x 0.1.0 (lib)".into()), HashMap::new()),
-            (&x_test_ridx, Some(x_src.clone()), Some("x 0.1.0 (test)".into()), HashMap::new()),
-            (&root_ridx, Some(root_src.clone()), Some("root_pkg 0.1.0 (lib)".into()), HashMap::new()),
+            (
+                &x_lib_ridx,
+                Some(x_src.clone()),
+                Some("x 0.1.0 (lib)".into()),
+                HashMap::new(),
+            ),
+            (
+                &x_test_ridx,
+                Some(x_src.clone()),
+                Some("x 0.1.0 (test)".into()),
+                HashMap::new(),
+            ),
+            (
+                &root_ridx,
+                Some(root_src.clone()),
+                Some("root_pkg 0.1.0 (lib)".into()),
+                HashMap::new(),
+            ),
         ],
         root_src.clone(),
     );
@@ -221,9 +256,24 @@ fn test_facade_subcrate_and_benchmark_routing() {
     // Benchmark crate is placed FIRST in reader array to expose ordering bias.
     let ws_a = build_mock_workspace(
         vec![
-            (&bench_ridx, Some(bench_src.clone()), Some("bench_ukey".into()), HashMap::new()),
-            (&bevy_ridx, Some(root_src.clone()), Some("bevy_ukey".into()), HashMap::new()),
-            (&ecs_ridx, Some(ecs_src.clone()), Some("ecs_ukey".into()), HashMap::new()),
+            (
+                &bench_ridx,
+                Some(bench_src.clone()),
+                Some("bench_ukey".into()),
+                HashMap::new(),
+            ),
+            (
+                &bevy_ridx,
+                Some(root_src.clone()),
+                Some("bevy_ukey".into()),
+                HashMap::new(),
+            ),
+            (
+                &ecs_ridx,
+                Some(ecs_src.clone()),
+                Some("ecs_ukey".into()),
+                HashMap::new(),
+            ),
         ],
         ws_root.clone(),
     );
@@ -231,9 +281,24 @@ fn test_facade_subcrate_and_benchmark_routing() {
     // Scenario B: Order [bevy, bevy_ecs, bevy_ecs_bench]
     let ws_b = build_mock_workspace(
         vec![
-            (&bevy_ridx, Some(root_src.clone()), Some("bevy_ukey".into()), HashMap::new()),
-            (&ecs_ridx, Some(ecs_src.clone()), Some("ecs_ukey".into()), HashMap::new()),
-            (&bench_ridx, Some(bench_src.clone()), Some("bench_ukey".into()), HashMap::new()),
+            (
+                &bevy_ridx,
+                Some(root_src.clone()),
+                Some("bevy_ukey".into()),
+                HashMap::new(),
+            ),
+            (
+                &ecs_ridx,
+                Some(ecs_src.clone()),
+                Some("ecs_ukey".into()),
+                HashMap::new(),
+            ),
+            (
+                &bench_ridx,
+                Some(bench_src.clone()),
+                Some("bench_ukey".into()),
+                HashMap::new(),
+            ),
         ],
         ws_root.clone(),
     );
@@ -263,4 +328,53 @@ fn test_facade_subcrate_and_benchmark_routing() {
     let rel_ecs_file = "crates/bevy_ecs/src/entity/index_set.rs";
     assert_eq!(ws_a.crate_name_for_file(rel_ecs_file), Some("bevy_ecs"));
     assert_eq!(ws_b.crate_name_for_file(rel_ecs_file), Some("bevy_ecs"));
+}
+
+#[test]
+fn test_candidate_reader_indices_prioritizes_sysroot_before_external_deps() {
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    let my_crate_ridx = temp_dir.path().join("my_crate.ridx");
+    let mut w_my = IndexWriter::new("my_crate", "0.1.0");
+    let mut f = File::create(&my_crate_ridx).unwrap();
+    w_my.write_to(&mut f).unwrap();
+    drop(f);
+
+    let dep_ridx = temp_dir.path().join("dep_crate.ridx");
+    let mut w_dep = IndexWriter::new("dep_crate", "1.0.0");
+    let mut f = File::create(&dep_ridx).unwrap();
+    w_dep.write_to(&mut f).unwrap();
+    drop(f);
+
+    let alloc_ridx = temp_dir.path().join("alloc.ridx");
+    let mut w_alloc = IndexWriter::new("alloc", "1.98.0");
+    let mut f = File::create(&alloc_ridx).unwrap();
+    w_alloc.write_to(&mut f).unwrap();
+    drop(f);
+
+    let my_src = PathBuf::from("/repo/src");
+    let ws_root = PathBuf::from("/repo");
+
+    // Index 0: my_crate (workspace crate containing queried file)
+    // Index 1: dep_crate (external dependency, reader_is_dependency = true)
+    // Index 2: alloc (sysroot crate, reader_is_dependency = true, crate_name = "alloc")
+    let mut ws = build_mock_workspace(
+        vec![
+            (&my_crate_ridx, Some(my_src), Some("my_crate_ukey".into()), HashMap::new()),
+            (&dep_ridx, None, Some("dep_crate_ukey".into()), HashMap::new()),
+            (&alloc_ridx, None, Some("alloc_ukey".into()), HashMap::new()),
+        ],
+        ws_root,
+    );
+    ws.reader_is_dependency[1] = true;
+    ws.reader_is_dependency[2] = true;
+
+    let query_file = "/repo/src/lib.rs";
+    let candidates = ws.candidate_reader_indices_for_file(query_file);
+
+    // Order MUST be:
+    // [0]: my_crate (target file crate)
+    // [2]: alloc (sysroot shard)
+    // [1]: dep_crate (external dependency shard)
+    assert_eq!(candidates, vec![0, 2, 1]);
 }

@@ -479,9 +479,11 @@ impl WorkspaceIndex {
                                 None
                             };
                             if base_kind.is_some() || !info.compiler_args.is_empty() {
-                                Some(super::target_kind::classify_target(
+                                let manifest_dir = effective_source_root.as_deref();
+                                Some(super::target_kind::classify_target_with_manifest(
                                     base_kind,
                                     &info.compiler_args,
+                                    manifest_dir,
                                 ))
                             } else {
                                 None

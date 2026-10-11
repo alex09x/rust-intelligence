@@ -267,7 +267,10 @@ fn test_find_type_param_in_scope_and_owners() {
             end_line: 5,
             end_col: 25,
         },
-        vec!["tp_crate::MyTrait".to_string(), "core::fmt::Debug".to_string()],
+        vec![
+            "tp_crate::MyTrait".to_string(),
+            "core::fmt::Debug".to_string(),
+        ],
     );
 
     let idx_file = File::create(var_dir.join("tp_crate.ridx")).unwrap();
@@ -305,10 +308,10 @@ fn test_find_type_param_in_scope_and_owners() {
 
     // Query cursor outside foo at line 35
     let tp_outside = ws.find_type_param_in_scope("src/lib.rs", "F", 35, 10);
-    assert!(tp_outside.is_none(), "TyParam F should not be in scope at line 35");
+    assert!(
+        tp_outside.is_none(),
+        "TyParam F should not be in scope at line 35"
+    );
 
     let _ = fs::remove_dir_all(&test_dir);
 }
-
-
-

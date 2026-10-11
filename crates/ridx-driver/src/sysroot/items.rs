@@ -140,7 +140,8 @@ pub fn extract_trait_items<'tcx>(
         if a_kind == DefKind::AssocTy {
             let mut assoc_bounds = Vec::new();
             for (clause, _) in tcx.explicit_item_bounds(assoc_did).skip_binder() {
-                if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder() {
+                if let rustc_middle::ty::ClauseKind::Trait(trait_pred) = clause.kind().skip_binder()
+                {
                     let bound_did = trait_pred.trait_ref.def_id;
                     if tcx.lang_items().sized_trait() != Some(bound_did)
                         && !tcx.trait_is_auto(bound_did)
@@ -293,4 +294,3 @@ pub fn extract_enum_variants<'tcx>(
         *total_definitions += 1;
     }
 }
-
