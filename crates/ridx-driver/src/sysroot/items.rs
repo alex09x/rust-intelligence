@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use ridx_format::{IndexWriter, RawDefinition};
@@ -198,14 +198,35 @@ pub fn extract_inherent_impl_items<'tcx>(
     path: &str,
     sysroot_src: Option<&Path>,
     writer: &mut IndexWriter,
-    visited: &mut HashSet<DefId>,
+    assoc_visited: &mut HashMap<DefId, u32>,
     total_definitions: &mut usize,
 ) {
-    for impl_did in tcx.inherent_impls(did) {
-        let impl_did = *impl_did;
+    let (impl_dids, adt_path): (Vec<DefId>, Option<String>) = match tcx.def_kind(did) {
+        DefKind::TyAlias => {
+            let ty = tcx.type_of(did).skip_binder();
+            if let Some(adt_def) = ty.ty_adt_def() {
+                let a_path = rustc_middle::ty::print::with_no_visible_paths!(
+                    rustc_middle::ty::print::with_no_trimmed_paths!(tcx.def_path_str(adt_def.did()))
+                );
+                let impls: Vec<DefId> = tcx
+                    .inherent_impls(adt_def.did())
+                    .iter()
+                    .copied()
+                    .filter(|&impl_did| tcx.type_of(impl_did).skip_binder() == ty)
+                    .collect();
+                (impls, Some(a_path))
+            } else {
+                (Vec::new(), None)
+            }
+        }
+        _ => (tcx.inherent_impls(did).to_vec(), None),
+    };
+
+    for impl_did in impl_dids {
         for assoc_did in tcx.associated_item_def_ids(impl_did) {
             let assoc_did = *assoc_did;
-            if !visited.insert(assoc_did) {
+            if let Some(&existing_idx) = assoc_visited.get(&assoc_did) {
+                writer.add_def_owner_by_index(existing_idx, path.to_string());
                 continue;
             }
             if !is_publicly_visible(tcx, assoc_did) || !is_stable_api(tcx, assoc_did) {
@@ -231,9 +252,17 @@ pub fn extract_inherent_impl_items<'tcx>(
             };
             let (a_file, a_sl, a_sc, a_el, a_ec) = extract_def_span(tcx, assoc_did, sysroot_src);
 
+            let mut a_owners = vec![path.to_string()];
+            if let Some(ref ap) = adt_path {
+                if ap != path && !a_owners.contains(ap) {
+                    a_owners.push(ap.clone());
+                }
+            }
+
+            let def_id = *total_definitions as u32;
             writer.add_definition_with_owners(
                 RawDefinition {
-                    def_id: *total_definitions as u32,
+                    def_id,
                     kind: map_def_kind(a_kind),
                     visibility: 0,
                     is_macro_expansion: false,
@@ -246,8 +275,9 @@ pub fn extract_inherent_impl_items<'tcx>(
                     end_line: a_el,
                     end_col: a_ec,
                 },
-                vec![path.to_string()],
+                a_owners,
             );
+            assoc_visited.insert(assoc_did, def_id);
             *total_definitions += 1;
         }
     }

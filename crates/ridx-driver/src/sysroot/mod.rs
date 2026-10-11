@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::Path;
 use std::time::Instant;
 
@@ -64,6 +64,7 @@ pub fn extract_sysroot_crate<'tcx>(
         .unwrap_or_else(|| tcx.sess.cfg_version.to_string());
     let mut writer = IndexWriter::new(target_crate, &toolchain_version);
     let mut visited = HashSet::new();
+    let mut assoc_visited = HashMap::new();
     let mut queue = VecDeque::new();
     let mut queue_visited = HashSet::new();
 
@@ -273,7 +274,7 @@ pub fn extract_sysroot_crate<'tcx>(
                         &canonical_path,
                         sysroot_src,
                         &mut writer,
-                        &mut visited,
+                        &mut assoc_visited,
                         &mut total_definitions,
                     );
                 }

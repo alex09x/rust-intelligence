@@ -387,7 +387,6 @@ fn test_l2_reexport_definition_resolution() {
 }
 
 #[test]
-#[ignore = "sysroot crates are not indexed yet (see backlog: sysroot indexing)"]
 fn test_l2_std_collections_hashmap_lookup() {
     let ws = get_or_index_l2_fixture("multi_crate");
     let def = ws

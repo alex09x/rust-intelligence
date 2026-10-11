@@ -362,3 +362,19 @@ fn test_case_cross_crate_ident_name_isolation() {
         }
     }
 }
+
+#[test]
+fn test_case_sysroot_atomic_tyalias_navigation_and_refs() {
+    let ws = get_or_index_l2_fixture("multi_crate");
+    let load_def = ws
+        .find_definition_by_path("core::sync::atomic::AtomicUsize::load")
+        .expect("AtomicUsize::load must resolve via alias owner fallback");
+    assert_eq!(load_def.name, "load");
+    assert_eq!(load_def.path, "core::sync::atomic::Atomic::<usize>::load");
+
+    let store_def = ws
+        .find_definition_by_path("core::sync::atomic::AtomicBool::store")
+        .expect("AtomicBool::store must resolve via alias owner fallback");
+    assert_eq!(store_def.name, "store");
+    assert_eq!(store_def.path, "core::sync::atomic::Atomic::<bool>::store");
+}

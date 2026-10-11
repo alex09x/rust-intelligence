@@ -1346,6 +1346,56 @@ fn test_sysroot_core_metadata_prototype() {
         "WorkspaceIndex must find Option: Clone link in deref chain"
     );
 
+    // Verify type alias inherent method resolution (AtomicBool, AtomicUsize, NonZeroUsize)
+    let atomic_bool_defs = core_reader.find_definitions_by_owner("core::sync::atomic::AtomicBool");
+    assert!(
+        atomic_bool_defs.iter().any(|d| core_reader.get_str(d.name_offset) == "load"),
+        "AtomicBool owner must contain load method"
+    );
+    assert!(
+        atomic_bool_defs.iter().any(|d| core_reader.get_str(d.name_offset) == "store"),
+        "AtomicBool owner must contain store method"
+    );
+    let atomic_bool_load = atomic_bool_defs
+        .iter()
+        .find(|d| core_reader.get_str(d.name_offset) == "load")
+        .unwrap();
+    assert_eq!(
+        core_reader.get_str(atomic_bool_load.path_offset),
+        "core::sync::atomic::Atomic::<bool>::load",
+        "AtomicBool::load def_path must remain canonical rustc path"
+    );
+
+    let atomic_usize_defs = core_reader.find_definitions_by_owner("core::sync::atomic::AtomicUsize");
+    assert!(
+        atomic_usize_defs.iter().any(|d| core_reader.get_str(d.name_offset) == "fetch_add"),
+        "AtomicUsize owner must contain fetch_add method"
+    );
+
+    let nonzero_usize_defs = core_reader.find_definitions_by_owner("core::num::nonzero::NonZeroUsize");
+    assert!(
+        nonzero_usize_defs.iter().any(|d| core_reader.get_str(d.name_offset) == "leading_zeros"),
+        "NonZeroUsize owner must contain leading_zeros method"
+    );
+
+    let ws_atomic_load = ws
+        .find_definition_by_path("core::sync::atomic::AtomicBool::load")
+        .expect("AtomicBool::load must resolve via WorkspaceIndex owner fallback");
+    assert_eq!(ws_atomic_load.name, "load");
+    assert_eq!(ws_atomic_load.path, "core::sync::atomic::Atomic::<bool>::load");
+
+    let ws_atomic_store = ws
+        .find_definition_by_path("core::sync::atomic::AtomicBool::store")
+        .expect("AtomicBool::store must resolve via WorkspaceIndex owner fallback");
+    assert_eq!(ws_atomic_store.name, "store");
+    assert_eq!(ws_atomic_store.path, "core::sync::atomic::Atomic::<bool>::store");
+
+    let ws_atomic_usize_load = ws
+        .find_definition_by_path("core::sync::atomic::AtomicUsize::load")
+        .expect("AtomicUsize::load must resolve via WorkspaceIndex owner fallback");
+    assert_eq!(ws_atomic_usize_load.name, "load");
+    assert_eq!(ws_atomic_usize_load.path, "core::sync::atomic::Atomic::<usize>::load");
+
     // Format metrics JSON for reporting
     let mut stats_json_parts = Vec::new();
     for s in &callbacks.crates_stats {

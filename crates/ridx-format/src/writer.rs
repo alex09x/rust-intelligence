@@ -217,6 +217,12 @@ impl IndexWriter {
         }
     }
 
+    pub fn add_def_owner_by_index(&mut self, idx: u32, owner: String) {
+        if (idx as usize) < self.definitions.len() && !owner.is_empty() {
+            self.def_owners.push((idx, owner));
+        }
+    }
+
     pub fn add_reference(&mut self, r: RawReference) {
         self.references.push(r);
     }

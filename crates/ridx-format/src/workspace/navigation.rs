@@ -103,6 +103,29 @@ impl WorkspaceIndex {
             }
         }
 
+        // Fallback: candidate may be `owner::item_name` where item is registered under owner
+        for candidate in super::std_map::std_path_candidates(path) {
+            let candidate_str = candidate.as_str();
+            if let Some((owner, item_name)) = candidate_str.rsplit_once("::") {
+                for (i, reader) in self.readers.iter().enumerate() {
+                    let prefix = format!("{}::", reader.crate_name());
+                    let sub_owner = owner.strip_prefix(&prefix).unwrap_or(owner);
+                    for def in reader.find_definitions_by_owner(owner) {
+                        if reader.get_str(def.name_offset()) == item_name {
+                            return Some(resolve_def(self.make_resolved_definition(i, def)));
+                        }
+                    }
+                    if sub_owner != owner {
+                        for def in reader.find_definitions_by_owner(sub_owner) {
+                            if reader.get_str(def.name_offset()) == item_name {
+                                return Some(resolve_def(self.make_resolved_definition(i, def)));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         None
     }
 
@@ -918,7 +941,11 @@ impl WorkspaceIndex {
 
     /// Finds all references to a symbol across every crate in the workspace.
     pub fn find_references<'a>(&'a self, target_path: &str) -> Vec<WorkspaceReference<'a>> {
-        self.find_references_for_unit(target_path, None)
+        let canonical = self
+            .find_definition_by_path(target_path)
+            .map(|d| d.path)
+            .unwrap_or(target_path);
+        self.find_references_for_unit(canonical, None)
     }
 
     /// Inferred expression type at cursor location.
