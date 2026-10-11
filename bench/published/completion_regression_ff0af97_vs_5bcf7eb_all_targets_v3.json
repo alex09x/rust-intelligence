@@ -20,7 +20,7 @@
     "excluded_scenarios": {},
     "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
     "node_source": "detected",
-    "taskset": "24-31",
+    "taskset": "0-31",
     "shard_provenance": {
       "total_dependencies": 0,
       "broken_paths": 0,
@@ -31,7 +31,7 @@
     },
     "total_scenarios": 100,
     "empty_responses": {
-      "f75fedc": 11,
+      "ff0af97": 11,
       "5bcf7eb": 11,
       "rust_analyzer_1_98_1": 2
     },
@@ -41,22 +41,22 @@
     },
     "regressions_to_empty": 0,
     "total_candidates": {
-      "f75fedc": 2142,
+      "ff0af97": 2142,
       "5bcf7eb": 2142,
       "rust_analyzer_1_98_1": 4675
     },
     "ra_zero_oracle_count": 2,
     "avg_recall_vs_ra": {
       "description": "Calculated strictly over scenarios where ra_count > 0",
-      "f75fedc": 57.9,
-      "f75fedc_n": 98,
+      "ff0af97": 57.9,
+      "ff0af97_n": 98,
       "5bcf7eb": 57.9,
       "5bcf7eb_n": 98
     },
     "avg_precision_vs_ra": {
       "description": "Calculated strictly over non-empty responses where ra_count > 0",
-      "f75fedc": 89.3,
-      "f75fedc_n": 87,
+      "ff0af97": 89.3,
+      "ff0af97_n": 87,
       "5bcf7eb": 89.3,
       "5bcf7eb_n": 87
     },
@@ -118,7 +118,7 @@
     },
     "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
     "node_source": "detected",
-    "taskset": "24-31",
+    "taskset": "0-31",
     "shard_provenance": {
       "total_dependencies": 611,
       "broken_paths": 0,
@@ -129,7 +129,7 @@
     },
     "total_scenarios": 99,
     "empty_responses": {
-      "f75fedc": 8,
+      "ff0af97": 8,
       "5bcf7eb": 8,
       "rust_analyzer_1_98_1": 6
     },
@@ -139,22 +139,22 @@
     },
     "regressions_to_empty": 0,
     "total_candidates": {
-      "f75fedc": 4126,
+      "ff0af97": 4126,
       "5bcf7eb": 4176,
       "rust_analyzer_1_98_1": 6801
     },
     "ra_zero_oracle_count": 6,
     "avg_recall_vs_ra": {
       "description": "Calculated strictly over scenarios where ra_count > 0",
-      "f75fedc": 53.2,
-      "f75fedc_n": 93,
+      "ff0af97": 53.2,
+      "ff0af97_n": 93,
       "5bcf7eb": 54.2,
       "5bcf7eb_n": 93
     },
     "avg_precision_vs_ra": {
       "description": "Calculated strictly over non-empty responses where ra_count > 0",
-      "f75fedc": 70.9,
-      "f75fedc_n": 89,
+      "ff0af97": 70.9,
+      "ff0af97_n": 89,
       "5bcf7eb": 72.0,
       "5bcf7eb_n": 89
     },
