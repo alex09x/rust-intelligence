@@ -51,6 +51,7 @@ mod ntm_domain9_l1_symbols_part2;
 mod ntm_domain9_l1_symbols_part3;
 mod ntm_domain9_l1_type_and_impl;
 mod ntm_domain9_l1_type_definition_part2;
+mod ntm_domain9_l1_type_definition_part3;
 mod ntm_domain9_l1_workspace_symbols;
 mod ntm_domain9_l1_workspace_symbols_part2;
 mod ntm_domain9_l1_workspace_symbols_part3;
