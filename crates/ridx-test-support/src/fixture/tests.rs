@@ -100,3 +100,88 @@ fn test_fixture_builder_defs_and_self_refs() {
     assert_eq!(refs[0].span.end_col(), 18);
     assert_eq!(refs[0].target_def_id, def_ids[0]);
 }
+
+#[test]
+fn test_synthetic_workspace_coordinates() {
+    let mut ws = SyntheticWorkspaceFixture::new().unwrap();
+    ws.add_crate("core_pkg", "0.1.0").unwrap();
+
+    let code = "/* 🦀 */ pub fn «grüßen»() {}\n";
+    let (clean, def_ids) = ws
+        .add_source_file_with_defs("core_pkg", "src/lib.rs", code, DefKind::Fn)
+        .unwrap();
+
+    assert_eq!(clean, "/* 🦀 */ pub fn grüßen() {}\n");
+    assert_eq!(def_ids.len(), 1);
+
+    assert_eq!(ws.crate_version("core_pkg"), Some("0.1.0"));
+
+    let ridx_path = ws.build_crate_index("core_pkg").unwrap();
+    assert!(ridx_path.is_file());
+
+    let reader = ridx_format::IndexReader::open(&ridx_path).unwrap();
+    let defs = reader.definitions();
+    assert_eq!(defs.len(), 1);
+
+    let def = &defs[0];
+    let name = reader.get_str(def.name_offset);
+    assert_eq!(name, "grüßen");
+    assert_eq!(def.span.start_line(), 1);
+    assert_eq!(def.span.start_col(), 16);
+    assert_eq!(def.span.end_col(), 22);
+
+    // Verify state is preserved across repeated builds
+    let ridx_path2 = ws.build_crate_index("core_pkg").unwrap();
+    let reader2 = ridx_format::IndexReader::open(&ridx_path2).unwrap();
+    assert_eq!(reader2.definitions().len(), 1);
+
+    // Verify sorted build_all_indices and write_workspace_manifest
+    ws.add_crate("extra_pkg", "0.2.0").unwrap();
+    let manifest = ws.write_workspace_manifest().unwrap();
+    assert!(manifest.is_file());
+    let manifest_text = std::fs::read_to_string(&manifest).unwrap();
+    assert!(manifest_text.contains("\"core_pkg\""));
+    assert!(manifest_text.contains("\"extra_pkg\""));
+
+    let all_shards = ws.build_all_indices().unwrap();
+    assert_eq!(all_shards.len(), 2);
+}
+
+#[test]
+fn test_synthetic_workspace_foreign_references() {
+    let mut ws = SyntheticWorkspaceFixture::new().unwrap();
+    ws.add_crate("provider_pkg", "0.1.0").unwrap();
+    ws.add_crate("consumer_pkg", "0.1.0").unwrap();
+
+    let (_, def_ids) = ws
+        .add_source_file_with_defs(
+            "provider_pkg",
+            "src/lib.rs",
+            "pub struct «ExportedCore»;\n",
+            DefKind::Struct,
+        )
+        .unwrap();
+
+    let clean = ws
+        .add_refs_to_foreign_def(
+            "consumer_pkg",
+            "src/lib.rs",
+            "use provider_pkg::ExportedCore;\npub fn run() { let _ = «ExportedCore»; }\n",
+            "provider_pkg",
+            def_ids[0],
+        )
+        .unwrap();
+
+    assert!(clean.contains("let _ = ExportedCore;"));
+
+    let shard = ws.build_crate_index("consumer_pkg").unwrap();
+    let reader = ridx_format::IndexReader::open(&shard).unwrap();
+    let refs = reader.references();
+    assert_eq!(refs.len(), 1);
+    assert_eq!(refs[0].target_def_id, def_ids[0]);
+    assert_eq!(
+        reader.get_str(refs[0].target_path_offset),
+        "provider_pkg::ExportedCore"
+    );
+    assert_eq!(refs[0].kind, DefKind::Struct as u8);
+}

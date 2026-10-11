@@ -12,7 +12,7 @@
 
 use crate::cursor_dsl::parse_spans;
 use crate::fixture::FixtureIndexBuilder;
-use ridx_format::DefKind;
+use ridx_format::{DefKind, RawDefinition};
 use std::collections::HashMap;
 use std::fs;
 use std::io;
@@ -21,7 +21,6 @@ use tempfile::TempDir;
 
 /// Internal state tracking for a single crate within the synthetic workspace.
 struct CrateState {
-    crate_name: String,
     version: String,
     crate_dir: PathBuf,
     builder: FixtureIndexBuilder,
@@ -85,7 +84,6 @@ impl SyntheticWorkspaceFixture {
         fs::write(crate_dir.join("Cargo.toml"), cargo_toml)?;
 
         let state = CrateState {
-            crate_name: crate_name.to_string(),
             version: version.to_string(),
             crate_dir: crate_dir.clone(),
             builder: FixtureIndexBuilder::new(crate_name, version),
@@ -96,6 +94,42 @@ impl SyntheticWorkspaceFixture {
         Ok(crate_dir)
     }
 
+    fn prepare_source_file(
+        &self,
+        crate_name: &str,
+        rel_path: &str,
+    ) -> io::Result<(PathBuf, String)> {
+        let crate_state = self.crates.get(crate_name).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("Crate {} not found", crate_name),
+            )
+        })?;
+        let file_path = crate_state.crate_dir.join(rel_path);
+        if let Some(parent) = file_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let abs_str = file_path
+            .to_str()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 file path"))?
+            .to_string();
+        Ok((file_path, abs_str))
+    }
+
+    fn record_source_file(
+        &mut self,
+        crate_name: &str,
+        rel_path: &str,
+        file_path: &Path,
+        content: &str,
+    ) {
+        if let Some(crate_state) = self.crates.get_mut(crate_name) {
+            let uri = format!("file://{}", file_path.display());
+            crate_state.files.insert(rel_path.to_string(), content.to_string());
+            crate_state.file_uris.insert(rel_path.to_string(), uri);
+        }
+    }
+
     /// Adds an unindexed plain source file to a crate.
     pub fn add_source_file(
         &mut self,
@@ -103,21 +137,32 @@ impl SyntheticWorkspaceFixture {
         rel_path: &str,
         content: &str,
     ) -> io::Result<PathBuf> {
-        let crate_state = self
-            .crates
-            .get_mut(crate_name)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("Crate {} not found", crate_name)))?;
-
-        let file_path = crate_state.crate_dir.join(rel_path);
-        if let Some(parent) = file_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
+        let (file_path, _) = self.prepare_source_file(crate_name, rel_path)?;
         fs::write(&file_path, content)?;
-
-        let uri = format!("file://{}", file_path.display());
-        crate_state.files.insert(rel_path.to_string(), content.to_string());
-        crate_state.file_uris.insert(rel_path.to_string(), uri);
+        self.record_source_file(crate_name, rel_path, &file_path, content);
         Ok(file_path)
+    }
+
+    /// Adds a source file with `«name»` definition annotations and a custom path prefix.
+    pub fn add_source_file_with_prefix_defs(
+        &mut self,
+        crate_name: &str,
+        rel_path: &str,
+        annotated_code: &str,
+        path_prefix: &str,
+        kind: DefKind,
+    ) -> io::Result<(String, Vec<u32>)> {
+        let (file_path, abs_str) = self.prepare_source_file(crate_name, rel_path)?;
+        let crate_state = self.crates.get_mut(crate_name).expect("crate exists");
+        let (clean_code, def_ids) = crate_state.builder.add_defs_with_ids(
+            annotated_code,
+            &abs_str,
+            path_prefix,
+            kind,
+        );
+        fs::write(&file_path, &clean_code)?;
+        self.record_source_file(crate_name, rel_path, &file_path, &clean_code);
+        Ok((clean_code, def_ids))
     }
 
     /// Adds a source file with `«name»` definition annotations, indexing them via `FixtureIndexBuilder`.
@@ -128,33 +173,7 @@ impl SyntheticWorkspaceFixture {
         annotated_code: &str,
         kind: DefKind,
     ) -> io::Result<(String, Vec<u32>)> {
-        let crate_state = self
-            .crates
-            .get_mut(crate_name)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("Crate {} not found", crate_name)))?;
-
-        let file_path = crate_state.crate_dir.join(rel_path);
-        if let Some(parent) = file_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-
-        let abs_str = file_path.to_str().ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 file path")
-        })?;
-
-        let (clean_code, def_ids) = crate_state.builder.add_defs_with_ids(
-            annotated_code,
-            abs_str,
-            &crate_state.crate_name,
-            kind,
-        );
-        fs::write(&file_path, &clean_code)?;
-
-        let uri = format!("file://{}", file_path.display());
-        crate_state.files.insert(rel_path.to_string(), clean_code.clone());
-        crate_state.file_uris.insert(rel_path.to_string(), uri);
-
-        Ok((clean_code, def_ids))
+        self.add_source_file_with_prefix_defs(crate_name, rel_path, annotated_code, crate_name, kind)
     }
 
     /// Adds references in a source file targeting an existing definition ID.
@@ -165,29 +184,13 @@ impl SyntheticWorkspaceFixture {
         annotated_code: &str,
         target_def_id: u32,
     ) -> io::Result<String> {
-        let crate_state = self
-            .crates
-            .get_mut(crate_name)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("Crate {} not found", crate_name)))?;
-
-        let file_path = crate_state.crate_dir.join(rel_path);
-        if let Some(parent) = file_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-
-        let abs_str = file_path.to_str().ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 file path")
-        })?;
-
+        let (file_path, abs_str) = self.prepare_source_file(crate_name, rel_path)?;
+        let crate_state = self.crates.get_mut(crate_name).expect("crate exists");
         let clean_code = crate_state
             .builder
-            .add_refs_to_def(annotated_code, abs_str, target_def_id);
+            .add_refs_to_def(annotated_code, &abs_str, target_def_id);
         fs::write(&file_path, &clean_code)?;
-
-        let uri = format!("file://{}", file_path.display());
-        crate_state.files.insert(rel_path.to_string(), clean_code.clone());
-        crate_state.file_uris.insert(rel_path.to_string(), uri);
-
+        self.record_source_file(crate_name, rel_path, &file_path, &clean_code);
         Ok(clean_code)
     }
 
@@ -202,20 +205,31 @@ impl SyntheticWorkspaceFixture {
         end_col: u32,
         type_name: &str,
     ) -> io::Result<()> {
-        let crate_state = self.crates.get_mut(crate_name).ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::NotFound,
-                format!("Crate {} not found", crate_name),
-            )
-        })?;
-        let file_path = crate_state.crate_dir.join(rel_path);
-        let abs_str = file_path
-            .to_str()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 file path"))?;
+        let (_, abs_str) = self.prepare_source_file(crate_name, rel_path)?;
+        let crate_state = self.crates.get_mut(crate_name).expect("crate exists");
         crate_state
             .builder
-            .add_type(abs_str, start_line, start_col, end_line, end_col, type_name);
+            .add_type(&abs_str, start_line, start_col, end_line, end_col, type_name);
         Ok(())
+    }
+
+    fn get_foreign_def(&self, target_crate: &str, target_def_id: u32) -> io::Result<RawDefinition> {
+        let target_state = self.crates.get(target_crate).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("Target crate {} not found", target_crate),
+            )
+        })?;
+        target_state
+            .builder
+            .get_def(target_def_id)
+            .cloned()
+            .ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("Def {} not found in crate {}", target_def_id, target_crate),
+                )
+            })
     }
 
     /// Adds references with `DefKind::Impl` targeting an existing trait or struct definition.
@@ -227,65 +241,76 @@ impl SyntheticWorkspaceFixture {
         target_crate: &str,
         target_def_id: u32,
     ) -> io::Result<String> {
-        let target_def = {
-            let target_state = self.crates.get(target_crate).ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("Target crate {} not found", target_crate),
-                )
-            })?;
-            target_state
-                .builder
-                .get_def(target_def_id)
-                .cloned()
-                .ok_or_else(|| {
-                    io::Error::new(
-                        io::ErrorKind::NotFound,
-                        format!("Def {} not found in crate {}", target_def_id, target_crate),
-                    )
-                })?
-        };
+        let target_def = self.get_foreign_def(target_crate, target_def_id)?;
+        self.add_foreign_refs_internal(
+            crate_name,
+            rel_path,
+            annotated_code,
+            target_def_id,
+            &target_def.path,
+            &target_def.file,
+            target_def.start_line,
+            target_def.start_col,
+            DefKind::Impl,
+        )
+    }
 
-        let crate_state = self.crates.get_mut(crate_name).ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::NotFound,
-                format!("Crate {} not found", crate_name),
-            )
-        })?;
+    /// Adds references in a source file targeting an existing definition in another crate.
+    pub fn add_refs_to_foreign_def(
+        &mut self,
+        crate_name: &str,
+        rel_path: &str,
+        annotated_code: &str,
+        target_crate: &str,
+        target_def_id: u32,
+    ) -> io::Result<String> {
+        let target_def = self.get_foreign_def(target_crate, target_def_id)?;
+        self.add_foreign_refs_internal(
+            crate_name,
+            rel_path,
+            annotated_code,
+            target_def_id,
+            &target_def.path,
+            &target_def.file,
+            target_def.start_line,
+            target_def.start_col,
+            target_def.kind,
+        )
+    }
 
-        let file_path = crate_state.crate_dir.join(rel_path);
-        if let Some(parent) = file_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-
-        let abs_str = file_path
-            .to_str()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 file path"))?;
-
+    #[allow(clippy::too_many_arguments)]
+    fn add_foreign_refs_internal(
+        &mut self,
+        crate_name: &str,
+        rel_path: &str,
+        annotated_code: &str,
+        target_def_id: u32,
+        target_path: &str,
+        target_file: &str,
+        target_line: u32,
+        target_col: u32,
+        kind: DefKind,
+    ) -> io::Result<String> {
+        let (file_path, abs_str) = self.prepare_source_file(crate_name, rel_path)?;
         let (clean_code, spans) = parse_spans(annotated_code);
+        let crate_state = self.crates.get_mut(crate_name).expect("crate exists");
         for span in spans {
             crate_state.builder.add_ref(
-                &target_def.path,
-                abs_str,
+                target_path,
+                &abs_str,
                 span.start_line + 1,
                 span.start_col_char + 1,
                 span.end_line + 1,
                 span.end_col_char + 1,
                 Some(target_def_id),
-                Some(&target_def.file),
-                target_def.start_line,
-                target_def.start_col,
-                DefKind::Impl,
+                Some(target_file),
+                target_line,
+                target_col,
+                kind,
             );
         }
         fs::write(&file_path, &clean_code)?;
-
-        let uri = format!("file://{}", file_path.display());
-        crate_state
-            .files
-            .insert(rel_path.to_string(), clean_code.clone());
-        crate_state.file_uris.insert(rel_path.to_string(), uri);
-
+        self.record_source_file(crate_name, rel_path, &file_path, &clean_code);
         Ok(clean_code)
     }
 
@@ -341,58 +366,3 @@ impl SyntheticWorkspaceFixture {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use ridx_format::IndexReader;
-
-    #[test]
-    fn test_synthetic_workspace_coordinates() {
-        let mut ws = SyntheticWorkspaceFixture::new().unwrap();
-        ws.add_crate("core_pkg", "0.1.0").unwrap();
-
-        // "/* 🦀 */ pub fn «grüßen»() {}"
-        // "/* " (3) + "🦀" (1) + " */ pub fn " (11) = 15 chars before marker.
-        // 1-based column for driver = 15 + 1 = 16.
-        // "grüßen" has 6 chars -> end col = 16 + 6 = 22.
-        let code = "/* 🦀 */ pub fn «grüßen»() {}\n";
-        let (clean, def_ids) = ws
-            .add_source_file_with_defs("core_pkg", "src/lib.rs", code, DefKind::Fn)
-            .unwrap();
-
-        assert_eq!(clean, "/* 🦀 */ pub fn grüßen() {}\n");
-        assert_eq!(def_ids.len(), 1);
-
-        assert_eq!(ws.crate_version("core_pkg"), Some("0.1.0"));
-
-        let ridx_path = ws.build_crate_index("core_pkg").unwrap();
-        assert!(ridx_path.is_file());
-
-        let reader = IndexReader::open(&ridx_path).unwrap();
-        let defs = reader.definitions();
-        assert_eq!(defs.len(), 1);
-
-        let def = &defs[0];
-        let name = reader.get_str(def.name_offset);
-        assert_eq!(name, "grüßen");
-        assert_eq!(def.span.start_line(), 1);
-        assert_eq!(def.span.start_col(), 16);
-        assert_eq!(def.span.end_col(), 22);
-
-        // Verify state is preserved across repeated builds
-        let ridx_path2 = ws.build_crate_index("core_pkg").unwrap();
-        let reader2 = IndexReader::open(&ridx_path2).unwrap();
-        assert_eq!(reader2.definitions().len(), 1);
-
-        // Verify sorted build_all_indices and write_workspace_manifest
-        ws.add_crate("extra_pkg", "0.2.0").unwrap();
-        let manifest = ws.write_workspace_manifest().unwrap();
-        assert!(manifest.is_file());
-        let manifest_text = fs::read_to_string(&manifest).unwrap();
-        assert!(manifest_text.contains("\"core_pkg\""));
-        assert!(manifest_text.contains("\"extra_pkg\""));
-
-        let all_shards = ws.build_all_indices().unwrap();
-        assert_eq!(all_shards.len(), 2);
-    }
-}
