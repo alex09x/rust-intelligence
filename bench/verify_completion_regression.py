@@ -24,7 +24,7 @@ from metrics import calc_pct, calc_route_acc, percentile
 from provenance import (
     EXCLUDED_SCENARIOS, REPO_SLUG_TO_NAME, ROOT_CAUSES, check_repo_clean, find_default_repo,
     find_sysroot_cas_key, get_driver_build_commit, get_driver_build_info, get_driver_hash,
-    get_node_info, get_node_source, get_repo_commit, get_sysroot_std_metadata,
+    get_node_info, get_node_source, get_repo_commit, get_shard_provenance, get_sysroot_std_metadata,
     get_taskset_affinity, is_sysroot_transplanted, load_baseline, verify_repo_commit,
 )
 from validate_scenarios import validate_scenarios_for_repo
@@ -73,32 +73,16 @@ def run_scenarios(srv, repo_dir, scenarios, is_ra=False, timeout=5.0):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Empirical regression and parity verification")
-    for f, d, h in [
-        ("--base-commit", "b05240a", "Baseline commit SHA"),
-        ("--curr-commit", "c308792", "Current commit SHA under test"),
-        ("--toolchain", "1.98.1", "Expected compiler and rust-analyzer toolchain version"),
-    ]:
+    for f, d, h in [("--base-commit", "b05240a", "Baseline commit SHA"), ("--curr-commit", "c308792", "Current commit SHA"), ("--toolchain", "1.98.1", "Expected toolchain")]:
         p.add_argument(f, default=d, help=h)
     for opt, h in [
-        ("--commit-ridx", "Alias for --curr-commit"),
-        ("--base-jsonl", "Explicit path to baseline rerun jsonl"),
-        ("--curr-jsonl", "Explicit path to current rerun jsonl (replay mode)"),
-        ("--ridx-bin", "Path to current ridx binary"),
-        ("--ra-bin", "Path to rust-analyzer binary"),
-        ("--serde-dir", "Path to serde repo"),
-        ("--bevy-dir", "Path to bevy repo"),
-        ("--output-json", "Path for comparison report json"),
-        ("--output-jsonl", "Path for output rerun jsonl"),
+        ("--commit-ridx", "Alias"), ("--base-jsonl", "Base jsonl"), ("--curr-jsonl", "Curr jsonl"),
+        ("--ridx-bin", "ridx path"), ("--ra-bin", "ra path"), ("--serde-dir", "serde path"),
+        ("--bevy-dir", "bevy path"), ("--output-json", "output json"), ("--output-jsonl", "output jsonl"),
     ]:
         p.add_argument(opt, help=h)
-    for fl, h in [
-        ("--replay", "Replay directly from existing published jsonl"),
-        ("--v2", "Format and name report with v2 methodology"),
-        ("--v3", "Format and name report with v3 methodology"),
-        ("--force", "Allow overwriting existing published benchmark files"),
-        ("--allow-invalid-config", "Allow running even if toolchain or sysroot invalid"),
-    ]:
-        p.add_argument(fl, action="store_true", help=h)
+    for fl in ["--replay", "--v2", "--v3", "--force", "--allow-invalid-config"]:
+        p.add_argument(fl, action="store_true")
     return p.parse_args()
 
 
@@ -299,6 +283,9 @@ def main():
         o_rec_b, o_prec_b = calc_route_acc(owner_scs, "base_recall_pct", "base_precision_pct", "base_count")
         f_rec_c, f_prec_c = calc_route_acc(fallback_scs, "recall_pct", "precision_pct", "ridx_count")
         f_rec_b, f_prec_b = calc_route_acc(fallback_scs, "base_recall_pct", "base_precision_pct", "base_count")
+        shard_prov = c_rec.get("shard_provenance") if curr_data else get_shard_provenance(rpath, curr_bin)
+        if not shard_prov:
+            shard_prov = get_shard_provenance(rpath, None)
 
         summary = {
             "repo": slug, "repo_commit": repo_commit, "toolchain": tc_ver, "sysroot_cas_key": cas_key,
@@ -310,7 +297,8 @@ def main():
             "base_sysroot_cas_key": base_data[slug].get("sysroot_cas_key"),
             "base_sysroot_transplanted": base_data[slug].get("sysroot_transplanted", True),
             "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
-            "excluded_scenarios": repo_excluded, "node": get_node_info(), "node_source": get_node_source(), "taskset": get_taskset_affinity(),
+            "excluded_scenarios": repo_excluded, "node": get_node_info(), "node_source": get_node_source(),
+            "taskset": get_taskset_affinity(), "shard_provenance": shard_prov,
             "total_scenarios": len(scenarios_base),
             "empty_responses": {base_commit: empty_b, curr_commit: empty_c, "rust_analyzer_1_98_1": empty_ra},
             "closed_empty_responses": {"count": closed_cnt, "scenarios": closed_names},
@@ -367,7 +355,7 @@ def main():
                 "invalid_config": is_invalid_config, "scenarios_validated": scenarios_validated,
                 "excluded_scenarios": repo_excluded,
                 "node": get_node_info(), "node_source": get_node_source(),
-                "taskset": get_taskset_affinity(), "seed": 42,
+                "taskset": get_taskset_affinity(), "shard_provenance": shard_prov, "seed": 42,
                 "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
                 "sample_count": len(scenarios_base), "capability": "completion",
                 "metrics": {

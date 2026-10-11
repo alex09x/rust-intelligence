@@ -10,6 +10,7 @@
 import hashlib
 import json
 import os
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -332,6 +333,64 @@ def get_node_source():
     if "BENCH_NODE" in os.environ or "BENCH_TASKSET" in os.environ:
         return "env"
     return "detected"
+
+
+def get_shard_provenance(rpath, curr_bin=None):
+    """Computes shard loading provenance (broken paths, object_path, unit_key, resilient hits)."""
+    mpath = Path(rpath) / "target" / "ridx" / "ridx_manifest.json"
+    empty = {"total_dependencies": 0, "broken_paths": 0, "loaded_via_object_path": 0, "loaded_via_unit_key": 0, "loaded_via_resilient": 0, "missing_dependencies": 0}
+    if not mpath.is_file():
+        return empty
+    try:
+        m = json.loads(mpath.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    dep_list = m.get("dependency_shards", [])
+    if not dep_list:
+        return empty
+
+    broken_paths = sum(1 for d in dep_list if not Path(d.get("object_path", "")).is_file())
+    manifest_obj_paths = {d.get("object_path") for d in dep_list if d.get("object_path")}
+    manifest_unit_keys = {d.get("unit_key") for d in dep_list if d.get("unit_key")}
+
+    obj_hits = key_hits = res_hits = 0
+    loaded_dep_paths = set()
+    if curr_bin and Path(curr_bin).is_file():
+        try:
+            out = subprocess.run([str(curr_bin), "inspect", "--json", str(rpath)], capture_output=True, text=True, env=_get_driver_env(), check=False)
+            if out.returncode == 0 and out.stdout.strip():
+                data = json.loads(out.stdout)
+                for c in data.get("crates", []):
+                    cname, cpath = c.get("name"), c.get("path", "")
+                    if cname in ("core", "alloc", "std") or "/variants/" in cpath:
+                        continue
+                    loaded_dep_paths.add(cpath)
+                    if cpath in manifest_obj_paths:
+                        obj_hits += 1
+                    elif any(cpath.endswith(f"{uk}.ridx") for uk in manifest_unit_keys):
+                        key_hits += 1
+                    else:
+                        res_hits += 1
+        except Exception:
+            pass
+
+    if not loaded_dep_paths:
+        cache_base = os.environ.get("RIDX_CACHE_DIR")
+        cache_dir = Path(cache_base) if cache_base else (Path.home() / ".cache" / "ridx" / "v3")
+        for dep in dep_list:
+            op, uk = Path(dep.get("object_path", "")), dep.get("unit_key", "")
+            if op.is_file():
+                obj_hits += 1
+            elif uk and (cache_dir / "objects" / uk[:2] / f"{uk}.ridx").is_file():
+                key_hits += 1
+            else:
+                res_hits += 1
+
+    missing = len(dep_list) - len(loaded_dep_paths) if loaded_dep_paths else 0
+    return {
+        "total_dependencies": len(dep_list), "broken_paths": broken_paths, "loaded_via_object_path": obj_hits,
+        "loaded_via_unit_key": key_hits, "loaded_via_resilient": res_hits, "missing_dependencies": max(0, missing),
+    }
 
 
 
