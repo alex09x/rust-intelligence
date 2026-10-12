@@ -336,21 +336,7 @@ pub fn dispatch_lsp_message<W: Write>(
             handle_code_action(&msg, ws, overlay_mgr)
         }
         "codeAction/resolve" => {
-            let uri = msg["params"]
-                .get("data")
-                .and_then(|d| d.get("uri"))
-                .and_then(|u| u.as_str())
-                .or_else(|| {
-                    msg["params"]
-                        .get("edit")
-                        .and_then(|e| e.get("changes"))
-                        .and_then(|c| c.as_object())
-                        .and_then(|m| m.keys().next().map(|s| s.as_str()))
-                });
-            let ws = uri.and_then(|u| {
-                let p = uri_to_path(u);
-                multi_root.find_workspace_for_path(Path::new(&p))
-            });
+            let ws = multi_root.resolve_code_action_ws(&msg);
             handle_code_action_resolve(&msg, ws, overlay_mgr)
         }
         "workspace/executeCommand" => {

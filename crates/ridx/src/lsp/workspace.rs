@@ -180,6 +180,24 @@ impl MultiRootWorkspace {
         self.find_workspace_for_path(Path::new(&file))
     }
 
+    pub fn resolve_code_action_ws(&self, msg: &Value) -> Option<&WorkspaceIndex> {
+        let uri = msg["params"]
+            .get("data")
+            .and_then(|d| d.get("uri"))
+            .and_then(|u| u.as_str())
+            .or_else(|| {
+                msg["params"]
+                    .get("edit")
+                    .and_then(|e| e.get("changes"))
+                    .and_then(|c| c.as_object())
+                    .and_then(|m| m.keys().next().map(|s| s.as_str()))
+            });
+        uri.and_then(|u| {
+            let p = super::protocol::uri_to_path(u);
+            self.find_workspace_for_path(Path::new(&p))
+        })
+    }
+
     pub fn check_file_provenance(&self, file: &str, text: &str) -> bool {
         let text_hash = ridx_format::normalized_source_hash(text.as_bytes());
         self.find_workspace_for_path(Path::new(file))
