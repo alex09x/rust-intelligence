@@ -26,7 +26,7 @@ DOMAINS = [
             ("shutdown", ["shutdown_"]),
             ("exit", ["exit_"]),
             ("$/cancelRequest", ["cancel_request_", "cancelrequest_"]),
-            ("$/setTrace", ["set_trace_"]),
+            ("$/setTrace (no-op)", ["set_trace_"]),
         ],
     ),
     (
@@ -286,7 +286,7 @@ def main():
     out = [
         f"# RIDX Test Coverage Matrix across {num_rows} LSP Methods", "",
         f"> **Note on Method Count ({num_rows} methods)**: The matrix covers {num_rows} distinct LSP capability rows across 10 domains. LSP `textDocument/declaration` is delegated directly to `textDocument/definition` via `handle_declaration` and tracked jointly in `textDocument/definition / declaration (delegating)`.",
-        "> **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub.",
+        "> **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.",
         "> **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).", "",
         f"- **Total E2E Tests**: {total_e2e}",
         f"- **Total Unit/Src Tests**: {total_src}",

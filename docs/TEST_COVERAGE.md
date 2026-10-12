@@ -1,7 +1,7 @@
 # RIDX Test Coverage Matrix across 53 LSP Methods
 
 > **Note on Method Count (53 methods)**: The matrix covers 53 distinct LSP capability rows across 10 domains. LSP `textDocument/declaration` is delegated directly to `textDocument/definition` via `handle_declaration` and tracked jointly in `textDocument/definition / declaration (delegating)`.
-> **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub.
+> **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
 - **Total E2E Tests**: 747
@@ -17,7 +17,7 @@
 | Domain 1: Lifecycle & Control | `shutdown` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 1: Lifecycle & Control | `exit` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 1: Lifecycle & Control | `$/cancelRequest` | 0 | 0 | 0 | ⚪ Zero E2E |
-| Domain 1: Lifecycle & Control | `$/setTrace` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 2 | 0 | 2 | 🔴 In Progress (2/50) |
 | Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 2 | 1 | 3 | 🔴 In Progress (2/50) |
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
@@ -83,7 +83,7 @@ _No classified e2e tests yet._
 #### `$/cancelRequest` (0 e2e tests)
 _No classified e2e tests yet._
 
-#### `$/setTrace` (0 e2e tests)
+#### `$/setTrace (no-op)` (0 e2e tests)
 _No classified e2e tests yet._
 
 ### Domain 2: Diagnostics & Flycheck
