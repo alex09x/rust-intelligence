@@ -296,6 +296,8 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
             }
 
     finally:
+        initial_quiescent = getattr(srv, "initial_quiescent", True)
+        initial_wait_ms = round(getattr(srv, "initial_wait_ms", 0.0), 2)
         srv.close()
 
     return {
@@ -303,4 +305,6 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         "peak_rss_mb": peak_rss / (1024 * 1024),
         "peak_fds": peak_fds,
         "peak_threads": peak_threads,
+        "initial_quiescent": initial_quiescent,
+        "initial_wait_ms": initial_wait_ms,
     }

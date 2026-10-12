@@ -37,6 +37,8 @@ class SimpleLspProcess:
         self.t_sends = {}
         self.t_recvs = {}
         self.is_quiescent = False
+        self.initial_quiescent = False
+        self.initial_wait_ms = 0.0
 
         self.reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
         self.reader_thread.start()
@@ -214,9 +216,13 @@ class SimpleLspProcess:
         if not self.exited:
             self.send_msg({"jsonrpc": "2.0", "method": "initialized", "params": {}})
             if self.is_ra:
-                self.wait_quiescent(timeout=20.0, settle_idle=0.5)
+                self.initial_wait_ms = self.wait_quiescent(timeout=600.0, settle_idle=0.5)
+                self.initial_quiescent = bool(self.is_quiescent)
+            else:
+                self.initial_quiescent = True
+                self.initial_wait_ms = 0.0
 
-    def wait_quiescent(self, timeout=20.0, settle_idle=0.5):
+    def wait_quiescent(self, timeout=600.0, settle_idle=0.5):
         t0 = time.perf_counter()
         while time.perf_counter() - t0 < timeout:
             if self.exited or self.p.poll() is not None:

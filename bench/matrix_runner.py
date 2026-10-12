@@ -63,6 +63,10 @@ def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed
         "total_tests_per_server": sum(v.get("tests_run", 0) for v in ridx_res["methods"].values()),
         "ridx_duration_sec": round(ridx_dur, 2),
         "ra_duration_sec": round(ra_dur, 2),
+        "ridx_initial_quiescent": ridx_res.get("initial_quiescent", True),
+        "ridx_initial_wait_ms": ridx_res.get("initial_wait_ms", 0.0),
+        "ra_initial_quiescent": ra_res.get("initial_quiescent", False),
+        "ra_initial_wait_ms": ra_res.get("initial_wait_ms", 0.0),
     }
     for k in [
         "ridx_commit", "ridx_binary_dirty", "driver_hash", "driver_build_commit", "driver_dirty",
