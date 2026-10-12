@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1613
+- **Total E2E Tests**: 1644
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1531
+- **Classified E2E Tests**: 1562
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 40 / 53
-- **Rows >= 50 E2E**: 19 / 53
+- **Rows >= 50 E2E**: 20 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -65,7 +65,7 @@
 | Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 51 | 0 | 51 | ✅ Complete |
-| Domain 10: Multi-root & File Events | `workspace/didDeleteFiles / willDeleteFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 10: Multi-root & File Events | `workspace/didDeleteFiles / willDeleteFiles` | 51 | 0 | 51 | ✅ Complete |
 
 ## Method-level Test Catalog
 
@@ -1704,27 +1704,58 @@
 - `test_will_rename_files_windows_path_uris`
 - `test_will_rename_files_with_special_characters`
 
-#### `workspace/didDeleteFiles / willDeleteFiles` (20 e2e tests)
+#### `workspace/didDeleteFiles / willDeleteFiles` (51 e2e tests)
 - `test_did_delete_files_active_overlay_evicted`
+- `test_did_delete_files_alternating_will_and_did_delete`
+- `test_did_delete_files_batch_across_multiple_workspaces`
 - `test_did_delete_files_batch_ten_files_partial_open`
+- `test_did_delete_files_clears_conv_cache_for_workspace`
 - `test_did_delete_files_clears_position_converter`
+- `test_did_delete_files_crlf_overlay_evicted_cleanly`
+- `test_did_delete_files_custom_scheme_ignored`
 - `test_did_delete_files_dirty_overlay_discarded`
+- `test_did_delete_files_dirty_overlay_with_unsaved_changes_evicted`
+- `test_did_delete_files_dispatched_via_lsp_pipeline`
 - `test_did_delete_files_empty_files_noop`
+- `test_did_delete_files_empty_uri_entry_handled`
+- `test_did_delete_files_file_outside_workspace_roots`
+- `test_did_delete_files_followed_by_did_open_new_document`
+- `test_did_delete_files_followed_by_workspace_symbol_query`
+- `test_did_delete_files_idempotent_eviction`
 - `test_did_delete_files_idempotent_multiple_deletions`
 - `test_did_delete_files_missing_files_key_noop`
 - `test_did_delete_files_missing_uri_field_skipped`
+- `test_did_delete_files_mixed_valid_and_invalid_entries`
 - `test_did_delete_files_multi_file_simultaneous`
+- `test_did_delete_files_multi_root_dispatch_preserves_roots`
 - `test_did_delete_files_multi_root_secondary_workspace`
+- `test_did_delete_files_multiple_overlays_evicted_simultaneously`
 - `test_did_delete_files_nonexistent_path_noop`
+- `test_did_delete_files_null_params_handled`
 - `test_did_delete_files_percent_encoded_uri`
+- `test_did_delete_files_reader_count_invariant`
+- `test_did_delete_files_relative_uri_handling`
 - `test_did_delete_files_reopen_after_deletion`
+- `test_did_delete_files_reopen_with_new_version_after_delete`
 - `test_did_delete_files_unopened_file_noop`
+- `test_did_delete_files_unrelated_overlay_remains_intact`
+- `test_will_delete_files_batch_fifty_files`
+- `test_will_delete_files_custom_string_id`
+- `test_will_delete_files_deeply_nested_file`
+- `test_will_delete_files_directory_delete_uri`
+- `test_will_delete_files_duplicate_files_in_request`
 - `test_will_delete_files_empty_files_array`
+- `test_will_delete_files_extra_fields_in_delete_param`
+- `test_will_delete_files_floating_point_id`
 - `test_will_delete_files_lifecycle_sequence_with_did_delete`
 - `test_will_delete_files_multi_file_returns_empty_edit`
+- `test_will_delete_files_negative_numeric_id`
 - `test_will_delete_files_numeric_id_preserved`
+- `test_will_delete_files_query_and_fragment_in_uri`
 - `test_will_delete_files_string_id_preserved`
 - `test_will_delete_files_valid_file_returns_empty_edit`
+- `test_will_delete_files_windows_style_uri`
+- `test_will_delete_files_with_special_characters`
 
 ### Unclassified E2E Tests
 
@@ -1814,4 +1845,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1613 total, 40 rows >= 20, 19 rows >= 50 of 53
+coverage: e2e 1644 total, 40 rows >= 20, 20 rows >= 50 of 53
