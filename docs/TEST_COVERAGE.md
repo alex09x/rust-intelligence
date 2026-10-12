@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1816
+- **Total E2E Tests**: 1847
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1734
+- **Classified E2E Tests**: 1765
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 43 / 53
-- **Rows >= 50 E2E**: 26 / 53
+- **Rows >= 50 E2E**: 27 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -59,7 +59,7 @@
 | Domain 9: Navigation & Symbols | `textDocument/references` | 51 | 1 | 52 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/documentHighlight` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 51 | 0 | 51 | ✅ Complete |
-| Domain 9: Navigation & Symbols | `workspace/symbol` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 9: Navigation & Symbols | `workspace/symbol` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 15 | 8 | 23 | 🔴 In Progress (15/50) |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 51 | 0 | 51 | ✅ Complete |
@@ -1623,7 +1623,7 @@
 - `test_l1_document_symbol_unicode_ranges`
 - `test_l1_document_symbol_unopened_and_empty`
 
-#### `workspace/symbol` (20 e2e tests)
+#### `workspace/symbol` (51 e2e tests)
 - `test_l1_workspace_symbol_cap_100_across_shards`
 - `test_l1_workspace_symbol_cap_100_single_shard_boundary`
 - `test_l1_workspace_symbol_case_insensitive`
@@ -1644,6 +1644,37 @@
 - `test_l1_workspace_symbol_whitespace_padded_query_returns_empty`
 - `test_l2_multiroot_symbols_search_across_crates`
 - `test_l2_workspace_symbol_search_and_deduplication`
+- `test_workspace_symbol_all_def_kinds_present`
+- `test_workspace_symbol_case_insensitive_lowercase_query`
+- `test_workspace_symbol_case_insensitive_uppercase_query`
+- `test_workspace_symbol_container_name_root_module`
+- `test_workspace_symbol_container_name_single_submodule`
+- `test_workspace_symbol_cross_crate_disjoint_names`
+- `test_workspace_symbol_empty_query_lists_all_symbols`
+- `test_workspace_symbol_empty_workspace_returns_empty`
+- `test_workspace_symbol_exact_prefix_query`
+- `test_workspace_symbol_identical_index_deduplicated`
+- `test_workspace_symbol_many_symbols_below_limit`
+- `test_workspace_symbol_missing_query_field_treated_as_empty`
+- `test_workspace_symbol_multi_file_same_crate`
+- `test_workspace_symbol_nested_modules_with_struct_and_enum`
+- `test_workspace_symbol_no_matches_returns_empty_array`
+- `test_workspace_symbol_null_query_treated_as_empty`
+- `test_workspace_symbol_query_matching_case_variations`
+- `test_workspace_symbol_query_matching_start_of_symbol`
+- `test_workspace_symbol_query_with_numbers`
+- `test_workspace_symbol_query_with_underscore_matching`
+- `test_workspace_symbol_range_start_end_valid`
+- `test_workspace_symbol_root_manifest_workspace_indexing`
+- `test_workspace_symbol_same_name_different_crates_preserved`
+- `test_workspace_symbol_single_letter_query`
+- `test_workspace_symbol_special_chars_in_filename_uri`
+- `test_workspace_symbol_submodule_deep_nesting`
+- `test_workspace_symbol_substring_matching_middle`
+- `test_workspace_symbol_suffix_matching`
+- `test_workspace_symbol_three_shards_ordered_merge`
+- `test_workspace_symbol_uri_scheme_and_prefix`
+- `test_workspace_symbol_utf16_multibyte_name_location`
 
 #### `workspaceSymbol/resolve` (15 e2e tests)
 - `test_l1_workspace_symbol_resolve_already_populated`
@@ -2017,4 +2048,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1816 total, 43 rows >= 20, 26 rows >= 50 of 53
+coverage: e2e 1847 total, 43 rows >= 20, 27 rows >= 50 of 53
