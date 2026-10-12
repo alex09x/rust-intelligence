@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1683
+- **Total E2E Tests**: 1718
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1601
+- **Classified E2E Tests**: 1636
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 40 / 53
-- **Rows >= 50 E2E**: 22 / 53
+- **Rows >= 20 E2E**: 41 / 53
+- **Rows >= 50 E2E**: 23 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -55,7 +55,7 @@
 | Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 14 | 0 | 14 | 🔴 In Progress (14/50) |
 | Domain 9: Navigation & Symbols | `textDocument/definition / declaration (delegating)` | 52 | 7 | 59 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/typeDefinition` | 51 | 0 | 51 | ✅ Complete |
-| Domain 9: Navigation & Symbols | `textDocument/implementation` | 16 | 0 | 16 | 🔴 In Progress (16/50) |
+| Domain 9: Navigation & Symbols | `textDocument/implementation` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/references` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 9: Navigation & Symbols | `textDocument/documentHighlight` | 19 | 0 | 19 | 🔴 In Progress (19/50) |
 | Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 16 | 0 | 16 | 🔴 In Progress (16/50) |
@@ -1411,7 +1411,42 @@
 - `test_type_definition_whitespace_returns_null`
 - `test_type_definition_with_clean_overlay`
 
-#### `textDocument/implementation` (16 e2e tests)
+#### `textDocument/implementation` (51 e2e tests)
+- `test_implementation_clean_overlay_returns_accurate_locations`
+- `test_implementation_cross_crate_struct_inherent_in_downstream`
+- `test_implementation_cross_crate_three_shards_all_implementing`
+- `test_implementation_cross_crate_trait_implemented_in_downstream`
+- `test_implementation_cross_file_struct_two_impl_files`
+- `test_implementation_cross_file_trait_three_implementors`
+- `test_implementation_deep_module_tree_impl`
+- `test_implementation_dirty_overlay_abstained_returns_empty`
+- `test_implementation_enum_with_multiple_trait_impls`
+- `test_implementation_generic_struct_concrete_impl`
+- `test_implementation_generic_struct_generic_impl`
+- `test_implementation_marker_trait_no_methods`
+- `test_implementation_multiple_crates_downstream_blanket_impl`
+- `test_implementation_multiple_crates_same_trait_name_isolation`
+- `test_implementation_no_workspace_returns_empty_array`
+- `test_implementation_out_of_bounds_col_returns_empty_array`
+- `test_implementation_out_of_bounds_line_returns_empty_array`
+- `test_implementation_overlay_on_different_file_preserves_target`
+- `test_implementation_preserves_large_numeric_id`
+- `test_implementation_preserves_numeric_request_id`
+- `test_implementation_preserves_string_request_id`
+- `test_implementation_reexported_trait_implementation`
+- `test_implementation_struct_impl_in_submodule`
+- `test_implementation_struct_impl_with_where_clause`
+- `test_implementation_struct_with_inherent_impl_only`
+- `test_implementation_struct_with_multiple_inherent_impl_blocks`
+- `test_implementation_trait_impl_in_parent_module`
+- `test_implementation_trait_implemented_by_enum`
+- `test_implementation_trait_implemented_by_primitive_wrapper`
+- `test_implementation_trait_implemented_by_two_structs`
+- `test_implementation_trait_with_generic_type_param_impl`
+- `test_implementation_tuple_struct_impl`
+- `test_implementation_unit_struct_impl`
+- `test_implementation_unregistered_uri_returns_empty_array`
+- `test_implementation_whitespace_cursor_returns_empty_array`
 - `test_l1_implementation_blanket_impl_indexed_ref`
 - `test_l1_implementation_cross_crate_two_shards`
 - `test_l1_implementation_cursor_on_impl_header_returns_self_impl`
@@ -1884,4 +1919,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1683 total, 40 rows >= 20, 22 rows >= 50 of 53
+coverage: e2e 1718 total, 41 rows >= 20, 23 rows >= 50 of 53
