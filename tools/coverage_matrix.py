@@ -109,7 +109,7 @@ DOMAINS = [
             ("textDocument/foldingRange", ["folding_range_", "folding_"]),
             ("textDocument/selectionRange", ["selection_range_"]),
             ("textDocument/documentLink / resolve", ["document_link_resolve_", "document_link_"]),
-            ("textDocument/documentColor / colorPresentation", ["color_presentation_", "document_color_"]),
+            ("textDocument/documentColor / colorPresentation (stub)", ["color_presentation_", "document_color_"]),
             ("textDocument/codeLens / resolve", ["code_lens_resolve_", "code_lens_"]),
         ],
     ),
@@ -286,6 +286,7 @@ def main():
     out = [
         f"# RIDX Test Coverage Matrix across {num_rows} LSP Methods", "",
         f"> **Note on Method Count ({num_rows} methods)**: The matrix covers {num_rows} distinct LSP capability rows across 10 domains. LSP `textDocument/declaration` is delegated directly to `textDocument/definition` via `handle_declaration` and tracked jointly in `textDocument/definition / declaration (delegating)`.",
+        "> **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub.",
         "> **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).", "",
         f"- **Total E2E Tests**: {total_e2e}",
         f"- **Total Unit/Src Tests**: {total_src}",

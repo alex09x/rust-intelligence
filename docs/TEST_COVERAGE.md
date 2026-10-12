@@ -1,10 +1,11 @@
 # RIDX Test Coverage Matrix across 53 LSP Methods
 
 > **Note on Method Count (53 methods)**: The matrix covers 53 distinct LSP capability rows across 10 domains. LSP `textDocument/declaration` is delegated directly to `textDocument/definition` via `handle_declaration` and tracked jointly in `textDocument/definition / declaration (delegating)`.
+> **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
 - **Total E2E Tests**: 506
-- **Total Unit/Src Tests**: 409
+- **Total Unit/Src Tests**: 410
 - **Classified E2E Tests**: 424
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 10 / 53
@@ -44,7 +45,7 @@
 | Domain 7: Presentation | `textDocument/foldingRange` | 1 | 0 | 1 | 🔴 In Progress (1/50) |
 | Domain 7: Presentation | `textDocument/selectionRange` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 0 | 0 | 0 | ⚪ Zero E2E |
-| Domain 7: Presentation | `textDocument/documentColor / colorPresentation` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 1 | 0 | 1 | 🔴 In Progress (1/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 0 | 10 | 10 | ⚪ Zero E2E |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 5 | 17 | 22 | 🔴 In Progress (5/50) |
@@ -287,7 +288,7 @@ _No classified e2e tests yet._
 #### `textDocument/documentLink / resolve` (0 e2e tests)
 _No classified e2e tests yet._
 
-#### `textDocument/documentColor / colorPresentation` (0 e2e tests)
+#### `textDocument/documentColor / colorPresentation (stub)` (0 e2e tests)
 _No classified e2e tests yet._
 
 #### `textDocument/codeLens / resolve` (1 e2e tests)
