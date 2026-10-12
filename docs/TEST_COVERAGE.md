@@ -4,11 +4,11 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 883
+- **Total E2E Tests**: 943
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 801
+- **Classified E2E Tests**: 861
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 29 / 53
+- **Rows >= 20 E2E**: 32 / 53
 - **Rows >= 50 E2E**: 1 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
@@ -29,12 +29,12 @@
 | Domain 4: Actions & Refactoring | `textDocument/codeAction` | 7 | 12 | 19 | 🔴 In Progress (7/50) |
 | Domain 4: Actions & Refactoring | `codeAction/resolve` | 1 | 13 | 14 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/completion` | 10 | 25 | 35 | 🔴 In Progress (10/50) |
-| Domain 5: Intelligence & Completion | `completionItem/resolve` | 0 | 9 | 9 | ⚪ Zero E2E |
+| Domain 5: Intelligence & Completion | `completionItem/resolve` | 20 | 9 | 29 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 5: Intelligence & Completion | `textDocument/hover` | 5 | 16 | 21 | 🔴 In Progress (5/50) |
 | Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 1 | 3 | 4 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 1 | 9 | 10 | 🔴 In Progress (1/50) |
-| Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 0 | 0 | 0 | ⚪ Zero E2E |
-| Domain 5: Intelligence & Completion | `textDocument/moniker` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 5: Intelligence & Completion | `textDocument/moniker` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `prepareCallHierarchy` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `callHierarchy/outgoingCalls` | 23 | 1 | 24 | 🟡 Wave 1 Pass (>= 20) |
@@ -358,8 +358,27 @@ _No classified e2e tests yet._
 - `test_out_of_bounds_line_completion_returns_empty`
 - `test_review_v4651_inline_completion_unicode_edit`
 
-#### `completionItem/resolve` (0 e2e tests)
-_No classified e2e tests yet._
+#### `completionItem/resolve` (20 e2e tests)
+- `test_completion_resolve_additional_text_edits_preserved`
+- `test_completion_resolve_command_preserved`
+- `test_completion_resolve_commit_characters_preserved`
+- `test_completion_resolve_complex_data_object_preserved`
+- `test_completion_resolve_data_to_markdown_documentation`
+- `test_completion_resolve_deprecated_preserved`
+- `test_completion_resolve_detail_to_markdown_documentation`
+- `test_completion_resolve_empty_label_rejected_error`
+- `test_completion_resolve_existing_doc_preserved`
+- `test_completion_resolve_filter_text_preserved`
+- `test_completion_resolve_idempotent_re_resolve`
+- `test_completion_resolve_insert_text_format_preserved`
+- `test_completion_resolve_insert_text_preserved`
+- `test_completion_resolve_kind_field_preserved`
+- `test_completion_resolve_label_preserved`
+- `test_completion_resolve_missing_label_rejected_error`
+- `test_completion_resolve_missing_params_rejected_error`
+- `test_completion_resolve_non_object_params_rejected_error`
+- `test_completion_resolve_tags_preserved`
+- `test_completion_resolve_text_edit_preserved`
 
 #### `textDocument/hover` (5 e2e tests)
 - `test_l2_hover_inside_cfg_test_method`
@@ -374,11 +393,49 @@ _No classified e2e tests yet._
 #### `textDocument/inlayHint / resolve` (1 e2e tests)
 - `test_l2_inlay_hint_utf16_with_emoji`
 
-#### `textDocument/inlineValue` (0 e2e tests)
-_No classified e2e tests yet._
+#### `textDocument/inlineValue` (20 e2e tests)
+- `test_inline_value_case_sensitive_lookup_flag_exact`
+- `test_inline_value_empty_document_returns_empty`
+- `test_inline_value_empty_range_empty_result`
+- `test_inline_value_field_access_identifier_separated`
+- `test_inline_value_function_parameter_variables`
+- `test_inline_value_let_binding_variable_name`
+- `test_inline_value_line_range_filtering_multi_line`
+- `test_inline_value_line_range_filtering_single_line`
+- `test_inline_value_loop_variable_name`
+- `test_inline_value_method_call_identifier`
+- `test_inline_value_multiline_function_inline_values`
+- `test_inline_value_multiple_let_variables`
+- `test_inline_value_nonexistent_file_empty`
+- `test_inline_value_numeric_identifiers_filtered_out`
+- `test_inline_value_out_of_bounds_line_range_empty`
+- `test_inline_value_overlay_text_vs_disk_text`
+- `test_inline_value_rust_keywords_filtered_out`
+- `test_inline_value_shadowed_variable_inline_values`
+- `test_inline_value_underscore_identifier_supported`
+- `test_inline_value_utf16_column_range_exact`
 
-#### `textDocument/moniker` (0 e2e tests)
-_No classified e2e tests yet._
+#### `textDocument/moniker` (20 e2e tests)
+- `test_moniker_const_scheme_rust`
+- `test_moniker_dirty_overlay_definition_lookup`
+- `test_moniker_empty_file_empty_monikers`
+- `test_moniker_enum_scheme_rust`
+- `test_moniker_function_scheme_rust`
+- `test_moniker_identifier_format_file_colon_colon_name`
+- `test_moniker_method_definition_moniker`
+- `test_moniker_module_definition_moniker`
+- `test_moniker_multiple_distinct_symbols_in_file`
+- `test_moniker_nonexistent_symbol_empty_list`
+- `test_moniker_out_of_bounds_column_empty`
+- `test_moniker_out_of_bounds_line_empty`
+- `test_moniker_overlay_definition_lookup`
+- `test_moniker_resolve_null_params_tolerance`
+- `test_moniker_resolve_returns_params_unmodified`
+- `test_moniker_struct_scheme_rust`
+- `test_moniker_trait_scheme_rust`
+- `test_moniker_type_alias_moniker`
+- `test_moniker_unique_scope_project`
+- `test_moniker_utf16_coordinates_lookup`
 
 ### Domain 6: Hierarchies
 
@@ -1089,4 +1146,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 883 total, 29 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 943 total, 32 rows >= 20, 1 rows >= 50 of 53
