@@ -340,7 +340,7 @@ def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed
         "sample_count_per_method": sample_count,
         "seed": seed,
         "total_methods": len(LSP_SPECS),
-        "total_tests_per_server": len(LSP_SPECS) * sample_count,
+        "total_tests_per_server": sum(v.get("tests_run", 0) for v in ridx_res["methods"].values()),
         "ridx_duration_sec": round(ridx_dur, 2),
         "ra_duration_sec": round(ra_dur, 2),
     }
