@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1551
+- **Total E2E Tests**: 1582
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1469
+- **Classified E2E Tests**: 1500
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 40 / 53
-- **Rows >= 50 E2E**: 17 / 53
+- **Rows >= 50 E2E**: 18 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -63,7 +63,7 @@
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 15 | 8 | 23 | 🔴 In Progress (15/50) |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 51 | 0 | 51 | ✅ Complete |
-| Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didDeleteFiles / willDeleteFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 
@@ -1598,27 +1598,58 @@
 - `test_did_change_watched_files_unmodified_shard_preserves_cached_state`
 - `test_did_change_watched_files_uppercase_scheme_handled`
 
-#### `workspace/didCreateFiles / willCreateFiles` (20 e2e tests)
+#### `workspace/didCreateFiles / willCreateFiles` (51 e2e tests)
+- `test_did_create_files_alternating_will_and_did_create`
 - `test_did_create_files_batch_twenty_files`
+- `test_did_create_files_case_sensitivity_path`
+- `test_did_create_files_clears_entire_converter_cache`
+- `test_did_create_files_crlf_file_conv_invalidation`
+- `test_did_create_files_directory_creation_ignored`
+- `test_did_create_files_dispatch_batch_in_multiroot`
+- `test_did_create_files_dispatch_followed_by_workspace_symbol`
+- `test_did_create_files_dispatched_via_lsp_pipeline`
+- `test_did_create_files_dot_slash_path_normalization`
 - `test_did_create_files_empty_files_noop`
+- `test_did_create_files_empty_notification_params`
 - `test_did_create_files_empty_uri_skipped`
 - `test_did_create_files_file_outside_roots_ignored`
 - `test_did_create_files_followed_by_did_open`
 - `test_did_create_files_missing_files_key_noop`
+- `test_did_create_files_mixed_valid_and_invalid_uris`
 - `test_did_create_files_multi_root_sync`
+- `test_did_create_files_multiple_events_idempotent`
+- `test_did_create_files_multiple_files_clears_multiple_conv_caches`
+- `test_did_create_files_non_utf8_path_handling`
+- `test_did_create_files_null_files_array`
 - `test_did_create_files_open_dirty_buffer_not_overwritten`
+- `test_did_create_files_overlay_content_preserved_after_notification`
+- `test_did_create_files_overlay_opened_before_notification`
 - `test_did_create_files_percent_encoded_uri`
 - `test_did_create_files_relative_path_resolution`
 - `test_did_create_files_retains_existing_roots`
 - `test_did_create_files_single_file_clears_conv`
+- `test_did_create_files_symbol_references_preserved`
 - `test_did_create_files_unmodified_index_preserves_baseline`
+- `test_did_create_files_with_custom_uri_scheme`
 - `test_did_create_files_with_updated_disk_index_syncs`
+- `test_did_create_files_workspace_reader_count_invariant`
+- `test_will_create_files_duplicate_files_in_request`
 - `test_will_create_files_empty_files_array`
+- `test_will_create_files_extra_fields_in_file_object`
+- `test_will_create_files_floating_point_id`
+- `test_will_create_files_large_batch_fifty_files`
 - `test_will_create_files_multi_file_returns_empty_edit`
+- `test_will_create_files_negative_numeric_id`
+- `test_will_create_files_null_options`
 - `test_will_create_files_numeric_id_preserved`
 - `test_will_create_files_returns_matching_schema`
+- `test_will_create_files_special_characters_in_filename`
 - `test_will_create_files_string_id_preserved`
 - `test_will_create_files_valid_file_returns_empty_edit`
+- `test_will_create_files_windows_style_uri`
+- `test_will_create_files_with_fragment`
+- `test_will_create_files_with_nested_subdirectories`
+- `test_will_create_files_with_query_params`
 
 #### `workspace/didRenameFiles / willRenameFiles` (20 e2e tests)
 - `test_did_rename_files_active_overlay_rebound`
@@ -1752,4 +1783,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1551 total, 40 rows >= 20, 17 rows >= 50 of 53
+coverage: e2e 1582 total, 40 rows >= 20, 18 rows >= 50 of 53
