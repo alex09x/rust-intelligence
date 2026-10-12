@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1582
+- **Total E2E Tests**: 1613
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1500
+- **Classified E2E Tests**: 1531
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 40 / 53
-- **Rows >= 50 E2E**: 18 / 53
+- **Rows >= 50 E2E**: 19 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -64,7 +64,7 @@
 | Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 51 | 0 | 51 | ✅ Complete |
-| Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didDeleteFiles / willDeleteFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 
 ## Method-level Test Catalog
@@ -1651,27 +1651,58 @@
 - `test_will_create_files_with_nested_subdirectories`
 - `test_will_create_files_with_query_params`
 
-#### `workspace/didRenameFiles / willRenameFiles` (20 e2e tests)
+#### `workspace/didRenameFiles / willRenameFiles` (51 e2e tests)
 - `test_did_rename_files_active_overlay_rebound`
+- `test_did_rename_files_alternating_will_and_did_rename`
+- `test_did_rename_files_batch_across_multiple_workspaces`
 - `test_did_rename_files_chain_rename`
+- `test_did_rename_files_clears_conv_for_both_old_and_new_paths`
 - `test_did_rename_files_clears_position_converter`
+- `test_did_rename_files_crlf_file_rebound_cleanly`
+- `test_did_rename_files_custom_scheme_ignored`
 - `test_did_rename_files_cyclic_rename_roundtrip`
+- `test_did_rename_files_deeply_nested_directory_rename`
+- `test_did_rename_files_dirty_overlay_keeps_dirty_state_after_rebind`
 - `test_did_rename_files_dirty_overlay_preserves_text_and_version`
+- `test_did_rename_files_dispatched_via_lsp_pipeline`
 - `test_did_rename_files_empty_files_noop`
+- `test_did_rename_files_empty_uris_handled`
+- `test_did_rename_files_extension_change_rs_to_bak`
 - `test_did_rename_files_followed_by_did_change`
+- `test_did_rename_files_followed_by_did_change_on_new_path`
 - `test_did_rename_files_followed_by_did_close`
+- `test_did_rename_files_followed_by_did_open_on_new_path`
+- `test_did_rename_files_followed_by_workspace_symbol_query`
+- `test_did_rename_files_idempotent_duplicate_events`
 - `test_did_rename_files_missing_fields_skipped`
 - `test_did_rename_files_missing_files_key_noop`
 - `test_did_rename_files_multi_rename_simultaneous`
+- `test_did_rename_files_multi_root_dispatch_preserves_roots`
 - `test_did_rename_files_multi_root_secondary_workspace`
+- `test_did_rename_files_null_params_handled`
 - `test_did_rename_files_percent_encoded_uri`
+- `test_did_rename_files_reader_count_invariant`
+- `test_did_rename_files_rebinding_clears_old_overlay_entry`
+- `test_did_rename_files_relative_uri_handling`
+- `test_did_rename_files_swap_two_files`
 - `test_did_rename_files_unopened_file_noop`
+- `test_will_rename_files_across_directories`
+- `test_will_rename_files_batch_twenty_files`
+- `test_will_rename_files_custom_string_id`
 - `test_will_rename_files_empty_files_array`
+- `test_will_rename_files_extra_fields_in_rename_param`
+- `test_will_rename_files_floating_point_id`
 - `test_will_rename_files_lifecycle_sequence_with_did_rename`
+- `test_will_rename_files_missing_new_uri_graceful`
 - `test_will_rename_files_multi_file_returns_empty_edit`
+- `test_will_rename_files_negative_numeric_id`
+- `test_will_rename_files_noop_same_source_and_dest`
 - `test_will_rename_files_numeric_id_preserved`
+- `test_will_rename_files_query_and_fragment_in_uris`
 - `test_will_rename_files_string_id_preserved`
 - `test_will_rename_files_valid_returns_empty_edit`
+- `test_will_rename_files_windows_path_uris`
+- `test_will_rename_files_with_special_characters`
 
 #### `workspace/didDeleteFiles / willDeleteFiles` (20 e2e tests)
 - `test_did_delete_files_active_overlay_evicted`
@@ -1783,4 +1814,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1582 total, 40 rows >= 20, 18 rows >= 50 of 53
+coverage: e2e 1613 total, 40 rows >= 20, 19 rows >= 50 of 53
