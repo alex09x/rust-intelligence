@@ -3,11 +3,11 @@
 > **Note on Method Count (53 methods)**: The matrix covers 53 distinct LSP capability rows across 10 domains. LSP `textDocument/declaration` is delegated directly to `textDocument/definition` via `handle_declaration` and tracked jointly in `textDocument/definition / declaration (delegating)`.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 486
+- **Total E2E Tests**: 506
 - **Total Unit/Src Tests**: 409
-- **Classified E2E Tests**: 404
+- **Classified E2E Tests**: 424
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 9 / 53
+- **Rows >= 20 E2E**: 10 / 53
 - **Rows >= 50 E2E**: 1 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
@@ -64,7 +64,7 @@
 | Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
-| Domain 10: Multi-root & File Events | `workspace/didDeleteFiles / willDeleteFiles` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 10: Multi-root & File Events | `workspace/didDeleteFiles / willDeleteFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 
 ## Method-level Test Catalog
 
@@ -611,8 +611,27 @@ _No classified e2e tests yet._
 - `test_will_rename_files_string_id_preserved`
 - `test_will_rename_files_valid_returns_empty_edit`
 
-#### `workspace/didDeleteFiles / willDeleteFiles` (0 e2e tests)
-_No classified e2e tests yet._
+#### `workspace/didDeleteFiles / willDeleteFiles` (20 e2e tests)
+- `test_did_delete_files_active_overlay_evicted`
+- `test_did_delete_files_batch_ten_files_partial_open`
+- `test_did_delete_files_clears_position_converter`
+- `test_did_delete_files_dirty_overlay_discarded`
+- `test_did_delete_files_empty_files_noop`
+- `test_did_delete_files_idempotent_multiple_deletions`
+- `test_did_delete_files_missing_files_key_noop`
+- `test_did_delete_files_missing_uri_field_skipped`
+- `test_did_delete_files_multi_file_simultaneous`
+- `test_did_delete_files_multi_root_secondary_workspace`
+- `test_did_delete_files_nonexistent_path_noop`
+- `test_did_delete_files_percent_encoded_uri`
+- `test_did_delete_files_reopen_after_deletion`
+- `test_did_delete_files_unopened_file_noop`
+- `test_will_delete_files_empty_files_array`
+- `test_will_delete_files_lifecycle_sequence_with_did_delete`
+- `test_will_delete_files_multi_file_returns_empty_edit`
+- `test_will_delete_files_numeric_id_preserved`
+- `test_will_delete_files_string_id_preserved`
+- `test_will_delete_files_valid_file_returns_empty_edit`
 
 ### Unclassified E2E Tests
 
@@ -702,4 +721,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 486 total, 9 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 506 total, 10 rows >= 20, 1 rows >= 50 of 53

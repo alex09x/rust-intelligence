@@ -28,6 +28,7 @@ mod l2_cases;
 mod l2_harness;
 mod ntm_compare_harness;
 mod ntm_domain10_file_create;
+mod ntm_domain10_file_delete;
 mod ntm_domain10_file_rename;
 mod ntm_domain10_l2_multiroot;
 mod ntm_domain10_watched_files;
