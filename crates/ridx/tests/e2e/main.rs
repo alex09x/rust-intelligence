@@ -196,3 +196,6 @@ mod ntm_version_precondition;
 mod ntm_workspace_edit;
 mod scip_loader;
 mod ntm_domain9_l1_definition_part3;
+mod ntm_domain9_l1_type_definition_part4;
+mod ntm_domain9_l1_type_definition_part5;
+mod ntm_domain9_l1_type_definition_part6;

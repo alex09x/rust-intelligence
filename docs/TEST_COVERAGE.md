@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1652
+- **Total E2E Tests**: 1683
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1570
+- **Classified E2E Tests**: 1601
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 40 / 53
-- **Rows >= 50 E2E**: 21 / 53
+- **Rows >= 50 E2E**: 22 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -54,7 +54,7 @@
 | Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 1 | 5 | 6 | 🔴 In Progress (1/50) |
 | Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 14 | 0 | 14 | 🔴 In Progress (14/50) |
 | Domain 9: Navigation & Symbols | `textDocument/definition / declaration (delegating)` | 52 | 7 | 59 | ✅ Complete |
-| Domain 9: Navigation & Symbols | `textDocument/typeDefinition` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 9: Navigation & Symbols | `textDocument/typeDefinition` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/implementation` | 16 | 0 | 16 | 🔴 In Progress (16/50) |
 | Domain 9: Navigation & Symbols | `textDocument/references` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 9: Navigation & Symbols | `textDocument/documentHighlight` | 19 | 0 | 19 | 🔴 In Progress (19/50) |
@@ -1358,7 +1358,7 @@
 - `test_ntm_hierarchy_and_protocol_invariants`
 - `test_staleness_definition_in_modified_hunk_abstains`
 
-#### `textDocument/typeDefinition` (20 e2e tests)
+#### `textDocument/typeDefinition` (51 e2e tests)
 - `test_l1_type_definition_cross_crate_two_shards`
 - `test_l1_type_definition_cross_file`
 - `test_l1_type_definition_dirty_overlay_returns_null`
@@ -1379,6 +1379,37 @@
 - `test_l1_type_definition_utf16_query_side`
 - `test_l1_type_definition_utf16_with_emoji_prefix`
 - `test_l1_type_definition_whitespace_and_oob_bounds`
+- `test_type_definition_closure_parameter_type`
+- `test_type_definition_const_type_target`
+- `test_type_definition_cross_crate_dependency`
+- `test_type_definition_cross_crate_reexport`
+- `test_type_definition_cross_file_parent_module`
+- `test_type_definition_cross_file_submodule`
+- `test_type_definition_deeply_nested_module_path`
+- `test_type_definition_empty_workspace_returns_null`
+- `test_type_definition_fn_return_type_binding`
+- `test_type_definition_generic_type_argument_target`
+- `test_type_definition_local_var_enum_type`
+- `test_type_definition_local_var_struct_type`
+- `test_type_definition_match_arm_pattern_variable`
+- `test_type_definition_mut_reference_target`
+- `test_type_definition_option_inner_type_string`
+- `test_type_definition_out_of_bounds_col_returns_null`
+- `test_type_definition_out_of_bounds_line_returns_null`
+- `test_type_definition_preserves_large_numeric_id`
+- `test_type_definition_preserves_numeric_request_id`
+- `test_type_definition_preserves_string_request_id`
+- `test_type_definition_primitive_type_without_def_returns_null`
+- `test_type_definition_reference_type_deref_target`
+- `test_type_definition_result_inner_type_string`
+- `test_type_definition_static_item_type`
+- `test_type_definition_struct_named_field`
+- `test_type_definition_struct_tuple_field`
+- `test_type_definition_type_alias_resolution`
+- `test_type_definition_unregistered_file_returns_null`
+- `test_type_definition_vector_inner_type_string`
+- `test_type_definition_whitespace_returns_null`
+- `test_type_definition_with_clean_overlay`
 
 #### `textDocument/implementation` (16 e2e tests)
 - `test_l1_implementation_blanket_impl_indexed_ref`
@@ -1853,4 +1884,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1652 total, 40 rows >= 20, 21 rows >= 50 of 53
+coverage: e2e 1683 total, 40 rows >= 20, 22 rows >= 50 of 53
