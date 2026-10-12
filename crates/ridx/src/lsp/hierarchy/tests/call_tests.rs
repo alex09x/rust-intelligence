@@ -157,3 +157,35 @@ fn test_call_hierarchy_incoming_and_outgoing() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_call_hierarchy_missing_item_or_empty_uri_returns_empty() {
+    let (temp_dir, ws, overlay_mgr, mut conv) = setup_test_hierarchy();
+
+    // 1. Missing item param (params: {})
+    let req_missing = json!({ "params": {} });
+    let inc1 = handle_call_hierarchy_incoming_calls(&req_missing, Some(&ws), &overlay_mgr, &mut conv);
+    assert_eq!(inc1, json!([]));
+    let out1 = handle_call_hierarchy_outgoing_calls(&req_missing, Some(&ws), &overlay_mgr, &mut conv);
+    assert_eq!(out1, json!([]));
+
+    // 2. Empty uri in item
+    let req_empty_uri = json!({
+        "params": {
+            "item": {
+                "name": "add",
+                "uri": "",
+                "range": {
+                    "start": { "line": 0, "character": 0 },
+                    "end": { "line": 0, "character": 3 }
+                }
+            }
+        }
+    });
+    let inc2 = handle_call_hierarchy_incoming_calls(&req_empty_uri, Some(&ws), &overlay_mgr, &mut conv);
+    assert_eq!(inc2, json!([]));
+    let out2 = handle_call_hierarchy_outgoing_calls(&req_empty_uri, Some(&ws), &overlay_mgr, &mut conv);
+    assert_eq!(out2, json!([]));
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}

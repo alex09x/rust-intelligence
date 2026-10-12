@@ -103,6 +103,9 @@ fn find_definition_path_in_workspace<'a>(
     file_str: &str,
     start_line: u32,
 ) -> Option<&'a str> {
+    if file_str.is_empty() {
+        return None;
+    }
     for (idx, reader) in ws.readers().iter().enumerate() {
         let rel_file = ws
             .source_root_at(idx)
@@ -130,8 +133,10 @@ pub fn handle_call_hierarchy_incoming_calls(
     conv: &mut PositionConverter,
 ) -> Value {
     let item = &msg["params"]["item"];
+    let Some(item_uri) = item.get("uri").and_then(|u| u.as_str()).filter(|u| !u.is_empty()) else {
+        return json!([]);
+    };
     let name = item["name"].as_str().unwrap_or("");
-    let item_uri = item["uri"].as_str().unwrap_or("");
     let item_file = uri_to_path(item_uri);
     let item_start_line = item["range"]["start"]["line"].as_u64().unwrap_or(0) as u32 + 1;
 
@@ -257,7 +262,9 @@ pub fn handle_call_hierarchy_outgoing_calls(
     conv: &mut PositionConverter,
 ) -> Value {
     let item = &msg["params"]["item"];
-    let uri = item["uri"].as_str().unwrap_or("");
+    let Some(uri) = item.get("uri").and_then(|u| u.as_str()).filter(|u| !u.is_empty()) else {
+        return json!([]);
+    };
     let file = uri_to_path(uri);
     let start_line = item["range"]["start"]["line"].as_u64().unwrap_or(0) as u32 + 1;
     let mut end_line = item["range"]["end"]["line"]
