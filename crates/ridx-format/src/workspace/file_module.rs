@@ -100,7 +100,7 @@ impl WorkspaceIndex {
             let indices: Vec<usize> = self.readers.iter().enumerate()
                 .filter(|&(i, r)| {
                     r.find_file_id(ap).is_some()
-                        || self.reader_file_hashes.get(i).map_or(false, |h| h.contains_key(ap))
+                        || self.reader_file_hashes.get(i).is_some_and(|h| h.contains_key(ap))
                 })
                 .map(|(i, _)| i)
                 .collect();
@@ -281,7 +281,7 @@ impl WorkspaceIndex {
             // Relative path
             let has_file = |s: &str| {
                 reader.find_file_id(s).is_some()
-                    || self.reader_file_hashes.get(reader_idx).map_or(false, |h| h.contains_key(s))
+                    || self.reader_file_hashes.get(reader_idx).is_some_and(|h| h.contains_key(s))
             };
 
             if let Some(ws_root) = &self.workspace_root {
