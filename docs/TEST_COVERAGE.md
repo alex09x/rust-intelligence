@@ -4,18 +4,18 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1023
+- **Total E2E Tests**: 1053
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 941
+- **Classified E2E Tests**: 971
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 33 / 53
-- **Rows >= 50 E2E**: 3 / 53
+- **Rows >= 50 E2E**: 4 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | Domain 1: Lifecycle & Control | `initialize / initialized` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `shutdown` | 50 | 0 | 50 | ✅ Complete |
-| Domain 1: Lifecycle & Control | `exit` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 1: Lifecycle & Control | `exit` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `$/cancelRequest` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
@@ -175,27 +175,57 @@
 - `test_shutdown_transitions_state_to_shutdown`
 - `test_shutdown_uninitialized_server_shutdown_rejected`
 
-#### `exit` (20 e2e tests)
+#### `exit` (50 e2e tests)
+- `test_exit_abrupt_exit_preserves_exit_code_1`
+- `test_exit_after_dynamic_registration_cycle`
+- `test_exit_after_failed_request_lifecycle`
+- `test_exit_after_initialize_reject_cycle`
+- `test_exit_after_multiple_document_edits`
+- `test_exit_after_multiple_shutdown_calls_returns_exit_code_0`
+- `test_exit_after_shutdown_returns_false_signal`
 - `test_exit_after_shutdown_returns_ok`
 - `test_exit_before_shutdown_returns_err`
+- `test_exit_cancelled_requests_set_unaffected`
 - `test_exit_check_lifecycle_and_cancel_returns_false`
+- `test_exit_clean_shutdown_preserves_exit_code_0`
 - `test_exit_cleans_up_no_deadlock`
+- `test_exit_dispatch_multiple_times`
 - `test_exit_does_not_mutate_other_state`
+- `test_exit_does_not_mutate_workspace_roots`
+- `test_exit_does_not_panic_on_custom_fields`
+- `test_exit_during_active_cancelled_set`
 - `test_exit_empty_params_tolerance`
 - `test_exit_error_message_exact`
+- `test_exit_exit_code_0_after_clean_shutdown`
+- `test_exit_exit_code_1_after_initialize_without_shutdown`
+- `test_exit_exit_code_1_without_shutdown`
+- `test_exit_final_lifecycle_checkpoint`
 - `test_exit_from_initialized_returns_err`
+- `test_exit_from_shutting_down_server_lifecycle`
 - `test_exit_from_uninitialized_returns_err`
 - `test_exit_full_lifecycle_sequence`
 - `test_exit_handle_exit_shutdown_parity`
+- `test_exit_idempotent_exit_code_check`
 - `test_exit_ignores_extra_params`
+- `test_exit_interleaved_with_custom_notifications`
 - `test_exit_missing_params_tolerance`
 - `test_exit_notification_no_response_written`
+- `test_exit_notification_without_version_header`
 - `test_exit_null_params_tolerance`
+- `test_exit_overlay_manager_clean_after_exit`
 - `test_exit_preserves_uninitialized_error_distinction`
+- `test_exit_produces_no_stdout_output`
 - `test_exit_repeated_exit_calls`
 - `test_exit_returns_exit_code_zero_signal`
+- `test_exit_with_empty_params_safe`
+- `test_exit_with_nested_json_params`
+- `test_exit_with_null_params_safe`
 - `test_exit_with_numeric_id_handled`
 - `test_exit_with_pending_cancelled_requests`
+- `test_exit_with_unexpected_id_field`
+- `test_exit_without_params_field_safe`
+- `test_exit_without_shutdown_returns_false_signal`
+- `test_exit_writer_unmodified_on_exit`
 
 #### `$/cancelRequest` (20 e2e tests)
 - `test_cancel_request_cancels_code_action`
@@ -1225,4 +1255,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1023 total, 33 rows >= 20, 3 rows >= 50 of 53
+coverage: e2e 1053 total, 33 rows >= 20, 4 rows >= 50 of 53
