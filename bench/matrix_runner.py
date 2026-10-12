@@ -26,12 +26,13 @@ if str(bench_dir) not in sys.path:
 
 from matrix_categories import LSP_SPECS
 from matrix_execute import execute_server_suite
-from matrix_provenance import collect_matrix_provenance, save_scenarios_positions
+from matrix_provenance import check_ridx_index, collect_matrix_provenance, save_scenarios_positions
 from matrix_sampling import sample_full_lsp_matrix
 
 
 def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed=42, out_path=None, repo_id=None):
     """Executes the full 78 methods x sample_count test matrix on both servers."""
+    check_ridx_index(repo_dir)
     ts_start = datetime.now(timezone.utc).isoformat()
     print(f"Sampling {sample_count} varieties across all 78 LSP methods for {repo_dir} (seed={seed})...")
     scenarios = sample_full_lsp_matrix(repo_dir, per_method=sample_count, seed=seed)
@@ -75,11 +76,13 @@ def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed
         "ridx_commit", "ridx_binary_dirty", "driver_hash", "driver_build_commit", "driver_dirty",
         "workspace_head", "workspace_head_note", "rustc", "ra_version", "node", "taskset",
         "repo_commit", "sysroot_cas_key", "sysroot_transplanted", "timestamp_start", "timestamp_end",
+        "ridx_index_shards",
     ]:
         res[k] = prov.get(k)
     res["ridx"] = ridx_res
     res["rust_analyzer"] = ra_res
     return res
+
 
 
 def main():

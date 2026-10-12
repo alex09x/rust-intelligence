@@ -69,6 +69,26 @@ def normalize_repo_identifier(repo_path: Path, repo_id: str = None) -> str:
     return repo_name
 
 
+def count_index_shards(repo_dir: Path) -> int:
+    """Counts *.ridx shard files in target/ridx."""
+    root = Path(repo_dir) / "target" / "ridx"
+    if not root.is_dir():
+        return 0
+    return sum(1 for _ in root.rglob("*.ridx"))
+
+
+def check_ridx_index(repo_dir: Path) -> int:
+    """Verifies that the RIDX index and sysroot CAS key exist, returning shard count."""
+    shards = count_index_shards(repo_dir)
+    cas_key = find_sysroot_cas_key(repo_dir)
+    if shards == 0 or not cas_key:
+        raise RuntimeError(
+            f"RIDX index missing for {repo_dir}: found {shards} shards, sysroot_cas_key={cas_key or 'none'}. "
+            "Index must be built before running matrix benchmark."
+        )
+    return shards
+
+
 def collect_matrix_provenance(
     repo_dir: Path,
     ridx_bin: Path,
@@ -107,9 +127,11 @@ def collect_matrix_provenance(
         "repo_commit": get_repo_commit(repo_dir) or "unknown",
         "sysroot_cas_key": cas_key or "none",
         "sysroot_transplanted": sysroot_trans,
+        "ridx_index_shards": count_index_shards(repo_dir),
         "timestamp_start": timestamp_start,
         "timestamp_end": timestamp_end,
     }
+
 
 
 def save_scenarios_positions(
