@@ -4,16 +4,16 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 963
+- **Total E2E Tests**: 993
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 881
+- **Classified E2E Tests**: 911
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 33 / 53
-- **Rows >= 50 E2E**: 1 / 53
+- **Rows >= 50 E2E**: 2 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| Domain 1: Lifecycle & Control | `initialize / initialized` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 1: Lifecycle & Control | `initialize / initialized` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `shutdown` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 1: Lifecycle & Control | `exit` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 1: Lifecycle & Control | `$/cancelRequest` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
@@ -71,25 +71,55 @@
 
 ### Domain 1: Lifecycle & Control
 
-#### `initialize / initialized` (20 e2e tests)
+#### `initialize / initialized` (50 e2e tests)
 - `test_initialize_already_initialized_rejected`
 - `test_initialize_basic_root_uri`
 - `test_initialize_basic_workspace_folders`
+- `test_initialize_capabilities_call_hierarchy_provider`
+- `test_initialize_capabilities_declaration_provider`
+- `test_initialize_capabilities_document_formatting_provider`
+- `test_initialize_capabilities_document_highlight_provider`
+- `test_initialize_capabilities_document_range_formatting_provider`
+- `test_initialize_capabilities_execute_command_provider`
+- `test_initialize_capabilities_folding_range_provider`
 - `test_initialize_capabilities_hover_provider`
+- `test_initialize_capabilities_implementation_provider`
+- `test_initialize_capabilities_selection_range_provider`
+- `test_initialize_capabilities_text_document_sync`
+- `test_initialize_capabilities_type_definition_provider`
+- `test_initialize_capabilities_type_hierarchy_provider`
+- `test_initialize_capabilities_workspace_folders_supported`
 - `test_initialize_client_capabilities_pull_diagnostic_disabled`
 - `test_initialize_client_capabilities_pull_diagnostic_enabled`
 - `test_initialize_client_capabilities_refresh_support_false`
 - `test_initialize_client_capabilities_refresh_support_true`
+- `test_initialize_client_info_handling`
 - `test_initialize_code_action_kinds`
+- `test_initialize_code_action_resolve_provider`
+- `test_initialize_completion_trigger_characters`
 - `test_initialize_completion_trigger_chars`
+- `test_initialize_diagnostic_provider_inter_file`
 - `test_initialize_empty_params`
 - `test_initialize_fallback_to_root_path`
 - `test_initialize_file_operations_capabilities`
 - `test_initialize_formatting_trigger_chars`
+- `test_initialize_initialization_options_ignored_safely`
+- `test_initialize_initialized_notification_no_response`
+- `test_initialize_inlay_hint_resolve_provider`
+- `test_initialize_multiple_consecutive_initialized_notifications`
+- `test_initialize_null_root_uri_and_null_root_path`
+- `test_initialize_rename_prepare_provider`
+- `test_initialize_response_jsonrpc_version_2_0`
+- `test_initialize_root_path_fallback_when_root_uri_missing`
 - `test_initialize_semantic_tokens_legend`
+- `test_initialize_semantic_tokens_provider_capabilities`
 - `test_initialize_server_info_exact`
+- `test_initialize_server_info_name_and_version`
 - `test_initialize_signature_help_trigger_chars`
+- `test_initialize_string_id_roundtrip`
 - `test_initialize_text_document_sync_capabilities`
+- `test_initialize_trace_param_handling`
+- `test_initialize_with_workspace_folders_param`
 - `test_initialized_duplicate_notification_handling`
 - `test_initialized_notification_handling`
 
@@ -1165,4 +1195,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 963 total, 33 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 993 total, 33 rows >= 20, 2 rows >= 50 of 53

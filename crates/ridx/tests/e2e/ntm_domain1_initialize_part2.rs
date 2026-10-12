@@ -58,7 +58,7 @@ fn test_initialize_already_initialized_rejected() {
         "params": { "capabilities": {} }
     });
     let res1 = dispatch_client(msg1, &mut out, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(res1.unwrap(), true);
+    assert!(res1.unwrap());
 
     out.clear();
     let msg2 = json!({
@@ -68,7 +68,7 @@ fn test_initialize_already_initialized_rejected() {
         "params": { "capabilities": {} }
     });
     let res2 = dispatch_client(msg2, &mut out, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(res2.unwrap(), true);
+    assert!(res2.unwrap());
 
     let val = extract_response(&out);
     assert_eq!(val["id"], 2);
