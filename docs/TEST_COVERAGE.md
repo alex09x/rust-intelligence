@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1193
+- **Total E2E Tests**: 1243
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 1111
+- **Classified E2E Tests**: 1161
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 35 / 53
-- **Rows >= 50 E2E**: 8 / 53
+- **Rows >= 20 E2E**: 36 / 53
+- **Rows >= 50 E2E**: 9 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -25,7 +25,7 @@
 | Domain 3: Synchronization & Coordinates | `textDocument/didChange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didSave` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
 | Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
-| Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 50 | 0 | 50 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `textDocument/codeAction` | 7 | 12 | 19 | 🔴 In Progress (7/50) |
 | Domain 4: Actions & Refactoring | `codeAction/resolve` | 1 | 13 | 14 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/completion` | 10 | 25 | 35 | 🔴 In Progress (10/50) |
@@ -557,8 +557,57 @@
 - `test_did_close_invalidates_position_converter`
 - `test_did_close_unopened_document_is_noop`
 
-#### `willSave / willSaveWaitUntil` (0 e2e tests)
-_No classified e2e tests yet._
+#### `willSave / willSaveWaitUntil` (50 e2e tests)
+- `test_will_save_after_delay_reason_returns_ok_true`
+- `test_will_save_batch_interleaved_with_did_change`
+- `test_will_save_does_not_invalidate_position_converter`
+- `test_will_save_does_not_modify_open_overlay_content`
+- `test_will_save_does_not_modify_open_overlay_version`
+- `test_will_save_does_not_trigger_flycheck`
+- `test_will_save_empty_params_handled_safely`
+- `test_will_save_empty_uri_safe`
+- `test_will_save_focus_out_reason_returns_ok_true`
+- `test_will_save_followed_by_did_save_sequence`
+- `test_will_save_large_document_overlay_preserved`
+- `test_will_save_manual_reason_returns_ok_true`
+- `test_will_save_multi_root_routing_intact`
+- `test_will_save_multiple_successive_notifications`
+- `test_will_save_notification_returns_true_in_dispatch`
+- `test_will_save_null_params_safe`
+- `test_will_save_on_closed_document_remains_closed`
+- `test_will_save_on_unopened_document_is_safe_noop`
+- `test_will_save_produces_zero_stdout_output`
+- `test_will_save_unknown_reason_code_handled_safely`
+- `test_will_save_unspecified_reason_handled_safely`
+- `test_will_save_wait_until_cancelled_request_returns_request_cancelled_error`
+- `test_will_save_wait_until_does_not_invalidate_position_converter`
+- `test_will_save_wait_until_does_not_mutate_overlay`
+- `test_will_save_wait_until_empty_params_safe`
+- `test_will_save_wait_until_empty_uri_safe`
+- `test_will_save_wait_until_followed_by_did_save`
+- `test_will_save_wait_until_interleaved_with_did_change`
+- `test_will_save_wait_until_jsonrpc_version_2_0`
+- `test_will_save_wait_until_large_document_overlay_preserved`
+- `test_will_save_wait_until_missing_reason_safe`
+- `test_will_save_wait_until_multiple_successive_requests`
+- `test_will_save_wait_until_null_params_safe`
+- `test_will_save_wait_until_on_closed_document`
+- `test_will_save_wait_until_preserves_multi_root_routing`
+- `test_will_save_wait_until_preserves_numeric_id`
+- `test_will_save_wait_until_preserves_string_id`
+- `test_will_save_wait_until_preserves_symbols_count`
+- `test_will_save_wait_until_reason_after_delay`
+- `test_will_save_wait_until_reason_focus_out`
+- `test_will_save_wait_until_reason_manual`
+- `test_will_save_wait_until_returns_empty_text_edits_array`
+- `test_will_save_wait_until_unopened_document`
+- `test_will_save_wait_until_with_arbitrary_client_extensions`
+- `test_will_save_wait_until_with_url_encoded_space_uri`
+- `test_will_save_wait_until_with_windows_uri`
+- `test_will_save_with_arbitrary_client_extensions`
+- `test_will_save_with_dirty_overlay_preserves_dirty_state`
+- `test_will_save_with_url_encoded_space_uri`
+- `test_will_save_with_windows_uri`
 
 ### Domain 4: Actions & Refactoring
 
@@ -1395,4 +1444,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1193 total, 35 rows >= 20, 8 rows >= 50 of 53
+coverage: e2e 1243 total, 36 rows >= 20, 9 rows >= 50 of 53
