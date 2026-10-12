@@ -4,20 +4,20 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 747
-- **Total Unit/Src Tests**: 411
-- **Classified E2E Tests**: 665
+- **Total E2E Tests**: 847
+- **Total Unit/Src Tests**: 412
+- **Classified E2E Tests**: 765
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 22 / 53
+- **Rows >= 20 E2E**: 27 / 53
 - **Rows >= 50 E2E**: 1 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| Domain 1: Lifecycle & Control | `initialize / initialized` | 0 | 0 | 0 | ⚪ Zero E2E |
-| Domain 1: Lifecycle & Control | `shutdown` | 0 | 0 | 0 | ⚪ Zero E2E |
-| Domain 1: Lifecycle & Control | `exit` | 0 | 0 | 0 | ⚪ Zero E2E |
-| Domain 1: Lifecycle & Control | `$/cancelRequest` | 0 | 0 | 0 | ⚪ Zero E2E |
-| Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 1: Lifecycle & Control | `initialize / initialized` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 1: Lifecycle & Control | `shutdown` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 1: Lifecycle & Control | `exit` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 1: Lifecycle & Control | `$/cancelRequest` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 2 | 0 | 2 | 🔴 In Progress (2/50) |
 | Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 2 | 1 | 3 | 🔴 In Progress (2/50) |
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
@@ -71,20 +71,115 @@
 
 ### Domain 1: Lifecycle & Control
 
-#### `initialize / initialized` (0 e2e tests)
-_No classified e2e tests yet._
+#### `initialize / initialized` (20 e2e tests)
+- `test_initialize_already_initialized_rejected`
+- `test_initialize_basic_root_uri`
+- `test_initialize_basic_workspace_folders`
+- `test_initialize_capabilities_hover_provider`
+- `test_initialize_client_capabilities_pull_diagnostic_disabled`
+- `test_initialize_client_capabilities_pull_diagnostic_enabled`
+- `test_initialize_client_capabilities_refresh_support_false`
+- `test_initialize_client_capabilities_refresh_support_true`
+- `test_initialize_code_action_kinds`
+- `test_initialize_completion_trigger_chars`
+- `test_initialize_empty_params`
+- `test_initialize_fallback_to_root_path`
+- `test_initialize_file_operations_capabilities`
+- `test_initialize_formatting_trigger_chars`
+- `test_initialize_semantic_tokens_legend`
+- `test_initialize_server_info_exact`
+- `test_initialize_signature_help_trigger_chars`
+- `test_initialize_text_document_sync_capabilities`
+- `test_initialized_duplicate_notification_handling`
+- `test_initialized_notification_handling`
 
-#### `shutdown` (0 e2e tests)
-_No classified e2e tests yet._
+#### `shutdown` (20 e2e tests)
+- `test_shutdown_allows_exit_after`
+- `test_shutdown_duplicate_rejected_code_32600`
+- `test_shutdown_flycheck_state_quiesced`
+- `test_shutdown_preserves_request_id`
+- `test_shutdown_rejects_call_hierarchy_code_32600`
+- `test_shutdown_rejects_code_action_code_32600`
+- `test_shutdown_rejects_completion_code_32600`
+- `test_shutdown_rejects_definition_code_32600`
+- `test_shutdown_rejects_document_symbol_code_32600`
+- `test_shutdown_rejects_formatting_code_32600`
+- `test_shutdown_rejects_hover_code_32600`
+- `test_shutdown_rejects_implementation_code_32600`
+- `test_shutdown_rejects_inlay_hint_code_32600`
+- `test_shutdown_rejects_references_code_32600`
+- `test_shutdown_rejects_rename_code_32600`
+- `test_shutdown_rejects_type_definition_code_32600`
+- `test_shutdown_rejects_type_hierarchy_code_32600`
+- `test_shutdown_rejects_workspace_symbol_code_32600`
+- `test_shutdown_returns_null`
+- `test_shutdown_transitions_state_to_shutdown`
 
-#### `exit` (0 e2e tests)
-_No classified e2e tests yet._
+#### `exit` (20 e2e tests)
+- `test_exit_after_shutdown_returns_ok`
+- `test_exit_before_shutdown_returns_err`
+- `test_exit_check_lifecycle_and_cancel_returns_false`
+- `test_exit_cleans_up_no_deadlock`
+- `test_exit_does_not_mutate_other_state`
+- `test_exit_empty_params_tolerance`
+- `test_exit_error_message_exact`
+- `test_exit_from_initialized_returns_err`
+- `test_exit_from_uninitialized_returns_err`
+- `test_exit_full_lifecycle_sequence`
+- `test_exit_handle_exit_shutdown_parity`
+- `test_exit_ignores_extra_params`
+- `test_exit_missing_params_tolerance`
+- `test_exit_notification_no_response_written`
+- `test_exit_null_params_tolerance`
+- `test_exit_preserves_uninitialized_error_distinction`
+- `test_exit_repeated_exit_calls`
+- `test_exit_returns_exit_code_zero_signal`
+- `test_exit_with_numeric_id_handled`
+- `test_exit_with_pending_cancelled_requests`
 
-#### `$/cancelRequest` (0 e2e tests)
-_No classified e2e tests yet._
+#### `$/cancelRequest` (20 e2e tests)
+- `test_cancel_request_cancels_code_action`
+- `test_cancel_request_cancels_completion`
+- `test_cancel_request_cancels_definition`
+- `test_cancel_request_cancels_formatting`
+- `test_cancel_request_cancels_hover`
+- `test_cancel_request_cancels_references`
+- `test_cancel_request_cancels_rename`
+- `test_cancel_request_concurrent_multiple_ids`
+- `test_cancel_request_duplicate_cancel_id`
+- `test_cancel_request_integer_id_stored`
+- `test_cancel_request_missing_id_tolerated`
+- `test_cancel_request_missing_params_tolerated`
+- `test_cancel_request_nonexistent_id_noop`
+- `test_cancel_request_preserves_exact_request_id`
+- `test_cancel_request_preserves_unrelated_requests`
+- `test_cancel_request_produces_no_stdout`
+- `test_cancel_request_removes_id_upon_cancel`
+- `test_cancel_request_returns_ok_true`
+- `test_cancel_request_string_id_stored`
+- `test_cancel_request_triggers_code_32800`
 
-#### `$/setTrace (no-op)` (0 e2e tests)
-_No classified e2e tests yet._
+#### `$/setTrace (no-op)` (20 e2e tests)
+- `test_set_trace_array_value_tolerated`
+- `test_set_trace_boolean_value_tolerated`
+- `test_set_trace_interleaved_with_definition`
+- `test_set_trace_messages_returns_ok_true`
+- `test_set_trace_missing_params_tolerated`
+- `test_set_trace_missing_value_tolerated`
+- `test_set_trace_no_response_id_leak`
+- `test_set_trace_numeric_value_tolerated`
+- `test_set_trace_object_value_tolerated`
+- `test_set_trace_off_returns_ok_true`
+- `test_set_trace_overlay_documents_unaffected`
+- `test_set_trace_post_initialize_allowed`
+- `test_set_trace_post_shutdown_allowed`
+- `test_set_trace_pre_initialize_allowed`
+- `test_set_trace_preserves_cancelled_requests`
+- `test_set_trace_preserves_lifecycle_state`
+- `test_set_trace_produces_no_stdout`
+- `test_set_trace_repeated_transitions`
+- `test_set_trace_unknown_value_tolerated`
+- `test_set_trace_verbose_returns_ok_true`
 
 ### Domain 2: Diagnostics & Flycheck
 
@@ -958,4 +1053,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 747 total, 22 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 847 total, 27 rows >= 20, 1 rows >= 50 of 53
