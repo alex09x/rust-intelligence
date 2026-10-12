@@ -5,7 +5,7 @@
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
 - **Total E2E Tests**: 1398
-- **Total Unit/Src Tests**: 419
+- **Total Unit/Src Tests**: 420
 - **Classified E2E Tests**: 1316
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 38 / 53
@@ -27,7 +27,7 @@
 | Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 50 | 0 | 50 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `textDocument/codeAction` | 7 | 12 | 19 | 🔴 In Progress (7/50) |
-| Domain 4: Actions & Refactoring | `codeAction/resolve` | 1 | 13 | 14 | 🔴 In Progress (1/50) |
+| Domain 4: Actions & Refactoring | `codeAction/resolve` | 1 | 14 | 15 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/completion` | 10 | 25 | 35 | 🔴 In Progress (10/50) |
 | Domain 5: Intelligence & Completion | `completionItem/resolve` | 20 | 9 | 29 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 5: Intelligence & Completion | `textDocument/hover` | 5 | 16 | 21 | 🔴 In Progress (5/50) |

@@ -32,6 +32,7 @@ pub fn organize_imports_action(
     }
 
     let mut entries: Vec<UseEntry> = Vec::new();
+    let mut leading_comments: Vec<String> = Vec::new();
     let mut current_attrs: Vec<String> = Vec::new();
     let mut block_start_line = None;
     let mut block_end_line = None;
@@ -60,7 +61,11 @@ pub fn organize_imports_action(
                 }
             }
             if in_import_block {
-                current_attrs.push(line.to_string());
+                if entries.is_empty() && current_attrs.is_empty() && trimmed.starts_with("//") {
+                    leading_comments.push(line.to_string());
+                } else {
+                    current_attrs.push(line.to_string());
+                }
             }
             i += 1;
         } else if trimmed.starts_with("use ") || trimmed.starts_with("pub use ") {
@@ -100,7 +105,10 @@ pub fn organize_imports_action(
                     .find(|l| !l.trim().is_empty())
                     .map(|l| l.trim());
                 if let Some(nl) = next_non_empty {
-                    if nl.starts_with("use ") || nl.starts_with("pub use ") || nl.starts_with("#[")
+                    if nl.starts_with("use ")
+                        || nl.starts_with("pub use ")
+                        || nl.starts_with("#[")
+                        || nl.starts_with("//")
                     {
                         i += 1;
                         continue;
@@ -122,6 +130,9 @@ pub fn organize_imports_action(
                     && a.use_lines == b.use_lines
             });
             let mut new_text_lines = Vec::new();
+            for c in &leading_comments {
+                new_text_lines.push(c.clone());
+            }
             for e in &entries {
                 for a in &e.attrs_and_comments {
                     new_text_lines.push(a.clone());

@@ -300,3 +300,34 @@ fn test_code_action_resolve_closed_file_disk_modified_returns_content_modified()
         "Resolving action for modified closed file must return ContentModified error"
     );
 }
+
+#[test]
+fn test_code_action_resolve_organize_imports_preserves_leading_comments() {
+    let mut overlay_mgr = OverlayManager::new();
+    let uri = "file:///tmp/leading_comments.rs";
+    let code = "// Important comment\nuse b::B;\nuse a::A;\nfn main() {}\n";
+    overlay_mgr.open_document(uri, "/tmp/leading_comments.rs", 1, code.to_string());
+
+    let req = json!({
+        "params": {
+            "title": "Organize Imports",
+            "kind": "source.organizeImports",
+            "data": {
+                "uri": uri,
+                "version": 1,
+                "kind": "source.organizeImports"
+            }
+        }
+    });
+
+    let res = handle_code_action_resolve(&req, None, &overlay_mgr).unwrap();
+    let edit = &res["edit"];
+
+    let mut files = HashMap::new();
+    files.insert(uri.to_string(), code.to_string());
+
+    let updated = apply_workspace_edit_with_versions(&files, edit, None);
+    let expected_code = "// Important comment\nuse a::A;\nuse b::B;\nfn main() {}\n";
+    assert_eq!(updated.get(uri).unwrap(), expected_code);
+}
+
