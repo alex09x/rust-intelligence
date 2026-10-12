@@ -207,9 +207,14 @@ fn test_call_hierarchy_outgoing_valid_uri_missing_range_saturates() {
 
     let outgoing = handle_call_hierarchy_outgoing_calls(&req, Some(&ws), &overlay_mgr, &mut conv);
     let arr = outgoing.as_array().unwrap();
-    assert!(!arr.is_empty());
-    let to_names: Vec<&str> = arr.iter().filter_map(|it| it["to"]["name"].as_str()).collect();
-    assert!(to_names.contains(&"add"));
+    assert_eq!(arr.len(), 1);
+    assert_eq!(arr[0]["to"]["name"], "add");
+    let from_ranges = arr[0]["fromRanges"].as_array().unwrap();
+    assert_eq!(from_ranges.len(), 1);
+    assert_eq!(from_ranges[0]["start"]["line"], 1);
+    assert_eq!(from_ranges[0]["start"]["character"], 4);
+    assert_eq!(from_ranges[0]["end"]["line"], 1);
+    assert_eq!(from_ranges[0]["end"]["character"], 7);
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
