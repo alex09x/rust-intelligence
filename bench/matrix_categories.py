@@ -198,7 +198,8 @@ def build_params(key, sc, repo_dir, is_ra=False):
     elif key == "workspace_diagnostic":
         return {"identifier": "workspace"}
     elif key == "cancel_request":
-        return {"id": sc.get("req_id", 9999)}
+        # String id guaranteed never to collide with numeric client next_id (int >= 1)
+        return {"id": sc.get("req_id", "bench-cancel-0")}
     elif key == "set_trace":
         return {"value": "off"}
     elif key == "progress_cancel":

@@ -165,9 +165,12 @@ def sample_full_lsp_matrix(repo_dir, per_method=300, seed=42):
                     "location": [f, l, c],
                 })
 
+        elif key == "cancel_request":
+            # String id guaranteed never to collide with numeric client next_id (int >= 1)
+            items = [{"name": f"{key}_{i}", "iteration": i, "req_id": f"bench-cancel-{i}"} for i in range(per_method)]
         else:
             # Lifecycle, resolve, or workspace ops
-            items = [{"name": f"{key}_{i}", "iteration": i, "req_id": 1000 + i} for i in range(per_method)]
+            items = [{"name": f"{key}_{i}", "iteration": i} for i in range(per_method)]
 
         scenarios[key] = items
 
