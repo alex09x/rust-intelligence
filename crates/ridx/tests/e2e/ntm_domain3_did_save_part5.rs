@@ -65,7 +65,7 @@ fn test_did_save_sequential_batch_across_ten_files() {
             json!({ "jsonrpc": "2.0", "method": "textDocument/didSave", "params": { "textDocument": { "uri": uri } } }),
             &mut lc, &mut mr, &mut om,
         );
-        assert_eq!(ok, true);
+        assert!(ok);
         assert_eq!(om.get(&file).unwrap().disk_text, Some(format!("fn f{}() {{}}\n", i)));
     }
 }
@@ -85,7 +85,7 @@ fn test_did_save_non_file_uri_scheme_safe() {
         &mut lc, &mut mr, &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(out.len(), 0);
 }
 
@@ -103,11 +103,11 @@ fn test_did_save_relative_path_fallback_safe() {
         &mut lc, &mut mr, &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
 }
 
 #[test]
-fn test_did_save_preserves_line_starts() {
+fn test_did_save_preserves_line_starts_on_nested_scopes() {
     let uri = "file:///tmp/scope_save.rs";
     let code = "fn outer() { let a = 1; { let b = 2; } }\n";
     let (mut lc, mut mr, mut om) = setup_server_with_doc(uri, code);
@@ -119,7 +119,7 @@ fn test_did_save_preserves_line_starts() {
         &mut lc, &mut mr, &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let overlay = om.get(&file).expect("overlay must exist");
     assert_eq!(overlay.line_starts.len(), line_starts_before);
 }
@@ -136,7 +136,7 @@ fn test_did_save_preserves_symbol_locations() {
         &mut lc, &mut mr, &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     let sym = &om.get(&file).unwrap().symbols[0];
     assert_eq!(sym.name, "located");
     assert_eq!(sym.start_line, 1);
@@ -160,7 +160,7 @@ fn test_did_save_preserves_document_open_paths() {
         &mut lc, &mut mr, &mut om,
     );
 
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(om.open_file_paths(), paths_before);
 }
 
@@ -182,7 +182,7 @@ fn test_did_save_when_flycheck_already_running() {
     );
 
     let _ = fs::remove_dir_all(&temp_dir);
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lc.flycheck.current_generation(), 2);
 }
 
@@ -203,6 +203,6 @@ fn test_did_save_with_root_containing_cargo_workspace() {
     );
 
     let _ = fs::remove_dir_all(&temp_dir);
-    assert_eq!(ok, true);
+    assert!(ok);
     assert_eq!(lc.flycheck.current_generation(), 1);
 }

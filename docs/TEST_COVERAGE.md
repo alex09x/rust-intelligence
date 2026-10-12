@@ -634,7 +634,7 @@
 - `test_did_save_preserves_content_hash`
 - `test_did_save_preserves_document_open_paths`
 - `test_did_save_preserves_line_starts`
-- `test_did_save_preserves_line_starts`
+- `test_did_save_preserves_line_starts_on_nested_scopes`
 - `test_did_save_preserves_other_open_documents`
 - `test_did_save_preserves_provenance_flag`
 - `test_did_save_preserves_symbol_locations`
