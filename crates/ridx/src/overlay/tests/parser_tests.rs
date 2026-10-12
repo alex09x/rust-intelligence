@@ -114,3 +114,33 @@ fn test_overlay_parser_edge_cases_and_comments() {
     p6.parse();
     assert!(p6.symbols.iter().any(|s| s.name == "a"));
 }
+
+#[test]
+fn test_overlay_parser_raw_idents_unions_and_const_fn() {
+    let code = r#"
+        const fn compute_const() -> i32 { 10 }
+        union FloatOrInt {
+            f: f32,
+            i: u32,
+        }
+        fn test_raw(r#type: i32, r#match: bool) {
+            let r#yield = 42;
+        }
+    "#;
+    let ls = crate::overlay::mapping::compute_line_starts(code);
+    let mut parser = OverlayParser::new(code, &ls);
+    parser.parse();
+    let names: Vec<&str> = parser.symbols.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        vec![
+            "compute_const",
+            "FloatOrInt",
+            "test_raw",
+            "r#type",
+            "r#match",
+            "r#yield"
+        ]
+    );
+}
+

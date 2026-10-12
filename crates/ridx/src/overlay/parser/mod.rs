@@ -34,6 +34,7 @@ pub fn is_rust_ident_continue(c: char) -> bool {
 }
 
 pub fn is_ident(s: &str) -> bool {
+    let s = s.strip_prefix("r#").unwrap_or(s);
     let mut chars = s.chars();
     match chars.next() {
         Some(c) if is_rust_ident_start(c) => chars.all(is_rust_ident_continue),
@@ -178,9 +179,14 @@ impl<'a> OverlayParser<'a> {
 
             // Identifiers / keywords
             if let Some(first_char) = self.text[pos..].chars().next() {
-                if is_rust_ident_start(first_char) {
+                let is_raw = self.text[pos..].starts_with("r#");
+                if is_raw || is_rust_ident_start(first_char) {
                     let start = pos;
-                    pos += first_char.len_utf8();
+                    if is_raw {
+                        pos += 2;
+                    } else {
+                        pos += first_char.len_utf8();
+                    }
                     while pos < len {
                         let c = self.text[pos..].chars().next().unwrap();
                         if is_rust_ident_continue(c) {
@@ -199,6 +205,9 @@ impl<'a> OverlayParser<'a> {
                         "struct" => {
                             self.parse_named_item(&mut pos, DefKind::Struct, current_scope);
                         }
+                        "union" => {
+                            self.parse_named_item(&mut pos, DefKind::Union, current_scope);
+                        }
                         "enum" => {
                             self.parse_named_item(&mut pos, DefKind::Enum, current_scope);
                         }
@@ -209,6 +218,14 @@ impl<'a> OverlayParser<'a> {
                             self.parse_named_item(&mut pos, DefKind::TyAlias, current_scope);
                         }
                         "const" => {
+                            let mut check_pos = pos;
+                            if let Some((next_tok, _, _)) = self.parse_ident(&mut check_pos) {
+                                if next_tok == "fn" {
+                                    pos = check_pos;
+                                    self.parse_fn_item(&mut pos, current_scope);
+                                    continue;
+                                }
+                            }
                             self.parse_named_item(&mut pos, DefKind::Const, current_scope);
                         }
                         "static" => {
@@ -272,12 +289,17 @@ impl<'a> OverlayParser<'a> {
         if *pos >= self.text.len() {
             return None;
         }
+        let is_raw = self.text[*pos..].starts_with("r#");
         let first_char = self.text[*pos..].chars().next()?;
-        if !is_rust_ident_start(first_char) {
+        if !is_raw && !is_rust_ident_start(first_char) {
             return None;
         }
         let start = *pos;
-        let mut cur = *pos + first_char.len_utf8();
+        let mut cur = if is_raw {
+            *pos + 2
+        } else {
+            *pos + first_char.len_utf8()
+        };
         while cur < self.text.len() {
             let c = self.text[cur..].chars().next().unwrap();
             if is_rust_ident_continue(c) {
