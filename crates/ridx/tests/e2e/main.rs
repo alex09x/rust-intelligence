@@ -93,6 +93,8 @@ mod ntm_domain7_selection_range_part2;
 mod ntm_domain7_semantic_tokens;
 mod ntm_domain7_semantic_tokens_part2;
 mod ntm_domain8_l2_editing;
+mod ntm_domain8_prepare_rename;
+mod ntm_domain8_prepare_rename_part2;
 mod ntm_domain9_l1_definition;
 mod ntm_domain9_l1_definition_part2;
 mod ntm_domain9_l1_highlight_and_resolve;

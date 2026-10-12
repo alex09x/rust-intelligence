@@ -4,11 +4,11 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 943
+- **Total E2E Tests**: 963
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 861
+- **Classified E2E Tests**: 881
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 32 / 53
+- **Rows >= 20 E2E**: 33 / 53
 - **Rows >= 50 E2E**: 1 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
@@ -47,7 +47,7 @@
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
-| Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 0 | 10 | 10 | ⚪ Zero E2E |
+| Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 20 | 10 | 30 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 5 | 17 | 22 | 🔴 In Progress (5/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 1 | 7 | 8 | 🔴 In Progress (1/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 3 | 8 | 11 | 🔴 In Progress (3/50) |
@@ -720,8 +720,27 @@ _No classified e2e tests yet._
 
 ### Domain 8: Editing & Workspace Edits
 
-#### `textDocument/prepareRename` (0 e2e tests)
-_No classified e2e tests yet._
+#### `textDocument/prepareRename` (20 e2e tests)
+- `test_prepare_rename_comment_rejected_error`
+- `test_prepare_rename_dirty_overlay_binding_rename`
+- `test_prepare_rename_empty_file_rejected_error`
+- `test_prepare_rename_error_code_minus_32803`
+- `test_prepare_rename_external_symbol_rejection_error`
+- `test_prepare_rename_fn_parameter_binding`
+- `test_prepare_rename_for_loop_binding`
+- `test_prepare_rename_keyword_rejected_error`
+- `test_prepare_rename_local_let_binding_range_and_placeholder`
+- `test_prepare_rename_match_arm_binding`
+- `test_prepare_rename_multiple_bindings_in_scope`
+- `test_prepare_rename_out_of_bounds_position_rejected_error`
+- `test_prepare_rename_parameter_binding_in_closure`
+- `test_prepare_rename_placeholder_matches_target_ident`
+- `test_prepare_rename_preserves_request_id`
+- `test_prepare_rename_punctuation_symbol_rejected_error`
+- `test_prepare_rename_range_line_matches_position`
+- `test_prepare_rename_shadowed_local_binding`
+- `test_prepare_rename_utf16_column_calculation`
+- `test_prepare_rename_whitespace_rejected_error`
 
 #### `textDocument/rename` (5 e2e tests)
 - `test_case_10_stale_rename_overlay_resolution`
@@ -1146,4 +1165,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 943 total, 32 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 963 total, 33 rows >= 20, 1 rows >= 50 of 53
