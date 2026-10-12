@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1368
+- **Total E2E Tests**: 1398
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 1286
+- **Classified E2E Tests**: 1316
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 38 / 53
-- **Rows >= 50 E2E**: 12 / 53
+- **Rows >= 50 E2E**: 13 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -19,7 +19,7 @@
 | Domain 1: Lifecycle & Control | `$/cancelRequest` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 50 | 0 | 50 | ✅ Complete |
 | Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 50 | 0 | 50 | ✅ Complete |
-| Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 50 | 1 | 51 | ✅ Complete |
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didOpen` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didChange` | 51 | 0 | 51 | ✅ Complete |
@@ -385,26 +385,56 @@
 - `test_e2e_pull_client_without_refresh_support_no_server_refresh_request`
 - `test_e2e_pull_diagnostic_client_no_publish_on_did_change`
 
-#### `workspace/diagnostic` (20 e2e tests)
+#### `workspace/diagnostic` (50 e2e tests)
 - `test_l2_workspace_diagnostic_report`
 - `test_workspace_diagnostic_after_did_change_overlay`
 - `test_workspace_diagnostic_after_did_close_overlay`
+- `test_workspace_diagnostic_block_comment_ignores_delimiters`
+- `test_workspace_diagnostic_char_escapes_clean`
+- `test_workspace_diagnostic_char_literal_escaped_quote`
+- `test_workspace_diagnostic_clear_all_overlays_returns_empty`
+- `test_workspace_diagnostic_crlf_overlay_coordinates`
 - `test_workspace_diagnostic_deduplication_by_uri`
+- `test_workspace_diagnostic_empty_file_overlay`
 - `test_workspace_diagnostic_empty_workspace`
+- `test_workspace_diagnostic_five_overlays_mixed`
 - `test_workspace_diagnostic_items_array_is_present`
+- `test_workspace_diagnostic_jsonrpc_2_0_response`
+- `test_workspace_diagnostic_let_bool_expected_found_integer`
+- `test_workspace_diagnostic_let_str_expected_found_bool`
+- `test_workspace_diagnostic_let_type_mismatch_in_workspace`
+- `test_workspace_diagnostic_line_comment_ignores_delimiters`
 - `test_workspace_diagnostic_mixed_clean_and_error_overlays`
+- `test_workspace_diagnostic_multiline_unclosed_brace_line_reporting`
 - `test_workspace_diagnostic_multiple_clean_overlays`
 - `test_workspace_diagnostic_multiple_erroneous_overlays`
+- `test_workspace_diagnostic_multiple_errors_in_single_file`
+- `test_workspace_diagnostic_multiple_overlays_sequential_fix`
+- `test_workspace_diagnostic_multiple_types_mismatches_in_one_file`
+- `test_workspace_diagnostic_negative_number_let_mismatch`
+- `test_workspace_diagnostic_nested_blocks_balanced`
+- `test_workspace_diagnostic_nested_closures_balanced`
 - `test_workspace_diagnostic_overlay_version_propagated`
 - `test_workspace_diagnostic_preserves_request_id`
 - `test_workspace_diagnostic_previous_result_id_empty_unchanged`
 - `test_workspace_diagnostic_previous_result_ids_accepted`
 - `test_workspace_diagnostic_range_matches_syntax_location`
+- `test_workspace_diagnostic_raw_string_escaped_delimiters`
+- `test_workspace_diagnostic_raw_string_unclosed_hash_count`
+- `test_workspace_diagnostic_report_kind_is_full`
 - `test_workspace_diagnostic_returns_workspace_report_format`
 - `test_workspace_diagnostic_severity_matches_document_diagnostic`
 - `test_workspace_diagnostic_single_clean_overlay`
 - `test_workspace_diagnostic_single_erroneous_overlay`
 - `test_workspace_diagnostic_source_matches_document_diagnostic`
+- `test_workspace_diagnostic_three_files_all_errors`
+- `test_workspace_diagnostic_unclosed_raw_string_literal`
+- `test_workspace_diagnostic_unclosed_string_literal`
+- `test_workspace_diagnostic_unclosed_string_quote_coordinates`
+- `test_workspace_diagnostic_unmatched_closing_bracket_in_workspace`
+- `test_workspace_diagnostic_unmatched_closing_paren_in_workspace`
+- `test_workspace_diagnostic_update_overlay_version_propagates_exact`
+- `test_workspace_diagnostic_whitespace_only_file_clean`
 - `test_workspace_diagnostics_reports_syntax_errors_in_open_overlays`
 
 #### `publishDiagnostics / flycheck` (62 e2e tests)
@@ -1569,4 +1599,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1368 total, 38 rows >= 20, 12 rows >= 50 of 53
+coverage: e2e 1398 total, 38 rows >= 20, 13 rows >= 50 of 53
