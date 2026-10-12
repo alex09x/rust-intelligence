@@ -4,11 +4,11 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 546
+- **Total E2E Tests**: 586
 - **Total Unit/Src Tests**: 410
-- **Classified E2E Tests**: 464
+- **Classified E2E Tests**: 504
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 12 / 53
+- **Rows >= 20 E2E**: 14 / 53
 - **Rows >= 50 E2E**: 1 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
@@ -44,8 +44,8 @@
 | Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
 | Domain 7: Presentation | `textDocument/foldingRange` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/selectionRange` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
-| Domain 7: Presentation | `textDocument/documentLink / resolve` | 0 | 0 | 0 | ⚪ Zero E2E |
-| Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 7: Presentation | `textDocument/documentLink / resolve` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 1 | 0 | 1 | 🔴 In Progress (1/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 0 | 10 | 10 | ⚪ Zero E2E |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 5 | 17 | 22 | 🔴 In Progress (5/50) |
@@ -324,11 +324,49 @@ _No classified e2e tests yet._
 - `test_selection_range_string_request_id_echoed`
 - `test_selection_range_unopened_document_returns_empty`
 
-#### `textDocument/documentLink / resolve` (0 e2e tests)
-_No classified e2e tests yet._
+#### `textDocument/documentLink / resolve` (20 e2e tests)
+- `test_document_link_angle_bracket_delimiter`
+- `test_document_link_dispatcher_echoes_numeric_id`
+- `test_document_link_dispatcher_echoes_string_id`
+- `test_document_link_empty_file_returns_empty`
+- `test_document_link_file_without_links_returns_empty`
+- `test_document_link_markdown_bracket_and_parenthesis_delimiters`
+- `test_document_link_multiple_links_same_line`
+- `test_document_link_nonexistent_file_returns_empty`
+- `test_document_link_overlay_did_change_updates_links`
+- `test_document_link_overlay_did_close_falls_back_to_disk`
+- `test_document_link_overlay_precedence_over_disk`
+- `test_document_link_quote_delimiter`
+- `test_document_link_resolve_echoes_valid_link_params`
+- `test_document_link_resolve_missing_params_returns_null`
+- `test_document_link_resolve_numeric_request_id_echoed`
+- `test_document_link_resolve_string_request_id_echoed`
+- `test_document_link_resolve_with_custom_tooltip_and_data`
+- `test_document_link_single_https_in_doc_comment`
+- `test_document_link_square_bracket_delimiter`
+- `test_document_link_utf16_offsets_with_multibyte_prefix`
 
-#### `textDocument/documentColor / colorPresentation (stub)` (0 e2e tests)
-_No classified e2e tests yet._
+#### `textDocument/documentColor / colorPresentation (stub)` (20 e2e tests)
+- `test_color_presentation_stub_consecutive_queries_isolation`
+- `test_color_presentation_stub_dispatcher_echoes_numeric_id`
+- `test_color_presentation_stub_dispatcher_echoes_string_id`
+- `test_color_presentation_stub_missing_color_object`
+- `test_color_presentation_stub_missing_range_object`
+- `test_color_presentation_stub_multi_line_range`
+- `test_color_presentation_stub_overlay_document_uri`
+- `test_color_presentation_stub_rgb_color_params`
+- `test_color_presentation_stub_rgba_color_params`
+- `test_color_presentation_stub_zero_range`
+- `test_document_color_stub_after_did_change_returns_empty_array`
+- `test_document_color_stub_after_did_close_returns_empty_array`
+- `test_document_color_stub_disk_file_returns_empty_array`
+- `test_document_color_stub_dispatcher_echoes_numeric_id`
+- `test_document_color_stub_dispatcher_echoes_string_id`
+- `test_document_color_stub_empty_file_returns_empty_array`
+- `test_document_color_stub_missing_text_document_param`
+- `test_document_color_stub_nonexistent_file_returns_empty_array`
+- `test_document_color_stub_overlay_buffer_returns_empty_array`
+- `test_document_color_stub_sequential_requests_isolation`
 
 #### `textDocument/codeLens / resolve` (1 e2e tests)
 - `test_l2_code_lens_command_declared_in_execute_command_provider`
@@ -761,4 +799,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 546 total, 12 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 586 total, 14 rows >= 20, 1 rows >= 50 of 53
