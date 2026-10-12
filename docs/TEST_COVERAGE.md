@@ -3,11 +3,11 @@
 > **Note on Method Count (53 methods)**: The matrix covers 53 distinct LSP capability rows across 10 domains. LSP `textDocument/declaration` is delegated directly to `textDocument/definition` via `handle_declaration` and tracked jointly in `textDocument/definition / declaration (delegating)`.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 401
+- **Total E2E Tests**: 446
 - **Total Unit/Src Tests**: 409
-- **Classified E2E Tests**: 324
-- **Unclassified E2E Tests**: 77
-- **Rows >= 20 E2E**: 5 / 53
+- **Classified E2E Tests**: 364
+- **Unclassified E2E Tests**: 82
+- **Rows >= 20 E2E**: 7 / 53
 - **Rows >= 50 E2E**: 1 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
@@ -60,8 +60,8 @@
 | Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 16 | 0 | 16 | 🔴 In Progress (16/50) |
 | Domain 9: Navigation & Symbols | `workspace/symbol` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 15 | 8 | 23 | 🔴 In Progress (15/50) |
-| Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 1 | 0 | 1 | 🔴 In Progress (1/50) |
-| Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 10: Multi-root & File Events | `workspace/didDeleteFiles / willDeleteFiles` | 0 | 0 | 0 | ⚪ Zero E2E |
@@ -522,11 +522,50 @@ _No classified e2e tests yet._
 
 ### Domain 10: Multi-root & File Events
 
-#### `workspace/didChangeWorkspaceFolders` (1 e2e tests)
+#### `workspace/didChangeWorkspaceFolders` (21 e2e tests)
+- `test_did_change_workspace_folders_add_multiple_roots_batch`
+- `test_did_change_workspace_folders_add_single_root`
+- `test_did_change_workspace_folders_all_workspaces_order_preserved`
+- `test_did_change_workspace_folders_dispatched_via_lsp_message`
+- `test_did_change_workspace_folders_duplicate_addition_ignored`
+- `test_did_change_workspace_folders_empty_added_and_removed_is_noop`
+- `test_did_change_workspace_folders_empty_params_safe`
+- `test_did_change_workspace_folders_empty_uri_entry_skipped`
+- `test_did_change_workspace_folders_invalid_file_uri_skipped`
+- `test_did_change_workspace_folders_malformed_added_entry_not_object`
+- `test_did_change_workspace_folders_malformed_removed_entry_not_object`
+- `test_did_change_workspace_folders_missing_event_object_is_noop`
+- `test_did_change_workspace_folders_non_file_scheme_skipped`
+- `test_did_change_workspace_folders_nonexistent_path_skipped`
+- `test_did_change_workspace_folders_remove_all_roots_via_event`
+- `test_did_change_workspace_folders_remove_multiple_roots_batch`
+- `test_did_change_workspace_folders_remove_nonexistent_root_is_noop`
+- `test_did_change_workspace_folders_remove_single_root`
+- `test_did_change_workspace_folders_routing_switches_after_removal`
+- `test_did_change_workspace_folders_simultaneous_add_and_remove`
 - `test_l2_multiroot_dynamic_workspace_folders`
 
-#### `workspace/didChangeWatchedFiles` (0 e2e tests)
-_No classified e2e tests yet._
+#### `workspace/didChangeWatchedFiles` (20 e2e tests)
+- `test_did_change_watched_files_active_overlay_preserved_across_reload`
+- `test_did_change_watched_files_clears_position_converter_cache`
+- `test_did_change_watched_files_corrupted_shard_preserves_old_index`
+- `test_did_change_watched_files_deleted_definition_removed_after_reload`
+- `test_did_change_watched_files_deleted_shard_removed_from_workspace`
+- `test_did_change_watched_files_dispatch_returns_true`
+- `test_did_change_watched_files_empty_changes_array_still_reloads_disk`
+- `test_did_change_watched_files_event_type_1_created`
+- `test_did_change_watched_files_event_type_2_changed`
+- `test_did_change_watched_files_event_type_3_deleted`
+- `test_did_change_watched_files_manifest_variant_switch_reloads_shards`
+- `test_did_change_watched_files_missing_params_handled_safely`
+- `test_did_change_watched_files_multiple_shards_only_one_modified`
+- `test_did_change_watched_files_multiple_workspaces_all_reloaded`
+- `test_did_change_watched_files_new_definition_discoverable_after_reload`
+- `test_did_change_watched_files_new_shard_discovered_in_workspace_dir`
+- `test_did_change_watched_files_rapid_successive_notifications`
+- `test_did_change_watched_files_reloads_symbols_exact_count`
+- `test_did_change_watched_files_single_shard_crate_version_reloaded`
+- `test_did_change_watched_files_unmodified_shard_preserves_cached_state`
 
 #### `workspace/didCreateFiles / willCreateFiles` (0 e2e tests)
 _No classified e2e tests yet._
@@ -539,7 +578,7 @@ _No classified e2e tests yet._
 
 ### Unclassified E2E Tests
 
-Total unclassified tests: 77 (multi-purpose, property, or helper harness tests)
+Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 
 - `test_atomic_closed_write_preserves_large_file_on_error`
 - `test_atomic_write_preserves_file_permissions`
@@ -589,6 +628,11 @@ Total unclassified tests: 77 (multi-purpose, property, or helper harness tests)
 - `test_map_line_suffix_common_shifted_after_delete`
 - `test_map_line_suffix_common_shifted_after_insert`
 - `test_map_live_to_compiled_position_tuple`
+- `test_multiroot_api_clear_removes_all_roots`
+- `test_multiroot_api_doc_ws_empty_uri_falls_back`
+- `test_multiroot_api_doc_ws_matches_root_file`
+- `test_multiroot_api_find_workspace_on_empty_is_none`
+- `test_multiroot_api_reopen_from_slice`
 - `test_overlay_manager_open_count_and_file_paths`
 - `test_overlay_rename_document_path`
 - `test_position_to_byte_offset_ascii_lines`
@@ -620,4 +664,4 @@ Total unclassified tests: 77 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 401 total, 5 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 446 total, 7 rows >= 20, 1 rows >= 50 of 53

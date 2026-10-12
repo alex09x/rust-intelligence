@@ -28,6 +28,8 @@ mod l2_cases;
 mod l2_harness;
 mod ntm_compare_harness;
 mod ntm_domain10_l2_multiroot;
+mod ntm_domain10_watched_files;
+mod ntm_domain10_workspace_folders;
 mod ntm_domain4_actions_stress;
 mod ntm_domain5_intelligence_stress;
 mod ntm_domain5_l2_cas_and_macros;
