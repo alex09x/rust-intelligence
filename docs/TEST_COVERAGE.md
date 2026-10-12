@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1083
+- **Total E2E Tests**: 1113
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 1001
+- **Classified E2E Tests**: 1031
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 33 / 53
-- **Rows >= 50 E2E**: 5 / 53
+- **Rows >= 50 E2E**: 6 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -17,7 +17,7 @@
 | Domain 1: Lifecycle & Control | `shutdown` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `exit` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `$/cancelRequest` | 50 | 0 | 50 | ✅ Complete |
-| Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 50 | 0 | 50 | ✅ Complete |
 | Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
@@ -279,27 +279,57 @@
 - `test_cancel_request_uninitialized_server_handles_safely`
 - `test_cancel_request_uuid_string_id`
 
-#### `$/setTrace (no-op)` (20 e2e tests)
+#### `$/setTrace (no-op)` (50 e2e tests)
+- `test_set_trace_after_shutdown_handling`
+- `test_set_trace_array_value_safe`
 - `test_set_trace_array_value_tolerated`
+- `test_set_trace_boolean_value_safe`
 - `test_set_trace_boolean_value_tolerated`
+- `test_set_trace_cancelled_requests_unaffected`
+- `test_set_trace_empty_params_safe`
+- `test_set_trace_empty_string_value_safe`
+- `test_set_trace_final_lifecycle_checkpoint`
+- `test_set_trace_interleaved_between_edits`
 - `test_set_trace_interleaved_with_definition`
+- `test_set_trace_lifecycle_state_unaffected`
 - `test_set_trace_messages_returns_ok_true`
+- `test_set_trace_missing_params_field_safe`
 - `test_set_trace_missing_params_tolerated`
 - `test_set_trace_missing_value_tolerated`
+- `test_set_trace_multiple_consecutive_updates`
 - `test_set_trace_no_response_id_leak`
+- `test_set_trace_null_value_safe`
+- `test_set_trace_numeric_value_safe`
 - `test_set_trace_numeric_value_tolerated`
 - `test_set_trace_object_value_tolerated`
 - `test_set_trace_off_returns_ok_true`
 - `test_set_trace_overlay_documents_unaffected`
+- `test_set_trace_overlay_manager_unaffected`
 - `test_set_trace_post_initialize_allowed`
 - `test_set_trace_post_shutdown_allowed`
 - `test_set_trace_pre_initialize_allowed`
+- `test_set_trace_pre_initialize_handling`
 - `test_set_trace_preserves_cancelled_requests`
 - `test_set_trace_preserves_lifecycle_state`
 - `test_set_trace_produces_no_stdout`
 - `test_set_trace_repeated_transitions`
+- `test_set_trace_stress_rapid_fire`
+- `test_set_trace_toggle_messages_to_off`
+- `test_set_trace_toggle_off_to_verbose`
+- `test_set_trace_toggle_verbose_to_messages`
+- `test_set_trace_unknown_string_value_safe`
 - `test_set_trace_unknown_value_tolerated`
+- `test_set_trace_uppercase_off_safe`
+- `test_set_trace_uppercase_verbose_safe`
+- `test_set_trace_value_messages_no_stdout_output`
+- `test_set_trace_value_off_no_stdout_output`
+- `test_set_trace_value_verbose_no_stdout_output`
 - `test_set_trace_verbose_returns_ok_true`
+- `test_set_trace_whitespace_string_value_safe`
+- `test_set_trace_with_erroneous_id_field`
+- `test_set_trace_with_nested_object_value`
+- `test_set_trace_without_jsonrpc_version_safe`
+- `test_set_trace_workspace_roots_unaffected`
 
 ### Domain 2: Diagnostics & Flycheck
 
@@ -1285,4 +1315,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1083 total, 33 rows >= 20, 5 rows >= 50 of 53
+coverage: e2e 1113 total, 33 rows >= 20, 6 rows >= 50 of 53

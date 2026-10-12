@@ -182,7 +182,9 @@ fn test_set_trace_overlay_documents_unaffected() {
     });
     dispatch_client(open_msg, &mut out, &mut mr, &mut ov, &mut lc, &can).unwrap();
     let file = ridx::lsp::protocol::uri_to_path(uri);
-    assert!(ov.get(&file).is_some());
+    let before_ov = ov.get(&file).unwrap();
+    assert_eq!(before_ov.text, "fn dummy() {}");
+    assert_eq!(before_ov.version, 1);
 
     let trace_msg = json!({ "jsonrpc": "2.0", "method": "$/setTrace", "params": { "value": "verbose" } });
     let res = dispatch_client(trace_msg, &mut out, &mut mr, &mut ov, &mut lc, &can);
