@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1781
+- **Total E2E Tests**: 1816
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1699
+- **Classified E2E Tests**: 1734
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 42 / 53
-- **Rows >= 50 E2E**: 25 / 53
+- **Rows >= 20 E2E**: 43 / 53
+- **Rows >= 50 E2E**: 26 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -58,7 +58,7 @@
 | Domain 9: Navigation & Symbols | `textDocument/implementation` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/references` | 51 | 1 | 52 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/documentHighlight` | 51 | 0 | 51 | ✅ Complete |
-| Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 16 | 0 | 16 | 🔴 In Progress (16/50) |
+| Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `workspace/symbol` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 15 | 8 | 23 | 🔴 In Progress (15/50) |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 51 | 0 | 51 | ✅ Complete |
@@ -1570,8 +1570,43 @@
 - `test_l1_document_highlight_utf16_multibyte_declaration_and_references`
 - `test_l1_document_highlight_workspace_references`
 
-#### `textDocument/documentSymbol` (16 e2e tests)
+#### `textDocument/documentSymbol` (51 e2e tests)
 - `test_case_11_new_symbol_in_live_buffer`
+- `test_document_symbol_buffer_mutation_updates_symbols`
+- `test_document_symbol_close_document_clears_symbols`
+- `test_document_symbol_comments_only_file_returns_empty`
+- `test_document_symbol_const_fn_declaration`
+- `test_document_symbol_const_item_name_kind`
+- `test_document_symbol_crlf_line_endings_preserved`
+- `test_document_symbol_empty_file_returns_empty`
+- `test_document_symbol_empty_uri_returns_empty`
+- `test_document_symbol_function_with_local_let`
+- `test_document_symbol_function_with_multiple_lets`
+- `test_document_symbol_function_with_mut_param`
+- `test_document_symbol_function_with_return_type`
+- `test_document_symbol_function_with_single_param`
+- `test_document_symbol_function_zero_params_no_return`
+- `test_document_symbol_missing_params_object`
+- `test_document_symbol_missing_text_document_param`
+- `test_document_symbol_module_declaration`
+- `test_document_symbol_multiline_items_range_bounds`
+- `test_document_symbol_multiple_documents_isolated`
+- `test_document_symbol_multiple_enums_in_file`
+- `test_document_symbol_multiple_structs_in_order`
+- `test_document_symbol_multiple_traits_in_file`
+- `test_document_symbol_multiple_type_aliases`
+- `test_document_symbol_nested_functions_in_item`
+- `test_document_symbol_nested_submodule`
+- `test_document_symbol_raw_identifier_handling`
+- `test_document_symbol_selection_range_matches_range`
+- `test_document_symbol_single_enum_with_variants`
+- `test_document_symbol_single_struct_name_kind_range`
+- `test_document_symbol_single_trait_name_kind`
+- `test_document_symbol_static_item_name_kind`
+- `test_document_symbol_type_alias_name_kind`
+- `test_document_symbol_type_parameter_filtered_out`
+- `test_document_symbol_unopened_document_returns_empty`
+- `test_document_symbol_utf16_surrogate_emoji_in_comment_preserves_coords`
 - `test_l1_document_symbol_all_kinds`
 - `test_l1_document_symbol_const_static_type_alias`
 - `test_l1_document_symbol_crlf_preservation`
@@ -1982,4 +2017,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1781 total, 42 rows >= 20, 25 rows >= 50 of 53
+coverage: e2e 1816 total, 43 rows >= 20, 26 rows >= 50 of 53
