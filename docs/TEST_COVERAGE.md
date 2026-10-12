@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1490
+- **Total E2E Tests**: 1520
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1408
+- **Classified E2E Tests**: 1438
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 40 / 53
-- **Rows >= 50 E2E**: 15 / 53
+- **Rows >= 50 E2E**: 16 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -61,7 +61,7 @@
 | Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 16 | 0 | 16 | 🔴 In Progress (16/50) |
 | Domain 9: Navigation & Symbols | `workspace/symbol` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 15 | 8 | 23 | 🔴 In Progress (15/50) |
-| Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
@@ -1492,27 +1492,57 @@
 
 ### Domain 10: Multi-root & File Events
 
-#### `workspace/didChangeWorkspaceFolders` (21 e2e tests)
+#### `workspace/didChangeWorkspaceFolders` (51 e2e tests)
+- `test_did_change_workspace_folders_add_and_remove_same_root_in_one_event`
+- `test_did_change_workspace_folders_add_folder_path_discovers_shards`
 - `test_did_change_workspace_folders_add_multiple_roots_batch`
 - `test_did_change_workspace_folders_add_single_root`
+- `test_did_change_workspace_folders_add_three_roots_distinct_order`
 - `test_did_change_workspace_folders_all_workspaces_order_preserved`
+- `test_did_change_workspace_folders_clear_removes_all_tracked_roots`
+- `test_did_change_workspace_folders_dispatch_ignores_if_empty_event`
+- `test_did_change_workspace_folders_dispatch_via_notification`
+- `test_did_change_workspace_folders_dispatch_with_cancelled_token`
+- `test_did_change_workspace_folders_dispatch_with_uninitialized_state`
 - `test_did_change_workspace_folders_dispatched_via_lsp_message`
 - `test_did_change_workspace_folders_duplicate_addition_ignored`
+- `test_did_change_workspace_folders_duplicate_in_same_added_batch`
 - `test_did_change_workspace_folders_empty_added_and_removed_is_noop`
 - `test_did_change_workspace_folders_empty_params_safe`
 - `test_did_change_workspace_folders_empty_uri_entry_skipped`
+- `test_did_change_workspace_folders_file_outside_all_roots_falls_back`
+- `test_did_change_workspace_folders_find_workspace_on_empty_returns_none`
+- `test_did_change_workspace_folders_http_uri_rejected`
 - `test_did_change_workspace_folders_invalid_file_uri_skipped`
 - `test_did_change_workspace_folders_malformed_added_entry_not_object`
 - `test_did_change_workspace_folders_malformed_removed_entry_not_object`
+- `test_did_change_workspace_folders_missing_added_field_handled`
 - `test_did_change_workspace_folders_missing_event_object_is_noop`
+- `test_did_change_workspace_folders_missing_removed_field_handled`
+- `test_did_change_workspace_folders_multiple_shards_same_event_dispatch`
+- `test_did_change_workspace_folders_non_existent_file_path_skipped_in_dispatch`
 - `test_did_change_workspace_folders_non_file_scheme_skipped`
 - `test_did_change_workspace_folders_nonexistent_path_skipped`
+- `test_did_change_workspace_folders_null_event_handled`
+- `test_did_change_workspace_folders_rapid_add_remove_sequence`
+- `test_did_change_workspace_folders_relative_file_uri_skipped`
 - `test_did_change_workspace_folders_remove_all_roots_via_event`
+- `test_did_change_workspace_folders_remove_already_empty_is_noop`
+- `test_did_change_workspace_folders_remove_first_root_preserves_tail`
+- `test_did_change_workspace_folders_remove_last_root_preserves_head`
+- `test_did_change_workspace_folders_remove_middle_root_preserves_surrounding`
 - `test_did_change_workspace_folders_remove_multiple_roots_batch`
 - `test_did_change_workspace_folders_remove_nonexistent_root_is_noop`
+- `test_did_change_workspace_folders_remove_root_clears_first_workspace`
 - `test_did_change_workspace_folders_remove_single_root`
+- `test_did_change_workspace_folders_remove_via_notification_dispatch`
+- `test_did_change_workspace_folders_removed_entry_without_uri_skipped`
+- `test_did_change_workspace_folders_reopen_from_slice`
+- `test_did_change_workspace_folders_reopen_previously_removed_root`
+- `test_did_change_workspace_folders_routing_longest_prefix`
 - `test_did_change_workspace_folders_routing_switches_after_removal`
 - `test_did_change_workspace_folders_simultaneous_add_and_remove`
+- `test_did_change_workspace_folders_uri_trailing_slash_handled`
 - `test_l2_multiroot_dynamic_workspace_folders`
 
 #### `workspace/didChangeWatchedFiles` (20 e2e tests)
@@ -1691,4 +1721,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1490 total, 40 rows >= 20, 15 rows >= 50 of 53
+coverage: e2e 1520 total, 40 rows >= 20, 16 rows >= 50 of 53
