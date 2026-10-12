@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1243
+- **Total E2E Tests**: 1290
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 1161
+- **Classified E2E Tests**: 1208
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 36 / 53
-- **Rows >= 50 E2E**: 9 / 53
+- **Rows >= 20 E2E**: 37 / 53
+- **Rows >= 50 E2E**: 10 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -23,7 +23,7 @@
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didOpen` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didChange` | 50 | 0 | 50 | ✅ Complete |
-| Domain 3: Synchronization & Coordinates | `textDocument/didSave` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
+| Domain 3: Synchronization & Coordinates | `textDocument/didSave` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
 | Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 50 | 0 | 50 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `textDocument/codeAction` | 7 | 12 | 19 | 🔴 In Progress (7/50) |
@@ -547,10 +547,57 @@
 - `test_did_change_version_skip_tolerance`
 - `test_did_change_version_zero_increments_internal_version`
 
-#### `textDocument/didSave` (3 e2e tests)
+#### `textDocument/didSave` (50 e2e tests)
 - `test_case_9_line_shift_after_did_save_without_reindex`
+- `test_did_save_after_close_document_is_safe_noop`
+- `test_did_save_after_did_change_updates_disk_baseline`
+- `test_did_save_client_reused_notification`
+- `test_did_save_crlf_document_preserves_crlf_in_disk_text`
+- `test_did_save_does_not_affect_cancelled_requests`
+- `test_did_save_does_not_evict_overlay`
+- `test_did_save_does_not_modify_open_count`
+- `test_did_save_does_not_trigger_flycheck_when_no_cargo_toml`
+- `test_did_save_empty_file_preserves_empty_content`
+- `test_did_save_empty_params_safe`
+- `test_did_save_empty_uri_handled_safely`
+- `test_did_save_full_sync_then_save`
+- `test_did_save_interleaved_between_changes`
+- `test_did_save_invalidates_position_converter_cache`
+- `test_did_save_large_file_preserves_full_content`
+- `test_did_save_missing_uri_safe`
+- `test_did_save_multiple_successive_saves_on_same_file`
+- `test_did_save_non_file_uri_scheme_safe`
+- `test_did_save_null_params_safe`
+- `test_did_save_on_already_saved_document_is_idempotent`
+- `test_did_save_preserves_compiled_text_when_present`
+- `test_did_save_preserves_content_hash`
+- `test_did_save_preserves_document_open_paths`
+- `test_did_save_preserves_line_starts`
+- `test_did_save_preserves_other_open_documents`
+- `test_did_save_preserves_provenance_flag`
+- `test_did_save_preserves_scopes`
+- `test_did_save_preserves_symbol_locations`
+- `test_did_save_preserves_symbols`
+- `test_did_save_preserves_version`
+- `test_did_save_produces_no_stdout_output`
+- `test_did_save_reconcile_with_disk_after_save`
+- `test_did_save_relative_path_fallback_safe`
+- `test_did_save_returns_ok_true`
+- `test_did_save_routes_to_correct_workspace_root`
+- `test_did_save_sequential_batch_across_ten_files`
 - `test_did_save_triggers_flycheck`
+- `test_did_save_triggers_flycheck_when_cargo_toml_present`
+- `test_did_save_unicode_document_preserves_unicode_in_disk_text`
+- `test_did_save_unopened_document_is_safe_noop`
 - `test_did_save_updates_disk_sync_state`
+- `test_did_save_updates_disk_text_to_current_overlay_text`
+- `test_did_save_when_flycheck_already_running`
+- `test_did_save_with_extra_client_metadata`
+- `test_did_save_with_included_text_param_safe`
+- `test_did_save_with_nested_subdirectory_path`
+- `test_did_save_with_root_containing_cargo_workspace`
+- `test_did_save_with_url_encoded_space_uri`
+- `test_did_save_with_windows_uri`
 
 #### `textDocument/didClose` (3 e2e tests)
 - `test_did_close_evicts_overlay`
@@ -1444,4 +1491,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1243 total, 36 rows >= 20, 9 rows >= 50 of 53
+coverage: e2e 1290 total, 37 rows >= 20, 10 rows >= 50 of 53
