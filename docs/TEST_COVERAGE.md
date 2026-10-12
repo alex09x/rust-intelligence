@@ -5,7 +5,7 @@
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
 - **Total E2E Tests**: 1398
-- **Total Unit/Src Tests**: 414
+- **Total Unit/Src Tests**: 416
 - **Classified E2E Tests**: 1316
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 38 / 53

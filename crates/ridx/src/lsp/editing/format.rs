@@ -125,11 +125,17 @@ pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     let last_line = doc_text.lines().last().unwrap_or("");
     let last_char = last_line.chars().count() as u32;
 
+    let (end_line, end_char) = if doc_text.ends_with('\n') {
+        (line_count, 0)
+    } else {
+        (line_count.saturating_sub(1), last_char)
+    };
+
     json!([
         {
             "range": {
                 "start": { "line": 0, "character": 0 },
-                "end": { "line": line_count, "character": last_char }
+                "end": { "line": end_line, "character": end_char }
             },
             "newText": formatted
         }
@@ -260,4 +266,51 @@ fn format_range_snippet(snippet: &str, edition: &str) -> Option<String> {
 
 pub fn handle_on_type_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     handle_formatting(msg, overlay_mgr)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::overlay::OverlayManager;
+    use serde_json::json;
+
+    #[test]
+    fn test_handle_formatting_range_end_with_trailing_newline() {
+        let mut overlay_mgr = OverlayManager::new();
+        let uri = "file:///tmp/fmt_nl.rs";
+        let code = "fn main() {\nlet x = 1;\n}\n";
+        overlay_mgr.open_document(uri, "/tmp/fmt_nl.rs", 1, code.to_string());
+
+        let msg = json!({
+            "params": {
+                "textDocument": { "uri": uri }
+            }
+        });
+        let res = handle_formatting(&msg, &overlay_mgr);
+        let edits = res.as_array().expect("edits array");
+        assert_eq!(edits.len(), 1);
+        let end = &edits[0]["range"]["end"];
+        assert_eq!(end["line"], 3);
+        assert_eq!(end["character"], 0);
+    }
+
+    #[test]
+    fn test_handle_formatting_range_end_without_trailing_newline() {
+        let mut overlay_mgr = OverlayManager::new();
+        let uri = "file:///tmp/fmt_no_nl.rs";
+        let code = "fn main() {\nlet x = 1;\n}";
+        overlay_mgr.open_document(uri, "/tmp/fmt_no_nl.rs", 1, code.to_string());
+
+        let msg = json!({
+            "params": {
+                "textDocument": { "uri": uri }
+            }
+        });
+        let res = handle_formatting(&msg, &overlay_mgr);
+        let edits = res.as_array().expect("edits array");
+        assert_eq!(edits.len(), 1);
+        let end = &edits[0]["range"]["end"];
+        assert_eq!(end["line"], 2);
+        assert_eq!(end["character"], 1);
+    }
 }
