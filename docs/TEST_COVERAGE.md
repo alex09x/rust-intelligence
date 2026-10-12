@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1398
+- **Total E2E Tests**: 1441
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1316
+- **Classified E2E Tests**: 1359
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 38 / 53
-- **Rows >= 50 E2E**: 13 / 53
+- **Rows >= 20 E2E**: 39 / 53
+- **Rows >= 50 E2E**: 14 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -26,7 +26,7 @@
 | Domain 3: Synchronization & Coordinates | `textDocument/didSave` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 50 | 0 | 50 | ✅ Complete |
-| Domain 4: Actions & Refactoring | `textDocument/codeAction` | 7 | 12 | 19 | 🔴 In Progress (7/50) |
+| Domain 4: Actions & Refactoring | `textDocument/codeAction` | 50 | 12 | 62 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `codeAction/resolve` | 1 | 14 | 15 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/completion` | 10 | 25 | 35 | 🔴 In Progress (10/50) |
 | Domain 5: Intelligence & Completion | `completionItem/resolve` | 20 | 9 | 29 | 🟡 Wave 1 Pass (>= 20) |
@@ -766,7 +766,50 @@
 
 ### Domain 4: Actions & Refactoring
 
-#### `textDocument/codeAction` (7 e2e tests)
+#### `textDocument/codeAction` (50 e2e tests)
+- `test_code_action_auto_import_cannot_find_message_fallback`
+- `test_code_action_auto_import_deduplicates_identical_paths`
+- `test_code_action_auto_import_e0412_from_workspace_symbol`
+- `test_code_action_auto_import_e0425_from_workspace_symbol`
+- `test_code_action_auto_import_filtered_out_by_only_refactor`
+- `test_code_action_auto_import_no_matching_symbol_yields_no_action`
+- `test_code_action_clean_doc_no_diagnostics_returns_empty_actions`
+- `test_code_action_combined_filtered_by_only_quickfix`
+- `test_code_action_combined_filtered_by_only_source`
+- `test_code_action_combined_organize_and_quickfix`
+- `test_code_action_data_carries_content_hash`
+- `test_code_action_data_carries_uri`
+- `test_code_action_did_change_updates_available_actions`
+- `test_code_action_did_close_reverts_to_disk_content`
+- `test_code_action_empty_buffer_returns_empty_actions`
+- `test_code_action_empty_diagnostics_array_in_context`
+- `test_code_action_empty_uri_rejected_code_32602`
+- `test_code_action_extract_variable_empty_range_yields_no_action`
+- `test_code_action_extract_variable_filtered_out_by_only_quickfix`
+- `test_code_action_extract_variable_non_empty_range`
+- `test_code_action_jsonrpc_version_2_0_echoed`
+- `test_code_action_missing_params_rejected_code_32602`
+- `test_code_action_missing_range_rejected_code_32602`
+- `test_code_action_missing_uri_rejected_code_32602`
+- `test_code_action_multiline_selection_range`
+- `test_code_action_non_existent_file_with_no_diagnostics_returns_empty`
+- `test_code_action_null_context_only_matches_all_kinds`
+- `test_code_action_organize_imports_filter_only_source_organize_imports`
+- `test_code_action_organize_imports_filtered_out_by_only_quickfix`
+- `test_code_action_organize_imports_single_line`
+- `test_code_action_organize_imports_with_duplicates`
+- `test_code_action_overlay_text_used_over_disk`
+- `test_code_action_quickfix_filtered_out_by_only_refactor`
+- `test_code_action_quickfix_multiple_diagnostics_emits_multiple_actions`
+- `test_code_action_quickfix_preserves_diagnostic_range`
+- `test_code_action_quickfix_preserves_document_version_in_edit`
+- `test_code_action_quickfix_unused_mut_message_fallback`
+- `test_code_action_quickfix_unused_mut_remove_mut`
+- `test_code_action_quickfix_unused_variable_message_fallback`
+- `test_code_action_quickfix_unused_variable_prefix_underscore`
+- `test_code_action_response_id_echoed_correctly`
+- `test_code_action_unknown_diagnostic_code_ignored`
+- `test_code_action_zero_width_range_at_eof`
 - `test_domain4_stream_code_action_did_change_resolve_conflict`
 - `test_extract_variable_inside_closure_rejected`
 - `test_extract_variable_multiline_short_circuit_and_loop_rejected`
@@ -1599,4 +1642,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1398 total, 38 rows >= 20, 13 rows >= 50 of 53
+coverage: e2e 1441 total, 39 rows >= 20, 14 rows >= 50 of 53
