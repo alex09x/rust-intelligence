@@ -102,6 +102,12 @@ def _na_summary():
     return {f"{prefix}_p{p}_us": "N/A" for prefix in ("cold", "warm") for p in (50, 90, 95, 99)}
 
 
+def _record_error_code(err_map, err):
+    if err:
+        c = str(err.get("code", "UNKNOWN") if isinstance(err, dict) else err)
+        err_map[c] = err_map.get(c, 0) + 1
+
+
 def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
     """Runs all 78 LSP methods on the server and collects execution metrics."""
     lifecycle_results = {}
@@ -109,6 +115,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
     for mid, key, rpc_method, domain, rpc_type in lifecycle_specs:
         lats = []
         errs = 0
+        err_codes = {}
         if key == "initialize":
             raw_p = subprocess.Popen(cmd, cwd=str(repo_dir), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             try:
@@ -126,8 +133,10 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                     lats.append(dur)
                 else:
                     errs += 1
-            except Exception:
+                    _record_error_code(err_codes, "MALFORMED_HEADER")
+            except Exception as e:
                 errs += 1
+                _record_error_code(err_codes, str(type(e).__name__))
             finally:
                 raw_p.kill()
                 raw_p.wait()
@@ -147,6 +156,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                 err = None
             if err:
                 errs += 1
+                _record_error_code(err_codes, err)
             lats.append(dur)
             e_srv.close()
 
@@ -156,6 +166,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
             "rpc_method": rpc_method,
             "tests_run": len(lats),
             "errors": errs,
+            "error_codes": err_codes,
             **_latency_summary(lats, lats),
         }
 
@@ -176,6 +187,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
             latencies_cold = []
             latencies_warm = []
             errors = 0
+            error_codes = {}
             a_count = 0  # (a) non-empty and verified
             b_count = 0  # (b) empty (null / [] / empty hover)
             c_count = 0  # (c) error / failed
@@ -187,6 +199,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                     "rpc_method": rpc_method,
                     "tests_run": len(method_scenarios),
                     "errors": 0,
+                    "error_codes": {},
                     "status": "SERVER_RPC_SUPPORTED",
                     "a_non_empty": len(method_scenarios),
                     "b_empty": 0,
@@ -212,12 +225,14 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                     else:
                         errors += 1
                         c_count += 1
+                        _record_error_code(error_codes, "NOTIFICATION_FAILED")
 
                 elif rpc_type == "mutation":
                     dur_mut, err_mut = execute_mutation_scenario(srv, key, sc, repo_dir)
                     if err_mut:
                         errors += 1
                         c_count += 1
+                        _record_error_code(error_codes, err_mut)
                     else:
                         a_count += 1
                     latencies_cold.append(dur_mut)
@@ -234,6 +249,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                             "status": "UNSUPPORTED",
                             "tests_run": len(method_scenarios),
                             "errors": 0,
+                            "error_codes": {"-32601": len(method_scenarios)},
                             "a_non_empty": 0,
                             "b_empty": 0,
                             "c_error": len(method_scenarios),
@@ -246,6 +262,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                     if err1:
                         errors += 1
                         c_count += 1
+                        _record_error_code(error_codes, err1)
                     elif res1 is None or res1 == [] or res1 == "" or (isinstance(res1, dict) and not res1) or (key == "hover" and isinstance(res1, dict) and not res1.get("contents")):
                         b_count += 1
                     else:
@@ -257,6 +274,10 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                     _, dur3, err3 = srv.request(rpc_method, params, timeout=2.0)
                     if err2 or err3:
                         errors += 1
+                        if err2:
+                            _record_error_code(error_codes, err2)
+                        if err3:
+                            _record_error_code(error_codes, err3)
                     warm_med = (dur2 + dur3) / 2.0
                     latencies_warm.append(warm_med)
 
@@ -275,6 +296,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                 "rpc_method": rpc_method,
                 "tests_run": len(method_scenarios),
                 "errors": errors,
+                "error_codes": error_codes,
                 "a_non_empty": a_count,
                 "b_empty": b_count,
                 "c_error": c_count,
@@ -318,7 +340,6 @@ def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed
     ra_res = execute_server_suite(ra_cmd, repo_dir, scenarios, is_ra=True, sample_count=sample_count)
     ra_dur = time.time() - t0
     ts_end = datetime.now(timezone.utc).isoformat()
-
     prov = collect_matrix_provenance(repo_dir, ridx_bin, ra_bin, seed, ts_start, ts_end, repo_id=repo_id)
 
     res = {
@@ -372,7 +393,6 @@ def main():
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     print(f"Benchmark matrix results saved to {out_path}")
-
 
 
 if __name__ == "__main__":
