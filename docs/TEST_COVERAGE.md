@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1290
+- **Total E2E Tests**: 1338
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 1208
+- **Classified E2E Tests**: 1256
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 37 / 53
-- **Rows >= 50 E2E**: 10 / 53
+- **Rows >= 20 E2E**: 38 / 53
+- **Rows >= 50 E2E**: 11 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -22,9 +22,9 @@
 | Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didOpen` | 50 | 0 | 50 | ✅ Complete |
-| Domain 3: Synchronization & Coordinates | `textDocument/didChange` | 50 | 0 | 50 | ✅ Complete |
+| Domain 3: Synchronization & Coordinates | `textDocument/didChange` | 51 | 0 | 51 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didSave` | 50 | 0 | 50 | ✅ Complete |
-| Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
+| Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 50 | 0 | 50 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `textDocument/codeAction` | 7 | 12 | 19 | 🔴 In Progress (7/50) |
 | Domain 4: Actions & Refactoring | `codeAction/resolve` | 1 | 13 | 14 | 🔴 In Progress (1/50) |
@@ -495,7 +495,7 @@
 - `test_did_open_with_provenance_uncompiled`
 - `test_did_open_with_unknown_language_id_safely`
 
-#### `textDocument/didChange` (50 e2e tests)
+#### `textDocument/didChange` (51 e2e tests)
 - `test_did_change_adds_enum_definition_symbol`
 - `test_did_change_adds_new_fn_symbol`
 - `test_did_change_adds_struct_definition_symbol`
@@ -535,6 +535,7 @@
 - `test_did_change_replace_multiline_block`
 - `test_did_change_replace_word_in_line`
 - `test_did_change_sequential_inserts_in_single_line`
+- `test_did_change_short_overlay_definition_on_past_eof_returns_null`
 - `test_did_change_supports_new_text_key_variant`
 - `test_did_change_supports_text_key_variant`
 - `test_did_change_unopened_document_implicit_open`
@@ -573,9 +574,9 @@
 - `test_did_save_preserves_content_hash`
 - `test_did_save_preserves_document_open_paths`
 - `test_did_save_preserves_line_starts`
+- `test_did_save_preserves_line_starts`
 - `test_did_save_preserves_other_open_documents`
 - `test_did_save_preserves_provenance_flag`
-- `test_did_save_preserves_scopes`
 - `test_did_save_preserves_symbol_locations`
 - `test_did_save_preserves_symbols`
 - `test_did_save_preserves_version`
@@ -599,10 +600,57 @@
 - `test_did_save_with_url_encoded_space_uri`
 - `test_did_save_with_windows_uri`
 
-#### `textDocument/didClose` (3 e2e tests)
+#### `textDocument/didClose` (50 e2e tests)
+- `test_did_close_already_closed_document_is_idempotent`
+- `test_did_close_crlf_document_evicted_cleanly`
+- `test_did_close_deep_nested_path`
+- `test_did_close_discards_unsaved_dirty_overlay`
+- `test_did_close_does_not_affect_multi_root_workspaces`
+- `test_did_close_does_not_affect_unrelated_open_files`
+- `test_did_close_does_not_alter_cancelled_requests`
+- `test_did_close_does_not_clear_other_converter_entries`
+- `test_did_close_does_not_modify_disk_file`
+- `test_did_close_empty_params_safe`
+- `test_did_close_empty_uri_safe`
 - `test_did_close_evicts_overlay`
+- `test_did_close_followed_by_reopen_starts_fresh_version`
+- `test_did_close_fragment_uri_safe`
+- `test_did_close_full_lifecycle_open_change_save_close`
+- `test_did_close_interleaved_open_close_pairs`
 - `test_did_close_invalidates_position_converter`
+- `test_did_close_invalidates_position_converter_cache`
+- `test_did_close_large_document_overlay_freed`
+- `test_did_close_missing_uri_safe`
+- `test_did_close_non_file_uri_scheme_safe`
+- `test_did_close_notification_with_extra_client_data`
+- `test_did_close_null_params_safe`
+- `test_did_close_open_change_close_without_save`
+- `test_did_close_open_file_paths_excludes_closed_file`
+- `test_did_close_preserves_flycheck_state`
+- `test_did_close_preserves_unrelated_file_version_and_symbols`
+- `test_did_close_produces_no_stdout_output`
+- `test_did_close_query_string_uri_safe`
+- `test_did_close_reduces_open_count_by_one`
+- `test_did_close_relative_uri_fallback_safe`
+- `test_did_close_removes_overlay_from_manager`
+- `test_did_close_reopen_with_different_text`
+- `test_did_close_returns_ok_true`
+- `test_did_close_reused_notification_safe`
+- `test_did_close_reverse_order_closing`
+- `test_did_close_sequential_closing_all_files`
+- `test_did_close_single_character_uri_safe`
+- `test_did_close_stress_ten_distinct_files_open_close`
+- `test_did_close_stress_twenty_open_and_close_cycles`
+- `test_did_close_subsequent_did_change_triggers_disk_fallback`
+- `test_did_close_subsequent_did_save_is_noop`
+- `test_did_close_subsequent_will_save_is_noop`
+- `test_did_close_subsequent_will_save_wait_until_returns_empty`
+- `test_did_close_trailing_slash_uri_safe`
+- `test_did_close_unicode_document_evicted_cleanly`
 - `test_did_close_unopened_document_is_noop`
+- `test_did_close_unopened_document_returns_ok_true`
+- `test_did_close_url_encoded_space_uri_eviction`
+- `test_did_close_windows_file_uri_eviction`
 
 #### `willSave / willSaveWaitUntil` (50 e2e tests)
 - `test_will_save_after_delay_reason_returns_ok_true`
@@ -1491,4 +1539,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1290 total, 37 rows >= 20, 10 rows >= 50 of 53
+coverage: e2e 1338 total, 38 rows >= 20, 11 rows >= 50 of 53
