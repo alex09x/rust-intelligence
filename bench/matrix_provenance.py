@@ -133,7 +133,6 @@ def collect_matrix_provenance(
     }
 
 
-
 def save_scenarios_positions(
     scenarios: Dict[str, list],
     out_path: Path,

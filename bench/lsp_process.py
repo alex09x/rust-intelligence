@@ -39,8 +39,11 @@ class SimpleLspProcess:
         self.is_quiescent = False
         self.initial_quiescent = False
         self.initial_wait_ms = 0.0
+        self.t_init_start = time.perf_counter()
         self.active_progress_tokens = set()
         self.progress_titles_seen = []
+        self.progress_events = []
+        self.active_token_titles = {}
         self.last_msg_time = time.perf_counter()
         self.open_docs = set()
 
@@ -173,14 +176,27 @@ class SimpleLspProcess:
                             kind = val.get("kind")
                             with self.lock:
                                 if kind == "begin":
+                                    title = val.get("title")
+                                    if tok is not None and title:
+                                        self.active_token_titles[str(tok)] = str(title)
                                     if tok is not None:
                                         self.active_progress_tokens.add(str(tok))
-                                    title = val.get("title")
                                     if title and str(title) not in self.progress_titles_seen:
                                         self.progress_titles_seen.append(str(title))
                                 elif kind == "end":
+                                    title = val.get("title") or self.active_token_titles.get(str(tok), "")
                                     if tok is not None:
                                         self.active_progress_tokens.discard(str(tok))
+                                else:
+                                    title = val.get("title") or self.active_token_titles.get(str(tok), "")
+
+                                if kind in ("begin", "end"):
+                                    t_ms = round((time.perf_counter() - self.t_init_start) * 1000.0, 2)
+                                    self.progress_events.append({
+                                        "title": str(title or ""),
+                                        "kind": str(kind),
+                                        "t_ms": t_ms,
+                                    })
             except Exception:
                 break
 

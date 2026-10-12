@@ -50,6 +50,19 @@ def test_index_precondition():
         checked = check_ridx_index(repo_dir)
         assert checked == 1, f"Expected checked shard count 1, got {checked}"
         print(f"PASS: valid index directory with shard accepted (shards={checked})")
+
+        # Test 3: Shards exist but sysroot_cas_key missing in manifest - expect rejection
+        bad_manifest = {"active_variant_id": "dev-test"}
+        (ridx_dir / "ridx_manifest.json").write_text(json.dumps(bad_manifest), encoding="utf-8")
+        rejected_no_key = False
+        try:
+            check_ridx_index(repo_dir)
+        except RuntimeError as e:
+            rejected_no_key = True
+            assert "sysroot_cas_key=none" in str(e)
+            print(f"PASS: shards present without sysroot_cas_key rejected as expected ({e})")
+        assert rejected_no_key, "Expected RuntimeError when sysroot_cas_key is missing"
+
         print("PASS: all index precondition checks passed")
 
 

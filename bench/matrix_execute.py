@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 from lsp_process import SimpleLspProcess
+from matrix_canary import wait_ra_canary_ready
 from matrix_categories import LSP_SPECS, build_params, DOMAIN_NAMES
 from matrix_scenarios import execute_mutation_scenario, execute_sync_scenario
 from metrics import percentile, get_proc_metrics
@@ -101,6 +102,14 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
     # Main server instance for queries, sync, presentation, and mutations
     srv = SimpleLspProcess(cmd, repo_dir, is_ra=is_ra)
     pid = srv.p.pid
+
+    canary_wait_ms = 0.0
+    canary_attempts = 0
+    if is_ra:
+        canary_positions = scenarios.get("definition", [])[:3]
+        canary_wait_ms, canary_attempts = wait_ra_canary_ready(
+            srv, canary_positions, repo_dir, timeout=600.0, interval=1.0
+        )
 
     results = dict(lifecycle_results)
     peak_rss = 0
@@ -256,6 +265,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         initial_quiescent = getattr(srv, "initial_quiescent", True)
         initial_wait_ms = round(getattr(srv, "initial_wait_ms", 0.0), 2)
         progress_titles_seen = list(getattr(srv, "progress_titles_seen", []))
+        progress_events = list(getattr(srv, "progress_events", []))
         srv.close()
 
     return {
@@ -265,6 +275,9 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         "peak_threads": peak_threads,
         "initial_quiescent": initial_quiescent,
         "initial_wait_ms": initial_wait_ms,
+        "canary_wait_ms": canary_wait_ms,
+        "canary_attempts": canary_attempts,
         "progress_titles_seen": progress_titles_seen,
+        "progress_events": progress_events,
         "open_documents_before_queries": open_docs_before_queries if open_docs_before_queries is not None else 0,
     }
