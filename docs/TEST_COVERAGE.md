@@ -4,19 +4,19 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1053
+- **Total E2E Tests**: 1083
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 971
+- **Classified E2E Tests**: 1001
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 33 / 53
-- **Rows >= 50 E2E**: 4 / 53
+- **Rows >= 50 E2E**: 5 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | Domain 1: Lifecycle & Control | `initialize / initialized` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `shutdown` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `exit` | 50 | 0 | 50 | ✅ Complete |
-| Domain 1: Lifecycle & Control | `$/cancelRequest` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 1: Lifecycle & Control | `$/cancelRequest` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
@@ -227,7 +227,7 @@
 - `test_exit_without_shutdown_returns_false_signal`
 - `test_exit_writer_unmodified_on_exit`
 
-#### `$/cancelRequest` (20 e2e tests)
+#### `$/cancelRequest` (50 e2e tests)
 - `test_cancel_request_cancels_code_action`
 - `test_cancel_request_cancels_completion`
 - `test_cancel_request_cancels_definition`
@@ -236,18 +236,48 @@
 - `test_cancel_request_cancels_references`
 - `test_cancel_request_cancels_rename`
 - `test_cancel_request_concurrent_multiple_ids`
+- `test_cancel_request_does_not_affect_overlay_contents`
 - `test_cancel_request_duplicate_cancel_id`
+- `test_cancel_request_duplicate_cancel_idempotent`
+- `test_cancel_request_empty_params_handled_safely`
 - `test_cancel_request_integer_id_stored`
+- `test_cancel_request_large_integer_id_recorded`
+- `test_cancel_request_missing_id_in_params_handled_safely`
 - `test_cancel_request_missing_id_tolerated`
 - `test_cancel_request_missing_params_tolerated`
+- `test_cancel_request_multiple_different_ids_accumulated`
+- `test_cancel_request_negative_id_recorded`
 - `test_cancel_request_nonexistent_id_noop`
+- `test_cancel_request_null_params_handled_safely`
+- `test_cancel_request_numeric_id_recorded_in_cancelled_set`
 - `test_cancel_request_preserves_exact_request_id`
 - `test_cancel_request_preserves_unrelated_requests`
+- `test_cancel_request_produces_no_response_bytes`
 - `test_cancel_request_produces_no_stdout`
+- `test_cancel_request_rejects_code_action_with_32800`
+- `test_cancel_request_rejects_completion_with_32800`
+- `test_cancel_request_rejects_definition_with_32800`
+- `test_cancel_request_rejects_document_highlight_with_32800`
+- `test_cancel_request_rejects_document_symbol_with_32800`
+- `test_cancel_request_rejects_formatting_with_32800`
+- `test_cancel_request_rejects_hover_with_32800`
+- `test_cancel_request_rejects_implementation_with_32800`
+- `test_cancel_request_rejects_inlay_hint_with_32800`
+- `test_cancel_request_rejects_references_with_32800`
+- `test_cancel_request_rejects_rename_with_32800`
+- `test_cancel_request_rejects_semantic_tokens_with_32800`
+- `test_cancel_request_rejects_type_definition_with_32800`
+- `test_cancel_request_rejects_workspace_symbol_with_32800`
+- `test_cancel_request_removes_id_from_set_after_rejection`
 - `test_cancel_request_removes_id_upon_cancel`
 - `test_cancel_request_returns_ok_true`
+- `test_cancel_request_stress_ten_consecutive_cancels`
+- `test_cancel_request_string_id_recorded_in_cancelled_set`
 - `test_cancel_request_string_id_stored`
+- `test_cancel_request_subsequent_request_with_same_id_not_cancelled`
 - `test_cancel_request_triggers_code_32800`
+- `test_cancel_request_uninitialized_server_handles_safely`
+- `test_cancel_request_uuid_string_id`
 
 #### `$/setTrace (no-op)` (20 e2e tests)
 - `test_set_trace_array_value_tolerated`
@@ -1255,4 +1285,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1053 total, 33 rows >= 20, 4 rows >= 50 of 53
+coverage: e2e 1083 total, 33 rows >= 20, 5 rows >= 50 of 53
