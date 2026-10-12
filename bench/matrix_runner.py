@@ -94,6 +94,14 @@ def execute_mutation_scenario(srv, key, sc, repo_dir):
     return dur, err
 
 
+def _latency_summary(cold, warm):
+    return {f"{s}_p{p}_us": percentile(v, p) for s, v in (("cold", cold), ("warm", warm)) for p in (50, 90, 95, 99)}
+
+
+def _na_summary():
+    return {f"{prefix}_p{p}_us": "N/A" for prefix in ("cold", "warm") for p in (50, 90, 95, 99)}
+
+
 def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
     """Runs all 78 LSP methods on the server and collects execution metrics."""
     lifecycle_results = {}
@@ -148,14 +156,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
             "rpc_method": rpc_method,
             "tests_run": len(lats),
             "errors": errs,
-            "cold_p50_us": percentile(lats, 50),
-            "cold_p90_us": percentile(lats, 90),
-            "cold_p95_us": percentile(lats, 95),
-            "cold_p99_us": percentile(lats, 99),
-            "warm_p50_us": percentile(lats, 50),
-            "warm_p90_us": percentile(lats, 90),
-            "warm_p95_us": percentile(lats, 95),
-            "warm_p99_us": percentile(lats, 99),
+            **_latency_summary(lats, lats),
         }
 
     # Main server instance for queries, sync, presentation, and mutations
@@ -193,14 +194,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                     "a_pct": 100.0,
                     "b_pct": 0.0,
                     "c_pct": 0.0,
-                    "cold_p50_us": "N/A",
-                    "cold_p90_us": "N/A",
-                    "cold_p95_us": "N/A",
-                    "cold_p99_us": "N/A",
-                    "warm_p50_us": "N/A",
-                    "warm_p90_us": "N/A",
-                    "warm_p95_us": "N/A",
-                    "warm_p99_us": "N/A",
+                    **_na_summary(),
                 }
                 continue
 
@@ -246,8 +240,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                             "a_pct": 0.0,
                             "b_pct": 0.0,
                             "c_pct": 100.0,
-                            "cold_p50_us": "N/A", "cold_p90_us": "N/A", "cold_p95_us": "N/A", "cold_p99_us": "N/A",
-                            "warm_p50_us": "N/A", "warm_p90_us": "N/A", "warm_p95_us": "N/A", "warm_p99_us": "N/A",
+                            **_na_summary(),
                         }
                         break
                     if err1:
@@ -288,14 +281,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                 "a_pct": round(a_count / tot * 100, 1),
                 "b_pct": round(b_count / tot * 100, 1),
                 "c_pct": round(c_count / tot * 100, 1),
-                "cold_p50_us": percentile(latencies_cold, 50),
-                "cold_p90_us": percentile(latencies_cold, 90),
-                "cold_p95_us": percentile(latencies_cold, 95),
-                "cold_p99_us": percentile(latencies_cold, 99),
-                "warm_p50_us": percentile(latencies_warm, 50),
-                "warm_p90_us": percentile(latencies_warm, 90),
-                "warm_p95_us": percentile(latencies_warm, 95),
-                "warm_p99_us": percentile(latencies_warm, 99),
+                **_latency_summary(latencies_cold, latencies_warm),
             }
 
     finally:
