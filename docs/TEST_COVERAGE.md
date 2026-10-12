@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1113
+- **Total E2E Tests**: 1154
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 1031
+- **Classified E2E Tests**: 1072
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 33 / 53
-- **Rows >= 50 E2E**: 6 / 53
+- **Rows >= 20 E2E**: 34 / 53
+- **Rows >= 50 E2E**: 7 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -21,7 +21,7 @@
 | Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
-| Domain 3: Synchronization & Coordinates | `textDocument/didOpen` | 9 | 0 | 9 | 🔴 In Progress (9/50) |
+| Domain 3: Synchronization & Coordinates | `textDocument/didOpen` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didChange` | 11 | 0 | 11 | 🔴 In Progress (11/50) |
 | Domain 3: Synchronization & Coordinates | `textDocument/didSave` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
 | Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
@@ -443,16 +443,57 @@
 
 ### Domain 3: Synchronization & Coordinates
 
-#### `textDocument/didOpen` (9 e2e tests)
+#### `textDocument/didOpen` (50 e2e tests)
 - `test_did_open_already_open_replaces_cleanly`
+- `test_did_open_async_fn_symbol`
+- `test_did_open_comment_only_document_symbols_empty`
+- `test_did_open_const_fn_symbol`
+- `test_did_open_const_symbols`
+- `test_did_open_content_hash_computed`
 - `test_did_open_crlf_line_endings_handling`
+- `test_did_open_dispatch_returns_ok_true`
 - `test_did_open_empty_document`
+- `test_did_open_empty_uri_handled_safely`
+- `test_did_open_enum_definition_symbols`
+- `test_did_open_escaped_uri_space_handling`
+- `test_did_open_extern_fn_symbol`
+- `test_did_open_fn_parameters_symbols`
 - `test_did_open_fresh_document`
+- `test_did_open_invalid_syntax_rust_preserves_text`
+- `test_did_open_invalidates_converter_cache`
 - `test_did_open_invalidates_position_cache`
+- `test_did_open_large_version_preserved`
+- `test_did_open_let_bindings_symbols`
+- `test_did_open_line_starts_crlf`
+- `test_did_open_line_starts_multiple_lines`
+- `test_did_open_missing_text_defaults_to_empty`
+- `test_did_open_missing_version_defaults_to_one`
+- `test_did_open_mod_declaration_symbols`
 - `test_did_open_multi_reader_provenance_fast_path`
 - `test_did_open_multibyte_unicode_and_emojis`
+- `test_did_open_negative_version_preserved`
+- `test_did_open_nested_items_symbols_count`
+- `test_did_open_notification_produces_no_stdout_output`
+- `test_did_open_null_text_document_handled_safely`
+- `test_did_open_open_file_paths_lists_exact_paths`
+- `test_did_open_raw_identifier_fn_symbol`
+- `test_did_open_reopen_same_uri_does_not_increase_count`
+- `test_did_open_reopen_updates_version_and_content`
+- `test_did_open_replaces_previously_closed_file`
+- `test_did_open_sequential_multiple_files_open_count`
+- `test_did_open_single_character_text`
+- `test_did_open_static_symbols`
+- `test_did_open_struct_definition_symbols`
+- `test_did_open_symbol_exact_line_and_col`
+- `test_did_open_symbol_multiline_offsets`
+- `test_did_open_trait_definition_symbols`
+- `test_did_open_type_alias_symbols`
+- `test_did_open_unsafe_fn_symbol`
+- `test_did_open_version_zero_preserved`
+- `test_did_open_with_language_id_rust_handled_safely`
 - `test_did_open_with_provenance_compiled`
 - `test_did_open_with_provenance_uncompiled`
+- `test_did_open_with_unknown_language_id_safely`
 
 #### `textDocument/didChange` (11 e2e tests)
 - `test_did_change_full_content_sync`
@@ -1315,4 +1356,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1113 total, 33 rows >= 20, 6 rows >= 50 of 53
+coverage: e2e 1154 total, 34 rows >= 20, 7 rows >= 50 of 53
