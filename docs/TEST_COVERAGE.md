@@ -4,11 +4,11 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 506
+- **Total E2E Tests**: 546
 - **Total Unit/Src Tests**: 410
-- **Classified E2E Tests**: 424
+- **Classified E2E Tests**: 464
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 10 / 53
+- **Rows >= 20 E2E**: 12 / 53
 - **Rows >= 50 E2E**: 1 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
@@ -42,8 +42,8 @@
 | Domain 6: Hierarchies | `typeHierarchy/supertypes` | 1 | 0 | 1 | 🔴 In Progress (1/50) |
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
 | Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
-| Domain 7: Presentation | `textDocument/foldingRange` | 1 | 0 | 1 | 🔴 In Progress (1/50) |
-| Domain 7: Presentation | `textDocument/selectionRange` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 7: Presentation | `textDocument/foldingRange` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 7: Presentation | `textDocument/selectionRange` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 1 | 0 | 1 | 🔴 In Progress (1/50) |
@@ -279,11 +279,50 @@ _No classified e2e tests yet._
 - `test_l2_semantic_tokens_full_compiler_grounded`
 - `test_l2_semantic_tokens_range_bounded`
 
-#### `textDocument/foldingRange` (1 e2e tests)
+#### `textDocument/foldingRange` (21 e2e tests)
+- `test_folding_range_braces_inside_block_comments_ignored`
+- `test_folding_range_braces_inside_char_literals_ignored`
+- `test_folding_range_braces_inside_line_comments_ignored`
+- `test_folding_range_braces_inside_string_literals_ignored`
+- `test_folding_range_deeply_nested_five_levels`
+- `test_folding_range_dispatcher_echoes_numeric_id`
+- `test_folding_range_dispatcher_echoes_string_id`
+- `test_folding_range_empty_file_returns_empty_array`
+- `test_folding_range_escaped_quotes_inside_strings`
+- `test_folding_range_multiple_sequential_functions`
+- `test_folding_range_nested_blocks_disk`
+- `test_folding_range_nonexistent_file_returns_empty_array`
+- `test_folding_range_overlay_dirty_edit_updates_folding`
+- `test_folding_range_overlay_scopes_take_precedence`
+- `test_folding_range_overlay_single_line_scope_filtered`
+- `test_folding_range_single_function_disk_fallback`
+- `test_folding_range_single_line_braces_ignored`
+- `test_folding_range_struct_impl_and_trait_blocks`
+- `test_folding_range_unclosed_braces_handled_safely`
+- `test_folding_range_unmatched_closing_braces_ignored`
 - `test_l2_folding_range_and_code_lens`
 
-#### `textDocument/selectionRange` (0 e2e tests)
-_No classified e2e tests yet._
+#### `textDocument/selectionRange` (20 e2e tests)
+- `test_selection_range_after_did_change_overlay_edit`
+- `test_selection_range_cursor_at_eof`
+- `test_selection_range_cursor_at_start_of_file`
+- `test_selection_range_cursor_between_functions`
+- `test_selection_range_cursor_inside_inner_block`
+- `test_selection_range_cursor_on_closure_or_loop`
+- `test_selection_range_deeply_nested_blocks`
+- `test_selection_range_duplicate_positions_in_request`
+- `test_selection_range_empty_positions_returns_empty`
+- `test_selection_range_missing_positions_key`
+- `test_selection_range_multiple_documents_isolation`
+- `test_selection_range_multiple_positions_batch`
+- `test_selection_range_nested_struct_impl_method`
+- `test_selection_range_numeric_request_id_echoed`
+- `test_selection_range_parent_nesting_invariants`
+- `test_selection_range_position_beyond_file_length`
+- `test_selection_range_range_coordinates_validity`
+- `test_selection_range_single_position_nested_scope`
+- `test_selection_range_string_request_id_echoed`
+- `test_selection_range_unopened_document_returns_empty`
 
 #### `textDocument/documentLink / resolve` (0 e2e tests)
 _No classified e2e tests yet._
@@ -722,4 +761,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 506 total, 10 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 546 total, 12 rows >= 20, 1 rows >= 50 of 53
