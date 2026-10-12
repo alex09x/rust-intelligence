@@ -18,7 +18,7 @@ from pathlib import Path
 
 from lsp_process import SimpleLspProcess
 from matrix_categories import LSP_SPECS, build_params, DOMAIN_NAMES
-from matrix_scenarios import execute_mutation_scenario
+from matrix_scenarios import execute_mutation_scenario, execute_sync_scenario
 from metrics import percentile, get_proc_metrics
 
 
@@ -109,8 +109,14 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
 
     try:
         query_specs = [s for s in LSP_SPECS if s[4] != "lifecycle"]
+        open_docs_before_queries = None
         for idx, (mid, key, rpc_method, domain, rpc_type) in enumerate(query_specs):
             print(f"  [{idx+1}/{len(query_specs)}] {rpc_method} ({DOMAIN_NAMES.get(domain, 'Other')})...", flush=True)
+            if mid == 15:
+                open_docs_before_queries = len(srv.open_docs)
+                assert open_docs_before_queries == 0, (
+                    f"Expected 0 open documents before queries (method 15), found {open_docs_before_queries}: {srv.open_docs}"
+                )
             method_scenarios = scenarios.get(key, [])[:sample_count]
             latencies_cold = []
             latencies_warm = []
@@ -140,6 +146,18 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
                 continue
 
             for sc in method_scenarios:
+                if domain == 2:
+                    dur_sync, err_sync = execute_sync_scenario(srv, key, sc, repo_dir)
+                    if err_sync:
+                        errors += 1
+                        c_count += 1
+                        _record_error_code(error_codes, err_sync)
+                    else:
+                        a_count += 1
+                    latencies_cold.append(dur_sync)
+                    latencies_warm.append(dur_sync)
+                    continue
+
                 params = build_params(key, sc, repo_dir, is_ra=is_ra)
 
                 if rpc_type == "notification":
@@ -246,4 +264,5 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         "peak_threads": peak_threads,
         "initial_quiescent": initial_quiescent,
         "initial_wait_ms": initial_wait_ms,
+        "open_documents_before_queries": open_docs_before_queries if open_docs_before_queries is not None else 0,
     }

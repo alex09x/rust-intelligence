@@ -122,10 +122,11 @@ def sample_full_lsp_matrix(repo_dir, per_method=300, seed=42):
             items = [{"name": f"{key}_{i}_{n}", "location": [f, l, c], "target": n, "new_name": f"{n}_renamed_{i}", "file": f}
                      for i, (f, l, c, n, k) in enumerate(pool)]
 
-        elif key in ("did_open", "did_change_full", "did_change_inc", "did_save", "did_close", "did_change_watched_files",
-                     "did_create_files", "will_create_files", "did_rename_files", "will_rename_files", "did_delete_files", "will_delete_files"):
+        elif key in ("did_open", "did_change_full", "did_change_inc", "will_save", "will_save_wait", "did_save", "did_close",
+                     "did_change_watched_files", "did_create_files", "will_create_files", "did_rename_files", "will_rename_files",
+                     "did_delete_files", "will_delete_files"):
             pool = _sample(files, per_method)
-            items = [{"name": f"{key}_{i}_{Path(f).name}", "file": f, "content": f"// benchmark test {i}\n"}
+            items = [{"name": f"{key}_{i}_{Path(f).name}", "file": f}
                      for i, f in enumerate(pool)]
 
         elif key == "mutation_case_a":

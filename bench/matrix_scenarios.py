@@ -74,3 +74,73 @@ def execute_mutation_scenario(srv, key, sc, repo_dir):
 
     dur = (time.perf_counter() - t0) * 1_000_000.0
     return dur, err
+
+
+def execute_sync_scenario(srv, key, sc, repo_dir):
+    """Executes a synchronization scenario with isolated open/close lifecycle."""
+    dur_us = 0.0
+    err = None
+    file_rel = sc.get("file", "src/lib.rs")
+    file_path = Path(repo_dir) / file_rel
+    uri = f"file://{file_path}"
+    disk_text = file_path.read_text(encoding="utf-8", errors="replace") if file_path.is_file() else ""
+
+    if key == "did_open":
+        t0 = time.perf_counter()
+        ok = srv.notify("textDocument/didOpen", {
+            "textDocument": {"uri": uri, "languageId": "rust", "version": 1, "text": disk_text}
+        })
+        dur_us = (time.perf_counter() - t0) * 1_000_000.0
+        if not ok:
+            err = "NOTIFICATION_FAILED"
+        srv.notify("textDocument/didClose", {"textDocument": {"uri": uri}})
+
+    elif key in ("did_change_full", "did_change_inc"):
+        srv.notify("textDocument/didOpen", {
+            "textDocument": {"uri": uri, "languageId": "rust", "version": 1, "text": disk_text}
+        })
+        changed_text = disk_text + "\n// bench change\n"
+        t0 = time.perf_counter()
+        ok = srv.notify("textDocument/didChange", {
+            "textDocument": {"uri": uri, "version": 2},
+            "contentChanges": [{"text": changed_text}],
+        })
+        dur_us = (time.perf_counter() - t0) * 1_000_000.0
+        if not ok:
+            err = "NOTIFICATION_FAILED"
+        # Revert text with version 3
+        srv.notify("textDocument/didChange", {
+            "textDocument": {"uri": uri, "version": 3},
+            "contentChanges": [{"text": disk_text}],
+        })
+        srv.notify("textDocument/didClose", {"textDocument": {"uri": uri}})
+
+    elif key in ("will_save", "will_save_wait", "did_save", "did_close"):
+        srv.notify("textDocument/didOpen", {
+            "textDocument": {"uri": uri, "languageId": "rust", "version": 1, "text": disk_text}
+        })
+        if key == "will_save":
+            t0 = time.perf_counter()
+            ok = srv.notify("textDocument/willSave", {"textDocument": {"uri": uri}, "reason": 1})
+            dur_us = (time.perf_counter() - t0) * 1_000_000.0
+            if not ok:
+                err = "NOTIFICATION_FAILED"
+            srv.notify("textDocument/didClose", {"textDocument": {"uri": uri}})
+        elif key == "will_save_wait":
+            res, dur_us, err = srv.request("textDocument/willSaveWaitUntil", {"textDocument": {"uri": uri}, "reason": 1}, timeout=5.0)
+            srv.notify("textDocument/didClose", {"textDocument": {"uri": uri}})
+        elif key == "did_save":
+            t0 = time.perf_counter()
+            ok = srv.notify("textDocument/didSave", {"textDocument": {"uri": uri}})
+            dur_us = (time.perf_counter() - t0) * 1_000_000.0
+            if not ok:
+                err = "NOTIFICATION_FAILED"
+            srv.notify("textDocument/didClose", {"textDocument": {"uri": uri}})
+        elif key == "did_close":
+            t0 = time.perf_counter()
+            ok = srv.notify("textDocument/didClose", {"textDocument": {"uri": uri}})
+            dur_us = (time.perf_counter() - t0) * 1_000_000.0
+            if not ok:
+                err = "NOTIFICATION_FAILED"
+
+    return dur_us, err

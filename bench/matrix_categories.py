@@ -204,14 +204,6 @@ def build_params(key, sc, repo_dir, is_ra=False):
         return {"value": "off"}
     elif key == "progress_cancel":
         return {"token": "token_1"}
-    elif key == "did_open":
-        return {"textDocument": {"uri": uri, "languageId": "rust", "version": 1, "text": sc.get("content", "pub fn dummy() {}")}}
-    elif key in ("did_change_full", "did_change_inc"):
-        return {"textDocument": {"uri": uri, "version": 2}, "contentChanges": [{"text": sc.get("content", "// change\n")}]}
-    elif key in ("will_save", "will_save_wait"):
-        return {"textDocument": {"uri": uri}, "reason": 1}
-    elif key in ("did_save", "did_close"):
-        return {"textDocument": {"uri": uri}}
     elif key == "did_change_watched_files":
         return {"changes": [{"uri": uri, "type": 2}]}
     elif key in ("did_create_files", "will_create_files"):

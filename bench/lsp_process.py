@@ -39,6 +39,7 @@ class SimpleLspProcess:
         self.is_quiescent = False
         self.initial_quiescent = False
         self.initial_wait_ms = 0.0
+        self.open_docs = set()
 
         self.reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
         self.reader_thread.start()
@@ -58,6 +59,17 @@ class SimpleLspProcess:
                 self.p.stdin.flush()
                 if "id" in m:
                     self.t_sends[m["id"]] = time.perf_counter()
+                method = m.get("method")
+                params = m.get("params") or {}
+                if isinstance(params, dict):
+                    td = params.get("textDocument") or {}
+                    if isinstance(td, dict):
+                        uri = td.get("uri")
+                        if uri:
+                            if method == "textDocument/didOpen":
+                                self.open_docs.add(uri)
+                            elif method == "textDocument/didClose":
+                                self.open_docs.discard(uri)
             return True
         except (BrokenPipeError, OSError):
             self.exited = True
