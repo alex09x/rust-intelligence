@@ -297,12 +297,12 @@ def main():
     res = (
         sys.argv[1]
         if len(sys.argv) > 1
-        else str(bench_dir / "results" / "pilot_results.jsonl")
+        else str(bench_dir / "published" / "pilot_5repos_2026-10-08.jsonl")
     )
     disc = (
         sys.argv[2]
         if len(sys.argv) > 2
-        else str(bench_dir / "results" / "discrepancies.jsonl")
+        else str(bench_dir / "published" / "discrepancies.jsonl")
     )
     out = (
         sys.argv[3]

@@ -38,15 +38,12 @@ def generate_repo_report(entry, source_file, discrepancies_file=None, rerun_data
     status = entry.get("status", "UNKNOWN")
     driver_sha = entry.get("driver_sha256") or entry.get("driver_sha", "")
     ra_version = entry.get("ra_version", "")
-    lines = []
+    lines = [f"## Benchmark Report: `{repo}` (commit `{commit}`)"]
 
     try:
         repo_root = Path(__file__).resolve().parent.parent
         src_path = Path(source_file)
-        if src_path.is_absolute():
-            clean_source = str(src_path.resolve().relative_to(repo_root))
-        else:
-            clean_source = str(src_path)
+        clean_source = str(src_path.resolve().relative_to(repo_root)) if src_path.is_absolute() else str(src_path)
     except Exception:
         clean_source = Path(source_file).name
     lines.append(f"*Source Data:* `{clean_source}`  ")
@@ -361,8 +358,8 @@ def generate_executive_summary(entries, discrepancies_file=None):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate automated markdown report from pilot results.")
-    parser.add_argument("--results", default=str(bench_dir / "results" / "pilot_results.jsonl"), help="Path to pilot_results.jsonl")
-    parser.add_argument("--discrepancies", default=str(bench_dir / "results" / "discrepancies.jsonl"), help="Path to discrepancies.jsonl")
+    parser.add_argument("--results", default=str(bench_dir / "published" / "pilot_5repos_2026-10-08.jsonl"), help="Path to pilot results")
+    parser.add_argument("--discrepancies", default=str(bench_dir / "published" / "discrepancies.jsonl"), help="Path to discrepancies.jsonl")
     parser.add_argument("--rerun-hover", default=str(bench_dir / "published" / "rerun_hover_844eac0.jsonl"), help="Path to rerun_hover_844eac0.jsonl")
     parser.add_argument("--output", help="Optional output markdown file path")
     args = parser.parse_args()
@@ -379,9 +376,7 @@ def main():
 
     entries, reports = [], []
     with open(results_path, "r", encoding="utf-8") as f:
-        for line in f:
-            if not line.strip():
-                continue
+        for line in (l.strip() for l in f if l.strip()):
             entry = json.loads(line)
             entries.append(entry)
             reports.append(generate_repo_report(entry, str(results_path), discrepancies_file=args.discrepancies, rerun_data=rerun_data))
@@ -389,8 +384,13 @@ def main():
     summary = generate_executive_summary(entries, discrepancies_file=args.discrepancies) if len(reports) > 1 else ""
     full_report = (summary + "\n\n---\n\n" + "\n\n---\n\n".join(reports)) if summary else "\n\n---\n\n".join(reports)
     if args.output:
-        with open(args.output, "w", encoding="utf-8") as out_f:
-            out_f.write(full_report)
+        out_path = Path(args.output)
+        marker = "\n---\n\n## 6. "
+        if out_path.exists():
+            existing = out_path.read_text(encoding="utf-8")
+            if marker in existing:
+                full_report = full_report + marker + existing.split(marker, 1)[1]
+        out_path.write_text(full_report, encoding="utf-8")
         print(f"Report written to {args.output}")
     else:
         print(full_report)

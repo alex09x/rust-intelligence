@@ -11,7 +11,7 @@
 ---
 
 ## Benchmark Report: `serde-rs/serde` (commit `6693a89c`)
-*Source Data:* `bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/published/pilot_5repos_2026-10-08.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
@@ -107,7 +107,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 ---
 
 ## Benchmark Report: `BurntSushi/ripgrep` (commit `3fce3b5b`)
-*Source Data:* `bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/published/pilot_5repos_2026-10-08.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
@@ -203,7 +203,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 ---
 
 ## Benchmark Report: `tokio-rs/tokio` (commit `b2636752`)
-*Source Data:* `bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/published/pilot_5repos_2026-10-08.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
@@ -299,7 +299,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 ---
 
 ## Benchmark Report: `bevyengine/bevy` (commit `68c80f3b`)
-*Source Data:* `bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/published/pilot_5repos_2026-10-08.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
@@ -395,7 +395,7 @@ Evaluated under framed JSON-RPC with `textDocument/didChange` (Wilson 95% Confid
 ---
 
 ## Benchmark Report: `rust-lang/rust-analyzer` (commit `021bfc15`)
-*Source Data:* `bench/results/pilot_results.jsonl`  
+*Source Data:* `bench/published/pilot_5repos_2026-10-08.jsonl`  
 *Run Status:* `SUCCESS`  
 *Driver SHA256:* `3954bd16bf13c8eb9566d25f1f5de24af710abf7001687c7f47088e1931a5dbf`  
 *rust-analyzer Version:* `rust-analyzer 1.98.1 (48a229c 2026-09-01)`  
