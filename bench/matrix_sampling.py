@@ -37,11 +37,11 @@ def sample_full_lsp_matrix(repo_dir, per_method=300, seed=42):
     usages, declarations = scan_source_positions(repo_dir)
     scenarios = {}
 
-    files = list({u[0] for u in usages} | {d[0] for d in declarations})
+    files = sorted({u[0] for u in usages} | {d[0] for d in declarations})
     if not files:
-        files = [str(p) for p in Path(repo_dir).glob("src/**/*.rs")]
+        files = sorted(str(p) for p in Path(repo_dir).glob("src/**/*.rs"))
 
-    decl_names = list({d[3] for d in declarations})
+    decl_names = sorted({d[3] for d in declarations})
     type_decls = [d for d in declarations if d[4] in ("struct", "enum", "trait")] or declarations
     fn_decls = [d for d in declarations if d[4] == "fn"] or declarations
     call_usages = [u for u in usages if u[4] == "method_call"] or usages

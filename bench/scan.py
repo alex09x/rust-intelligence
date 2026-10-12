@@ -36,7 +36,7 @@ def scan_source_positions(repo_dir):
     seen_usages = set()
     seen_decls = set()
 
-    for p in Path(repo_dir).rglob("*.rs"):
+    for p in sorted(Path(repo_dir).rglob("*.rs")):
         parts = p.parts
         if any(ignored in parts for ignored in ("target", ".git", ".prod", "node_modules")):
             continue
@@ -98,7 +98,7 @@ def find_crate_visible_pairs(repo_dir):
     pairs = []
     repo_path = Path(repo_dir)
 
-    for cargo_toml in repo_path.rglob("Cargo.toml"):
+    for cargo_toml in sorted(repo_path.rglob("Cargo.toml")):
         parts = cargo_toml.parts
         if any(ignored in parts for ignored in ("target", ".git", ".prod")):
             continue
@@ -130,7 +130,7 @@ def find_crate_visible_pairs(repo_dir):
             pass
 
         # Scan other .rs files in the crate for function declarations to call probe
-        for rs_file in src_dir.rglob("*.rs"):
+        for rs_file in sorted(src_dir.rglob("*.rs")):
             rs_str = str(rs_file.resolve())
             try:
                 with open(rs_file, "r", encoding="utf-8", errors="replace") as f:
