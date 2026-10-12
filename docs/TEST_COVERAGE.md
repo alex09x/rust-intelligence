@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1520
+- **Total E2E Tests**: 1551
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1438
+- **Classified E2E Tests**: 1469
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 40 / 53
-- **Rows >= 50 E2E**: 16 / 53
+- **Rows >= 50 E2E**: 17 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -62,7 +62,7 @@
 | Domain 9: Navigation & Symbols | `workspace/symbol` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 15 | 8 | 23 | 🔴 In Progress (15/50) |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 51 | 0 | 51 | ✅ Complete |
-| Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didDeleteFiles / willDeleteFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
@@ -1545,27 +1545,58 @@
 - `test_did_change_workspace_folders_uri_trailing_slash_handled`
 - `test_l2_multiroot_dynamic_workspace_folders`
 
-#### `workspace/didChangeWatchedFiles` (20 e2e tests)
+#### `workspace/didChangeWatchedFiles` (51 e2e tests)
 - `test_did_change_watched_files_active_overlay_preserved_across_reload`
+- `test_did_change_watched_files_cancelled_request_set_safe`
+- `test_did_change_watched_files_changed_event_type_2`
+- `test_did_change_watched_files_clears_position_converter`
 - `test_did_change_watched_files_clears_position_converter_cache`
+- `test_did_change_watched_files_consecutive_rapid_notifications`
 - `test_did_change_watched_files_corrupted_shard_preserves_old_index`
+- `test_did_change_watched_files_created_event_type_1`
 - `test_did_change_watched_files_deleted_definition_removed_after_reload`
+- `test_did_change_watched_files_deleted_event_type_3`
 - `test_did_change_watched_files_deleted_shard_removed_from_workspace`
 - `test_did_change_watched_files_dispatch_returns_true`
+- `test_did_change_watched_files_duplicate_uri_in_changes_array`
 - `test_did_change_watched_files_empty_changes_array_still_reloads_disk`
+- `test_did_change_watched_files_empty_changes_array_triggers_reload`
+- `test_did_change_watched_files_empty_uri_entry_skipped`
 - `test_did_change_watched_files_event_type_1_created`
 - `test_did_change_watched_files_event_type_2_changed`
 - `test_did_change_watched_files_event_type_3_deleted`
+- `test_did_change_watched_files_first_workspace_preserved_after_reload`
+- `test_did_change_watched_files_ignores_directory_change`
+- `test_did_change_watched_files_malformed_change_entry_not_object`
 - `test_did_change_watched_files_manifest_variant_switch_reloads_shards`
+- `test_did_change_watched_files_missing_changes_field_safe`
 - `test_did_change_watched_files_missing_params_handled_safely`
+- `test_did_change_watched_files_missing_params_safe`
+- `test_did_change_watched_files_mixed_change_types_batch`
+- `test_did_change_watched_files_modified_shard_reloads_new_definitions`
+- `test_did_change_watched_files_modified_shard_reloads_new_version`
+- `test_did_change_watched_files_multi_root_len_preserved_after_reload`
+- `test_did_change_watched_files_multiple_shards_both_reloaded_simultaneously`
+- `test_did_change_watched_files_multiple_shards_only_modified_reloaded`
 - `test_did_change_watched_files_multiple_shards_only_one_modified`
 - `test_did_change_watched_files_multiple_workspaces_all_reloaded`
 - `test_did_change_watched_files_new_definition_discoverable_after_reload`
 - `test_did_change_watched_files_new_shard_discovered_in_workspace_dir`
+- `test_did_change_watched_files_non_file_uri_skipped`
+- `test_did_change_watched_files_null_params_safe`
+- `test_did_change_watched_files_pre_init_lifecycle_safe`
 - `test_did_change_watched_files_rapid_successive_notifications`
+- `test_did_change_watched_files_relative_path_in_changes`
+- `test_did_change_watched_files_reload_all_returns_false_when_empty_multi_root`
+- `test_did_change_watched_files_reload_removes_deleted_definitions`
+- `test_did_change_watched_files_reload_updates_workspace_symbol_search`
 - `test_did_change_watched_files_reloads_symbols_exact_count`
 - `test_did_change_watched_files_single_shard_crate_version_reloaded`
+- `test_did_change_watched_files_source_rs_file_in_changes_ignored`
+- `test_did_change_watched_files_toml_file_in_changes_ignored`
+- `test_did_change_watched_files_unmodified_shard_not_reloaded`
 - `test_did_change_watched_files_unmodified_shard_preserves_cached_state`
+- `test_did_change_watched_files_uppercase_scheme_handled`
 
 #### `workspace/didCreateFiles / willCreateFiles` (20 e2e tests)
 - `test_did_create_files_batch_twenty_files`
@@ -1721,4 +1752,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1520 total, 40 rows >= 20, 16 rows >= 50 of 53
+coverage: e2e 1551 total, 40 rows >= 20, 17 rows >= 50 of 53
