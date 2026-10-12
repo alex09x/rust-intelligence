@@ -4,9 +4,9 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 746
-- **Total Unit/Src Tests**: 410
-- **Classified E2E Tests**: 664
+- **Total E2E Tests**: 747
+- **Total Unit/Src Tests**: 411
+- **Classified E2E Tests**: 665
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 22 / 53
 - **Rows >= 50 E2E**: 1 / 53
@@ -37,7 +37,7 @@
 | Domain 5: Intelligence & Completion | `textDocument/moniker` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 6: Hierarchies | `prepareCallHierarchy` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
-| Domain 6: Hierarchies | `callHierarchy/outgoingCalls` | 22 | 0 | 22 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 6: Hierarchies | `callHierarchy/outgoingCalls` | 23 | 1 | 24 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `prepareTypeHierarchy` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `typeHierarchy/supertypes` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 23 | 0 | 23 | 🟡 Wave 1 Pass (>= 20) |
@@ -296,7 +296,7 @@ _No classified e2e tests yet._
 - `test_call_hierarchy_incoming_calls_zero_callers_returns_empty`
 - `test_l2_call_hierarchy_prepare_and_incoming`
 
-#### `callHierarchy/outgoingCalls` (22 e2e tests)
+#### `callHierarchy/outgoingCalls` (23 e2e tests)
 - `test_call_hierarchy_outgoing_calls_declaration_fn_filtered`
 - `test_call_hierarchy_outgoing_calls_dispatcher_echoes_numeric_id`
 - `test_call_hierarchy_outgoing_calls_dispatcher_echoes_string_id`
@@ -316,6 +316,7 @@ _No classified e2e tests yet._
 - `test_call_hierarchy_outgoing_calls_roundtrip_from_prepare`
 - `test_call_hierarchy_outgoing_calls_single_callee`
 - `test_call_hierarchy_outgoing_calls_unknown_callee_ignored`
+- `test_call_hierarchy_outgoing_calls_valid_uri_missing_range_saturates`
 - `test_call_hierarchy_outgoing_calls_zero_callees_returns_empty`
 - `test_l2_call_hierarchy_outgoing`
 - `test_l2_call_hierarchy_outgoing_with_array_and_braces`
@@ -957,4 +958,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 746 total, 22 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 747 total, 22 rows >= 20, 1 rows >= 50 of 53

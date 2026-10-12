@@ -266,11 +266,12 @@ pub fn handle_call_hierarchy_outgoing_calls(
         return json!([]);
     };
     let file = uri_to_path(uri);
-    let start_line = item["range"]["start"]["line"].as_u64().unwrap_or(0) as u32 + 1;
+    let start_line = item["range"]["start"]["line"]
+        .as_u64()
+        .map_or(1, |l| (l as u32).saturating_add(1));
     let mut end_line = item["range"]["end"]["line"]
         .as_u64()
-        .unwrap_or(u32::MAX as u64) as u32
-        + 1;
+        .map_or(u32::MAX, |l| (l as u32).saturating_add(1));
 
     let Some(ws) = workspace else {
         return json!([]);

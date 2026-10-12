@@ -149,38 +149,26 @@ fn test_call_hierarchy_outgoing_calls_multiple_callees() {
     let lib_str = file.to_str().unwrap().to_string();
     let mut writer = IndexWriter::new("multi_out_crate", "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "foo".to_string(), path: "multi_out_crate::foo".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 4,
+        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false, name: "foo".to_string(),
+        path: "multi_out_crate::foo".to_string(), signature: None, file: lib_str.clone(), start_line: 1, start_col: 1, end_line: 1, end_col: 4,
     });
     writer.add_definition(RawDefinition {
-        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "bar".to_string(), path: "multi_out_crate::bar".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 2, start_col: 1, end_line: 2, end_col: 4,
+        def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false, name: "bar".to_string(),
+        path: "multi_out_crate::bar".to_string(), signature: None, file: lib_str.clone(), start_line: 2, start_col: 1, end_line: 2, end_col: 4,
     });
     writer.add_definition(RawDefinition {
-        def_id: 3, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "caller".to_string(), path: "multi_out_crate::caller".to_string(),
-        signature: None, file: lib_str.clone(),
-        start_line: 4, start_col: 1, end_line: 7, end_col: 2,
+        def_id: 3, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false, name: "caller".to_string(),
+        path: "multi_out_crate::caller".to_string(), signature: None, file: lib_str.clone(), start_line: 4, start_col: 1, end_line: 7, end_col: 2,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 5, start_col: 5, end_line: 5, end_col: 8,
-        target_def_id: Some(1), target_path: "multi_out_crate::foo".to_string(),
-        target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(), start_line: 5, start_col: 5, end_line: 5, end_col: 8,
+        target_def_id: Some(1), target_path: "multi_out_crate::foo".to_string(), target_file: Some(lib_str.clone()),
+        target_unit: None, target_line: 1, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 6, start_col: 5, end_line: 6, end_col: 8,
-        target_def_id: Some(2), target_path: "multi_out_crate::bar".to_string(),
-        target_file: Some(lib_str),
-        target_unit: None, target_line: 2, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(), start_line: 6, start_col: 5, end_line: 6, end_col: 8,
+        target_def_id: Some(2), target_path: "multi_out_crate::bar".to_string(), target_file: Some(lib_str),
+        target_unit: None, target_line: 2, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn foo() {}\nfn bar() {}\n\nfn caller() {\n    foo();\n    bar();\n}\n").unwrap();
@@ -291,20 +279,14 @@ fn test_call_hierarchy_outgoing_calls_recursive_call_self_ignored() {
         start_line: 3, start_col: 1, end_line: 3, end_col: 27,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 1, start_col: 15, end_line: 1, end_col: 22,
-        target_def_id: Some(1), target_path: "rec_crate::recurse".to_string(),
-        target_file: Some(lib_str.clone()),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(), start_line: 1, start_col: 15, end_line: 1, end_col: 22,
+        target_def_id: Some(1), target_path: "rec_crate::recurse".to_string(), target_file: Some(lib_str.clone()),
+        target_unit: None, target_line: 1, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
     });
     writer.add_reference(RawReference {
-        file: lib_str.clone(),
-        start_line: 3, start_col: 14, end_line: 3, end_col: 21,
-        target_def_id: Some(1), target_path: "rec_crate::recurse".to_string(),
-        target_file: Some(lib_str),
-        target_unit: None, target_line: 1, target_col: 1,
-        kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
+        file: lib_str.clone(), start_line: 3, start_col: 14, end_line: 3, end_col: 21,
+        target_def_id: Some(1), target_path: "rec_crate::recurse".to_string(), target_file: Some(lib_str),
+        target_unit: None, target_line: 1, target_col: 1, kind: DefKind::Fn, is_write: false, is_macro_expansion: false,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     std::fs::write(&file, "fn recurse() { recurse(); }\n\nfn caller() { recurse(); }\n").unwrap();
@@ -389,6 +371,27 @@ fn test_call_hierarchy_outgoing_calls_dispatcher_echoes_string_id() {
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], "outgoing-str-42");
+    let calls = resp["result"].as_array().unwrap();
+    assert_eq!(calls.len(), 1);
+    assert_eq!(calls[0]["to"]["name"], "callee");
+}
+
+#[test]
+fn test_call_hierarchy_outgoing_calls_valid_uri_missing_range_saturates() {
+    let ts = create_temp_shard("miss_range");
+    let file = ts.dir.join("src/lib.rs");
+    std::fs::write(&file, "fn callee() {}\n\nfn caller() {\n    callee();\n}\n").unwrap();
+    let mut dsp = TestDispatcher::new(ts.shard.clone());
+
+    let req = json!({
+        "jsonrpc": "2.0", "id": 888222, "method": "callHierarchy/outgoingCalls",
+        "params": {
+            "item": { "name": "caller", "kind": 12, "uri": to_uri(&file) }
+        }
+    });
+    assert!(dsp.dispatch(&req));
+    let resp = dsp.parse_response();
+    assert_eq!(resp["id"], 888222);
     let calls = resp["result"].as_array().unwrap();
     assert_eq!(calls.len(), 1);
     assert_eq!(calls[0]["to"]["name"], "callee");

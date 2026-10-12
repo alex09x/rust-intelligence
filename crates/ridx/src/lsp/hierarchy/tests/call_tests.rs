@@ -189,3 +189,27 @@ fn test_call_hierarchy_missing_item_or_empty_uri_returns_empty() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_call_hierarchy_outgoing_valid_uri_missing_range_saturates() {
+    let (temp_dir, ws, overlay_mgr, mut conv) = setup_test_hierarchy();
+    let caller_file = temp_dir.join("src/caller.rs");
+    let caller_uri = path_to_uri(caller_file.to_str().unwrap());
+
+    let req = json!({
+        "params": {
+            "item": {
+                "name": "caller",
+                "uri": caller_uri
+            }
+        }
+    });
+
+    let outgoing = handle_call_hierarchy_outgoing_calls(&req, Some(&ws), &overlay_mgr, &mut conv);
+    let arr = outgoing.as_array().unwrap();
+    assert!(!arr.is_empty());
+    let to_names: Vec<&str> = arr.iter().filter_map(|it| it["to"]["name"].as_str()).collect();
+    assert!(to_names.contains(&"add"));
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
