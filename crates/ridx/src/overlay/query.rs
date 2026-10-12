@@ -22,22 +22,25 @@ impl DocumentOverlay {
     pub fn find_definition_at(&self, line: u32, col: u32) -> Option<OverlayDefinition> {
         // 1. Direct hit on an existing overlay definition span
         for sym in &self.symbols {
-            if line >= sym.start_line
-                && line <= sym.end_line
-                && col >= sym.start_col
-                && col <= sym.end_col
-            {
-                return Some(OverlayDefinition {
-                    name: sym.name.clone(),
-                    kind: sym.kind,
-                    signature: sym.signature.clone(),
-                    file: self.file_path.clone(),
-                    start_line: sym.start_line,
-                    start_col: sym.start_col,
-                    end_line: sym.end_line,
-                    end_col: sym.end_col,
-                });
+            if line < sym.start_line || line > sym.end_line {
+                continue;
             }
+            if line == sym.start_line && col < sym.start_col {
+                continue;
+            }
+            if line == sym.end_line && col > sym.end_col {
+                continue;
+            }
+            return Some(OverlayDefinition {
+                name: sym.name.clone(),
+                kind: sym.kind,
+                signature: sym.signature.clone(),
+                file: self.file_path.clone(),
+                start_line: sym.start_line,
+                start_col: sym.start_col,
+                end_line: sym.end_line,
+                end_col: sym.end_col,
+            });
         }
 
         // 2. Identifier at cursor location -> resolve to visible binding in lexical scope

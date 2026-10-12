@@ -149,3 +149,46 @@ fn test_find_global_symbol_definition_scope_and_items() {
     assert!(def_local.is_some());
     assert_eq!(def_local.unwrap().file, file_b);
 }
+
+#[test]
+fn test_find_definition_at_end_col_boundary() {
+    let code = "fn test_sym() {}\n";
+    let overlay = DocumentOverlay::new("file:///test.rs", "/test.rs", 1, code.to_string());
+    let sym = overlay.symbols.iter().find(|s| s.name == "test_sym").expect("symbol test_sym");
+    let line = sym.start_line;
+    let end_col = sym.end_col;
+
+    // At end_col (inclusive boundary): returns Some("test_sym")
+    let at_end = overlay.find_definition_at(line, end_col);
+    assert_eq!(at_end.map(|d| d.name), Some("test_sym".to_string()));
+
+    // At end_col + 1 (outside boundary): returns None
+    let past_end = overlay.find_definition_at(line, end_col + 1);
+    assert_eq!(past_end.map(|d| d.name), None);
+}
+
+#[test]
+fn test_find_definition_at_multiline_span() {
+    use crate::overlay::OverlaySymbol;
+    use ridx_format::DefKind;
+    let code = "struct BigStruct {\n    field: i32,\n}\n";
+    let mut overlay = DocumentOverlay::new("file:///test.rs", "/test.rs", 1, code.to_string());
+    overlay.symbols.push(OverlaySymbol {
+        name: "BigStruct".to_string(),
+        kind: DefKind::Struct,
+        signature: None,
+        start_line: 1,
+        start_col: 1,
+        end_line: 3,
+        end_col: 2,
+        scope_id: 0,
+        decl_start_byte: 0,
+        decl_end_byte: 0,
+        scope_start_byte: 0,
+    });
+
+    // Intermediate line 2: must match inside the multi-line definition
+    let mid = overlay.find_definition_at(2, 5);
+    assert_eq!(mid.map(|d| d.name), Some("BigStruct".to_string()));
+}
+
