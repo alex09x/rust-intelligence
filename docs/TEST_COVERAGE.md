@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1441
+- **Total E2E Tests**: 1490
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1359
+- **Classified E2E Tests**: 1408
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 39 / 53
-- **Rows >= 50 E2E**: 14 / 53
+- **Rows >= 20 E2E**: 40 / 53
+- **Rows >= 50 E2E**: 15 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -27,7 +27,7 @@
 | Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 50 | 0 | 50 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `textDocument/codeAction` | 50 | 12 | 62 | ✅ Complete |
-| Domain 4: Actions & Refactoring | `codeAction/resolve` | 1 | 14 | 15 | 🔴 In Progress (1/50) |
+| Domain 4: Actions & Refactoring | `codeAction/resolve` | 50 | 14 | 64 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/completion` | 10 | 25 | 35 | 🔴 In Progress (10/50) |
 | Domain 5: Intelligence & Completion | `completionItem/resolve` | 20 | 9 | 29 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 5: Intelligence & Completion | `textDocument/hover` | 5 | 16 | 21 | 🔴 In Progress (5/50) |
@@ -818,7 +818,56 @@
 - `test_refactor_extract_variable_execution`
 - `test_refactor_organize_imports_execution`
 
-#### `codeAction/resolve` (1 e2e tests)
+#### `codeAction/resolve` (50 e2e tests)
+- `test_code_action_resolve_array_params_rejected_code_32602`
+- `test_code_action_resolve_auto_import_missing_import_path_rejected_code_32602`
+- `test_code_action_resolve_auto_import_nested_path`
+- `test_code_action_resolve_auto_import_preserves_document_version`
+- `test_code_action_resolve_auto_import_resolves_text_edit`
+- `test_code_action_resolve_cancellation_removes_request_cleanly`
+- `test_code_action_resolve_closed_document_uses_disk_content`
+- `test_code_action_resolve_data_missing_uri_rejected_code_32602`
+- `test_code_action_resolve_data_null_uri_rejected_code_32602`
+- `test_code_action_resolve_data_unknown_kind_rejected_code_32602`
+- `test_code_action_resolve_disk_content_hash_match_succeeds`
+- `test_code_action_resolve_disk_content_hash_mismatch_rejected_32801`
+- `test_code_action_resolve_existing_edit_read_only_dependency_rejected`
+- `test_code_action_resolve_extract_variable_disk_fallback`
+- `test_code_action_resolve_extract_variable_invalid_range_request_failed`
+- `test_code_action_resolve_extract_variable_preserves_document_version`
+- `test_code_action_resolve_extract_variable_valid_expression`
+- `test_code_action_resolve_idempotent_multiple_resolves`
+- `test_code_action_resolve_missing_params_rejected_code_32602`
+- `test_code_action_resolve_missing_title_rejected_code_32602`
+- `test_code_action_resolve_multi_root_workspace_routing`
+- `test_code_action_resolve_no_edit_and_no_data_returns_params_unchanged`
+- `test_code_action_resolve_non_existent_file_disk_hash_mismatch_rejected_32801`
+- `test_code_action_resolve_non_object_params_rejected_code_32602`
+- `test_code_action_resolve_null_title_rejected_code_32602`
+- `test_code_action_resolve_numeric_title_rejected_code_32602`
+- `test_code_action_resolve_organize_imports_deduplicates_duplicate_use`
+- `test_code_action_resolve_organize_imports_disk_fallback_has_no_version`
+- `test_code_action_resolve_organize_imports_preserves_document_version`
+- `test_code_action_resolve_organize_imports_resolves_text_edit`
+- `test_code_action_resolve_organize_imports_with_leading_comments`
+- `test_code_action_resolve_organize_imports_with_no_imports_request_failed`
+- `test_code_action_resolve_overlay_advanced_twice_rejected_32801`
+- `test_code_action_resolve_overlay_regression_rejected_32801`
+- `test_code_action_resolve_overlay_version_match_succeeds`
+- `test_code_action_resolve_overlay_version_mismatch_rejected_content_modified_32801`
+- `test_code_action_resolve_preserves_client_command_field`
+- `test_code_action_resolve_quickfix_empty_new_text_valid`
+- `test_code_action_resolve_quickfix_missing_range_rejected_code_32602`
+- `test_code_action_resolve_quickfix_multiline_replacement`
+- `test_code_action_resolve_quickfix_preserves_action_diagnostics_field`
+- `test_code_action_resolve_quickfix_remove_mut`
+- `test_code_action_resolve_quickfix_simple_variable_prefix`
+- `test_code_action_resolve_read_only_dependency_in_data_rejected`
+- `test_code_action_resolve_refactor_extract_missing_range_rejected_code_32602`
+- `test_code_action_resolve_reopened_document_new_version_rejected_32801`
+- `test_code_action_resolve_response_preserves_request_id_and_jsonrpc`
+- `test_code_action_resolve_with_existing_document_changes_edit`
+- `test_code_action_resolve_with_existing_edit_returns_intact`
 - `test_domain4_real_l2_external_dependency_rejection`
 
 ### Domain 5: Intelligence & Completion
@@ -1642,4 +1691,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1441 total, 39 rows >= 20, 14 rows >= 50 of 53
+coverage: e2e 1490 total, 40 rows >= 20, 15 rows >= 50 of 53
