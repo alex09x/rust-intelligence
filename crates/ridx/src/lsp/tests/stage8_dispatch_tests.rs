@@ -339,3 +339,58 @@ fn test_find_declaration_ident_col_empty_target_and_lifetimes() {
         None
     );
 }
+
+#[test]
+fn test_dispatch_cancel_request_notification() {
+    use crate::lsp::dispatch::dispatch_lsp_message;
+    use crate::lsp::lifecycle::LifecycleManager;
+    use crate::lsp::protocol::LspMessage;
+    use crate::lsp::workspace::MultiRootWorkspace;
+    use crate::overlay::OverlayManager;
+    use std::collections::HashSet;
+    use std::sync::{Arc, Mutex};
+
+    let mut mr = MultiRootWorkspace::new();
+    let mut ov = OverlayManager::new();
+    let mut lc = LifecycleManager::new();
+    let can = Arc::new(Mutex::new(HashSet::new()));
+    let mut out = Vec::new();
+
+    // 1. $/cancelRequest without id -> Ok(true), out is empty, cancelled_requests set is empty
+    let cancel_no_id = json!({
+        "jsonrpc": "2.0",
+        "method": "$/cancelRequest",
+        "params": {}
+    });
+    let res = dispatch_lsp_message(
+        LspMessage::Client(cancel_no_id),
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut ov,
+        &can,
+        None,
+    );
+    assert!(res.unwrap());
+    assert_eq!(out, b"");
+    assert_eq!(*can.lock().unwrap(), HashSet::new());
+
+    // 2. $/cancelRequest with id = 42 -> Ok(true), out is empty, id in set
+    let cancel_with_id = json!({
+        "jsonrpc": "2.0",
+        "method": "$/cancelRequest",
+        "params": { "id": 42 }
+    });
+    let res = dispatch_lsp_message(
+        LspMessage::Client(cancel_with_id),
+        &mut out,
+        &mut lc,
+        &mut mr,
+        &mut ov,
+        &can,
+        None,
+    );
+    assert!(res.unwrap());
+    assert_eq!(out, b"");
+    assert_eq!(*can.lock().unwrap(), HashSet::from([json!(42)]));
+}

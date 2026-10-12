@@ -179,6 +179,13 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/publishDiagnostics" | "textDocument/willSave" => return Ok(true),
         "textDocument/willSaveWaitUntil" => Ok(json!([])),
 
+        "$/cancelRequest" => {
+            if let Some(cancel_id) = msg.get("params").and_then(|p| p.get("id")) {
+                cancelled_requests.lock().unwrap().insert(cancel_id.clone());
+            }
+            return Ok(true);
+        }
+
         "workspace/didChangeConfiguration" | "$/setTrace" | "window/workDoneProgress/cancel" => {
             return Ok(true)
         }
