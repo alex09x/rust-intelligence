@@ -1,0 +1,119 @@
+{
+  "dataset": "pilot_5repos_2026-10-08",
+  "date": "2026-10-08",
+  "date_source": "collected_from",
+  "collected_from": "2026-10-08T22:47:24.081107+00:00",
+  "collected_to": "2026-10-09T02:48:48.904839+00:00",
+  "ridx_commit": "unknown",
+  "ridx_commit_note": "Pilot benchmark collected between 2026-10-08T22:47:24.081107+00:00 and 2026-10-09T02:48:48.904839+00:00, prior to commits 844eac0 (2026-10-09T05:05:40-07:00) and 53e8364 (2026-10-10T02:35:49-07:00). Exact RIDX git commit not recorded in telemetry.",
+  "driver_sha256": {
+    "serde-rs/serde": "ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8",
+    "BurntSushi/ripgrep": "ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8",
+    "tokio-rs/tokio": "ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8",
+    "bevyengine/bevy": "ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8",
+    "rust-lang/rust-analyzer": "3954bd16bf13c8eb9566d25f1f5de24af710abf7001687c7f47088e1931a5dbf"
+  },
+  "driver_note": "rust-lang/rust-analyzer collected using driver sha256 3954bd16bf13c8eb9566d25f1f5de24af710abf7001687c7f47088e1931a5dbf; serde-rs/serde, BurntSushi/ripgrep, tokio-rs/tokio, bevyengine/bevy collected using driver sha256 ac554e8f3b302af637109a0679adf95aff0d8d35937d6f6b4e99770044b720c8",
+  "rustc": "unknown",
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "node": "unknown",
+  "taskset": "unknown",
+  "repo_commits": {
+    "serde-rs/serde": "6693a89cca77e0151437da1c7f890090b9ebf04c",
+    "BurntSushi/ripgrep": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
+    "tokio-rs/tokio": "b2636752450484955e7ad334bac678424d51bc4a",
+    "bevyengine/bevy": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+    "rust-lang/rust-analyzer": "021bfc15e24909389bd208d1622b7f4f3942b91a"
+  },
+  "measurements": {
+    "initial_indexing": [
+      "cold_cargo_check_sec",
+      "cargo_check_peak_rss_mb",
+      "cargo_check_peak_fds",
+      "cargo_check_peak_threads",
+      "cold_ridx_index_sec",
+      "ridx_index_peak_rss_mb",
+      "ridx_index_peak_fds",
+      "ridx_index_peak_threads",
+      "ridx_index_size_bytes",
+      "ra_scip_build_sec",
+      "ra_scip_peak_rss_mb",
+      "ra_scip_peak_fds",
+      "ra_scip_peak_threads",
+      "ra_scip_size_bytes"
+    ],
+    "warm_no_op": [
+      "warm_ridx_index_sec"
+    ],
+    "incremental_change": [
+      "w1_commit_walk",
+      "w2_large_jumps"
+    ],
+    "open_and_first_query": [
+      "ridx_init_ms",
+      "ridx_warmup_ms",
+      "ra_init_ms",
+      "ra_warmup_ms",
+      "scip_load_ms"
+    ],
+    "warm_requests": [
+      "metrics",
+      "readonly_total",
+      "readonly_matched_strict",
+      "readonly_match_rate_strict_pct",
+      "readonly_matched_line_level",
+      "readonly_match_rate_line_level_pct",
+      "matched_scenarios_strict",
+      "match_rate_strict_pct",
+      "matched_scenarios_line_level",
+      "match_rate_line_level_pct",
+      "matched_scenarios",
+      "total_scenarios",
+      "match_rate_pct",
+      "scip_matched_scenarios",
+      "scip_total_scenarios",
+      "scip_match_rate_pct"
+    ],
+    "storage_and_memory": [
+      "ridx_peak_rss_mb",
+      "ridx_peak_rss_anon_mb",
+      "ridx_peak_rss_file_mb",
+      "ridx_peak_open_fds",
+      "ridx_peak_threads",
+      "ridx_peak_ridx_open_fds",
+      "ridx_peak_ridx_mapped_regions",
+      "ra_peak_rss_mb",
+      "ra_peak_rss_anon_mb",
+      "ra_peak_rss_file_mb",
+      "ra_peak_open_fds",
+      "ra_peak_threads",
+      "scip_peak_rss_mb",
+      "scip_peak_open_fds",
+      "scip_peak_threads",
+      "w3_multi_worktree"
+    ]
+  },
+  "source_sha256": "baac6e000fc3490beed138f04c250d9bad331b22f164a9c74e08fb4463ba3871",
+  "sanitization": [
+    {
+      "rule": "/tmp/<build-dir>/serde/ -> serde-rs/serde/",
+      "replacements": 1
+    },
+    {
+      "rule": "/tmp/<build-dir>/ripgrep/ -> BurntSushi/ripgrep/",
+      "replacements": 2
+    },
+    {
+      "rule": "/tmp/<build-dir>/tokio/ -> tokio-rs/tokio/",
+      "replacements": 16
+    },
+    {
+      "rule": "/tmp/<build-dir>/bevy/ -> bevyengine/bevy/",
+      "replacements": 6
+    },
+    {
+      "rule": "/tmp/<build-dir>/rust-analyzer/ -> rust-lang/rust-analyzer/",
+      "replacements": 4
+    }
+  ]
+}

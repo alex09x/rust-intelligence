@@ -1,0 +1,36 @@
+{
+  "dataset": "discrepancies",
+  "date": "2026-10-09",
+  "date_source": "mtime of raw file on publishing host",
+  "source_sha256": "275bd59564032aecf82b27b3ad29166a5451ac743f15f4fccdb2b3e2adf6a52d",
+  "sanitization": [
+    {
+      "rule": "/tmp/<build-dir>/serde/ -> serde-rs/serde/",
+      "replacements": 157
+    },
+    {
+      "rule": "/tmp/<build-dir>/ripgrep/ -> BurntSushi/ripgrep/",
+      "replacements": 146
+    },
+    {
+      "rule": "/tmp/<build-dir>/tokio/ -> tokio-rs/tokio/",
+      "replacements": 159
+    },
+    {
+      "rule": "/tmp/<build-dir>/bevy/ -> bevyengine/bevy/",
+      "replacements": 123
+    },
+    {
+      "rule": "/tmp/<build-dir>/rust-analyzer/ -> rust-lang/rust-analyzer/",
+      "replacements": 193
+    },
+    {
+      "rule": "/home/<user>/.cargo/registry/ -> <cargo-registry>/",
+      "replacements": 15
+    },
+    {
+      "rule": "/home/<user>/.rustup/toolchains/<toolchain>/lib/rustlib/ -> <rustlib>/",
+      "replacements": 77
+    }
+  ]
+}

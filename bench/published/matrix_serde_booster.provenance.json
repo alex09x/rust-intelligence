@@ -1,0 +1,27 @@
+{
+  "dataset": "matrix_serde_booster",
+  "repo": "serde-rs/serde",
+  "repo_commit": "unknown",
+  "ridx_commit": "unknown",
+  "ridx_commit_note": "Matrix run dated 2026-10-08T19:47:44+00:00 on booster; exact RIDX build commit not recorded in raw JSON.",
+  "driver_hash": "unknown",
+  "rustc": "unknown",
+  "ra_version": "unknown",
+  "node": "booster",
+  "node_source": "file name",
+  "date": "2026-10-08",
+  "date_source": "mtime of raw file on publishing host",
+  "taskset": "unknown",
+  "seed": "unknown",
+  "duration_sec": {
+    "ridx": 710.72,
+    "rust_analyzer": 241.49
+  },
+  "source_sha256": "7fb091d7ed295020420a2bfbcf34e2c5b0110e99d9584d3c644dfd74f1166812",
+  "sanitization": [
+    {
+      "rule": "repo -> serde-rs/serde",
+      "replacements": 1
+    }
+  ]
+}
