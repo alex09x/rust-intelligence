@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1749
+- **Total E2E Tests**: 1781
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1667
+- **Classified E2E Tests**: 1699
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 41 / 53
-- **Rows >= 50 E2E**: 24 / 53
+- **Rows >= 20 E2E**: 42 / 53
+- **Rows >= 50 E2E**: 25 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -57,7 +57,7 @@
 | Domain 9: Navigation & Symbols | `textDocument/typeDefinition` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/implementation` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/references` | 51 | 1 | 52 | ✅ Complete |
-| Domain 9: Navigation & Symbols | `textDocument/documentHighlight` | 19 | 0 | 19 | 🔴 In Progress (19/50) |
+| Domain 9: Navigation & Symbols | `textDocument/documentHighlight` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 16 | 0 | 16 | 🔴 In Progress (16/50) |
 | Domain 9: Navigation & Symbols | `workspace/symbol` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 15 | 8 | 23 | 🔴 In Progress (15/50) |
@@ -1517,7 +1517,39 @@
 - `test_references_whitespace_cursor_returns_empty_array`
 - `test_references_with_clean_overlay_mapping`
 
-#### `textDocument/documentHighlight` (19 e2e tests)
+#### `textDocument/documentHighlight` (51 e2e tests)
+- `test_document_highlight_clean_overlay_with_compiled_index`
+- `test_document_highlight_compiled_const_def_and_usage`
+- `test_document_highlight_compiled_enum_def_and_variant_refs`
+- `test_document_highlight_compiled_fn_def_and_call_site`
+- `test_document_highlight_compiled_multiple_references_same_line`
+- `test_document_highlight_compiled_non_existent_symbol_returns_empty`
+- `test_document_highlight_compiled_query_from_reference_location`
+- `test_document_highlight_compiled_struct_def_and_two_refs`
+- `test_document_highlight_compiled_trait_def_and_impl`
+- `test_document_highlight_compiled_type_alias_and_references`
+- `test_document_highlight_compiled_zero_refs_returns_only_declaration`
+- `test_document_highlight_cross_file_def_only_returns_local_refs`
+- `test_document_highlight_cross_file_ref_omitted_from_target_doc`
+- `test_document_highlight_empty_uri_returns_empty`
+- `test_document_highlight_first_is_write_kind_3`
+- `test_document_highlight_fn_two_parameters_distinct`
+- `test_document_highlight_function_parameter_highlight`
+- `test_document_highlight_inner_scope_shadowing_isolated`
+- `test_document_highlight_inside_block_comment_returns_empty`
+- `test_document_highlight_inside_line_comment_returns_empty`
+- `test_document_highlight_inside_string_literal_returns_empty`
+- `test_document_highlight_local_var_three_usages`
+- `test_document_highlight_local_var_two_usages`
+- `test_document_highlight_mut_parameter_highlight`
+- `test_document_highlight_mut_variable_reassignment`
+- `test_document_highlight_nested_blocks_lexical_scope`
+- `test_document_highlight_outer_scope_ignores_inner_shadow`
+- `test_document_highlight_sequential_shadowing_first`
+- `test_document_highlight_sequential_shadowing_second`
+- `test_document_highlight_shadowing_across_sibling_blocks`
+- `test_document_highlight_subsequent_are_text_kind_1`
+- `test_document_highlight_whitespace_between_tokens_returns_empty`
 - `test_l1_document_highlight_boundaries_and_empty`
 - `test_l1_document_highlight_clean_overlay_input_column_via_overlay_conversion`
 - `test_l1_document_highlight_compiled_struct_field_self_access`
@@ -1950,4 +1982,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1749 total, 41 rows >= 20, 24 rows >= 50 of 53
+coverage: e2e 1781 total, 42 rows >= 20, 25 rows >= 50 of 53
