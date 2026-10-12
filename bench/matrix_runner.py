@@ -24,8 +24,10 @@ bench_dir = Path(__file__).resolve().parent
 if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
 
+from datetime import datetime, timezone
 from lsp_process import SimpleLspProcess
 from matrix_categories import LSP_SPECS, build_params, DOMAIN_NAMES
+from matrix_provenance import collect_matrix_provenance, save_scenarios_positions
 from matrix_sampling import sample_full_lsp_matrix
 from metrics import percentile, get_proc_metrics
 
@@ -307,10 +309,16 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
     }
 
 
-def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed=42):
+def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed=42, out_path=None, repo_id=None):
     """Executes the full 78 methods x sample_count test matrix on both servers."""
-    print(f"Sampling {sample_count} varieties across all 78 LSP methods for {repo_dir}...")
+    ts_start = datetime.now(timezone.utc).isoformat()
+    print(f"Sampling {sample_count} varieties across all 78 LSP methods for {repo_dir} (seed={seed})...")
     scenarios = sample_full_lsp_matrix(repo_dir, per_method=sample_count, seed=seed)
+
+    if out_path:
+        pos_path = Path(out_path).with_suffix(".positions.json")
+        save_scenarios_positions(scenarios, pos_path, repo_dir, seed=seed, sample_count=sample_count)
+        print(f"Recorded benchmark sample positions to {pos_path}")
 
     print("Running RIDX test suite across all 78 methods...")
     ridx_cmd = [str(ridx_bin), "lsp"]
@@ -323,40 +331,62 @@ def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed
     t0 = time.time()
     ra_res = execute_server_suite(ra_cmd, repo_dir, scenarios, is_ra=True, sample_count=sample_count)
     ra_dur = time.time() - t0
+    ts_end = datetime.now(timezone.utc).isoformat()
 
-    return {
-        "repo": str(repo_dir),
+    prov = collect_matrix_provenance(repo_dir, ridx_bin, ra_bin, seed, ts_start, ts_end, repo_id=repo_id)
+
+    res = {
+        "repo": prov["repo"],
         "sample_count_per_method": sample_count,
+        "seed": seed,
         "total_methods": len(LSP_SPECS),
         "total_tests_per_server": len(LSP_SPECS) * sample_count,
         "ridx_duration_sec": round(ridx_dur, 2),
         "ra_duration_sec": round(ra_dur, 2),
-        "ridx": ridx_res,
-        "rust_analyzer": ra_res,
     }
+    for k in [
+        "ridx_commit", "ridx_binary_dirty", "driver_hash", "driver_build_commit", "driver_dirty",
+        "workspace_head", "workspace_head_note", "rustc", "ra_version", "node", "taskset",
+        "repo_commit", "sysroot_cas_key", "sysroot_transplanted", "timestamp_start", "timestamp_end",
+    ]:
+        res[k] = prov.get(k)
+    res["ridx"] = ridx_res
+    res["rust_analyzer"] = ra_res
+    return res
 
 
 def main():
     parser = argparse.ArgumentParser(description="Full 78-method LSP matrix benchmark runner")
     parser.add_argument("--repo", required=True, help="Repository root path")
+    parser.add_argument("--repo-id", help="Canonical repository identifier (e.g. owner/name)")
     parser.add_argument("--ridx-bin", default="target/release/ridx", help="Path to ridx binary")
     parser.add_argument("--ra-bin", default="rust-analyzer", help="Path to rust-analyzer binary")
     parser.add_argument("--sample-count", type=int, default=300, help="Number of test varieties per method")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed for scenario sampling")
     parser.add_argument("--output", default="bench/results/matrix_results.json", help="Output JSON path")
     args = parser.parse_args()
 
+    repo_dir = Path(args.repo).resolve()
+    from matrix_provenance import CANONICAL_REPOS
+    if repo_dir.name not in CANONICAL_REPOS and not args.repo_id:
+        parser.error(f"Unknown benchmark repository '{repo_dir.name}'. Please specify canonical --repo-id owner/name.")
+
+    out_path = Path(args.output)
     results = run_full_matrix_benchmark(
-        repo_dir=Path(args.repo).resolve(),
+        repo_dir=repo_dir,
         ridx_bin=Path(args.ridx_bin).resolve(),
         ra_bin=shutil.which(str(args.ra_bin)) or (Path(args.ra_bin).resolve() if Path(args.ra_bin).is_file() else args.ra_bin),
         sample_count=args.sample_count,
+        seed=args.seed,
+        out_path=out_path,
+        repo_id=args.repo_id,
     )
 
-    out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     print(f"Benchmark matrix results saved to {out_path}")
+
 
 
 if __name__ == "__main__":
