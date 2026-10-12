@@ -37,6 +37,8 @@ mod ntm_domain1_set_trace;
 mod ntm_domain1_set_trace_part2;
 mod ntm_domain1_shutdown;
 mod ntm_domain1_shutdown_part2;
+mod ntm_domain2_document_diagnostic;
+mod ntm_domain2_workspace_diagnostic;
 mod ntm_domain10_file_create;
 mod ntm_domain10_file_delete;
 mod ntm_domain10_file_rename;
