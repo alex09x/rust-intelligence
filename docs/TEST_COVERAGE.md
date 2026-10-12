@@ -4,11 +4,11 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 586
+- **Total E2E Tests**: 626
 - **Total Unit/Src Tests**: 410
-- **Classified E2E Tests**: 504
+- **Classified E2E Tests**: 544
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 14 / 53
+- **Rows >= 20 E2E**: 16 / 53
 - **Rows >= 50 E2E**: 1 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
@@ -41,12 +41,12 @@
 | Domain 6: Hierarchies | `prepareTypeHierarchy` | 0 | 0 | 0 | ⚪ Zero E2E |
 | Domain 6: Hierarchies | `typeHierarchy/supertypes` | 1 | 0 | 1 | 🔴 In Progress (1/50) |
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
-| Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
+| Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 23 | 0 | 23 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/foldingRange` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/selectionRange` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
-| Domain 7: Presentation | `textDocument/codeLens / resolve` | 1 | 0 | 1 | 🔴 In Progress (1/50) |
+| Domain 7: Presentation | `textDocument/codeLens / resolve` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 0 | 10 | 10 | ⚪ Zero E2E |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 5 | 17 | 22 | 🔴 In Progress (5/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 1 | 7 | 8 | 🔴 In Progress (1/50) |
@@ -274,10 +274,30 @@ _No classified e2e tests yet._
 
 ### Domain 7: Presentation
 
-#### `textDocument/semanticTokens/full / delta / range` (3 e2e tests)
+#### `textDocument/semanticTokens/full / delta / range` (23 e2e tests)
 - `test_l2_semantic_tokens_delta_caching_and_edits`
 - `test_l2_semantic_tokens_full_compiler_grounded`
 - `test_l2_semantic_tokens_range_bounded`
+- `test_semantic_tokens_delta_echoes_string_id`
+- `test_semantic_tokens_delta_identical_data_returns_empty_edits`
+- `test_semantic_tokens_delta_modified_data_returns_edit`
+- `test_semantic_tokens_delta_uncached_id_returns_full_data`
+- `test_semantic_tokens_full_dispatcher_echoes_numeric_id`
+- `test_semantic_tokens_full_dispatcher_echoes_string_id`
+- `test_semantic_tokens_full_empty_file_returns_empty_data`
+- `test_semantic_tokens_full_multiple_functions_relative_delta_encoding`
+- `test_semantic_tokens_full_nonexistent_file_returns_empty_data`
+- `test_semantic_tokens_full_overlay_buffer_precedence`
+- `test_semantic_tokens_full_overlay_did_change`
+- `test_semantic_tokens_full_overlay_did_close`
+- `test_semantic_tokens_full_result_id_format`
+- `test_semantic_tokens_full_single_function_disk`
+- `test_semantic_tokens_range_beyond_eof`
+- `test_semantic_tokens_range_bounded_first_function`
+- `test_semantic_tokens_range_bounded_second_function`
+- `test_semantic_tokens_range_echoes_numeric_id`
+- `test_semantic_tokens_range_echoes_string_id`
+- `test_semantic_tokens_range_empty_window`
 
 #### `textDocument/foldingRange` (21 e2e tests)
 - `test_folding_range_braces_inside_block_comments_ignored`
@@ -368,7 +388,27 @@ _No classified e2e tests yet._
 - `test_document_color_stub_overlay_buffer_returns_empty_array`
 - `test_document_color_stub_sequential_requests_isolation`
 
-#### `textDocument/codeLens / resolve` (1 e2e tests)
+#### `textDocument/codeLens / resolve` (21 e2e tests)
+- `test_code_lens_disk_workspace_definition`
+- `test_code_lens_dispatcher_echoes_numeric_id`
+- `test_code_lens_dispatcher_echoes_string_id`
+- `test_code_lens_empty_file_returns_empty`
+- `test_code_lens_file_without_symbols_returns_empty`
+- `test_code_lens_multiple_definitions_in_file`
+- `test_code_lens_nonexistent_file_returns_empty`
+- `test_code_lens_overlay_did_change_updates_lenses`
+- `test_code_lens_overlay_did_close_falls_back_to_index`
+- `test_code_lens_overlay_symbols_precedence`
+- `test_code_lens_resolve_echoes_numeric_id`
+- `test_code_lens_resolve_echoes_string_id`
+- `test_code_lens_resolve_missing_data_returns_unchanged`
+- `test_code_lens_resolve_overlay_dirty_mapped_coords`
+- `test_code_lens_resolve_plural_title_formatting`
+- `test_code_lens_resolve_roundtrip_from_code_lens_request`
+- `test_code_lens_resolve_singular_title_formatting`
+- `test_code_lens_resolve_with_multiple_references`
+- `test_code_lens_resolve_with_single_reference`
+- `test_code_lens_resolve_with_zero_references`
 - `test_l2_code_lens_command_declared_in_execute_command_provider`
 
 ### Domain 8: Editing & Workspace Edits
@@ -799,4 +839,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 586 total, 14 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 626 total, 16 rows >= 20, 1 rows >= 50 of 53
