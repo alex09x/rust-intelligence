@@ -5,7 +5,7 @@
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
 - **Total E2E Tests**: 1398
-- **Total Unit/Src Tests**: 417
+- **Total Unit/Src Tests**: 419
 - **Classified E2E Tests**: 1316
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 38 / 53
@@ -35,10 +35,10 @@
 | Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 1 | 9 | 10 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 5: Intelligence & Completion | `textDocument/moniker` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
-| Domain 6: Hierarchies | `prepareCallHierarchy` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 6: Hierarchies | `prepareCallHierarchy` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `callHierarchy/outgoingCalls` | 23 | 1 | 24 | 🟡 Wave 1 Pass (>= 20) |
-| Domain 6: Hierarchies | `prepareTypeHierarchy` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 6: Hierarchies | `prepareTypeHierarchy` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `typeHierarchy/supertypes` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 23 | 0 | 23 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 23 | 0 | 23 | 🟡 Wave 1 Pass (>= 20) |

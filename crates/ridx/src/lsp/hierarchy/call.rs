@@ -11,7 +11,8 @@
 //! LSP call hierarchy navigation handlers.
 
 use crate::lsp::editing::is_rust_keyword;
-use crate::lsp::params::text_document_position;
+use crate::lsp::error::LspResult;
+use crate::lsp::params::text_document_opt_position;
 use crate::lsp::protocol::{lsp_symbol_kind, path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
@@ -28,10 +29,11 @@ pub fn handle_prepare_call_hierarchy(
     workspace: Option<&WorkspaceIndex>,
     overlay_mgr: &OverlayManager,
     conv: &mut PositionConverter,
-) -> Value {
-    let (uri, line_0based, utf16_col_0based) = match text_document_position(msg) {
-        Ok(t) => t,
-        Err(_) => return Value::Array(vec![]),
+) -> LspResult<Value> {
+    let (uri, pos_opt) = text_document_opt_position(msg)?;
+    let (line_0based, utf16_col_0based) = match pos_opt {
+        Some(p) => p,
+        None => return Ok(Value::Array(vec![])),
     };
     let file = uri_to_path(uri);
     let line_1based = line_0based + 1;
@@ -64,7 +66,7 @@ pub fn handle_prepare_call_hierarchy(
                 "range": sel_range,
                 "selectionRange": sel_range
             }));
-            return json!(items);
+            return Ok(json!(items));
         }
     }
 
@@ -94,7 +96,7 @@ pub fn handle_prepare_call_hierarchy(
         }
     }
 
-    json!(items)
+    Ok(json!(items))
 }
 
 fn find_definition_path_in_workspace<'a>(

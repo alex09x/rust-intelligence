@@ -47,7 +47,7 @@ fn test_l2_call_hierarchy_prepare_and_incoming() {
         }
     });
 
-    let prep_res = handle_prepare_call_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv);
+    let prep_res = handle_prepare_call_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     assert!(
         prep_res.is_array(),
         "prepareCallHierarchy must return an array"
@@ -104,7 +104,7 @@ fn test_l2_call_hierarchy_outgoing() {
         }
     });
 
-    let prep_res = handle_prepare_call_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv);
+    let prep_res = handle_prepare_call_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     let items = prep_res.as_array().unwrap();
     assert_eq!(items.len(), 1);
     let proc_item = &items[0];
@@ -150,7 +150,7 @@ fn test_l2_type_hierarchy_supertypes_and_subtypes() {
             "position": { "line": box_line, "character": box_col }
         }
     });
-    let prep_res = handle_prepare_type_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv);
+    let prep_res = handle_prepare_type_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     assert!(prep_res.is_array());
     let items = prep_res.as_array().unwrap();
     assert_eq!(items.len(), 1);
@@ -265,7 +265,7 @@ fn test_l2_hierarchy_latency_benchmark() {
     let mut prep_latencies = Vec::with_capacity(100);
     for _ in 0..100 {
         let t0 = Instant::now();
-        let _ = handle_prepare_call_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv);
+        let _ = handle_prepare_call_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
         prep_latencies.push(t0.elapsed());
     }
     prep_latencies.sort();
@@ -318,7 +318,7 @@ fn test_l2_call_hierarchy_outgoing_with_array_and_braces() {
         }
     });
 
-    let prep_res = handle_prepare_call_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv);
+    let prep_res = handle_prepare_call_hierarchy(&prep_req, Some(ws), &overlay_mgr, &mut conv).unwrap();
     let items = prep_res.as_array().unwrap();
     assert_eq!(items.len(), 1);
     let proc_item = &items[0];

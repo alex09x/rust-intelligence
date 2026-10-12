@@ -247,7 +247,7 @@ pub fn dispatch_lsp_message<W: Write>(
         "textDocument/inlineValue" => Ok(handle_inline_value(&msg, Some(overlay_mgr))),
         "textDocument/inlineCompletion" => Ok(handle_inline_completion(&msg, Some(overlay_mgr))),
         "textDocument/prepareCallHierarchy" => {
-            Ok(handle_prepare_call_hierarchy(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv))
+            handle_prepare_call_hierarchy(&msg, multi_root.doc_ws(&msg), overlay_mgr, conv)
         }
         "callHierarchy/incomingCalls" => {
             let f = uri_to_path(msg["params"]["item"]["uri"].as_str().unwrap_or(""));
@@ -269,7 +269,7 @@ pub fn dispatch_lsp_message<W: Write>(
         }
         "textDocument/prepareTypeHierarchy" => {
             let ws = multi_root.doc_ws(&msg);
-            Ok(handle_prepare_type_hierarchy(&msg, ws, overlay_mgr, conv))
+            handle_prepare_type_hierarchy(&msg, ws, overlay_mgr, conv)
         }
         "typeHierarchy/supertypes" => {
             Ok(handle_type_hierarchy_supertypes(&msg, multi_root.first_workspace()))

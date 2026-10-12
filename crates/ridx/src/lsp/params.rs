@@ -43,6 +43,39 @@ pub fn text_document_position(msg: &Value) -> LspResult<(&str, u32, u32)> {
     Ok((uri, line, col))
 }
 
+/// Extracts `(uri, Option<(line_0based, col_0based)>)` from a TextDocumentPositionParams payload,
+/// requiring valid textDocument.uri and params object, but allowing missing position.
+pub fn text_document_opt_position(msg: &Value) -> LspResult<(&str, Option<(u32, u32)>)> {
+    let params = msg
+        .get("params")
+        .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
+    if !params.is_object() {
+        return Err(LspError::invalid_params("Params must be an object"));
+    }
+
+    let uri = params["textDocument"]["uri"]
+        .as_str()
+        .ok_or_else(|| LspError::invalid_params("Missing textDocument.uri"))?;
+    if uri.is_empty() {
+        return Err(LspError::invalid_params("Empty textDocument.uri"));
+    }
+
+    let pos = &params["position"];
+    if !pos.is_object() {
+        return Ok((uri, None));
+    }
+    let line = match pos["line"].as_u64() {
+        Some(l) => l as u32,
+        None => return Ok((uri, None)),
+    };
+    let col = match pos["character"].as_u64() {
+        Some(c) => c as u32,
+        None => return Ok((uri, None)),
+    };
+
+    Ok((uri, Some((line, col))))
+}
+
 /// Extracts and validates `(uri, start_line, start_col, end_line, end_col)` from a Range-based payload.
 pub fn text_document_range(msg: &Value) -> LspResult<(&str, u32, u32, u32, u32)> {
     let params = msg
