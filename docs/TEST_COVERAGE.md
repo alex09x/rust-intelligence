@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1154
+- **Total E2E Tests**: 1193
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 1072
+- **Classified E2E Tests**: 1111
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 34 / 53
-- **Rows >= 50 E2E**: 7 / 53
+- **Rows >= 20 E2E**: 35 / 53
+- **Rows >= 50 E2E**: 8 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -22,7 +22,7 @@
 | Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didOpen` | 50 | 0 | 50 | ✅ Complete |
-| Domain 3: Synchronization & Coordinates | `textDocument/didChange` | 11 | 0 | 11 | 🔴 In Progress (11/50) |
+| Domain 3: Synchronization & Coordinates | `textDocument/didChange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didSave` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
 | Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 3 | 0 | 3 | 🔴 In Progress (3/50) |
 | Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 0 | 0 | 0 | ⚪ Zero E2E |
@@ -495,18 +495,57 @@
 - `test_did_open_with_provenance_uncompiled`
 - `test_did_open_with_unknown_language_id_safely`
 
-#### `textDocument/didChange` (11 e2e tests)
+#### `textDocument/didChange` (50 e2e tests)
+- `test_did_change_adds_enum_definition_symbol`
+- `test_did_change_adds_new_fn_symbol`
+- `test_did_change_adds_struct_definition_symbol`
+- `test_did_change_content_hash_updates_after_edit`
+- `test_did_change_converts_fn_to_comment_removes_symbol`
+- `test_did_change_crlf_incremental_replacement`
+- `test_did_change_delete_entire_document`
+- `test_did_change_delete_first_character`
+- `test_did_change_delete_last_character`
+- `test_did_change_empty_change_leaves_text_intact`
+- `test_did_change_empty_content_changes_array_safe`
 - `test_did_change_full_content_sync`
+- `test_did_change_full_sync_replaces_entire_buffer`
 - `test_did_change_incremental_multiline_delete`
 - `test_did_change_incremental_multiline_insert`
 - `test_did_change_incremental_single_line_delete`
 - `test_did_change_incremental_single_line_insert`
+- `test_did_change_insert_at_end_of_document`
+- `test_did_change_insert_at_start_of_document`
+- `test_did_change_insert_in_middle_of_line`
+- `test_did_change_invalidates_position_converter_cache`
+- `test_did_change_inverted_range_clamped_safely`
+- `test_did_change_line_starts_recalculated_after_newline_delete`
+- `test_did_change_line_starts_recalculated_after_newline_insert`
+- `test_did_change_missing_content_changes_key_safe`
 - `test_did_change_multi_change_batch_in_order`
+- `test_did_change_multibyte_utf8_char_offset`
+- `test_did_change_multiple_changes_in_single_notification`
+- `test_did_change_negative_version_increments_internal_version`
+- `test_did_change_notification_produces_no_stdout_when_pull_diagnostics`
+- `test_did_change_notification_returns_ok_true`
+- `test_did_change_out_of_bounds_range_clamped_safely`
+- `test_did_change_preserves_other_open_documents`
+- `test_did_change_removes_existing_fn_symbol`
+- `test_did_change_renames_fn_symbol_in_place`
 - `test_did_change_reparses_symbols_and_scopes`
+- `test_did_change_replace_multiline_block`
+- `test_did_change_replace_word_in_line`
+- `test_did_change_sequential_inserts_in_single_line`
+- `test_did_change_supports_new_text_key_variant`
+- `test_did_change_supports_text_key_variant`
 - `test_did_change_unopened_document_implicit_open`
+- `test_did_change_unopened_document_missing_on_disk_uses_empty`
+- `test_did_change_unopened_document_reads_from_disk_fallback`
+- `test_did_change_utf16_surrogate_pair_column_offset`
 - `test_did_change_version_duplicate_or_zero`
+- `test_did_change_version_increment_from_client`
 - `test_did_change_version_monotonic_increments`
 - `test_did_change_version_skip_tolerance`
+- `test_did_change_version_zero_increments_internal_version`
 
 #### `textDocument/didSave` (3 e2e tests)
 - `test_case_9_line_shift_after_did_save_without_reindex`
@@ -1356,4 +1395,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1154 total, 34 rows >= 20, 7 rows >= 50 of 53
+coverage: e2e 1193 total, 35 rows >= 20, 8 rows >= 50 of 53
