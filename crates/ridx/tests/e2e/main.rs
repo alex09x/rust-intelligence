@@ -218,3 +218,7 @@ mod ntm_domain9_l1_workspace_symbols_part5;
 mod ntm_domain9_l1_workspace_symbols_part6;
 mod ntm_domain9_l1_workspace_symbols_part7;
 mod ntm_domain9_l1_workspace_symbols_part8;
+mod ntm_domain9_l1_workspace_symbols_resolve_part2;
+mod ntm_domain9_l1_workspace_symbols_resolve_part3;
+mod ntm_domain9_l1_workspace_symbols_resolve_part4;
+mod ntm_domain9_l1_workspace_symbols_resolve_part5;

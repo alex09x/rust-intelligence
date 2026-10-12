@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1847
+- **Total E2E Tests**: 1883
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1765
+- **Classified E2E Tests**: 1801
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 43 / 53
-- **Rows >= 50 E2E**: 27 / 53
+- **Rows >= 20 E2E**: 44 / 53
+- **Rows >= 50 E2E**: 28 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -60,7 +60,7 @@
 | Domain 9: Navigation & Symbols | `textDocument/documentHighlight` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `workspace/symbol` | 51 | 0 | 51 | ✅ Complete |
-| Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 15 | 8 | 23 | 🔴 In Progress (15/50) |
+| Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 51 | 8 | 59 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 51 | 0 | 51 | ✅ Complete |
@@ -1676,7 +1676,7 @@
 - `test_workspace_symbol_uri_scheme_and_prefix`
 - `test_workspace_symbol_utf16_multibyte_name_location`
 
-#### `workspaceSymbol/resolve` (15 e2e tests)
+#### `workspaceSymbol/resolve` (51 e2e tests)
 - `test_l1_workspace_symbol_resolve_already_populated`
 - `test_l1_workspace_symbol_resolve_bare_path_empty_container_name`
 - `test_l1_workspace_symbol_resolve_crate_root_container_name`
@@ -1692,6 +1692,42 @@
 - `test_l1_workspace_symbol_resolve_preserves_kind_with_location_sub`
 - `test_l1_workspace_symbol_resolve_same_name_multiple_crates_first_shard`
 - `test_l2_workspace_symbol_resolve`
+- `test_workspace_symbol_resolve_assoc_const_in_trait`
+- `test_workspace_symbol_resolve_assoc_fn_in_impl`
+- `test_workspace_symbol_resolve_client_version_field_preservation`
+- `test_workspace_symbol_resolve_complex_client_nested_json`
+- `test_workspace_symbol_resolve_const_def_kind`
+- `test_workspace_symbol_resolve_container_name_deep_nested_module`
+- `test_workspace_symbol_resolve_crlf_offsets_preserved`
+- `test_workspace_symbol_resolve_empty_name_returns_unchanged`
+- `test_workspace_symbol_resolve_empty_shards_list_returns_unchanged`
+- `test_workspace_symbol_resolve_enum_def_kind`
+- `test_workspace_symbol_resolve_exact_match_priority_over_prefix`
+- `test_workspace_symbol_resolve_field_item_in_struct`
+- `test_workspace_symbol_resolve_fn_def_kind`
+- `test_workspace_symbol_resolve_four_shards_fourth_shard_lookup`
+- `test_workspace_symbol_resolve_id_preservation`
+- `test_workspace_symbol_resolve_macro_def_kind`
+- `test_workspace_symbol_resolve_missing_location_is_populated`
+- `test_workspace_symbol_resolve_missing_params_returns_null`
+- `test_workspace_symbol_resolve_mod_def_kind`
+- `test_workspace_symbol_resolve_multi_crate_first_shard_wins`
+- `test_workspace_symbol_resolve_multi_crate_second_shard_when_first_lacks`
+- `test_workspace_symbol_resolve_non_ascii_unicode_symbol_name`
+- `test_workspace_symbol_resolve_non_existent_symbol_unchanged`
+- `test_workspace_symbol_resolve_null_location_is_replaced`
+- `test_workspace_symbol_resolve_null_params_returns_null`
+- `test_workspace_symbol_resolve_preserves_existing_location`
+- `test_workspace_symbol_resolve_preserves_symbol_kind_field`
+- `test_workspace_symbol_resolve_preserves_unrelated_custom_field`
+- `test_workspace_symbol_resolve_repeated_consecutive_resolves_idempotent`
+- `test_workspace_symbol_resolve_root_manifest_workspace_indexing`
+- `test_workspace_symbol_resolve_static_def_kind`
+- `test_workspace_symbol_resolve_struct_def_kind`
+- `test_workspace_symbol_resolve_trait_def_kind`
+- `test_workspace_symbol_resolve_type_alias_def_kind`
+- `test_workspace_symbol_resolve_union_def_kind`
+- `test_workspace_symbol_resolve_utf16_surrogate_emoji_offset`
 
 ### Domain 10: Multi-root & File Events
 
@@ -2048,4 +2084,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1847 total, 43 rows >= 20, 27 rows >= 50 of 53
+coverage: e2e 1883 total, 44 rows >= 20, 28 rows >= 50 of 53
