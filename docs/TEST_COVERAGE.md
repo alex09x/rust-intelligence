@@ -3,11 +3,11 @@
 > **Note on Method Count (53 methods)**: The matrix covers 53 distinct LSP capability rows across 10 domains. LSP `textDocument/declaration` is delegated directly to `textDocument/definition` via `handle_declaration` and tracked jointly in `textDocument/definition / declaration (delegating)`.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 446
+- **Total E2E Tests**: 486
 - **Total Unit/Src Tests**: 409
-- **Classified E2E Tests**: 364
+- **Classified E2E Tests**: 404
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 7 / 53
+- **Rows >= 20 E2E**: 9 / 53
 - **Rows >= 50 E2E**: 1 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
@@ -62,8 +62,8 @@
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 15 | 8 | 23 | 🔴 In Progress (15/50) |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
-| Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 0 | 0 | 0 | ⚪ Zero E2E |
-| Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 0 | 0 | 0 | ⚪ Zero E2E |
+| Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 10: Multi-root & File Events | `workspace/didDeleteFiles / willDeleteFiles` | 0 | 0 | 0 | ⚪ Zero E2E |
 
 ## Method-level Test Catalog
@@ -567,11 +567,49 @@ _No classified e2e tests yet._
 - `test_did_change_watched_files_single_shard_crate_version_reloaded`
 - `test_did_change_watched_files_unmodified_shard_preserves_cached_state`
 
-#### `workspace/didCreateFiles / willCreateFiles` (0 e2e tests)
-_No classified e2e tests yet._
+#### `workspace/didCreateFiles / willCreateFiles` (20 e2e tests)
+- `test_did_create_files_batch_twenty_files`
+- `test_did_create_files_empty_files_noop`
+- `test_did_create_files_empty_uri_skipped`
+- `test_did_create_files_file_outside_roots_ignored`
+- `test_did_create_files_followed_by_did_open`
+- `test_did_create_files_missing_files_key_noop`
+- `test_did_create_files_multi_root_sync`
+- `test_did_create_files_open_dirty_buffer_not_overwritten`
+- `test_did_create_files_percent_encoded_uri`
+- `test_did_create_files_relative_path_resolution`
+- `test_did_create_files_retains_existing_roots`
+- `test_did_create_files_single_file_clears_conv`
+- `test_did_create_files_unmodified_index_preserves_baseline`
+- `test_did_create_files_with_updated_disk_index_syncs`
+- `test_will_create_files_empty_files_array`
+- `test_will_create_files_multi_file_returns_empty_edit`
+- `test_will_create_files_numeric_id_preserved`
+- `test_will_create_files_returns_matching_schema`
+- `test_will_create_files_string_id_preserved`
+- `test_will_create_files_valid_file_returns_empty_edit`
 
-#### `workspace/didRenameFiles / willRenameFiles` (0 e2e tests)
-_No classified e2e tests yet._
+#### `workspace/didRenameFiles / willRenameFiles` (20 e2e tests)
+- `test_did_rename_files_active_overlay_rebound`
+- `test_did_rename_files_chain_rename`
+- `test_did_rename_files_clears_position_converter`
+- `test_did_rename_files_cyclic_rename_roundtrip`
+- `test_did_rename_files_dirty_overlay_preserves_text_and_version`
+- `test_did_rename_files_empty_files_noop`
+- `test_did_rename_files_followed_by_did_change`
+- `test_did_rename_files_followed_by_did_close`
+- `test_did_rename_files_missing_fields_skipped`
+- `test_did_rename_files_missing_files_key_noop`
+- `test_did_rename_files_multi_rename_simultaneous`
+- `test_did_rename_files_multi_root_secondary_workspace`
+- `test_did_rename_files_percent_encoded_uri`
+- `test_did_rename_files_unopened_file_noop`
+- `test_will_rename_files_empty_files_array`
+- `test_will_rename_files_lifecycle_sequence_with_did_rename`
+- `test_will_rename_files_multi_file_returns_empty_edit`
+- `test_will_rename_files_numeric_id_preserved`
+- `test_will_rename_files_string_id_preserved`
+- `test_will_rename_files_valid_returns_empty_edit`
 
 #### `workspace/didDeleteFiles / willDeleteFiles` (0 e2e tests)
 _No classified e2e tests yet._
@@ -664,4 +702,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 446 total, 7 rows >= 20, 1 rows >= 50 of 53
+coverage: e2e 486 total, 9 rows >= 20, 1 rows >= 50 of 53
