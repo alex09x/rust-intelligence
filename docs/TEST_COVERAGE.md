@@ -4,17 +4,17 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 993
+- **Total E2E Tests**: 1023
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 911
+- **Classified E2E Tests**: 941
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 33 / 53
-- **Rows >= 50 E2E**: 2 / 53
+- **Rows >= 50 E2E**: 3 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | Domain 1: Lifecycle & Control | `initialize / initialized` | 50 | 0 | 50 | ✅ Complete |
-| Domain 1: Lifecycle & Control | `shutdown` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 1: Lifecycle & Control | `shutdown` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `exit` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 1: Lifecycle & Control | `$/cancelRequest` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
@@ -123,27 +123,57 @@
 - `test_initialized_duplicate_notification_handling`
 - `test_initialized_notification_handling`
 
-#### `shutdown` (20 e2e tests)
+#### `shutdown` (50 e2e tests)
 - `test_shutdown_allows_exit_after`
 - `test_shutdown_duplicate_rejected_code_32600`
+- `test_shutdown_duplicate_shutdown_rejected`
 - `test_shutdown_flycheck_state_quiesced`
+- `test_shutdown_followed_by_did_change_ignored_safely`
+- `test_shutdown_followed_by_did_close_ignored_safely`
+- `test_shutdown_followed_by_did_open_ignored_safely`
+- `test_shutdown_followed_by_set_trace_ignored_safely`
+- `test_shutdown_jsonrpc_version_in_response`
+- `test_shutdown_numeric_large_id_preserved`
 - `test_shutdown_preserves_request_id`
 - `test_shutdown_rejects_call_hierarchy_code_32600`
+- `test_shutdown_rejects_call_hierarchy_prepare_code_32600`
 - `test_shutdown_rejects_code_action_code_32600`
+- `test_shutdown_rejects_code_action_resolve_code_32600`
 - `test_shutdown_rejects_completion_code_32600`
+- `test_shutdown_rejects_completion_resolve_code_32600`
 - `test_shutdown_rejects_definition_code_32600`
+- `test_shutdown_rejects_document_diagnostic_code_32600`
+- `test_shutdown_rejects_document_highlight_code_32600`
+- `test_shutdown_rejects_document_link_code_32600`
 - `test_shutdown_rejects_document_symbol_code_32600`
+- `test_shutdown_rejects_execute_command_code_32600`
+- `test_shutdown_rejects_folding_range_code_32600`
 - `test_shutdown_rejects_formatting_code_32600`
 - `test_shutdown_rejects_hover_code_32600`
 - `test_shutdown_rejects_implementation_code_32600`
+- `test_shutdown_rejects_implementation_post_shutdown_32600`
 - `test_shutdown_rejects_inlay_hint_code_32600`
+- `test_shutdown_rejects_inlay_hint_post_shutdown_32600`
+- `test_shutdown_rejects_inlay_hint_resolve_code_32600`
+- `test_shutdown_rejects_inline_value_code_32600`
+- `test_shutdown_rejects_moniker_code_32600`
+- `test_shutdown_rejects_prepare_rename_code_32600`
 - `test_shutdown_rejects_references_code_32600`
 - `test_shutdown_rejects_rename_code_32600`
+- `test_shutdown_rejects_selection_range_code_32600`
+- `test_shutdown_rejects_semantic_tokens_code_32600`
+- `test_shutdown_rejects_signature_help_code_32600`
 - `test_shutdown_rejects_type_definition_code_32600`
 - `test_shutdown_rejects_type_hierarchy_code_32600`
+- `test_shutdown_rejects_type_hierarchy_prepare_code_32600`
+- `test_shutdown_rejects_workspace_diagnostic_code_32600`
 - `test_shutdown_rejects_workspace_symbol_code_32600`
+- `test_shutdown_rejects_workspace_symbol_resolve_code_32600`
 - `test_shutdown_returns_null`
+- `test_shutdown_string_id_preserved`
+- `test_shutdown_success_response_result_null`
 - `test_shutdown_transitions_state_to_shutdown`
+- `test_shutdown_uninitialized_server_shutdown_rejected`
 
 #### `exit` (20 e2e tests)
 - `test_exit_after_shutdown_returns_ok`
@@ -1195,4 +1225,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 993 total, 33 rows >= 20, 2 rows >= 50 of 53
+coverage: e2e 1023 total, 33 rows >= 20, 3 rows >= 50 of 53

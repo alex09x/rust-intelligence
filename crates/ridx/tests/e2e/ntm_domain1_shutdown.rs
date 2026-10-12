@@ -72,7 +72,7 @@ fn test_shutdown_returns_null() {
 
     let msg = json!({ "jsonrpc": "2.0", "id": 2, "method": "shutdown", "params": null });
     let res = dispatch_client(msg, &mut out, &mut mr, &mut ov, &mut lc, &can);
-    assert_eq!(res.unwrap(), true);
+    assert!(res.unwrap());
 
     let val = extract_response(&out);
     assert_eq!(val["id"], 2);
