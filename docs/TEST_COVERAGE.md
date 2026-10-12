@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1338
+- **Total E2E Tests**: 1368
 - **Total Unit/Src Tests**: 412
-- **Classified E2E Tests**: 1256
+- **Classified E2E Tests**: 1286
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 38 / 53
-- **Rows >= 50 E2E**: 11 / 53
+- **Rows >= 50 E2E**: 12 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -18,7 +18,7 @@
 | Domain 1: Lifecycle & Control | `exit` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `$/cancelRequest` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 50 | 0 | 50 | ✅ Complete |
-| Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 50 | 0 | 50 | ✅ Complete |
 | Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didOpen` | 50 | 0 | 50 | ✅ Complete |
@@ -333,15 +333,42 @@
 
 ### Domain 2: Diagnostics & Flycheck
 
-#### `textDocument/diagnostic` (20 e2e tests)
+#### `textDocument/diagnostic` (50 e2e tests)
+- `test_document_diagnostic_block_comment_multiline_delimiters_ignored`
+- `test_document_diagnostic_char_literal_delimiters_ignored`
 - `test_document_diagnostic_clean_file_empty_items`
 - `test_document_diagnostic_comments_delimiters_ignored`
+- `test_document_diagnostic_crlf_line_coordinates_exact`
+- `test_document_diagnostic_deeply_nested_unclosed_inner`
+- `test_document_diagnostic_empty_file_returns_zero_items`
+- `test_document_diagnostic_empty_params_missing_uri`
+- `test_document_diagnostic_escaped_backslash_in_string`
+- `test_document_diagnostic_escaped_quote_in_string`
+- `test_document_diagnostic_let_bool_expected_found_str`
+- `test_document_diagnostic_let_i32_expected_found_bool`
+- `test_document_diagnostic_let_str_expected_found_integer`
+- `test_document_diagnostic_let_string_expected_found_integer`
 - `test_document_diagnostic_let_type_mismatch_e0308`
+- `test_document_diagnostic_let_usize_expected_found_bool`
+- `test_document_diagnostic_line_comment_delimiters_ignored`
 - `test_document_diagnostic_mismatched_paren_brace`
 - `test_document_diagnostic_mismatched_paren_bracket`
+- `test_document_diagnostic_multiline_string_literal`
+- `test_document_diagnostic_multiline_unclosed_brace_line_exact`
+- `test_document_diagnostic_multiple_let_mismatches_in_single_file`
+- `test_document_diagnostic_multiple_unclosed_delimiters_count`
+- `test_document_diagnostic_negative_integer_let_mismatch`
+- `test_document_diagnostic_nested_block_comments_with_delimiters`
+- `test_document_diagnostic_nested_closures_and_blocks_balanced`
+- `test_document_diagnostic_nested_delimiters_balanced`
 - `test_document_diagnostic_nonexistent_uri_empty_items`
+- `test_document_diagnostic_only_whitespace_and_newlines_zero_items`
 - `test_document_diagnostic_overlay_precedence_over_disk`
+- `test_document_diagnostic_raw_string_delimiters_ignored`
+- `test_document_diagnostic_raw_string_multiple_hashes_unclosed`
+- `test_document_diagnostic_response_jsonrpc_version`
 - `test_document_diagnostic_severity_is_error`
+- `test_document_diagnostic_single_quote_char_escape_in_code`
 - `test_document_diagnostic_source_is_ridx`
 - `test_document_diagnostic_string_delimiters_ignored`
 - `test_document_diagnostic_unclosed_brace`
@@ -350,8 +377,11 @@
 - `test_document_diagnostic_unclosed_raw_string_literal`
 - `test_document_diagnostic_unclosed_string_literal`
 - `test_document_diagnostic_unmatched_closing_brace`
+- `test_document_diagnostic_unmatched_closing_brace_at_eof`
 - `test_document_diagnostic_unmatched_closing_bracket`
 - `test_document_diagnostic_unmatched_closing_paren`
+- `test_document_diagnostic_update_overlay_introduces_new_error`
+- `test_document_diagnostic_update_overlay_version_resolves_error`
 - `test_e2e_pull_client_without_refresh_support_no_server_refresh_request`
 - `test_e2e_pull_diagnostic_client_no_publish_on_did_change`
 
@@ -1539,4 +1569,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1338 total, 38 rows >= 20, 11 rows >= 50 of 53
+coverage: e2e 1368 total, 38 rows >= 20, 12 rows >= 50 of 53
