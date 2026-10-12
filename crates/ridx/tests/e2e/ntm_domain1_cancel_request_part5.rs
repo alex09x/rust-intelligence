@@ -218,7 +218,7 @@ fn test_cancel_request_subsequent_request_with_same_id_not_cancelled() {
     let _ = dispatch_client(req2, &mut out, &mut mr, &mut ov, &mut lc, &can);
     let val = extract_response(&out);
     assert_eq!(val["id"], req_id);
-    assert!(val.get("error").is_none());
+    assert_eq!(val["result"], serde_json::Value::Null);
 }
 
 #[test]
