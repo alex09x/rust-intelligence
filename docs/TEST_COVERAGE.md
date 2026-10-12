@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1644
+- **Total E2E Tests**: 1652
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1562
+- **Classified E2E Tests**: 1570
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 40 / 53
-- **Rows >= 50 E2E**: 20 / 53
+- **Rows >= 50 E2E**: 21 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -53,7 +53,7 @@
 | Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 3 | 8 | 11 | 🔴 In Progress (3/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 1 | 5 | 6 | 🔴 In Progress (1/50) |
 | Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 14 | 0 | 14 | 🔴 In Progress (14/50) |
-| Domain 9: Navigation & Symbols | `textDocument/definition / declaration (delegating)` | 44 | 7 | 51 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 9: Navigation & Symbols | `textDocument/definition / declaration (delegating)` | 52 | 7 | 59 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/typeDefinition` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 9: Navigation & Symbols | `textDocument/implementation` | 16 | 0 | 16 | 🔴 In Progress (16/50) |
 | Domain 9: Navigation & Symbols | `textDocument/references` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
@@ -1304,7 +1304,7 @@
 
 ### Domain 9: Navigation & Symbols
 
-#### `textDocument/definition / declaration (delegating)` (44 e2e tests)
+#### `textDocument/definition / declaration (delegating)` (52 e2e tests)
 - `test_case_1_associated_type_navigation`
 - `test_case_2_trait_method_concrete_vs_generic`
 - `test_case_3_two_versions_of_same_crate`
@@ -1315,6 +1315,14 @@
 - `test_case_9_line_shift_definition_and_references`
 - `test_case_cross_crate_ident_name_isolation`
 - `test_case_sysroot_atomic_tyalias_navigation_and_refs`
+- `test_definition_const_item_in_same_file`
+- `test_definition_delegating_declaration_parity`
+- `test_definition_enum_type_in_same_file`
+- `test_definition_function_symbol_in_same_file`
+- `test_definition_preserves_numeric_request_id`
+- `test_definition_preserves_string_request_id`
+- `test_definition_struct_type_in_same_file`
+- `test_definition_whitespace_position_returns_null`
 - `test_goto_def_and_rename_generic_type_param_t`
 - `test_l1_declaration_cross_file_same_crate`
 - `test_l1_declaration_definition_parity_contract`
@@ -1845,4 +1853,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1644 total, 40 rows >= 20, 20 rows >= 50 of 53
+coverage: e2e 1652 total, 40 rows >= 20, 21 rows >= 50 of 53
