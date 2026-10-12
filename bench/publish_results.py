@@ -12,129 +12,121 @@ verified benchmark artifacts into bench/published/.
 """
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 CANONICAL_REPOS = {
-    "serde": "serde-rs/serde",
-    "ripgrep": "BurntSushi/ripgrep",
-    "tokio": "tokio-rs/tokio",
-    "bevy": "bevyengine/bevy",
+    "serde": "serde-rs/serde", "ripgrep": "BurntSushi/ripgrep",
+    "tokio": "tokio-rs/tokio", "bevy": "bevyengine/bevy",
     "rust-analyzer": "rust-lang/rust-analyzer",
 }
 
 ROADMAP_DIMENSION_MAP = {
     "initial_indexing": [
-        "cold_cargo_check_sec",
-        "cargo_check_peak_rss_mb",
-        "cargo_check_peak_fds",
-        "cargo_check_peak_threads",
-        "cold_ridx_index_sec",
-        "ridx_index_peak_rss_mb",
-        "ridx_index_peak_fds",
-        "ridx_index_peak_threads",
-        "ridx_index_size_bytes",
-        "ra_scip_build_sec",
-        "ra_scip_peak_rss_mb",
-        "ra_scip_peak_fds",
-        "ra_scip_peak_threads",
-        "ra_scip_size_bytes",
+        "cold_cargo_check_sec", "cargo_check_peak_rss_mb", "cargo_check_peak_fds",
+        "cargo_check_peak_threads", "cold_ridx_index_sec", "ridx_index_peak_rss_mb",
+        "ridx_index_peak_fds", "ridx_index_peak_threads", "ridx_index_size_bytes",
+        "ra_scip_build_sec", "ra_scip_peak_rss_mb", "ra_scip_peak_fds",
+        "ra_scip_peak_threads", "ra_scip_size_bytes",
     ],
-    "warm_no_op": [
-        "warm_ridx_index_sec",
-    ],
-    "incremental_change": [
-        "w1_commit_walk",
-        "w2_large_jumps",
-    ],
+    "warm_no_op": ["warm_ridx_index_sec"],
+    "incremental_change": ["w1_commit_walk", "w2_large_jumps"],
     "open_and_first_query": [
-        "ridx_init_ms",
-        "ridx_warmup_ms",
-        "ra_init_ms",
-        "ra_warmup_ms",
-        "scip_load_ms",
+        "ridx_init_ms", "ridx_warmup_ms", "ra_init_ms", "ra_warmup_ms", "scip_load_ms",
     ],
     "warm_requests": [
-        "metrics",
-        "readonly_total",
-        "readonly_matched_strict",
-        "readonly_match_rate_strict_pct",
-        "readonly_matched_line_level",
-        "readonly_match_rate_line_level_pct",
-        "matched_scenarios_strict",
-        "match_rate_strict_pct",
-        "matched_scenarios_line_level",
-        "match_rate_line_level_pct",
-        "matched_scenarios",
-        "total_scenarios",
-        "match_rate_pct",
-        "scip_matched_scenarios",
-        "scip_total_scenarios",
+        "metrics", "readonly_total", "readonly_matched_strict",
+        "readonly_match_rate_strict_pct", "readonly_matched_line_level",
+        "readonly_match_rate_line_level_pct", "matched_scenarios_strict",
+        "match_rate_strict_pct", "matched_scenarios_line_level",
+        "match_rate_line_level_pct", "matched_scenarios", "total_scenarios",
+        "match_rate_pct", "scip_matched_scenarios", "scip_total_scenarios",
         "scip_match_rate_pct",
     ],
     "storage_and_memory": [
-        "ridx_peak_rss_mb",
-        "ridx_peak_rss_anon_mb",
-        "ridx_peak_rss_file_mb",
-        "ridx_peak_open_fds",
-        "ridx_peak_threads",
-        "ridx_peak_ridx_open_fds",
-        "ridx_peak_ridx_mapped_regions",
-        "ra_peak_rss_mb",
-        "ra_peak_rss_anon_mb",
-        "ra_peak_rss_file_mb",
-        "ra_peak_open_fds",
-        "ra_peak_threads",
-        "scip_peak_rss_mb",
-        "scip_peak_open_fds",
-        "scip_peak_threads",
+        "ridx_peak_rss_mb", "ridx_peak_rss_anon_mb", "ridx_peak_rss_file_mb",
+        "ridx_peak_open_fds", "ridx_peak_threads", "ridx_peak_ridx_open_fds",
+        "ridx_peak_ridx_mapped_regions", "ra_peak_rss_mb", "ra_peak_rss_anon_mb",
+        "ra_peak_rss_file_mb", "ra_peak_open_fds", "ra_peak_threads",
+        "scip_peak_rss_mb", "scip_peak_open_fds", "scip_peak_threads",
         "w3_multi_worktree",
     ],
 }
 
-FORBIDDEN_PATTERNS = ["/home/", "/tmp/", "/Users/", "alex09x"]
+FORBIDDEN_DATA_PATTERNS = [
+    re.compile(r"/home/[^/]+/"), re.compile(r"/Users/[^/]+/"), re.compile(r"/tmp/[^/]+/"),
+]
+
+FORBIDDEN_SIDECAR_PATTERNS = [
+    re.compile(r"/home/[a-zA-Z0-9_.-]+/"), re.compile(r"/Users/[a-zA-Z0-9_.-]+/"),
+    re.compile(r"/tmp/[a-zA-Z0-9_.-]+/"),
+]
 
 
-def sanitize_text(text: str) -> str:
-    """Sanitizes paths according to canonical mapping and privacy requirements."""
+def compute_sha256(file_path: Path) -> str:
+    """Computes SHA-256 hex digest of a file."""
+    h = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        while chunk := f.read(65536):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def sanitize_text(text: str) -> Tuple[str, List[Dict[str, Any]]]:
+    """Sanitizes paths according to canonical mapping and privacy requirements.
+
+    Returns sanitized text and list of applied sanitization rules with replacement counts.
+    """
+    applied_rules: List[Dict[str, Any]] = []
+
     for repo_short, canonical in CANONICAL_REPOS.items():
-        text = text.replace(f"/tmp/mitts-bench/{repo_short}/", f"{canonical}/")
-    text = re.sub(r"/tmp/mitts-bench/([^/]+)/", r"\1/", text)
-    text = re.sub(r"/home/[^/]+/\.cargo/registry/", "<cargo-registry>/", text)
-    text = re.sub(
-        r"/home/[^/]+/\.rustup/toolchains/[^/]+/lib/rustlib/",
-        "<rustlib>/",
-        text,
-    )
-    text = re.sub(r"/home/[^/]+/", "<user-home>/", text)
-    text = re.sub(r"/tmp/", "<tmp>/", text)
-    text = re.sub(r"alex09x", "<user>", text)
-    return text
+        pattern = rf"/tmp/[^/]+/{re.escape(repo_short)}/"
+        count = len(re.findall(pattern, text))
+        if count > 0:
+            text = re.sub(pattern, f"{canonical}/", text)
+            applied_rules.append({"rule": f"/tmp/<build-dir>/{repo_short}/ -> {canonical}/", "replacements": count})
+
+    gen_pattern = r"/tmp/[^/]+/([^/]+)/"
+    count = len(re.findall(gen_pattern, text))
+    if count > 0:
+        text = re.sub(gen_pattern, r"\1/", text)
+        applied_rules.append({"rule": "/tmp/<build-dir>/<repo>/ -> <repo>/", "replacements": count})
+
+    for pat, desc, repl in [
+        (r"/home/[^/]+/\.cargo/registry/", "/home/<user>/.cargo/registry/ -> <cargo-registry>/", "<cargo-registry>/"),
+        (r"/home/[^/]+/\.rustup/toolchains/[^/]+/lib/rustlib/", "/home/<user>/.rustup/toolchains/<toolchain>/lib/rustlib/ -> <rustlib>/", "<rustlib>/"),
+        (r"/home/[^/]+/", "/home/<user>/ -> <user-home>/", "<user-home>/"),
+        (r"/Users/[^/]+/", "/Users/<user>/ -> <user-home>/", "<user-home>/"),
+        (r"/tmp/", "/tmp/ -> <tmp>/", "<tmp>/"),
+    ]:
+        count = len(re.findall(pat, text))
+        if count > 0:
+            text = re.sub(pat, repl, text)
+            applied_rules.append({"rule": desc, "replacements": count})
+
+    return text, applied_rules
 
 
 def verify_clean_output(content: str, filename: str) -> None:
     """Verifies that no host-private patterns appear in published text."""
-    for pattern in FORBIDDEN_PATTERNS:
-        if pattern in content:
-            count = content.count(pattern)
+    patterns = FORBIDDEN_SIDECAR_PATTERNS if filename.endswith(".provenance.json") else FORBIDDEN_DATA_PATTERNS
+    for pat in patterns:
+        matches = pat.findall(content)
+        if matches:
             raise RuntimeError(
-                f"Privacy check failed for {filename}: found {count} occurrences of '{pattern}'"
+                f"Privacy check failed for {filename}: found {len(matches)} occurrences matching '{pat.pattern}'"
             )
 
 
 def get_commit_date(commit_hash: str) -> str:
     """Queries ISO-8601 commit date from git log."""
     try:
-        res = subprocess.run(
-            ["git", "show", "-s", "--format=%cI", commit_hash],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        res = subprocess.run(["git", "show", "-s", "--format=%cI", commit_hash], capture_output=True, text=True, check=False)
         if res.returncode == 0 and res.stdout.strip():
             return res.stdout.strip()
     except Exception:
@@ -152,13 +144,9 @@ def publish_pilot_results(src_dir: Path, pub_dir: Path, dry_run: bool = False) -
     dst_file = pub_dir / "pilot_5repos_2026-10-08.jsonl"
     sidecar_file = pub_dir / "pilot_5repos_2026-10-08.provenance.json"
 
-    repo_commits = {}
-    driver_hashes = {}
-    ra_version = "unknown"
-    timestamps = []
+    repo_commits, driver_hashes, timestamps, lines = {}, {}, [], []
+    ra_version, first_record = "unknown", None
 
-    lines = []
-    first_record = None
     with open(src_file, "r", encoding="utf-8") as f:
         for line in f:
             if not line.strip():
@@ -179,35 +167,27 @@ def publish_pilot_results(src_dir: Path, pub_dir: Path, dry_run: bool = False) -
     if first_record is None:
         raise RuntimeError(f"Empty pilot results file: {src_file}")
 
-    # Build and validate ROADMAP measurements map from actual data
     measurements: Dict[str, list] = {}
     for dim, keys in ROADMAP_DIMENSION_MAP.items():
-        dim_keys = []
         for k in keys:
             if k not in first_record:
-                raise RuntimeError(
-                    f"Declared ROADMAP key '{k}' missing from pilot results first record"
-                )
-            dim_keys.append(k)
-        measurements[dim] = dim_keys
+                raise RuntimeError(f"Declared ROADMAP key '{k}' missing from pilot results first record")
+        measurements[dim] = list(keys)
 
-    # Compute chronology
+    collected_from, collected_to = "unknown", "unknown"
     if timestamps:
-        min_ts = min(timestamps)
-        max_ts = max(timestamps)
-        collected_from = datetime.fromtimestamp(min_ts, tz=timezone.utc).isoformat()
-        collected_to = datetime.fromtimestamp(max_ts, tz=timezone.utc).isoformat()
-    else:
-        collected_from = "unknown"
-        collected_to = "unknown"
+        collected_from = datetime.fromtimestamp(min(timestamps), tz=timezone.utc).isoformat()
+        collected_to = datetime.fromtimestamp(max(timestamps), tz=timezone.utc).isoformat()
 
-    # Build driver_note dynamically from driver_sha256 dictionary
+    date_str = collected_from.split("T")[0] if collected_from != "unknown" else "unknown"
+
     hash_to_repos: Dict[str, list] = {}
     for r, h in driver_hashes.items():
         hash_to_repos.setdefault(h, []).append(r)
-    driver_note_parts = []
-    for h, rlist in sorted(hash_to_repos.items(), key=lambda x: len(x[1])):
-        driver_note_parts.append(f"{', '.join(rlist)} collected using driver sha256 {h}")
+    driver_note_parts = [
+        f"{', '.join(rlist)} collected using driver sha256 {h}"
+        for h, rlist in sorted(hash_to_repos.items(), key=lambda x: len(x[1]))
+    ]
     driver_note = "; ".join(driver_note_parts)
 
     date_53e8364 = get_commit_date("53e8364")
@@ -218,25 +198,21 @@ def publish_pilot_results(src_dir: Path, pub_dir: Path, dry_run: bool = False) -
         "Exact RIDX git commit not recorded in telemetry."
     )
 
+    source_sha256 = compute_sha256(src_file)
+    clean_lines, sanitization_rules = sanitize_text("".join(lines))
+    verify_clean_output(clean_lines, dst_file.name)
+
     sidecar_data: Dict[str, Any] = {
-        "dataset": "pilot_5repos_2026-10-08",
-        "date": "2026-10-08",
-        "collected_from": collected_from,
-        "collected_to": collected_to,
-        "ridx_commit": "unknown",
-        "ridx_commit_note": ridx_commit_note,
-        "driver_sha256": driver_hashes,
-        "driver_note": driver_note,
-        "rustc": "unknown",
-        "ra_version": ra_version,
-        "node": "unknown",
-        "taskset": "unknown",
-        "repo_commits": repo_commits,
-        "measurements": measurements,
+        "dataset": "pilot_5repos_2026-10-08", "date": date_str, "date_source": "collected_from",
+        "collected_from": collected_from, "collected_to": collected_to,
+        "ridx_commit": "unknown", "ridx_commit_note": ridx_commit_note,
+        "driver_sha256": driver_hashes, "driver_note": driver_note,
+        "rustc": "unknown", "ra_version": ra_version, "node": "unknown",
+        "taskset": "unknown", "repo_commits": repo_commits,
+        "measurements": measurements, "source_sha256": source_sha256,
+        "sanitization": sanitization_rules,
     }
 
-    clean_lines = sanitize_text("".join(lines))
-    verify_clean_output(clean_lines, dst_file.name)
     sidecar_str = json.dumps(sidecar_data, indent=2)
     verify_clean_output(sidecar_str, sidecar_file.name)
 
@@ -265,30 +241,26 @@ def publish_serde_matrix(src_dir: Path, pub_dir: Path, dry_run: bool = False) ->
     with open(src_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    raw_repo = data.get("repo", "")
     data["repo"] = "serde-rs/serde"
+    sanitization_rules: List[Dict[str, Any]] = []
+    if raw_repo != "serde-rs/serde":
+        sanitization_rules.append({"rule": "repo -> serde-rs/serde", "replacements": 1})
+
+    source_sha256 = compute_sha256(src_file)
+    mtime_dt = datetime.fromtimestamp(src_file.stat().st_mtime, tz=timezone.utc)
+    mtime_iso = mtime_dt.isoformat()
 
     sidecar_data = {
-        "dataset": "matrix_serde_booster",
-        "repo": "serde-rs/serde",
-        "repo_commit": "unknown",
-        "ridx_commit": "unknown",
-        "ridx_commit_note": (
-            "Matrix run dated 2026-10-08 12:47 PDT on booster; exact RIDX build commit "
-            "not recorded in raw JSON."
-        ),
-        "driver_hash": "unknown",
-        "rustc": "unknown",
-        "ra_version": "unknown",
-        "node": "booster",
-        "node_source": "file name",
-        "date": "2026-10-08",
-        "date_source": "mtime of raw file on publishing host",
-        "taskset": "unknown",
-        "seed": "unknown",
-        "duration_sec": {
-            "ridx": data.get("ridx_duration_sec"),
-            "rust_analyzer": data.get("ra_duration_sec"),
-        },
+        "dataset": "matrix_serde_booster", "repo": "serde-rs/serde",
+        "repo_commit": "unknown", "ridx_commit": "unknown",
+        "ridx_commit_note": f"Matrix run dated {mtime_iso} on booster; exact RIDX build commit not recorded in raw JSON.",
+        "driver_hash": "unknown", "rustc": "unknown", "ra_version": "unknown",
+        "node": "booster", "node_source": "file name",
+        "date": mtime_dt.date().isoformat(), "date_source": "mtime of raw file on publishing host",
+        "taskset": "unknown", "seed": "unknown",
+        "duration_sec": {"ridx": data.get("ridx_duration_sec"), "rust_analyzer": data.get("ra_duration_sec")},
+        "source_sha256": source_sha256, "sanitization": sanitization_rules,
     }
 
     dst_str = json.dumps(data, indent=2)
@@ -309,25 +281,43 @@ def publish_serde_matrix(src_dir: Path, pub_dir: Path, dry_run: bool = False) ->
 
 
 def publish_discrepancies(src_dir: Path, pub_dir: Path, dry_run: bool = False) -> None:
-    """Sanitizes discrepancies.jsonl by stripping private host paths."""
+    """Sanitizes discrepancies.jsonl by stripping private host paths and writes provenance sidecar."""
     src_file = src_dir / "discrepancies.jsonl"
     if not src_file.is_file():
         print(f"Skipping discrepancies: {src_file} not found")
         return
 
     dst_file = pub_dir / "discrepancies.jsonl"
+    sidecar_file = pub_dir / "discrepancies.provenance.json"
 
-    clean_output = sanitize_text(src_file.read_text(encoding="utf-8"))
+    raw_text = src_file.read_text(encoding="utf-8")
+    source_sha256 = compute_sha256(src_file)
+    mtime_dt = datetime.fromtimestamp(src_file.stat().st_mtime, tz=timezone.utc)
+
+    clean_output, sanitization_rules = sanitize_text(raw_text)
     verify_clean_output(clean_output, dst_file.name)
+
+    sidecar_data = {
+        "dataset": "discrepancies",
+        "date": mtime_dt.date().isoformat(),
+        "date_source": "mtime of raw file on publishing host",
+        "source_sha256": source_sha256,
+        "sanitization": sanitization_rules,
+    }
+    sidecar_str = json.dumps(sidecar_data, indent=2)
+    verify_clean_output(sidecar_str, sidecar_file.name)
 
     if dry_run:
         line_count = len(clean_output.splitlines())
         print(f"[dry-run] Would write {line_count} sanitized lines to {dst_file}")
+        print(f"[dry-run] Would write provenance sidecar to {sidecar_file}")
         return
 
     with open(dst_file, "w", encoding="utf-8") as f:
         f.write(clean_output)
-    print(f"Published discrepancies to {dst_file}")
+    with open(sidecar_file, "w", encoding="utf-8") as f:
+        f.write(sidecar_str)
+    print(f"Published discrepancies to {dst_file} and {sidecar_file}")
 
 
 def main() -> None:
