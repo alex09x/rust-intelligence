@@ -39,6 +39,9 @@ class SimpleLspProcess:
         self.is_quiescent = False
         self.initial_quiescent = False
         self.initial_wait_ms = 0.0
+        self.active_progress_tokens = set()
+        self.progress_titles_seen = []
+        self.last_msg_time = time.perf_counter()
         self.open_docs = set()
 
         self.reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
@@ -145,6 +148,9 @@ class SimpleLspProcess:
                     except Exception:
                         continue
 
+                    with self.lock:
+                        self.last_msg_time = t_recv
+
                     if "method" in msg and "id" in msg:
                         self.handle_server_request(msg)
                     elif "id" in msg:
@@ -156,8 +162,25 @@ class SimpleLspProcess:
                                 self.responses[req_id] = msg
                                 ev.set()
                     elif "method" in msg:
-                        if msg.get("method") == "experimental/serverStatus":
-                            self.is_quiescent = msg.get("params", {}).get("quiescent", False)
+                        method = msg.get("method")
+                        if method == "experimental/serverStatus":
+                            with self.lock:
+                                self.is_quiescent = msg.get("params", {}).get("quiescent", False)
+                        elif method == "$/progress":
+                            params = msg.get("params", {})
+                            tok = params.get("token")
+                            val = params.get("value", {})
+                            kind = val.get("kind")
+                            with self.lock:
+                                if kind == "begin":
+                                    if tok is not None:
+                                        self.active_progress_tokens.add(str(tok))
+                                    title = val.get("title")
+                                    if title and str(title) not in self.progress_titles_seen:
+                                        self.progress_titles_seen.append(str(title))
+                                elif kind == "end":
+                                    if tok is not None:
+                                        self.active_progress_tokens.discard(str(tok))
             except Exception:
                 break
 
@@ -229,18 +252,24 @@ class SimpleLspProcess:
             self.send_msg({"jsonrpc": "2.0", "method": "initialized", "params": {}})
             if self.is_ra:
                 self.initial_wait_ms = self.wait_quiescent(timeout=600.0, settle_idle=0.5)
-                self.initial_quiescent = bool(self.is_quiescent)
+                with self.lock:
+                    self.initial_quiescent = bool(self.is_quiescent and len(self.active_progress_tokens) == 0)
             else:
                 self.initial_quiescent = True
                 self.initial_wait_ms = 0.0
 
     def wait_quiescent(self, timeout=600.0, settle_idle=0.5):
+        """Waits until server is quiescent, all progress tokens complete, and idle for settle_idle seconds."""
         t0 = time.perf_counter()
         while time.perf_counter() - t0 < timeout:
             if self.exited or self.p.poll() is not None:
                 self.exited = True
                 break
-            if self.is_quiescent:
+            with self.lock:
+                quiescent = self.is_quiescent
+                no_active = len(self.active_progress_tokens) == 0
+                idle = (time.perf_counter() - self.last_msg_time) >= settle_idle
+            if quiescent and no_active and idle:
                 break
             time.sleep(0.05)
         return (time.perf_counter() - t0) * 1000.0

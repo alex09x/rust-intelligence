@@ -67,6 +67,7 @@ def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed
         "ridx_initial_wait_ms": ridx_res.get("initial_wait_ms", 0.0),
         "ra_initial_quiescent": ra_res.get("initial_quiescent", False),
         "ra_initial_wait_ms": ra_res.get("initial_wait_ms", 0.0),
+        "ra_progress_titles_seen": ra_res.get("progress_titles_seen", []),
         "ridx_open_documents_before_queries": ridx_res.get("open_documents_before_queries", 0),
         "ra_open_documents_before_queries": ra_res.get("open_documents_before_queries", 0),
     }

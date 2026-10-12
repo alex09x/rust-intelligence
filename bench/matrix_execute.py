@@ -255,6 +255,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
     finally:
         initial_quiescent = getattr(srv, "initial_quiescent", True)
         initial_wait_ms = round(getattr(srv, "initial_wait_ms", 0.0), 2)
+        progress_titles_seen = list(getattr(srv, "progress_titles_seen", []))
         srv.close()
 
     return {
@@ -264,5 +265,6 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         "peak_threads": peak_threads,
         "initial_quiescent": initial_quiescent,
         "initial_wait_ms": initial_wait_ms,
+        "progress_titles_seen": progress_titles_seen,
         "open_documents_before_queries": open_docs_before_queries if open_docs_before_queries is not None else 0,
     }
