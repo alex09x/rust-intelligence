@@ -52,7 +52,7 @@
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 50 | 7 | 57 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 50 | 8 | 58 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 50 | 5 | 55 | ✅ Complete |
-| Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 14 | 0 | 14 | 🔴 In Progress (14/50) |
+| Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 50 | 0 | 50 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/definition / declaration (delegating)` | 52 | 7 | 59 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/typeDefinition` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/implementation` | 51 | 0 | 51 | ✅ Complete |
@@ -2126,13 +2126,49 @@
 - `test_on_type_formatting_unformatted_fn_params_spaces`
 - `test_on_type_formatting_unformatted_let_binding_spaces`
 
-#### `workspace/executeCommand` (14 e2e tests)
+#### `workspace/executeCommand` (50 e2e tests)
 - `test_apply_edit_two_way_handshake_reject_and_accept`
 - `test_apply_workspace_edit_with_newtext`
 - `test_client_ack_does_not_rewrite_closed_file_on_disk`
 - `test_client_advancing_to_version_2_rejects_version_1_apply_edit`
 - `test_combined_versions_retain_initial_client_snapshot`
 - `test_domain4_stream_execute_command`
+- `test_execute_command_after_shutdown_returns_code_32600`
+- `test_execute_command_apply_edits_client_accept_commits_edits`
+- `test_execute_command_apply_edits_client_reject_aborts_edits`
+- `test_execute_command_apply_edits_empty_arguments_fails`
+- `test_execute_command_apply_edits_generates_apply_edit_request`
+- `test_execute_command_apply_edits_invalid_workspace_edit_structure`
+- `test_execute_command_apply_edits_multi_file_mixed_plan`
+- `test_execute_command_apply_edits_multiple_edits_same_file_accumulated`
+- `test_execute_command_apply_edits_single_file_disk_plan`
+- `test_execute_command_apply_edits_single_file_overlay_plan`
+- `test_execute_command_apply_edits_stale_version_rejected`
+- `test_execute_command_apply_edits_two_concurrent_independent_commands`
+- `test_execute_command_apply_edits_version_match_succeeds`
+- `test_execute_command_cancelled_request_returns_code_32800`
+- `test_execute_command_consecutive_commands_isolation`
+- `test_execute_command_empty_command_string_returns_code_32602`
+- `test_execute_command_jsonrpc_protocol_version_is_2_0`
+- `test_execute_command_large_numeric_id_preserved`
+- `test_execute_command_missing_command_field_returns_code_32602`
+- `test_execute_command_missing_params_field_handled`
+- `test_execute_command_negative_numeric_id_preserved`
+- `test_execute_command_null_id_notification_handled`
+- `test_execute_command_resolve_workspace_custom_uri_scheme`
+- `test_execute_command_resolve_workspace_empty_params`
+- `test_execute_command_resolve_workspace_idempotence`
+- `test_execute_command_resolve_workspace_with_root_path`
+- `test_execute_command_resolve_workspace_with_root_uri`
+- `test_execute_command_show_references_array_arguments_position`
+- `test_execute_command_show_references_empty_locations`
+- `test_execute_command_show_references_multiple_locations_count`
+- `test_execute_command_show_references_named_params_fallback`
+- `test_execute_command_show_references_string_id_preserved`
+- `test_execute_command_show_references_with_position_and_locations`
+- `test_execute_command_string_id_preserved`
+- `test_execute_command_unknown_command_name_in_error_message`
+- `test_execute_command_unknown_command_returns_code_32602`
 - `test_l2_workspace_execute_commands`
 - `test_multiple_arguments_preserve_all_edits`
 - `test_open_document_command_edits_sync_disk_and_return_payload`
@@ -2924,4 +2960,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2723 total, 52 rows >= 20, 52 rows >= 50 of 53
+coverage: e2e 2759 total, 53 rows >= 20, 53 rows >= 50 of 53
