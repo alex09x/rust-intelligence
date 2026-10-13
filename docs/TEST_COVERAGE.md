@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 2272
+- **Total E2E Tests**: 2301
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 2190
+- **Classified E2E Tests**: 2219
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 48 / 53
-- **Rows >= 50 E2E**: 39 / 53
+- **Rows >= 50 E2E**: 40 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -39,7 +39,7 @@
 | Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 50 | 0 | 50 | ✅ Complete |
 | Domain 6: Hierarchies | `callHierarchy/outgoingCalls` | 50 | 1 | 51 | ✅ Complete |
 | Domain 6: Hierarchies | `prepareTypeHierarchy` | 50 | 1 | 51 | ✅ Complete |
-| Domain 6: Hierarchies | `typeHierarchy/supertypes` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 6: Hierarchies | `typeHierarchy/supertypes` | 50 | 0 | 50 | ✅ Complete |
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 23 | 0 | 23 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 23 | 0 | 23 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/foldingRange` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
@@ -1446,27 +1446,56 @@
 - `test_prepare_type_hierarchy_type_alias_with_complex_signature`
 - `test_prepare_type_hierarchy_utf16_multibyte_character_offset`
 
-#### `typeHierarchy/supertypes` (21 e2e tests)
+#### `typeHierarchy/supertypes` (50 e2e tests)
 - `test_l2_type_hierarchy_supertypes_and_subtypes`
+- `test_type_hierarchy_supertypes_associated_type_in_impl`
+- `test_type_hierarchy_supertypes_consecutive_requests_different_structs`
+- `test_type_hierarchy_supertypes_cross_file_impl`
+- `test_type_hierarchy_supertypes_cross_file_trait_definition`
 - `test_type_hierarchy_supertypes_deduplication_across_blocks`
 - `test_type_hierarchy_supertypes_dispatcher_echoes_numeric_id`
 - `test_type_hierarchy_supertypes_dispatcher_echoes_string_id`
+- `test_type_hierarchy_supertypes_empty_impl_block`
 - `test_type_hierarchy_supertypes_empty_name_returns_empty`
+- `test_type_hierarchy_supertypes_empty_params_returns_empty`
 - `test_type_hierarchy_supertypes_enum_implementation`
 - `test_type_hierarchy_supertypes_fallback_path_when_file_read_fails`
+- `test_type_hierarchy_supertypes_generic_const_param_impl`
 - `test_type_hierarchy_supertypes_generic_struct_implementation`
 - `test_type_hierarchy_supertypes_generic_trait_implementation`
+- `test_type_hierarchy_supertypes_impl_with_comments_in_header`
+- `test_type_hierarchy_supertypes_inherent_impl_block_ignored`
 - `test_type_hierarchy_supertypes_inherent_impl_filtered`
+- `test_type_hierarchy_supertypes_item_without_name_returns_empty`
+- `test_type_hierarchy_supertypes_macro_generated_impl_flag`
+- `test_type_hierarchy_supertypes_missing_item_param_returns_empty`
 - `test_type_hierarchy_supertypes_missing_workspace_returns_empty`
 - `test_type_hierarchy_supertypes_multiline_impl_header`
+- `test_type_hierarchy_supertypes_multiple_impls_different_traits_ordered`
 - `test_type_hierarchy_supertypes_multiple_traits_implementation`
+- `test_type_hierarchy_supertypes_multiple_workspaces_first_workspace_used`
+- `test_type_hierarchy_supertypes_nested_type_parameters`
+- `test_type_hierarchy_supertypes_null_item_returns_empty`
+- `test_type_hierarchy_supertypes_qualified_struct_in_impl`
 - `test_type_hierarchy_supertypes_qualified_trait_path`
+- `test_type_hierarchy_supertypes_reference_based_enum_supertypes`
 - `test_type_hierarchy_supertypes_reference_based_impl_resolution`
+- `test_type_hierarchy_supertypes_reference_without_matching_impl_line_ignored`
+- `test_type_hierarchy_supertypes_roundtrip_response_structure`
+- `test_type_hierarchy_supertypes_self_as_trait_not_matched`
 - `test_type_hierarchy_supertypes_single_trait_implementation`
+- `test_type_hierarchy_supertypes_struct_name_with_generics_in_item`
 - `test_type_hierarchy_supertypes_successive_isolated_requests`
+- `test_type_hierarchy_supertypes_supertypes_item_shape_exact_fields`
+- `test_type_hierarchy_supertypes_three_traits_on_same_struct`
+- `test_type_hierarchy_supertypes_trait_name_with_generics_in_result`
+- `test_type_hierarchy_supertypes_trait_with_lifetime_bounds`
+- `test_type_hierarchy_supertypes_tuple_struct_impl`
+- `test_type_hierarchy_supertypes_unit_struct_impl`
 - `test_type_hierarchy_supertypes_unknown_type_returns_empty`
 - `test_type_hierarchy_supertypes_unregistered_trait_returns_fallback_range`
 - `test_type_hierarchy_supertypes_where_clause_syntax`
+- `test_type_hierarchy_supertypes_whitespace_around_names_in_impl`
 - `test_type_hierarchy_supertypes_zero_supertypes_returns_empty`
 
 #### `typeHierarchy/subtypes` (23 e2e tests)
@@ -2473,4 +2502,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2272 total, 48 rows >= 20, 39 rows >= 50 of 53
+coverage: e2e 2301 total, 48 rows >= 20, 40 rows >= 50 of 53
