@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1953
+- **Total E2E Tests**: 1998
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1871
+- **Classified E2E Tests**: 1916
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 45 / 53
-- **Rows >= 50 E2E**: 30 / 53
+- **Rows >= 20 E2E**: 46 / 53
+- **Rows >= 50 E2E**: 31 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -30,7 +30,7 @@
 | Domain 4: Actions & Refactoring | `codeAction/resolve` | 50 | 14 | 64 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/completion` | 50 | 25 | 75 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `completionItem/resolve` | 50 | 9 | 59 | ✅ Complete |
-| Domain 5: Intelligence & Completion | `textDocument/hover` | 5 | 16 | 21 | 🔴 In Progress (5/50) |
+| Domain 5: Intelligence & Completion | `textDocument/hover` | 50 | 16 | 66 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 1 | 3 | 4 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 1 | 9 | 10 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
@@ -976,7 +976,52 @@
 - `test_completion_resolve_unicode_label_preserved`
 - `test_completion_resolve_whitespace_only_label_preserved`
 
-#### `textDocument/hover` (5 e2e tests)
+#### `textDocument/hover` (50 e2e tests)
+- `test_hover_async_fn_shows_fn_name`
+- `test_hover_at_end_of_identifier`
+- `test_hover_at_start_of_identifier`
+- `test_hover_between_tokens_returns_null`
+- `test_hover_cancelled_request_returns_cancelled_error`
+- `test_hover_character_zero_before_ident_returns_null`
+- `test_hover_closed_document_cleared_from_overlay`
+- `test_hover_codeblock_fencing_present`
+- `test_hover_comment_line_returns_null`
+- `test_hover_const_definition_shows_const`
+- `test_hover_const_with_explicit_type`
+- `test_hover_dirty_overlay_updates_definition_hover`
+- `test_hover_empty_document_returns_null`
+- `test_hover_empty_result_is_json_null`
+- `test_hover_enum_definition_shows_enum_name`
+- `test_hover_enum_with_tuple_variants`
+- `test_hover_file_scheme_uri_normalized`
+- `test_hover_fn_definition_shows_signature`
+- `test_hover_fn_parameter_shows_parameter_signature`
+- `test_hover_generic_fn_shows_fn_name`
+- `test_hover_impl_method_shows_fn_name`
+- `test_hover_invalid_character_negative_rejected_error`
+- `test_hover_invalid_line_negative_rejected_error`
+- `test_hover_markdown_kind_is_explicit`
+- `test_hover_missing_params_rejected_error`
+- `test_hover_missing_position_rejected_error`
+- `test_hover_missing_text_document_rejected_error`
+- `test_hover_module_definition_shows_mod`
+- `test_hover_multiple_sequential_hover_requests_stable`
+- `test_hover_nested_module_item`
+- `test_hover_nonexistent_file_returns_null`
+- `test_hover_out_of_bounds_character_returns_null`
+- `test_hover_out_of_bounds_line_returns_null`
+- `test_hover_pub_crate_fn_shows_fn_name`
+- `test_hover_static_definition_shows_static`
+- `test_hover_static_raw_definition`
+- `test_hover_struct_definition_shows_struct_name`
+- `test_hover_struct_with_generics`
+- `test_hover_tab_indented_fn_hovered`
+- `test_hover_trait_definition_shows_trait_name`
+- `test_hover_type_alias_shows_type_definition`
+- `test_hover_union_definition_shows_union`
+- `test_hover_unsafe_fn_shows_fn_name`
+- `test_hover_utf16_surrogate_column_offset`
+- `test_hover_whitespace_character_returns_null`
 - `test_l2_hover_inside_cfg_test_method`
 - `test_l2_hover_inside_cfg_test_struct`
 - `test_l2_hover_on_assoc_type_extract`
@@ -2154,4 +2199,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1953 total, 45 rows >= 20, 30 rows >= 50 of 53
+coverage: e2e 1998 total, 46 rows >= 20, 31 rows >= 50 of 53
