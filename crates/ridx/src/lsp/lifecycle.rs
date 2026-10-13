@@ -225,6 +225,7 @@ impl LifecycleManager {
         }
         self.state = ServerState::ShutDown;
         self.flycheck.shutdown();
+        super::hierarchy::clear_impl_table_cache();
         Ok(Value::Null)
     }
 

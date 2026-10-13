@@ -10,6 +10,8 @@
 
 //! LSP type hierarchy navigation handlers.
 
+use super::def_cache::{fallback_json, find_first_target_def, find_first_trait_def};
+use super::impl_table::{get_or_build_impl_table, ImplTable};
 use super::scan::{get_impl_line_from_file, parse_impl_line};
 use crate::lsp::error::LspResult;
 use crate::lsp::params::text_document_opt_position;
@@ -114,6 +116,7 @@ pub(crate) fn parse_fallback_impl_path(path: &str) -> (Option<String>, Option<St
 
 struct ImplCandidateQuery<'a> {
     ws: &'a WorkspaceIndex,
+    table: Option<&'a ImplTable>,
     query_name: &'a str,
     is_supertype: bool,
     seen: &'a mut HashSet<String>,
@@ -126,9 +129,13 @@ fn process_impl_candidate(
     start_line_1based: u32,
     fallback: (Option<String>, Option<String>),
 ) {
-    let (trait_opt, target_opt) = get_impl_line_from_file(Path::new(file_path), start_line_1based)
-        .map(|l| parse_impl_line(&l))
-        .unwrap_or(fallback);
+    let (trait_opt, target_opt) = if let Some(table) = q.table {
+        table.get_or_parse_fallback_line(file_path, start_line_1based, fallback)
+    } else {
+        get_impl_line_from_file(Path::new(file_path), start_line_1based)
+            .map(|l| parse_impl_line(&l))
+            .unwrap_or(fallback)
+    };
 
     let (Some(trait_name), Some(target_name)) = (trait_opt, target_opt) else {
         return;
@@ -136,70 +143,43 @@ fn process_impl_candidate(
 
     let trait_base = trait_name.split('<').next().unwrap_or(&trait_name).trim();
     let target_base = target_name.split('<').next().unwrap_or(&target_name).trim();
-    let name_base = q.query_name.split('<').next().unwrap_or(q.query_name).trim();
+    let name_base = q
+        .query_name
+        .split('<')
+        .next()
+        .unwrap_or(q.query_name)
+        .trim();
 
     if q.is_supertype {
         if target_base == name_base || target_base.ends_with(&format!("::{name_base}")) {
             if !q.seen.insert(trait_base.to_string()) {
                 return;
             }
-            let (item_uri, item_range) = if let Some(t_def) = q
-                .ws
-                .find_first_symbol(trait_base, |d| d.name == trait_base && d.kind == DefKind::Trait)
-            {
-                let p = t_def.resolved_path();
-                let s = p.to_str().unwrap_or(t_def.file);
-                let r = json!({
-                    "start": { "line": t_def.span.start_line().saturating_sub(1), "character": t_def.span.start_col().saturating_sub(1) },
-                    "end": { "line": t_def.span.end_line().saturating_sub(1), "character": t_def.span.end_col().saturating_sub(1) }
-                });
-                (path_to_uri(s), r)
+            let def_val = if let Some(table) = q.table {
+                table.resolve_trait_def(q.ws, trait_base, Path::new(file_path), start_line_1based)
             } else {
-                let uri = path_to_uri(file_path);
-                let r = json!({
-                    "start": { "line": start_line_1based.saturating_sub(1), "character": 0 },
-                    "end": { "line": start_line_1based.saturating_sub(1), "character": 0 }
-                });
-                (uri, r)
+                find_first_trait_def(q.ws, trait_base)
+                    .map(|cd| cd.to_json(trait_base))
+                    .unwrap_or_else(|| {
+                        fallback_json(trait_base, 11, Path::new(file_path), start_line_1based)
+                    })
             };
-            q.results.push(json!({
-                "name": trait_base,
-                "kind": 11,
-                "uri": item_uri,
-                "range": item_range,
-                "selectionRange": item_range
-            }));
+            q.results.push(def_val);
         }
     } else if trait_base == name_base || trait_base.ends_with(&format!("::{name_base}")) {
         if !q.seen.insert(target_base.to_string()) {
             return;
         }
-        let (item_uri, item_range, kind) = if let Some(t_def) = q
-            .ws
-            .find_first_symbol(target_base, |d| d.name == target_base && matches!(d.kind, DefKind::Struct | DefKind::Enum))
-        {
-            let p = t_def.resolved_path();
-            let s = p.to_str().unwrap_or(t_def.file);
-            let r = json!({
-                "start": { "line": t_def.span.start_line().saturating_sub(1), "character": t_def.span.start_col().saturating_sub(1) },
-                "end": { "line": t_def.span.end_line().saturating_sub(1), "character": t_def.span.end_col().saturating_sub(1) }
-            });
-            (path_to_uri(s), r, lsp_symbol_kind(t_def.kind))
+        let def_val = if let Some(table) = q.table {
+            table.resolve_target_def(q.ws, target_base, Path::new(file_path), start_line_1based)
         } else {
-            let uri = path_to_uri(file_path);
-            let r = json!({
-                "start": { "line": start_line_1based.saturating_sub(1), "character": 0 },
-                "end": { "line": start_line_1based.saturating_sub(1), "character": 0 }
-            });
-            (uri, r, 23)
+            find_first_target_def(q.ws, target_base)
+                .map(|cd| cd.to_json(target_base))
+                .unwrap_or_else(|| {
+                    fallback_json(target_base, 23, Path::new(file_path), start_line_1based)
+                })
         };
-        q.results.push(json!({
-            "name": target_base,
-            "kind": kind,
-            "uri": item_uri,
-            "range": item_range,
-            "selectionRange": item_range
-        }));
+        q.results.push(def_val);
     }
 }
 
@@ -207,6 +187,21 @@ fn run_impl_reference_fallback(
     query: &mut ImplCandidateQuery<'_>,
     match_kind: fn(DefKind) -> bool,
 ) {
+    if let Some(table) = query.table {
+        if let Some(cached_results) =
+            table.get_fallback_results(query.query_name, query.is_supertype)
+        {
+            for val in cached_results {
+                let name = val["name"].as_str().unwrap_or("");
+                if query.seen.insert(name.to_string()) {
+                    query.results.push(val);
+                }
+            }
+            return;
+        }
+    }
+
+    let start_idx = query.results.len();
     if let Some(sym) = query.ws.find_first_symbol(query.query_name, |s| {
         s.name == query.query_name && match_kind(s.kind)
     }) {
@@ -215,6 +210,10 @@ fn run_impl_reference_fallback(
             let r_file = r_path.to_str().unwrap_or(r.file);
             process_impl_candidate(query, r_file, r.span.start_line(), (None, None));
         }
+    }
+    if let Some(table) = query.table {
+        let added = query.results[start_idx..].to_vec();
+        table.insert_fallback_results(query.query_name, query.is_supertype, added);
     }
 }
 
@@ -229,12 +228,13 @@ pub fn handle_type_hierarchy_supertypes(msg: &Value, workspace: Option<&Workspac
     let mut seen = HashSet::new();
 
     // 1. Fast indexed lookup from ImplTable
-    let table = super::impl_table::get_or_build_impl_table(ws);
+    let table = get_or_build_impl_table(ws);
     table.find_supertypes(ws, name, &mut seen, &mut supertypes);
 
     // 2. References to matching struct/enum (for macro expansions and mock indices)
     let mut query = ImplCandidateQuery {
         ws,
+        table: Some(&table),
         query_name: name,
         is_supertype: true,
         seen: &mut seen,
@@ -256,12 +256,13 @@ pub fn handle_type_hierarchy_subtypes(msg: &Value, workspace: Option<&WorkspaceI
     let mut seen = HashSet::new();
 
     // 1. Fast indexed lookup from ImplTable
-    let table = super::impl_table::get_or_build_impl_table(ws);
+    let table = get_or_build_impl_table(ws);
     table.find_subtypes(ws, name, &mut seen, &mut subtypes);
 
     // 2. References to matching trait (for macro expansions and mock indices)
     let mut query = ImplCandidateQuery {
         ws,
+        table: Some(&table),
         query_name: name,
         is_supertype: false,
         seen: &mut seen,
@@ -287,22 +288,22 @@ pub fn baseline_handle_type_hierarchy_supertypes(
     let mut seen = HashSet::new();
     let mut query = ImplCandidateQuery {
         ws,
+        table: None,
         query_name: name,
         is_supertype: true,
         seen: &mut seen,
         results: &mut supertypes,
     };
 
-    for sym in ws.search_symbols("").into_iter().filter(|s| s.kind == DefKind::Impl) {
+    for sym in ws
+        .search_symbols("")
+        .into_iter()
+        .filter(|s| s.kind == DefKind::Impl)
+    {
         let sym_path = sym.resolved_path();
         let sym_file = sym_path.to_str().unwrap_or(sym.file);
         let fallback = parse_fallback_impl_path(sym.path);
-        process_impl_candidate(
-            &mut query,
-            sym_file,
-            sym.span.start_line(),
-            fallback,
-        );
+        process_impl_candidate(&mut query, sym_file, sym.span.start_line(), fallback);
     }
 
     run_impl_reference_fallback(&mut query, |k| matches!(k, DefKind::Struct | DefKind::Enum));
@@ -324,22 +325,22 @@ pub fn baseline_handle_type_hierarchy_subtypes(
     let mut seen = HashSet::new();
     let mut query = ImplCandidateQuery {
         ws,
+        table: None,
         query_name: name,
         is_supertype: false,
         seen: &mut seen,
         results: &mut subtypes,
     };
 
-    for sym in ws.search_symbols("").into_iter().filter(|s| s.kind == DefKind::Impl) {
+    for sym in ws
+        .search_symbols("")
+        .into_iter()
+        .filter(|s| s.kind == DefKind::Impl)
+    {
         let sym_path = sym.resolved_path();
         let sym_file = sym_path.to_str().unwrap_or(sym.file);
         let fallback = parse_fallback_impl_path(sym.path);
-        process_impl_candidate(
-            &mut query,
-            sym_file,
-            sym.span.start_line(),
-            fallback,
-        );
+        process_impl_candidate(&mut query, sym_file, sym.span.start_line(), fallback);
     }
 
     run_impl_reference_fallback(&mut query, |k| k == DefKind::Trait);

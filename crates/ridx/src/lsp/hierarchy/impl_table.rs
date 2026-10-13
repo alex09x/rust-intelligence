@@ -10,11 +10,12 @@
 
 //! In-memory compact impl index and definition cache for ultra-fast type hierarchy.
 
+use super::def_cache::{find_first_target_def, find_first_trait_def, resolve_def, CachedDef};
+use super::fallback_cache::FallbackCache;
 use super::scan::{get_impl_line, parse_impl_line};
 use super::types::parse_fallback_impl_path;
-use crate::lsp::protocol::{lsp_symbol_kind, path_to_uri};
 use ridx_format::{DefKind, WorkspaceIndex};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock, RwLock};
@@ -27,33 +28,17 @@ pub struct CompactImpl {
     pub line: u32,
 }
 
-#[derive(Clone, Debug)]
-pub struct CachedDef {
-    pub uri: String,
-    pub range: Value,
-    pub kind: u32,
-}
-
-impl CachedDef {
-    fn to_json(&self, name: &str) -> Value {
-        json!({
-            "name": name,
-            "kind": self.kind,
-            "uri": self.uri,
-            "range": self.range,
-            "selectionRange": self.range,
-        })
-    }
-}
-
 pub struct ImplTable {
     pub(crate) impls: Vec<CompactImpl>,
     pub(crate) names: Vec<Box<str>>,
     pub(crate) files: Vec<PathBuf>,
+    pub(crate) file_ids: HashMap<Box<str>, u32>,
+    pub(crate) by_file_line: Vec<(u64, u32, u32)>,
     pub(crate) by_target_short: HashMap<Box<str>, Vec<u32>>,
     pub(crate) by_trait_short: HashMap<Box<str>, Vec<u32>>,
     pub(crate) trait_defs: RwLock<HashMap<Box<str>, Option<CachedDef>>>,
     pub(crate) target_defs: RwLock<HashMap<Box<str>, Option<CachedDef>>>,
+    pub(crate) fallback_cache: FallbackCache,
 }
 
 fn intern_str(names: &mut Vec<Box<str>>, map: &mut HashMap<Box<str>, u32>, s: &str) -> u32 {
@@ -198,7 +183,26 @@ impl ImplTable {
                 .push(impl_idx);
         }
 
-        #[cfg(target_os = "linux")]
+        let mut by_file_line: Vec<(u64, u32, u32)> = Vec::with_capacity(impls.len());
+        for imp in &impls {
+            let key = ((imp.file_id as u64) << 32) | (imp.line as u64);
+            by_file_line.push((key, imp.trait_id, imp.target_id));
+        }
+        by_file_line.sort_unstable_by_key(|e| e.0);
+        by_file_line.dedup_by_key(|e| e.0);
+
+        let mut file_ids = HashMap::with_capacity(files.len());
+        for (idx, f) in files.iter().enumerate() {
+            if let Some(s) = f.to_str() {
+                file_ids.insert(s.into(), idx as u32);
+            }
+        }
+        let fallback_cache = FallbackCache::new();
+
+        #[cfg(all(target_os = "linux", target_env = "gnu"))]
+        // SAFETY: malloc_trim is an extern C function provided by glibc's allocator.
+        // Calling it with pad = 0 instructs glibc to release free top-of-heap memory
+        // to the OS. It has no undefined behavior or side effects on live Rust allocations.
         unsafe {
             extern "C" {
                 fn malloc_trim(pad: usize) -> i32;
@@ -210,10 +214,13 @@ impl ImplTable {
             impls,
             names,
             files,
+            file_ids,
+            by_file_line,
             by_target_short,
             by_trait_short,
             trait_defs: RwLock::new(HashMap::new()),
             target_defs: RwLock::new(HashMap::new()),
+            fallback_cache,
         }
     }
 
@@ -264,8 +271,7 @@ impl ImplTable {
             for &idx in candidate_indices {
                 let imp = &self.impls[idx as usize];
                 let trait_str = &self.names[imp.trait_id as usize];
-                if trait_str.as_ref() == name_base
-                    || trait_str.ends_with(&format!("::{name_base}"))
+                if trait_str.as_ref() == name_base || trait_str.ends_with(&format!("::{name_base}"))
                 {
                     let target_str = &self.names[imp.target_id as usize];
                     if !seen.insert(target_str.to_string()) {
@@ -283,74 +289,72 @@ impl ImplTable {
         }
     }
 
-    fn resolve_def<F>(
-        cache: &RwLock<HashMap<Box<str>, Option<CachedDef>>>,
-        name: &str,
-        kind: u32,
+    pub(crate) fn resolve_trait_def(
+        &self,
+        ws: &WorkspaceIndex,
+        tr: &str,
         file: &Path,
         line: u32,
-        find_fn: F,
-    ) -> Value
-    where
-        F: FnOnce() -> Option<CachedDef>,
-    {
-        if let Ok(guard) = cache.read() {
-            if let Some(cached) = guard.get(name) {
-                return match cached {
-                    Some(cd) => cd.to_json(name),
-                    None => fallback_json(name, kind, file, line),
-                };
+    ) -> Value {
+        resolve_def(&self.trait_defs, tr, 11, file, line, || {
+            find_first_trait_def(ws, tr)
+        })
+    }
+
+    pub(crate) fn resolve_target_def(
+        &self,
+        ws: &WorkspaceIndex,
+        tgt: &str,
+        file: &Path,
+        line: u32,
+    ) -> Value {
+        resolve_def(&self.target_defs, tgt, 23, file, line, || {
+            find_first_target_def(ws, tgt)
+        })
+    }
+
+    pub fn find_impl_by_file_line(&self, file_path: &str, line: u32) -> Option<(&str, &str)> {
+        let fid = self.file_ids.get(file_path)?;
+        for offset in 0..=4 {
+            if let Some(target_line) = line.checked_sub(offset) {
+                let key = ((*fid as u64) << 32) | (target_line as u64);
+                if let Ok(idx) = self.by_file_line.binary_search_by_key(&key, |e| e.0) {
+                    let entry = self.by_file_line[idx];
+                    let tr = &self.names[entry.1 as usize];
+                    let tgt = &self.names[entry.2 as usize];
+                    return Some((tr, tgt));
+                }
             }
         }
-        let opt_def = find_fn();
-        let result = match &opt_def {
-            Some(cd) => cd.to_json(name),
-            None => fallback_json(name, kind, file, line),
-        };
-        if let Ok(mut guard) = cache.write() {
-            guard.insert(name.into(), opt_def);
+        None
+    }
+
+    pub fn get_or_parse_fallback_line(
+        &self,
+        file_path: &str,
+        line_1based: u32,
+        fallback: (Option<String>, Option<String>),
+    ) -> (Option<String>, Option<String>) {
+        if let Some((tr, tgt)) = self.find_impl_by_file_line(file_path, line_1based) {
+            self.fallback_cache.record_hit();
+            return (Some(tr.to_string()), Some(tgt.to_string()));
         }
-        result
+        self.fallback_cache
+            .get_or_parse(file_path, line_1based, fallback)
     }
 
-    fn resolve_trait_def(&self, ws: &WorkspaceIndex, tr: &str, file: &Path, line: u32) -> Value {
-        Self::resolve_def(&self.trait_defs, tr, 11, file, line, || find_first_trait_def(ws, tr))
+    pub fn get_fallback_results(&self, name: &str, is_supertype: bool) -> Option<Vec<Value>> {
+        self.fallback_cache.get_fallback_results(name, is_supertype)
     }
 
-    fn resolve_target_def(&self, ws: &WorkspaceIndex, tgt: &str, file: &Path, line: u32) -> Value {
-        Self::resolve_def(&self.target_defs, tgt, 23, file, line, || find_first_target_def(ws, tgt))
+    pub fn insert_fallback_results(&self, name: &str, is_supertype: bool, results: Vec<Value>) {
+        self.fallback_cache
+            .insert_fallback_results(name, is_supertype, results);
     }
-}
 
-fn fallback_json(name: &str, kind: u32, file_path: &Path, impl_line: u32) -> Value {
-    let uri = path_to_uri(file_path.to_str().unwrap_or(""));
-    let r = json!({
-        "start": { "line": impl_line.saturating_sub(1), "character": 0 },
-        "end": { "line": impl_line.saturating_sub(1), "character": 0 }
-    });
-    json!({ "name": name, "kind": kind, "uri": uri, "range": r, "selectionRange": r })
-}
-
-fn make_cached_def(sym: &ridx_format::WorkspaceSymbol, kind: u32) -> CachedDef {
-    let p = sym.resolved_path();
-    let s = p.to_str().unwrap_or(sym.file);
-    let range = json!({
-        "start": { "line": sym.span.start_line().saturating_sub(1), "character": sym.span.start_col().saturating_sub(1) },
-        "end": { "line": sym.span.end_line().saturating_sub(1), "character": sym.span.end_col().saturating_sub(1) }
-    });
-    CachedDef { uri: path_to_uri(s), range, kind }
-}
-
-fn find_first_trait_def(ws: &WorkspaceIndex, trait_base: &str) -> Option<CachedDef> {
-    ws.find_first_symbol(trait_base, |d| d.name == trait_base && d.kind == DefKind::Trait)
-        .map(|t| make_cached_def(&t, 11))
-}
-
-fn find_first_target_def(ws: &WorkspaceIndex, target_base: &str) -> Option<CachedDef> {
-    ws.find_first_symbol(target_base, |d| {
-        d.name == target_base && matches!(d.kind, DefKind::Struct | DefKind::Enum)
-    })
-    .map(|t| make_cached_def(&t, lsp_symbol_kind(t.kind)))
+    pub fn fallback_hit_stats(&self) -> (usize, usize) {
+        self.fallback_cache.hit_stats()
+    }
 }
 
 type CacheMap = HashMap<u64, (u64, Arc<ImplTable>)>;

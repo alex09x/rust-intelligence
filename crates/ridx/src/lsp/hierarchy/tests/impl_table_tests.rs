@@ -9,6 +9,7 @@
  */
 
 use super::setup_test_hierarchy;
+use crate::lsp::hierarchy::fallback_cache::FallbackCache;
 use crate::lsp::hierarchy::impl_table::*;
 use crate::lsp::hierarchy::types::*;
 use ridx_format::{DefKind, IndexWriter, RawDefinition, WorkspaceIndex};
@@ -191,7 +192,13 @@ fn test_same_named_types_reader_order_and_baseline_equivalence() {
             signature: None,
         },
     ];
-    make_reader_file(&temp_dir, "bevy_render", "crate1/src/lib.rs", code_1, defs_1);
+    make_reader_file(
+        &temp_dir,
+        "bevy_render",
+        "crate1/src/lib.rs",
+        code_1,
+        defs_1,
+    );
 
     // Crate 2: bevy_ui
     let code_2 = "pub trait Render { fn draw_ui(&self); }\npub struct Mesh;\nimpl Render for Mesh { fn draw_ui(&self) {} }\n";
@@ -246,27 +253,61 @@ fn test_same_named_types_reader_order_and_baseline_equivalence() {
     let ws = WorkspaceIndex::open(&temp_dir).unwrap();
     assert_eq!(ws.readers().len(), 2);
 
-    // 1. Check subtypes request
     let sub_req = json!({
         "params": { "item": { "name": "Render" } }
     });
-    let actual_sub = handle_type_hierarchy_subtypes(&sub_req, Some(&ws));
-    let expected_sub = baseline_handle_type_hierarchy_subtypes(&sub_req, Some(&ws));
-    assert_eq!(
-        actual_sub, expected_sub,
-        "Subtypes output must be byte-for-byte identical to baseline oracle"
-    );
-
-    // 2. Check supertypes request
     let super_req = json!({
         "params": { "item": { "name": "Mesh" } }
     });
-    let actual_super = handle_type_hierarchy_supertypes(&super_req, Some(&ws));
-    let expected_super = baseline_handle_type_hierarchy_supertypes(&super_req, Some(&ws));
+
+    // Case 1: Oracle is called before handler
+    let expected_sub_1 = baseline_handle_type_hierarchy_subtypes(&sub_req, Some(&ws));
+    let actual_sub_1 = handle_type_hierarchy_subtypes(&sub_req, Some(&ws));
     assert_eq!(
-        actual_super, expected_super,
-        "Supertypes output must be byte-for-byte identical to baseline oracle"
+        actual_sub_1, expected_sub_1,
+        "Subtypes output must match baseline oracle when oracle runs first"
     );
+
+    let expected_super_1 = baseline_handle_type_hierarchy_supertypes(&super_req, Some(&ws));
+    let actual_super_1 = handle_type_hierarchy_supertypes(&super_req, Some(&ws));
+    assert_eq!(
+        actual_super_1, expected_super_1,
+        "Supertypes output must match baseline oracle when oracle runs first"
+    );
+
+    // Case 2: On fresh workspace, handler is called before oracle
+    let ws2 = WorkspaceIndex::open(&temp_dir).unwrap();
+    let actual_sub_2 = handle_type_hierarchy_subtypes(&sub_req, Some(&ws2));
+    let expected_sub_2 = baseline_handle_type_hierarchy_subtypes(&sub_req, Some(&ws2));
+    assert_eq!(
+        actual_sub_2, expected_sub_2,
+        "Subtypes output must match baseline oracle when handler runs first"
+    );
+
+    let actual_super_2 = handle_type_hierarchy_supertypes(&super_req, Some(&ws2));
+    let expected_super_2 = baseline_handle_type_hierarchy_supertypes(&super_req, Some(&ws2));
+    assert_eq!(
+        actual_super_2, expected_super_2,
+        "Supertypes output must match baseline oracle when handler runs first"
+    );
+}
+
+#[test]
+fn test_oracle_does_not_populate_cache() {
+    let (_temp_dir, ws, _, _) = setup_test_hierarchy();
+    let sub_req = json!({
+        "params": { "item": { "name": "Render" } }
+    });
+    let super_req = json!({
+        "params": { "item": { "name": "Mesh" } }
+    });
+
+    let _ = baseline_handle_type_hierarchy_subtypes(&sub_req, Some(&ws));
+    let _ = baseline_handle_type_hierarchy_supertypes(&super_req, Some(&ws));
+
+    let table = get_or_build_impl_table(&ws);
+    assert_eq!(table.get_fallback_results("Render", false), None);
+    assert_eq!(table.get_fallback_results("Mesh", true), None);
 }
 
 #[test]
@@ -297,4 +338,30 @@ fn test_cache_invalidation_on_generation_bump() {
         !Arc::ptr_eq(&table3, &table4),
         "Cleared cache must re-build and return new Arc"
     );
+}
+
+#[test]
+fn test_fallback_cache_memoization() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let file = temp_dir.path().join("test.rs");
+    fs::write(&file, "line 1\nimpl Foo for Bar {}\nline 3\n").unwrap();
+    let file_str = file.to_str().unwrap();
+
+    let cache = FallbackCache::new();
+
+    // First query for line 2 (impl line) -> miss, parses file
+    let res1 = cache.get_or_parse(file_str, 2, (None, None));
+    assert_eq!(res1, (Some("Foo".to_string()), Some("Bar".to_string())));
+
+    // Second query for line 2 -> hit from cache
+    let res2 = cache.get_or_parse(file_str, 2, (None, None));
+    assert_eq!(res2, res1);
+
+    // Query for line 1 (not an impl) -> negative cache hit
+    let res_neg1 = cache.get_or_parse(file_str, 1, (None, None));
+    assert_eq!(res_neg1, (None, None));
+
+    // Second query for line 1 -> negative cache hit without re-parsing
+    let res_neg2 = cache.get_or_parse(file_str, 1, (None, None));
+    assert_eq!(res_neg2, (None, None));
 }
