@@ -10,19 +10,13 @@
 
 //! LSP server lifecycle state machine, capability advertisement, and shutdown handling.
 
+pub use crate::lsp::editing::apply_registry::PendingApplyState;
+use crate::lsp::editing::apply_registry::ApplyEditRegistry;
 use crate::lsp::presentation::flycheck::FlycheckState;
 use serde_json::{json, Value};
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
-
-#[derive(Debug, Clone)]
-pub struct PendingApplyState {
-    pub command_req_id: Option<Value>,
-    pub total_count: usize,
-    pub combined_edit: Value,
-}
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServerState {
@@ -38,8 +32,7 @@ pub struct LifecycleManager {
     client_pull_diagnostics: bool,
     client_refresh_diagnostics: bool,
     refresh_counter: AtomicU64,
-    next_apply_id: AtomicU64,
-    pending_applies: Mutex<HashMap<Value, PendingApplyState>>,
+    pub apply_registry: ApplyEditRegistry,
 }
 
 impl Default for LifecycleManager {
@@ -57,8 +50,7 @@ impl LifecycleManager {
             client_pull_diagnostics: false,
             client_refresh_diagnostics: false,
             refresh_counter: AtomicU64::new(0),
-            next_apply_id: AtomicU64::new(10000),
-            pending_applies: Mutex::new(HashMap::new()),
+            apply_registry: ApplyEditRegistry::new(),
         }
     }
 
@@ -76,7 +68,7 @@ impl LifecycleManager {
     }
 
     pub fn get_next_apply_id(&self) -> Value {
-        json!(self.next_apply_id.fetch_add(1, Ordering::Relaxed))
+        self.apply_registry.get_next_id()
     }
 
     pub fn register_pending_apply(
@@ -86,43 +78,16 @@ impl LifecycleManager {
         total_count: usize,
         combined_edit: Value,
     ) {
-        let mut lock = self.pending_applies.lock().unwrap();
-        lock.insert(
+        self.apply_registry.register_pending(
             apply_req_id,
-            PendingApplyState {
-                command_req_id,
-                total_count,
-                combined_edit,
-            },
+            command_req_id,
+            total_count,
+            combined_edit,
         );
     }
 
     pub fn handle_apply_edit_response(&self, msg: &Value) -> Option<(Option<Value>, Value)> {
-        let resp_id = msg.get("id")?;
-        let mut lock = self.pending_applies.lock().unwrap();
-        let state = lock.remove(resp_id)?;
-
-        let client_applied = msg
-            .get("result")
-            .and_then(|r| r.get("applied"))
-            .and_then(|a| a.as_bool())
-            .unwrap_or(false);
-
-        if client_applied {
-            Some((
-                state.command_req_id,
-                json!({
-                    "applied": true,
-                    "count": state.total_count,
-                    "edit": state.combined_edit,
-                }),
-            ))
-        } else {
-            Some((
-                state.command_req_id,
-                json!({ "applied": false, "count": 0, "failure": "client_rejected" }),
-            ))
-        }
+        self.apply_registry.handle_response(msg)
     }
 
     #[allow(dead_code)]
@@ -177,13 +142,22 @@ impl LifecycleManager {
 
         let rs_filter = json!([{ "pattern": { "glob": "**/*.rs" } }]);
         let file_operations = json!({
-            "didCreate": { "filters": rs_filter }, "willCreate": { "filters": rs_filter },
-            "didRename": { "filters": rs_filter }, "willRename": { "filters": rs_filter },
-            "didDelete": { "filters": rs_filter }, "willDelete": { "filters": rs_filter }
+            "didCreate": { "filters": rs_filter },
+            "willCreate": { "filters": rs_filter },
+            "didRename": { "filters": rs_filter },
+            "willRename": { "filters": rs_filter },
+            "didDelete": { "filters": rs_filter },
+            "willDelete": { "filters": rs_filter }
         });
 
         let mut caps = json!({
-            "textDocumentSync": { "openClose": true, "change": 2, "willSave": true, "willSaveWaitUntil": true, "save": { "includeText": false } },
+            "textDocumentSync": {
+                "openClose": true,
+                "change": 2, // Incremental
+                "willSave": true,
+                "willSaveWaitUntil": true,
+                "save": { "includeText": false }
+            },
             "definitionProvider": true,
             "declarationProvider": true,
             "typeDefinitionProvider": true,
@@ -193,11 +167,19 @@ impl LifecycleManager {
             "documentSymbolProvider": true,
             "workspaceSymbolProvider": { "resolveProvider": true },
             "hoverProvider": true,
-            "completionProvider": { "triggerCharacters": [".", ":"], "resolveProvider": true },
-            "signatureHelpProvider": { "triggerCharacters": ["(", ","] },
+            "completionProvider": {
+                "triggerCharacters": [".", ":"],
+                "resolveProvider": true
+            },
+            "signatureHelpProvider": {
+                "triggerCharacters": ["(", ","]
+            },
             "documentFormattingProvider": true,
             "documentRangeFormattingProvider": true,
-            "documentOnTypeFormattingProvider": { "firstTriggerCharacter": ";", "moreTriggerCharacter": ["}"] },
+            "documentOnTypeFormattingProvider": {
+                "firstTriggerCharacter": ";",
+                "moreTriggerCharacter": ["}"]
+            },
             "renameProvider": { "prepareProvider": true },
             "linkedEditingRangeProvider": true,
             "callHierarchyProvider": true,
@@ -206,16 +188,26 @@ impl LifecycleManager {
             "documentColorProvider": true,
             "selectionRangeProvider": true,
             "foldingRangeProvider": true,
-            "codeActionProvider": { "codeActionKinds": ["quickfix", "refactor", "source.organizeImports"], "resolveProvider": true },
+            "codeActionProvider": {
+                "codeActionKinds": ["quickfix", "refactor", "source.organizeImports"],
+                "resolveProvider": true
+            },
             "codeLensProvider": { "resolveProvider": true },
             "executeCommandProvider": {
-                "commands": ["ridx.showReferences", "ridx.applyEdits", "ridx.resolveWorkspace"]
+                "commands": [
+                    "ridx.showReferences",
+                    "ridx.applyEdits",
+                    "ridx.resolveWorkspace"
+                ]
             },
             "inlayHintProvider": { "resolveProvider": true },
             "inlineValueProvider": true,
             "monikerProvider": true,
             "workspace": {
-                "workspaceFolders": { "supported": true, "changeNotifications": true },
+                "workspaceFolders": {
+                    "supported": true,
+                    "changeNotifications": true
+                },
                 "fileOperations": file_operations
             }
         });
@@ -234,7 +226,10 @@ impl LifecycleManager {
             "full": { "delta": true }
         });
 
-        caps["diagnosticProvider"] = json!({ "interFileDependencies": true, "workspaceDiagnostics": true });
+        caps["diagnosticProvider"] = json!({
+            "interFileDependencies": true,
+            "workspaceDiagnostics": true,
+        });
 
         let capabilities = json!({
             "capabilities": caps,
@@ -255,7 +250,7 @@ impl LifecycleManager {
         }
         self.state = ServerState::ShutDown;
         self.flycheck.shutdown();
-        self.pending_applies.lock().unwrap().clear();
+        self.apply_registry.clear();
         super::hierarchy::clear_impl_table_cache();
         Ok(Value::Null)
     }

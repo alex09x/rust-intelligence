@@ -11,6 +11,7 @@
 //! LSP editing handlers: rename, formatting, code actions, and commands.
 
 pub mod actions;
+pub mod apply_registry;
 pub mod atomic_write;
 pub mod commands;
 pub mod extract;
