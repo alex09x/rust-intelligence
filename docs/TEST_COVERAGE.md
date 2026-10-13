@@ -41,7 +41,7 @@
 | Domain 6: Hierarchies | `prepareTypeHierarchy` | 50 | 1 | 51 | ✅ Complete |
 | Domain 6: Hierarchies | `typeHierarchy/supertypes` | 50 | 0 | 50 | ✅ Complete |
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 23 | 0 | 23 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/foldingRange` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/selectionRange` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
@@ -1552,30 +1552,57 @@
 
 ### Domain 7: Presentation
 
-#### `textDocument/semanticTokens/full / delta / range` (23 e2e tests)
+#### `textDocument/semanticTokens/full / delta / range` (50 e2e tests)
 - `test_l2_semantic_tokens_delta_caching_and_edits`
 - `test_l2_semantic_tokens_full_compiler_grounded`
 - `test_l2_semantic_tokens_range_bounded`
+- `test_semantic_tokens_delta_cache_eviction_over_256`
 - `test_semantic_tokens_delta_echoes_string_id`
+- `test_semantic_tokens_delta_empty_previous_result_id`
 - `test_semantic_tokens_delta_identical_data_returns_empty_edits`
 - `test_semantic_tokens_delta_modified_data_returns_edit`
+- `test_semantic_tokens_delta_multiple_tokens_removed`
+- `test_semantic_tokens_delta_single_token_appended`
+- `test_semantic_tokens_delta_single_token_prepended`
+- `test_semantic_tokens_delta_token_modified_in_middle`
 - `test_semantic_tokens_delta_uncached_id_returns_full_data`
+- `test_semantic_tokens_delta_whitespace_did_change_returns_empty_edits`
+- `test_semantic_tokens_full_constants_and_statics`
 - `test_semantic_tokens_full_dispatcher_echoes_numeric_id`
 - `test_semantic_tokens_full_dispatcher_echoes_string_id`
 - `test_semantic_tokens_full_empty_file_returns_empty_data`
+- `test_semantic_tokens_full_enum_and_variants`
+- `test_semantic_tokens_full_macro_definition`
+- `test_semantic_tokens_full_module_hierarchy`
 - `test_semantic_tokens_full_multiple_functions_relative_delta_encoding`
 - `test_semantic_tokens_full_nonexistent_file_returns_empty_data`
+- `test_semantic_tokens_full_overlapping_tokens_filtered`
 - `test_semantic_tokens_full_overlay_buffer_precedence`
 - `test_semantic_tokens_full_overlay_did_change`
 - `test_semantic_tokens_full_overlay_did_close`
+- `test_semantic_tokens_full_overlay_dirty_deletion_removes_token`
+- `test_semantic_tokens_full_overlay_dirty_line_shift`
+- `test_semantic_tokens_full_overlay_live_symbols_precedence`
+- `test_semantic_tokens_full_references_and_definitions_combined`
 - `test_semantic_tokens_full_result_id_format`
+- `test_semantic_tokens_full_same_line_multiple_tokens`
 - `test_semantic_tokens_full_single_function_disk`
+- `test_semantic_tokens_full_struct_and_fields`
+- `test_semantic_tokens_full_tokens_with_gap_lines`
+- `test_semantic_tokens_full_trait_and_associated_items`
+- `test_semantic_tokens_full_type_alias_and_type_param`
+- `test_semantic_tokens_full_utf16_multibyte_token_coordinates`
 - `test_semantic_tokens_range_beyond_eof`
+- `test_semantic_tokens_range_boundary_end_line_exact`
+- `test_semantic_tokens_range_boundary_start_line_exact`
 - `test_semantic_tokens_range_bounded_first_function`
 - `test_semantic_tokens_range_bounded_second_function`
 - `test_semantic_tokens_range_echoes_numeric_id`
 - `test_semantic_tokens_range_echoes_string_id`
 - `test_semantic_tokens_range_empty_window`
+- `test_semantic_tokens_range_inverted_lines_returns_empty`
+- `test_semantic_tokens_range_single_line_slice`
+- `test_semantic_tokens_range_spanning_subset_of_lines`
 
 #### `textDocument/foldingRange` (21 e2e tests)
 - `test_folding_range_braces_inside_block_comments_ignored`
@@ -2529,4 +2556,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2328 total, 48 rows >= 20, 41 rows >= 50 of 53
+coverage: e2e 2355 total, 48 rows >= 20, 42 rows >= 50 of 53
