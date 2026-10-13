@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1923
+- **Total E2E Tests**: 1953
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1841
+- **Classified E2E Tests**: 1871
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 45 / 53
-- **Rows >= 50 E2E**: 29 / 53
+- **Rows >= 50 E2E**: 30 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -29,7 +29,7 @@
 | Domain 4: Actions & Refactoring | `textDocument/codeAction` | 50 | 12 | 62 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `codeAction/resolve` | 50 | 14 | 64 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/completion` | 50 | 25 | 75 | ✅ Complete |
-| Domain 5: Intelligence & Completion | `completionItem/resolve` | 20 | 9 | 29 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 5: Intelligence & Completion | `completionItem/resolve` | 50 | 9 | 59 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/hover` | 5 | 16 | 21 | 🔴 In Progress (5/50) |
 | Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 1 | 3 | 4 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 1 | 9 | 10 | 🔴 In Progress (1/50) |
@@ -924,27 +924,57 @@
 - `test_out_of_bounds_line_completion_returns_empty`
 - `test_review_v4651_inline_completion_unicode_edit`
 
-#### `completionItem/resolve` (20 e2e tests)
+#### `completionItem/resolve` (50 e2e tests)
 - `test_completion_resolve_additional_text_edits_preserved`
+- `test_completion_resolve_array_params_rejected_error`
+- `test_completion_resolve_boolean_label_rejected_error`
+- `test_completion_resolve_boolean_params_rejected_error`
+- `test_completion_resolve_both_detail_and_data_detail_takes_precedence`
+- `test_completion_resolve_cancelled_request_returns_cancelled`
 - `test_completion_resolve_command_preserved`
 - `test_completion_resolve_commit_characters_preserved`
 - `test_completion_resolve_complex_data_object_preserved`
+- `test_completion_resolve_data_non_string_leaves_documentation_none`
+- `test_completion_resolve_data_string_not_wrapped_in_codeblock`
 - `test_completion_resolve_data_to_markdown_documentation`
 - `test_completion_resolve_deprecated_preserved`
 - `test_completion_resolve_detail_to_markdown_documentation`
+- `test_completion_resolve_detail_without_data_produces_codeblock`
+- `test_completion_resolve_empty_detail_produces_empty_codeblock`
+- `test_completion_resolve_empty_item_after_completion_workflow`
 - `test_completion_resolve_empty_label_rejected_error`
+- `test_completion_resolve_escaped_newlines_in_data`
 - `test_completion_resolve_existing_doc_preserved`
+- `test_completion_resolve_extra_unknown_fields_preserved`
 - `test_completion_resolve_filter_text_preserved`
 - `test_completion_resolve_idempotent_re_resolve`
 - `test_completion_resolve_insert_text_format_preserved`
+- `test_completion_resolve_insert_text_mode_preserved`
 - `test_completion_resolve_insert_text_preserved`
+- `test_completion_resolve_integer_label_rejected_error`
 - `test_completion_resolve_kind_field_preserved`
+- `test_completion_resolve_label_details_preserved`
 - `test_completion_resolve_label_preserved`
 - `test_completion_resolve_missing_label_rejected_error`
 - `test_completion_resolve_missing_params_rejected_error`
+- `test_completion_resolve_multiline_detail_formatted_cleanly`
+- `test_completion_resolve_multiple_tags_deprecated_preserved`
 - `test_completion_resolve_non_object_params_rejected_error`
+- `test_completion_resolve_null_detail_falls_back_to_data`
+- `test_completion_resolve_null_label_rejected_error`
+- `test_completion_resolve_null_params_rejected_error`
+- `test_completion_resolve_numeric_kind_constants`
+- `test_completion_resolve_numeric_params_rejected_error`
+- `test_completion_resolve_plain_text_existing_documentation_preserved`
+- `test_completion_resolve_preselect_preserved`
+- `test_completion_resolve_sort_text_preserved`
+- `test_completion_resolve_string_existing_documentation_preserved`
+- `test_completion_resolve_string_params_rejected_error`
 - `test_completion_resolve_tags_preserved`
 - `test_completion_resolve_text_edit_preserved`
+- `test_completion_resolve_unicode_detail_formatted_in_markdown`
+- `test_completion_resolve_unicode_label_preserved`
+- `test_completion_resolve_whitespace_only_label_preserved`
 
 #### `textDocument/hover` (5 e2e tests)
 - `test_l2_hover_inside_cfg_test_method`
@@ -2124,4 +2154,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1923 total, 45 rows >= 20, 29 rows >= 50 of 53
+coverage: e2e 1953 total, 45 rows >= 20, 30 rows >= 50 of 53
