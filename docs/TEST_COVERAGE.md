@@ -42,7 +42,7 @@
 | Domain 6: Hierarchies | `typeHierarchy/supertypes` | 50 | 0 | 50 | ✅ Complete |
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/foldingRange` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 7: Presentation | `textDocument/foldingRange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/selectionRange` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
@@ -1604,27 +1604,56 @@
 - `test_semantic_tokens_range_single_line_slice`
 - `test_semantic_tokens_range_spanning_subset_of_lines`
 
-#### `textDocument/foldingRange` (21 e2e tests)
+#### `textDocument/foldingRange` (50 e2e tests)
+- `test_folding_range_async_blocks`
 - `test_folding_range_braces_inside_block_comments_ignored`
 - `test_folding_range_braces_inside_char_literals_ignored`
 - `test_folding_range_braces_inside_line_comments_ignored`
 - `test_folding_range_braces_inside_string_literals_ignored`
+- `test_folding_range_closing_brace_on_same_line_as_start_ignored`
+- `test_folding_range_closure_bodies`
+- `test_folding_range_comments_interleaved_in_function_body`
+- `test_folding_range_consecutive_block_comments`
+- `test_folding_range_consecutive_requests_idempotent`
+- `test_folding_range_const_blocks`
+- `test_folding_range_crlf_line_endings`
 - `test_folding_range_deeply_nested_five_levels`
 - `test_folding_range_dispatcher_echoes_numeric_id`
 - `test_folding_range_dispatcher_echoes_string_id`
 - `test_folding_range_empty_file_returns_empty_array`
+- `test_folding_range_empty_lines_between_functions`
+- `test_folding_range_enum_with_struct_variants`
 - `test_folding_range_escaped_quotes_inside_strings`
+- `test_folding_range_impl_with_multiple_methods`
+- `test_folding_range_loop_and_while_blocks`
+- `test_folding_range_macro_invocation_with_braces`
+- `test_folding_range_match_expression_arms`
+- `test_folding_range_module_nested_in_module`
+- `test_folding_range_multiline_block_comment_spanning_braces`
+- `test_folding_range_multiple_closing_braces_same_line`
+- `test_folding_range_multiple_opening_braces_same_line`
 - `test_folding_range_multiple_sequential_functions`
 - `test_folding_range_nested_blocks_disk`
 - `test_folding_range_nonexistent_file_returns_empty_array`
+- `test_folding_range_overlay_did_change_contracts_range`
+- `test_folding_range_overlay_did_change_expands_range`
+- `test_folding_range_overlay_did_close_falls_back_to_disk`
 - `test_folding_range_overlay_dirty_edit_updates_folding`
+- `test_folding_range_overlay_multiline_scope_emitted`
+- `test_folding_range_overlay_nested_scopes`
 - `test_folding_range_overlay_scopes_take_precedence`
 - `test_folding_range_overlay_single_line_scope_filtered`
+- `test_folding_range_overlay_without_scopes_returns_empty`
+- `test_folding_range_raw_string_braces_ignored`
 - `test_folding_range_single_function_disk_fallback`
 - `test_folding_range_single_line_braces_ignored`
 - `test_folding_range_struct_impl_and_trait_blocks`
+- `test_folding_range_trailing_spaces_and_tabs`
+- `test_folding_range_trait_with_default_methods`
 - `test_folding_range_unclosed_braces_handled_safely`
 - `test_folding_range_unmatched_closing_braces_ignored`
+- `test_folding_range_unsafe_blocks`
+- `test_folding_range_utf8_multibyte_prefix_columns`
 - `test_l2_folding_range_and_code_lens`
 
 #### `textDocument/selectionRange` (20 e2e tests)
@@ -2556,4 +2585,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2355 total, 48 rows >= 20, 42 rows >= 50 of 53
+coverage: e2e 2384 total, 48 rows >= 20, 43 rows >= 50 of 53
