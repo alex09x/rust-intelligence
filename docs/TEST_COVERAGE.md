@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 2186
+- **Total E2E Tests**: 2215
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 2104
+- **Classified E2E Tests**: 2133
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 48 / 53
-- **Rows >= 50 E2E**: 36 / 53
+- **Rows >= 50 E2E**: 37 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -36,7 +36,7 @@
 | Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 50 | 0 | 50 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/moniker` | 50 | 0 | 50 | ✅ Complete |
 | Domain 6: Hierarchies | `prepareCallHierarchy` | 50 | 1 | 51 | ✅ Complete |
-| Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 50 | 0 | 50 | ✅ Complete |
 | Domain 6: Hierarchies | `callHierarchy/outgoingCalls` | 23 | 1 | 24 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `prepareTypeHierarchy` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `typeHierarchy/supertypes` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
@@ -1290,27 +1290,56 @@
 - `test_prepare_call_hierarchy_utf16_multibyte_prefix_columns`
 - `test_prepare_call_hierarchy_zero_width_selection_range_validity`
 
-#### `callHierarchy/incomingCalls` (21 e2e tests)
+#### `callHierarchy/incomingCalls` (50 e2e tests)
 - `test_call_hierarchy_incoming_calls_after_overlay_did_change`
 - `test_call_hierarchy_incoming_calls_after_overlay_did_close`
+- `test_call_hierarchy_incoming_calls_assoc_method_callee`
+- `test_call_hierarchy_incoming_calls_assoc_method_caller`
+- `test_call_hierarchy_incoming_calls_async_fn_caller`
+- `test_call_hierarchy_incoming_calls_callee_line_beyond_file_end`
+- `test_call_hierarchy_incoming_calls_caller_at_eof`
+- `test_call_hierarchy_incoming_calls_caller_in_submodule`
 - `test_call_hierarchy_incoming_calls_caller_range_body_end_bounded`
+- `test_call_hierarchy_incoming_calls_caller_with_signature`
+- `test_call_hierarchy_incoming_calls_consecutive_requests_different_callees`
+- `test_call_hierarchy_incoming_calls_const_fn_caller`
+- `test_call_hierarchy_incoming_calls_cross_file_caller`
+- `test_call_hierarchy_incoming_calls_direct_caller_only_no_transitive`
 - `test_call_hierarchy_incoming_calls_dispatcher_echoes_numeric_id`
 - `test_call_hierarchy_incoming_calls_dispatcher_echoes_string_id`
 - `test_call_hierarchy_incoming_calls_empty_file_returns_empty`
 - `test_call_hierarchy_incoming_calls_from_item_uri_and_range_correct`
 - `test_call_hierarchy_incoming_calls_from_ranges_contain_call_span`
+- `test_call_hierarchy_incoming_calls_from_ranges_match_source_call_coordinates`
+- `test_call_hierarchy_incoming_calls_generic_fn_caller`
+- `test_call_hierarchy_incoming_calls_invalid_item_type_returns_empty`
 - `test_call_hierarchy_incoming_calls_isolated_successive_requests`
+- `test_call_hierarchy_incoming_calls_item_empty_uri_returns_empty`
+- `test_call_hierarchy_incoming_calls_item_missing_name_field`
+- `test_call_hierarchy_incoming_calls_macro_call_site_reference`
+- `test_call_hierarchy_incoming_calls_method_to_method`
 - `test_call_hierarchy_incoming_calls_missing_item_param_returns_empty`
 - `test_call_hierarchy_incoming_calls_missing_uri_in_item_returns_empty`
+- `test_call_hierarchy_incoming_calls_multiple_call_sites_same_caller`
 - `test_call_hierarchy_incoming_calls_multiple_callers_in_same_file`
 - `test_call_hierarchy_incoming_calls_multiple_calls_from_same_caller`
+- `test_call_hierarchy_incoming_calls_mutually_recursive_functions`
+- `test_call_hierarchy_incoming_calls_nested_inside_block`
 - `test_call_hierarchy_incoming_calls_non_call_reference_ignored`
 - `test_call_hierarchy_incoming_calls_nonexistent_item_file_returns_empty`
 - `test_call_hierarchy_incoming_calls_overlay_text_call_site_detection`
+- `test_call_hierarchy_incoming_calls_private_caller_visibility`
+- `test_call_hierarchy_incoming_calls_pub_crate_caller_visibility`
+- `test_call_hierarchy_incoming_calls_recursive_self_caller`
+- `test_call_hierarchy_incoming_calls_response_shape_exact_fields`
 - `test_call_hierarchy_incoming_calls_roundtrip_from_prepare`
 - `test_call_hierarchy_incoming_calls_single_caller_in_same_file`
+- `test_call_hierarchy_incoming_calls_trait_default_method_caller`
+- `test_call_hierarchy_incoming_calls_two_files_callers`
 - `test_call_hierarchy_incoming_calls_unknown_item_returns_empty`
+- `test_call_hierarchy_incoming_calls_unsafe_fn_caller`
 - `test_call_hierarchy_incoming_calls_zero_callers_returns_empty`
+- `test_call_hierarchy_incoming_calls_zero_line_zero_col_callee`
 - `test_l2_call_hierarchy_prepare_and_incoming`
 
 #### `callHierarchy/outgoingCalls` (23 e2e tests)
@@ -2387,4 +2416,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2186 total, 48 rows >= 20, 36 rows >= 50 of 53
+coverage: e2e 2215 total, 48 rows >= 20, 37 rows >= 50 of 53
