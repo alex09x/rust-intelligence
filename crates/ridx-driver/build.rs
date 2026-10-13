@@ -8,10 +8,25 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use std::env;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
-    let commit = std::env::var("RIDX_BUILD_COMMIT").ok().unwrap_or_else(|| {
+    println!("cargo:rerun-if-env-changed=RUSTC");
+
+    let rustc = env::var("RUSTC").unwrap_or_else(|_| "rustc".to_string());
+    if let Ok(output) = Command::new(rustc).arg("--print").arg("sysroot").output() {
+        if output.status.success() {
+            let sysroot_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            let lib_dir = PathBuf::from(sysroot_str).join("lib");
+            if lib_dir.is_dir() {
+                println!("cargo:rustc-link-search=native={}", lib_dir.display());
+            }
+        }
+    }
+
+    let commit = env::var("RIDX_BUILD_COMMIT").ok().unwrap_or_else(|| {
         Command::new("git")
             .args(["rev-parse", "HEAD"])
             .output()
@@ -31,7 +46,7 @@ fn main() {
             .unwrap_or_else(|| "unknown".to_string())
     });
 
-    let dirty = std::env::var("RIDX_BUILD_DIRTY")
+    let dirty = env::var("RIDX_BUILD_DIRTY")
         .ok()
         .map(|v| v == "true" || v == "1")
         .unwrap_or_else(|| {
@@ -56,15 +71,15 @@ fn main() {
     {
         if out.status.success() {
             let git_dir = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            let p = std::path::Path::new(&git_dir);
+            let p = Path::new(&git_dir);
             println!("cargo:rerun-if-changed={}", p.join("HEAD").display());
             println!("cargo:rerun-if-changed={}", p.join("index").display());
         }
     }
 
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| std::path::PathBuf::from("."));
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("."));
     let ws_root = manifest_dir
         .parent()
         .and_then(|p| p.parent())
