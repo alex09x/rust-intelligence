@@ -177,14 +177,13 @@ fn test_call_hierarchy_incoming_calls_response_shape_exact_fields() {
     let calls = resp["result"].as_array().unwrap();
     assert_eq!(calls.len(), 1);
     let item = &calls[0];
-    assert!(item.get("from").is_some());
-    assert!(item.get("fromRanges").is_some());
+    assert_eq!(item["fromRanges"], json!([{ "start": { "line": 3, "character": 4 }, "end": { "line": 3, "character": 10 } }]));
     let from = &item["from"];
     assert_eq!(from["name"], "caller");
     assert_eq!(from["kind"], 12);
     assert_eq!(from["uri"], to_uri(&file));
-    assert!(from.get("range").is_some());
-    assert!(from.get("selectionRange").is_some());
+    assert_eq!(from["range"], json!({ "start": { "line": 2, "character": 0 }, "end": { "line": 4, "character": 0 } }));
+    assert_eq!(from["selectionRange"], json!({ "start": { "line": 2, "character": 0 }, "end": { "line": 2, "character": 6 } }));
 }
 
 #[test]
