@@ -45,7 +45,7 @@
 | Domain 7: Presentation | `textDocument/foldingRange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/selectionRange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 20 | 10 | 30 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 5 | 17 | 22 | 🔴 In Progress (5/50) |
@@ -1760,17 +1760,46 @@
 - `test_document_link_with_url_anchor_fragment`
 - `test_document_link_with_url_query_parameters`
 
-#### `textDocument/documentColor / colorPresentation (stub)` (20 e2e tests)
-- `test_color_presentation_stub_consecutive_queries_isolation`
-- `test_color_presentation_stub_dispatcher_echoes_numeric_id`
-- `test_color_presentation_stub_dispatcher_echoes_string_id`
-- `test_color_presentation_stub_missing_color_object`
-- `test_color_presentation_stub_missing_range_object`
-- `test_color_presentation_stub_multi_line_range`
-- `test_color_presentation_stub_overlay_document_uri`
-- `test_color_presentation_stub_rgb_color_params`
-- `test_color_presentation_stub_rgba_color_params`
-- `test_color_presentation_stub_zero_range`
+#### `textDocument/documentColor / colorPresentation (stub)` (50 e2e tests)
+- `test_color_presentation_after_shutdown_returns_code_32600`
+- `test_color_presentation_cancelled_request_returns_code_32800`
+- `test_color_presentation_color_clamped_extremes_zero_and_one`
+- `test_color_presentation_color_intermediate_floats`
+- `test_color_presentation_consecutive_queries_isolation`
+- `test_color_presentation_dispatcher_echoes_numeric_id`
+- `test_color_presentation_dispatcher_echoes_string_id`
+- `test_color_presentation_empty_params_object`
+- `test_color_presentation_extra_fields_in_color_object`
+- `test_color_presentation_jsonrpc_protocol_version_is_2_0`
+- `test_color_presentation_large_numeric_id_preserved`
+- `test_color_presentation_missing_color_object`
+- `test_color_presentation_missing_params_completely`
+- `test_color_presentation_missing_range_object`
+- `test_color_presentation_multi_line_range`
+- `test_color_presentation_negative_numeric_id_preserved`
+- `test_color_presentation_null_params`
+- `test_color_presentation_overlay_document_uri`
+- `test_color_presentation_range_with_crlf_offsets`
+- `test_color_presentation_rgb_color_params`
+- `test_color_presentation_rgba_color_params`
+- `test_color_presentation_string_id_with_special_characters`
+- `test_color_presentation_ten_rapid_consecutive_requests`
+- `test_color_presentation_zero_range`
+- `test_color_presentation_zero_width_character_offsets`
+- `test_color_workflow_document_color_then_presentation`
+- `test_color_workflow_multiple_documents_independent_queries`
+- `test_document_color_after_shutdown_returns_code_32600`
+- `test_document_color_cancelled_request_returns_code_32800`
+- `test_document_color_did_close_then_reopen_returns_empty`
+- `test_document_color_did_save_notification_cycle`
+- `test_document_color_empty_params_object`
+- `test_document_color_extra_unexpected_param_fields`
+- `test_document_color_jsonrpc_protocol_version_is_2_0`
+- `test_document_color_large_numeric_id_preserved`
+- `test_document_color_multiple_consecutive_did_change_events`
+- `test_document_color_negative_numeric_id_preserved`
+- `test_document_color_null_params_handled`
+- `test_document_color_string_id_with_special_characters`
 - `test_document_color_stub_after_did_change_returns_empty_array`
 - `test_document_color_stub_after_did_close_returns_empty_array`
 - `test_document_color_stub_disk_file_returns_empty_array`
@@ -1781,6 +1810,7 @@
 - `test_document_color_stub_nonexistent_file_returns_empty_array`
 - `test_document_color_stub_overlay_buffer_returns_empty_array`
 - `test_document_color_stub_sequential_requests_isolation`
+- `test_document_color_ten_rapid_consecutive_requests`
 
 #### `textDocument/codeLens / resolve` (21 e2e tests)
 - `test_code_lens_disk_workspace_definition`
@@ -2645,4 +2675,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2444 total, 48 rows >= 20, 45 rows >= 50 of 53
+coverage: e2e 2474 total, 48 rows >= 20, 46 rows >= 50 of 53
