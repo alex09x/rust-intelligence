@@ -127,58 +127,6 @@ def publish_pilot_results(src_dir: Path, pub_dir: Path, dry_run: bool = False) -
     print(f"Published pilot results to {dst_file} and {sidecar_file}")
 
 
-def publish_serde_matrix(src_dir: Path, pub_dir: Path, dry_run: bool = False) -> None:
-    """Sanitizes serde booster matrix JSON and produces provenance sidecar."""
-    src_file = src_dir / "matrix_serde_booster.json"
-    if not src_file.is_file():
-        print(f"Skipping serde matrix: {src_file} not found")
-        return
-
-    dst_file = pub_dir / "matrix_serde_booster.json"
-    sidecar_file = pub_dir / "matrix_serde_booster.provenance.json"
-
-    with open(src_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    raw_repo = data.get("repo", "")
-    data["repo"] = "serde-rs/serde"
-    sanitization_rules: List[Dict[str, Any]] = []
-    if raw_repo != "serde-rs/serde":
-        sanitization_rules.append({"rule": "repo -> serde-rs/serde", "replacements": 1})
-
-    source_sha256 = compute_sha256(src_file)
-    mtime_dt = datetime.fromtimestamp(src_file.stat().st_mtime, tz=timezone.utc)
-    mtime_iso = mtime_dt.isoformat()
-
-    sidecar_data = {
-        "dataset": "matrix_serde_booster", "repo": "serde-rs/serde",
-        "repo_commit": "unknown", "ridx_commit": "unknown",
-        "ridx_commit_note": f"Matrix run dated {mtime_iso} on booster; exact RIDX build commit not recorded in raw JSON.",
-        "driver_hash": "unknown", "rustc": "unknown", "ra_version": "unknown",
-        "node": "booster", "node_source": "file name",
-        "date": mtime_dt.date().isoformat(), "date_source": "mtime of raw file on publishing host",
-        "taskset": "unknown", "seed": "unknown",
-        "duration_sec": {"ridx": data.get("ridx_duration_sec"), "rust_analyzer": data.get("ra_duration_sec")},
-        "source_sha256": source_sha256, "sanitization": sanitization_rules,
-    }
-
-    dst_str = json.dumps(data, indent=2)
-    verify_clean_output(dst_str, dst_file.name)
-    sidecar_str = json.dumps(sidecar_data, indent=2)
-    verify_clean_output(sidecar_str, sidecar_file.name)
-
-    if dry_run:
-        print(f"[dry-run] Would write sanitized serde matrix to {dst_file}")
-        print(f"[dry-run] Would write provenance sidecar to {sidecar_file}")
-        return
-
-    with open(dst_file, "w", encoding="utf-8") as f:
-        f.write(dst_str)
-    with open(sidecar_file, "w", encoding="utf-8") as f:
-        f.write(sidecar_str)
-    print(f"Published serde matrix to {dst_file} and {sidecar_file}")
-
-
 MATRIX_PROVENANCE_FIELDS = [
     "repo_commit", "ridx_commit", "ridx_binary_dirty", "driver_hash", "driver_build_commit",
     "driver_dirty", "driver_source", "driver_newer_than_index", "index_built_at",
@@ -308,8 +256,7 @@ def main() -> None:
 
     print(f"Publishing benchmark results from {src_dir} to {pub_dir}...")
     publish_pilot_results(src_dir, pub_dir, dry_run=args.dry_run)
-    publish_serde_matrix(src_dir, pub_dir, dry_run=args.dry_run)
-    for repo_key in ("ripgrep", "tokio", "rust-analyzer", "bevy"):
+    for repo_key in ("serde", "ripgrep", "tokio", "rust-analyzer", "bevy"):
         publish_matrix(src_dir, pub_dir, repo_key, CANONICAL_REPOS[repo_key], dry_run=args.dry_run)
     publish_discrepancies(src_dir, pub_dir, dry_run=args.dry_run)
     print("Done.")

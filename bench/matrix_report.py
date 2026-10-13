@@ -62,7 +62,6 @@ NOTES = [
     "`a` counts non-empty answers, `b` empty answers (`null`, `[]`, empty hover), `c` failed "
     "scenarios; `errors` counts error responses, which can exceed `c` because a scenario sends "
     "several requests.",
-    "The published serde matrix was collected before `b704408`; a rerun on the current harness is pending.",
 ]
 
 
@@ -145,7 +144,7 @@ def render(pub_dir: Path) -> str:
     for key, canon in REPO_ORDER:
         f = pub_dir / f"matrix_{key}_booster.json"
         sidecar = pub_dir / f"matrix_{key}_booster.provenance.json"
-        if f.is_file() and sidecar.is_file() and key != "serde":
+        if f.is_file() and sidecar.is_file():
             published.append(key)
         else:
             missing.append(canon)
