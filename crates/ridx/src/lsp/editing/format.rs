@@ -89,6 +89,10 @@ pub fn handle_formatting(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
         return json!([]);
     };
 
+    if doc_text.trim().is_empty() {
+        return json!([]);
+    }
+
     let edition = find_crate_edition(&file);
 
     let mut cmd = Command::new("rustfmt");
@@ -312,5 +316,22 @@ mod tests {
         let end = &edits[0]["range"]["end"];
         assert_eq!(end["line"], 2);
         assert_eq!(end["character"], 1);
+    }
+
+    #[test]
+    fn test_handle_formatting_blank_document_returns_no_edits() {
+        let mut overlay_mgr = OverlayManager::new();
+        let uri = "file:///tmp/fmt_blank.rs";
+        let code = "   \n\n  \t \n";
+        overlay_mgr.open_document(uri, "/tmp/fmt_blank.rs", 1, code.to_string());
+
+        let msg = json!({
+            "params": {
+                "textDocument": { "uri": uri }
+            }
+        });
+        let res = handle_formatting(&msg, &overlay_mgr);
+        let edits = res.as_array().expect("edits array");
+        assert_eq!(edits, json!([]).as_array().unwrap());
     }
 }
