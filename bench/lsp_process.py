@@ -32,6 +32,9 @@ class SimpleLspProcess:
         self.next_id = 1
         self.exited = False
         self.lock = threading.Lock()
+        # Serializes writes to the server's stdin. It is never held together with self.lock, so a
+        # write that blocks on a full stdin pipe cannot stop the reader thread from draining stdout.
+        self.write_lock = threading.Lock()
         self.events = {}
         self.responses = {}
         self.t_sends = {}
@@ -58,11 +61,16 @@ class SimpleLspProcess:
         try:
             b = json.dumps(m).encode("utf-8")
             hdr = f"Content-Length: {len(b)}\r\n\r\n".encode("utf-8")
-            with self.lock:
+            # The blocking write happens outside self.lock. When the server is itself blocked on a
+            # full stdout pipe (a large response) and this write blocks on a full stdin pipe, the
+            # reader thread must still be able to take self.lock and drain stdout; otherwise both
+            # processes wait on each other forever.
+            with self.write_lock:
                 if self.exited or self.p.stdin.closed:
                     return False
                 self.p.stdin.write(hdr + b)
                 self.p.stdin.flush()
+            with self.lock:
                 if "id" in m:
                     self.t_sends[m["id"]] = time.perf_counter()
                 method = m.get("method")
