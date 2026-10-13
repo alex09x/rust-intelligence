@@ -44,7 +44,7 @@
 | Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/foldingRange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/selectionRange` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/documentLink / resolve` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 7: Presentation | `textDocument/documentLink / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 20 | 10 | 30 | 🟡 Wave 1 Pass (>= 20) |
@@ -1708,27 +1708,57 @@
 - `test_selection_range_unopened_document_returns_empty`
 - `test_selection_range_utf8_multibyte_prefix_columns`
 
-#### `textDocument/documentLink / resolve` (20 e2e tests)
+#### `textDocument/documentLink / resolve` (50 e2e tests)
 - `test_document_link_angle_bracket_delimiter`
+- `test_document_link_angle_bracket_in_doc`
+- `test_document_link_at_end_of_line_without_trailing_delimiter`
+- `test_document_link_at_start_of_line`
+- `test_document_link_blank_lines_between_links`
+- `test_document_link_consecutive_queries_idempotent`
+- `test_document_link_consecutive_resolve_requests_isolation`
+- `test_document_link_crlf_line_endings_preserved`
+- `test_document_link_cyrillic_prefix_utf16_offsets`
+- `test_document_link_did_change_appends_second_link`
+- `test_document_link_did_change_removes_link`
+- `test_document_link_did_change_replaces_link`
 - `test_document_link_dispatcher_echoes_numeric_id`
 - `test_document_link_dispatcher_echoes_string_id`
+- `test_document_link_disk_fallback_file_without_overlay`
+- `test_document_link_disk_file_updates_re_read`
+- `test_document_link_emoji_surrogate_pair_utf16_offsets`
 - `test_document_link_empty_file_returns_empty`
 - `test_document_link_file_without_links_returns_empty`
+- `test_document_link_links_inside_string_literals`
 - `test_document_link_markdown_bracket_and_parenthesis_delimiters`
 - `test_document_link_multiple_links_same_line`
+- `test_document_link_multiple_links_with_mixed_delimiters`
 - `test_document_link_nonexistent_file_returns_empty`
 - `test_document_link_overlay_did_change_updates_links`
 - `test_document_link_overlay_did_close_falls_back_to_disk`
 - `test_document_link_overlay_precedence_over_disk`
+- `test_document_link_parenthesis_in_markdown_link`
 - `test_document_link_quote_delimiter`
 - `test_document_link_resolve_echoes_valid_link_params`
 - `test_document_link_resolve_missing_params_returns_null`
+- `test_document_link_resolve_null_params_returns_null`
 - `test_document_link_resolve_numeric_request_id_echoed`
+- `test_document_link_resolve_preserves_custom_data_payload`
+- `test_document_link_resolve_preserves_target_and_range`
+- `test_document_link_resolve_preserves_tooltip`
 - `test_document_link_resolve_string_request_id_echoed`
 - `test_document_link_resolve_with_custom_tooltip_and_data`
 - `test_document_link_single_https_in_doc_comment`
 - `test_document_link_square_bracket_delimiter`
+- `test_document_link_square_bracket_in_reference`
+- `test_document_link_three_consecutive_lines`
+- `test_document_link_two_open_documents_independent_links`
+- `test_document_link_url_with_trailing_slash`
 - `test_document_link_utf16_offsets_with_multibyte_prefix`
+- `test_document_link_whitespace_tab_delimiter`
+- `test_document_link_with_hyphen_and_subdomain`
+- `test_document_link_with_port_number`
+- `test_document_link_with_url_anchor_fragment`
+- `test_document_link_with_url_query_parameters`
 
 #### `textDocument/documentColor / colorPresentation (stub)` (20 e2e tests)
 - `test_color_presentation_stub_consecutive_queries_isolation`
@@ -2615,4 +2645,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2414 total, 48 rows >= 20, 44 rows >= 50 of 53
+coverage: e2e 2444 total, 48 rows >= 20, 45 rows >= 50 of 53
