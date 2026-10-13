@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 2096
+- **Total E2E Tests**: 2126
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 2014
+- **Classified E2E Tests**: 2044
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 48 / 53
-- **Rows >= 50 E2E**: 33 / 53
+- **Rows >= 50 E2E**: 34 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -33,7 +33,7 @@
 | Domain 5: Intelligence & Completion | `textDocument/hover` | 50 | 16 | 66 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 50 | 3 | 53 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 50 | 9 | 59 | ✅ Complete |
-| Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 50 | 0 | 50 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/moniker` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `prepareCallHierarchy` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
@@ -1132,27 +1132,57 @@
 - `test_inlay_hint_zero_length_file_returns_empty`
 - `test_l2_inlay_hint_utf16_with_emoji`
 
-#### `textDocument/inlineValue` (20 e2e tests)
+#### `textDocument/inlineValue` (50 e2e tests)
+- `test_inline_value_all_keywords_line_returns_empty`
+- `test_inline_value_array_indexing_expression_identifiers`
+- `test_inline_value_binary_arithmetic_expression_identifiers`
+- `test_inline_value_cancelled_request_returns_cancelled_error`
 - `test_inline_value_case_sensitive_lookup_flag_exact`
+- `test_inline_value_closed_document_cleared_from_overlay`
+- `test_inline_value_closure_parameter_identifiers`
+- `test_inline_value_comment_line_identifiers_extracted`
+- `test_inline_value_const_and_static_identifiers`
+- `test_inline_value_cr_lf_line_endings_supported`
+- `test_inline_value_dirty_overlay_reflected`
 - `test_inline_value_empty_document_returns_empty`
 - `test_inline_value_empty_range_empty_result`
+- `test_inline_value_end_line_before_start_line_empty`
 - `test_inline_value_field_access_identifier_separated`
 - `test_inline_value_function_parameter_variables`
+- `test_inline_value_generic_type_arguments_identifiers`
 - `test_inline_value_let_binding_variable_name`
 - `test_inline_value_line_range_filtering_multi_line`
 - `test_inline_value_line_range_filtering_single_line`
+- `test_inline_value_long_identifier_range_exact`
 - `test_inline_value_loop_variable_name`
+- `test_inline_value_macro_call_identifiers`
+- `test_inline_value_match_arm_pattern_identifiers`
 - `test_inline_value_method_call_identifier`
+- `test_inline_value_missing_params_defaults_gracefully`
+- `test_inline_value_missing_range_defaults_to_line_zero`
+- `test_inline_value_missing_text_document_defaults_empty`
+- `test_inline_value_multibyte_utf8_emoji_character_col`
 - `test_inline_value_multiline_function_inline_values`
 - `test_inline_value_multiple_let_variables`
+- `test_inline_value_multiple_sequential_requests_stable`
+- `test_inline_value_nested_block_scopes_identifiers`
 - `test_inline_value_nonexistent_file_empty`
 - `test_inline_value_numeric_identifiers_filtered_out`
 - `test_inline_value_out_of_bounds_line_range_empty`
 - `test_inline_value_overlay_text_vs_disk_text`
+- `test_inline_value_response_is_json_array`
 - `test_inline_value_rust_keywords_filtered_out`
 - `test_inline_value_shadowed_variable_inline_values`
+- `test_inline_value_single_char_identifier_range`
+- `test_inline_value_string_literal_embedded_alphanumeric`
+- `test_inline_value_struct_destructuring_identifiers`
+- `test_inline_value_tab_indentation_character_positions`
+- `test_inline_value_trailing_semicolon_and_commas`
+- `test_inline_value_tuple_destructuring_identifiers`
 - `test_inline_value_underscore_identifier_supported`
 - `test_inline_value_utf16_column_range_exact`
+- `test_inline_value_whitespace_indentation_start_col`
+- `test_inline_value_zero_length_file_returns_empty`
 
 #### `textDocument/moniker` (20 e2e tests)
 - `test_moniker_const_scheme_rust`
@@ -2297,4 +2327,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2096 total, 48 rows >= 20, 33 rows >= 50 of 53
+coverage: e2e 2126 total, 48 rows >= 20, 34 rows >= 50 of 53
