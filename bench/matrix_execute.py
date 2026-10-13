@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 
 from lsp_process import SimpleLspProcess
-from matrix_canary import wait_ra_canary_ready
+from matrix_canary import ensure_ra_ready
 from matrix_categories import LSP_SPECS, build_params, DOMAIN_NAMES
 from matrix_scenarios import execute_mutation_scenario, execute_sync_scenario
 from metrics import percentile, get_proc_metrics
@@ -105,11 +105,12 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
 
     canary_wait_ms = 0.0
     canary_attempts = 0
+    pre_query = {"quiescent_wait_ms": 0.0, "canary_wait_ms": 0.0, "canary_attempts": 0}
+    canary_positions = scenarios.get("definition", [])[:3]
     if is_ra:
-        canary_positions = scenarios.get("definition", [])[:3]
-        canary_wait_ms, canary_attempts = wait_ra_canary_ready(
-            srv, canary_positions, repo_dir, timeout=600.0, interval=1.0
-        )
+        ready = ensure_ra_ready(srv, canary_positions, repo_dir, timeout=600.0, interval=1.0)
+        canary_wait_ms = ready["canary_wait_ms"]
+        canary_attempts = ready["canary_attempts"]
 
     results = dict(lifecycle_results)
     peak_rss = 0
@@ -122,6 +123,12 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         for idx, (mid, key, rpc_method, domain, rpc_type) in enumerate(query_specs):
             print(f"  [{idx+1}/{len(query_specs)}] {rpc_method} ({DOMAIN_NAMES.get(domain, 'Other')})...", flush=True)
             if mid == 15:
+                if is_ra:
+                    # The sync block (ids 8-14) makes rust-analyzer reload the workspace;
+                    # re-establish readiness before the first query method.
+                    pre_query = ensure_ra_ready(
+                        srv, canary_positions, repo_dir, timeout=600.0, interval=1.0, settle_idle=2.0
+                    )
                 open_docs_before_queries = len(srv.open_docs)
                 assert open_docs_before_queries == 0, (
                     f"Expected 0 open documents before queries (method 15), found {open_docs_before_queries}: {srv.open_docs}"
@@ -277,6 +284,9 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         "initial_wait_ms": initial_wait_ms,
         "canary_wait_ms": canary_wait_ms,
         "canary_attempts": canary_attempts,
+        "quiescent_pre_query_wait_ms": pre_query["quiescent_wait_ms"],
+        "canary_pre_query_wait_ms": pre_query["canary_wait_ms"],
+        "canary_pre_query_attempts": pre_query["canary_attempts"],
         "progress_titles_seen": progress_titles_seen,
         "progress_events": progress_events,
         "open_documents_before_queries": open_docs_before_queries if open_docs_before_queries is not None else 0,

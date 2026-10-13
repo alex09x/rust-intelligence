@@ -17,7 +17,7 @@ bench_dir = Path(__file__).resolve().parent
 if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
 
-from matrix_canary import is_non_empty_response, wait_ra_canary_ready
+from matrix_canary import ensure_ra_ready, is_non_empty_response, wait_ra_canary_ready
 
 
 class MockLspServer:
@@ -122,9 +122,47 @@ def test_canary_all_positions_must_be_nonempty():
     print(f"PASS: 3-position canary verified all positions across {attempts} attempts ({len(srv.requests)} queries)")
 
 
+class MockQuiescentServer(MockLspServer):
+    """Mock server that also records wait_quiescent calls like SimpleLspProcess."""
+
+    def __init__(self, response_sequence, quiescent_ms=42.0):
+        super().__init__(response_sequence)
+        self.quiescent_calls = []
+        self.quiescent_ms = quiescent_ms
+
+    def wait_quiescent(self, timeout=600.0, settle_idle=0.5):
+        self.quiescent_calls.append((timeout, settle_idle))
+        return self.quiescent_ms
+
+
+def test_ensure_ra_ready_waits_quiescent_then_canary():
+    """ensure_ra_ready calls wait_quiescent once with the given settle window, then the canary."""
+    loc = [{"uri": "file:///opt/vendor/x.rs", "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 1}}}]
+    srv = MockQuiescentServer([[], loc, loc], quiescent_ms=1234.5)
+    canary_positions = [{"file": "a.rs", "location": ["a.rs", 1, 1]}]
+    ready = ensure_ra_ready(srv, canary_positions, Path("/tmp"), timeout=5.0, interval=0.01, settle_idle=2.0)
+    assert srv.quiescent_calls == [(5.0, 2.0)], f"Expected one wait_quiescent(5.0, 2.0) call, got {srv.quiescent_calls}"
+    assert ready["quiescent_wait_ms"] == 1234.5, f"Expected quiescent_wait_ms 1234.5, got {ready['quiescent_wait_ms']}"
+    assert ready["canary_attempts"] == 3, f"Expected 3 canary attempts, got {ready['canary_attempts']}"
+    assert len(srv.requests) == 3, f"Expected 3 requests, got {len(srv.requests)}"
+    print(f"PASS: ensure_ra_ready waited quiescent ({ready['quiescent_wait_ms']} ms) and canary succeeded on attempt {ready['canary_attempts']}")
+
+
+def test_ensure_ra_ready_without_wait_quiescent():
+    """A server without wait_quiescent still passes through the canary with quiescent_wait_ms 0."""
+    loc = [{"uri": "file:///opt/vendor/x.rs", "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 1}}}]
+    srv = MockLspServer([loc, loc])
+    ready = ensure_ra_ready(srv, [{"file": "a.rs", "location": ["a.rs", 1, 1]}], Path("/tmp"), timeout=5.0, interval=0.01)
+    assert ready["quiescent_wait_ms"] == 0.0, f"Expected 0.0, got {ready['quiescent_wait_ms']}"
+    assert ready["canary_attempts"] == 2, f"Expected 2 attempts, got {ready['canary_attempts']}"
+    print("PASS: ensure_ra_ready without wait_quiescent ran the canary only")
+
+
 if __name__ == "__main__":
     test_canary_empty_empty_nonempty_nonempty()
     test_canary_timeout_on_all_empty()
     test_canary_reset_on_intermittent_empty()
     test_canary_all_positions_must_be_nonempty()
+    test_ensure_ra_ready_waits_quiescent_then_canary()
+    test_ensure_ra_ready_without_wait_quiescent()
     print("PASS: all rust-analyzer canary unit tests passed successfully")

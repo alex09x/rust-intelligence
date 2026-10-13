@@ -78,3 +78,34 @@ def wait_ra_canary_ready(
             consecutive_success = 0
 
         time.sleep(interval)
+
+
+def ensure_ra_ready(
+    srv: Any,
+    canary_positions: List[Dict[str, Any]],
+    repo_dir: Path,
+    timeout: float = 600.0,
+    interval: float = 1.0,
+    settle_idle: float = 0.5,
+) -> Dict[str, float]:
+    """
+    Re-establishes rust-analyzer readiness: waits for server quiescence (no active
+    progress tokens, idle for settle_idle seconds) and then runs the definition canary.
+    Used once after initialize and again before the first query method, because the
+    synchronization block (didOpen/didChange/didClose) triggers a workspace reload
+    during which rust-analyzer answers definition requests with empty results.
+
+    Returns {"quiescent_wait_ms", "canary_wait_ms", "canary_attempts"}.
+    """
+    quiescent_wait_ms = 0.0
+    wait_fn = getattr(srv, "wait_quiescent", None)
+    if callable(wait_fn):
+        quiescent_wait_ms = float(wait_fn(timeout=timeout, settle_idle=settle_idle))
+    canary_wait_ms, canary_attempts = wait_ra_canary_ready(
+        srv, canary_positions, repo_dir, timeout=timeout, interval=interval
+    )
+    return {
+        "quiescent_wait_ms": round(quiescent_wait_ms, 2),
+        "canary_wait_ms": canary_wait_ms,
+        "canary_attempts": canary_attempts,
+    }
