@@ -50,7 +50,7 @@
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 50 | 10 | 60 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 50 | 17 | 67 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 50 | 7 | 57 | ✅ Complete |
-| Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 3 | 8 | 11 | 🔴 In Progress (3/50) |
+| Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 50 | 8 | 58 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 1 | 5 | 6 | 🔴 In Progress (1/50) |
 | Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 14 | 0 | 14 | 🔴 In Progress (14/50) |
 | Domain 9: Navigation & Symbols | `textDocument/definition / declaration (delegating)` | 52 | 7 | 59 | ✅ Complete |
@@ -2022,9 +2022,56 @@
 - `test_linked_editing_range_word_boundary_end_exact_character`
 - `test_linked_editing_range_word_boundary_start_exact_character`
 
-#### `textDocument/formatting / rangeFormatting` (3 e2e tests)
+#### `textDocument/formatting / rangeFormatting` (50 e2e tests)
+- `test_formatting_after_shutdown_returns_code_32600`
+- `test_formatting_already_formatted_code_idempotent`
+- `test_formatting_cancelled_request_returns_code_32800`
+- `test_formatting_consecutive_blank_lines_collapsed`
+- `test_formatting_consecutive_requests_idempotence`
+- `test_formatting_crlf_document_normalized`
+- `test_formatting_did_close_falls_back_to_disk`
+- `test_formatting_disk_fallback_when_not_in_overlay`
+- `test_formatting_empty_file_returns_empty`
+- `test_formatting_enum_variant_indentation`
+- `test_formatting_jsonrpc_protocol_version_is_2_0`
+- `test_formatting_large_numeric_id_preserved`
+- `test_formatting_match_arms_indentation`
+- `test_formatting_missing_text_document_returns_empty`
+- `test_formatting_multiline_chain_indentation`
+- `test_formatting_negative_numeric_id_preserved`
+- `test_formatting_nonexistent_file_returns_empty_array`
+- `test_formatting_options_tab_size_and_spaces_parsed`
+- `test_formatting_overlay_active_buffer_precedes_disk`
+- `test_formatting_string_id_preserved`
+- `test_formatting_struct_field_alignment`
+- `test_formatting_syntax_error_invalid_tokens_returns_empty`
+- `test_formatting_syntax_error_unclosed_delimiter_returns_empty`
+- `test_formatting_trailing_whitespace_stripped`
+- `test_formatting_unformatted_spaces_around_params`
 - `test_l2_formatting_full_and_idempotence`
 - `test_l2_range_formatting_scoped`
+- `test_range_formatting_after_shutdown_returns_code_32600`
+- `test_range_formatting_already_formatted_range_returns_empty`
+- `test_range_formatting_cancelled_request_returns_code_32800`
+- `test_range_formatting_consecutive_requests_isolation`
+- `test_range_formatting_disk_fallback_when_not_in_overlay`
+- `test_range_formatting_empty_file_returns_empty`
+- `test_range_formatting_empty_range_returns_empty`
+- `test_range_formatting_first_line_only`
+- `test_range_formatting_jsonrpc_protocol_version_is_2_0`
+- `test_range_formatting_large_numeric_id_preserved`
+- `test_range_formatting_missing_range_param_defaults_to_all_or_empty`
+- `test_range_formatting_missing_text_document_returns_empty`
+- `test_range_formatting_negative_numeric_id_preserved`
+- `test_range_formatting_nonexistent_file_returns_empty_array`
+- `test_range_formatting_out_of_bounds_end_line_clamped`
+- `test_range_formatting_overlay_active_buffer_precedes_disk`
+- `test_range_formatting_preserves_untouched_regions`
+- `test_range_formatting_scoped_middle_lines_only`
+- `test_range_formatting_single_line`
+- `test_range_formatting_start_line_beyond_file_returns_empty`
+- `test_range_formatting_string_id_preserved`
+- `test_range_formatting_syntax_error_snippet_returns_empty`
 - `test_refactor_formatting_and_range_formatting_execution`
 
 #### `textDocument/onTypeFormatting` (1 e2e tests)
@@ -2828,4 +2875,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2627 total, 50 rows >= 20, 50 rows >= 50 of 53
+coverage: e2e 2674 total, 51 rows >= 20, 51 rows >= 50 of 53
