@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 2047
+- **Total E2E Tests**: 2096
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1965
+- **Classified E2E Tests**: 2014
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 47 / 53
-- **Rows >= 50 E2E**: 32 / 53
+- **Rows >= 20 E2E**: 48 / 53
+- **Rows >= 50 E2E**: 33 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -32,7 +32,7 @@
 | Domain 5: Intelligence & Completion | `completionItem/resolve` | 50 | 9 | 59 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/hover` | 50 | 16 | 66 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 50 | 3 | 53 | ✅ Complete |
-| Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 1 | 9 | 10 | 🔴 In Progress (1/50) |
+| Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 50 | 9 | 59 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 5: Intelligence & Completion | `textDocument/moniker` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `prepareCallHierarchy` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
@@ -1080,7 +1080,56 @@
 - `test_signature_help_whitespace_between_callee_and_paren`
 - `test_signature_help_zero_signatures_when_null`
 
-#### `textDocument/inlayHint / resolve` (1 e2e tests)
+#### `textDocument/inlayHint / resolve` (50 e2e tests)
+- `test_inlay_hint_block_comments_around_let_binding`
+- `test_inlay_hint_cancelled_request_returns_cancelled_error`
+- `test_inlay_hint_closed_document_cleared_from_overlay`
+- `test_inlay_hint_cr_lf_line_endings_in_buffer`
+- `test_inlay_hint_dirty_overlay_reflected`
+- `test_inlay_hint_empty_document_returns_empty_array`
+- `test_inlay_hint_explicit_type_annotation_skipped`
+- `test_inlay_hint_invalid_range_negative_line_rejected`
+- `test_inlay_hint_inverted_range_start_after_end_returns_empty`
+- `test_inlay_hint_large_buffer_preceding_range_handled`
+- `test_inlay_hint_let_inside_nested_block`
+- `test_inlay_hint_let_mut_binding_without_type`
+- `test_inlay_hint_line_range_filtering_end_line_respected`
+- `test_inlay_hint_line_range_filtering_start_line_respected`
+- `test_inlay_hint_missing_params_rejected_error`
+- `test_inlay_hint_missing_range_rejected_error`
+- `test_inlay_hint_missing_text_document_rejected_error`
+- `test_inlay_hint_multiple_sequential_requests_stable`
+- `test_inlay_hint_no_let_bindings_returns_empty_array`
+- `test_inlay_hint_nonexistent_file_returns_empty_array`
+- `test_inlay_hint_out_of_bounds_range_returns_empty_array`
+- `test_inlay_hint_resolve_cancelled_request_returns_cancelled_error`
+- `test_inlay_hint_resolve_empty_string_tooltip_preserved`
+- `test_inlay_hint_resolve_idempotent_multiple_calls`
+- `test_inlay_hint_resolve_missing_label_error`
+- `test_inlay_hint_resolve_missing_params_error`
+- `test_inlay_hint_resolve_missing_position_error`
+- `test_inlay_hint_resolve_multiline_label_preserved`
+- `test_inlay_hint_resolve_non_object_params_error`
+- `test_inlay_hint_resolve_populates_default_tooltip`
+- `test_inlay_hint_resolve_preserves_boolean_data_field`
+- `test_inlay_hint_resolve_preserves_custom_tooltip`
+- `test_inlay_hint_resolve_preserves_data_payload_array`
+- `test_inlay_hint_resolve_preserves_data_payload_object`
+- `test_inlay_hint_resolve_preserves_data_payload_string`
+- `test_inlay_hint_resolve_preserves_kind`
+- `test_inlay_hint_resolve_preserves_label`
+- `test_inlay_hint_resolve_preserves_null_data_field`
+- `test_inlay_hint_resolve_preserves_numeric_data_field`
+- `test_inlay_hint_resolve_preserves_padding_left`
+- `test_inlay_hint_resolve_preserves_padding_right`
+- `test_inlay_hint_resolve_preserves_position`
+- `test_inlay_hint_resolve_utf16_position_preserved`
+- `test_inlay_hint_resolve_with_text_edits_preserved`
+- `test_inlay_hint_response_is_json_array`
+- `test_inlay_hint_single_line_range_filtering`
+- `test_inlay_hint_trailing_whitespace_and_tabs_in_file`
+- `test_inlay_hint_utf8_multibyte_characters_in_buffer`
+- `test_inlay_hint_zero_length_file_returns_empty`
 - `test_l2_inlay_hint_utf16_with_emoji`
 
 #### `textDocument/inlineValue` (20 e2e tests)
@@ -2248,4 +2297,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2047 total, 47 rows >= 20, 32 rows >= 50 of 53
+coverage: e2e 2096 total, 48 rows >= 20, 33 rows >= 50 of 53
