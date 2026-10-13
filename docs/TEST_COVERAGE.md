@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1998
+- **Total E2E Tests**: 2047
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1916
+- **Classified E2E Tests**: 1965
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 46 / 53
-- **Rows >= 50 E2E**: 31 / 53
+- **Rows >= 20 E2E**: 47 / 53
+- **Rows >= 50 E2E**: 32 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -31,7 +31,7 @@
 | Domain 5: Intelligence & Completion | `textDocument/completion` | 50 | 25 | 75 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `completionItem/resolve` | 50 | 9 | 59 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/hover` | 50 | 16 | 66 | ✅ Complete |
-| Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 1 | 3 | 4 | 🔴 In Progress (1/50) |
+| Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 50 | 3 | 53 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 1 | 9 | 10 | 🔴 In Progress (1/50) |
 | Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 5: Intelligence & Completion | `textDocument/moniker` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
@@ -1028,8 +1028,57 @@
 - `test_l2_hover_on_generic_trait_method`
 - `test_l2_hover_on_inferred_vec`
 
-#### `textDocument/signatureHelp` (1 e2e tests)
+#### `textDocument/signatureHelp` (50 e2e tests)
 - `test_l2_signature_help_cross_crate_and_trait`
+- `test_signature_help_active_signature_is_zero`
+- `test_signature_help_after_closed_paren_returns_null`
+- `test_signature_help_array_expression_in_argument`
+- `test_signature_help_block_expression_in_argument`
+- `test_signature_help_cancelled_request_returns_cancelled_error`
+- `test_signature_help_closed_document_cleared_from_overlay`
+- `test_signature_help_closure_expression_in_argument`
+- `test_signature_help_comment_inside_arg_list`
+- `test_signature_help_dirty_overlay_updates_signature`
+- `test_signature_help_dyn_trait_parameter_labels`
+- `test_signature_help_empty_document_returns_null`
+- `test_signature_help_fn_pointer_parameter_labels`
+- `test_signature_help_four_arguments_progression`
+- `test_signature_help_generic_function_signature_label`
+- `test_signature_help_generic_type_args_in_argument`
+- `test_signature_help_impl_trait_parameter_labels`
+- `test_signature_help_invalid_character_negative_rejected_error`
+- `test_signature_help_invalid_line_negative_rejected_error`
+- `test_signature_help_lifetime_parameter_labels`
+- `test_signature_help_method_call_on_self`
+- `test_signature_help_missing_params_rejected_error`
+- `test_signature_help_missing_position_rejected_error`
+- `test_signature_help_missing_text_document_rejected_error`
+- `test_signature_help_multi_param_fn_first_param`
+- `test_signature_help_multi_param_fn_second_param`
+- `test_signature_help_multi_param_fn_third_param`
+- `test_signature_help_multiline_call_arguments`
+- `test_signature_help_multiple_sequential_requests_stable`
+- `test_signature_help_nested_call_inner_active_param`
+- `test_signature_help_nested_call_outer_second_param`
+- `test_signature_help_no_param_fn`
+- `test_signature_help_nonexistent_file_returns_null`
+- `test_signature_help_out_of_bounds_character_returns_null`
+- `test_signature_help_out_of_bounds_line_returns_null`
+- `test_signature_help_outside_call_returns_null`
+- `test_signature_help_parameters_extracted_labels`
+- `test_signature_help_preceding_text_large_buffer_handled`
+- `test_signature_help_ref_mut_parameter_labels`
+- `test_signature_help_return_type_arrow_present_in_label`
+- `test_signature_help_single_param_fn_active_zero`
+- `test_signature_help_string_literal_in_argument`
+- `test_signature_help_tab_indented_call`
+- `test_signature_help_trailing_comma_active_parameter`
+- `test_signature_help_tuple_expression_in_argument`
+- `test_signature_help_turbofish_function_call`
+- `test_signature_help_unknown_callee_returns_null`
+- `test_signature_help_utf16_surrogate_in_call_line`
+- `test_signature_help_whitespace_between_callee_and_paren`
+- `test_signature_help_zero_signatures_when_null`
 
 #### `textDocument/inlayHint / resolve` (1 e2e tests)
 - `test_l2_inlay_hint_utf16_with_emoji`
@@ -2199,4 +2248,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1998 total, 46 rows >= 20, 31 rows >= 50 of 53
+coverage: e2e 2047 total, 47 rows >= 20, 32 rows >= 50 of 53
