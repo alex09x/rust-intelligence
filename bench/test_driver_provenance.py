@@ -20,7 +20,9 @@ bench_dir = Path(__file__).resolve().parent
 if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
 
-from matrix_provenance import index_driver_path, index_timestamp_epoch, resolve_driver
+import hashlib
+
+from matrix_provenance import corpus_lockfile_sha256, index_driver_path, index_timestamp_epoch, resolve_driver
 from provenance import fnv1a_64, get_driver_hash
 
 DRIVER_BYTES = b"fake ridx-driver payload"
@@ -109,8 +111,19 @@ def test_sibling_driver_and_env_override():
         print("PASS: sibling driver is used when no manifest exists and RIDX_DRIVER_BIN overrides both")
 
 
+def test_corpus_lockfile_sha256():
+    with tempfile.TemporaryDirectory() as td:
+        repo_dir = Path(td)
+        assert corpus_lockfile_sha256(repo_dir) == "none"
+        lock = repo_dir / "Cargo.lock"
+        lock.write_bytes(b'[[package]]\nname = "trybuild"\nversion = "1.0.108"\n')
+        assert corpus_lockfile_sha256(repo_dir) == hashlib.sha256(lock.read_bytes()).hexdigest()
+        print("PASS: corpus lockfile sha256 is recorded, 'none' without a lockfile")
+
+
 if __name__ == "__main__":
     test_driver_resolved_from_index_manifest()
     test_missing_driver_is_unknown_not_ridx_hash()
     test_sibling_driver_and_env_override()
+    test_corpus_lockfile_sha256()
     print("PASS: all driver provenance tests passed")

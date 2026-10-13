@@ -25,6 +25,7 @@ def _raw_matrix(repo_label):
     return {
         "repo": repo_label,
         "repo_commit": "4649aa9700619f94cf9c66876e9549d83420e16c",
+        "corpus_lockfile_sha256": "0" * 64,
         "ridx_commit": "d3b7810f2504452dd66570969eef2def04028be5",
         "ridx_binary_dirty": False,
         "driver_hash": "8884205b28dd2daa",
@@ -92,6 +93,7 @@ def test_publish_matrix_sidecar_sanitization_and_determinism():
         assert sidecar["ridx_commit"] == "d3b7810f2504452dd66570969eef2def04028be5"
         assert sidecar["harness_commit"] == "d3b7810f2504452dd66570969eef2def04028be5"
         assert sidecar["driver_hash"] == "8884205b28dd2daa"
+        assert sidecar["corpus_lockfile_sha256"] == "0" * 64
         assert sidecar["driver_source"] == "index_manifest"
         assert sidecar["driver_newer_than_index"] is False
         assert sidecar["index_built_at"] == "2026-10-12T07:55:46+00:00"

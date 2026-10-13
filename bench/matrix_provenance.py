@@ -9,6 +9,7 @@
 Provenance collection and scenario position recording for LSP matrix benchmarks.
 """
 
+import hashlib
 import json
 import os
 import subprocess
@@ -121,6 +122,15 @@ def index_timestamp_epoch(repo_dir: Path) -> Optional[int]:
     return int(ts) if isinstance(ts, (int, float)) else None
 
 
+def corpus_lockfile_sha256(repo_dir: Path) -> str:
+    """Returns the sha256 of the corpus Cargo.lock, which fixes the dependency versions the index
+    was built against, or "none" when the corpus has no lockfile."""
+    lock = Path(repo_dir) / "Cargo.lock"
+    if not lock.is_file():
+        return "none"
+    return hashlib.sha256(lock.read_bytes()).hexdigest()
+
+
 def resolve_driver(repo_dir: Path, ridx_bin: Path) -> Tuple[Optional[Path], str]:
     """Locates the driver that built the index: RIDX_DRIVER_BIN, then the manifest, then a sibling.
 
@@ -187,6 +197,7 @@ def collect_matrix_provenance(
         "seed": seed,
         "repo": normalize_repo_identifier(repo_dir, repo_id),
         "repo_commit": get_repo_commit(repo_dir) or "unknown",
+        "corpus_lockfile_sha256": corpus_lockfile_sha256(repo_dir),
         "sysroot_cas_key": cas_key or "none",
         "sysroot_transplanted": sysroot_trans,
         "ridx_index_shards": count_index_shards(repo_dir),
