@@ -24,6 +24,8 @@ pub(crate) fn lock_cli_test() -> std::sync::MutexGuard<'static, ()> {
     crate::indexer::tests::lock_indexer_test()
 }
 
+pub(crate) use crate::indexer::tests::{CwdGuard, EnvGuard};
+
 pub(crate) fn new_test_dir(prefix: &str) -> TestDir {
     static CNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
     let id = CNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);

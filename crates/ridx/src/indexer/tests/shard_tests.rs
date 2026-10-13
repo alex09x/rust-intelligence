@@ -275,8 +275,8 @@ fn test_indexer_dependency_shards_and_cargo_config() {
     fs::write(deps_dir.join("ignored.txt"), b"not json").unwrap();
     fs::write(deps_dir.join("invalid.json"), b"invalid json").unwrap();
 
-    std::env::set_var("LD_LIBRARY_PATH", "/usr/lib");
-    std::env::set_var("DYLD_FALLBACK_LIBRARY_PATH", "/usr/local/lib");
+    let _ld_guard = EnvGuard::set("LD_LIBRARY_PATH", "/usr/lib");
+    let _dyld_guard = EnvGuard::set("DYLD_FALLBACK_LIBRARY_PATH", "/usr/local/lib");
 
     if find_driver_binary().is_some() {
         let res = try_run_indexing(opts.clone());

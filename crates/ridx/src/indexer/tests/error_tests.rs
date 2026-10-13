@@ -207,92 +207,77 @@ fn test_indexer_helpers_and_error_paths() {
         .contains("failed to create output directory"));
 
     // 8. Driver binary not found error (line 337)
-    std::env::set_var("RIDX_DRIVER_BIN", "/nonexistent/mock/driver/path");
-    let orig_path = std::env::var("PATH").ok();
-    std::env::set_var("PATH", "");
-    let err_driver = try_run_indexing(IndexOptions {
-        path: direct_manifest.clone(),
-        out_dir_opt: Some(temp.0.join("out_test")),
-        package: None,
-        release: false,
-        features: None,
-        no_default_features: false,
-        all_features: false,
-        target: None,
-        cache_dir: None,
-        driver_bin: None,
-    });
-    if let Some(p) = orig_path {
-        std::env::set_var("PATH", p);
-    } else {
-        std::env::remove_var("PATH");
-    }
-    std::env::remove_var("RIDX_DRIVER_BIN");
+    let err_driver = {
+        let _driver_guard = EnvGuard::set("RIDX_DRIVER_BIN", "/nonexistent/mock/driver/path");
+        let _path_guard = EnvGuard::set("PATH", "");
+        try_run_indexing(IndexOptions {
+            path: direct_manifest.clone(),
+            out_dir_opt: Some(temp.0.join("out_test")),
+            package: None,
+            release: false,
+            features: None,
+            no_default_features: false,
+            all_features: false,
+            target: None,
+            cache_dir: None,
+            driver_bin: None,
+        })
+    };
     assert!(err_driver.is_err());
 
     // 9. compute_variant_id with RUSTFLAGS and CARGO_ENCODED_RUSTFLAGS (lines 248-253)
-    std::env::set_var("RUSTFLAGS", "-C opt-level=3");
-    std::env::set_var("CARGO_ENCODED_RUSTFLAGS", "-C\x1fopt-level=3");
-    let v_flags = compute_variant_id("dev", None, None, None, false, false, &direct_manifest);
-    assert!(!v_flags.is_empty());
-    std::env::remove_var("RUSTFLAGS");
-    std::env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+    {
+        let _rf = EnvGuard::set("RUSTFLAGS", "-C opt-level=3");
+        let _cerf = EnvGuard::set("CARGO_ENCODED_RUSTFLAGS", "-C\x1fopt-level=3");
+        let v_flags = compute_variant_id("dev", None, None, None, false, false, &direct_manifest);
+        assert!(!v_flags.is_empty());
+    }
 
     // 10. compute_variant_id with RUSTUP_TOOLCHAIN and empty PATH (lines 89-91 in variant.rs)
-    let orig_path2 = std::env::var("PATH").ok();
-    std::env::set_var("PATH", "");
-    std::env::set_var("RUSTUP_TOOLCHAIN", "test-toolchain");
-    let v_toolchain = compute_variant_id("dev", None, None, None, false, false, &direct_manifest);
-    assert!(!v_toolchain.is_empty());
-    if let Some(p) = orig_path2 {
-        std::env::set_var("PATH", p);
-    } else {
-        std::env::remove_var("PATH");
+    {
+        let _path = EnvGuard::set("PATH", "");
+        let _tc = EnvGuard::set("RUSTUP_TOOLCHAIN", "test-toolchain");
+        let v_toolchain = compute_variant_id("dev", None, None, None, false, false, &direct_manifest);
+        assert!(!v_toolchain.is_empty());
     }
-    std::env::remove_var("RUSTUP_TOOLCHAIN");
 
     // 11. try_run_indexing cargo execution error (lines 214-215 in orchestrate.rs)
-    let orig_path3 = std::env::var("PATH").ok();
-    std::env::set_var("PATH", "");
-    std::env::set_var("RIDX_DRIVER_BIN", &dummy_driver);
-    let err_cargo = try_run_indexing(IndexOptions {
-        path: direct_manifest.clone(),
-        out_dir_opt: Some(temp.0.join("out_test_cargo")),
-        package: None,
-        release: false,
-        features: None,
-        no_default_features: false,
-        all_features: false,
-        target: None,
-        cache_dir: None,
-        driver_bin: None,
-    });
-    if let Some(p) = orig_path3 {
-        std::env::set_var("PATH", p);
-    } else {
-        std::env::remove_var("PATH");
-    }
-    std::env::remove_var("RIDX_DRIVER_BIN");
+    let err_cargo = {
+        let _path = EnvGuard::set("PATH", "");
+        let _driver = EnvGuard::set("RIDX_DRIVER_BIN", &dummy_driver);
+        try_run_indexing(IndexOptions {
+            path: direct_manifest.clone(),
+            out_dir_opt: Some(temp.0.join("out_test_cargo")),
+            package: None,
+            release: false,
+            features: None,
+            no_default_features: false,
+            all_features: false,
+            target: None,
+            cache_dir: None,
+            driver_bin: None,
+        })
+    };
     assert!(err_cargo.is_err());
 
     // 12. WorkspaceIndex::open failure after cargo check exits 0 (lines 227-231 in orchestrate.rs)
     let _ = fs::remove_file(direct_manifest.parent().unwrap().join("Cargo.lock"));
-    std::env::set_var("RIDX_DRIVER_BIN", &dummy_driver);
-    std::env::set_var("RIDX_NO_DEPS", "1");
-    let err_open = try_run_indexing(IndexOptions {
-        path: direct_manifest,
-        out_dir_opt: Some(temp.0.join("out_test_empty")),
-        package: None,
-        release: false,
-        features: None,
-        no_default_features: false,
-        all_features: false,
-        target: None,
-        cache_dir: None,
-        driver_bin: None,
-    });
-    std::env::remove_var("RIDX_DRIVER_BIN");
-    std::env::remove_var("RIDX_NO_DEPS");
+    let err_open = {
+        let _driver = EnvGuard::set("RIDX_DRIVER_BIN", &dummy_driver);
+        let _no_deps = EnvGuard::set("RIDX_NO_DEPS", "1");
+        try_run_indexing(IndexOptions {
+            path: direct_manifest,
+            out_dir_opt: Some(temp.0.join("out_test_empty")),
+            package: None,
+            release: false,
+            features: None,
+            no_default_features: false,
+            all_features: false,
+            target: None,
+            cache_dir: None,
+            driver_bin: None,
+        })
+    };
     assert!(err_open.is_err());
     assert!(err_open
         .unwrap_err()

@@ -197,12 +197,12 @@ fn test_manifest_discovery_and_auto_reindexing() {
     let test_auto = new_test_dir("auto_idx");
     let empty_dir = test_auto.0.join("empty");
     fs::create_dir_all(&empty_dir).unwrap();
-    let orig_cur = std::env::current_dir().unwrap();
-    std::env::remove_var("RIDX_INDEX_DIR");
-    std::env::set_current_dir(&empty_dir).unwrap();
-    let res_empty = try_resolve_workspace(None);
-    assert!(res_empty.is_err());
-    std::env::set_current_dir(&orig_cur).unwrap();
+    {
+        let _idx_dir = EnvGuard::remove("RIDX_INDEX_DIR");
+        let _cwd = CwdGuard::change(&empty_dir).unwrap();
+        let res_empty = try_resolve_workspace(None);
+        assert!(res_empty.is_err());
+    }
 
     if find_driver_binary().is_some() {
         let ws_auto = test_auto.0.join("ws");
@@ -215,10 +215,12 @@ fn test_manifest_discovery_and_auto_reindexing() {
             .unwrap();
         fs::write(src_auto.join("lib.rs"), "pub fn auto_fn() {}\n").unwrap();
 
-        std::env::set_var("RIDX_NO_DEPS", "1");
-        std::env::set_current_dir(&ws_auto).unwrap();
-        let res_auto_build = try_resolve_workspace(None);
-        assert!(res_auto_build.is_ok());
+        let _no_deps = EnvGuard::set("RIDX_NO_DEPS", "1");
+        {
+            let _cwd = CwdGuard::change(&ws_auto).unwrap();
+            let res_auto_build = try_resolve_workspace(None);
+            assert!(res_auto_build.is_ok());
+        }
 
         // Now test find_manifest_for_path returning valid manifest with workspace_root (lines 398-419)
         // In ws_auto, target/ridx/ridx_manifest.json exists now from auto_indexing
@@ -253,9 +255,11 @@ fn test_manifest_discovery_and_auto_reindexing() {
         .unwrap();
 
         // Point current_dir to out_dir where ridx_manifest.json has workspace_root
-        std::env::set_current_dir(&out_dir).unwrap();
-        let res_from_manifest = try_resolve_workspace(None);
-        assert!(res_from_manifest.is_ok());
+        {
+            let _cwd = CwdGuard::change(&out_dir).unwrap();
+            let res_from_manifest = try_resolve_workspace(None);
+            assert!(res_from_manifest.is_ok());
+        }
 
         // Test manifest with non-existent workspace_root and no enclosing workspace (lines 405-408)
         v_manifest["workspace_root"] =
@@ -267,11 +271,13 @@ fn test_manifest_discovery_and_auto_reindexing() {
             serde_json::to_string(&v_manifest).unwrap(),
         )
         .unwrap();
-        std::env::set_current_dir(&isolated_manifest_dir).unwrap();
-        let res_isolated = try_resolve_workspace(None);
-        assert!(res_isolated
-            .unwrap_err()
-            .contains("Cannot find Cargo workspace"));
+        {
+            let _cwd = CwdGuard::change(&isolated_manifest_dir).unwrap();
+            let res_isolated = try_resolve_workspace(None);
+            assert!(res_isolated
+                .unwrap_err()
+                .contains("Cannot find Cargo workspace"));
+        }
 
         // Test manifest with empty workspace_root where enclosing workspace exists (line 403)
         let cur_empty_ws = test_auto.0.join("cur_empty_ws");
@@ -292,11 +298,10 @@ fn test_manifest_discovery_and_auto_reindexing() {
             serde_json::to_string(&v_manifest).unwrap(),
         )
         .unwrap();
-        std::env::set_current_dir(&cur_empty_ws).unwrap();
-        let _ = try_resolve_workspace(None);
-
-        std::env::set_current_dir(&orig_cur).unwrap();
-        std::env::remove_var("RIDX_NO_DEPS");
+        {
+            let _cwd = CwdGuard::change(&cur_empty_ws).unwrap();
+            let _ = try_resolve_workspace(None);
+        }
     }
 
     // Test corrupted variant_manifest.json and ridx_manifest.json (lines 218-219, 247-248)
@@ -369,10 +374,10 @@ fn test_manifest_discovery_and_auto_reindexing() {
         var_base.0.display().to_string(),
         Some("sample_target".to_string()),
     );
-    let orig_c = std::env::current_dir().unwrap();
-    std::env::set_current_dir(&var_base.0).unwrap();
-    let _ = try_resolve_index_and_target("sample_target".to_string(), None);
-    std::env::set_current_dir(&orig_c).unwrap();
+    {
+        let _cwd = CwdGuard::change(&var_base.0).unwrap();
+        let _ = try_resolve_index_and_target("sample_target".to_string(), None);
+    }
 }
 
 #[test]

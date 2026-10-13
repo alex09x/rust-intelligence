@@ -18,6 +18,7 @@ use std::path::Path;
 
 #[test]
 fn test_parse_location_and_workspace_helpers() {
+    let _lock = lock_cli_test();
     assert_eq!(
         parse_location("src/lib.rs:10:5"),
         Some(("src/lib.rs", 10, 5))
