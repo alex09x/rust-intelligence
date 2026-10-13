@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 1883
+- **Total E2E Tests**: 1923
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 1801
+- **Classified E2E Tests**: 1841
 - **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 44 / 53
-- **Rows >= 50 E2E**: 28 / 53
+- **Rows >= 20 E2E**: 45 / 53
+- **Rows >= 50 E2E**: 29 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -28,7 +28,7 @@
 | Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 50 | 0 | 50 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `textDocument/codeAction` | 50 | 12 | 62 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `codeAction/resolve` | 50 | 14 | 64 | ✅ Complete |
-| Domain 5: Intelligence & Completion | `textDocument/completion` | 10 | 25 | 35 | 🔴 In Progress (10/50) |
+| Domain 5: Intelligence & Completion | `textDocument/completion` | 50 | 25 | 75 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `completionItem/resolve` | 20 | 9 | 29 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 5: Intelligence & Completion | `textDocument/hover` | 5 | 16 | 21 | 🔴 In Progress (5/50) |
 | Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 1 | 3 | 4 | 🔴 In Progress (1/50) |
@@ -872,7 +872,47 @@
 
 ### Domain 5: Intelligence & Completion
 
-#### `textDocument/completion` (10 e2e tests)
+#### `textDocument/completion` (50 e2e tests)
+- `test_completion_at_exact_file_boundary_end`
+- `test_completion_at_exact_file_boundary_start`
+- `test_completion_cancelled_request_returns_cancelled_error`
+- `test_completion_client_filter_text_matches_label`
+- `test_completion_closure_argument_scoped`
+- `test_completion_data_field_for_resolve_request`
+- `test_completion_deprecated_item_tag_if_applicable`
+- `test_completion_empty_document_returns_empty_items`
+- `test_completion_enum_variant_scope`
+- `test_completion_for_loop_variable_scoped`
+- `test_completion_function_parameter_suggested`
+- `test_completion_if_let_binding_scoped`
+- `test_completion_in_comment_line_returns_empty_or_items`
+- `test_completion_in_string_literal_returns_valid_array`
+- `test_completion_insert_text_format_plain_or_snippet`
+- `test_completion_invoked_trigger_kind_supported`
+- `test_completion_items_have_sort_text_or_label`
+- `test_completion_items_have_valid_kind_integers`
+- `test_completion_items_unique_labels_within_scope`
+- `test_completion_local_let_binding_present_in_items`
+- `test_completion_match_arm_pattern_variable`
+- `test_completion_missing_params_rejected_error`
+- `test_completion_missing_position_rejected_error`
+- `test_completion_missing_text_document_rejected_error`
+- `test_completion_multiline_raw_string_literal`
+- `test_completion_multiple_scopes_nested_block`
+- `test_completion_nonexistent_file_returns_empty_items`
+- `test_completion_out_of_bounds_line_returns_empty_items`
+- `test_completion_overlay_update_replaces_completion_candidates`
+- `test_completion_path_separator_double_colon`
+- `test_completion_result_is_incomplete_flag_present`
+- `test_completion_self_parameter_method_lookup`
+- `test_completion_struct_field_completion`
+- `test_completion_tab_indentation_column_handling`
+- `test_completion_trait_method_suggestion`
+- `test_completion_trigger_character_dot_supported`
+- `test_completion_tuple_index_access`
+- `test_completion_utf16_surrogate_pair_column_indexing`
+- `test_completion_while_let_binding_scoped`
+- `test_completion_whitespace_only_line`
 - `test_l2_completion_generic_trait_bound`
 - `test_l2_completion_latency_benchmark`
 - `test_l2_completion_local_mod_shadows_sysroot`
@@ -2084,4 +2124,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 1883 total, 44 rows >= 20, 28 rows >= 50 of 53
+coverage: e2e 1923 total, 45 rows >= 20, 29 rows >= 50 of 53
