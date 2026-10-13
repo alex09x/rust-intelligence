@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 2156
+- **Total E2E Tests**: 2186
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 2074
+- **Classified E2E Tests**: 2104
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 48 / 53
-- **Rows >= 50 E2E**: 35 / 53
+- **Rows >= 50 E2E**: 36 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -35,7 +35,7 @@
 | Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 50 | 9 | 59 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 50 | 0 | 50 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/moniker` | 50 | 0 | 50 | ✅ Complete |
-| Domain 6: Hierarchies | `prepareCallHierarchy` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 6: Hierarchies | `prepareCallHierarchy` | 50 | 1 | 51 | ✅ Complete |
 | Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `callHierarchy/outgoingCalls` | 23 | 1 | 24 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `prepareTypeHierarchy` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
@@ -1238,16 +1238,39 @@
 
 ### Domain 6: Hierarchies
 
-#### `prepareCallHierarchy` (20 e2e tests)
+#### `prepareCallHierarchy` (50 e2e tests)
 - `test_prepare_call_hierarchy_associated_function`
+- `test_prepare_call_hierarchy_async_fn_declaration`
+- `test_prepare_call_hierarchy_clean_overlay_retains_definition`
+- `test_prepare_call_hierarchy_consecutive_queries_different_functions`
+- `test_prepare_call_hierarchy_const_fn_declaration`
+- `test_prepare_call_hierarchy_cursor_on_comment_returns_empty`
+- `test_prepare_call_hierarchy_cursor_on_const_returns_empty`
+- `test_prepare_call_hierarchy_cursor_on_enum_returns_empty`
+- `test_prepare_call_hierarchy_cursor_on_fn_param_returns_empty`
+- `test_prepare_call_hierarchy_cursor_on_fn_return_type_returns_empty`
 - `test_prepare_call_hierarchy_cursor_on_non_function_returns_empty`
+- `test_prepare_call_hierarchy_cursor_on_static_returns_empty`
+- `test_prepare_call_hierarchy_cursor_on_string_literal_returns_empty`
+- `test_prepare_call_hierarchy_cursor_on_struct_returns_empty`
+- `test_prepare_call_hierarchy_cursor_on_type_alias_returns_empty`
 - `test_prepare_call_hierarchy_cursor_on_whitespace_returns_empty`
+- `test_prepare_call_hierarchy_dirty_overlay_skips_stale_workspace`
 - `test_prepare_call_hierarchy_dispatcher_echoes_numeric_id`
 - `test_prepare_call_hierarchy_dispatcher_echoes_string_id`
 - `test_prepare_call_hierarchy_empty_file_returns_empty`
+- `test_prepare_call_hierarchy_extern_c_fn_declaration`
+- `test_prepare_call_hierarchy_generic_fn_with_type_params`
+- `test_prepare_call_hierarchy_generic_fn_with_where_clause`
+- `test_prepare_call_hierarchy_invalid_params_type_rejected_32602`
+- `test_prepare_call_hierarchy_method_with_mut_ref_self`
+- `test_prepare_call_hierarchy_method_with_ref_self`
 - `test_prepare_call_hierarchy_method_with_signature`
+- `test_prepare_call_hierarchy_method_with_value_self`
 - `test_prepare_call_hierarchy_missing_position_param_returns_empty`
+- `test_prepare_call_hierarchy_missing_text_document_param_rejected_32602`
 - `test_prepare_call_hierarchy_multiple_functions_selection`
+- `test_prepare_call_hierarchy_nested_function_in_block`
 - `test_prepare_call_hierarchy_nonexistent_file_returns_empty`
 - `test_prepare_call_hierarchy_overlay_did_change_updates_symbol`
 - `test_prepare_call_hierarchy_overlay_did_close_falls_back`
@@ -1255,10 +1278,17 @@
 - `test_prepare_call_hierarchy_position_at_fn_name_end`
 - `test_prepare_call_hierarchy_position_at_fn_name_start`
 - `test_prepare_call_hierarchy_position_beyond_eof_returns_empty`
+- `test_prepare_call_hierarchy_private_function`
+- `test_prepare_call_hierarchy_pub_crate_function`
 - `test_prepare_call_hierarchy_range_equals_selection_range`
 - `test_prepare_call_hierarchy_sequential_requests_isolation`
 - `test_prepare_call_hierarchy_single_free_function`
 - `test_prepare_call_hierarchy_symbol_kind_function`
+- `test_prepare_call_hierarchy_trait_default_method`
+- `test_prepare_call_hierarchy_trait_required_method`
+- `test_prepare_call_hierarchy_unsafe_fn_declaration`
+- `test_prepare_call_hierarchy_utf16_multibyte_prefix_columns`
+- `test_prepare_call_hierarchy_zero_width_selection_range_validity`
 
 #### `callHierarchy/incomingCalls` (21 e2e tests)
 - `test_call_hierarchy_incoming_calls_after_overlay_did_change`
@@ -2357,4 +2387,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2156 total, 48 rows >= 20, 35 rows >= 50 of 53
+coverage: e2e 2186 total, 48 rows >= 20, 36 rows >= 50 of 53
