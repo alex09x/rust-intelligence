@@ -49,7 +49,7 @@
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 50 | 10 | 60 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 50 | 17 | 67 | ✅ Complete |
-| Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 1 | 7 | 8 | 🔴 In Progress (1/50) |
+| Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 50 | 7 | 57 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 3 | 8 | 11 | 🔴 In Progress (3/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 1 | 5 | 6 | 🔴 In Progress (1/50) |
 | Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 14 | 0 | 14 | 🔴 In Progress (14/50) |
@@ -1970,8 +1970,57 @@
 - `test_rename_string_literal_position_returns_error_32803`
 - `test_rename_to_identical_name_succeeds_with_edits`
 
-#### `textDocument/linkedEditingRange` (1 e2e tests)
+#### `textDocument/linkedEditingRange` (50 e2e tests)
 - `test_l2_linked_editing_range_local_bindings`
+- `test_linked_editing_range_after_shutdown_returns_code_32600`
+- `test_linked_editing_range_binding_in_nested_closures`
+- `test_linked_editing_range_blank_line_returns_null`
+- `test_linked_editing_range_cancelled_request_returns_code_32800`
+- `test_linked_editing_range_comment_returns_null`
+- `test_linked_editing_range_consecutive_requests_isolation`
+- `test_linked_editing_range_crlf_line_endings_preserved`
+- `test_linked_editing_range_did_change_delete_lines_shifts_ranges`
+- `test_linked_editing_range_did_change_horizontal_shift`
+- `test_linked_editing_range_did_change_insert_lines_before_shifts_ranges`
+- `test_linked_editing_range_did_close_document_clears_overlay_returns_null`
+- `test_linked_editing_range_empty_file_returns_null`
+- `test_linked_editing_range_empty_params_returns_null`
+- `test_linked_editing_range_explicit_type_annotation`
+- `test_linked_editing_range_fn_first_of_two_parameters`
+- `test_linked_editing_range_fn_parameter_usage_site`
+- `test_linked_editing_range_fn_second_of_two_parameters`
+- `test_linked_editing_range_fn_single_parameter`
+- `test_linked_editing_range_greek_multibyte_prefix_columns`
+- `test_linked_editing_range_jsonrpc_protocol_version_is_2_0`
+- `test_linked_editing_range_keyword_fn_returns_null`
+- `test_linked_editing_range_keyword_let_returns_null`
+- `test_linked_editing_range_large_numeric_id_preserved`
+- `test_linked_editing_range_local_binding_declaration_site`
+- `test_linked_editing_range_local_binding_first_usage_site`
+- `test_linked_editing_range_local_binding_second_usage_site`
+- `test_linked_editing_range_local_binding_three_usages_all_included`
+- `test_linked_editing_range_long_binding_name`
+- `test_linked_editing_range_missing_position_returns_null`
+- `test_linked_editing_range_missing_text_document_returns_null`
+- `test_linked_editing_range_multiple_documents_isolated`
+- `test_linked_editing_range_mut_binding_declaration_and_reassignments`
+- `test_linked_editing_range_negative_numeric_id_preserved`
+- `test_linked_editing_range_nested_block_inner_shadowed_binding`
+- `test_linked_editing_range_nested_block_outer_shadowed_binding`
+- `test_linked_editing_range_nonexistent_file_uri_returns_null`
+- `test_linked_editing_range_null_params_returns_null`
+- `test_linked_editing_range_numeric_literal_returns_null`
+- `test_linked_editing_range_position_beyond_file_end_returns_null`
+- `test_linked_editing_range_position_beyond_line_end_returns_null`
+- `test_linked_editing_range_punctuation_brace_returns_null`
+- `test_linked_editing_range_punctuation_semicolon_returns_null`
+- `test_linked_editing_range_reopen_document_restores_capabilities`
+- `test_linked_editing_range_sequential_scopes_independent_bindings`
+- `test_linked_editing_range_single_letter_binding_name`
+- `test_linked_editing_range_string_id_preserved`
+- `test_linked_editing_range_string_literal_returns_null`
+- `test_linked_editing_range_word_boundary_end_exact_character`
+- `test_linked_editing_range_word_boundary_start_exact_character`
 
 #### `textDocument/formatting / rangeFormatting` (3 e2e tests)
 - `test_l2_formatting_full_and_idempotence`
@@ -2779,4 +2828,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2578 total, 49 rows >= 20, 49 rows >= 50 of 53
+coverage: e2e 2627 total, 50 rows >= 20, 50 rows >= 50 of 53
