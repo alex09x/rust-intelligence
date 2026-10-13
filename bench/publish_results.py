@@ -181,7 +181,8 @@ def publish_serde_matrix(src_dir: Path, pub_dir: Path, dry_run: bool = False) ->
 
 MATRIX_PROVENANCE_FIELDS = [
     "repo_commit", "ridx_commit", "ridx_binary_dirty", "driver_hash", "driver_build_commit",
-    "driver_dirty", "rustc", "ra_version", "node", "taskset", "seed", "sample_count_per_method",
+    "driver_dirty", "driver_source", "driver_newer_than_index", "index_built_at",
+    "rustc", "ra_version", "node", "taskset", "seed", "sample_count_per_method",
     "total_methods", "total_tests_per_server", "sysroot_cas_key", "sysroot_transplanted",
     "ridx_index_shards", "timestamp_start", "timestamp_end", "ridx_duration_sec", "ra_duration_sec",
     "ra_initial_wait_ms", "ra_canary_wait_ms", "ra_canary_attempts",

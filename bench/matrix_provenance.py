@@ -14,7 +14,7 @@ import os
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
 from provenance import (
     _get_driver_env,
@@ -89,6 +89,55 @@ def check_ridx_index(repo_dir: Path) -> int:
     return shards
 
 
+def _read_index_manifest(repo_dir: Path) -> Optional[Dict[str, Any]]:
+    mf = Path(repo_dir) / "target" / "ridx" / "ridx_manifest.json"
+    if not mf.is_file():
+        return None
+    try:
+        data = json.loads(mf.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def index_driver_path(repo_dir: Path) -> Optional[Path]:
+    """Returns the ridx-driver binary recorded in the index manifest's compiler_args, if any."""
+    data = _read_index_manifest(repo_dir)
+    if data is None:
+        return None
+    for shard in data.get("dependency_shards") or []:
+        args = shard.get("compiler_args") or []
+        if args and Path(str(args[0])).name.startswith("ridx-driver"):
+            return Path(str(args[0]))
+    return None
+
+
+def index_timestamp_epoch(repo_dir: Path) -> Optional[int]:
+    """Returns the index manifest's timestamp_epoch_secs, if recorded."""
+    data = _read_index_manifest(repo_dir)
+    if data is None:
+        return None
+    ts = data.get("timestamp_epoch_secs")
+    return int(ts) if isinstance(ts, (int, float)) else None
+
+
+def resolve_driver(repo_dir: Path, ridx_bin: Path) -> Tuple[Optional[Path], str]:
+    """Locates the driver that built the index: RIDX_DRIVER_BIN, then the manifest, then a sibling.
+
+    Returns (path, source) with source in {"env", "index_manifest", "sibling", "none"}.
+    """
+    env_driver = os.environ.get("RIDX_DRIVER_BIN")
+    if env_driver and Path(env_driver).is_file():
+        return Path(env_driver), "env"
+    recorded = index_driver_path(repo_dir)
+    if recorded is not None and recorded.is_file():
+        return recorded, "index_manifest"
+    sibling = Path(ridx_bin).parent / "ridx-driver"
+    if sibling.is_file():
+        return sibling, "sibling"
+    return None, "none"
+
+
 def collect_matrix_provenance(
     repo_dir: Path,
     ridx_bin: Path,
@@ -98,14 +147,24 @@ def collect_matrix_provenance(
     timestamp_end: str,
     repo_id: str = None,
 ) -> Dict[str, Any]:
-    """Collects complete provenance metadata according to methodology specification."""
+    """Collects complete provenance metadata according to methodology specification.
+
+    The driver fields describe the ridx-driver that built the index being queried, resolved by
+    `resolve_driver`; they are "unknown" when no driver binary can be located.
+    """
     cas_key = find_sysroot_cas_key(repo_dir)
-    sysroot_trans = is_sysroot_transplanted(ridx_bin, cas_key) if cas_key else False
+    driver_bin, driver_source = resolve_driver(repo_dir, ridx_bin)
+    sysroot_trans = is_sysroot_transplanted(str(driver_bin), cas_key) if (cas_key and driver_bin) else cas_key is None
 
     ridx_commit, ridx_dirty = get_binary_build_info(ridx_bin)
-    cand_driver = Path(ridx_bin).parent / "ridx-driver"
-    driver_bin = os.environ.get("RIDX_DRIVER_BIN") or (cand_driver if cand_driver.is_file() else None)
     drv_commit, drv_dirty = get_binary_build_info(driver_bin) if driver_bin else (None, False)
+    index_epoch = index_timestamp_epoch(repo_dir)
+    index_built_at = (
+        datetime.fromtimestamp(index_epoch, tz=timezone.utc).isoformat() if index_epoch is not None else "unknown"
+    )
+    driver_newer_than_index = (
+        driver_bin is not None and index_epoch is not None and driver_bin.stat().st_mtime > index_epoch
+    )
 
     repo_root = Path(__file__).resolve().parent.parent
     ws_head = get_repo_commit(repo_root) or "unknown"
@@ -113,9 +172,12 @@ def collect_matrix_provenance(
     return {
         "ridx_commit": ridx_commit or "unknown",
         "ridx_binary_dirty": ridx_dirty,
-        "driver_hash": get_driver_hash(ridx_bin) or "unknown",
+        "driver_hash": get_driver_hash(ridx_bin, driver_bin) or "unknown",
         "driver_build_commit": drv_commit or "unknown",
         "driver_dirty": drv_dirty,
+        "driver_source": driver_source,
+        "driver_newer_than_index": driver_newer_than_index,
+        "index_built_at": index_built_at,
         "workspace_head": ws_head,
         "workspace_head_note": "Reference only: git HEAD of workspace running the benchmark",
         "rustc": get_rustc_version(),

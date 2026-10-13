@@ -30,6 +30,9 @@ def _raw_matrix(repo_label):
         "driver_hash": "8884205b28dd2daa",
         "driver_build_commit": "cdf975d9dc93a314436e40188bf5e25d09144ccf",
         "driver_dirty": False,
+        "driver_source": "index_manifest",
+        "driver_newer_than_index": False,
+        "index_built_at": "2026-10-12T07:55:46+00:00",
         "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
         "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
         "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
@@ -89,6 +92,9 @@ def test_publish_matrix_sidecar_sanitization_and_determinism():
         assert sidecar["ridx_commit"] == "d3b7810f2504452dd66570969eef2def04028be5"
         assert sidecar["harness_commit"] == "d3b7810f2504452dd66570969eef2def04028be5"
         assert sidecar["driver_hash"] == "8884205b28dd2daa"
+        assert sidecar["driver_source"] == "index_manifest"
+        assert sidecar["driver_newer_than_index"] is False
+        assert sidecar["index_built_at"] == "2026-10-12T07:55:46+00:00"
         assert sidecar["ridx_index_shards"] == 27
         assert sidecar["ra_canary_pre_query_attempts"] == 2
         assert sidecar["date"] == "2026-10-13"

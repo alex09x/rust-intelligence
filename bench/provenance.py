@@ -126,18 +126,20 @@ def fnv1a_64(data: bytes) -> int:
     return h
 
 
-def get_driver_hash(curr_bin):
-    """Returns 64-bit hex fingerprint of the active driver binary."""
-    driver_bin = os.environ.get("RIDX_DRIVER_BIN")
+def get_driver_hash(curr_bin, driver_bin=None):
+    """Returns 64-bit hex fingerprint of the driver binary, or None when no driver is found.
+
+    The ridx binary itself is never hashed in place of the driver.
+    """
+    env_driver = os.environ.get("RIDX_DRIVER_BIN")
     if driver_bin and Path(driver_bin).is_file():
         p = Path(driver_bin)
+    elif env_driver and Path(env_driver).is_file():
+        p = Path(env_driver)
     else:
-        curr_path = Path(curr_bin)
-        cand_driver = curr_path.parent / "ridx-driver"
+        cand_driver = Path(curr_bin).parent / "ridx-driver"
         if cand_driver.is_file():
             p = cand_driver
-        elif curr_path.is_file():
-            p = curr_path
         else:
             return None
     try:
@@ -190,11 +192,10 @@ def is_driver_transplanted(cas_key: str, curr_bin: str = None) -> bool:
     driver_bin = os.environ.get("RUSTC_WORKSPACE_WRAPPER") or os.environ.get("RIDX_DRIVER_BIN")
     if not driver_bin and curr_bin:
         curr_path = Path(curr_bin)
-        cand_driver = curr_path.parent / "ridx-driver"
-        if cand_driver.is_file():
-            driver_bin = str(cand_driver)
-        elif curr_path.is_file():
+        if curr_path.name.startswith("ridx-driver") and curr_path.is_file():
             driver_bin = str(curr_path)
+        elif (curr_path.parent / "ridx-driver").is_file():
+            driver_bin = str(curr_path.parent / "ridx-driver")
     if not driver_bin or not Path(driver_bin).is_file():
         return True
     try:
