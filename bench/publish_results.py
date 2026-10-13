@@ -135,6 +135,7 @@ MATRIX_PROVENANCE_FIELDS = [
     "ridx_index_shards", "timestamp_start", "timestamp_end", "ridx_duration_sec", "ra_duration_sec",
     "ra_initial_wait_ms", "ra_canary_wait_ms", "ra_canary_attempts",
     "ra_quiescent_pre_query_wait_ms", "ra_canary_pre_query_wait_ms", "ra_canary_pre_query_attempts",
+    "ridx_cancelled_on_timeout", "ra_cancelled_on_timeout",
 ]
 
 

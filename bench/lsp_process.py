@@ -11,11 +11,14 @@ Uses an asynchronous background reader thread to continuously drain stdout, elim
 OS pipe buffer deadlocks caused by unconsumed server notifications (e.g. publishDiagnostics).
 """
 
+import copy
 import json
 import os
 import subprocess
 import threading
 import time
+
+from lsp_capabilities import CLIENT_CAPABILITIES
 
 
 class SimpleLspProcess:
@@ -35,6 +38,12 @@ class SimpleLspProcess:
         # Serializes writes to the server's stdin. It is never held together with self.lock, so a
         # write that blocks on a full stdin pipe cannot stop the reader thread from draining stdout.
         self.write_lock = threading.Lock()
+        # Ids of requests sent but not yet answered, including ones the client stopped waiting for.
+        self.outstanding = set()
+        # A request that times out is cancelled with $/cancelRequest, as an editor does, so the
+        # server can drop it from its queue instead of computing an answer nobody reads.
+        self.cancel_on_timeout = True
+        self.cancelled_on_timeout = 0
         self.events = {}
         self.responses = {}
         self.t_sends = {}
@@ -167,11 +176,15 @@ class SimpleLspProcess:
                     elif "id" in msg:
                         req_id = msg["id"]
                         with self.lock:
-                            self.t_recvs[req_id] = t_recv
+                            self.outstanding.discard(req_id)
                             ev = self.events.get(req_id)
                             if ev is not None:
+                                self.t_recvs[req_id] = t_recv
                                 self.responses[req_id] = msg
                                 ev.set()
+                            else:
+                                # Late answer to a request the client stopped waiting for.
+                                self.t_sends.pop(req_id, None)
                     elif "method" in msg:
                         method = msg.get("method")
                         if method == "experimental/serverStatus":
@@ -221,42 +234,7 @@ class SimpleLspProcess:
             "params": {
                 "processId": None, "rootUri": f"file://{self.cwd}",
                 "initializationOptions": {"checkOnSave": False},
-                "capabilities": {
-                    "window": {"workDoneProgress": True},
-                    "workspace": {
-                        "configuration": True,
-                        "workspaceFolders": True,
-                        "applyEdit": True,
-                        "symbol": {"dynamicRegistration": True},
-                    },
-                    "textDocument": {
-                        "synchronization": {"dynamicRegistration": True, "willSave": True, "willSaveWaitUntil": True, "didSave": True},
-                        "definition": {"dynamicRegistration": True, "linkSupport": True},
-                        "references": {"dynamicRegistration": True},
-                        "hover": {"dynamicRegistration": True, "contentFormat": ["markdown", "plaintext"]},
-                        "completion": {"dynamicRegistration": True, "completionItem": {"snippetSupport": True}},
-                        "signatureHelp": {"dynamicRegistration": True},
-                        "documentSymbol": {"dynamicRegistration": True, "hierarchicalDocumentSymbolSupport": True},
-                        "semanticTokens": {
-                            "dynamicRegistration": True,
-                            "tokenTypes": [
-                                "comment", "keyword", "string", "number", "regexp", "operator", "namespace",
-                                "type", "struct", "class", "interface", "enum", "typeParameter", "function",
-                                "method", "decorator", "macro", "variable", "parameter", "property", "label",
-                            ],
-                            "tokenModifiers": [
-                                "declaration", "definition", "readonly", "static", "deprecated",
-                                "abstract", "async", "modification", "documentation", "defaultLibrary",
-                            ],
-                            "requests": {"full": True, "range": True},
-                            "formats": ["relative"],
-                        },
-                        "inlayHint": {"dynamicRegistration": True},
-                        "codeAction": {"dynamicRegistration": True},
-                        "formatting": {"dynamicRegistration": True},
-                    },
-                    "experimental": {"serverStatusNotification": True},
-                },
+                "capabilities": copy.deepcopy(CLIENT_CAPABILITIES),
             },
         }
 
@@ -309,6 +287,7 @@ class SimpleLspProcess:
 
         with self.lock:
             self.events[req_id] = ev
+            self.outstanding.add(req_id)
 
         req = {"jsonrpc": "2.0", "id": req_id, "method": method, "params": params}
         t0 = time.perf_counter()
@@ -316,9 +295,16 @@ class SimpleLspProcess:
         if not self.send_msg(req):
             with self.lock:
                 self.events.pop(req_id, None)
+                self.outstanding.discard(req_id)
             return None, 0.0, "BROKEN_PIPE"
 
         signaled = ev.wait(timeout=timeout)
+        if not signaled and self.cancel_on_timeout:
+            with self.lock:
+                still_pending = req_id in self.outstanding
+            if still_pending:
+                self.notify("$/cancelRequest", {"id": req_id})
+                self.cancelled_on_timeout += 1
 
         with self.lock:
             self.events.pop(req_id, None)
@@ -339,6 +325,23 @@ class SimpleLspProcess:
             return None, dur_us, "TIMEOUT"
 
         return msg.get("result"), dur_us, msg.get("error")
+
+    def drain(self, timeout=600.0, poll=0.05):
+        """Waits until every request sent so far has been answered or rejected by the server.
+
+        Returns (waited_ms, still_outstanding). Called between benchmark methods so the backlog of
+        one method cannot delay, and time out, the first requests of the next one.
+        """
+        t0 = time.perf_counter()
+        while True:
+            with self.lock:
+                left = len(self.outstanding)
+            if left == 0 or self.exited or self.p.poll() is not None:
+                break
+            if time.perf_counter() - t0 >= timeout:
+                break
+            time.sleep(poll)
+        return round((time.perf_counter() - t0) * 1000.0, 2), left
 
     def notify(self, method, params):
         return self.send_msg({"jsonrpc": "2.0", "method": method, "params": params})

@@ -77,6 +77,8 @@ def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed
         "ra_progress_events": ra_res.get("progress_events", []),
         "ridx_open_documents_before_queries": ridx_res.get("open_documents_before_queries", 0),
         "ra_open_documents_before_queries": ra_res.get("open_documents_before_queries", 0),
+        "ridx_cancelled_on_timeout": ridx_res.get("cancelled_on_timeout", 0),
+        "ra_cancelled_on_timeout": ra_res.get("cancelled_on_timeout", 0),
     }
     # Every provenance field recorded by collect_matrix_provenance is carried into the result.
     res.update({k: v for k, v in prov.items() if k not in res})

@@ -116,12 +116,19 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
     peak_rss = 0
     peak_fds = 0
     peak_threads = 0
+    # Time spent before each method waiting for answers still owed from the previous one.
+    method_drains = {}
 
     try:
         query_specs = [s for s in LSP_SPECS if s[4] != "lifecycle"]
         open_docs_before_queries = None
         for idx, (mid, key, rpc_method, domain, rpc_type) in enumerate(query_specs):
             print(f"  [{idx+1}/{len(query_specs)}] {rpc_method} ({DOMAIN_NAMES.get(domain, 'Other')})...", flush=True)
+            drain_fn = getattr(srv, "drain", None)
+            if callable(drain_fn):
+                waited_ms, left = drain_fn(timeout=600.0)
+                if waited_ms >= 1.0 or left:
+                    method_drains[key] = {"waited_ms": waited_ms, "still_outstanding": left}
             if mid == 15:
                 if is_ra:
                     # The sync block (ids 8-14) makes rust-analyzer reload the workspace;
@@ -273,6 +280,7 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         initial_wait_ms = round(getattr(srv, "initial_wait_ms", 0.0), 2)
         progress_titles_seen = list(getattr(srv, "progress_titles_seen", []))
         progress_events = list(getattr(srv, "progress_events", []))
+        cancelled_on_timeout = int(getattr(srv, "cancelled_on_timeout", 0))
         srv.close()
 
     return {
@@ -290,4 +298,6 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
         "progress_titles_seen": progress_titles_seen,
         "progress_events": progress_events,
         "open_documents_before_queries": open_docs_before_queries if open_docs_before_queries is not None else 0,
+        "cancelled_on_timeout": cancelled_on_timeout,
+        "method_drains": method_drains,
     }
