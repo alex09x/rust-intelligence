@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 2126
+- **Total E2E Tests**: 2156
 - **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 2044
+- **Classified E2E Tests**: 2074
 - **Unclassified E2E Tests**: 82
 - **Rows >= 20 E2E**: 48 / 53
-- **Rows >= 50 E2E**: 34 / 53
+- **Rows >= 50 E2E**: 35 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -34,7 +34,7 @@
 | Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 50 | 3 | 53 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/inlayHint / resolve` | 50 | 9 | 59 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 50 | 0 | 50 | ✅ Complete |
-| Domain 5: Intelligence & Completion | `textDocument/moniker` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 5: Intelligence & Completion | `textDocument/moniker` | 50 | 0 | 50 | ✅ Complete |
 | Domain 6: Hierarchies | `prepareCallHierarchy` | 20 | 1 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 6: Hierarchies | `callHierarchy/outgoingCalls` | 23 | 1 | 24 | 🟡 Wave 1 Pass (>= 20) |
@@ -1184,27 +1184,57 @@
 - `test_inline_value_whitespace_indentation_start_col`
 - `test_inline_value_zero_length_file_returns_empty`
 
-#### `textDocument/moniker` (20 e2e tests)
+#### `textDocument/moniker` (50 e2e tests)
+- `test_moniker_associated_function_moniker`
+- `test_moniker_cancelled_request_returns_cancelled_error`
+- `test_moniker_closed_document_cleared_from_overlay`
 - `test_moniker_const_scheme_rust`
+- `test_moniker_cr_lf_line_endings_supported`
 - `test_moniker_dirty_overlay_definition_lookup`
+- `test_moniker_dirty_overlay_updates_identifier`
 - `test_moniker_empty_file_empty_monikers`
 - `test_moniker_enum_scheme_rust`
+- `test_moniker_fn_in_nested_scope`
 - `test_moniker_function_scheme_rust`
 - `test_moniker_identifier_format_file_colon_colon_name`
+- `test_moniker_macro_rules_position_empty`
 - `test_moniker_method_definition_moniker`
+- `test_moniker_missing_params_defaults_empty`
+- `test_moniker_missing_position_defaults_empty`
+- `test_moniker_missing_text_document_defaults_empty`
 - `test_moniker_module_definition_moniker`
+- `test_moniker_multibyte_utf8_character_col_offset`
 - `test_moniker_multiple_distinct_symbols_in_file`
+- `test_moniker_multiple_sequential_requests_stable`
+- `test_moniker_negative_position_handled_gracefully`
 - `test_moniker_nonexistent_symbol_empty_list`
 - `test_moniker_out_of_bounds_column_empty`
 - `test_moniker_out_of_bounds_line_empty`
 - `test_moniker_overlay_definition_lookup`
+- `test_moniker_repeated_name_in_different_files`
+- `test_moniker_resolve_array_params_preserved`
+- `test_moniker_resolve_cancelled_request_returns_cancelled_error`
+- `test_moniker_resolve_custom_kind_preserved`
+- `test_moniker_resolve_data_payload_preserved`
+- `test_moniker_resolve_empty_object_params`
+- `test_moniker_resolve_group_field_preserved`
+- `test_moniker_resolve_idempotent_multiple_calls`
 - `test_moniker_resolve_null_params_tolerance`
+- `test_moniker_resolve_numeric_id_preserved`
 - `test_moniker_resolve_returns_params_unmodified`
+- `test_moniker_resolve_string_params_preserved`
+- `test_moniker_response_is_json_array`
+- `test_moniker_static_item_moniker`
 - `test_moniker_struct_scheme_rust`
+- `test_moniker_submodule_definition_moniker`
+- `test_moniker_tab_indented_symbol_definition`
 - `test_moniker_trait_scheme_rust`
 - `test_moniker_type_alias_moniker`
+- `test_moniker_union_definition_moniker`
 - `test_moniker_unique_scope_project`
 - `test_moniker_utf16_coordinates_lookup`
+- `test_moniker_whitespace_surrounding_position_empty`
+- `test_moniker_zero_length_file_returns_empty`
 
 ### Domain 6: Hierarchies
 
@@ -2327,4 +2357,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2126 total, 48 rows >= 20, 34 rows >= 50 of 53
+coverage: e2e 2156 total, 48 rows >= 20, 35 rows >= 50 of 53
