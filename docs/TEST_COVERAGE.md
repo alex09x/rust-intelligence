@@ -51,7 +51,7 @@
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 50 | 17 | 67 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 50 | 7 | 57 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 50 | 8 | 58 | ✅ Complete |
-| Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 1 | 5 | 6 | 🔴 In Progress (1/50) |
+| Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 50 | 5 | 55 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 14 | 0 | 14 | 🔴 In Progress (14/50) |
 | Domain 9: Navigation & Symbols | `textDocument/definition / declaration (delegating)` | 52 | 7 | 59 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/typeDefinition` | 51 | 0 | 51 | ✅ Complete |
@@ -2074,8 +2074,57 @@
 - `test_range_formatting_syntax_error_snippet_returns_empty`
 - `test_refactor_formatting_and_range_formatting_execution`
 
-#### `textDocument/onTypeFormatting` (1 e2e tests)
+#### `textDocument/onTypeFormatting` (50 e2e tests)
 - `test_l2_on_type_formatting_delegation`
+- `test_on_type_formatting_after_shutdown_returns_code_32600`
+- `test_on_type_formatting_already_formatted_returns_empty`
+- `test_on_type_formatting_cancelled_request_returns_code_32800`
+- `test_on_type_formatting_consecutive_blank_lines_collapsed`
+- `test_on_type_formatting_consecutive_requests_isolation`
+- `test_on_type_formatting_crlf_normalized`
+- `test_on_type_formatting_did_change_incremental_update`
+- `test_on_type_formatting_did_close_falls_back_to_disk`
+- `test_on_type_formatting_disk_fallback_when_not_in_overlay`
+- `test_on_type_formatting_edition_2021_resolved`
+- `test_on_type_formatting_empty_file_returns_empty`
+- `test_on_type_formatting_enum_variant_indentation`
+- `test_on_type_formatting_jsonrpc_protocol_version_is_2_0`
+- `test_on_type_formatting_large_numeric_id_preserved`
+- `test_on_type_formatting_macro_invocation_formatted`
+- `test_on_type_formatting_match_arm_indentation`
+- `test_on_type_formatting_missing_ch_param_defaults_gracefully`
+- `test_on_type_formatting_missing_position_defaults_gracefully`
+- `test_on_type_formatting_missing_text_document_returns_empty`
+- `test_on_type_formatting_multiline_chain`
+- `test_on_type_formatting_negative_numeric_id_preserved`
+- `test_on_type_formatting_nonexistent_file_returns_empty_array`
+- `test_on_type_formatting_null_id_notification_handled`
+- `test_on_type_formatting_options_insert_spaces_false`
+- `test_on_type_formatting_options_tab_size_2`
+- `test_on_type_formatting_options_tab_size_4`
+- `test_on_type_formatting_overlay_active_buffer_precedes_disk`
+- `test_on_type_formatting_position_at_end_of_file`
+- `test_on_type_formatting_position_at_start_of_file`
+- `test_on_type_formatting_position_out_of_bounds_char`
+- `test_on_type_formatting_position_out_of_bounds_line`
+- `test_on_type_formatting_single_semicolon_file`
+- `test_on_type_formatting_string_id_preserved`
+- `test_on_type_formatting_struct_field_alignment`
+- `test_on_type_formatting_syntax_error_invalid_tokens_returns_empty`
+- `test_on_type_formatting_syntax_error_unclosed_delimiter_returns_empty`
+- `test_on_type_formatting_trailing_whitespace_stripped`
+- `test_on_type_formatting_trigger_arrow`
+- `test_on_type_formatting_trigger_closing_brace`
+- `test_on_type_formatting_trigger_closing_paren`
+- `test_on_type_formatting_trigger_colon`
+- `test_on_type_formatting_trigger_comma`
+- `test_on_type_formatting_trigger_dot`
+- `test_on_type_formatting_trigger_newline`
+- `test_on_type_formatting_trigger_semicolon`
+- `test_on_type_formatting_unicode_comments_preserved`
+- `test_on_type_formatting_unicode_identifier_preserved`
+- `test_on_type_formatting_unformatted_fn_params_spaces`
+- `test_on_type_formatting_unformatted_let_binding_spaces`
 
 #### `workspace/executeCommand` (14 e2e tests)
 - `test_apply_edit_two_way_handshake_reject_and_accept`
@@ -2875,4 +2924,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2674 total, 51 rows >= 20, 51 rows >= 50 of 53
+coverage: e2e 2723 total, 52 rows >= 20, 52 rows >= 50 of 53
