@@ -12,8 +12,17 @@
 
 use crate::lsp::presentation::flycheck::FlycheckState;
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
+
+#[derive(Debug, Clone)]
+pub struct PendingApplyState {
+    pub command_req_id: Option<Value>,
+    pub total_count: usize,
+    pub combined_edit: Value,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServerState {
@@ -28,7 +37,9 @@ pub struct LifecycleManager {
     pub conv: crate::lsp::protocol::PositionConverter,
     client_pull_diagnostics: bool,
     client_refresh_diagnostics: bool,
-    refresh_counter: std::sync::atomic::AtomicU64,
+    refresh_counter: AtomicU64,
+    next_apply_id: AtomicU64,
+    pending_applies: Mutex<HashMap<Value, PendingApplyState>>,
 }
 
 impl Default for LifecycleManager {
@@ -45,7 +56,9 @@ impl LifecycleManager {
             conv: crate::lsp::protocol::PositionConverter::new(),
             client_pull_diagnostics: false,
             client_refresh_diagnostics: false,
-            refresh_counter: std::sync::atomic::AtomicU64::new(0),
+            refresh_counter: AtomicU64::new(0),
+            next_apply_id: AtomicU64::new(10000),
+            pending_applies: Mutex::new(HashMap::new()),
         }
     }
 
@@ -58,11 +71,58 @@ impl LifecycleManager {
     }
 
     pub fn next_refresh_id(&self) -> String {
-        let n = self
-            .refresh_counter
-            .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
-            + 1;
+        let n = self.refresh_counter.fetch_add(1, Ordering::SeqCst) + 1;
         format!("ridx-refresh-{}", n)
+    }
+
+    pub fn get_next_apply_id(&self) -> Value {
+        json!(self.next_apply_id.fetch_add(1, Ordering::Relaxed))
+    }
+
+    pub fn register_pending_apply(
+        &self,
+        apply_req_id: Value,
+        command_req_id: Option<Value>,
+        total_count: usize,
+        combined_edit: Value,
+    ) {
+        let mut lock = self.pending_applies.lock().unwrap();
+        lock.insert(
+            apply_req_id,
+            PendingApplyState {
+                command_req_id,
+                total_count,
+                combined_edit,
+            },
+        );
+    }
+
+    pub fn handle_apply_edit_response(&self, msg: &Value) -> Option<(Option<Value>, Value)> {
+        let resp_id = msg.get("id")?;
+        let mut lock = self.pending_applies.lock().unwrap();
+        let state = lock.remove(resp_id)?;
+
+        let client_applied = msg
+            .get("result")
+            .and_then(|r| r.get("applied"))
+            .and_then(|a| a.as_bool())
+            .unwrap_or(false);
+
+        if client_applied {
+            Some((
+                state.command_req_id,
+                json!({
+                    "applied": true,
+                    "count": state.total_count,
+                    "edit": state.combined_edit,
+                }),
+            ))
+        } else {
+            Some((
+                state.command_req_id,
+                json!({ "applied": false, "count": 0, "failure": "client_rejected" }),
+            ))
+        }
     }
 
     #[allow(dead_code)]
@@ -117,22 +177,13 @@ impl LifecycleManager {
 
         let rs_filter = json!([{ "pattern": { "glob": "**/*.rs" } }]);
         let file_operations = json!({
-            "didCreate": { "filters": rs_filter },
-            "willCreate": { "filters": rs_filter },
-            "didRename": { "filters": rs_filter },
-            "willRename": { "filters": rs_filter },
-            "didDelete": { "filters": rs_filter },
-            "willDelete": { "filters": rs_filter }
+            "didCreate": { "filters": rs_filter }, "willCreate": { "filters": rs_filter },
+            "didRename": { "filters": rs_filter }, "willRename": { "filters": rs_filter },
+            "didDelete": { "filters": rs_filter }, "willDelete": { "filters": rs_filter }
         });
 
         let mut caps = json!({
-            "textDocumentSync": {
-                "openClose": true,
-                "change": 2, // Incremental
-                "willSave": true,
-                "willSaveWaitUntil": true,
-                "save": { "includeText": false }
-            },
+            "textDocumentSync": { "openClose": true, "change": 2, "willSave": true, "willSaveWaitUntil": true, "save": { "includeText": false } },
             "definitionProvider": true,
             "declarationProvider": true,
             "typeDefinitionProvider": true,
@@ -142,19 +193,11 @@ impl LifecycleManager {
             "documentSymbolProvider": true,
             "workspaceSymbolProvider": { "resolveProvider": true },
             "hoverProvider": true,
-            "completionProvider": {
-                "triggerCharacters": [".", ":"],
-                "resolveProvider": true
-            },
-            "signatureHelpProvider": {
-                "triggerCharacters": ["(", ","]
-            },
+            "completionProvider": { "triggerCharacters": [".", ":"], "resolveProvider": true },
+            "signatureHelpProvider": { "triggerCharacters": ["(", ","] },
             "documentFormattingProvider": true,
             "documentRangeFormattingProvider": true,
-            "documentOnTypeFormattingProvider": {
-                "firstTriggerCharacter": ";",
-                "moreTriggerCharacter": ["}"]
-            },
+            "documentOnTypeFormattingProvider": { "firstTriggerCharacter": ";", "moreTriggerCharacter": ["}"] },
             "renameProvider": { "prepareProvider": true },
             "linkedEditingRangeProvider": true,
             "callHierarchyProvider": true,
@@ -163,26 +206,16 @@ impl LifecycleManager {
             "documentColorProvider": true,
             "selectionRangeProvider": true,
             "foldingRangeProvider": true,
-            "codeActionProvider": {
-                "codeActionKinds": ["quickfix", "refactor", "source.organizeImports"],
-                "resolveProvider": true
-            },
+            "codeActionProvider": { "codeActionKinds": ["quickfix", "refactor", "source.organizeImports"], "resolveProvider": true },
             "codeLensProvider": { "resolveProvider": true },
             "executeCommandProvider": {
-                "commands": [
-                    "ridx.showReferences",
-                    "ridx.applyEdits",
-                    "ridx.resolveWorkspace"
-                ]
+                "commands": ["ridx.showReferences", "ridx.applyEdits", "ridx.resolveWorkspace"]
             },
             "inlayHintProvider": { "resolveProvider": true },
             "inlineValueProvider": true,
             "monikerProvider": true,
             "workspace": {
-                "workspaceFolders": {
-                    "supported": true,
-                    "changeNotifications": true
-                },
+                "workspaceFolders": { "supported": true, "changeNotifications": true },
                 "fileOperations": file_operations
             }
         });
@@ -201,10 +234,7 @@ impl LifecycleManager {
             "full": { "delta": true }
         });
 
-        caps["diagnosticProvider"] = json!({
-            "interFileDependencies": true,
-            "workspaceDiagnostics": true,
-        });
+        caps["diagnosticProvider"] = json!({ "interFileDependencies": true, "workspaceDiagnostics": true });
 
         let capabilities = json!({
             "capabilities": caps,
@@ -225,6 +255,7 @@ impl LifecycleManager {
         }
         self.state = ServerState::ShutDown;
         self.flycheck.shutdown();
+        self.pending_applies.lock().unwrap().clear();
         super::hierarchy::clear_impl_table_cache();
         Ok(Value::Null)
     }
@@ -343,5 +374,25 @@ mod tests {
 
         // Exit after shutdown succeeds
         assert!(lm.handle_exit().is_ok());
+    }
+
+    #[test]
+    fn test_apply_edit_counter_and_pending_applies_per_instance() {
+        let (lm1, lm2) = (LifecycleManager::new(), LifecycleManager::new());
+        assert_eq!(lm1.get_next_apply_id(), json!(10000));
+        assert_eq!(lm2.get_next_apply_id(), json!(10000));
+        assert_eq!(lm1.get_next_apply_id(), json!(10001));
+        assert_eq!(lm2.get_next_apply_id(), json!(10001));
+
+        lm1.register_pending_apply(json!(10000), Some(json!(404)), 2, json!({"test": 1}));
+        let ack = json!({ "id": 10000, "result": { "applied": true } });
+        assert_eq!(lm2.handle_apply_edit_response(&ack), None);
+        assert_eq!(
+            lm1.handle_apply_edit_response(&ack),
+            Some((
+                Some(json!(404)),
+                json!({ "applied": true, "count": 2, "edit": { "test": 1 } })
+            ))
+        );
     }
 }

@@ -53,7 +53,7 @@ pub fn dispatch_lsp_message<W: Write>(
     };
 
     if msg.get("method").is_none() {
-        if let Some((Some(ref cmd_id), resp)) = handle_apply_edit_response(&msg) {
+        if let Some((Some(ref cmd_id), resp)) = lifecycle.handle_apply_edit_response(&msg) {
             send_response(
                 writer,
                 &json!({ "jsonrpc": "2.0", "id": cmd_id, "result": resp }),
@@ -348,7 +348,8 @@ pub fn dispatch_lsp_message<W: Write>(
             handle_code_action_resolve(&msg, ws, overlay_mgr)
         }
         "workspace/executeCommand" => {
-            if let Some(res) = try_dispatch_apply_edits_command(&msg, overlay_mgr, writer, &mut id)?
+            if let Some(res) =
+                try_dispatch_apply_edits_command(&msg, overlay_mgr, lifecycle, writer, &mut id)?
             {
                 return Ok(res);
             }

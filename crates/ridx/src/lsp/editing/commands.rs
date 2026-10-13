@@ -17,8 +17,6 @@ use crate::lsp::protocol::uri_to_path;
 use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
 
 pub fn handle_execute_command(
     msg: &Value,
@@ -296,63 +294,10 @@ fn execute_apply_edits(msg: &Value, overlay_mgr: &mut OverlayManager) -> Value {
     })
 }
 
-static NEXT_APPLY_ID: AtomicU64 = AtomicU64::new(10000);
-
-pub fn get_next_apply_id() -> Value {
-    json!(NEXT_APPLY_ID.fetch_add(1, Ordering::Relaxed))
-}
-
-pub struct PendingApplyState {
-    pub command_req_id: Option<Value>,
-    pub plan: ApplyPlan,
-}
-
-static PENDING_APPLIES: Mutex<Option<HashMap<Value, PendingApplyState>>> = Mutex::new(None);
-
-pub fn register_pending_apply(apply_req_id: Value, command_req_id: Option<Value>, plan: ApplyPlan) {
-    let mut lock = PENDING_APPLIES.lock().unwrap();
-    let map = lock.get_or_insert_with(HashMap::new);
-    map.insert(
-        apply_req_id,
-        PendingApplyState {
-            command_req_id,
-            plan,
-        },
-    );
-}
-
-pub fn handle_apply_edit_response(msg: &Value) -> Option<(Option<Value>, Value)> {
-    let resp_id = msg.get("id")?;
-    let mut lock = PENDING_APPLIES.lock().unwrap();
-    let map = lock.as_mut()?;
-    let state = map.remove(resp_id)?;
-
-    let client_applied = msg
-        .get("result")
-        .and_then(|r| r.get("applied"))
-        .and_then(|a| a.as_bool())
-        .unwrap_or(false);
-
-    if client_applied {
-        Some((
-            state.command_req_id,
-            json!({
-                "applied": true,
-                "count": state.plan.total_count,
-                "edit": state.plan.combined_edit,
-            }),
-        ))
-    } else {
-        Some((
-            state.command_req_id,
-            json!({ "applied": false, "count": 0, "failure": "client_rejected" }),
-        ))
-    }
-}
-
 pub fn try_dispatch_apply_edits_command<W: std::io::Write>(
     msg: &Value,
     overlay_mgr: &mut OverlayManager,
+    lifecycle: &crate::lsp::lifecycle::LifecycleManager,
     writer: &mut W,
     id: &mut Option<Value>,
 ) -> std::io::Result<Option<bool>> {
@@ -365,7 +310,7 @@ pub fn try_dispatch_apply_edits_command<W: std::io::Write>(
         .unwrap_or(&[]);
     match plan_apply_edits(args, overlay_mgr) {
         Ok(plan) => {
-            let apply_req_id = get_next_apply_id();
+            let apply_req_id = lifecycle.get_next_apply_id();
             crate::lsp::protocol::send_response(
                 writer,
                 &json!({
@@ -375,7 +320,12 @@ pub fn try_dispatch_apply_edits_command<W: std::io::Write>(
                     "params": { "label": "Apply refactoring edits", "edit": plan.combined_edit }
                 }),
             )?;
-            register_pending_apply(apply_req_id, id.take(), plan);
+            lifecycle.register_pending_apply(
+                apply_req_id,
+                id.take(),
+                plan.total_count,
+                plan.combined_edit,
+            );
             Ok(Some(true))
         }
         Err(err) => {
