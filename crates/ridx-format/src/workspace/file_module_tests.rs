@@ -105,6 +105,8 @@ fn test_relative_path_anchored_to_workspace_root_beats_dependency_suffix_match()
         manifest_ino: None,
         active_variant_id: None,
         sysroot_cas_key: None,
+        instance_id: 1,
+        generation: 1,
     };
 
     // Query relative path "src/lib.rs"

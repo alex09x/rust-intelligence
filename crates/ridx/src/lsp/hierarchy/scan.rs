@@ -335,3 +335,25 @@ pub(crate) fn get_impl_line(lines: &[&str], line_idx: usize) -> Option<String> {
     }
     None
 }
+
+pub(crate) fn get_impl_line_from_file(path: &Path, line_1based: u32) -> Option<String> {
+    use std::io::{BufRead, BufReader};
+    let f = std::fs::File::open(path).ok()?;
+    let reader = BufReader::new(f);
+    let start = line_1based.saturating_sub(4).max(1) as usize;
+    let end = (line_1based + 5) as usize;
+    let mut window = Vec::new();
+    for (idx, line_res) in reader.lines().enumerate() {
+        let line_no = idx + 1;
+        if line_no > end {
+            break;
+        }
+        if line_no >= start {
+            let l = line_res.ok()?;
+            window.push(l);
+        }
+    }
+    let target_idx = (line_1based as usize).saturating_sub(start);
+    let refs: Vec<&str> = window.iter().map(|s| s.as_str()).collect();
+    get_impl_line(&refs, target_idx)
+}

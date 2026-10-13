@@ -9,6 +9,7 @@
  */
 
 pub mod call_tests;
+pub mod impl_table_tests;
 pub mod type_tests;
 
 use crate::lsp::protocol::PositionConverter;

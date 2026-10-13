@@ -597,6 +597,9 @@ impl WorkspaceIndex {
             }
         }
 
+        if changed {
+            self.generation = self.generation.wrapping_add(1);
+        }
         Ok(changed)
     }
 

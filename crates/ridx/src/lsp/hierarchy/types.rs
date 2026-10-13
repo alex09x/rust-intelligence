@@ -10,7 +10,7 @@
 
 //! LSP type hierarchy navigation handlers.
 
-use super::scan::{get_impl_line, parse_impl_line};
+use super::scan::{get_impl_line_from_file, parse_impl_line};
 use crate::lsp::error::LspResult;
 use crate::lsp::params::text_document_opt_position;
 use crate::lsp::protocol::{lsp_symbol_kind, path_to_uri, uri_to_path, PositionConverter};
@@ -18,6 +18,7 @@ use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 use std::collections::HashSet;
+use std::path::Path;
 
 pub fn handle_prepare_type_hierarchy(
     msg: &Value,
@@ -100,7 +101,7 @@ pub fn handle_prepare_type_hierarchy(
     Ok(json!(items))
 }
 
-fn parse_fallback_impl_path(path: &str) -> (Option<String>, Option<String>) {
+pub(crate) fn parse_fallback_impl_path(path: &str) -> (Option<String>, Option<String>) {
     if let Some(inner) = path.strip_prefix('<').and_then(|s| s.strip_suffix('>')) {
         if let Some((target, tr)) = inner.split_once(" as ") {
             let target_clean = target.rsplit("::").next().unwrap_or(target);
@@ -125,13 +126,8 @@ fn process_impl_candidate(
     start_line_1based: u32,
     fallback: (Option<String>, Option<String>),
 ) {
-    let (trait_opt, target_opt) = std::fs::read_to_string(file_path)
-        .ok()
-        .and_then(|c| {
-            let lines: Vec<&str> = c.lines().collect();
-            let l_idx = start_line_1based.saturating_sub(1) as usize;
-            get_impl_line(&lines, l_idx).map(|l| parse_impl_line(&l))
-        })
+    let (trait_opt, target_opt) = get_impl_line_from_file(Path::new(file_path), start_line_1based)
+        .map(|l| parse_impl_line(&l))
         .unwrap_or(fallback);
 
     let (Some(trait_name), Some(target_name)) = (trait_opt, target_opt) else {
@@ -149,9 +145,7 @@ fn process_impl_candidate(
             }
             let (item_uri, item_range) = if let Some(t_def) = q
                 .ws
-                .search_symbols(trait_base)
-                .into_iter()
-                .find(|d| d.name == trait_base && d.kind == DefKind::Trait)
+                .find_first_symbol(trait_base, |d| d.name == trait_base && d.kind == DefKind::Trait)
             {
                 let p = t_def.resolved_path();
                 let s = p.to_str().unwrap_or(t_def.file);
@@ -182,9 +176,7 @@ fn process_impl_candidate(
         }
         let (item_uri, item_range, kind) = if let Some(t_def) = q
             .ws
-            .search_symbols(target_base)
-            .into_iter()
-            .find(|d| d.name == target_base && matches!(d.kind, DefKind::Struct | DefKind::Enum))
+            .find_first_symbol(target_base, |d| d.name == target_base && matches!(d.kind, DefKind::Struct | DefKind::Enum))
         {
             let p = t_def.resolved_path();
             let s = p.to_str().unwrap_or(t_def.file);
@@ -211,7 +203,80 @@ fn process_impl_candidate(
     }
 }
 
+fn run_impl_reference_fallback(
+    query: &mut ImplCandidateQuery<'_>,
+    match_kind: fn(DefKind) -> bool,
+) {
+    if let Some(sym) = query.ws.find_first_symbol(query.query_name, |s| {
+        s.name == query.query_name && match_kind(s.kind)
+    }) {
+        for r in query.ws.find_references(sym.path) {
+            let r_path = r.resolved_path();
+            let r_file = r_path.to_str().unwrap_or(r.file);
+            process_impl_candidate(query, r_file, r.span.start_line(), (None, None));
+        }
+    }
+}
+
 pub fn handle_type_hierarchy_supertypes(msg: &Value, workspace: Option<&WorkspaceIndex>) -> Value {
+    let item = &msg["params"]["item"];
+    let name = item["name"].as_str().unwrap_or("");
+    let Some(ws) = workspace else {
+        return json!([]);
+    };
+
+    let mut supertypes = Vec::new();
+    let mut seen = HashSet::new();
+
+    // 1. Fast indexed lookup from ImplTable
+    let table = super::impl_table::get_or_build_impl_table(ws);
+    table.find_supertypes(ws, name, &mut seen, &mut supertypes);
+
+    // 2. References to matching struct/enum (for macro expansions and mock indices)
+    let mut query = ImplCandidateQuery {
+        ws,
+        query_name: name,
+        is_supertype: true,
+        seen: &mut seen,
+        results: &mut supertypes,
+    };
+    run_impl_reference_fallback(&mut query, |k| matches!(k, DefKind::Struct | DefKind::Enum));
+
+    supertypes.into()
+}
+
+pub fn handle_type_hierarchy_subtypes(msg: &Value, workspace: Option<&WorkspaceIndex>) -> Value {
+    let item = &msg["params"]["item"];
+    let name = item["name"].as_str().unwrap_or("");
+    let Some(ws) = workspace else {
+        return json!([]);
+    };
+
+    let mut subtypes = Vec::new();
+    let mut seen = HashSet::new();
+
+    // 1. Fast indexed lookup from ImplTable
+    let table = super::impl_table::get_or_build_impl_table(ws);
+    table.find_subtypes(ws, name, &mut seen, &mut subtypes);
+
+    // 2. References to matching trait (for macro expansions and mock indices)
+    let mut query = ImplCandidateQuery {
+        ws,
+        query_name: name,
+        is_supertype: false,
+        seen: &mut seen,
+        results: &mut subtypes,
+    };
+    run_impl_reference_fallback(&mut query, |k| k == DefKind::Trait);
+
+    subtypes.into()
+}
+
+#[cfg(test)]
+pub fn baseline_handle_type_hierarchy_supertypes(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+) -> Value {
     let item = &msg["params"]["item"];
     let name = item["name"].as_str().unwrap_or("");
     let Some(ws) = workspace else {
@@ -228,7 +293,6 @@ pub fn handle_type_hierarchy_supertypes(msg: &Value, workspace: Option<&Workspac
         results: &mut supertypes,
     };
 
-    // 1. DefKind::Impl definitions (compiler index)
     for sym in ws.search_symbols("").into_iter().filter(|s| s.kind == DefKind::Impl) {
         let sym_path = sym.resolved_path();
         let sym_file = sym_path.to_str().unwrap_or(sym.file);
@@ -241,26 +305,15 @@ pub fn handle_type_hierarchy_supertypes(msg: &Value, workspace: Option<&Workspac
         );
     }
 
-    // 2. References to matching struct/enum (mock/reference index)
-    for sym in ws.search_symbols(name) {
-        if sym.name == name && matches!(sym.kind, DefKind::Struct | DefKind::Enum) {
-            for r in ws.find_references(sym.path) {
-                let r_path = r.resolved_path();
-                let r_file = r_path.to_str().unwrap_or(r.file);
-                process_impl_candidate(
-                    &mut query,
-                    r_file,
-                    r.span.start_line(),
-                    (None, None),
-                );
-            }
-        }
-    }
-
+    run_impl_reference_fallback(&mut query, |k| matches!(k, DefKind::Struct | DefKind::Enum));
     supertypes.into()
 }
 
-pub fn handle_type_hierarchy_subtypes(msg: &Value, workspace: Option<&WorkspaceIndex>) -> Value {
+#[cfg(test)]
+pub fn baseline_handle_type_hierarchy_subtypes(
+    msg: &Value,
+    workspace: Option<&WorkspaceIndex>,
+) -> Value {
     let item = &msg["params"]["item"];
     let name = item["name"].as_str().unwrap_or("");
     let Some(ws) = workspace else {
@@ -277,7 +330,6 @@ pub fn handle_type_hierarchy_subtypes(msg: &Value, workspace: Option<&WorkspaceI
         results: &mut subtypes,
     };
 
-    // 1. DefKind::Impl definitions (compiler index)
     for sym in ws.search_symbols("").into_iter().filter(|s| s.kind == DefKind::Impl) {
         let sym_path = sym.resolved_path();
         let sym_file = sym_path.to_str().unwrap_or(sym.file);
@@ -290,21 +342,6 @@ pub fn handle_type_hierarchy_subtypes(msg: &Value, workspace: Option<&WorkspaceI
         );
     }
 
-    // 2. References to matching trait (mock/reference index)
-    for sym in ws.search_symbols(name) {
-        if sym.name == name && sym.kind == DefKind::Trait {
-            for r in ws.find_references(sym.path) {
-                let r_path = r.resolved_path();
-                let r_file = r_path.to_str().unwrap_or(r.file);
-                process_impl_candidate(
-                    &mut query,
-                    r_file,
-                    r.span.start_line(),
-                    (None, None),
-                );
-            }
-        }
-    }
-
+    run_impl_reference_fallback(&mut query, |k| k == DefKind::Trait);
     subtypes.into()
 }

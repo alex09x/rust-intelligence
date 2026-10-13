@@ -80,6 +80,7 @@ pub fn dispatch_lsp_message<W: Write>(
     }
     if any_reloaded {
         lifecycle.conv.clear();
+        super::hierarchy::clear_impl_table_cache();
     }
 
     let conv = &mut lifecycle.conv;

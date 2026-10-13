@@ -1160,6 +1160,67 @@ impl WorkspaceIndex {
         matches
     }
 
+    /// Finds the first symbol matching `query` and `predicate` without eagerly collecting all matches.
+    pub fn find_first_symbol<'a, F>(
+        &'a self,
+        query: &str,
+        mut predicate: F,
+    ) -> Option<WorkspaceSymbol<'a>>
+    where
+        F: FnMut(&WorkspaceSymbol<'a>) -> bool,
+    {
+        let queries = super::std_map::std_path_candidates(query);
+        for q in &queries {
+            let q_ascii_lower = if q.is_ascii() {
+                Some(q.to_ascii_lowercase())
+            } else {
+                None
+            };
+            for (i, reader) in self.readers.iter().enumerate() {
+                let crate_name = reader.crate_name();
+                let defs = match &q_ascii_lower {
+                    Some(lower) => reader.search_symbols_ascii(lower.as_bytes()),
+                    None => reader.search_symbols(q),
+                };
+                let source_root = self
+                    .source_roots
+                    .get(i)
+                    .and_then(|r| r.as_deref())
+                    .or(self.workspace_root.as_deref());
+                let unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+
+                for def in defs {
+                    let name = reader.get_str(def.name_offset());
+                    let path = reader.get_str(def.path_offset());
+                    let span = def.span();
+                    let file = reader.get_file(span.file_id());
+                    let signature = if def.sig_offset() != 0 {
+                        Some(reader.get_str(def.sig_offset()))
+                    } else {
+                        None
+                    };
+
+                    let sym = WorkspaceSymbol {
+                        crate_name,
+                        name,
+                        path,
+                        kind: DefKind::from(def.kind),
+                        file,
+                        span,
+                        signature,
+                        is_macro_expansion: def.is_macro_expansion(),
+                        source_root,
+                        unit_key,
+                    };
+                    if predicate(&sym) {
+                        return Some(sym);
+                    }
+                }
+            }
+        }
+        None
+    }
+
     /// Iterates over matching definitions across workspace readers without eager allocation,
     /// searching preferred crate first and stopping when `cb` returns false or scan budget is exhausted.
     pub fn for_each_symbol_ascii<F>(

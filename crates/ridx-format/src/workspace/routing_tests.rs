@@ -80,6 +80,8 @@ fn build_mock_workspace(
         manifest_ino: None,
         active_variant_id: None,
         sysroot_cas_key: None,
+        instance_id: 1,
+        generation: 1,
     }
 }
 

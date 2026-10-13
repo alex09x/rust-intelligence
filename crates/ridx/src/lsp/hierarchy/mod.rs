@@ -11,6 +11,7 @@
 //! LSP call hierarchy and type hierarchy navigation handlers.
 
 pub mod call;
+pub mod impl_table;
 pub mod scan;
 pub mod types;
 
@@ -18,4 +19,5 @@ pub mod types;
 pub mod tests;
 
 pub use call::*;
+pub use impl_table::*;
 pub use types::*;

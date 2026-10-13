@@ -43,6 +43,13 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static WORKSPACE_INSTANCE_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+fn next_workspace_instance_id() -> u64 {
+    WORKSPACE_INSTANCE_COUNTER.fetch_add(1, Ordering::Relaxed)
+}
 
 /// Unified multi-crate index for a cargo workspace or multi-index directory.
 pub struct WorkspaceIndex {
@@ -70,6 +77,8 @@ pub struct WorkspaceIndex {
     pub(crate) manifest_ino: Option<u64>,
     pub(crate) active_variant_id: Option<String>,
     pub(crate) sysroot_cas_key: Option<String>,
+    pub(crate) instance_id: u64,
+    pub(crate) generation: u64,
 }
 
 impl std::fmt::Debug for WorkspaceIndex {
@@ -150,6 +159,8 @@ impl WorkspaceIndex {
                 manifest_ino: None,
                 active_variant_id: None,
                 sysroot_cas_key: None,
+                instance_id: next_workspace_instance_id(),
+                generation: 1,
             };
             return Ok(ws);
         }
@@ -576,6 +587,8 @@ impl WorkspaceIndex {
             manifest_ino: None,
             active_variant_id,
             sysroot_cas_key: sysroot_cas_key.clone(),
+            instance_id: next_workspace_instance_id(),
+            generation: 1,
         };
         if let Some(cas_key) = sysroot_cas_key {
             ws.attach_sysroot_shards_for_key(&cas_key);
@@ -803,6 +816,26 @@ impl WorkspaceIndex {
     pub fn is_external_path(&self, path: &Path) -> bool {
         let s = path.to_str().unwrap_or("");
         self.is_external_target(s, path, None)
+    }
+
+    /// Returns the unique instance ID for this workspace.
+    #[inline]
+    pub fn instance_id(&self) -> u64 {
+        self.instance_id
+    }
+
+    /// Returns the current index generation counter.
+    /// Incremented on each index reload or modification.
+    #[inline]
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+
+    /// Explicitly bumps the index generation counter.
+    #[inline]
+    pub fn bump_generation(&mut self) -> u64 {
+        self.generation = self.generation.wrapping_add(1);
+        self.generation
     }
 }
 
