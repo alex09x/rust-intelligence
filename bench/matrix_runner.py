@@ -78,13 +78,8 @@ def run_full_matrix_benchmark(repo_dir, ridx_bin, ra_bin, sample_count=300, seed
         "ridx_open_documents_before_queries": ridx_res.get("open_documents_before_queries", 0),
         "ra_open_documents_before_queries": ra_res.get("open_documents_before_queries", 0),
     }
-    for k in [
-        "ridx_commit", "ridx_binary_dirty", "driver_hash", "driver_build_commit", "driver_dirty",
-        "workspace_head", "workspace_head_note", "rustc", "ra_version", "node", "taskset",
-        "repo_commit", "sysroot_cas_key", "sysroot_transplanted", "timestamp_start", "timestamp_end",
-        "ridx_index_shards",
-    ]:
-        res[k] = prov.get(k)
+    # Every provenance field recorded by collect_matrix_provenance is carried into the result.
+    res.update({k: v for k, v in prov.items() if k not in res})
     res["ridx"] = ridx_res
     res["rust_analyzer"] = ra_res
     return res
