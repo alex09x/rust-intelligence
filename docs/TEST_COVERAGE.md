@@ -43,7 +43,7 @@
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/foldingRange` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/selectionRange` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 7: Presentation | `textDocument/selectionRange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 20 | 0 | 20 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
@@ -1656,27 +1656,57 @@
 - `test_folding_range_utf8_multibyte_prefix_columns`
 - `test_l2_folding_range_and_code_lens`
 
-#### `textDocument/selectionRange` (20 e2e tests)
+#### `textDocument/selectionRange` (50 e2e tests)
 - `test_selection_range_after_did_change_overlay_edit`
+- `test_selection_range_batch_positions_in_same_function_different_scopes`
+- `test_selection_range_batch_positions_ordered_descending`
+- `test_selection_range_batch_three_positions_different_functions`
+- `test_selection_range_consecutive_requests_idempotent`
+- `test_selection_range_crlf_line_endings_position_calculation`
 - `test_selection_range_cursor_at_eof`
 - `test_selection_range_cursor_at_start_of_file`
 - `test_selection_range_cursor_between_functions`
+- `test_selection_range_cursor_between_nested_blocks`
+- `test_selection_range_cursor_inside_block_expression`
+- `test_selection_range_cursor_inside_closure_block`
+- `test_selection_range_cursor_inside_const_item_block`
+- `test_selection_range_cursor_inside_for_loop_block`
+- `test_selection_range_cursor_inside_if_else_blocks`
+- `test_selection_range_cursor_inside_impl_block_method`
 - `test_selection_range_cursor_inside_inner_block`
+- `test_selection_range_cursor_inside_loop_infinite`
+- `test_selection_range_cursor_inside_match_arm_block`
+- `test_selection_range_cursor_inside_nested_module`
+- `test_selection_range_cursor_inside_trait_default_method`
+- `test_selection_range_cursor_inside_unsafe_block`
+- `test_selection_range_cursor_inside_while_block`
+- `test_selection_range_cursor_on_block_comment_inside_fn`
+- `test_selection_range_cursor_on_closing_brace_boundary`
 - `test_selection_range_cursor_on_closure_or_loop`
+- `test_selection_range_cursor_on_leading_whitespace_of_block`
+- `test_selection_range_cursor_on_line_comment_inside_fn`
+- `test_selection_range_cursor_on_opening_brace_boundary`
 - `test_selection_range_deeply_nested_blocks`
+- `test_selection_range_did_change_block_removed`
+- `test_selection_range_did_change_nested_block_added`
 - `test_selection_range_duplicate_positions_in_request`
 - `test_selection_range_empty_positions_returns_empty`
+- `test_selection_range_invalid_uri_format_returns_empty`
 - `test_selection_range_missing_positions_key`
 - `test_selection_range_multiple_documents_isolation`
 - `test_selection_range_multiple_positions_batch`
 - `test_selection_range_nested_struct_impl_method`
+- `test_selection_range_null_positions_treated_safely`
 - `test_selection_range_numeric_request_id_echoed`
+- `test_selection_range_overlay_did_change_shifts_selection_range`
+- `test_selection_range_overlay_did_close_falls_back_to_empty`
 - `test_selection_range_parent_nesting_invariants`
 - `test_selection_range_position_beyond_file_length`
 - `test_selection_range_range_coordinates_validity`
 - `test_selection_range_single_position_nested_scope`
 - `test_selection_range_string_request_id_echoed`
 - `test_selection_range_unopened_document_returns_empty`
+- `test_selection_range_utf8_multibyte_prefix_columns`
 
 #### `textDocument/documentLink / resolve` (20 e2e tests)
 - `test_document_link_angle_bracket_delimiter`
@@ -2585,4 +2615,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2384 total, 48 rows >= 20, 43 rows >= 50 of 53
+coverage: e2e 2414 total, 48 rows >= 20, 44 rows >= 50 of 53
