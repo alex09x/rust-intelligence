@@ -46,7 +46,7 @@
 | Domain 7: Presentation | `textDocument/selectionRange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/codeLens / resolve` | 21 | 0 | 21 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 7: Presentation | `textDocument/codeLens / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 20 | 10 | 30 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 5 | 17 | 22 | 🔴 In Progress (5/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 1 | 7 | 8 | 🔴 In Progress (1/50) |
@@ -1812,27 +1812,56 @@
 - `test_document_color_stub_sequential_requests_isolation`
 - `test_document_color_ten_rapid_consecutive_requests`
 
-#### `textDocument/codeLens / resolve` (21 e2e tests)
+#### `textDocument/codeLens / resolve` (50 e2e tests)
+- `test_code_lens_after_shutdown_returns_code_32600`
+- `test_code_lens_cancelled_request_returns_code_32800`
+- `test_code_lens_const_definition_lens`
+- `test_code_lens_crlf_line_offsets_matching`
+- `test_code_lens_did_change_deletes_symbol_removes_lens`
+- `test_code_lens_did_change_shifts_lenses_downward`
 - `test_code_lens_disk_workspace_definition`
 - `test_code_lens_dispatcher_echoes_numeric_id`
 - `test_code_lens_dispatcher_echoes_string_id`
 - `test_code_lens_empty_file_returns_empty`
+- `test_code_lens_enum_definition_lens`
 - `test_code_lens_file_without_symbols_returns_empty`
+- `test_code_lens_jsonrpc_protocol_version_is_2_0`
+- `test_code_lens_large_numeric_id_preserved`
 - `test_code_lens_multiple_definitions_in_file`
+- `test_code_lens_multiple_functions_order_preserved`
+- `test_code_lens_negative_numeric_id_preserved`
 - `test_code_lens_nonexistent_file_returns_empty`
 - `test_code_lens_overlay_did_change_updates_lenses`
 - `test_code_lens_overlay_did_close_falls_back_to_index`
 - `test_code_lens_overlay_symbols_precedence`
+- `test_code_lens_resolve_after_shutdown_returns_code_32600`
+- `test_code_lens_resolve_arguments_structure`
+- `test_code_lens_resolve_cancelled_request_returns_code_32800`
 - `test_code_lens_resolve_echoes_numeric_id`
 - `test_code_lens_resolve_echoes_string_id`
+- `test_code_lens_resolve_empty_data_object`
+- `test_code_lens_resolve_jsonrpc_protocol_version_is_2_0`
+- `test_code_lens_resolve_large_numeric_id_preserved`
+- `test_code_lens_resolve_location_range_and_uri`
 - `test_code_lens_resolve_missing_data_returns_unchanged`
+- `test_code_lens_resolve_negative_numeric_id_preserved`
+- `test_code_lens_resolve_null_data`
 - `test_code_lens_resolve_overlay_dirty_mapped_coords`
 - `test_code_lens_resolve_plural_title_formatting`
+- `test_code_lens_resolve_preserves_additional_fields`
+- `test_code_lens_resolve_preserves_custom_lens_range`
 - `test_code_lens_resolve_roundtrip_from_code_lens_request`
 - `test_code_lens_resolve_singular_title_formatting`
+- `test_code_lens_resolve_three_references_plural_formatting`
 - `test_code_lens_resolve_with_multiple_references`
 - `test_code_lens_resolve_with_single_reference`
 - `test_code_lens_resolve_with_zero_references`
+- `test_code_lens_static_definition_lens`
+- `test_code_lens_struct_definition_lens`
+- `test_code_lens_trait_definition_lens`
+- `test_code_lens_two_documents_independent_lenses`
+- `test_code_lens_type_alias_definition_lens`
+- `test_code_lens_unicode_identifiers_exact_offsets`
 - `test_l2_code_lens_command_declared_in_execute_command_provider`
 
 ### Domain 8: Editing & Workspace Edits
@@ -2675,4 +2704,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2474 total, 48 rows >= 20, 46 rows >= 50 of 53
+coverage: e2e 2503 total, 48 rows >= 20, 47 rows >= 50 of 53
