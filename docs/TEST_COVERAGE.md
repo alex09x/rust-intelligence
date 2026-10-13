@@ -47,7 +47,7 @@
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 50 | 0 | 50 | ✅ Complete |
-| Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 20 | 10 | 30 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 50 | 10 | 60 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 5 | 17 | 22 | 🔴 In Progress (5/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 1 | 7 | 8 | 🔴 In Progress (1/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 3 | 8 | 11 | 🔴 In Progress (3/50) |
@@ -1866,18 +1866,46 @@
 
 ### Domain 8: Editing & Workspace Edits
 
-#### `textDocument/prepareRename` (20 e2e tests)
+#### `textDocument/prepareRename` (50 e2e tests)
+- `test_prepare_rename_after_shutdown_returns_code_32600`
+- `test_prepare_rename_blank_line_returns_error_32803`
+- `test_prepare_rename_cancelled_request_returns_code_32800`
 - `test_prepare_rename_comment_rejected_error`
+- `test_prepare_rename_comment_token_returns_error_32803`
+- `test_prepare_rename_consecutive_queries_isolation`
+- `test_prepare_rename_crlf_line_endings_preserved`
+- `test_prepare_rename_did_change_overlay_moves_binding_range`
 - `test_prepare_rename_dirty_overlay_binding_rename`
 - `test_prepare_rename_empty_file_rejected_error`
 - `test_prepare_rename_error_code_minus_32803`
+- `test_prepare_rename_explicit_type_annotation_let_binding`
+- `test_prepare_rename_external_crate_symbol_rejected_with_exact_message`
 - `test_prepare_rename_external_symbol_rejection_error`
 - `test_prepare_rename_fn_parameter_binding`
 - `test_prepare_rename_for_loop_binding`
+- `test_prepare_rename_function_second_parameter`
+- `test_prepare_rename_greek_multibyte_prefix_columns`
+- `test_prepare_rename_if_let_unsupported_pattern_rejected_with_32803`
+- `test_prepare_rename_index_const_definition_exact_range`
+- `test_prepare_rename_index_enum_definition_exact_range`
+- `test_prepare_rename_index_fn_definition_exact_range`
+- `test_prepare_rename_index_reference_site_prepares_target`
+- `test_prepare_rename_index_static_definition_exact_range`
+- `test_prepare_rename_index_struct_definition_exact_range`
+- `test_prepare_rename_index_trait_definition_exact_range`
+- `test_prepare_rename_index_type_alias_exact_range`
+- `test_prepare_rename_jsonrpc_protocol_version_is_2_0`
 - `test_prepare_rename_keyword_rejected_error`
+- `test_prepare_rename_large_numeric_id_preserved`
 - `test_prepare_rename_local_let_binding_range_and_placeholder`
 - `test_prepare_rename_match_arm_binding`
+- `test_prepare_rename_missing_params_completely_returns_error`
 - `test_prepare_rename_multiple_bindings_in_scope`
+- `test_prepare_rename_mut_let_binding_exact_range`
+- `test_prepare_rename_negative_numeric_id_preserved`
+- `test_prepare_rename_nested_block_outer_binding_unaffected`
+- `test_prepare_rename_nested_block_shadowed_inner_binding`
+- `test_prepare_rename_nonexistent_file_uri_returns_error_32803`
 - `test_prepare_rename_out_of_bounds_position_rejected_error`
 - `test_prepare_rename_parameter_binding_in_closure`
 - `test_prepare_rename_placeholder_matches_target_ident`
@@ -1885,7 +1913,9 @@
 - `test_prepare_rename_punctuation_symbol_rejected_error`
 - `test_prepare_rename_range_line_matches_position`
 - `test_prepare_rename_shadowed_local_binding`
+- `test_prepare_rename_string_id_preserved`
 - `test_prepare_rename_utf16_column_calculation`
+- `test_prepare_rename_while_let_unsupported_pattern_rejected_with_32803`
 - `test_prepare_rename_whitespace_rejected_error`
 
 #### `textDocument/rename` (5 e2e tests)
@@ -2704,4 +2734,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2503 total, 48 rows >= 20, 47 rows >= 50 of 53
+coverage: e2e 2533 total, 48 rows >= 20, 48 rows >= 50 of 53
