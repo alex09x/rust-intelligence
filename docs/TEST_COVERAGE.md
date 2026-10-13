@@ -48,7 +48,7 @@
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 50 | 10 | 60 | ✅ Complete |
-| Domain 8: Editing & Workspace Edits | `textDocument/rename` | 5 | 17 | 22 | 🔴 In Progress (5/50) |
+| Domain 8: Editing & Workspace Edits | `textDocument/rename` | 50 | 17 | 67 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 1 | 7 | 8 | 🔴 In Progress (1/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 3 | 8 | 11 | 🔴 In Progress (3/50) |
 | Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 1 | 5 | 6 | 🔴 In Progress (1/50) |
@@ -1918,12 +1918,57 @@
 - `test_prepare_rename_while_let_unsupported_pattern_rejected_with_32803`
 - `test_prepare_rename_whitespace_rejected_error`
 
-#### `textDocument/rename` (5 e2e tests)
+#### `textDocument/rename` (50 e2e tests)
 - `test_case_10_stale_rename_overlay_resolution`
 - `test_case_8_external_dependency_rename_safety`
 - `test_ntm_overlay_mutations_and_editing_pipeline`
 - `test_refactor_cross_file_workspace_rename_execution`
 - `test_refactor_rename_local_variable_execution`
+- `test_rename_after_shutdown_returns_code_32600`
+- `test_rename_blank_line_returns_error_32803`
+- `test_rename_cancelled_request_returns_code_32800`
+- `test_rename_comment_position_returns_error_32803`
+- `test_rename_consecutive_requests_isolation`
+- `test_rename_crlf_line_endings_preserved`
+- `test_rename_document_changes_reflects_overlay_version`
+- `test_rename_fn_parameter_declaration_and_body_references`
+- `test_rename_fn_second_parameter_isolated`
+- `test_rename_greek_multibyte_prefix_columns`
+- `test_rename_index_const_edits_declaration_and_usages`
+- `test_rename_index_enum_edits_declaration_and_usages`
+- `test_rename_index_external_symbol_rejected_with_exact_error`
+- `test_rename_index_fn_declaration_and_caller_edits`
+- `test_rename_index_fn_triggered_from_caller_site`
+- `test_rename_index_static_edits_declaration_and_usages`
+- `test_rename_index_struct_edits_declaration_and_usages`
+- `test_rename_index_trait_edits_declaration_and_usages`
+- `test_rename_index_type_alias_edits_declaration_and_usages`
+- `test_rename_invalid_ident_digit_prefix_rejected`
+- `test_rename_invalid_ident_empty_string_rejected`
+- `test_rename_invalid_ident_hyphen_rejected`
+- `test_rename_invalid_ident_keyword_fn_rejected`
+- `test_rename_invalid_ident_keyword_struct_rejected`
+- `test_rename_invalid_ident_whitespace_rejected`
+- `test_rename_jsonrpc_protocol_version_is_2_0`
+- `test_rename_keyword_position_returns_error_32803`
+- `test_rename_large_numeric_id_preserved`
+- `test_rename_local_binding_declaration_and_usage_site_edits`
+- `test_rename_local_binding_explicit_type_annotation`
+- `test_rename_local_binding_invoked_from_usage_site`
+- `test_rename_local_binding_multiple_usage_sites_all_edited`
+- `test_rename_local_mut_binding_edits_declaration_and_reassignments`
+- `test_rename_missing_new_name_returns_error_32803`
+- `test_rename_missing_position_returns_error_32803`
+- `test_rename_missing_text_document_returns_error_32803`
+- `test_rename_negative_numeric_id_preserved`
+- `test_rename_nested_block_outer_binding_leaves_inner_shadowed_untouched`
+- `test_rename_nested_block_shadowed_inner_binding_leaves_outer_untouched`
+- `test_rename_nonexistent_file_uri_returns_error_32803`
+- `test_rename_punctuation_position_returns_error_32803`
+- `test_rename_raw_ident_r_hash_valid`
+- `test_rename_string_id_preserved`
+- `test_rename_string_literal_position_returns_error_32803`
+- `test_rename_to_identical_name_succeeds_with_edits`
 
 #### `textDocument/linkedEditingRange` (1 e2e tests)
 - `test_l2_linked_editing_range_local_bindings`
@@ -2734,4 +2779,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2533 total, 48 rows >= 20, 48 rows >= 50 of 53
+coverage: e2e 2578 total, 49 rows >= 20, 49 rows >= 50 of 53
