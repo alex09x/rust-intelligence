@@ -770,7 +770,21 @@ impl WorkspaceIndex {
             let is_same_package = is_exact_target_unit || is_sibling_unit;
 
             if !is_same_package {
-                if reader_crate == target_crate {
+                let is_consumer_of_target = target_unit_key.map(|tu| {
+                    let in_deps = self
+                        .reader_dependencies
+                        .get(i)
+                        .map(|d| d.iter().any(|dep| dep == tu))
+                        .unwrap_or(false);
+                    let in_extern = self
+                        .reader_extern_units
+                        .get(i)
+                        .map(|m| m.values().any(|uk| uk == tu))
+                        .unwrap_or(false);
+                    in_deps || in_extern
+                }).unwrap_or(false);
+
+                if reader_crate == target_crate && !is_consumer_of_target {
                     // Different package that collides on crate_name but is not a sibling unit.
                     continue;
                 }
