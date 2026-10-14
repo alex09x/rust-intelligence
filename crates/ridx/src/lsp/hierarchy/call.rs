@@ -21,8 +21,26 @@ use std::collections::HashMap;
 use std::path::Path;
 
 #[allow(unused_imports)]
+use super::scan::{
+    find_definition_path_in_workspace, find_enclosing_function, find_function_body_end_line,
+    is_call_site_in_lines,
+};
+#[cfg(test)]
 pub(crate) use super::scan::is_call_site;
-use super::scan::{find_enclosing_function, find_function_body_end_line, is_call_site_in_lines};
+
+fn make_call_item(
+    name: &str,
+    kind: DefKind,
+    sig: Option<&str>,
+    uri: &str,
+    coords: (u32, u32, u32, u32),
+) -> Value {
+    let r = json!({
+        "start": { "line": coords.0.saturating_sub(1), "character": coords.1 },
+        "end": { "line": coords.2.saturating_sub(1), "character": coords.3 }
+    });
+    json!({ "name": name, "kind": lsp_symbol_kind(kind), "detail": sig, "uri": uri, "range": r, "selectionRange": r })
+}
 
 pub fn handle_prepare_call_hierarchy(
     msg: &Value,
@@ -54,18 +72,13 @@ pub fn handle_prepare_call_hierarchy(
                 overlay.char_col_to_utf16_col(def.start_line, def.start_col),
                 overlay.char_col_to_utf16_col(def.end_line, def.end_col),
             );
-            let sel_range = json!({
-                "start": { "line": def.start_line.saturating_sub(1), "character": sc },
-                "end": { "line": def.end_line.saturating_sub(1), "character": ec }
-            });
-            items.push(json!({
-                "name": def.name,
-                "kind": lsp_symbol_kind(def.kind),
-                "detail": def.signature,
-                "uri": uri,
-                "range": sel_range,
-                "selectionRange": sel_range
-            }));
+            items.push(make_call_item(
+                &def.name,
+                def.kind,
+                def.signature.as_deref(),
+                uri,
+                (def.start_line, sc, def.end_line, ec),
+            ));
             return Ok(json!(items));
         }
     }
@@ -79,53 +92,19 @@ pub fn handle_prepare_call_hierarchy(
                     let d_str = d_path.to_str().unwrap_or(def.file);
                     let sc = conv.char_col_to_utf16_col(d_str, def.start_line, def.start_col);
                     let ec = conv.char_col_to_utf16_col(d_str, def.end_line, def.end_col);
-                    let sel_range = json!({
-                        "start": { "line": def.start_line.saturating_sub(1), "character": sc },
-                        "end": { "line": def.end_line.saturating_sub(1), "character": ec }
-                    });
-                    items.push(json!({
-                        "name": def.name,
-                        "kind": lsp_symbol_kind(def.kind),
-                        "detail": def.signature,
-                        "uri": path_to_uri(d_str),
-                        "range": sel_range,
-                        "selectionRange": sel_range
-                    }));
+                    items.push(make_call_item(
+                        def.name,
+                        def.kind,
+                        def.signature,
+                        &path_to_uri(d_str),
+                        (def.start_line, sc, def.end_line, ec),
+                    ));
                 }
             }
         }
     }
 
     Ok(json!(items))
-}
-
-fn find_definition_path_in_workspace<'a>(
-    ws: &'a WorkspaceIndex,
-    file_path: &Path,
-    file_str: &str,
-    start_line: u32,
-) -> Option<&'a str> {
-    if file_str.is_empty() {
-        return None;
-    }
-    for (idx, reader) in ws.readers().iter().enumerate() {
-        let rel_file = ws
-            .source_root_at(idx)
-            .and_then(|root| file_path.strip_prefix(root).ok())
-            .and_then(|rel| rel.to_str())
-            .unwrap_or(file_str);
-
-        if let Some(fid) = reader.find_file_id(rel_file) {
-            if let Some(def) = reader.definitions().iter().find(|d| {
-                d.span.file_id == fid
-                    && matches!(DefKind::from(d.kind), DefKind::Fn | DefKind::AssocFn)
-                    && d.span.start_line == start_line
-            }) {
-                return Some(reader.get_str(def.path_offset));
-            }
-        }
-    }
-    None
 }
 
 pub fn handle_call_hierarchy_incoming_calls(
@@ -135,7 +114,11 @@ pub fn handle_call_hierarchy_incoming_calls(
     conv: &mut PositionConverter,
 ) -> Value {
     let item = &msg["params"]["item"];
-    let Some(item_uri) = item.get("uri").and_then(|u| u.as_str()).filter(|u| !u.is_empty()) else {
+    let Some(item_uri) = item
+        .get("uri")
+        .and_then(|u| u.as_str())
+        .filter(|u| !u.is_empty())
+    else {
         return json!([]);
     };
     let name = item["name"].as_str().unwrap_or("");
@@ -149,7 +132,9 @@ pub fn handle_call_hierarchy_incoming_calls(
     let item_path = Path::new(&item_file);
     let mut ref_paths = Vec::new();
 
-    if let Some(path) = find_definition_path_in_workspace(ws, item_path, &item_file, item_start_line) {
+    if let Some(path) =
+        find_definition_path_in_workspace(ws, item_path, &item_file, item_start_line)
+    {
         ref_paths.push(path);
     }
 
@@ -198,8 +183,7 @@ pub fn handle_call_hierarchy_incoming_calls(
                 "end": { "line": span.end_line().saturating_sub(1), "character": ec }
             });
 
-            let caller_def =
-                find_enclosing_function(ws, r_str, span.start_line(), &file_lines);
+            let caller_def = find_enclosing_function(ws, r_str, span.start_line(), &file_lines);
 
             let Some((caller, c_body_end)) = caller_def else {
                 continue;
@@ -213,11 +197,8 @@ pub fn handle_call_hierarchy_incoming_calls(
                 caller.span.start_line(),
                 caller.span.start_col(),
             );
-            let c_ec = conv.char_col_to_utf16_col(
-                c_str,
-                caller.span.end_line(),
-                caller.span.end_col(),
-            );
+            let c_ec =
+                conv.char_col_to_utf16_col(c_str, caller.span.end_line(), caller.span.end_col());
             let c_range = json!({
                 "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
                 "end": { "line": c_body_end.saturating_sub(1), "character": 0 }
@@ -264,7 +245,11 @@ pub fn handle_call_hierarchy_outgoing_calls(
     conv: &mut PositionConverter,
 ) -> Value {
     let item = &msg["params"]["item"];
-    let Some(uri) = item.get("uri").and_then(|u| u.as_str()).filter(|u| !u.is_empty()) else {
+    let Some(uri) = item
+        .get("uri")
+        .and_then(|u| u.as_str())
+        .filter(|u| !u.is_empty())
+    else {
         return json!([]);
     };
     let file = uri_to_path(uri);
@@ -358,11 +343,6 @@ pub fn handle_call_hierarchy_outgoing_calls(
                             );
                             let t_ec =
                                 conv.char_col_to_utf16_col(target_str, def.end_line, def.end_col);
-                            let target_range = json!({
-                                "start": { "line": def.start_line.saturating_sub(1), "character": t_sc },
-                                "end": { "line": def.end_line.saturating_sub(1), "character": t_ec }
-                            });
-
                             let c_sc = conv.char_col_to_utf16_col(&file, line_num, col_1based);
                             let c_ec = conv.char_col_to_utf16_col(&file, line_num, end_col_1based);
                             let call_range = json!({
@@ -370,14 +350,13 @@ pub fn handle_call_hierarchy_outgoing_calls(
                                 "end": { "line": line_idx, "character": c_ec }
                             });
 
-                            let target_item = json!({
-                                "name": def.name,
-                                "kind": lsp_symbol_kind(def.kind),
-                                "detail": def.signature,
-                                "uri": target_uri,
-                                "range": target_range,
-                                "selectionRange": target_range
-                            });
+                            let target_item = make_call_item(
+                                def.name,
+                                def.kind,
+                                def.signature,
+                                &target_uri,
+                                (def.start_line, t_sc, def.end_line, t_ec),
+                            );
 
                             outgoing.push(json!({
                                 "to": target_item,

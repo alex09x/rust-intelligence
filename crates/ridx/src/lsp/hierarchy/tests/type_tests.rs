@@ -27,7 +27,8 @@ fn test_type_hierarchy_full() {
             "position": { "line": 1, "character": 13 }
         }
     });
-    let type_res = handle_prepare_type_hierarchy(&type_req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let type_res =
+        handle_prepare_type_hierarchy(&type_req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!type_res.as_array().unwrap().is_empty());
 
     // 2. Supertypes with and without workspace
@@ -131,4 +132,3 @@ fn test_prepare_type_hierarchy_missing_params_rejected_code_32602() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
-

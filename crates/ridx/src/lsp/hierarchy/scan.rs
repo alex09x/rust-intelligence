@@ -357,3 +357,32 @@ pub(crate) fn get_impl_line_from_file(path: &Path, line_1based: u32) -> Option<S
     let refs: Vec<&str> = window.iter().map(|s| s.as_str()).collect();
     get_impl_line(&refs, target_idx)
 }
+
+pub(crate) fn find_definition_path_in_workspace<'a>(
+    ws: &'a WorkspaceIndex,
+    file_path: &Path,
+    file_str: &str,
+    start_line: u32,
+) -> Option<&'a str> {
+    if file_str.is_empty() {
+        return None;
+    }
+    for (idx, reader) in ws.readers().iter().enumerate() {
+        let rel_file = ws
+            .source_root_at(idx)
+            .and_then(|root| file_path.strip_prefix(root).ok())
+            .and_then(|rel| rel.to_str())
+            .unwrap_or(file_str);
+
+        if let Some(fid) = reader.find_file_id(rel_file) {
+            if let Some(def) = reader.definitions().iter().find(|d| {
+                d.span.file_id == fid
+                    && matches!(DefKind::from(d.kind), DefKind::Fn | DefKind::AssocFn)
+                    && d.span.start_line == start_line
+            }) {
+                return Some(reader.get_str(def.path_offset));
+            }
+        }
+    }
+    None
+}

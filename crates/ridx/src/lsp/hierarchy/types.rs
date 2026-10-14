@@ -202,9 +202,20 @@ fn run_impl_reference_fallback(
     }
 
     let start_idx = query.results.len();
-    if let Some(sym) = query.ws.find_first_symbol(query.query_name, |s| {
-        s.name == query.query_name && match_kind(s.kind)
-    }) {
+    let expected_mask = if query.is_supertype {
+        super::type_index::KIND_STRUCT | super::type_index::KIND_ENUM
+    } else {
+        super::type_index::KIND_TRAIT
+    };
+    let sym_opt = if let Some(table) = query.table {
+        table.find_type_def(query.ws, query.query_name, expected_mask)
+    } else {
+        query.ws.find_first_symbol(query.query_name, |s| {
+            s.name == query.query_name && match_kind(s.kind)
+        })
+    };
+
+    if let Some(sym) = sym_opt {
         for r in query.ws.find_references(sym.path) {
             let r_path = r.resolved_path();
             let r_file = r_path.to_str().unwrap_or(r.file);

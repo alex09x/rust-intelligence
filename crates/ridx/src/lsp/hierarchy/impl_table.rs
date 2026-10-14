@@ -10,7 +10,9 @@
 
 //! In-memory compact impl index and definition cache for ultra-fast type hierarchy.
 
-use super::def_cache::{find_first_target_def, find_first_trait_def, resolve_def, CachedDef};
+pub use super::cache::CompactImpl;
+use super::cache::{intern_path, intern_str};
+use super::def_cache::{resolve_def, CachedDef};
 use super::fallback_cache::FallbackCache;
 use super::scan::{get_impl_line, parse_impl_line};
 use super::types::parse_fallback_impl_path;
@@ -18,15 +20,7 @@ use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, OnceLock, RwLock};
-
-#[derive(Clone, Copy, Debug)]
-pub struct CompactImpl {
-    pub trait_id: u32,
-    pub target_id: u32,
-    pub file_id: u32,
-    pub line: u32,
-}
+use std::sync::RwLock;
 
 pub struct ImplTable {
     pub(crate) impls: Vec<CompactImpl>,
@@ -39,28 +33,15 @@ pub struct ImplTable {
     pub(crate) trait_defs: RwLock<HashMap<Box<str>, Option<CachedDef>>>,
     pub(crate) target_defs: RwLock<HashMap<Box<str>, Option<CachedDef>>>,
     pub(crate) fallback_cache: FallbackCache,
+    pub(crate) type_defs: Vec<super::type_index::TypeDefEntry>,
 }
 
-fn intern_str(names: &mut Vec<Box<str>>, map: &mut HashMap<Box<str>, u32>, s: &str) -> u32 {
-    if let Some(&id) = map.get(s) {
-        return id;
-    }
-    let id = names.len() as u32;
-    let b: Box<str> = s.into();
-    map.insert(b.clone(), id);
-    names.push(b);
-    id
-}
-
-fn intern_path(files: &mut Vec<PathBuf>, map: &mut HashMap<PathBuf, u32>, p: &Path) -> u32 {
-    if let Some(&id) = map.get(p) {
-        return id;
-    }
-    let id = files.len() as u32;
-    let pb = p.to_path_buf();
-    map.insert(pb.clone(), id);
-    files.push(pb);
-    id
+struct PendingImpl {
+    file_id: u32,
+    start_line: u32,
+    reader_idx: u32,
+    path_offset: u32,
+    orig_idx: u32,
 }
 
 impl ImplTable {
@@ -72,15 +53,6 @@ impl ImplTable {
         let mut impls = Vec::new();
         let mut by_target_short: HashMap<Box<str>, Vec<u32>> = HashMap::new();
         let mut by_trait_short: HashMap<Box<str>, Vec<u32>> = HashMap::new();
-
-        struct PendingImpl {
-            file_id: u32,
-            start_line: u32,
-            reader_idx: u32,
-            path_offset: u32,
-            orig_idx: u32,
-        }
-
         let mut pending = Vec::new();
 
         for (reader_idx, reader) in ws.readers().iter().enumerate() {
@@ -91,20 +63,17 @@ impl ImplTable {
                     continue;
                 }
                 let raw_file = reader.get_file(def.span.file_id);
-                let full_path = if let Some(root) = source_root {
-                    ridx_format::join_resolving_overlap(root, Path::new(raw_file))
-                } else {
-                    PathBuf::from(raw_file)
+                let full_path = match source_root {
+                    Some(root) => ridx_format::join_resolving_overlap(root, Path::new(raw_file)),
+                    None => PathBuf::from(raw_file),
                 };
                 let file_id = intern_path(&mut files, &mut file_to_id, &full_path);
-
-                let orig_idx = pending.len() as u32;
                 pending.push(PendingImpl {
                     file_id,
                     start_line: def.span.start_line(),
                     reader_idx: reader_idx as u32,
                     path_offset: def.path_offset,
-                    orig_idx,
+                    orig_idx: pending.len() as u32,
                 });
             }
         }
@@ -112,6 +81,7 @@ impl ImplTable {
         pending.sort_unstable_by_key(|p| p.file_id);
 
         let mut resolved = Vec::with_capacity(pending.len());
+        let mut extra_impl_lines = Vec::new();
         let mut i = 0;
         while i < pending.len() {
             let file_id = pending[i].file_id;
@@ -141,6 +111,20 @@ impl ImplTable {
                     })
                     .unwrap_or((None, None));
                 resolved.push((p.orig_idx, p.file_id, p.start_line, parsed.0, parsed.1));
+            }
+
+            if let Some(lines) = &lines_opt {
+                for (l_idx, line_str) in lines.iter().enumerate() {
+                    let trimmed = line_str.trim_start();
+                    if trimmed.starts_with("impl ") || trimmed.starts_with("impl<") {
+                        if let Some(full) = get_impl_line(lines, l_idx) {
+                            if let (Some(tr), Some(tgt)) = parse_impl_line(&full) {
+                                let line_1based = (l_idx + 1) as u32;
+                                extra_impl_lines.push((file_id, line_1based, tr, tgt));
+                            }
+                        }
+                    }
+                }
             }
         }
         drop(pending);
@@ -183,11 +167,25 @@ impl ImplTable {
                 .push(impl_idx);
         }
 
-        let mut by_file_line: Vec<(u64, u32, u32)> = Vec::with_capacity(impls.len());
+        let mut by_file_line: Vec<(u64, u32, u32)> =
+            Vec::with_capacity(impls.len() + extra_impl_lines.len());
         for imp in &impls {
             let key = ((imp.file_id as u64) << 32) | (imp.line as u64);
             by_file_line.push((key, imp.trait_id, imp.target_id));
         }
+
+        for (file_id, line, tr_name, tgt_name) in extra_impl_lines {
+            let tr_base = tr_name.split('<').next().unwrap_or(&tr_name).trim();
+            let tgt_base = tgt_name.split('<').next().unwrap_or(&tgt_name).trim();
+            if tr_base.is_empty() {
+                continue;
+            }
+            let trait_id = intern_str(&mut names, &mut name_to_id, tr_base);
+            let target_id = intern_str(&mut names, &mut name_to_id, tgt_base);
+            let key = ((file_id as u64) << 32) | (line as u64);
+            by_file_line.push((key, trait_id, target_id));
+        }
+
         by_file_line.sort_unstable_by_key(|e| e.0);
         by_file_line.dedup_by_key(|e| e.0);
 
@@ -210,6 +208,8 @@ impl ImplTable {
             malloc_trim(0);
         }
 
+        let type_defs = super::type_index::build_type_index(ws);
+
         Self {
             impls,
             names,
@@ -221,6 +221,7 @@ impl ImplTable {
             trait_defs: RwLock::new(HashMap::new()),
             target_defs: RwLock::new(HashMap::new()),
             fallback_cache,
+            type_defs,
         }
     }
 
@@ -289,6 +290,15 @@ impl ImplTable {
         }
     }
 
+    pub fn find_type_def<'a>(
+        &self,
+        ws: &'a WorkspaceIndex,
+        query: &str,
+        expected_mask: u8,
+    ) -> Option<ridx_format::WorkspaceSymbol<'a>> {
+        super::type_index::find_in_type_index(&self.type_defs, ws, query, expected_mask)
+    }
+
     pub(crate) fn resolve_trait_def(
         &self,
         ws: &WorkspaceIndex,
@@ -297,7 +307,8 @@ impl ImplTable {
         line: u32,
     ) -> Value {
         resolve_def(&self.trait_defs, tr, 11, file, line, || {
-            find_first_trait_def(ws, tr)
+            self.find_type_def(ws, tr, super::type_index::KIND_TRAIT)
+                .map(|t| super::def_cache::make_cached_def(&t, 11))
         })
     }
 
@@ -309,13 +320,20 @@ impl ImplTable {
         line: u32,
     ) -> Value {
         resolve_def(&self.target_defs, tgt, 23, file, line, || {
-            find_first_target_def(ws, tgt)
+            self.find_type_def(
+                ws,
+                tgt,
+                super::type_index::KIND_STRUCT | super::type_index::KIND_ENUM,
+            )
+            .map(|t| {
+                super::def_cache::make_cached_def(&t, crate::lsp::protocol::lsp_symbol_kind(t.kind))
+            })
         })
     }
 
     pub fn find_impl_by_file_line(&self, file_path: &str, line: u32) -> Option<(&str, &str)> {
         let fid = self.file_ids.get(file_path)?;
-        for offset in 0..=4 {
+        for offset in 0..=8 {
             if let Some(target_line) = line.checked_sub(offset) {
                 let key = ((*fid as u64) << 32) | (target_line as u64);
                 if let Ok(idx) = self.by_file_line.binary_search_by_key(&key, |e| e.0) {
@@ -339,6 +357,10 @@ impl ImplTable {
             self.fallback_cache.record_hit();
             return (Some(tr.to_string()), Some(tgt.to_string()));
         }
+        if self.file_ids.contains_key(file_path) {
+            self.fallback_cache.record_hit();
+            return fallback;
+        }
         self.fallback_cache
             .get_or_parse(file_path, line_1based, fallback)
     }
@@ -351,45 +373,6 @@ impl ImplTable {
         self.fallback_cache
             .insert_fallback_results(name, is_supertype, results);
     }
-
-    pub fn fallback_hit_stats(&self) -> (usize, usize) {
-        self.fallback_cache.hit_stats()
-    }
 }
 
-type CacheMap = HashMap<u64, (u64, Arc<ImplTable>)>;
-static IMPL_TABLE_CACHE: OnceLock<RwLock<CacheMap>> = OnceLock::new();
-
-fn get_cache() -> &'static RwLock<CacheMap> {
-    IMPL_TABLE_CACHE.get_or_init(|| RwLock::new(HashMap::new()))
-}
-
-pub fn get_or_build_impl_table(ws: &WorkspaceIndex) -> Arc<ImplTable> {
-    let key = ws.instance_id();
-    let gen = ws.generation();
-
-    if let Ok(guard) = get_cache().read() {
-        if let Some((cached_gen, table)) = guard.get(&key) {
-            if *cached_gen == gen {
-                return Arc::clone(table);
-            }
-        }
-    }
-
-    let new_table = Arc::new(ImplTable::build(ws));
-    if let Ok(mut guard) = get_cache().write() {
-        if guard.len() > 16 {
-            guard.clear();
-        }
-        guard.insert(key, (gen, Arc::clone(&new_table)));
-    }
-    new_table
-}
-
-pub fn clear_impl_table_cache() {
-    if let Some(cache) = IMPL_TABLE_CACHE.get() {
-        if let Ok(mut guard) = cache.write() {
-            guard.clear();
-        }
-    }
-}
+pub use super::cache::{clear_impl_table_cache, get_or_build_impl_table};

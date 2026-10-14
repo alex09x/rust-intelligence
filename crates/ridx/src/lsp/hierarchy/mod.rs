@@ -10,11 +10,13 @@
 
 //! LSP call hierarchy and type hierarchy navigation handlers.
 
+pub mod cache;
 pub mod call;
 pub mod def_cache;
 pub mod fallback_cache;
 pub mod impl_table;
 pub mod scan;
+pub mod type_index;
 pub mod types;
 
 #[cfg(test)]
@@ -24,4 +26,5 @@ pub use call::*;
 pub use def_cache::*;
 pub use fallback_cache::*;
 pub use impl_table::*;
+pub use type_index::*;
 pub use types::*;
