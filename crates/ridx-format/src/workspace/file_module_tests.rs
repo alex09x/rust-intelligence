@@ -87,6 +87,7 @@ fn test_relative_path_anchored_to_workspace_root_beats_dependency_suffix_match()
             Some("ws_crate 0.1.0 (lib)".into()),
         ],
         unit_match: UnitMatchIndex::default(),
+        path_index: super::PathIndex::default(),
         target_kinds: vec![None, None],
         reader_generations: vec![None, None],
         reader_dependencies: vec![Vec::new(), Vec::new()],

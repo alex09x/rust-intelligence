@@ -380,6 +380,8 @@ impl WorkspaceIndex {
                                         for idx in 0..self.readers.len() {
                                             self.record_reloaded_reader_files(idx);
                                         }
+                                        self.rebuild_unit_match();
+                                        self.rebuild_path_index();
                                         return Ok(true);
                                     }
                                 }
@@ -599,6 +601,7 @@ impl WorkspaceIndex {
 
         if changed {
             self.rebuild_unit_match();
+            self.rebuild_path_index();
             self.generation = self.generation.wrapping_add(1);
         }
         Ok(changed)

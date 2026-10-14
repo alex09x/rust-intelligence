@@ -18,7 +18,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Normalizes a path by removing redundant `.` and resolving `..` components lexically.
-fn normalize_path(path: &Path) -> PathBuf {
+pub(crate) fn normalize_path(path: &Path) -> PathBuf {
     use std::path::Component;
     let mut components = Vec::new();
     for c in path.components() {
@@ -42,7 +42,7 @@ fn normalize_path(path: &Path) -> PathBuf {
 
 /// Checks whether a path contains a `ParentDir` (`..`) that pops across a symlink component,
 /// meaning lexical normalization would diverge from the true filesystem target.
-fn path_traverses_symlink_parent(path: &Path) -> bool {
+pub(crate) fn path_traverses_symlink_parent(path: &Path) -> bool {
     let mut current = PathBuf::new();
     for c in path.components() {
         match c {
@@ -69,7 +69,8 @@ fn path_traverses_symlink_parent(path: &Path) -> bool {
 /// Matches an entry path from an index shard or sidecar map against a requested file path.
 /// Resolves real filesystem identity for both entry and request before any lexical collapse,
 /// guaranteeing that lexical collapse never overrides known unequal canonical paths.
-fn file_entry_matches(
+#[cfg(test)]
+pub(crate) fn file_entry_matches(
     entry_str: &str,
     reader_origin: Option<&Path>,
     req_path: &Path,
@@ -190,126 +191,7 @@ impl WorkspaceIndex {
             }
         }
 
-        let p = Path::new(file_path);
-        let explicit_origin = self
-            .workspace_root
-            .as_deref()
-            .or(self.root_dir.as_deref())
-            .or_else(|| {
-                if self.readers.len() == 1 {
-                    self.source_roots.first().and_then(|r| r.as_deref())
-                } else {
-                    None
-                }
-            });
-
-        let (ws_abs, req_canon) = if p.is_absolute() {
-            (None, p.canonicalize().ok())
-        } else if let Some(origin) = explicit_origin {
-            let abs = origin.join(p);
-            let canon = abs.canonicalize().ok();
-            (Some(abs), canon)
-        } else {
-            (None, None)
-        };
-        let ws_canon = req_canon.clone();
-
-        let mut candidate_indices: Vec<usize> = Vec::with_capacity(self.readers.len());
-        if let Some(ref c_p) = req_canon {
-            for (i, _) in self.readers.iter().enumerate() {
-                if let Some(Some(ref root)) = self.source_roots.get(i) {
-                    if let Ok(c_root) = root.canonicalize() {
-                        if c_p.starts_with(&c_root) && !candidate_indices.contains(&i) {
-                            candidate_indices.push(i);
-                        }
-                    }
-                }
-            }
-        }
-        if let Some(ref abs) = ws_abs {
-            let norm_abs = normalize_path(abs);
-            for (i, _) in self.readers.iter().enumerate() {
-                if let Some(Some(ref root)) = self.source_roots.get(i) {
-                    let norm_root = normalize_path(root);
-                    if norm_abs.starts_with(&norm_root) && !candidate_indices.contains(&i) {
-                        candidate_indices.push(i);
-                    }
-                }
-            }
-        } else if p.is_absolute() {
-            let norm_p = normalize_path(p);
-            for (i, _) in self.readers.iter().enumerate() {
-                if let Some(Some(ref root)) = self.source_roots.get(i) {
-                    let norm_root = normalize_path(root);
-                    if norm_p.starts_with(&norm_root) && !candidate_indices.contains(&i) {
-                        candidate_indices.push(i);
-                    }
-                }
-            }
-        }
-        for (i, _) in self.readers.iter().enumerate() {
-            let is_dep = self.reader_is_dependency.get(i).copied().unwrap_or(false)
-                || self.source_roots.get(i).and_then(|r| r.as_ref()).is_some();
-            if !is_dep && !candidate_indices.contains(&i) {
-                candidate_indices.push(i);
-            }
-        }
-        for (i, _) in self.readers.iter().enumerate() {
-            if !candidate_indices.contains(&i) {
-                candidate_indices.push(i);
-            }
-        }
-
-        // Phase 1: Search authoritative embedded FileEntry table across candidate readers
-        for &i in &candidate_indices {
-            let reader = &self.readers[i];
-            let origin = self
-                .source_roots
-                .get(i)
-                .and_then(|r| r.as_deref())
-                .or(self.workspace_root.as_deref())
-                .or(self.root_dir.as_deref());
-
-            for fid in 0..reader.files_count() {
-                let entry_str = reader.get_file(fid);
-                if entry_str.is_empty() {
-                    continue;
-                }
-                if file_entry_matches(entry_str, origin, p, req_canon.as_deref()) {
-                    return self.mtimes.get(i).copied().flatten();
-                }
-                if let Some(ref abs_req) = ws_abs {
-                    if file_entry_matches(entry_str, origin, abs_req, ws_canon.as_deref()) {
-                        return self.mtimes.get(i).copied().flatten();
-                    }
-                }
-            }
-        }
-
-        // Phase 2: Fallback to sidecar metadata maps across candidate readers
-        for &i in &candidate_indices {
-            let origin = self
-                .source_roots
-                .get(i)
-                .and_then(|r| r.as_deref())
-                .or(self.workspace_root.as_deref())
-                .or(self.root_dir.as_deref());
-
-            if let Some(map) = self.reader_file_hashes.get(i) {
-                for k in map.keys() {
-                    if file_entry_matches(k, origin, p, req_canon.as_deref()) {
-                        return self.mtimes.get(i).copied().flatten();
-                    }
-                    if let Some(ref abs_req) = ws_abs {
-                        if file_entry_matches(k, origin, abs_req, ws_canon.as_deref()) {
-                            return self.mtimes.get(i).copied().flatten();
-                        }
-                    }
-                }
-            }
-        }
-
-        None
+        self.path_index.shard_mtime_slow(self, file_path)
     }
 
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
@@ -341,134 +223,7 @@ impl WorkspaceIndex {
             }
         }
 
-        let p = Path::new(file_path);
-        let explicit_origin = self
-            .workspace_root
-            .as_deref()
-            .or(self.root_dir.as_deref())
-            .or_else(|| {
-                if self.readers.len() == 1 {
-                    self.source_roots.first().and_then(|r| r.as_deref())
-                } else {
-                    None
-                }
-            });
-
-        let (ws_abs, req_canon) = if p.is_absolute() {
-            (None, p.canonicalize().ok())
-        } else if let Some(origin) = explicit_origin {
-            let abs = origin.join(p);
-            let canon = abs.canonicalize().ok();
-            (Some(abs), canon)
-        } else {
-            (None, None)
-        };
-        let ws_canon = req_canon.clone();
-
-        // Order candidate readers:
-        // 1. Dependency readers whose source_root contains p
-        // 2. Workspace member readers (non-dependency)
-        // 3. Other dependency readers
-        let mut candidate_indices: Vec<usize> = Vec::with_capacity(self.readers.len());
-        if let Some(ref c_p) = req_canon {
-            for (i, _) in self.readers.iter().enumerate() {
-                if let Some(Some(ref root)) = self.source_roots.get(i) {
-                    if let Ok(c_root) = root.canonicalize() {
-                        if c_p.starts_with(&c_root) && !candidate_indices.contains(&i) {
-                            candidate_indices.push(i);
-                        }
-                    }
-                }
-            }
-        }
-        if let Some(ref abs) = ws_abs {
-            let norm_abs = normalize_path(abs);
-            for (i, _) in self.readers.iter().enumerate() {
-                if let Some(Some(ref root)) = self.source_roots.get(i) {
-                    let norm_root = normalize_path(root);
-                    if norm_abs.starts_with(&norm_root) && !candidate_indices.contains(&i) {
-                        candidate_indices.push(i);
-                    }
-                }
-            }
-        } else if p.is_absolute() {
-            let norm_p = normalize_path(p);
-            for (i, _) in self.readers.iter().enumerate() {
-                if let Some(Some(ref root)) = self.source_roots.get(i) {
-                    let norm_root = normalize_path(root);
-                    if norm_p.starts_with(&norm_root) && !candidate_indices.contains(&i) {
-                        candidate_indices.push(i);
-                    }
-                }
-            }
-        }
-        for (i, _) in self.readers.iter().enumerate() {
-            let is_dep = self.reader_is_dependency.get(i).copied().unwrap_or(false)
-                || self.source_roots.get(i).and_then(|r| r.as_ref()).is_some();
-            if !is_dep && !candidate_indices.contains(&i) {
-                candidate_indices.push(i);
-            }
-        }
-        for (i, _) in self.readers.iter().enumerate() {
-            if !candidate_indices.contains(&i) {
-                candidate_indices.push(i);
-            }
-        }
-
-        // Phase 1: Search authoritative embedded FileEntry table across candidate readers
-        for &i in &candidate_indices {
-            let reader = &self.readers[i];
-            let origin = self
-                .source_roots
-                .get(i)
-                .and_then(|r| r.as_deref())
-                .or(self.workspace_root.as_deref())
-                .or(self.root_dir.as_deref());
-
-            for fid in 0..reader.files_count() {
-                let entry_str = reader.get_file(fid);
-                let h = reader.file_source_hash(fid);
-                if h == 0 || entry_str.is_empty() {
-                    continue;
-                }
-                if file_entry_matches(entry_str, origin, p, req_canon.as_deref()) {
-                    return Some(h);
-                }
-                if let Some(ref abs_req) = ws_abs {
-                    if file_entry_matches(entry_str, origin, abs_req, ws_canon.as_deref()) {
-                        return Some(h);
-                    }
-                }
-            }
-        }
-
-        // Phase 2: Fallback to sidecar metadata maps across candidate readers
-        for &i in &candidate_indices {
-            let origin = self
-                .source_roots
-                .get(i)
-                .and_then(|r| r.as_deref())
-                .or(self.workspace_root.as_deref())
-                .or(self.root_dir.as_deref());
-
-            if let Some(map) = self.reader_file_hashes.get(i) {
-                for (k, &h) in map {
-                    if h == 0 || k.is_empty() {
-                        continue;
-                    }
-                    if file_entry_matches(k, origin, p, req_canon.as_deref()) {
-                        return Some(h);
-                    }
-                    if let Some(ref abs_req) = ws_abs {
-                        if file_entry_matches(k, origin, abs_req, ws_canon.as_deref()) {
-                            return Some(h);
-                        }
-                    }
-                }
-            }
-        }
-
-        None
+        self.path_index.source_hash_slow(self, file_path)
     }
 
     pub(crate) fn load_file_metadata(

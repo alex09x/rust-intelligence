@@ -101,6 +101,7 @@ impl super::WorkspaceIndex {
             }
         }
         self.rebuild_unit_match();
+        self.rebuild_path_index();
     }
 }
 

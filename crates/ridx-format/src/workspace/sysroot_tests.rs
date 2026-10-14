@@ -102,6 +102,7 @@ fn test_sysroot_references_without_unit_key_not_clobbered() {
             Some("unit_app".to_string()),
         ],
         unit_match: UnitMatchIndex::default(),
+        path_index: super::PathIndex::default(),
         target_kinds: vec![None, None, Some(TargetKind::Bin)],
         reader_generations: vec![None, None, None],
         reader_dependencies: vec![Vec::new(), Vec::new(), vec!["alloc".to_string()]],
@@ -260,6 +261,7 @@ fn test_workspace_references_exclude_dependency_and_sysroot_readers() {
             Some("unit_app".to_string()),
         ],
         unit_match: UnitMatchIndex::default(),
+        path_index: super::PathIndex::default(),
         target_kinds: vec![None, Some(TargetKind::Lib), Some(TargetKind::Bin)],
         reader_generations: vec![None, None, None],
         reader_dependencies: vec![

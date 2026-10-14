@@ -63,6 +63,7 @@ fn build_mock_workspace(
         source_roots,
         unit_keys,
         unit_match,
+        path_index: super::PathIndex::default(),
         target_kinds: vec![None; count],
         reader_generations,
         reader_dependencies,

@@ -67,6 +67,7 @@ fn create_test_workspace(
         source_roots,
         unit_keys,
         unit_match,
+        path_index: super::PathIndex::default(),
         target_kinds,
         reader_generations,
         reader_dependencies,

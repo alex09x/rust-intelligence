@@ -138,6 +138,7 @@ fn build_mock_workspace_with_kinds(
         source_roots,
         unit_keys,
         unit_match,
+        path_index: super::PathIndex::default(),
         target_kinds,
         reader_generations,
         reader_dependencies,

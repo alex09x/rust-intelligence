@@ -16,6 +16,7 @@ pub mod cache_resolver;
 pub mod file_module;
 pub mod manifest;
 pub mod navigation;
+pub mod path_index;
 pub mod prelude;
 pub mod provenance;
 pub mod qualifier;
@@ -30,6 +31,8 @@ mod cache_resolver_tests;
 #[cfg(test)]
 mod file_module_tests;
 #[cfg(test)]
+mod path_index_tests;
+#[cfg(test)]
 mod routing_tests;
 #[cfg(test)]
 mod sibling_tests;
@@ -41,6 +44,7 @@ mod target_kind_routing_tests;
 mod unit_match_tests;
 
 pub use manifest::*;
+pub use path_index::PathIndex;
 pub use prelude::is_prelude_trait;
 pub use target_kind::{classify_target, classify_target_with_manifest, TargetKind};
 pub use unit_match::UnitMatchIndex;
@@ -67,6 +71,7 @@ pub struct WorkspaceIndex {
     pub(crate) source_roots: Vec<Option<PathBuf>>,
     pub(crate) unit_keys: Vec<Option<String>>,
     pub(crate) unit_match: UnitMatchIndex,
+    pub(crate) path_index: PathIndex,
     pub(crate) target_kinds: Vec<Option<TargetKind>>,
     pub(crate) reader_generations: Vec<Option<String>>,
     pub(crate) reader_dependencies: Vec<Vec<String>>,
@@ -144,13 +149,14 @@ impl WorkspaceIndex {
             let meta_mtimes = vec![meta.meta_mtime];
 
             let unit_match = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
-            let ws = Self {
+            let mut ws = Self {
                 readers,
                 paths,
                 mtimes,
                 source_roots,
                 unit_keys,
                 unit_match,
+                path_index: PathIndex::default(),
                 target_kinds,
                 reader_generations,
                 reader_dependencies,
@@ -173,6 +179,7 @@ impl WorkspaceIndex {
                 instance_id: next_workspace_instance_id(),
                 generation: 1,
             };
+            ws.rebuild_path_index();
             return Ok(ws);
         }
 
@@ -581,6 +588,7 @@ impl WorkspaceIndex {
             source_roots,
             unit_keys,
             unit_match,
+            path_index: PathIndex::default(),
             target_kinds,
             reader_generations,
             reader_dependencies,
@@ -606,6 +614,7 @@ impl WorkspaceIndex {
         if let Some(cas_key) = sysroot_cas_key {
             ws.attach_sysroot_shards_for_key(&cas_key);
         }
+        ws.rebuild_path_index();
         Ok(ws)
     }
 
@@ -686,6 +695,11 @@ impl WorkspaceIndex {
             &self.unit_keys,
             &self.reader_extern_units,
         );
+    }
+
+    /// Rebuilds the internal file path provenance lookup index.
+    pub(crate) fn rebuild_path_index(&mut self) {
+        self.path_index = PathIndex::build(self);
     }
 
     /// Reference to the internal unit matching index.
@@ -776,6 +790,7 @@ impl WorkspaceIndex {
     /// Sets or overrides the workspace root directory.
     pub fn set_workspace_root(&mut self, root: Option<PathBuf>) {
         self.workspace_root = root;
+        self.rebuild_path_index();
     }
 
     /// Checks whether a target file, path, or unit key belongs to an external dependency or outside the workspace.
