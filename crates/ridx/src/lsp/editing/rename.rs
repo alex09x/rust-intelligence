@@ -258,6 +258,11 @@ pub fn handle_rename(
                         }
                     };
 
+                    // Index records item definition spans starting at item keywords (e.g. `fn`, `mod`,
+                    // `pub`, `struct`) rather than identifier tokens. The declaration edit is already
+                    // applied above at the exact identifier column. Skipping references whose token does
+                    // not match target_name is safe and necessary: it avoids corrupting keyword tokens
+                    // and handles macro expansions where the reference span points elsewhere.
                     if occ_str != target_name {
                         if r.is_macro_expansion {
                             skipped_macro_refs += 1;
