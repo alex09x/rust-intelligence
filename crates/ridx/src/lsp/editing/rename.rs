@@ -18,97 +18,7 @@ use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-pub fn handle_prepare_rename(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> LspResult<Value> {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
-    let line_1based = line_0based + 1;
-
-    let overlay_opt = overlay_mgr.get(&file);
-    let col_1based = if let Some(overlay) = overlay_opt {
-        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
-    } else {
-        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
-    };
-
-    if let Some(overlay) = overlay_opt {
-        let refs = overlay.find_local_binding_references(line_1based, col_1based);
-        if let Some((sl, sc, el, ec)) = refs.iter().find(|(sl, sc, el, ec)| {
-            line_1based >= *sl && line_1based <= *el && col_1based >= *sc && col_1based <= *ec
-        }) {
-            let start_char = overlay.char_col_to_utf16_col(*sl, *sc);
-            let end_char = overlay.char_col_to_utf16_col(*el, *ec);
-            let ident = overlay.get_ident_at(*sl, *sc).unwrap_or_default();
-            return Ok(json!({
-                "range": {
-                    "start": { "line": sl.saturating_sub(1), "character": start_char },
-                    "end": { "line": el.saturating_sub(1), "character": end_char }
-                },
-                "placeholder": ident
-            }));
-        }
-    }
-
-    if let Some(ws) = workspace {
-        let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
-        if !is_dirty {
-            if let Some(loc_refs) = ws.find_references_at(&file, line_1based, col_1based) {
-                let target_name = loc_refs
-                    .target_symbol
-                    .rsplit("::")
-                    .next()
-                    .unwrap_or(loc_refs.target_symbol);
-                if target_name.is_empty() {
-                    return Err(LspError::request_failed(
-                        "Cannot prepare rename: no identifier found at this position",
-                    ));
-                }
-                if loc_refs.is_external(ws) {
-                    return Err(LspError::request_failed(format!(
-                        "Cannot rename external symbol '{target_name}'"
-                    )));
-                }
-
-                let line_str = if let Some(ov) = overlay_opt {
-                    let idx = line_0based as usize;
-                    ov.text.lines().nth(idx).map(|s| s.to_string())
-                } else {
-                    std::fs::read_to_string(&file)
-                        .ok()
-                        .and_then(|t| t.lines().nth(line_0based as usize).map(|s| s.to_string()))
-                };
-
-                let ident_col = line_str
-                    .as_deref()
-                    .and_then(|s| find_declaration_ident_col(s, target_name, loc_refs.target_kind))
-                    .unwrap_or(col_1based);
-
-                let sc = if let Some(ov) = overlay_opt {
-                    ov.char_col_to_utf16_col(line_1based, ident_col)
-                } else {
-                    conv.char_col_to_utf16_col(&file, line_1based, ident_col)
-                };
-                let ec = sc + target_name.chars().count() as u32;
-
-                return Ok(json!({
-                    "range": {
-                        "start": { "line": line_0based, "character": sc },
-                        "end": { "line": line_0based, "character": ec }
-                    },
-                    "placeholder": target_name
-                }));
-            }
-        }
-    }
-
-    Err(LspError::request_failed("Cannot prepare rename: no identifier found at this position"))
-}
+pub use super::prepare_rename::handle_prepare_rename;
 
 fn to_utf16_col(
     ov: Option<&crate::overlay::DocumentOverlay>,
@@ -283,6 +193,7 @@ pub fn handle_rename(
                 }
 
                 // Add references edits with live buffer remapping and safety checks
+                let mut skipped_macro_refs = 0usize;
                 for r in loc_refs.references {
                     let r_path = r.resolved_path();
                     if ws.is_external_path(&r_path) {
@@ -336,12 +247,21 @@ pub fn handle_rename(
 
                     let occ_str = match occ_name {
                         Some(s) if !s.is_empty() => s,
-                        _ => return Err(LspError::request_failed(
-                            "Failed to locate identifier at reference position",
-                        )),
+                        _ => {
+                            if r.is_macro_expansion {
+                                skipped_macro_refs += 1;
+                                continue;
+                            }
+                            return Err(LspError::request_failed(
+                                "Failed to locate identifier at reference position",
+                            ));
+                        }
                     };
 
                     if occ_str != target_name {
+                        if r.is_macro_expansion {
+                            skipped_macro_refs += 1;
+                        }
                         continue;
                     }
 
@@ -360,6 +280,12 @@ pub fn handle_rename(
                     if !edits.iter().any(|e| e["range"] == edit["range"]) {
                         edits.push(edit);
                     }
+                }
+
+                if skipped_macro_refs > 0 {
+                    eprintln!(
+                        "[ridx:rename] Skipped {skipped_macro_refs} macro expansion reference(s) where identifier could not be located in source"
+                    );
                 }
             }
         }

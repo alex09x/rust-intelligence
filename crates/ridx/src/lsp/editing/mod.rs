@@ -19,6 +19,7 @@ pub mod format;
 pub mod ident;
 pub mod linked;
 pub mod organize;
+pub mod prepare_rename;
 pub mod rename;
 
 #[cfg(test)]
