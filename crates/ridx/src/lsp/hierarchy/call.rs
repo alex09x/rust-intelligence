@@ -121,7 +121,6 @@ pub fn handle_call_hierarchy_incoming_calls(
     else {
         return json!([]);
     };
-    let name = item["name"].as_str().unwrap_or("");
     let item_file = uri_to_path(item_uri);
     let item_start_line = item["range"]["start"]["line"].as_u64().unwrap_or(0) as u32 + 1;
 
@@ -130,32 +129,18 @@ pub fn handle_call_hierarchy_incoming_calls(
     };
 
     let item_path = Path::new(&item_file);
-    let mut ref_paths = Vec::new();
+    let mut ref_paths: Vec<String> = Vec::new();
 
     if let Some(path) =
         find_definition_path_in_workspace(ws, item_path, &item_file, item_start_line)
     {
-        ref_paths.push(path);
-    }
-
-    // Include trait or impl counterpart paths for trait methods
-    if ref_paths.iter().any(|p| p.contains(" as ")) {
-        for p in ref_paths.clone() {
-            if let Some(idx) = p.find(" as ") {
-                let trait_part = p[idx + 4..].trim_end_matches('>');
-                for sym in ws.search_symbols(name) {
-                    if sym.path.ends_with(trait_part) && !ref_paths.contains(&sym.path) {
-                        ref_paths.push(sym.path);
-                    }
-                }
-            }
-        }
+        ref_paths.push(path.to_string());
     }
 
     let mut incoming_map: HashMap<String, (Value, Vec<Value>)> = HashMap::new();
     let mut file_cache: HashMap<String, String> = HashMap::new();
 
-    for path in ref_paths {
+    for path in &ref_paths {
         let refs = ws.find_references(path);
         for r in refs {
             let r_path = r.resolved_path();

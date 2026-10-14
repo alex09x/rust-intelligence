@@ -9,6 +9,7 @@
  */
 
 pub mod call_tests;
+pub mod call_trait_tests;
 pub mod impl_table_tests;
 pub mod type_tests;
 
