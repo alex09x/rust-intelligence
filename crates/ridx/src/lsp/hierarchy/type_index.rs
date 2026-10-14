@@ -19,7 +19,7 @@ pub const KIND_TRAIT: u8 = 1 << 2;
 #[derive(Clone, Copy, Debug)]
 pub struct TypeDefEntry {
     pub hash: u64,
-    pub reader_idx: u16,
+    pub reader_idx: u32,
     pub def_idx: u32,
     pub kind: u8,
 }
@@ -46,7 +46,7 @@ pub fn build_type_index(ws: &WorkspaceIndex) -> Vec<TypeDefEntry> {
                 let hash = fnv1a_64(name.as_bytes());
                 entries.push(TypeDefEntry {
                     hash,
-                    reader_idx: reader_idx as u16,
+                    reader_idx: reader_idx as u32,
                     def_idx: def_idx as u32,
                     kind: def.kind,
                 });

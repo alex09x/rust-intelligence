@@ -22,6 +22,8 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 
+const BLOCKING_IMPL: u32 = u32::MAX;
+
 pub struct ImplTable {
     pub(crate) impls: Vec<CompactImpl>,
     pub(crate) names: Vec<Box<str>>,
@@ -116,13 +118,13 @@ impl ImplTable {
             if let Some(lines) = &lines_opt {
                 for (l_idx, line_str) in lines.iter().enumerate() {
                     let trimmed = line_str.trim_start();
-                    if trimmed.starts_with("impl ") || trimmed.starts_with("impl<") {
-                        if let Some(full) = get_impl_line(lines, l_idx) {
-                            if let (Some(tr), Some(tgt)) = parse_impl_line(&full) {
-                                let line_1based = (l_idx + 1) as u32;
-                                extra_impl_lines.push((file_id, line_1based, tr, tgt));
-                            }
-                        }
+                    if trimmed.starts_with("impl") {
+                        let line_1based = (l_idx + 1) as u32;
+                        let parsed = get_impl_line(lines, l_idx).and_then(|f| {
+                            let (tr, tgt) = parse_impl_line(&f);
+                            Some((tr?, tgt?))
+                        });
+                        extra_impl_lines.push((file_id, line_1based, parsed));
                     }
                 }
             }
@@ -167,26 +169,24 @@ impl ImplTable {
                 .push(impl_idx);
         }
 
-        let mut by_file_line: Vec<(u64, u32, u32)> =
-            Vec::with_capacity(impls.len() + extra_impl_lines.len());
-        for imp in &impls {
-            let key = ((imp.file_id as u64) << 32) | (imp.line as u64);
-            by_file_line.push((key, imp.trait_id, imp.target_id));
-        }
+        let mut by_file_line: Vec<(u64, u32, u32)> = Vec::with_capacity(extra_impl_lines.len());
 
-        for (file_id, line, tr_name, tgt_name) in extra_impl_lines {
-            let tr_base = tr_name.split('<').next().unwrap_or(&tr_name).trim();
-            let tgt_base = tgt_name.split('<').next().unwrap_or(&tgt_name).trim();
-            if tr_base.is_empty() {
-                continue;
-            }
-            let trait_id = intern_str(&mut names, &mut name_to_id, tr_base);
-            let target_id = intern_str(&mut names, &mut name_to_id, tgt_base);
+        for (file_id, line, parsed) in extra_impl_lines {
             let key = ((file_id as u64) << 32) | (line as u64);
-            by_file_line.push((key, trait_id, target_id));
+            if let Some((tr_name, tgt_name)) = parsed {
+                let tr_base = tr_name.split('<').next().unwrap_or(&tr_name).trim();
+                let tgt_base = tgt_name.split('<').next().unwrap_or(&tgt_name).trim();
+                if !tr_base.is_empty() {
+                    let trait_id = intern_str(&mut names, &mut name_to_id, tr_base);
+                    let target_id = intern_str(&mut names, &mut name_to_id, tgt_base);
+                    by_file_line.push((key, trait_id, target_id));
+                    continue;
+                }
+            }
+            by_file_line.push((key, BLOCKING_IMPL, BLOCKING_IMPL));
         }
 
-        by_file_line.sort_unstable_by_key(|e| e.0);
+        by_file_line.sort_unstable_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
         by_file_line.dedup_by_key(|e| e.0);
 
         let mut file_ids = HashMap::with_capacity(files.len());
@@ -333,15 +333,18 @@ impl ImplTable {
 
     pub fn find_impl_by_file_line(&self, file_path: &str, line: u32) -> Option<(&str, &str)> {
         let fid = self.file_ids.get(file_path)?;
-        for offset in 0..=8 {
-            if let Some(target_line) = line.checked_sub(offset) {
-                let key = ((*fid as u64) << 32) | (target_line as u64);
-                if let Ok(idx) = self.by_file_line.binary_search_by_key(&key, |e| e.0) {
-                    let entry = self.by_file_line[idx];
-                    let tr = &self.names[entry.1 as usize];
-                    let tgt = &self.names[entry.2 as usize];
-                    return Some((tr, tgt));
+        let max_offset = 4.min(line.saturating_sub(1));
+        for offset in 0..=max_offset {
+            let target_line = line - offset;
+            let key = ((*fid as u64) << 32) | (target_line as u64);
+            if let Ok(idx) = self.by_file_line.binary_search_by_key(&key, |e| e.0) {
+                let entry = self.by_file_line[idx];
+                if entry.1 == BLOCKING_IMPL {
+                    return None;
                 }
+                let tr = &self.names[entry.1 as usize];
+                let tgt = &self.names[entry.2 as usize];
+                return Some((tr, tgt));
             }
         }
         None
