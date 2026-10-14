@@ -646,49 +646,56 @@ impl WorkspaceIndex {
             }
         }
         // If target_unit_key is given, locate the definition in target_unit to get its line and file
-        let target_def_coords = if let Some(target_unit) = target_unit_key {
+        let target_idx = if let Some(target_unit) = target_unit_key {
+            self.unit_keys
+                .iter()
+                .position(|u| u.as_deref() == Some(target_unit))
+        } else {
+            self.readers
+                .iter()
+                .position(|r| r.crate_name() == target_crate && r.find_definition_by_path(target_path).is_some())
+        };
+
+        if let Some(t_idx) = target_idx {
+            target_crate = self.readers[t_idx].crate_name();
+        }
+
+        let target_def_coords = if let Some(t_idx) = target_idx {
+            let r = &self.readers[t_idx];
             let mut coords = None;
-            for (j, r) in self.readers.iter().enumerate() {
-                if self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(target_unit) {
-                    target_crate = r.crate_name();
-                    if let Some(def) = r.find_definition_by_path(target_path) {
-                        let span = def.span();
-                        let file = r.get_file(span.file_id());
-                        let full_file = if let Some(Some(root)) = self.source_roots.get(j) {
+            if let Some(def) = r.find_definition_by_path(target_path) {
+                let span = def.span();
+                let file = r.get_file(span.file_id());
+                let full_file = if let Some(Some(root)) = self.source_roots.get(t_idx) {
+                    crate::format::join_resolving_overlap(root, Path::new(file))
+                        .to_string_lossy()
+                        .to_string()
+                } else if let Some(ref ws_root) = self.workspace_root {
+                    crate::format::join_resolving_overlap(ws_root, Path::new(file))
+                        .to_string_lossy()
+                        .to_string()
+                } else {
+                    file.to_string()
+                };
+                coords = Some((file.to_string(), full_file, span.start_line()));
+            } else if let Some(rest) = target_path.strip_prefix(&format!("{target_crate}::")) {
+                let mapped = format!("{}::{}", r.crate_name(), rest);
+                if let Some(def) = r.find_definition_by_path(&mapped) {
+                    let span = def.span();
+                    let file = r.get_file(span.file_id());
+                    let full_file = self
+                        .source_roots
+                        .get(t_idx)
+                        .and_then(|r| r.as_ref())
+                        .or(self.workspace_root.as_ref())
+                        .map(|root| {
                             crate::format::join_resolving_overlap(root, Path::new(file))
                                 .to_string_lossy()
                                 .to_string()
-                        } else if let Some(ref ws_root) = self.workspace_root {
-                            crate::format::join_resolving_overlap(ws_root, Path::new(file))
-                                .to_string_lossy()
-                                .to_string()
-                        } else {
-                            file.to_string()
-                        };
-                        coords = Some((file.to_string(), full_file, span.start_line()));
-                        break;
-                    }
-                    if let Some(rest) = target_path.strip_prefix(&format!("{target_crate}::")) {
-                        let mapped = format!("{}::{}", r.crate_name(), rest);
-                        if let Some(def) = r.find_definition_by_path(&mapped) {
-                            let span = def.span();
-                            let file = r.get_file(span.file_id());
-                            let full_file = self
-                                .source_roots
-                                .get(j)
-                                .and_then(|r| r.as_ref())
-                                .or(self.workspace_root.as_ref())
-                                .map(|root| {
-                                    crate::format::join_resolving_overlap(root, Path::new(file))
-                                        .to_string_lossy()
-                                        .to_string()
-                                })
-                                .unwrap_or_else(|| file.to_string());
+                        })
+                        .unwrap_or_else(|| file.to_string());
 
-                            coords = Some((file.to_string(), full_file, span.start_line()));
-                            break;
-                        }
-                    }
+                    coords = Some((file.to_string(), full_file, span.start_line()));
                 }
             }
             coords
@@ -719,15 +726,25 @@ impl WorkspaceIndex {
             let reader_unit = self.unit_keys.get(i).and_then(|u| u.as_deref());
             let reader_crate = reader.crate_name();
 
-            let is_target_unit =
+            let is_exact_target_unit =
                 if let (Some(target_unit), Some(ru)) = (target_unit_key, reader_unit) {
                     ru == target_unit
                 } else {
-                    reader_crate == target_crate
+                    target_idx == Some(i) || reader_crate == target_crate
                 };
 
-            if !is_target_unit {
-                // The reader is an external/referring crate (or a different unit of the same crate name).
+            let is_sibling_unit = target_idx
+                .map(|t| self.are_sibling_workspace_units(t, i))
+                .unwrap_or(false);
+
+            let is_same_package = is_exact_target_unit || is_sibling_unit;
+
+            if !is_same_package {
+                if reader_crate == target_crate {
+                    // Different package that collides on crate_name but is not a sibling unit.
+                    continue;
+                }
+                // The reader is an external/referring crate.
                 // If target_unit_key is given:
                 if let Some(target_unit) = target_unit_key {
                     let has_deps = self
@@ -786,7 +803,7 @@ impl WorkspaceIndex {
             let mut query_path_vec = Vec::new();
             if local_path == global_path {
                 query_path_vec.push(target_path);
-            } else if is_target_unit {
+            } else if is_same_package {
                 query_path_vec.push(local_path);
                 query_path_vec.push(global_path);
             } else {
@@ -802,9 +819,14 @@ impl WorkspaceIndex {
                                 continue;
                             }
                         } else if reader_crate == target_crate {
-                            if let Some(ru) = reader_unit {
-                                if ru != target_unit {
-                                    continue;
+                            if !is_same_package {
+                                continue;
+                            }
+                            if !is_sibling_unit {
+                                if let Some(ru) = reader_unit {
+                                    if ru != target_unit {
+                                        continue;
+                                    }
                                 }
                             }
                         } else if let Some((
@@ -836,8 +858,18 @@ impl WorkspaceIndex {
 
                     let span = r.span();
                     let file = reader.get_file(span.file_id());
+                    let resolved_path = {
+                        let p = Path::new(file);
+                        if p.is_absolute() {
+                            p.to_path_buf()
+                        } else if let Some(root) = source_root {
+                            crate::format::join_resolving_overlap(root, p)
+                        } else {
+                            p.to_path_buf()
+                        }
+                    };
                     let ref_key = (
-                        file,
+                        resolved_path,
                         span.start_line(),
                         span.start_col(),
                         span.end_line(),
@@ -910,8 +942,18 @@ impl WorkspaceIndex {
 
                             let span = r.span();
                             let file = reader.get_file(span.file_id());
+                            let resolved_path = {
+                                let p = Path::new(file);
+                                if p.is_absolute() {
+                                    p.to_path_buf()
+                                } else if let Some(root) = source_root {
+                                    crate::format::join_resolving_overlap(root, p)
+                                } else {
+                                    p.to_path_buf()
+                                }
+                            };
                             let ref_key = (
-                                file,
+                                resolved_path,
                                 span.start_line(),
                                 span.start_col(),
                                 span.end_line(),

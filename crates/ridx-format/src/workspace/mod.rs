@@ -31,6 +31,8 @@ mod file_module_tests;
 #[cfg(test)]
 mod routing_tests;
 #[cfg(test)]
+mod sibling_tests;
+#[cfg(test)]
 mod target_kind_routing_tests;
 
 pub use manifest::*;
@@ -837,6 +839,34 @@ impl WorkspaceIndex {
         let file_str = path_to_check.to_str().unwrap_or("");
 
         self.is_external_target(file_str, path_to_check, uk)
+    }
+
+    /// Checks whether two readers represent sibling units of the same workspace package
+    /// (e.g. `lib` and `lib test` shards of the same package).
+    ///
+    /// Sibling units share the same non-external source root and crate name, but may have
+    /// distinct unit keys (e.g. `unit_lib` vs `unit_test`).
+    pub fn are_sibling_workspace_units(&self, idx1: usize, idx2: usize) -> bool {
+        if idx1 >= self.readers.len() || idx2 >= self.readers.len() {
+            return false;
+        }
+        if self.is_reader_external(idx1) || self.is_reader_external(idx2) {
+            return false;
+        }
+        if idx1 == idx2 {
+            return true;
+        }
+        if self.readers[idx1].crate_name() != self.readers[idx2].crate_name() {
+            return false;
+        }
+        let (Some(sr1), Some(sr2)) = (self.source_root_at(idx1), self.source_root_at(idx2)) else {
+            return false;
+        };
+        sr1 == sr2
+            || match (sr1.canonicalize(), sr2.canonicalize()) {
+                (Ok(c1), Ok(c2)) => c1 == c2,
+                _ => false,
+            }
     }
 
     /// Returns the unique instance ID for this workspace.
