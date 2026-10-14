@@ -25,7 +25,8 @@ REPO_ORDER = [
 PROVENANCE_ROWS = [
     ("RIDX commit", "ridx_commit"), ("RIDX binary dirty", "ridx_binary_dirty"),
     ("Driver hash", "driver_hash"), ("Driver build commit", "driver_build_commit"),
-    ("Corpus commit", "repo_commit"), ("Sysroot CAS key", "sysroot_cas_key"),
+    ("Driver source", "driver_source"), ("Corpus commit", "repo_commit"),
+    ("Corpus Cargo.lock sha256", "corpus_lockfile_sha256"), ("Sysroot CAS key", "sysroot_cas_key"),
     ("Index shards", "ridx_index_shards"), ("rustc", "rustc"), ("rust-analyzer", "ra_version"),
     ("Node", "node"), ("CPU set", "taskset"), ("Seed", "seed"),
     ("Samples per method", "sample_count_per_method"), ("Requests per server", "total_tests_per_server"),
@@ -34,6 +35,8 @@ PROVENANCE_ROWS = [
     ("rust-analyzer initial wait (ms)", "ra_initial_wait_ms"),
     ("rust-analyzer canary wait (ms) / attempts", None),
     ("rust-analyzer pre-query canary wait (ms) / attempts", None),
+    ("RIDX requests cancelled on timeout", "ridx_cancelled_on_timeout"),
+    ("rust-analyzer requests cancelled on timeout", "ra_cancelled_on_timeout"),
 ]
 
 KNOWN_HARNESS_DEFECTS = [
@@ -50,6 +53,13 @@ KNOWN_HARNESS_DEFECTS = [
      "answer `textDocument/definition` with empty results for a few seconds (measured on tokio: "
      "229/300 non-empty before the block, 0/300 right after, 229/300 sixty seconds later); the "
      "runner now re-establishes readiness before the first query method."),
+    ("c4667d9", "the client wrote requests to the server's stdin while holding the lock its reader "
+     "thread needed, so a server blocked on a full stdout pipe and the client blocked on a full "
+     "stdin pipe waited for each other; stdin writes now use a separate lock."),
+    ("1d5d2ca", "a request that hit the client timeout was never cancelled, so the server kept "
+     "computing it and delayed the first requests of the next method (observed on bevy: about 20 s "
+     "per `typeHierarchy/subtypes` request against a 2 s timeout); the client now sends "
+     "`$/cancelRequest` on timeout and waits for outstanding answers before each method."),
 ]
 
 NOTES = [
@@ -62,6 +72,17 @@ NOTES = [
     "`a` counts non-empty answers, `b` empty answers (`null`, `[]`, empty hover), `c` failed "
     "scenarios; `errors` counts error responses, which can exceed `c` because a scenario sends "
     "several requests.",
+    "serde: the corpus has no committed `Cargo.lock`. The generated lockfile resolved a registry "
+    "`serde_derive` of a newer version next to the workspace one, and `trybuild` in `test_suite` "
+    "then failed to compile; the lockfile was regenerated with `serde_derive` unified to the "
+    "workspace version. Its sha256 is recorded as `corpus_lockfile_sha256`.",
+    "All five runs use RIDX commit `6ce1fa9`. The later commits `7913226` and `ec21213` change the "
+    "`typeHierarchy/subtypes` and `typeHierarchy/supertypes` reference fallback; the 42 bevy "
+    "`typeHierarchy/subtypes` timeouts in this run are the behaviour of `6ce1fa9`.",
+    "Indexes were built with the driver recorded as `driver_hash` (`driver_build_commit`), which "
+    "can be older than the RIDX commit. Between driver build commit `cdf975d` and RIDX commit "
+    "`6ce1fa9` the driver changed only in `build.rs` (link search path) and `ridx-format` only in "
+    "reader-side workspace code, so the index contents do not depend on the newer commit.",
 ]
 
 
