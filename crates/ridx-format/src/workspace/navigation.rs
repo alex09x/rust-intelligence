@@ -750,6 +750,9 @@ impl WorkspaceIndex {
         let global_path = global_path_buf.as_str();
 
         for (i, reader) in self.readers.iter().enumerate() {
+            if self.is_reader_external(i) {
+                continue;
+            }
             let reader_unit = self.unit_keys.get(i).and_then(|u| u.as_deref());
             let reader_crate = reader.crate_name();
 
