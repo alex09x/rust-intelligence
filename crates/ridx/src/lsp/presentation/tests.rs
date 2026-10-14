@@ -284,3 +284,76 @@ fn test_workspace_diagnostic_discovers_closed_files() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_workspace_diagnostic_filters_external_dependencies() {
+    use crate::lsp::protocol::path_to_uri;
+
+    let id = TEST_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let temp_dir =
+        std::env::temp_dir().join(format!("ridx_test_ws_diag_ext_{}_{}", std::process::id(), id));
+
+    // 1. Workspace member crate
+    let ws_crate_dir = temp_dir.join("my_crate");
+    fs::create_dir_all(ws_crate_dir.join("src")).unwrap();
+    let ws_file = ws_crate_dir.join("src/lib.rs");
+    fs::write(&ws_file, "pub fn ws_fn() {}\n").unwrap();
+    let ws_ridx = ws_crate_dir.join("index.ridx");
+    let mut ws_writer = IndexWriter::new("my_crate", "0.1.0");
+    ws_writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: ridx_format::DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: "src/lib.rs".to_string(),
+        name: "ws_fn".to_string(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 13,
+        path: "my_crate::ws_fn".to_string(),
+        signature: Some("fn ws_fn()".to_string()),
+    });
+    let mut f = fs::File::create(&ws_ridx).unwrap();
+    ws_writer.write_to(&mut f).unwrap();
+
+    // 2. External dependency crate (simulated cargo registry)
+    let dep_crate_dir = temp_dir.join(".cargo/registry/src/index.crates.io-1234/dep_crate-0.1.0");
+    fs::create_dir_all(dep_crate_dir.join("src")).unwrap();
+    let dep_file = dep_crate_dir.join("src/lib.rs");
+    fs::write(&dep_file, "pub fn dep_fn() {}\n").unwrap();
+    let dep_ridx = dep_crate_dir.join("index.ridx");
+    let mut dep_writer = IndexWriter::new("dep_crate", "0.1.0");
+    dep_writer.add_definition(RawDefinition {
+        def_id: 2,
+        kind: ridx_format::DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: "src/lib.rs".to_string(),
+        name: "dep_fn".to_string(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 14,
+        path: "dep_crate::dep_fn".to_string(),
+        signature: Some("fn dep_fn()".to_string()),
+    });
+    let mut f = fs::File::create(&dep_ridx).unwrap();
+    dep_writer.write_to(&mut f).unwrap();
+
+    let mut multi_root = crate::lsp::workspace::MultiRootWorkspace::new();
+    multi_root.add_root(ws_ridx);
+    multi_root.add_root(dep_ridx);
+
+    let overlay_mgr = OverlayManager::new();
+    let req = json!({ "params": {} });
+    let res = handle_workspace_diagnostic(&req, &overlay_mgr, &multi_root);
+    let items = res["items"].as_array().expect("items array");
+    let mut uris: Vec<_> = items.iter().map(|it| it["uri"].as_str().unwrap().to_string()).collect();
+    uris.sort();
+
+    let expected_ws_uri = path_to_uri(&ws_file.to_string_lossy());
+    assert_eq!(uris, vec![expected_ws_uri]);
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}

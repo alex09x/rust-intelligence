@@ -818,6 +818,27 @@ impl WorkspaceIndex {
         self.is_external_target(s, path, None)
     }
 
+    /// Returns whether the reader at index `idx` is marked as a dependency.
+    #[inline]
+    pub fn is_reader_dependency(&self, idx: usize) -> bool {
+        self.reader_is_dependency.get(idx).copied().unwrap_or(false)
+    }
+
+    /// Checks whether the reader at index `idx` belongs to an external dependency or outside the workspace.
+    pub fn is_reader_external(&self, idx: usize) -> bool {
+        if self.is_reader_dependency(idx) {
+            return true;
+        }
+
+        let uk = self.unit_keys.get(idx).and_then(|u| u.as_deref());
+        let sroot = self.source_root_at(idx);
+        let p = self.paths.get(idx).map(|p| p.as_path());
+        let path_to_check = sroot.or(p).unwrap_or_else(|| Path::new(""));
+        let file_str = path_to_check.to_str().unwrap_or("");
+
+        self.is_external_target(file_str, path_to_check, uk)
+    }
+
     /// Returns the unique instance ID for this workspace.
     #[inline]
     pub fn instance_id(&self) -> u64 {
