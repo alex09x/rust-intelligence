@@ -92,6 +92,10 @@ pub fn handle_workspace_diagnostic_with_flycheck(
                 } else {
                     std::path::PathBuf::from(rel)
                 };
+                // Workspace crate readers can reference external files (e.g. macro expansions in dependencies).
+                if ridx_format::is_external_dependency_path(&path) || ws.is_external_path(&path) {
+                    continue;
+                }
                 let path_str = path.to_string_lossy().to_string();
                 let uri = path_to_uri(&path_str);
                 if seen_uris.insert(uri.clone()) {
