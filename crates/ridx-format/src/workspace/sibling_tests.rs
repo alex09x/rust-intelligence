@@ -59,12 +59,14 @@ fn create_test_workspace(
         meta_mtimes.push(None);
     }
 
+    let unit_match = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
     WorkspaceIndex {
         readers,
         paths,
         mtimes,
         source_roots,
         unit_keys,
+        unit_match,
         target_kinds,
         reader_generations,
         reader_dependencies,

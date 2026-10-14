@@ -55,12 +55,14 @@ fn build_mock_workspace(
     }
 
     let count = readers.len();
+    let unit_match = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
     WorkspaceIndex {
         readers,
         paths,
         mtimes,
         source_roots,
         unit_keys,
+        unit_match,
         target_kinds: vec![None; count],
         reader_generations,
         reader_dependencies,

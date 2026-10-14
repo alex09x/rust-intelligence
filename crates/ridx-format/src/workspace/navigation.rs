@@ -611,47 +611,21 @@ impl WorkspaceIndex {
     /// Checks whether `ref_target_unit` matches `target_unit` for `target_crate`.
     /// Handles exact unit match, as well as single-version workspaces where Cargo
     /// assigned different unit hashes (e.g. lib vs test vs dep compilation).
-    fn matches_unit(
+    #[inline]
+    pub(crate) fn matches_unit(
         &self,
         reader_idx: usize,
         ref_target_unit: &str,
         target_unit: &str,
         target_crate: &str,
     ) -> bool {
-        if ref_target_unit == target_unit {
-            return true;
-        }
-        let target_unit_in_crate = self.readers.iter().enumerate().any(|(j, r)| {
-            r.crate_name() == target_crate
-                && self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(target_unit)
-        }) || self
-            .reader_extern_units
-            .iter()
-            .any(|m| m.get(target_crate).map(|u| u.as_str()) == Some(target_unit));
-        if !target_unit_in_crate {
-            return false;
-        }
-
-        let is_reader_extern_target = self
-            .reader_extern_units
-            .get(reader_idx)
-            .and_then(|m| m.get(target_crate))
-            .map(|u| u.as_str())
-            == Some(ref_target_unit);
-        let target_versions_count = self
-            .readers
-            .iter()
-            .filter(|r| r.crate_name() == target_crate)
-            .map(|r| r.crate_version())
-            .filter(|v| !v.is_empty())
-            .collect::<std::collections::HashSet<_>>()
-            .len();
-        let belongs_to_target_crate = is_reader_extern_target
-            || self.readers.iter().enumerate().any(|(j, r)| {
-                r.crate_name() == target_crate
-                    && self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(ref_target_unit)
-            });
-        belongs_to_target_crate && target_versions_count <= 1
+        self.unit_match.matches_unit(
+            reader_idx,
+            ref_target_unit,
+            target_unit,
+            target_crate,
+            &self.reader_extern_units,
+        )
     }
 
     /// Finds all references to a symbol, optionally scoped to a target dependency unit.
@@ -748,6 +722,8 @@ impl WorkspaceIndex {
         };
         let global_path_buf = format!("{target_crate}::{local_path}");
         let global_path = global_path_buf.as_str();
+
+        let mut match_memo = std::collections::HashMap::<(usize, &str), bool>::new();
 
         for (i, reader) in self.readers.iter().enumerate() {
             if self.is_reader_external(i) {
@@ -859,7 +835,16 @@ impl WorkspaceIndex {
                     let r_target_unit = reader.target_unit(r);
                     if let Some(target_unit) = target_unit_key {
                         if !r_target_unit.is_empty() {
-                            if !self.matches_unit(i, r_target_unit, target_unit, target_crate) {
+                            let matches = if r_target_unit == target_unit {
+                                true
+                            } else if let Some(&cached) = match_memo.get(&(i, r_target_unit)) {
+                                cached
+                            } else {
+                                let res = self.matches_unit(i, r_target_unit, target_unit, target_crate);
+                                match_memo.insert((i, r_target_unit), res);
+                                res
+                            };
+                            if !matches {
                                 continue;
                             }
                         } else if reader_crate == target_crate {
@@ -940,7 +925,16 @@ impl WorkspaceIndex {
                 for (alias, uk) in extern_map {
                     if alias != target_crate {
                         if let Some(target_unit) = target_unit_key {
-                            if !self.matches_unit(i, uk, target_unit, target_crate) {
+                            let matches = if uk == target_unit {
+                                true
+                            } else if let Some(&cached) = match_memo.get(&(i, uk.as_str())) {
+                                cached
+                            } else {
+                                let res = self.matches_unit(i, uk, target_unit, target_crate);
+                                match_memo.insert((i, uk.as_str()), res);
+                                res
+                            };
+                            if !matches {
                                 continue;
                             }
                         }
@@ -949,12 +943,21 @@ impl WorkspaceIndex {
                             let r_target_unit = reader.target_unit(r);
                             if let Some(target_unit) = target_unit_key {
                                 if !r_target_unit.is_empty() {
-                                    if !self.matches_unit(
-                                        i,
-                                        r_target_unit,
-                                        target_unit,
-                                        target_crate,
-                                    ) {
+                                    let matches = if r_target_unit == target_unit {
+                                        true
+                                    } else if let Some(&cached) = match_memo.get(&(i, r_target_unit)) {
+                                        cached
+                                    } else {
+                                        let res = self.matches_unit(
+                                            i,
+                                            r_target_unit,
+                                            target_unit,
+                                            target_crate,
+                                        );
+                                        match_memo.insert((i, r_target_unit), res);
+                                        res
+                                    };
+                                    if !matches {
                                         continue;
                                     }
                                 } else if let Some((

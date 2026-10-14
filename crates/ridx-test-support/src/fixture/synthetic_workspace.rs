@@ -195,6 +195,7 @@ impl SyntheticWorkspaceFixture {
     }
 
     /// Adds an inferred type mapping for a cursor range in a crate's file.
+    #[allow(clippy::too_many_arguments)]
     pub fn add_type_at(
         &mut self,
         crate_name: &str,

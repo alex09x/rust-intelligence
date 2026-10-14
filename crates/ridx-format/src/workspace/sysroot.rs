@@ -100,6 +100,7 @@ impl super::WorkspaceIndex {
                 self.meta_mtimes.push(None);
             }
         }
+        self.rebuild_unit_match();
     }
 }
 

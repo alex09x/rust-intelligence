@@ -11,7 +11,7 @@
 //! Unit tests for authoritative target classification and workspace target-kind routing.
 
 use super::target_kind::{classify_target, TargetKind};
-use super::WorkspaceIndex;
+use super::{UnitMatchIndex, WorkspaceIndex};
 use crate::writer::IndexWriter;
 use std::collections::HashMap;
 use std::fs::File;
@@ -130,12 +130,14 @@ fn build_mock_workspace_with_kinds(
         meta_mtimes.push(None);
     }
 
+    let unit_match = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
     WorkspaceIndex {
         readers,
         paths,
         mtimes,
         source_roots,
         unit_keys,
+        unit_match,
         target_kinds,
         reader_generations,
         reader_dependencies,

@@ -598,6 +598,7 @@ impl WorkspaceIndex {
         }
 
         if changed {
+            self.rebuild_unit_match();
             self.generation = self.generation.wrapping_add(1);
         }
         Ok(changed)

@@ -23,6 +23,7 @@ pub mod reload;
 pub mod std_map;
 pub mod sysroot;
 pub mod target_kind;
+pub mod unit_match;
 
 #[cfg(test)]
 mod cache_resolver_tests;
@@ -36,10 +37,13 @@ mod sibling_tests;
 mod sysroot_tests;
 #[cfg(test)]
 mod target_kind_routing_tests;
+#[cfg(test)]
+mod unit_match_tests;
 
 pub use manifest::*;
 pub use prelude::is_prelude_trait;
 pub use target_kind::{classify_target, classify_target_with_manifest, TargetKind};
+pub use unit_match::UnitMatchIndex;
 
 use crate::reader::IndexReader;
 use memmap2::Mmap;
@@ -62,6 +66,7 @@ pub struct WorkspaceIndex {
     pub(crate) mtimes: Vec<Option<std::time::SystemTime>>,
     pub(crate) source_roots: Vec<Option<PathBuf>>,
     pub(crate) unit_keys: Vec<Option<String>>,
+    pub(crate) unit_match: UnitMatchIndex,
     pub(crate) target_kinds: Vec<Option<TargetKind>>,
     pub(crate) reader_generations: Vec<Option<String>>,
     pub(crate) reader_dependencies: Vec<Vec<String>>,
@@ -138,12 +143,14 @@ impl WorkspaceIndex {
             let meta_paths = vec![meta.meta_path];
             let meta_mtimes = vec![meta.meta_mtime];
 
+            let unit_match = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
             let ws = Self {
                 readers,
                 paths,
                 mtimes,
                 source_roots,
                 unit_keys,
+                unit_match,
                 target_kinds,
                 reader_generations,
                 reader_dependencies,
@@ -566,12 +573,14 @@ impl WorkspaceIndex {
             }
         });
 
+        let unit_match = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
         let mut ws = Self {
             readers,
             paths,
             mtimes,
             source_roots,
             unit_keys,
+            unit_match,
             target_kinds,
             reader_generations,
             reader_dependencies,
@@ -668,6 +677,21 @@ impl WorkspaceIndex {
     /// Number of crates loaded in this workspace index.
     pub fn crate_count(&self) -> usize {
         self.readers.len()
+    }
+
+    /// Rebuilds the internal unit matching index after readers or extern units change.
+    pub(crate) fn rebuild_unit_match(&mut self) {
+        self.unit_match = UnitMatchIndex::build(
+            &self.readers,
+            &self.unit_keys,
+            &self.reader_extern_units,
+        );
+    }
+
+    /// Reference to the internal unit matching index.
+    #[inline]
+    pub fn unit_match(&self) -> &UnitMatchIndex {
+        &self.unit_match
     }
 
     /// Slice of crate index readers.
