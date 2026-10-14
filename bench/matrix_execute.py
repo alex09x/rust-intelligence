@@ -16,6 +16,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from lsp_barrier import barrier
 from lsp_process import SimpleLspProcess
 from matrix_canary import ensure_ra_ready
 from matrix_categories import LSP_SPECS, build_params, DOMAIN_NAMES
@@ -127,8 +128,12 @@ def execute_server_suite(cmd, repo_dir, scenarios, is_ra, sample_count=300):
             drain_fn = getattr(srv, "drain", None)
             if callable(drain_fn):
                 waited_ms, left = drain_fn(timeout=600.0)
-                if waited_ms >= 1.0 or left:
-                    method_drains[key] = {"waited_ms": waited_ms, "still_outstanding": left}
+                barrier_ms, answered = barrier(srv, timeout=600.0)
+                if waited_ms >= 1.0 or left or barrier_ms >= 1.0 or not answered:
+                    method_drains[key] = {
+                        "waited_ms": waited_ms, "still_outstanding": left,
+                        "barrier_ms": barrier_ms, "barrier_answered": answered,
+                    }
             if mid == 15:
                 if is_ra:
                     # The sync block (ids 8-14) makes rust-analyzer reload the workspace;
