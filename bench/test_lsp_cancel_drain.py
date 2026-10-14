@@ -18,6 +18,7 @@ $/cancelRequest ids, and the worker rejects cancelled requests with -32800 witho
 
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 bench_dir = Path(__file__).resolve().parent
@@ -68,7 +69,7 @@ while True:
     if m.get("method") == "initialize":
         write_msg({"jsonrpc": "2.0", "id": m["id"], "result": {"capabilities": {}}})
     elif m.get("method") == "slow/query":
-        time.sleep(0.05)
+        time.sleep(m["params"].get("sleep", 0.05))
         computed[0] += 1
         write_msg({"jsonrpc": "2.0", "id": m["id"], "result": [m["params"]["n"]]})
     elif m.get("method") == "stats/computed":
@@ -86,16 +87,20 @@ def test_timed_out_requests_are_cancelled_and_drained():
     with tempfile.TemporaryDirectory() as td:
         srv = _start(td)
         try:
-            errs = [srv.request("slow/query", {"n": n}, timeout=0.005)[2] for n in range(100)]
+            # 500 ms per request keeps a 5 ms client timeout far below the server time even on a
+            # loaded host, where the wait itself can overshoot by tens of milliseconds.
+            t0 = time.perf_counter()
+            errs = [srv.request("slow/query", {"n": n, "sleep": 0.5}, timeout=0.005)[2] for n in range(100)]
+            send_s = time.perf_counter() - t0
             assert errs.count("TIMEOUT") == 100, errs
             assert srv.cancelled_on_timeout == 100
             waited_ms, left = srv.drain(timeout=30.0)
             assert left == 0, (waited_ms, left)
             computed, _dur, err = srv.request("stats/computed", None, timeout=10.0)
             assert err is None
-            # Only requests already being computed when their cancel arrived are computed; with a
-            # 5 ms timeout against a 50 ms server that is a small fraction of the 100 sent.
-            assert computed <= 20, computed
+            # Only a request already being computed when its cancel arrived is computed: at most one
+            # per 500 ms of sending, plus the one in progress; without cancellation all 100 would be.
+            assert computed <= int(send_s / 0.5) + 2, (computed, send_s)
             res, _dur, err = srv.request("slow/query", {"n": 100}, timeout=10.0)
             assert (res, err) == ([100], None)
             print(f"PASS: 100 timed-out requests cancelled, {computed} computed, drained in {waited_ms} ms")
