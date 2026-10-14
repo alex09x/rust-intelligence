@@ -255,6 +255,7 @@ mod ntm_domain7_semantic_tokens_part5;
 mod ntm_domain7_semantic_tokens_part6;
 mod ntm_domain7_semantic_tokens_part7;
 mod ntm_domain8_l2_editing;
+mod ntm_domain8_l2_use_rename;
 mod ntm_domain8_prepare_rename;
 mod ntm_domain8_prepare_rename_part2;
 mod ntm_domain8_prepare_rename_part3;
