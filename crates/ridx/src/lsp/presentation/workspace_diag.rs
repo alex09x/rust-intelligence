@@ -80,11 +80,6 @@ pub fn handle_workspace_diagnostic_with_flycheck(
                 .source_root_at(i)
                 .or_else(|| ws.workspace_root())
                 .or_else(|| ws.paths().get(i).and_then(|p| p.parent()));
-            if let Some(orig) = origin {
-                if ridx_format::is_external_dependency_path(orig) || ws.is_external_path(orig) {
-                    continue;
-                }
-            }
             for fid in 0..reader.files_count() {
                 let rel = reader.get_file(fid);
                 if rel.is_empty() {
@@ -97,9 +92,6 @@ pub fn handle_workspace_diagnostic_with_flycheck(
                 } else {
                     std::path::PathBuf::from(rel)
                 };
-                if ridx_format::is_external_dependency_path(&path) || ws.is_external_path(&path) {
-                    continue;
-                }
                 let path_str = path.to_string_lossy().to_string();
                 let uri = path_to_uri(&path_str);
                 if seen_uris.insert(uri.clone()) {
