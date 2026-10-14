@@ -189,8 +189,12 @@ ridx lsp
 ```
 
 > **Note on updates**: After updating `ridx` (or modifying compiler driver flags), run `ridx index .` (or `ridx index . --all-features`) to re-generate workspace indices with updated canonical symbol definitions and paths.
->
-> **Standard library indexing limitation**: Go to definition, hover signatures, and find-references for items defined in `std`/`core`/`alloc` are not available yet: sysroot crates are precompiled and are not indexed. Navigation into crates.io and git dependencies works.
+
+### Known limitations
+- **Standard library (`std`, `core`, `alloc`)**: Definition navigation and hover for standard library items are supported via pre-indexed sysroot shards. Finding references to standard library items is scoped to workspace crates, and renaming standard library symbols is prohibited.
+- **`Self` keywords**: `Self` is not counted as a type reference in references queries.
+- **Macro invocations (`vec![]`)**: Invocations of `vec![]` are not indexed as references to `Vec`.
+- **Target-specific cfgs (`cfg(windows)`, `cfg(unix)`)**: Items guarded by target-conditional compilation are indexed for the compilation target specified during indexing (`ridx index --target <triple>`).
 
 ---
 
