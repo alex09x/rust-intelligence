@@ -231,3 +231,88 @@ fn test_rename_sibling_units_deduplicated_workspace_edit() {
     assert!(updated_test.contains("calculate(20)"));
     assert!(!updated_test.contains("compute"));
 }
+
+#[test]
+fn test_rename_overlapping_different_edits_returns_internal_error() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let ws_root = temp_dir.path().to_path_buf();
+    let pkg_root = ws_root.join("my_pkg");
+    fs::create_dir_all(pkg_root.join("src")).unwrap();
+
+    let lib_rs = pkg_root.join("src/lib.rs");
+    let lib_str = lib_rs.to_str().unwrap().to_string();
+    let lib_content = "pub fn compute(x: i32) -> i32 {\n    x * 2\n}\n";
+    fs::write(&lib_rs, lib_content).unwrap();
+
+    let variants_dir = ws_root.join("target/ridx/variants/dev");
+    let deps_dir = variants_dir.join(".deps");
+    fs::create_dir_all(&deps_dir).unwrap();
+
+    let mut writer = IndexWriter::new("my_pkg", "0.1.0");
+    writer.set_unit_key("unit_lib");
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "compute".to_string(),
+        path: "my_pkg::compute".to_string(),
+        signature: None,
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 15,
+    });
+    // Inject reference overlapping with declaration on line 1, but with different start_col (9 instead of 8)
+    writer.add_reference(RawReference {
+        file: lib_str.clone(),
+        start_line: 1,
+        start_col: 9,
+        end_line: 1,
+        end_col: 16,
+        target_def_id: Some(1),
+        target_path: "my_pkg::compute".to_string(),
+        target_file: Some(lib_str.clone()),
+        target_unit: Some("unit_lib".to_string()),
+        target_line: 1,
+        target_col: 8,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
+    });
+
+    let lib_idx_path = deps_dir.join("my_pkg_lib.ridx");
+    let mut f_lib = fs::File::create(&lib_idx_path).unwrap();
+    writer.write_to(&mut f_lib).unwrap();
+    drop(f_lib);
+
+    let ws = WorkspaceIndex::open(&lib_idx_path).unwrap();
+
+    let mut overlay_mgr = OverlayManager::new();
+    let uri_lib = path_to_uri(&lib_str);
+    overlay_mgr.open_document(&uri_lib, &lib_str, 1, lib_content.to_string());
+    let mut conv = PositionConverter::new();
+
+    let req = json!({
+        "params": {
+            "textDocument": { "uri": &uri_lib },
+            "position": { "line": 0, "character": 7 },
+            "newName": "calculate"
+        }
+    });
+
+    let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv);
+    assert!(res.is_err(), "Overlapping rename edits must return an error");
+    let err = res.unwrap_err();
+    assert_eq!(err.code, -32603, "Must return JSON-RPC internal error code -32603");
+    assert!(
+        err.message.contains("Overlapping rename edits in file:"),
+        "Error message must specify overlapping rename edits"
+    );
+    assert!(
+        err.message.contains(&lib_str),
+        "Error message must include the file path"
+    );
+}
+

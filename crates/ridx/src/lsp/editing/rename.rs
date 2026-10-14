@@ -302,30 +302,7 @@ pub fn handle_rename(
         ));
     }
 
-    for edits in changes_map.values_mut() {
-        edits.sort_by(|a, b| {
-            let a_sl = a["range"]["start"]["line"].as_u64().unwrap_or(0);
-            let b_sl = b["range"]["start"]["line"].as_u64().unwrap_or(0);
-            let a_sc = a["range"]["start"]["character"].as_u64().unwrap_or(0);
-            let b_sc = b["range"]["start"]["character"].as_u64().unwrap_or(0);
-            (a_sl, a_sc).cmp(&(b_sl, b_sc))
-        });
-        let mut deduped: Vec<Value> = Vec::with_capacity(edits.len());
-        for edit in edits.drain(..) {
-            if let Some(prev) = deduped.last() {
-                let prev_el = prev["range"]["end"]["line"].as_u64().unwrap_or(0);
-                let prev_ec = prev["range"]["end"]["character"].as_u64().unwrap_or(0);
-                let cur_sl = edit["range"]["start"]["line"].as_u64().unwrap_or(0);
-                let cur_sc = edit["range"]["start"]["character"].as_u64().unwrap_or(0);
-                if (cur_sl, cur_sc) < (prev_el, prev_ec) {
-                    // Overlaps with previous edit, skip duplicate or overlapping span
-                    continue;
-                }
-            }
-            deduped.push(edit);
-        }
-        *edits = deduped;
-    }
+    validate_and_dedup_edits(&mut changes_map)?;
 
     let mut doc_changes = Vec::new();
     for (doc_uri, edits) in &changes_map {
@@ -346,3 +323,40 @@ pub fn handle_rename(
         "documentChanges": doc_changes
     }))
 }
+
+pub(crate) fn validate_and_dedup_edits(
+    changes_map: &mut HashMap<String, Vec<Value>>,
+) -> Result<(), LspError> {
+    for (doc_uri, edits) in changes_map {
+        edits.sort_by(|a, b| {
+            let a_sl = a["range"]["start"]["line"].as_u64().unwrap_or(0);
+            let b_sl = b["range"]["start"]["line"].as_u64().unwrap_or(0);
+            let a_sc = a["range"]["start"]["character"].as_u64().unwrap_or(0);
+            let b_sc = b["range"]["start"]["character"].as_u64().unwrap_or(0);
+            (a_sl, a_sc).cmp(&(b_sl, b_sc))
+        });
+        let mut deduped: Vec<Value> = Vec::with_capacity(edits.len());
+        for edit in edits.drain(..) {
+            if let Some(prev) = deduped.last() {
+                let prev_el = prev["range"]["end"]["line"].as_u64().unwrap_or(0);
+                let prev_ec = prev["range"]["end"]["character"].as_u64().unwrap_or(0);
+                let cur_sl = edit["range"]["start"]["line"].as_u64().unwrap_or(0);
+                let cur_sc = edit["range"]["start"]["character"].as_u64().unwrap_or(0);
+                if (cur_sl, cur_sc) < (prev_el, prev_ec) {
+                    if prev["range"] == edit["range"] {
+                        // Exact duplicate range, safe to skip
+                        continue;
+                    }
+                    let doc_file = uri_to_path(doc_uri);
+                    return Err(LspError::internal_error(format!(
+                        "Overlapping rename edits in file: {doc_file}"
+                    )));
+                }
+            }
+            deduped.push(edit);
+        }
+        *edits = deduped;
+    }
+    Ok(())
+}
+

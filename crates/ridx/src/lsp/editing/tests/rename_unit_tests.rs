@@ -14,7 +14,7 @@
 //! preserve CRLF, respect lexical scoping and shadowing, leave comments and
 //! string literals untouched, and always yield syntactically valid Rust.
 
-use crate::lsp::editing::rename::handle_rename;
+use crate::lsp::editing::rename::{handle_rename, validate_and_dedup_edits};
 use crate::lsp::protocol::{path_to_uri, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_test_support::{apply_workspace_edit, parse_fixture};
@@ -233,3 +233,64 @@ fn test_rename_commutativity_property() {
     let original_clean = parse_fixture(fixture).clean_text;
     assert_eq!(*step2_code, original_clean);
 }
+
+#[test]
+fn test_rename_overlapping_different_ranges_returns_internal_error() {
+    let mut changes_map = HashMap::new();
+    let uri = "file:///workspace/test.rs".to_string();
+    changes_map.insert(
+        uri.clone(),
+        vec![
+            json!({
+                "range": {
+                    "start": { "line": 5, "character": 4 },
+                    "end": { "line": 5, "character": 10 }
+                },
+                "newText": "foo"
+            }),
+            json!({
+                "range": {
+                    "start": { "line": 5, "character": 7 },
+                    "end": { "line": 5, "character": 12 }
+                },
+                "newText": "bar"
+            }),
+        ],
+    );
+
+    let res = validate_and_dedup_edits(&mut changes_map);
+    assert!(res.is_err());
+    let err = res.unwrap_err();
+    assert_eq!(err.code, -32603);
+    assert!(err.message.contains("Overlapping rename edits in file:"));
+    assert!(err.message.contains("/workspace/test.rs"));
+}
+
+#[test]
+fn test_rename_exact_duplicate_ranges_deduplicated() {
+    let mut changes_map = HashMap::new();
+    let uri = "file:///workspace/test.rs".to_string();
+    changes_map.insert(
+        uri.clone(),
+        vec![
+            json!({
+                "range": {
+                    "start": { "line": 5, "character": 4 },
+                    "end": { "line": 5, "character": 10 }
+                },
+                "newText": "foo"
+            }),
+            json!({
+                "range": {
+                    "start": { "line": 5, "character": 4 },
+                    "end": { "line": 5, "character": 10 }
+                },
+                "newText": "foo"
+            }),
+        ],
+    );
+
+    assert!(validate_and_dedup_edits(&mut changes_map).is_ok());
+    assert_eq!(changes_map[&uri].len(), 1);
+}
+

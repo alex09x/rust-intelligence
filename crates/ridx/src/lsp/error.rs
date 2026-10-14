@@ -83,6 +83,10 @@ impl LspError {
         Self::new(SERVER_NOT_INITIALIZED, "Server not initialized")
     }
 
+    pub fn internal_error(message: impl Into<String>) -> Self {
+        Self::new(INTERNAL_ERROR, message)
+    }
+
     pub fn to_json(&self) -> Value {
         if let Some(ref data) = self.data {
             json!({
