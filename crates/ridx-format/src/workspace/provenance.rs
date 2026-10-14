@@ -549,7 +549,7 @@ impl WorkspaceIndex {
 
                         return LoadedFileMetadata {
                             source_root: effective_source_root,
-                            unit_key: Some(info.unit_key),
+                            unit_key: (!info.unit_key.is_empty()).then(|| info.unit_key),
                             target_kind: effective_target_kind,
                             is_dependency: info.is_dependency,
                             generation: gen,

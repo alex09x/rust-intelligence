@@ -33,6 +33,8 @@ mod routing_tests;
 #[cfg(test)]
 mod sibling_tests;
 #[cfg(test)]
+mod sysroot_tests;
+#[cfg(test)]
 mod target_kind_routing_tests;
 
 pub use manifest::*;

@@ -34,6 +34,7 @@ pub struct ResolvedDefinition<'a> {
     pub is_reexport: bool,
     pub source_root: Option<&'a Path>,
     pub unit_key: Option<&'a str>,
+    pub reader_idx: Option<usize>,
 }
 
 impl<'a> ResolvedDefinition<'a> {
@@ -435,6 +436,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                         is_reexport: def.is_reexport(),
                         source_root: None,
                         unit_key: None,
+                        reader_idx: None,
                     });
                 }
             }
@@ -466,6 +468,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 } else {
                     None
                 },
+                reader_idx: None,
             });
         }
 
@@ -503,6 +506,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
                 is_reexport: def.is_reexport(),
                 source_root: None,
                 unit_key: None,
+                reader_idx: None,
             });
         }
 
@@ -1101,6 +1105,7 @@ mod tests {
             is_reexport: false,
             source_root: Some(Path::new("/workspace")),
             unit_key: Some("unit1"),
+            reader_idx: None,
         };
 
         assert_eq!(def.resolved_path(), Path::new("/workspace/src/lib.rs"));
@@ -1636,6 +1641,7 @@ mod tests {
             is_reexport: false,
             source_root: None,
             unit_key: None,
+            reader_idx: None,
         };
         assert_eq!(
             resolved.resolved_path(),

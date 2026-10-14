@@ -79,7 +79,7 @@ impl super::WorkspaceIndex {
         for sys_path in shards {
             if let Ok(reader) = IndexReader::open(sys_path) {
                 let mtime = fs::metadata(sys_path).and_then(|m| m.modified()).ok();
-                let ukey = reader.unit_key().to_string();
+                let ukey = (!reader.unit_key().is_empty()).then(|| reader.unit_key().to_string());
                 let gen = if !reader.generation().is_empty() {
                     Some(reader.generation().to_string())
                 } else {
@@ -89,7 +89,7 @@ impl super::WorkspaceIndex {
                 self.paths.push(sys_path.clone());
                 self.mtimes.push(mtime);
                 self.source_roots.push(None);
-                self.unit_keys.push(Some(ukey));
+                self.unit_keys.push(ukey);
                 self.target_kinds.push(Some(super::TargetKind::Lib));
                 self.reader_generations.push(gen);
                 self.reader_dependencies.push(Vec::new());

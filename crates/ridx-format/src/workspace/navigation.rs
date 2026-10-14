@@ -40,12 +40,16 @@ impl WorkspaceIndex {
             end_col: span.end_col(),
             is_macro_expansion: def.is_macro_expansion(),
             is_reexport: def.is_reexport(),
-            source_root: self
-                .source_roots
-                .get(reader_idx)
-                .and_then(|r| r.as_deref())
-                .or(self.workspace_root.as_deref()),
+            source_root: if self.reader_is_dependency.get(reader_idx).copied().unwrap_or(false) {
+                self.source_roots.get(reader_idx).and_then(|r| r.as_deref())
+            } else {
+                self.source_roots
+                    .get(reader_idx)
+                    .and_then(|r| r.as_deref())
+                    .or(self.workspace_root.as_deref())
+            },
             unit_key: self.unit_keys.get(reader_idx).and_then(|u| u.as_deref()),
+            reader_idx: Some(reader_idx),
         }
     }
 
@@ -199,12 +203,16 @@ impl WorkspaceIndex {
                 let is_local = !is_explicit_remote
                     && (res.path.starts_with(&crate_prefix) || res.path == reader.crate_name());
                 if is_local && res.file != "external" {
-                    res.source_root = self
-                        .source_roots
-                        .get(i)
-                        .and_then(|r| r.as_deref())
-                        .or(self.workspace_root.as_deref());
+                    res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
+                        self.source_roots.get(i).and_then(|r| r.as_deref())
+                    } else {
+                        self.source_roots
+                            .get(i)
+                            .and_then(|r| r.as_deref())
+                            .or(self.workspace_root.as_deref())
+                    };
                     res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+                    res.reader_idx = Some(i);
                     return Some(res);
                 }
                 // If it resolves to a cross-crate target, attempt resolution in
@@ -216,11 +224,17 @@ impl WorkspaceIndex {
                     res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
                 }
                 if res.source_root.is_none() {
-                    res.source_root = self
-                        .source_roots
-                        .get(i)
-                        .and_then(|r| r.as_deref())
-                        .or(self.workspace_root.as_deref());
+                    res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
+                        self.source_roots.get(i).and_then(|r| r.as_deref())
+                    } else {
+                        self.source_roots
+                            .get(i)
+                            .and_then(|r| r.as_deref())
+                            .or(self.workspace_root.as_deref())
+                    };
+                }
+                if res.reader_idx.is_none() {
+                    res.reader_idx = Some(i);
                 }
                 return Some(res);
             }
@@ -358,12 +372,16 @@ impl WorkspaceIndex {
                         end_col: def_span.end_col(),
                         is_macro_expansion: def.is_macro_expansion(),
                         is_reexport: def.is_reexport(),
-                        source_root: self
-                            .source_roots
-                            .get(j)
-                            .and_then(|r| r.as_deref())
-                            .or(self.workspace_root.as_deref()),
+                        source_root: if self.reader_is_dependency.get(j).copied().unwrap_or(false) {
+                            self.source_roots.get(j).and_then(|r| r.as_deref())
+                        } else {
+                            self.source_roots
+                                .get(j)
+                                .and_then(|r| r.as_deref())
+                                .or(self.workspace_root.as_deref())
+                        },
                         unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
+                        reader_idx: Some(j),
                     });
                 }
             }
@@ -413,12 +431,16 @@ impl WorkspaceIndex {
                         end_col: def_span.end_col(),
                         is_macro_expansion: def.is_macro_expansion(),
                         is_reexport: def.is_reexport(),
-                        source_root: self
-                            .source_roots
-                            .get(j)
-                            .and_then(|r| r.as_deref())
-                            .or(self.workspace_root.as_deref()),
+                        source_root: if self.reader_is_dependency.get(j).copied().unwrap_or(false) {
+                            self.source_roots.get(j).and_then(|r| r.as_deref())
+                        } else {
+                            self.source_roots
+                                .get(j)
+                                .and_then(|r| r.as_deref())
+                                .or(self.workspace_root.as_deref())
+                        },
                         unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
+                        reader_idx: Some(j),
                     });
                 }
             }
@@ -471,12 +493,16 @@ impl WorkspaceIndex {
                                     end_col: d_span.end_col(),
                                     is_macro_expansion: def.is_macro_expansion(),
                                     is_reexport: def.is_reexport(),
-                                    source_root: self
-                                        .source_roots
-                                        .get(j)
-                                        .and_then(|s| s.as_deref())
-                                        .or(self.workspace_root.as_deref()),
+                                    source_root: if self.reader_is_dependency.get(j).copied().unwrap_or(false) {
+                                        self.source_roots.get(j).and_then(|s| s.as_deref())
+                                    } else {
+                                        self.source_roots
+                                            .get(j)
+                                            .and_then(|s| s.as_deref())
+                                            .or(self.workspace_root.as_deref())
+                                    },
                                     unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
+                                    reader_idx: Some(j),
                                 });
                             }
                         }
@@ -634,6 +660,7 @@ impl WorkspaceIndex {
         target_path: &str,
         target_unit_key: Option<&str>,
     ) -> Vec<WorkspaceReference<'a>> {
+        let target_unit_key = target_unit_key.filter(|k| !k.is_empty());
         let mut all_refs = Vec::new();
         let mut seen_refs = std::collections::HashSet::new();
         let mut target_crate = target_path.split("::").next().unwrap_or(target_path);
@@ -1362,6 +1389,7 @@ impl WorkspaceIndex {
             target_end_col: def.end_col,
             target_source_root: def.source_root,
             target_unit_key: def.unit_key,
+            target_reader_idx: def.reader_idx,
             references: refs,
         })
     }

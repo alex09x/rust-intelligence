@@ -136,7 +136,7 @@ fn test_sibling_units_reference_only_in_test_shard() {
         end_col: 15,
     });
     test_writer.add_reference(RawReference {
-        file: "tests/test_run.rs".to_string(),
+        file: "src/runtime/tests/inject.rs".to_string(),
         start_line: 10,
         start_col: 5,
         end_line: 10,
@@ -181,7 +181,7 @@ fn test_sibling_units_reference_only_in_test_shard() {
         1,
         "Reference in sibling test shard must be found when querying unit_lib"
     );
-    assert_eq!(refs[0].file, "tests/test_run.rs");
+    assert_eq!(refs[0].file, "src/runtime/tests/inject.rs");
     assert_eq!(refs[0].span.start_line(), 10);
     assert_eq!(refs[0].span.start_col(), 5);
 }

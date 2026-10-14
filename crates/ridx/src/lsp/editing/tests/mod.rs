@@ -20,6 +20,7 @@ pub mod rename_edge_tests;
 pub mod rename_macro_tests;
 pub mod rename_matrix_tests;
 pub mod rename_sibling_tests;
+pub mod rename_sysroot_tests;
 pub mod rename_tests;
 pub mod rename_unit_tests;
 

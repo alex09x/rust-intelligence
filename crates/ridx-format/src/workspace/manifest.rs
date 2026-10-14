@@ -83,6 +83,7 @@ pub struct LocationReferences<'a> {
     pub target_end_col: u32,
     pub target_source_root: Option<&'a Path>,
     pub target_unit_key: Option<&'a str>,
+    pub target_reader_idx: Option<usize>,
     pub references: Vec<WorkspaceReference<'a>>,
 }
 
@@ -100,6 +101,11 @@ impl<'a> LocationReferences<'a> {
 
     /// Returns true if this target represents an external dependency or is outside the workspace.
     pub fn is_external(&self, ws: &super::WorkspaceIndex) -> bool {
+        if let Some(idx) = self.target_reader_idx {
+            if ws.is_reader_external(idx) {
+                return true;
+            }
+        }
         ws.is_external_target(
             self.target_file,
             &self.target_resolved_path(),
@@ -326,6 +332,7 @@ mod tests {
             target_end_col: 1,
             target_source_root: Some(root),
             target_unit_key: None,
+            target_reader_idx: None,
             references: vec![r_abs],
         };
         assert_eq!(loc_refs.target_resolved_path(), root.join(rel_file));
