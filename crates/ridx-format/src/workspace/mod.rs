@@ -193,162 +193,7 @@ impl WorkspaceIndex {
         };
 
         // Check if an active build variant manifest exists
-        let manifest_file = search_dir.join("ridx_manifest.json");
-        let (scan_dir, manifest_info) = if manifest_file.is_file() {
-            let content = fs::read(&manifest_file)?;
-            let manifest = serde_json::from_slice::<VariantManifest>(&content).map_err(|e| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!("Failed to parse variant manifest {:?}: {e}", manifest_file),
-                )
-            })?;
-
-            let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
-            if !manifest.active_variant_id.is_empty() {
-                let expected_variant_dir = format!("variants/{}", manifest.active_variant_id);
-                let vdir_str = manifest.variant_dir.trim();
-                let vpath = Path::new(vdir_str);
-                if vdir_str.is_empty()
-                    || vpath.is_absolute()
-                    || vpath
-                        .components()
-                        .any(|c| c == std::path::Component::ParentDir)
-                    || vpath == Path::new(".")
-                    || vdir_str != expected_variant_dir
-                {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        format!(
-                            "Active variant manifest {:?} specifies variant_dir {:?} which does not match active_variant_id {:?} (expected {:?})",
-                            manifest_file, manifest.variant_dir, manifest.active_variant_id, expected_variant_dir
-                        ),
-                    ));
-                }
-
-                let vdir = search_dir.join(&expected_variant_dir);
-                if vdir == search_dir || !vdir.is_dir() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        format!(
-                            "Active variant directory {:?} specified in {:?} does not exist. Run 'ridx index' to build this variant.",
-                            vdir, manifest_file
-                        ),
-                    ));
-                }
-
-                if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        format!(
-                            "Format version mismatch in manifest {:?}: format_version {} != current {}",
-                            manifest_file, manifest.format_version, crate::format::CURRENT_FORMAT_VERSION
-                        ),
-                    ));
-                }
-
-                match manifest.extractor_version.as_deref() {
-                    Some(ver) if ver == crate::format::EXTRACTOR_VERSION => {}
-                    Some(ver) => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
-                            format!(
-                                "Extractor version mismatch in manifest {:?}: extractor_version {} != current {}",
-                                manifest_file, ver, crate::format::EXTRACTOR_VERSION
-                            ),
-                        ));
-                    }
-                    None => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
-                            format!("Extractor version missing in manifest {:?}", manifest_file),
-                        ));
-                    }
-                }
-
-                (
-                    vdir,
-                    Some((
-                        manifest_file,
-                        mtime,
-                        manifest.active_variant_id,
-                        manifest.dependency_shards,
-                        if !manifest.workspace_root.is_empty() {
-                            Some(PathBuf::from(manifest.workspace_root))
-                        } else {
-                            None
-                        },
-                        manifest.sysroot_cas_key,
-                    )),
-                )
-            } else {
-                // Legacy manifest without active_variant_id: scan search_dir directly
-                (search_dir.clone(), None)
-            }
-        } else if search_dir.join("variant_manifest.json").is_file() {
-            let v_manifest_file = search_dir.join("variant_manifest.json");
-            let content = fs::read(&v_manifest_file)?;
-            let manifest = serde_json::from_slice::<VariantManifest>(&content).map_err(|e| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!(
-                        "Failed to parse variant manifest {:?}: {e}",
-                        v_manifest_file
-                    ),
-                )
-            })?;
-            let mtime = fs::metadata(&v_manifest_file)
-                .and_then(|m| m.modified())
-                .ok();
-            if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!(
-                        "Format version mismatch in manifest {:?}: format_version {} != current {}",
-                        v_manifest_file,
-                        manifest.format_version,
-                        crate::format::CURRENT_FORMAT_VERSION
-                    ),
-                ));
-            }
-            match manifest.extractor_version.as_deref() {
-                Some(ver) if ver == crate::format::EXTRACTOR_VERSION => {}
-                Some(ver) => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        format!(
-                            "Extractor version mismatch in manifest {:?}: extractor_version {} != current {}",
-                            v_manifest_file, ver, crate::format::EXTRACTOR_VERSION
-                        ),
-                    ));
-                }
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        format!(
-                            "Extractor version missing in manifest {:?}",
-                            v_manifest_file
-                        ),
-                    ));
-                }
-            }
-            (
-                search_dir.clone(),
-                Some((
-                    v_manifest_file,
-                    mtime,
-                    manifest.active_variant_id,
-                    manifest.dependency_shards,
-                    if !manifest.workspace_root.is_empty() {
-                        Some(PathBuf::from(manifest.workspace_root))
-                    } else {
-                        None
-                    },
-                    manifest.sysroot_cas_key,
-                )),
-            )
-        } else {
-            (search_dir.clone(), None)
-        };
+        let (scan_dir, manifest_info) = Self::resolve_open_manifest(&search_dir)?;
 
         let mut ridx_files = Vec::new();
         if scan_dir.is_dir() {
@@ -619,6 +464,179 @@ impl WorkspaceIndex {
         ws.generation = 1;
         ws.path_index = PathIndex::build(&ws);
         Ok(ws)
+    }
+}
+
+pub(super) type OpenManifestInfo = (
+    PathBuf,
+    Option<std::time::SystemTime>,
+    String,
+    Vec<DependencyShardInfo>,
+    Option<PathBuf>,
+    Option<String>,
+);
+
+impl WorkspaceIndex {
+    pub(super) fn resolve_open_manifest(
+        search_dir: &Path,
+    ) -> io::Result<(PathBuf, Option<OpenManifestInfo>)> {
+        let manifest_file = search_dir.join("ridx_manifest.json");
+        let res = if manifest_file.is_file() {
+            let content = fs::read(&manifest_file)?;
+            let manifest = serde_json::from_slice::<VariantManifest>(&content).map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Failed to parse variant manifest {:?}: {e}", manifest_file),
+                )
+            })?;
+
+            let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
+            if !manifest.active_variant_id.is_empty() {
+                let expected_variant_dir = format!("variants/{}", manifest.active_variant_id);
+                let vdir_str = manifest.variant_dir.trim();
+                let vpath = Path::new(vdir_str);
+                if vdir_str.is_empty()
+                    || vpath.is_absolute()
+                    || vpath
+                        .components()
+                        .any(|c| c == std::path::Component::ParentDir)
+                    || vpath == Path::new(".")
+                    || vdir_str != expected_variant_dir
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "Active variant manifest {:?} specifies variant_dir {:?} which does not match active_variant_id {:?} (expected {:?})",
+                            manifest_file, manifest.variant_dir, manifest.active_variant_id, expected_variant_dir
+                        ),
+                    ));
+                }
+
+                let vdir = search_dir.join(&expected_variant_dir);
+                if vdir == search_dir || !vdir.is_dir() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::NotFound,
+                        format!(
+                            "Active variant directory {:?} specified in {:?} does not exist. Run 'ridx index' to build this variant.",
+                            vdir, manifest_file
+                        ),
+                    ));
+                }
+
+                if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "Format version mismatch in manifest {:?}: format_version {} != current {}",
+                            manifest_file, manifest.format_version, crate::format::CURRENT_FORMAT_VERSION
+                        ),
+                    ));
+                }
+
+                match manifest.extractor_version.as_deref() {
+                    Some(ver) if ver == crate::format::EXTRACTOR_VERSION => {}
+                    Some(ver) => {
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            format!(
+                                "Extractor version mismatch in manifest {:?}: extractor_version {} != current {}",
+                                manifest_file, ver, crate::format::EXTRACTOR_VERSION
+                            ),
+                        ));
+                    }
+                    None => {
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            format!("Extractor version missing in manifest {:?}", manifest_file),
+                        ));
+                    }
+                }
+
+                (
+                    vdir,
+                    Some((
+                        manifest_file,
+                        mtime,
+                        manifest.active_variant_id,
+                        manifest.dependency_shards,
+                        if !manifest.workspace_root.is_empty() {
+                            Some(PathBuf::from(manifest.workspace_root))
+                        } else {
+                            None
+                        },
+                        manifest.sysroot_cas_key,
+                    )),
+                )
+            } else {
+                // Legacy manifest without active_variant_id: scan search_dir directly
+                (search_dir.to_path_buf(), None)
+            }
+        } else if search_dir.join("variant_manifest.json").is_file() {
+            let v_manifest_file = search_dir.join("variant_manifest.json");
+            let content = fs::read(&v_manifest_file)?;
+            let manifest = serde_json::from_slice::<VariantManifest>(&content).map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!(
+                        "Failed to parse variant manifest {:?}: {e}",
+                        v_manifest_file
+                    ),
+                )
+            })?;
+            let mtime = fs::metadata(&v_manifest_file)
+                .and_then(|m| m.modified())
+                .ok();
+            if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!(
+                        "Format version mismatch in manifest {:?}: format_version {} != current {}",
+                        v_manifest_file,
+                        manifest.format_version,
+                        crate::format::CURRENT_FORMAT_VERSION
+                    ),
+                ));
+            }
+            match manifest.extractor_version.as_deref() {
+                Some(ver) if ver == crate::format::EXTRACTOR_VERSION => {}
+                Some(ver) => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "Extractor version mismatch in manifest {:?}: extractor_version {} != current {}",
+                            v_manifest_file, ver, crate::format::EXTRACTOR_VERSION
+                        ),
+                    ));
+                }
+                None => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "Extractor version missing in manifest {:?}",
+                            v_manifest_file
+                        ),
+                    ));
+                }
+            }
+            (
+                search_dir.to_path_buf(),
+                Some((
+                    v_manifest_file,
+                    mtime,
+                    manifest.active_variant_id,
+                    manifest.dependency_shards,
+                    if !manifest.workspace_root.is_empty() {
+                        Some(PathBuf::from(manifest.workspace_root))
+                    } else {
+                        None
+                    },
+                    manifest.sysroot_cas_key,
+                )),
+            )
+        } else {
+            (search_dir.to_path_buf(), None)
+        };
+        Ok(res)
     }
 
     /// Auto-discovers .ridx indices starting from current directory up to root or target/ridx.
