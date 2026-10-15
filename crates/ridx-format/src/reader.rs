@@ -360,9 +360,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         if start + len > bytes.len() {
             return &[];
         }
-        unsafe {
-            std::slice::from_raw_parts(bytes[start..].as_ptr() as *const DerefEntry, count)
-        }
+        unsafe { std::slice::from_raw_parts(bytes[start..].as_ptr() as *const DerefEntry, count) }
     }
 
     /// Find a definition by its canonical path (e.g. `stdx::panic_context::enter`).
@@ -537,12 +535,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     }
 
     /// Finds the innermost TypeEntry at a cursor position `(file, line, col)`.
-    pub fn find_innermost_type_entry(
-        &self,
-        file: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<&TypeEntry> {
+    pub fn find_innermost_type_entry(&self, file: &str, line: u32, col: u32) -> Option<&TypeEntry> {
         let file_id = self.find_file_id(file)?;
         let types = self.types();
         let key = (file_id, line, col);
@@ -2027,7 +2020,12 @@ mod tests {
                 visibility: 0,
                 is_macro_expansion: false,
                 name: format!("SymbolName_{}_{}", i % 50, i),
-                path: format!("scale_crate::module_{}::SymbolName_{}_{}", i % 20, i % 50, i),
+                path: format!(
+                    "scale_crate::module_{}::SymbolName_{}_{}",
+                    i % 20,
+                    i % 50,
+                    i
+                ),
                 file: format!("src/mod_{}.rs", i % 30),
                 start_line: (i % 500 + 1) as u32,
                 start_col: 1,
@@ -2042,7 +2040,13 @@ mod tests {
         drop(f);
 
         let reader = IndexReader::open(&idx_path).unwrap();
-        let queries = ["symbolname", "module_5", "name_25", "xyz_nonexistent", "scale_crate"];
+        let queries = [
+            "symbolname",
+            "module_5",
+            "name_25",
+            "xyz_nonexistent",
+            "scale_crate",
+        ];
 
         // 1. Time new implementation (zero-alloc ASCII)
         let t0 = std::time::Instant::now();
@@ -2061,7 +2065,8 @@ mod tests {
             for def in reader.definitions() {
                 let name = reader.get_str(def.name_offset());
                 let path = reader.get_str(def.path_offset());
-                if name.to_lowercase().contains(&q_lower) || path.to_lowercase().contains(&q_lower) {
+                if name.to_lowercase().contains(&q_lower) || path.to_lowercase().contains(&q_lower)
+                {
                     matches.push(def);
                 }
             }
@@ -2089,7 +2094,8 @@ mod tests {
 
     #[test]
     fn test_search_symbols_and_fallback_ignore_typaram() {
-        let temp_dir = std::env::temp_dir().join(format!("ridx_typaram_search_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("ridx_typaram_search_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&temp_dir);
         std::fs::create_dir_all(&temp_dir).unwrap();
         let idx_path = temp_dir.join("test.ridx");
@@ -2107,7 +2113,9 @@ mod tests {
             start_col: 1,
             end_line: 10,
             end_col: 20,
-            signature: Some("fn deserialize<'de, D>(deserializer: D) -> Result<T, D::Error>".to_string()),
+            signature: Some(
+                "fn deserialize<'de, D>(deserializer: D) -> Result<T, D::Error>".to_string(),
+            ),
         });
         writer.add_definition(crate::writer::RawDefinition {
             def_id: 2,
@@ -2160,19 +2168,31 @@ mod tests {
 
         // 1. search_symbols for "deserialize" must return Fn and Struct, but NOT TyParam D or T
         let matches = reader.search_symbols("deserialize");
-        let matched_names: Vec<&str> = matches.iter().map(|d| reader.get_str(d.name_offset())).collect();
+        let matched_names: Vec<&str> = matches
+            .iter()
+            .map(|d| reader.get_str(d.name_offset()))
+            .collect();
         assert_eq!(matched_names, vec!["deserialize", "Deserializer"]);
 
         // 2. search_symbols_ascii for "d" must return "deserialize" and "Deserializer", NOT "D"
         let matches_d = reader.search_symbols_ascii(b"d");
-        let names_d: Vec<&str> = matches_d.iter().map(|d| reader.get_str(d.name_offset())).collect();
-        assert!(!names_d.contains(&"D"), "TyParam D must not be returned in symbol search");
+        let names_d: Vec<&str> = matches_d
+            .iter()
+            .map(|d| reader.get_str(d.name_offset()))
+            .collect();
+        assert!(
+            !names_d.contains(&"D"),
+            "TyParam D must not be returned in symbol search"
+        );
         assert!(names_d.contains(&"deserialize"));
         assert!(names_d.contains(&"Deserializer"));
 
         // 3. search_symbols for "T" must return empty, NOT TyParam T
         let matches_t = reader.search_symbols("T");
-        assert!(matches_t.is_empty(), "TyParam T must not be returned in symbol search");
+        assert!(
+            matches_t.is_empty(),
+            "TyParam T must not be returned in symbol search"
+        );
 
         // 4. for_each_symbol_ascii with needle "deserialize":
         // Budget must NOT be consumed by TyParam entries
@@ -2200,7 +2220,10 @@ mod tests {
                 true
             },
         );
-        assert!(!completed, "Must return false when record budget is exhausted");
+        assert!(
+            !completed,
+            "Must return false when record budget is exhausted"
+        );
         assert_eq!(record_budget, 0, "Record budget must be fully exhausted");
 
         let _ = std::fs::remove_dir_all(&temp_dir);
@@ -2208,7 +2231,8 @@ mod tests {
 
     #[test]
     fn test_v3_defs_by_owner_and_derefs_roundtrip() {
-        let temp_dir = std::env::temp_dir().join(format!("ridx_v3_roundtrip_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("ridx_v3_roundtrip_{}", std::process::id()));
         let _ = std::fs::create_dir_all(&temp_dir);
         let idx_path = temp_dir.join("test_v3.ridx");
 
@@ -2296,7 +2320,10 @@ mod tests {
         // Verify find_definitions_by_owner
         let defs = reader.find_definitions_by_owner("test_v3_crate::MyStruct");
         assert_eq!(defs.len(), 2);
-        let names: Vec<&str> = defs.iter().map(|d| reader.get_str(d.name_offset())).collect();
+        let names: Vec<&str> = defs
+            .iter()
+            .map(|d| reader.get_str(d.name_offset()))
+            .collect();
         assert!(names.contains(&"do_work"));
         assert!(names.contains(&"count"));
 
@@ -2321,7 +2348,8 @@ mod tests {
 
     #[test]
     fn test_v3_canonical_owner_collision_protection() {
-        let temp_dir = std::env::temp_dir().join(format!("ridx_v3_collision_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("ridx_v3_collision_{}", std::process::id()));
         let _ = std::fs::create_dir_all(&temp_dir);
         let idx_path = temp_dir.join("test_collision.ridx");
 
@@ -2462,13 +2490,17 @@ mod tests {
         assert_eq!(reader.header().derefs_count, 0);
         assert!(reader.defs_by_owner().is_empty());
         assert!(reader.deref_entries().is_empty());
-        assert_eq!(reader.find_definitions_by_owner("anything"), Vec::<&DefEntry>::new());
+        assert_eq!(
+            reader.find_definitions_by_owner("anything"),
+            Vec::<&DefEntry>::new()
+        );
         assert_eq!(reader.find_deref_target("anything"), None);
     }
 
     #[test]
     fn test_v3_owner_matching_first_interned_string() {
-        let temp_dir = std::env::temp_dir().join(format!("ridx_first_string_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("ridx_first_string_{}", std::process::id()));
         let _ = std::fs::create_dir_all(&temp_dir);
         let idx_path = temp_dir.join("test_first.ridx");
 

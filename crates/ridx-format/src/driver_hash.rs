@@ -116,13 +116,13 @@ fn append_disk_cache(
         }
     }
 
-    if let Ok(mut f) = fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&cp)
-    {
+    if let Ok(mut f) = fs::OpenOptions::new().create(true).append(true).open(&cp) {
         use std::io::Write;
-        let _ = writeln!(f, "{}\t{}\t{}\t{}\t{:016x}", p_str, len, mtime_secs, ino, hash);
+        let _ = writeln!(
+            f,
+            "{}\t{}\t{}\t{}\t{:016x}",
+            p_str, len, mtime_secs, ino, hash
+        );
     }
 }
 
@@ -271,4 +271,3 @@ mod tests {
         assert_eq!(res, Some(0x0123456789abcdef + 69));
     }
 }
-

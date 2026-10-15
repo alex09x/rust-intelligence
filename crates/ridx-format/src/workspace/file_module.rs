@@ -97,10 +97,16 @@ impl WorkspaceIndex {
 
         // 2. Exact match for workspace-anchored path if relative
         if let Some(ap) = abs_str {
-            let indices: Vec<usize> = self.readers.iter().enumerate()
+            let indices: Vec<usize> = self
+                .readers
+                .iter()
+                .enumerate()
                 .filter(|&(i, r)| {
                     r.find_file_id(ap).is_some()
-                        || self.reader_file_hashes.get(i).is_some_and(|h| h.contains_key(ap))
+                        || self
+                            .reader_file_hashes
+                            .get(i)
+                            .is_some_and(|h| h.contains_key(ap))
                 })
                 .map(|(i, _)| i)
                 .collect();
@@ -110,7 +116,10 @@ impl WorkspaceIndex {
         }
 
         // 3. reader.find_file_id match (direct index match)
-        let indices: Vec<usize> = self.readers.iter().enumerate()
+        let indices: Vec<usize> = self
+            .readers
+            .iter()
+            .enumerate()
             .filter(|&(_, r)| r.find_file_id(file_path).is_some())
             .map(|(i, _)| i)
             .collect();
@@ -119,23 +128,40 @@ impl WorkspaceIndex {
         }
 
         // 4. reader_file_hashes exact match
-        let indices: Vec<usize> = self.reader_file_hashes.iter().enumerate()
+        let indices: Vec<usize> = self
+            .reader_file_hashes
+            .iter()
+            .enumerate()
             .filter(|&(_, h)| h.contains_key(file_path))
             .map(|(i, _)| i)
             .collect();
         if !indices.is_empty() {
-            let cname_matches: Vec<usize> = indices.iter().copied().filter(|&i| {
-                let c = self.readers[i].crate_name();
-                file_path.contains(&format!("/{c}/")) || file_path.contains(&format!("\\{c}\\"))
-            }).collect();
-            return if cname_matches.is_empty() { indices } else { cname_matches };
+            let cname_matches: Vec<usize> = indices
+                .iter()
+                .copied()
+                .filter(|&i| {
+                    let c = self.readers[i].crate_name();
+                    file_path.contains(&format!("/{c}/")) || file_path.contains(&format!("\\{c}\\"))
+                })
+                .collect();
+            return if cname_matches.is_empty() {
+                indices
+            } else {
+                cname_matches
+            };
         }
 
         // 5. Crate name contained in path
-        let indices: Vec<usize> = self.readers.iter().enumerate().filter(|&(_, r)| {
-            let c = r.crate_name();
-            file_path.contains(&format!("/{c}/")) || file_path.contains(&format!("\\{c}\\"))
-        }).map(|(i, _)| i).collect();
+        let indices: Vec<usize> = self
+            .readers
+            .iter()
+            .enumerate()
+            .filter(|&(_, r)| {
+                let c = r.crate_name();
+                file_path.contains(&format!("/{c}/")) || file_path.contains(&format!("\\{c}\\"))
+            })
+            .map(|(i, _)| i)
+            .collect();
         if !indices.is_empty() {
             return indices;
         }
@@ -281,7 +307,10 @@ impl WorkspaceIndex {
             // Relative path
             let has_file = |s: &str| {
                 reader.find_file_id(s).is_some()
-                    || self.reader_file_hashes.get(reader_idx).is_some_and(|h| h.contains_key(s))
+                    || self
+                        .reader_file_hashes
+                        .get(reader_idx)
+                        .is_some_and(|h| h.contains_key(s))
             };
 
             if let Some(ws_root) = &self.workspace_root {

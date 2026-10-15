@@ -218,7 +218,10 @@ impl IndexWriter {
     }
 
     pub fn add_def_owner_by_index(&mut self, idx: u32, owner: String) {
-        debug_assert!((idx as usize) < self.definitions.len(), "def index {idx} out of bounds");
+        debug_assert!(
+            (idx as usize) < self.definitions.len(),
+            "def index {idx} out of bounds"
+        );
         if (idx as usize) < self.definitions.len() && !owner.is_empty() {
             self.def_owners.push((idx, owner));
         }

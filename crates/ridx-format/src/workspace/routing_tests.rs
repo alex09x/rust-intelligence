@@ -365,8 +365,18 @@ fn test_candidate_reader_indices_prioritizes_sysroot_before_external_deps() {
     // Index 2: alloc (sysroot crate, reader_is_dependency = true, crate_name = "alloc")
     let mut ws = build_mock_workspace(
         vec![
-            (&my_crate_ridx, Some(my_src), Some("my_crate_ukey".into()), HashMap::new()),
-            (&dep_ridx, None, Some("dep_crate_ukey".into()), HashMap::new()),
+            (
+                &my_crate_ridx,
+                Some(my_src),
+                Some("my_crate_ukey".into()),
+                HashMap::new(),
+            ),
+            (
+                &dep_ridx,
+                None,
+                Some("dep_crate_ukey".into()),
+                HashMap::new(),
+            ),
             (&alloc_ridx, None, Some("alloc_ukey".into()), HashMap::new()),
         ],
         ws_root,

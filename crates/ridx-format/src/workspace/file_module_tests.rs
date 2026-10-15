@@ -123,10 +123,18 @@ fn test_relative_path_anchored_to_workspace_root_beats_dependency_suffix_match()
     );
 
     let primary_idx = workspace.reader_index_for_file("src/lib.rs");
-    assert_eq!(primary_idx, Some(1), "primary reader index must be ws_crate");
+    assert_eq!(
+        primary_idx,
+        Some(1),
+        "primary reader index must be ws_crate"
+    );
 
     let cname = workspace.crate_name_for_file("src/lib.rs");
-    assert_eq!(cname, Some("ws_crate"), "crate name for 'src/lib.rs' must be ws_crate");
+    assert_eq!(
+        cname,
+        Some("ws_crate"),
+        "crate name for 'src/lib.rs' must be ws_crate"
+    );
 
     let target_1 = workspace.target_file_for_reader(1, "src/lib.rs");
     assert_eq!(

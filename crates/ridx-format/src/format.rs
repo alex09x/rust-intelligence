@@ -20,7 +20,6 @@ pub const EXTRACTOR_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub use crate::driver_hash::*;
 
-
 /// Resolves the global RIDX shared cache directory for external crate dependencies.
 /// Uses `$RIDX_CACHE_DIR` if set, or platform default:
 /// - Unix: `$XDG_CACHE_HOME/ridx/v{CURRENT_VERSION}` or `$HOME/.cache/ridx/v{CURRENT_VERSION}`
