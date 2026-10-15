@@ -41,6 +41,7 @@ pub fn run_cli(command: Commands) {
                 target,
                 cache_dir: None,
                 driver_bin: None,
+                capture_child_output: false,
             });
         }
         Commands::Inspect { index_path, json } => {

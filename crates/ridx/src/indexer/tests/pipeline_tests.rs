@@ -45,6 +45,7 @@ fn test_run_indexing_on_sample_crate() {
             target: None,
             cache_dir: None,
             driver_bin: None,
+            capture_child_output: false,
         });
         assert!(out.variant_out_dir.exists());
 
@@ -60,6 +61,7 @@ fn test_run_indexing_on_sample_crate() {
             target: None,
             cache_dir: None,
             driver_bin: None,
+            capture_child_output: false,
         });
         assert!(out_file.variant_out_dir.exists());
     }
@@ -80,6 +82,7 @@ fn test_try_run_indexing_error_cases() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(res_missing.is_err());
 
@@ -96,6 +99,7 @@ fn test_try_run_indexing_error_cases() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(res_not_cargo.is_err());
 
@@ -112,6 +116,7 @@ fn test_try_run_indexing_error_cases() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(res_empty.is_err());
 }
@@ -146,6 +151,7 @@ fn test_try_run_indexing_with_options_and_deps() {
             target: None,
             cache_dir: None,
             driver_bin: None,
+            capture_child_output: false,
         });
         assert!(res.is_ok());
 
@@ -249,6 +255,7 @@ fn test_try_run_indexing_with_options_and_deps() {
             target: None,
             cache_dir: None,
             driver_bin: None,
+            capture_child_output: false,
         });
         assert!(res2.is_ok());
     }
@@ -272,26 +279,51 @@ fn test_try_run_indexing_syntax_error() {
     )
     .unwrap();
 
-    if find_driver_binary().is_some() {
-        let res = try_run_indexing(IndexOptions {
-            path: test_dir.0.clone(),
-            out_dir_opt: None,
-            package: None,
-            release: false,
-            features: None,
-            no_default_features: false,
-            all_features: false,
-            target: None,
-            cache_dir: None,
-            driver_bin: None,
-        });
-        assert!(res.is_err());
-        let err_msg = res.unwrap_err();
-        assert!(
-            err_msg.contains("cargo check exited with status")
-                || err_msg.contains("failed to open generated variant index")
-        );
-    }
+    let driver_bin = find_driver_binary()
+        .or_else(|| {
+            let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+            let mut cmd = std::process::Command::new(cargo);
+            cmd.args([
+                "build",
+                "-p",
+                "ridx-driver",
+                "--bin",
+                "ridx-driver",
+                "--quiet",
+            ])
+            .current_dir(env!("CARGO_MANIFEST_DIR"));
+            if std::env::var_os("CARGO_TARGET_DIR").is_none() {
+                if let Some(target_dir) = std::env::current_exe()
+                    .ok()
+                    .and_then(|exe| exe.parent()?.parent()?.parent().map(PathBuf::from))
+                {
+                    cmd.env("CARGO_TARGET_DIR", target_dir);
+                }
+            }
+            let status = cmd.status().ok()?;
+            status.success().then(find_driver_binary).flatten()
+        })
+        .expect("ridx-driver binary not found; failed to locate or build ridx-driver");
+
+    let res = try_run_indexing(IndexOptions {
+        path: test_dir.0.clone(),
+        out_dir_opt: None,
+        package: None,
+        release: false,
+        features: None,
+        no_default_features: false,
+        all_features: false,
+        target: None,
+        cache_dir: None,
+        driver_bin: Some(driver_bin),
+        capture_child_output: true,
+    });
+    let err_msg = res.expect_err("indexing crate with syntax error must fail");
+    assert!(
+        err_msg.contains("cargo check exited with status")
+            && err_msg.contains("unclosed delimiter"),
+        "expected cargo check failure with captured rustc stderr in err_msg, got: {err_msg}"
+    );
 }
 
 #[test]

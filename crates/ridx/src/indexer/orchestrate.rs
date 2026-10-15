@@ -236,18 +236,38 @@ pub fn try_run_indexing(opts: IndexOptions) -> Result<PublishedVariant, String> 
         cmd.env("DYLD_FALLBACK_LIBRARY_PATH", ld);
     }
 
-    let status = match cmd.status() {
-        Ok(s) => s,
-        Err(e) => {
-            return Err(format!("failed to execute cargo check: {e}"));
+    if opts.capture_child_output {
+        let output = match cmd.output() {
+            Ok(o) => o,
+            Err(e) => {
+                return Err(format!("failed to execute cargo check: {e}"));
+            }
+        };
+        if !output.status.success() {
+            let stderr_str = String::from_utf8_lossy(&output.stderr);
+            let tail: Vec<&str> = stderr_str.lines().rev().take(20).collect();
+            let tail_joined = tail.into_iter().rev().collect::<Vec<_>>().join("\n");
+            if tail_joined.is_empty() {
+                return Err(format!("cargo check exited with status {}", output.status));
+            }
+            return Err(format!(
+                "cargo check exited with status {}\n{}",
+                output.status, tail_joined
+            ));
         }
-    };
+    } else {
+        let status = match cmd.status() {
+            Ok(s) => s,
+            Err(e) => {
+                return Err(format!("failed to execute cargo check: {e}"));
+            }
+        };
+        if !status.success() {
+            return Err(format!("cargo check exited with status {status}"));
+        }
+    }
 
     let elapsed = start.elapsed();
-
-    if !status.success() {
-        return Err(format!("cargo check exited with status {status}"));
-    }
 
     let ws = match WorkspaceIndex::open(&variant_out_dir) {
         Ok(w) => w,

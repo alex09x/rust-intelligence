@@ -33,6 +33,7 @@ fn test_indexer_helpers_and_error_paths() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     })
     .is_err());
 
@@ -50,6 +51,7 @@ fn test_indexer_helpers_and_error_paths() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     })
     .is_err());
 
@@ -66,6 +68,7 @@ fn test_indexer_helpers_and_error_paths() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     })
     .is_err());
 
@@ -181,6 +184,7 @@ fn test_indexer_helpers_and_error_paths() {
         target: Some("x86_64-unknown-linux-gnu".to_string()),
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     std::env::remove_var("RIDX_NO_DEPS");
     let _ = fs::remove_dir_all(&expected_rel_dir);
@@ -200,6 +204,7 @@ fn test_indexer_helpers_and_error_paths() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(err_out.is_err());
     assert!(err_out
@@ -221,6 +226,7 @@ fn test_indexer_helpers_and_error_paths() {
             target: None,
             cache_dir: None,
             driver_bin: None,
+            capture_child_output: false,
         })
     };
     assert!(err_driver.is_err());
@@ -256,6 +262,7 @@ fn test_indexer_helpers_and_error_paths() {
             target: None,
             cache_dir: None,
             driver_bin: None,
+            capture_child_output: false,
         })
     };
     assert!(err_cargo.is_err());
@@ -276,6 +283,7 @@ fn test_indexer_helpers_and_error_paths() {
             target: None,
             cache_dir: None,
             driver_bin: None,
+            capture_child_output: false,
         })
     };
     assert!(err_open.is_err());

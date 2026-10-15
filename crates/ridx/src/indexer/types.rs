@@ -24,6 +24,7 @@ pub struct IndexOptions {
     pub target: Option<String>,
     pub cache_dir: Option<PathBuf>,
     pub driver_bin: Option<PathBuf>,
+    pub capture_child_output: bool,
 }
 
 #[derive(Debug, Clone)]

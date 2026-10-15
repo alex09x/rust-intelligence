@@ -85,6 +85,7 @@ fn test_published_variant_and_options() {
         target: Some("x86_64".to_string()),
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     };
     assert_eq!(opts.package.as_deref(), Some("test_pkg"));
 

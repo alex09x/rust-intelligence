@@ -69,6 +69,7 @@ fn test_indexer_additional_edge_cases() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(err_mkdir
         .unwrap_err()
@@ -87,6 +88,7 @@ fn test_indexer_additional_edge_cases() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(err_no_driver
         .unwrap_err()

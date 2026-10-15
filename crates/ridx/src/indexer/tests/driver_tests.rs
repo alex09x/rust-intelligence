@@ -85,9 +85,6 @@ fn test_indexer_cargo_config_and_driver() {
     }
 
     // Test resolve_cargo_home and find_cargo_configs (lines 85-96, 119-126)
-    let orig_home = std::env::var("HOME").ok();
-    let orig_cargo_home = std::env::var("CARGO_HOME").ok();
-
     let work_dir = temp.0.join("sample_pkg");
     fs::create_dir_all(&work_dir).unwrap();
     let manifest_file = work_dir.join("Cargo.toml");
@@ -180,6 +177,7 @@ fn test_indexer_cargo_config_and_driver() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(err_file
         .unwrap_err()
@@ -197,6 +195,7 @@ fn test_indexer_cargo_config_and_driver() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(err_dir
         .unwrap_err()
@@ -213,6 +212,7 @@ fn test_indexer_cargo_config_and_driver() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(err_nonexist.unwrap_err().contains("does not exist"));
 }

@@ -82,6 +82,7 @@ fn test_direct_reindex_cross_crate_line_shift() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(out0.is_ok(), "Initial index failed: {:?}", out0.err());
     let pv0 = out0.unwrap();
@@ -119,6 +120,7 @@ fn test_direct_reindex_cross_crate_line_shift() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(out1.is_ok(), "Direct reindex failed: {:?}", out1.err());
     let pv1 = out1.unwrap();
@@ -205,6 +207,7 @@ fn test_direct_fallback_on_proc_macro() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(out0.is_ok(), "Initial index failed: {:?}", out0.err());
     let pv0 = out0.unwrap();
@@ -228,6 +231,7 @@ fn test_direct_fallback_on_proc_macro() {
         target: None,
         cache_dir: None,
         driver_bin: None,
+        capture_child_output: false,
     });
     assert!(
         out1.is_ok(),
