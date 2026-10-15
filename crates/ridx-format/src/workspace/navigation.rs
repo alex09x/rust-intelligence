@@ -40,7 +40,12 @@ impl WorkspaceIndex {
             end_col: span.end_col(),
             is_macro_expansion: def.is_macro_expansion(),
             is_reexport: def.is_reexport(),
-            source_root: if self.reader_is_dependency.get(reader_idx).copied().unwrap_or(false) {
+            source_root: if self
+                .reader_is_dependency
+                .get(reader_idx)
+                .copied()
+                .unwrap_or(false)
+            {
                 self.source_roots.get(reader_idx).and_then(|r| r.as_deref())
             } else {
                 self.source_roots
@@ -203,7 +208,8 @@ impl WorkspaceIndex {
                 let is_local = !is_explicit_remote
                     && (res.path.starts_with(&crate_prefix) || res.path == reader.crate_name());
                 if is_local && res.file != "external" {
-                    res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
+                    res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false)
+                    {
                         self.source_roots.get(i).and_then(|r| r.as_deref())
                     } else {
                         self.source_roots
@@ -224,7 +230,8 @@ impl WorkspaceIndex {
                     res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
                 }
                 if res.source_root.is_none() {
-                    res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
+                    res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false)
+                    {
                         self.source_roots.get(i).and_then(|r| r.as_deref())
                     } else {
                         self.source_roots
@@ -493,7 +500,12 @@ impl WorkspaceIndex {
                                     end_col: d_span.end_col(),
                                     is_macro_expansion: def.is_macro_expansion(),
                                     is_reexport: def.is_reexport(),
-                                    source_root: if self.reader_is_dependency.get(j).copied().unwrap_or(false) {
+                                    source_root: if self
+                                        .reader_is_dependency
+                                        .get(j)
+                                        .copied()
+                                        .unwrap_or(false)
+                                    {
                                         self.source_roots.get(j).and_then(|s| s.as_deref())
                                     } else {
                                         self.source_roots
@@ -672,9 +684,9 @@ impl WorkspaceIndex {
                 .iter()
                 .position(|u| u.as_deref() == Some(target_unit))
         } else {
-            self.readers
-                .iter()
-                .position(|r| r.crate_name() == target_crate && r.find_definition_by_path(target_path).is_some())
+            self.readers.iter().position(|r| {
+                r.crate_name() == target_crate && r.find_definition_by_path(target_path).is_some()
+            })
         };
 
         if let Some(t_idx) = target_idx {
@@ -766,19 +778,21 @@ impl WorkspaceIndex {
             let is_same_package = is_exact_target_unit || is_sibling_unit;
 
             if !is_same_package {
-                let is_consumer_of_target = target_unit_key.map(|tu| {
-                    let in_deps = self
-                        .reader_dependencies
-                        .get(i)
-                        .map(|d| d.iter().any(|dep| dep == tu))
-                        .unwrap_or(false);
-                    let in_extern = self
-                        .reader_extern_units
-                        .get(i)
-                        .map(|m| m.values().any(|uk| uk == tu))
-                        .unwrap_or(false);
-                    in_deps || in_extern
-                }).unwrap_or(false);
+                let is_consumer_of_target = target_unit_key
+                    .map(|tu| {
+                        let in_deps = self
+                            .reader_dependencies
+                            .get(i)
+                            .map(|d| d.iter().any(|dep| dep == tu))
+                            .unwrap_or(false);
+                        let in_extern = self
+                            .reader_extern_units
+                            .get(i)
+                            .map(|m| m.values().any(|uk| uk == tu))
+                            .unwrap_or(false);
+                        in_deps || in_extern
+                    })
+                    .unwrap_or(false);
 
                 if reader_crate == target_crate && !is_consumer_of_target {
                     // Different package that collides on crate_name but is not a sibling unit.
