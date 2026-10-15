@@ -144,3 +144,80 @@ fn test_overlay_parser_raw_idents_unions_and_const_fn() {
     );
 }
 
+#[test]
+fn test_overlay_parser_lifetimes_and_static_do_not_swallow_or_emit_keywords() {
+    use ridx_format::DefKind;
+
+    // 1. Standalone `'static` must emit only `T` (never `str` as a bogus `Static` item)
+    let static_only = "pub const T: &'static str = \"x\";\n";
+    let ls_static = crate::overlay::mapping::compute_line_starts(static_only);
+    let mut p_static = OverlayParser::new(static_only, &ls_static);
+    p_static.parse();
+    let static_syms: Vec<(&str, DefKind)> = p_static
+        .symbols
+        .iter()
+        .map(|s| (s.name.as_str(), s.kind))
+        .collect();
+    assert_eq!(static_syms, vec![("T", DefKind::Const)]);
+
+    // 2. Combined `'static` + `'a` lifetime parameters + `->` return type arrow
+    let code = concat!(
+        "pub const T: &'static str = \"x\";\n",
+        "pub fn f<'a>(s: &'a str) -> &'a str { let _ = 1; if let Some(v) = Some(2) { let _w = v; } s }\n",
+    );
+    let ls = crate::overlay::mapping::compute_line_starts(code);
+    let mut parser = OverlayParser::new(code, &ls);
+    parser.parse();
+    let syms: Vec<(&str, DefKind)> = parser
+        .symbols
+        .iter()
+        .map(|s| (s.name.as_str(), s.kind))
+        .collect();
+    assert_eq!(
+        syms,
+        vec![
+            ("T", DefKind::Const),
+            ("f", DefKind::Fn),
+            ("s", DefKind::Local),
+            ("_", DefKind::Local),
+            ("Some", DefKind::Local),
+            ("_w", DefKind::Local),
+        ]
+    );
+}
+
+#[test]
+fn test_overlay_parser_raw_strings_escaped_quotes_and_return_arrows() {
+    use ridx_format::DefKind;
+
+    let code = concat!(
+        "pub fn parse_tokens<'a, 'r#static>(input: &'a str) -> &'r#static str {\n",
+        "    let escaped_quote = '\\'';\n",
+        "    let raw_str = r#\"{ fn bogus_fn() {} static BOGUS_STATIC: i32 = 0; 'unclosed }\"#;\n",
+        "    let byte_raw = br##\"{ struct BogusStruct; }\"##;\n",
+        "    let after_raw: &'static str = input;\n",
+        "    after_raw\n",
+        "}\n",
+    );
+    let ls = crate::overlay::mapping::compute_line_starts(code);
+    let mut parser = OverlayParser::new(code, &ls);
+    parser.parse();
+    let syms: Vec<(&str, DefKind)> = parser
+        .symbols
+        .iter()
+        .map(|s| (s.name.as_str(), s.kind))
+        .collect();
+    assert_eq!(
+        syms,
+        vec![
+            ("parse_tokens", DefKind::Fn),
+            ("input", DefKind::Local),
+            ("escaped_quote", DefKind::Local),
+            ("raw_str", DefKind::Local),
+            ("byte_raw", DefKind::Local),
+            ("after_raw", DefKind::Local),
+        ]
+    );
+    assert_eq!(parser.scopes.len(), 2);
+    assert_eq!(parser.scopes[1].end_byte, code.len() - 1);
+}

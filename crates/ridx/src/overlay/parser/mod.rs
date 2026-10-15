@@ -42,6 +42,112 @@ pub fn is_ident(s: &str) -> bool {
     }
 }
 
+pub(crate) fn skip_string_or_char_literal(text: &str, pos: &mut usize) -> bool {
+    let bytes = text.as_bytes();
+    let len = bytes.len();
+    if *pos >= len {
+        return false;
+    }
+    let b = bytes[*pos];
+
+    // Raw string r"..." / r#"..."# or byte/C raw string br"..." / cr"..."
+    let raw_start =
+        if b == b'r' && *pos + 1 < len && (bytes[*pos + 1] == b'"' || bytes[*pos + 1] == b'#') {
+            Some(*pos + 1)
+        } else if (b == b'b' || b == b'c')
+            && *pos + 2 < len
+            && bytes[*pos + 1] == b'r'
+            && (bytes[*pos + 2] == b'"' || bytes[*pos + 2] == b'#')
+        {
+            Some(*pos + 2)
+        } else {
+            None
+        };
+    if let Some(mut h_idx) = raw_start {
+        let mut hashes = 0usize;
+        while h_idx < len && bytes[h_idx] == b'#' {
+            hashes += 1;
+            h_idx += 1;
+        }
+        if h_idx < len && bytes[h_idx] == b'"' {
+            let mut i = h_idx + 1;
+            while i < len {
+                if bytes[i] == b'"'
+                    && i + hashes < len
+                    && (0..hashes).all(|k| bytes[i + 1 + k] == b'#')
+                {
+                    *pos = i + 1 + hashes;
+                    return true;
+                }
+                i += 1;
+            }
+            *pos = len;
+            return true;
+        }
+    }
+
+    if b == b'"' {
+        let mut i = *pos + 1;
+        while i < len && bytes[i] != b'"' {
+            if bytes[i] == b'\\' && i + 1 < len {
+                i += 2;
+            } else {
+                i += 1;
+            }
+        }
+        *pos = (i + 1).min(len);
+        return true;
+    }
+
+    if b == b'\'' {
+        let j = *pos + 1;
+        if j + 1 < len && bytes[j] == b'\\' && bytes[j + 1] != b'\n' && bytes[j + 1] != b'\r' {
+            let esc_len = text[j + 1..].chars().next().map_or(1, char::len_utf8);
+            let mut k = j + 1 + esc_len;
+            while k < len && bytes[k] != b'\'' && bytes[k] != b'\n' && bytes[k] != b'\r' {
+                k += 1;
+            }
+            if k < len && bytes[k] == b'\'' {
+                *pos = k + 1;
+                return true;
+            }
+        } else if let Some(ch) = text[j..].chars().next() {
+            if ch != '\'' && ch != '\\' && ch != '\n' && ch != '\r' {
+                let end_quote = j + ch.len_utf8();
+                if end_quote < len && bytes[end_quote] == b'\'' {
+                    *pos = end_quote + 1;
+                    return true;
+                }
+            }
+        }
+
+        // Lifetime `'ident` / `'r#ident` or standalone `'`
+        let mut k = if text[j..].starts_with("r#") {
+            j + 2
+        } else {
+            j
+        };
+        if let Some(first_char) = text[k..].chars().next() {
+            if is_rust_ident_start(first_char) {
+                k += first_char.len_utf8();
+                while let Some(c) = text[k..].chars().next() {
+                    if is_rust_ident_continue(c) {
+                        k += c.len_utf8();
+                    } else {
+                        break;
+                    }
+                }
+                *pos = k;
+                return true;
+            }
+        }
+        *pos = j;
+        return true;
+    }
+
+    false
+}
+
 pub(crate) struct OverlayParser<'a> {
     pub(crate) text: &'a str,
     line_starts: &'a [usize],
@@ -90,60 +196,15 @@ impl<'a> OverlayParser<'a> {
         let mut scope_stack = vec![0];
 
         while pos < len {
-            // Skip whitespace and comments
+            let prev = pos;
+            self.skip_whitespace_and_comments(&mut pos);
+            if pos != prev {
+                continue;
+            }
             let b = bytes[pos];
-            if b.is_ascii_whitespace() {
-                pos += 1;
-                continue;
-            }
 
-            // Line comment //
-            if b == b'/' && pos + 1 < len && bytes[pos + 1] == b'/' {
-                pos += 2;
-                while pos < len && bytes[pos] != b'\n' {
-                    pos += 1;
-                }
-                continue;
-            }
-
-            // Block comment /* ... */
-            if b == b'/' && pos + 1 < len && bytes[pos + 1] == b'*' {
-                let mut depth = 1usize;
-                pos += 2;
-                while pos + 1 < len {
-                    if bytes[pos] == b'/' && bytes[pos + 1] == b'*' {
-                        depth += 1;
-                        pos += 2;
-                    } else if bytes[pos] == b'*' && bytes[pos + 1] == b'/' {
-                        depth -= 1;
-                        pos += 2;
-                        if depth == 0 {
-                            break;
-                        }
-                    } else {
-                        pos += 1;
-                    }
-                }
-                if depth > 0 {
-                    pos = len;
-                }
-                continue;
-            }
-
-            // String or char literal
-            if b == b'"' || b == b'\'' {
-                let quote = b;
-                pos += 1;
-                while pos < len && bytes[pos] != quote {
-                    if bytes[pos] == b'\\' && pos + 1 < len {
-                        pos += 2;
-                    } else {
-                        pos += 1;
-                    }
-                }
-                if pos < len {
-                    pos += 1;
-                }
+            // Raw string, string, char literal, or lifetime `'ident`
+            if skip_string_or_char_literal(self.text, &mut pos) {
                 continue;
             }
 
@@ -168,9 +229,11 @@ impl<'a> OverlayParser<'a> {
             }
 
             if b == b'}' {
-                if let Some(id) = scope_stack.pop() {
-                    if id < self.scopes.len() {
-                        self.scopes[id].end_byte = pos + 1;
+                if scope_stack.len() > 1 {
+                    if let Some(id) = scope_stack.pop() {
+                        if id < self.scopes.len() {
+                            self.scopes[id].end_byte = pos + 1;
+                        }
                     }
                 }
                 pos += 1;

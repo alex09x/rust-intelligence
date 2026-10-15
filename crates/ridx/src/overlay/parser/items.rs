@@ -10,7 +10,7 @@
 
 //! Item parsing methods for OverlayParser: functions, parameters, let-bindings, and named items.
 
-use super::{is_ident, OverlayParser, OverlaySymbol, Scope};
+use super::{is_ident, skip_string_or_char_literal, OverlayParser, OverlaySymbol, Scope};
 use ridx_format::DefKind;
 
 impl<'a> OverlayParser<'a> {
@@ -28,7 +28,10 @@ impl<'a> OverlayParser<'a> {
         let mut depth = 0usize;
         while *pos < len {
             let b = bytes[*pos];
-            if b == b'(' || b == b'[' || b == b'<' {
+            if b == b'-' && *pos + 1 < len && bytes[*pos + 1] == b'>' {
+                *pos += 2;
+                continue;
+            } else if b == b'(' || b == b'[' || b == b'<' {
                 depth += 1;
             } else if (b == b')' || b == b']' || b == b'>') && depth > 0 {
                 depth -= 1;
@@ -180,51 +183,14 @@ impl<'a> OverlayParser<'a> {
         let mut bracket_depth: usize = 0;
 
         while cur < len {
+            let prev = cur;
+            self.skip_whitespace_and_comments(&mut cur);
+            if cur != prev {
+                continue;
+            }
             let b = bytes[cur];
-            // Comments
-            if b == b'/' && cur + 1 < len && bytes[cur + 1] == b'/' {
-                cur += 2;
-                while cur < len && bytes[cur] != b'\n' {
-                    cur += 1;
-                }
-                continue;
-            }
-            if b == b'/' && cur + 1 < len && bytes[cur + 1] == b'*' {
-                let mut depth = 1usize;
-                cur += 2;
-                while cur + 1 < len {
-                    if bytes[cur] == b'/' && bytes[cur + 1] == b'*' {
-                        depth += 1;
-                        cur += 2;
-                    } else if bytes[cur] == b'*' && bytes[cur + 1] == b'/' {
-                        depth -= 1;
-                        cur += 2;
-                        if depth == 0 {
-                            break;
-                        }
-                    } else {
-                        cur += 1;
-                    }
-                }
-                if depth > 0 {
-                    cur = len;
-                }
-                continue;
-            }
-            // Strings and chars
-            if b == b'"' || b == b'\'' {
-                let quote = b;
-                cur += 1;
-                while cur < len && bytes[cur] != quote {
-                    if bytes[cur] == b'\\' && cur + 1 < len {
-                        cur += 2;
-                    } else {
-                        cur += 1;
-                    }
-                }
-                if cur < len {
-                    cur += 1;
-                }
+            // Strings, chars, and lifetimes
+            if skip_string_or_char_literal(self.text, &mut cur) {
                 continue;
             }
             // Delimiters
