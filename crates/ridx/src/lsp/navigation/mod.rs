@@ -11,17 +11,18 @@
 //! LSP navigation handlers: definition, declaration, type definition, and implementation.
 
 pub mod references;
+pub mod type_definition;
 
 #[cfg(test)]
 pub mod tests;
 
 pub use references::*;
+pub use type_definition::handle_type_definition;
 
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
-use ridx_format::{DefKind, WorkspaceIndex, WorkspaceSymbol};
+use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
-use std::path::Path;
 
 pub fn handle_definition(
     msg: &Value,
@@ -209,101 +210,6 @@ pub fn handle_declaration(
     conv: &mut PositionConverter,
 ) -> Value {
     handle_definition(msg, workspace, overlay_mgr, conv)
-}
-
-pub fn handle_type_definition(
-    msg: &Value,
-    workspace: Option<&WorkspaceIndex>,
-    overlay_mgr: &OverlayManager,
-    conv: &mut PositionConverter,
-) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-    let line_0based = msg["params"]["position"]["line"].as_u64().unwrap_or(0) as u32;
-    let utf16_col_0based = msg["params"]["position"]["character"].as_u64().unwrap_or(0) as u32;
-    let line_1based = line_0based + 1;
-
-    let overlay_opt = overlay_mgr.get(&file);
-    let col_1based = if let Some(overlay) = overlay_opt {
-        overlay.utf16_col_to_char_col(line_1based, utf16_col_0based)
-    } else {
-        conv.utf16_col_to_char_col(&file, line_1based, utf16_col_0based)
-    };
-
-    let Some(ws) = workspace else {
-        return Value::Null;
-    };
-
-    let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
-    if is_dirty {
-        return Value::Null;
-    }
-
-    if let Some(ty) = ws.type_at(&file, line_1based, col_1based) {
-        let syms = ws.search_symbols(ty);
-        let file_path = Path::new(&file);
-
-        let current_crate_units: Vec<(&str, &str)> = ws
-            .reader_indices_for_file(&file)
-            .into_iter()
-            .filter_map(|idx| ws.readers().get(idx))
-            .map(|r| (r.crate_name(), r.unit_key()))
-            .collect();
-
-        let in_same_crate = |sym: &WorkspaceSymbol<'_>| -> bool {
-            current_crate_units.iter().any(|(cr, uk)| {
-                (!cr.is_empty() && sym.crate_name == *cr)
-                    || (!uk.is_empty() && sym.unit_key == Some(*uk))
-            })
-        };
-
-        // 1. Exact symbol name match: same file -> same crate -> any in shard
-        let exact_name_syms: Vec<&WorkspaceSymbol<'_>> =
-            syms.iter().filter(|sym| sym.name == ty).collect();
-
-        let def_opt = exact_name_syms
-            .iter()
-            .copied()
-            .find(|sym| sym.resolved_path() == file_path)
-            .or_else(|| exact_name_syms.iter().copied().find(|sym| in_same_crate(sym)))
-            .or_else(|| exact_name_syms.into_iter().next())
-            .cloned()
-            .or_else(|| {
-                // 2. Exact path match fallback: when type_at returns a qualified path
-                // (e.g. core_lib::types::Config or ty.ends_with("::Config"))
-                let path_matches: Vec<&WorkspaceSymbol<'_>> = syms
-                    .iter()
-                    .filter(|sym| sym.path == ty || ty.ends_with(&format!("::{}", sym.name)))
-                    .collect();
-
-                path_matches
-                    .iter()
-                    .copied()
-                    .find(|sym| sym.resolved_path() == file_path)
-                    .or_else(|| path_matches.iter().copied().find(|sym| in_same_crate(sym)))
-                    .or_else(|| path_matches.into_iter().next())
-                    .cloned()
-            });
-
-        if let Some(def) = def_opt {
-            let resolved_path = def.resolved_path();
-            let path_str = resolved_path.to_str().unwrap_or(def.file);
-            let uri = path_to_uri(path_str);
-            let start_char =
-                conv.char_col_to_utf16_col(path_str, def.span.start_line(), def.span.start_col());
-            let end_char =
-                conv.char_col_to_utf16_col(path_str, def.span.end_line(), def.span.end_col());
-            return json!({
-                "uri": uri,
-                "range": {
-                    "start": { "line": def.span.start_line().saturating_sub(1), "character": start_char },
-                    "end": { "line": def.span.end_line().saturating_sub(1), "character": end_char }
-                }
-            });
-        }
-    }
-
-    Value::Null
 }
 
 pub fn handle_implementation(

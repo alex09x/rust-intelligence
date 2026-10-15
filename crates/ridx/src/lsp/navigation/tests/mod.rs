@@ -13,6 +13,7 @@ pub mod definition_tests;
 pub mod implementation_tests;
 pub mod ref_tests;
 pub mod references_matrix_tests;
+pub mod type_definition_compound_tests;
 pub mod type_definition_tests;
 
 use crate::lsp::protocol::PositionConverter;
