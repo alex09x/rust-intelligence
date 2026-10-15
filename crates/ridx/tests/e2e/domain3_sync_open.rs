@@ -230,11 +230,9 @@ fn test_did_open_invalidates_position_cache() {
 #[test]
 fn test_did_open_multi_reader_provenance_fast_path() {
     use ridx_format::{DefKind, IndexWriter, RawDefinition, WorkspaceIndex};
-
     let temp_dir = std::env::temp_dir().join(format!("ridx_test_fast_path_{}", std::process::id()));
     let _ = std::fs::create_dir_all(&temp_dir);
 
-    // 1. Reader A: crate_a with src_a.rs
     let file_a_path = temp_dir.join("src_a.rs").to_str().unwrap().to_string();
     let mut writer_a = IndexWriter::new("crate_a", "0.1.0");
     writer_a.add_file_hash(&file_a_path, 0x1111_2222_3333_4444);
@@ -252,12 +250,10 @@ fn test_did_open_multi_reader_provenance_fast_path() {
         end_line: 1,
         end_col: 10,
     });
-    let ridx_a = temp_dir.join("crate_a.ridx");
-    let mut f_a = std::fs::File::create(&ridx_a).unwrap();
-    writer_a.write_to(&mut f_a).unwrap();
-    drop(f_a);
+    writer_a
+        .write_to(&mut std::fs::File::create(temp_dir.join("crate_a.ridx")).unwrap())
+        .unwrap();
 
-    // 2. Reader B: crate_b with src_b.rs
     let file_b_path = temp_dir.join("src_b.rs").to_str().unwrap().to_string();
     let mut writer_b = IndexWriter::new("crate_b", "0.1.0");
     writer_b.add_file_hash(&file_b_path, 0x5555_6666_7777_8888);
@@ -275,47 +271,128 @@ fn test_did_open_multi_reader_provenance_fast_path() {
         end_line: 1,
         end_col: 10,
     });
-    let ridx_b = temp_dir.join("crate_b.ridx");
-    let mut f_b = std::fs::File::create(&ridx_b).unwrap();
-    writer_b.write_to(&mut f_b).unwrap();
-    drop(f_b);
+    writer_b
+        .write_to(&mut std::fs::File::create(temp_dir.join("crate_b.ridx")).unwrap())
+        .unwrap();
 
-    // Open multi-reader workspace from directory containing both shards
     let mut ws = WorkspaceIndex::open(&temp_dir).expect("must open multi-reader workspace");
     ws.set_workspace_root(Some(temp_dir.clone()));
     assert_eq!(ws.readers().len(), 2, "must contain both reader shards");
+    assert_eq!(ws.source_hash_for_file(&file_a_path), Some(0x1111_2222_3333_4444));
+    assert!(ws.shard_mtime_for_file(&file_a_path).is_some());
+    assert_eq!(ws.source_hash_for_file(&file_b_path), Some(0x5555_6666_7777_8888));
+    assert!(ws.shard_mtime_for_file(&file_b_path).is_some());
 
-    // Verify deterministic fast-path retrieval:
-    // Reader A knows src_a.rs
-    let hash_a = ws.source_hash_for_file(&file_a_path);
-    assert_eq!(
-        hash_a,
-        Some(0x1111_2222_3333_4444),
-        "fast path must return exact hash for file_a in reader A"
-    );
-    let mtime_a = ws.shard_mtime_for_file(&file_a_path);
-    assert!(
-        mtime_a.is_some(),
-        "fast path must find shard mtime for file_a"
-    );
-
-    // Reader B knows src_b.rs
-    let hash_b = ws.source_hash_for_file(&file_b_path);
-    assert_eq!(
-        hash_b,
-        Some(0x5555_6666_7777_8888),
-        "fast path must return exact hash for file_b in reader B"
-    );
-    let mtime_b = ws.shard_mtime_for_file(&file_b_path);
-    assert!(
-        mtime_b.is_some(),
-        "fast path must find shard mtime for file_b"
-    );
-
-    // Non-existent file returns None without timing assertions
     let unknown_path = temp_dir.join("unknown.rs").to_str().unwrap().to_string();
     assert_eq!(ws.source_hash_for_file(&unknown_path), None);
     assert_eq!(ws.shard_mtime_for_file(&unknown_path), None);
-
     let _ = std::fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_did_open_modified_buffer_populates_compiled_text_and_resolves_shifted_definition() {
+    use ridx::lsp::protocol::path_to_uri;
+    use ridx_format::{normalized_source_hash, DefKind, IndexWriter, RawDefinition, RawReference};
+
+    let temp_dir =
+        std::env::temp_dir().join(format!("ridx_did_open_shifted_{}", std::process::id()));
+    let _ = std::fs::create_dir_all(&temp_dir);
+    let target_file = temp_dir.join("target.rs");
+    let caller_file = temp_dir.join("caller.rs");
+    let target_disk = "pub fn compute_answer() -> i32 {\n    42\n}\n";
+    let caller_disk = "pub fn run() -> i32 {\n    compute_answer()\n}\n";
+    std::fs::write(&target_file, target_disk).unwrap();
+    std::fs::write(&caller_file, caller_disk).unwrap();
+
+    let target_path = target_file.to_str().unwrap().to_string();
+    let caller_path = caller_file.to_str().unwrap().to_string();
+    let mut writer = IndexWriter::new("shifted_open_crate", "0.1.0");
+    writer.add_file_hash(&target_path, normalized_source_hash(target_disk.as_bytes()));
+    writer.add_file_hash(&caller_path, normalized_source_hash(caller_disk.as_bytes()));
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 0,
+        is_macro_expansion: false,
+        name: "compute_answer".to_string(),
+        path: "shifted_open_crate::compute_answer".to_string(),
+        signature: Some("pub fn compute_answer() -> i32".to_string()),
+        file: target_path.clone(),
+        start_line: 1,
+        start_col: 8,
+        end_line: 1,
+        end_col: 22,
+    });
+    writer.add_reference(RawReference {
+        file: caller_path.clone(),
+        start_line: 2,
+        start_col: 5,
+        end_line: 2,
+        end_col: 19,
+        target_def_id: Some(1),
+        target_path: "shifted_open_crate::compute_answer".to_string(),
+        target_file: Some(target_path.clone()),
+        target_unit: Some("shifted_open_crate".to_string()),
+        target_line: 1,
+        target_col: 8,
+        kind: DefKind::Fn,
+        is_write: false,
+        is_macro_expansion: false,
+    });
+    writer
+        .write_to(&mut std::fs::File::create(temp_dir.join("shifted_open_crate.ridx")).unwrap())
+        .unwrap();
+
+    let mut lifecycle = LifecycleManager::new();
+    let _ = lifecycle.handle_initialize(&json!({ "params": {} }));
+    let mut multi_root = MultiRootWorkspace::new();
+    assert!(multi_root.add_root(temp_dir.clone()));
+    let mut overlay_mgr = OverlayManager::new();
+    let caller_uri = path_to_uri(&caller_path);
+    let target_uri = path_to_uri(&target_path);
+    let shifted_buffer = format!("{}{}", "\n".repeat(10), caller_disk);
+
+    dispatch_msg(
+        json!({
+            "jsonrpc": "2.0", "method": "textDocument/didOpen",
+            "params": { "textDocument": { "uri": &caller_uri, "version": 1, "text": &shifted_buffer } }
+        }),
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+    );
+    assert_eq!(
+        overlay_mgr.get(&caller_path).unwrap().compiled_text.as_deref(),
+        Some(caller_disk)
+    );
+
+    let mut out = Cursor::new(Vec::new());
+    let cancelled = Arc::new(Mutex::new(HashSet::new()));
+    dispatch_lsp_message(
+        json!({
+            "jsonrpc": "2.0", "id": 77, "method": "textDocument/definition",
+            "params": { "textDocument": { "uri": &caller_uri }, "position": { "line": 11, "character": 4 } }
+        }),
+        &mut out,
+        &mut lifecycle,
+        &mut multi_root,
+        &mut overlay_mgr,
+        &cancelled,
+        None,
+    )
+    .unwrap();
+
+    let raw_out = String::from_utf8(out.into_inner()).unwrap();
+    let body = raw_out.split("\r\n\r\n").nth(1).expect("LSP JSON-RPC body");
+    let resp: Value = serde_json::from_str(body).unwrap();
+    let _ = std::fs::remove_dir_all(&temp_dir);
+
+    assert_eq!(
+        resp["result"],
+        json!({
+            "uri": target_uri,
+            "range": { "start": { "line": 0, "character": 7 }, "end": { "line": 0, "character": 21 } }
+        }),
+        "definition at +10 shifted line must resolve via disk compiled_text baseline"
+    );
 }

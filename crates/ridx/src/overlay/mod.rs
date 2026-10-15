@@ -134,6 +134,42 @@ impl DocumentOverlay {
         overlay
     }
 
+    /// Creates and parses a new DocumentOverlay resolving `compiled_text` from buffer or disk against `expected_hash`.
+    pub fn new_with_source_hash(
+        uri: impl Into<String>,
+        file_path: impl Into<String>,
+        version: i32,
+        text: String,
+        expected_hash: Option<u64>,
+    ) -> Self {
+        let uri = uri.into();
+        let file_path = file_path.into();
+        let content_hash = normalized_source_hash(text.as_bytes());
+        let disk_text = std::fs::read_to_string(&file_path).ok();
+        let compiled_text = expected_hash.and_then(|expected| {
+            if content_hash == expected {
+                Some(text.clone())
+            } else {
+                let disk = disk_text.as_ref()?;
+                (normalized_source_hash(disk.as_bytes()) == expected).then(|| disk.clone())
+            }
+        });
+        let mut overlay = Self {
+            uri,
+            file_path,
+            version,
+            content_hash,
+            text,
+            compiled_text,
+            disk_text,
+            line_starts: Vec::new(),
+            symbols: Vec::new(),
+            scopes: Vec::new(),
+        };
+        overlay.reparse();
+        overlay
+    }
+
     /// Creates and parses a new DocumentOverlay from buffer text assuming compiled baseline.
     #[allow(dead_code)]
     pub fn new(

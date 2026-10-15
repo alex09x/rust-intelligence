@@ -110,8 +110,8 @@ pub fn dispatch_lsp_message<W: Write>(
                 .as_i64()
                 .unwrap_or(1) as i32;
             let file = uri_to_path(uri);
-            let has_provenance = multi_root.check_file_provenance(&file, text);
-            overlay_mgr.open_with_provenance(uri, &file, version, text.to_string(), has_provenance);
+            let expected_hash = multi_root.source_hash_for_file(&file);
+            overlay_mgr.open_with_source_hash(uri, &file, version, text.to_string(), expected_hash);
             conv.invalidate(&file);
             return Ok(true);
         }

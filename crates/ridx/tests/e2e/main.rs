@@ -28,6 +28,7 @@ mod ntm_domain3_did_change_part4;
 mod ntm_domain3_did_change_part5;
 mod domain3_sync_lifecycle;
 mod domain3_sync_open;
+mod domain3_sync_open_baseline;
 mod ntm_domain3_did_open_part2;
 mod ntm_domain3_did_open_part3;
 mod ntm_domain3_did_open_part4;

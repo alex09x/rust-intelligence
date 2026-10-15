@@ -205,6 +205,11 @@ impl MultiRootWorkspace {
             == Some(text_hash)
     }
 
+    pub fn source_hash_for_file(&self, file: &str) -> Option<u64> {
+        self.find_workspace_for_path(Path::new(file))
+            .and_then(|ws| ws.source_hash_for_file(file))
+    }
+
     pub fn handle_file_event(
         &mut self,
         method: &str,
@@ -350,6 +355,40 @@ mod tests {
         drop(f_new);
         assert!(mr_reload.reload_all_if_modified());
 
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_source_hash_for_file_and_new_with_source_hash() {
+        use crate::overlay::DocumentOverlay;
+        use ridx_format::{normalized_source_hash, IndexWriter};
+        let temp_dir = std::env::temp_dir().join(format!("ridx_mr_compiled_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&temp_dir);
+        let src_file = temp_dir.join("lib.rs");
+        let src_str = src_file.to_str().unwrap().to_string();
+        let indexed = "pub fn answer() -> i32 { 42 }\n";
+        let expected = normalized_source_hash(indexed.as_bytes());
+
+        let mut writer = IndexWriter::new("compiled_crate", "0.1.0");
+        writer.get_or_insert_file(&src_str);
+        writer.add_file_hash(&src_str, expected);
+        writer.write_to(&mut std::fs::File::create(temp_dir.join("compiled.ridx")).unwrap()).unwrap();
+        let mut mr = MultiRootWorkspace::new();
+        assert!(mr.add_root(temp_dir.clone()));
+        assert_eq!(mr.source_hash_for_file(&src_str), Some(expected));
+
+        let shifted = format!("{}{}", "\n".repeat(10), indexed);
+        std::fs::write(&src_file, indexed).unwrap();
+        let ov = DocumentOverlay::new_with_source_hash("file:///a.rs", &src_str, 1, shifted.clone(), mr.source_hash_for_file(&src_str));
+        assert_eq!((ov.compiled_text.as_deref(), ov.disk_text.as_deref()), (Some(indexed), Some(indexed)));
+
+        let diverged = "pub fn diverged() {}\n";
+        std::fs::write(&src_file, diverged).unwrap();
+        let ov2 = DocumentOverlay::new_with_source_hash("file:///a.rs", &src_str, 1, indexed.to_string(), mr.source_hash_for_file(&src_str));
+        assert_eq!((ov2.compiled_text.as_deref(), ov2.disk_text.as_deref()), (Some(indexed), Some(diverged)));
+
+        let ov3 = DocumentOverlay::new_with_source_hash("file:///a.rs", &src_str, 1, diverged.to_string(), mr.source_hash_for_file(&src_str));
+        assert_eq!((ov3.compiled_text.as_deref(), ov3.disk_text.as_deref()), (None, Some(diverged)));
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }
