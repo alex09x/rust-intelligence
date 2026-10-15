@@ -1134,43 +1134,34 @@ fn determine_target_kind(compiler_args: &[String]) -> ridx_format::TargetKind {
     ridx_format::classify_target(base_kind.as_deref(), compiler_args)
 }
 
-fn build_crate_index(
+struct CrateIndexBuildContext<'a> {
+    start: Instant,
+    local_stable_crate_id: u64,
+    caught_panics: usize,
+    crate_name: String,
+    crate_version: String,
+    manifest_dir: Option<PathBuf>,
+    suffix: String,
+    unit_key: String,
+    deps_dir: PathBuf,
+    dep_keys_or_names: Vec<String>,
+    extern_units: std::collections::HashMap<String, String>,
+    krate_to_unit: std::collections::HashMap<rustc_span::def_id::CrateNum, String>,
+    out_dir: &'a Path,
+    compiler_args: &'a [String],
+}
+
+fn resolve_extern_and_crate_units(
     tcx: TyCtxt<'_>,
-    out_dir: &Path,
-    disambiguator: Option<&str>,
     compiler_args: &[String],
+    deps_dir: &Path,
+    unit_key: &str,
+) -> (
+    Vec<String>,
+    std::collections::HashMap<String, String>,
+    std::collections::HashMap<rustc_span::def_id::CrateNum, String>,
 ) {
-    let start = Instant::now();
-    let local_stable_crate_id = tcx
-        .stable_crate_id(rustc_span::def_id::LOCAL_CRATE)
-        .as_u64();
-    let caught_panics = CAUGHT_PANICS.load(std::sync::atomic::Ordering::Relaxed);
-    let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
-    let crate_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
-
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from);
-    let is_immutable = manifest_dir
-        .as_ref()
-        .map(|m| is_immutable_package(m))
-        .unwrap_or(false);
-
-    let suffix = match disambiguator {
-        Some(d) if d.starts_with('-') || d.starts_with('_') => d.to_string(),
-        Some(d) if !d.is_empty() => format!("_{d}"),
-        _ => String::new(),
-    };
-
-    let unit_key = compute_dependency_unit_key(
-        &crate_name,
-        &crate_version,
-        disambiguator,
-        manifest_dir.as_deref(),
-        compiler_args,
-    );
-
-    let deps_dir = out_dir.join(".deps");
-    let _ = fs::create_dir_all(&deps_dir);
-
+    let unit_key = unit_key.to_string();
     let mut dep_keys_or_names = Vec::new();
     let mut extern_units = std::collections::HashMap::new();
 
@@ -1315,155 +1306,173 @@ fn build_crate_index(
         }
     }
 
-    if is_immutable {
-        let cache_dir = ridx_format::resolve_cache_dir();
-        let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
+    (dep_keys_or_names, extern_units, krate_to_unit)
+}
 
-        let is_valid_cache = if obj_path.is_file() {
-            if let Ok(reader) = ridx_format::IndexReader::open(&obj_path) {
-                reader.header().version == ridx_format::CURRENT_FORMAT_VERSION
-                    && reader.unit_key() == unit_key
-            } else {
-                false
-            }
+fn build_immutable_dependency_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildContext<'_>) {
+    let CrateIndexBuildContext {
+        start,
+        local_stable_crate_id,
+        caught_panics,
+        crate_name,
+        crate_version,
+        manifest_dir,
+        suffix,
+        unit_key,
+        deps_dir,
+        dep_keys_or_names,
+        extern_units,
+        krate_to_unit,
+        out_dir: _,
+        compiler_args,
+    } = ctx;
+    let cache_dir = ridx_format::resolve_cache_dir();
+    let obj_path = ridx_format::cache_object_path(&cache_dir, &unit_key);
+
+    let is_valid_cache = if obj_path.is_file() {
+        if let Ok(reader) = ridx_format::IndexReader::open(&obj_path) {
+            reader.header().version == ridx_format::CURRENT_FORMAT_VERSION
+                && reader.unit_key() == unit_key
         } else {
             false
-        };
-
-        if is_valid_cache {
-            let (generation, file_hashes) = {
-                let reader = ridx_format::IndexReader::open(&obj_path).unwrap();
-                let gen = reader.generation().to_string();
-                let embedded = reader.embedded_file_hashes();
-                let mut hashes =
-                    collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref());
-                ridx_format::merge_embedded_hashes_authoritative(
-                    &mut hashes,
-                    &embedded,
-                    manifest_dir.as_deref(),
-                );
-                (gen, hashes)
-            };
-            let cas_key = sysroot::compute_sysroot_cas_key(tcx);
-            let dep_info = serde_json::json!({
-                "name": crate_name,
-                "version": crate_version,
-                "unit_key": unit_key,
-                "driver_hash": format!("{:016x}", ridx_format::get_driver_hash()),
-                "format_version": ridx_format::CURRENT_FORMAT_VERSION,
-                "generation": generation,
-                "object_path": obj_path.display().to_string(),
-                "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
-                "target_kind": "lib",
-                "is_dependency": true,
-                "dependencies": dep_keys_or_names,
-                "extern_units": extern_units,
-                "file_hashes": file_hashes,
-                "compiler_args": compiler_args,
-                "stable_crate_id": format!("{:016x}", local_stable_crate_id),
-                "caught_panics": caught_panics,
-                "sysroot_cas_key": cas_key,
-            });
-            write_sidecar_metadata(
-                &deps_dir,
-                &crate_name,
-                &suffix,
-                local_stable_crate_id,
-                &dep_info,
-            );
-
-            let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
-            eprintln!(
-                "ridx: cache hit for {} v{} ({} KB, unit: {}) in {:.1} ms",
-                crate_name,
-                crate_version,
-                file_size / 1024,
-                &unit_key[..unit_key.len().min(8)],
-                start.elapsed().as_secs_f64() * 1000.0
-            );
-            return;
-        } else if obj_path.is_file() {
-            let _ = fs::remove_file(&obj_path);
         }
+    } else {
+        false
+    };
 
-        // Cache miss: extract index with package_root set for relative source paths
-        let mut visitor = HirVisitor {
-            tcx,
-            typeck: None,
-            current_body_owner: None,
-            package_root: manifest_dir.clone(),
-            writer: IndexWriter::new(&crate_name, &crate_version),
-            krate_to_unit: krate_to_unit.clone(),
-            seen_refs: std::collections::HashSet::new(),
+    if is_valid_cache {
+        let (generation, file_hashes) = {
+            let reader = ridx_format::IndexReader::open(&obj_path).unwrap();
+            let gen = reader.generation().to_string();
+            let embedded = reader.embedded_file_hashes();
+            let mut hashes =
+                collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref());
+            ridx_format::merge_embedded_hashes_authoritative(
+                &mut hashes,
+                &embedded,
+                manifest_dir.as_deref(),
+            );
+            (gen, hashes)
         };
-        visitor.writer.set_unit_key(&unit_key);
+        let cas_key = sysroot::compute_sysroot_cas_key(tcx);
+        let dep_info = serde_json::json!({
+            "name": crate_name,
+            "version": crate_version,
+            "unit_key": unit_key,
+            "driver_hash": format!("{:016x}", ridx_format::get_driver_hash()),
+            "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+            "generation": generation,
+            "object_path": obj_path.display().to_string(),
+            "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+            "target_kind": "lib",
+            "is_dependency": true,
+            "dependencies": dep_keys_or_names,
+            "extern_units": extern_units,
+            "file_hashes": file_hashes,
+            "compiler_args": compiler_args,
+            "stable_crate_id": format!("{:016x}", local_stable_crate_id),
+            "caught_panics": caught_panics,
+            "sysroot_cas_key": cas_key,
+        });
+        write_sidecar_metadata(
+            &deps_dir,
+            &crate_name,
+            &suffix,
+            local_stable_crate_id,
+            &dep_info,
+        );
 
-        extract_crate_items(tcx, &mut visitor, manifest_dir.as_deref());
+        let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
+        eprintln!(
+            "ridx: cache hit for {} v{} ({} KB, unit: {}) in {:.1} ms",
+            crate_name,
+            crate_version,
+            file_size / 1024,
+            &unit_key[..unit_key.len().min(8)],
+            start.elapsed().as_secs_f64() * 1000.0
+        );
+        return;
+    } else if obj_path.is_file() {
+        let _ = fs::remove_file(&obj_path);
+    }
 
-        let file_hashes =
-            collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref());
+    // Cache miss: extract index with package_root set for relative source paths
+    let mut visitor = HirVisitor {
+        tcx,
+        typeck: None,
+        current_body_owner: None,
+        package_root: manifest_dir.clone(),
+        writer: IndexWriter::new(&crate_name, &crate_version),
+        krate_to_unit: krate_to_unit.clone(),
+        seen_refs: std::collections::HashSet::new(),
+    };
+    visitor.writer.set_unit_key(&unit_key);
 
-        let snapshot_digest = ridx_format::compute_source_snapshot_digest(&file_hashes);
-        let generation = format!("{:016x}", snapshot_digest);
-        visitor.writer.set_generation(&generation);
-        visitor.writer.set_file_hashes(file_hashes.clone());
+    extract_crate_items(tcx, &mut visitor, manifest_dir.as_deref());
 
-        if let Some(parent) = obj_path.parent() {
-            let _ = fs::create_dir_all(parent);
-        }
+    let file_hashes = collect_file_hashes(tcx, manifest_dir.as_deref(), manifest_dir.as_deref());
 
-        let tmp_file_path = obj_path.with_extension(format!("tmp.{}", std::process::id()));
-        match File::create(&tmp_file_path) {
-            Ok(f) => {
-                let mut writer = BufWriter::new(f);
-                let def_count = visitor.writer.definition_count();
-                let ref_count = visitor.writer.reference_count();
-                let type_count = visitor.writer.type_count();
+    let snapshot_digest = ridx_format::compute_source_snapshot_digest(&file_hashes);
+    let generation = format!("{:016x}", snapshot_digest);
+    visitor.writer.set_generation(&generation);
+    visitor.writer.set_file_hashes(file_hashes.clone());
 
-                if let Err(e) = visitor.writer.write_to(&mut writer) {
-                    eprintln!("ridx-driver: write failed for dependency {crate_name}: {e}");
+    if let Some(parent) = obj_path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+
+    let tmp_file_path = obj_path.with_extension(format!("tmp.{}", std::process::id()));
+    match File::create(&tmp_file_path) {
+        Ok(f) => {
+            let mut writer = BufWriter::new(f);
+            let def_count = visitor.writer.definition_count();
+            let ref_count = visitor.writer.reference_count();
+            let type_count = visitor.writer.type_count();
+
+            if let Err(e) = visitor.writer.write_to(&mut writer) {
+                eprintln!("ridx-driver: write failed for dependency {crate_name}: {e}");
+                let _ = fs::remove_file(&tmp_file_path);
+            } else {
+                drop(writer);
+                if let Err(e) = fs::rename(&tmp_file_path, &obj_path) {
+                    eprintln!(
+                        "ridx-driver: failed to atomically rename {:?} to {:?}: {e}",
+                        tmp_file_path, obj_path
+                    );
                     let _ = fs::remove_file(&tmp_file_path);
                 } else {
-                    drop(writer);
-                    if let Err(e) = fs::rename(&tmp_file_path, &obj_path) {
-                        eprintln!(
-                            "ridx-driver: failed to atomically rename {:?} to {:?}: {e}",
-                            tmp_file_path, obj_path
-                        );
-                        let _ = fs::remove_file(&tmp_file_path);
-                    } else {
-                        // Publish sidecar metadata only after .ridx file is published
-                        let cas_key = sysroot::compute_sysroot_cas_key(tcx);
-                        let dep_info = serde_json::json!({
-                            "name": crate_name,
-                            "version": crate_version,
-                            "unit_key": unit_key,
-                            "driver_hash": format!("{:016x}", ridx_format::get_driver_hash()),
-                            "format_version": ridx_format::CURRENT_FORMAT_VERSION,
-                            "generation": generation,
-                            "object_path": obj_path.display().to_string(),
-                            "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
-                            "target_kind": "lib",
-                            "is_dependency": true,
-                            "dependencies": dep_keys_or_names,
-                            "extern_units": extern_units,
-                            "file_hashes": file_hashes,
-                            "compiler_args": compiler_args,
-                            "stable_crate_id": format!("{:016x}", local_stable_crate_id),
-                            "caught_panics": caught_panics,
-                            "sysroot_cas_key": cas_key,
-                        });
-                        write_sidecar_metadata(
-                            &deps_dir,
-                            &crate_name,
-                            &suffix,
-                            local_stable_crate_id,
-                            &dep_info,
-                        );
+                    // Publish sidecar metadata only after .ridx file is published
+                    let cas_key = sysroot::compute_sysroot_cas_key(tcx);
+                    let dep_info = serde_json::json!({
+                        "name": crate_name,
+                        "version": crate_version,
+                        "unit_key": unit_key,
+                        "driver_hash": format!("{:016x}", ridx_format::get_driver_hash()),
+                        "format_version": ridx_format::CURRENT_FORMAT_VERSION,
+                        "generation": generation,
+                        "object_path": obj_path.display().to_string(),
+                        "source_root": manifest_dir.as_ref().map(|p| p.display().to_string()),
+                        "target_kind": "lib",
+                        "is_dependency": true,
+                        "dependencies": dep_keys_or_names,
+                        "extern_units": extern_units,
+                        "file_hashes": file_hashes,
+                        "compiler_args": compiler_args,
+                        "stable_crate_id": format!("{:016x}", local_stable_crate_id),
+                        "caught_panics": caught_panics,
+                        "sysroot_cas_key": cas_key,
+                    });
+                    write_sidecar_metadata(
+                        &deps_dir,
+                        &crate_name,
+                        &suffix,
+                        local_stable_crate_id,
+                        &dep_info,
+                    );
 
-                        let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
-                        if caught_panics > 0 {
-                            eprintln!(
+                    let file_size = fs::metadata(&obj_path).map(|m| m.len()).unwrap_or(0);
+                    if caught_panics > 0 {
+                        eprintln!(
                                 "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {}, CAUGHT PANICS: {})",
                                 crate_name,
                                 crate_version,
@@ -1475,8 +1484,8 @@ fn build_crate_index(
                                 &unit_key[..unit_key.len().min(8)],
                                 caught_panics
                             );
-                        } else {
-                            eprintln!(
+                    } else {
+                        eprintln!(
                                 "ridx: indexed dependency {} v{} ({} defs, {} refs, {} types, {} KB in {:.1} ms, cached: {})",
                                 crate_name,
                                 crate_version,
@@ -1487,20 +1496,36 @@ fn build_crate_index(
                                 start.elapsed().as_secs_f64() * 1000.0,
                                 &unit_key[..unit_key.len().min(8)]
                             );
-                        }
                     }
                 }
             }
-            Err(e) => {
-                eprintln!(
-                    "ridx-driver: failed to create temporary index {:?}: {e}",
-                    tmp_file_path
-                );
-            }
         }
-        return;
+        Err(e) => {
+            eprintln!(
+                "ridx-driver: failed to create temporary index {:?}: {e}",
+                tmp_file_path
+            );
+        }
     }
+}
 
+fn build_workspace_crate_index(tcx: TyCtxt<'_>, ctx: CrateIndexBuildContext<'_>) {
+    let CrateIndexBuildContext {
+        start,
+        local_stable_crate_id,
+        caught_panics,
+        crate_name,
+        crate_version,
+        manifest_dir,
+        suffix,
+        unit_key,
+        deps_dir,
+        dep_keys_or_names,
+        extern_units,
+        krate_to_unit,
+        out_dir,
+        compiler_args,
+    } = ctx;
     // Workspace crate: write to out_dir
     if let Err(e) = fs::create_dir_all(out_dir) {
         eprintln!("ridx-driver: failed to create out_dir {:?}: {e}", out_dir);
@@ -1649,6 +1674,68 @@ fn build_crate_index(
             );
         }
     }
+}
+
+fn build_crate_index(
+    tcx: TyCtxt<'_>,
+    out_dir: &Path,
+    disambiguator: Option<&str>,
+    compiler_args: &[String],
+) {
+    let start = Instant::now();
+    let local_stable_crate_id = tcx
+        .stable_crate_id(rustc_span::def_id::LOCAL_CRATE)
+        .as_u64();
+    let caught_panics = CAUGHT_PANICS.load(std::sync::atomic::Ordering::Relaxed);
+    let crate_name = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
+    let crate_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.1.0".to_string());
+
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from);
+    let is_immutable = manifest_dir
+        .as_ref()
+        .map(|m| is_immutable_package(m))
+        .unwrap_or(false);
+
+    let suffix = match disambiguator {
+        Some(d) if d.starts_with('-') || d.starts_with('_') => d.to_string(),
+        Some(d) if !d.is_empty() => format!("_{d}"),
+        _ => String::new(),
+    };
+
+    let unit_key = compute_dependency_unit_key(
+        &crate_name,
+        &crate_version,
+        disambiguator,
+        manifest_dir.as_deref(),
+        compiler_args,
+    );
+
+    let deps_dir = out_dir.join(".deps");
+    let _ = fs::create_dir_all(&deps_dir);
+
+    let (dep_keys_or_names, extern_units, krate_to_unit) =
+        resolve_extern_and_crate_units(tcx, compiler_args, &deps_dir, &unit_key);
+    let ctx = CrateIndexBuildContext {
+        start,
+        local_stable_crate_id,
+        caught_panics,
+        crate_name,
+        crate_version,
+        manifest_dir,
+        suffix,
+        unit_key,
+        deps_dir,
+        dep_keys_or_names,
+        extern_units,
+        krate_to_unit,
+        out_dir,
+        compiler_args,
+    };
+    if is_immutable {
+        build_immutable_dependency_index(tcx, ctx);
+        return;
+    }
+    build_workspace_crate_index(tcx, ctx);
 }
 
 struct NoopCallbacks;
