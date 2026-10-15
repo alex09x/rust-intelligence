@@ -156,6 +156,23 @@ fn reader_origin(ws: &WorkspaceIndex, i: usize) -> Option<&Path> {
         .or(ws.root_dir.as_deref())
 }
 
+pub(crate) fn cached_canonicalize(p: &Path) -> Option<PathBuf> {
+    // Unit tests mutate the filesystem under temp_dir(), whereas corpus directories are static.
+    if p.starts_with(std::env::temp_dir()) {
+        return p.canonicalize().ok();
+    }
+    static CACHE: std::sync::OnceLock<
+        std::sync::RwLock<std::collections::HashMap<PathBuf, Option<PathBuf>>>,
+    > = std::sync::OnceLock::new();
+    let lock = CACHE.get_or_init(|| std::sync::RwLock::new(std::collections::HashMap::new()));
+    if let Some(res) = lock.read().unwrap().get(p) {
+        return res.clone();
+    }
+    let res = p.canonicalize().ok();
+    lock.write().unwrap().insert(p.to_path_buf(), res.clone());
+    res
+}
+
 fn legacy_candidates(
     ws: &WorkspaceIndex,
     p: &Path,
@@ -172,10 +189,10 @@ fn legacy_candidates(
         .or_else(|| (ws.readers.len() == 1).then(|| ws.source_roots.first()?.as_deref())?);
 
     let (ws_abs, req_canon) = if p.is_absolute() {
-        (None, p.canonicalize().ok())
+        (None, cached_canonicalize(p))
     } else if let Some(origin) = explicit_origin {
         let abs = origin.join(p);
-        let canon = abs.canonicalize().ok();
+        let canon = cached_canonicalize(&abs);
         (Some(abs), canon)
     } else {
         (None, None)
@@ -186,7 +203,7 @@ fn legacy_candidates(
     if let Some(ref c_p) = req_canon {
         for i in 0..ws.readers.len() {
             if let Some(Some(ref root)) = ws.source_roots.get(i) {
-                if root.canonicalize().is_ok_and(|cr| c_p.starts_with(&cr))
+                if cached_canonicalize(root).is_some_and(|cr| c_p.starts_with(&cr))
                     && !candidate_indices.contains(&i)
                 {
                     candidate_indices.push(i);

@@ -67,11 +67,42 @@ pub struct PathIndex {
     by_key: HashMap<PathBuf, Vec<u32>>,
     by_file_name: HashMap<OsString, Vec<u32>>,
     dotdot_uids: Vec<u32>,
+    bare_reader_files: Vec<String>,
 }
 
 mod build;
 
 impl PathIndex {
+    /// Returns `false` when `file_path` cannot match the fast path.
+    pub fn may_match_fast_path(&self, ws: &WorkspaceIndex, file_path: &str) -> bool {
+        if (self.generation, self.reader_count) != (ws.generation, ws.readers.len()) {
+            return true;
+        }
+        if self.entries.len() <= 64 {
+            return true;
+        }
+        let p = Path::new(file_path);
+        let Some(fname) = p.file_name() else {
+            return false;
+        };
+        if self.by_file_name.contains_key(fname) {
+            return true;
+        }
+        let fname_str = fname.to_str().unwrap_or("");
+        if self
+            .bare_reader_files
+            .iter()
+            .any(|b| fname_str.ends_with(b.as_str()))
+        {
+            return true;
+        }
+        p.parent().is_none_or(|par| {
+            par.as_os_str().is_empty()
+                || ws.workspace_root.as_deref() == Some(par)
+                || self.origins.iter().any(|o| o.raw == par)
+        })
+    }
+
     /// Resolves `shard_mtime_for_file` when the in-memory fast path does not match.
     pub fn shard_mtime_slow(
         &self,
@@ -106,11 +137,11 @@ impl PathIndex {
         want_hash: bool,
     ) -> Option<(usize, u64)> {
         let p = Path::new(file_path);
-        let explicit_origin = ws
-            .workspace_root
-            .as_deref()
-            .or(ws.root_dir.as_deref())
-            .or_else(|| (ws.readers.len() == 1).then(|| ws.source_roots.first()?.as_deref())?);
+        let explicit_origin = match ws.workspace_root.as_deref().or(ws.root_dir.as_deref()) {
+            Some(origin) => Some(origin),
+            None if ws.readers.len() == 1 => ws.source_roots.first().and_then(|r| r.as_deref()),
+            None => None,
+        };
 
         let (ws_abs, req_canon) = if p.is_absolute() {
             (None, p.canonicalize().ok())
@@ -125,15 +156,36 @@ impl PathIndex {
         let norm_p = normalize_path(p);
         let norm_ws_abs = ws_abs.as_deref().map(normalize_path);
 
-        let mut candidate_uids: Vec<u32> = Vec::new();
+        let p_trav = has_parent_dir(p) && path_traverses_symlink_parent(p);
+        let abs_trav = ws_abs
+            .as_deref()
+            .is_some_and(|a| has_parent_dir(a) && path_traverses_symlink_parent(a));
+        let matches_uid = |uid: u32| -> bool {
+            self.entry_matches_single(uid, p, &norm_p, req_canon.as_deref(), p_trav)
+                || ws_abs.as_deref().is_some_and(|abs_req| {
+                    self.entry_matches_single(
+                        uid,
+                        abs_req,
+                        norm_ws_abs.as_deref().unwrap_or(abs_req),
+                        ws_canon.as_deref(),
+                        abs_trav,
+                    )
+                })
+        };
+
+        let mut matching_uids: Vec<u32> = Vec::new();
         if self.entries.len() <= 64 {
-            candidate_uids.extend(0..self.entries.len() as u32);
+            for uid in 0..self.entries.len() as u32 {
+                if matches_uid(uid) {
+                    matching_uids.push(uid);
+                }
+            }
         } else {
             let mut seen = HashSet::new();
-            let mut add = |slice: Option<&Vec<u32>>| {
+            let mut check_slice = |slice: Option<&Vec<u32>>, out: &mut Vec<u32>| {
                 for &uid in slice.into_iter().flatten() {
-                    if seen.insert(uid) {
-                        candidate_uids.push(uid);
+                    if seen.insert(uid) && matches_uid(uid) {
+                        out.push(uid);
                     }
                 }
             };
@@ -147,10 +199,10 @@ impl PathIndex {
             .into_iter()
             .flatten()
             {
-                add(self.by_key.get(key));
+                check_slice(self.by_key.get(key), &mut matching_uids);
             }
-            add(Some(&self.dotdot_uids));
-            if req_canon.is_some() || p.is_relative() {
+            check_slice(Some(&self.dotdot_uids), &mut matching_uids);
+            if matching_uids.is_empty() && (req_canon.is_some() || p.is_relative()) {
                 for fname in [
                     p.file_name(),
                     norm_p.file_name(),
@@ -159,34 +211,10 @@ impl PathIndex {
                 .into_iter()
                 .flatten()
                 {
-                    add(self.by_file_name.get(fname));
+                    check_slice(self.by_file_name.get(fname), &mut matching_uids);
                 }
             }
         }
-        if candidate_uids.is_empty() {
-            return None;
-        }
-
-        let p_trav = has_parent_dir(p) && path_traverses_symlink_parent(p);
-        let abs_trav = ws_abs
-            .as_deref()
-            .is_some_and(|a| has_parent_dir(a) && path_traverses_symlink_parent(a));
-
-        let matching_uids: Vec<u32> = candidate_uids
-            .into_iter()
-            .filter(|&uid| {
-                self.entry_matches_single(uid, p, &norm_p, req_canon.as_deref(), p_trav)
-                    || ws_abs.as_deref().is_some_and(|abs_req| {
-                        self.entry_matches_single(
-                            uid,
-                            abs_req,
-                            norm_ws_abs.as_deref().unwrap_or(abs_req),
-                            ws_canon.as_deref(),
-                            abs_trav,
-                        )
-                    })
-            })
-            .collect();
         if matching_uids.is_empty() {
             return None;
         }
@@ -263,6 +291,17 @@ impl PathIndex {
             return true;
         }
 
+        let orig_meta = entry.origin_id.map(|oid| &self.origins[oid as usize]);
+        if req_canon.is_none() {
+            if req_path.is_absolute() || entry.norm_entry.is_relative() {
+                if entry.norm_entry != norm_req {
+                    return false;
+                }
+            } else if orig_meta.is_none() {
+                return false;
+            }
+        }
+
         let compute_fs = || EntryFsMeta {
             canon: entry.entry_orig.canonicalize().ok(),
             traverses_symlink: has_parent_dir(&entry.entry_orig)
@@ -276,40 +315,36 @@ impl PathIndex {
             &owned_fs
         };
 
-        let effective_req_canon = req_canon.map(Path::to_path_buf).or_else(|| {
-            req_path
-                .is_absolute()
-                .then(|| req_path.canonicalize().ok())?
-        });
-        if let (Some(ref c_entry), Some(ref c_req)) = (&fs_meta.canon, &effective_req_canon) {
+        if let (Some(ref c_entry), Some(c_req)) = (&fs_meta.canon, req_canon) {
             return c_entry == c_req;
         }
 
-        let orig_meta = entry.origin_id.map(|oid| &self.origins[oid as usize]);
+        let lexical_match = if req_path.is_absolute() || entry.norm_entry.is_relative() {
+            entry.norm_entry == norm_req
+        } else if let Some(orig) = orig_meta {
+            let matches_rel = |base: &Path, full: &Path| {
+                full.strip_prefix(base)
+                    .is_ok_and(|rel| rel == norm_req || normalize_path(rel) == norm_req)
+            };
+            matches_rel(&orig.norm, &entry.norm_entry)
+                || fs_meta
+                    .canon
+                    .as_ref()
+                    .zip(orig.canon.as_ref())
+                    .is_some_and(|(ce, co)| matches_rel(co, ce))
+        } else {
+            false
+        };
+        if !lexical_match {
+            return false;
+        }
+
         let req_has_dotdot = has_parent_dir(req_path);
-        if fs_meta.traverses_symlink
+        !(fs_meta.traverses_symlink
             || req_traverses_symlink
             || orig_meta.is_some_and(|orig| {
                 (orig.has_dotdot || req_has_dotdot)
                     && path_traverses_symlink_parent(&orig.raw.join(req_path))
-            })
-        {
-            return false;
-        }
-
-        if req_path.is_absolute() || entry.norm_entry.is_relative() {
-            return entry.norm_entry == norm_req;
-        }
-        let Some(orig) = orig_meta else { return false };
-        let matches_rel = |base: &Path, full: &Path| {
-            full.strip_prefix(base)
-                .is_ok_and(|rel| rel == norm_req || normalize_path(rel) == norm_req)
-        };
-        matches_rel(&orig.norm, &entry.norm_entry)
-            || fs_meta
-                .canon
-                .as_ref()
-                .zip(orig.canon.as_ref())
-                .is_some_and(|(ce, co)| matches_rel(co, ce))
+            }))
     }
 }

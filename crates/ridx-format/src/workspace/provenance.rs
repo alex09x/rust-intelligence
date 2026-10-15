@@ -102,13 +102,12 @@ pub(crate) fn file_entry_matches(
     }
 
     // 2. Resolve canonical identities on the filesystem before any lexical collapse
-    let entry_canon = entry_orig.canonicalize().ok();
-    let effective_req_canon = req_canon.map(|p| p.to_path_buf()).or_else(|| {
-        if req_path.is_absolute() {
-            req_path.canonicalize().ok()
-        } else {
-            None
-        }
+    use super::path_index_tests::oracle::cached_canonicalize;
+    let entry_canon = cached_canonicalize(&entry_orig);
+    let effective_req_canon = req_canon.map(Path::to_path_buf).or_else(|| {
+        req_path
+            .is_absolute()
+            .then(|| cached_canonicalize(req_path))?
     });
 
     // 3. Authoritative filesystem identity comparison
@@ -155,7 +154,7 @@ pub(crate) fn file_entry_matches(
                     return true;
                 }
             }
-            if let (Some(ref c_entry), Ok(c_orig)) = (&entry_canon, orig.canonicalize()) {
+            if let (Some(ref c_entry), Some(c_orig)) = (&entry_canon, cached_canonicalize(orig)) {
                 if let Ok(rel) = c_entry.strip_prefix(&c_orig) {
                     if rel == norm_req || normalize_path(rel) == norm_req {
                         return true;
@@ -164,7 +163,6 @@ pub(crate) fn file_entry_matches(
             }
         }
     }
-
     false
 }
 
@@ -172,57 +170,59 @@ impl WorkspaceIndex {
     /// Returns the file modification timestamp of the index shard containing the given source file.
     pub fn shard_mtime_for_file(&self, file_path: &str) -> Option<std::time::SystemTime> {
         // Fast path: query candidate readers prioritized for this file using in-memory indices
-        for idx in self.candidate_reader_indices_for_file(file_path) {
-            if let Some(target_file) = self.target_file_for_reader(idx, file_path) {
-                let reader = &self.readers[idx];
-                if reader.find_file_id(target_file.as_ref()).is_some() {
-                    return self.mtimes.get(idx).copied().flatten();
+        if self.path_index.may_match_fast_path(self, file_path) {
+            for idx in self.candidate_reader_indices_for_file(file_path) {
+                if let Some(target_file) = self.target_file_for_reader(idx, file_path) {
+                    let reader = &self.readers[idx];
+                    if reader.find_file_id(target_file.as_ref()).is_some() {
+                        return self.mtimes.get(idx).copied().flatten();
+                    }
+                    if let Some(hashes) = self.reader_file_hashes.get(idx) {
+                        if hashes.contains_key(target_file.as_ref()) {
+                            return self.mtimes.get(idx).copied().flatten();
+                        }
+                    }
                 }
                 if let Some(hashes) = self.reader_file_hashes.get(idx) {
-                    if hashes.contains_key(target_file.as_ref()) {
+                    if hashes.contains_key(file_path) {
                         return self.mtimes.get(idx).copied().flatten();
                     }
                 }
             }
-            if let Some(hashes) = self.reader_file_hashes.get(idx) {
-                if hashes.contains_key(file_path) {
-                    return self.mtimes.get(idx).copied().flatten();
-                }
-            }
         }
-
         self.path_index.shard_mtime_slow(self, file_path)
     }
 
     /// Returns the compiled source hash (from rustc compilation provenance) for a file if available.
     pub fn source_hash_for_file(&self, file_path: &str) -> Option<u64> {
         // Fast path: query candidate readers prioritized for this file using in-memory indices
-        for idx in self.candidate_reader_indices_for_file(file_path) {
-            if let Some(target_file) = self.target_file_for_reader(idx, file_path) {
-                let reader = &self.readers[idx];
-                if let Some(fid) = reader.find_file_id(target_file.as_ref()) {
-                    let h = reader.file_source_hash(fid);
-                    if h != 0 {
-                        return Some(h);
+        if self.path_index.may_match_fast_path(self, file_path) {
+            for idx in self.candidate_reader_indices_for_file(file_path) {
+                if let Some(target_file) = self.target_file_for_reader(idx, file_path) {
+                    let reader = &self.readers[idx];
+                    if let Some(fid) = reader.find_file_id(target_file.as_ref()) {
+                        let h = reader.file_source_hash(fid);
+                        if h != 0 {
+                            return Some(h);
+                        }
+                    }
+                    if let Some(hashes) = self.reader_file_hashes.get(idx) {
+                        if let Some(&h) = hashes.get(target_file.as_ref()) {
+                            if h != 0 {
+                                return Some(h);
+                            }
+                        }
                     }
                 }
                 if let Some(hashes) = self.reader_file_hashes.get(idx) {
-                    if let Some(&h) = hashes.get(target_file.as_ref()) {
+                    if let Some(&h) = hashes.get(file_path) {
                         if h != 0 {
                             return Some(h);
                         }
                     }
                 }
             }
-            if let Some(hashes) = self.reader_file_hashes.get(idx) {
-                if let Some(&h) = hashes.get(file_path) {
-                    if h != 0 {
-                        return Some(h);
-                    }
-                }
-            }
         }
-
         self.path_index.source_hash_slow(self, file_path)
     }
 

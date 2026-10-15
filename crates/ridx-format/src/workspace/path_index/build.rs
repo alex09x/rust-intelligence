@@ -129,7 +129,9 @@ impl PathIndex {
             {
                 push_u(by_file_name.entry(fname.to_os_string()).or_default(), uid);
             }
-            if has_parent_dir(&entry_orig) {
+            if has_parent_dir(&entry_orig)
+                && (entry_orig.file_name().is_none() || norm_entry.file_name().is_none())
+            {
                 push_u(&mut dotdot_uids, uid);
             }
             entries.push(UniquePathEntry {
@@ -145,11 +147,18 @@ impl PathIndex {
             uid as usize
         };
 
+        let mut bare_reader_files: Vec<String> = Vec::new();
         for (i, reader) in ws.readers.iter().enumerate() {
             let oid = readers_meta[i].origin_id;
             for fid in 0..reader.files_count() {
                 let s = reader.get_file(fid);
                 if !s.is_empty() {
+                    if !s.contains('/')
+                        && !s.contains('\\')
+                        && !bare_reader_files.iter().any(|b| b == s)
+                    {
+                        bare_reader_files.push(s.to_string());
+                    }
                     let uid = intern(&mut entries, oid, s);
                     entries[uid]
                         .phase1
@@ -174,6 +183,7 @@ impl PathIndex {
             by_key,
             by_file_name,
             dotdot_uids,
+            bare_reader_files,
         }
     }
 }
