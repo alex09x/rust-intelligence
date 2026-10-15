@@ -58,14 +58,7 @@ impl WorkspaceIndex {
         self.reload_if_modified()
     }
 
-    /// Checks timestamps of indexed files and reloads any that have changed.
-    /// Also scans directory for newly generated .ridx files and removes deleted ones.
-    /// If an active variant manifest exists and was switched, atomically reloads the new variant's reader set.
-    /// Returns true if any index was updated, added, removed, or switched.
-    pub fn reload_if_modified(&mut self) -> io::Result<bool> {
-        let mut changed = false;
-        self.last_reloaded_files.clear();
-
+    pub(super) fn reload_active_variant_if_switched(&mut self) -> io::Result<bool> {
         // 0. Check if active variant manifest was updated or switched
         if self.manifest_path.is_none() {
             if let Some(ref dir) = self.root_dir {
@@ -390,6 +383,22 @@ impl WorkspaceIndex {
                     }
                 }
             }
+        }
+
+        Ok(false)
+    }
+
+    /// Checks timestamps of indexed files and reloads any that have changed.
+    /// Also scans directory for newly generated .ridx files and removes deleted ones.
+    /// If an active variant manifest exists and was switched, atomically reloads the new variant's reader set.
+    /// Returns true if any index was updated, added, removed, or switched.
+    pub fn reload_if_modified(&mut self) -> io::Result<bool> {
+        let mut changed = false;
+        self.last_reloaded_files.clear();
+
+        // 0. Check if active variant manifest was updated or switched
+        if self.reload_active_variant_if_switched()? {
+            return Ok(true);
         }
 
         // 1. Reconcile existing files: remove deleted, reload modified
