@@ -100,6 +100,22 @@ pub struct DocumentOverlay {
     pub(crate) scopes: Vec<Scope>,
 }
 
+/// Resolves the compiled baseline text by checking whether the live buffer hash or on-disk file hash matches `expected_hash`.
+pub(crate) fn resolve_compiled_text(
+    content_hash: u64,
+    text: &str,
+    disk_text: Option<&str>,
+    expected_hash: Option<u64>,
+) -> Option<String> {
+    let expected = expected_hash?;
+    if content_hash == expected {
+        Some(text.to_owned())
+    } else {
+        let disk = disk_text?;
+        (normalized_source_hash(disk.as_bytes()) == expected).then(|| disk.to_owned())
+    }
+}
+
 impl DocumentOverlay {
     /// Creates and parses a new DocumentOverlay with explicit provenance tracking.
     pub fn new_with_provenance(
@@ -146,14 +162,8 @@ impl DocumentOverlay {
         let file_path = file_path.into();
         let content_hash = normalized_source_hash(text.as_bytes());
         let disk_text = std::fs::read_to_string(&file_path).ok();
-        let compiled_text = expected_hash.and_then(|expected| {
-            if content_hash == expected {
-                Some(text.clone())
-            } else {
-                let disk = disk_text.as_ref()?;
-                (normalized_source_hash(disk.as_bytes()) == expected).then(|| disk.clone())
-            }
-        });
+        let compiled_text =
+            resolve_compiled_text(content_hash, &text, disk_text.as_deref(), expected_hash);
         let mut overlay = Self {
             uri,
             file_path,

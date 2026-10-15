@@ -125,24 +125,16 @@ impl OverlayManager {
         if let Some(existing) = self.overlays.get_mut(file_path) {
             let disk_text = std::fs::read_to_string(file_path).ok();
             existing.update(version, text);
-            existing.compiled_text = expected_hash.and_then(|expected| {
-                if existing.content_hash == expected {
-                    Some(existing.text.clone())
-                } else {
-                    let disk = disk_text.as_ref()?;
-                    (ridx_format::normalized_source_hash(disk.as_bytes()) == expected)
-                        .then(|| disk.clone())
-                }
-            });
-            existing.disk_text = disk_text;
-        } else {
-            let overlay = DocumentOverlay::new_with_source_hash(
-                uri,
-                file_path,
-                version,
-                text,
+            existing.compiled_text = super::resolve_compiled_text(
+                existing.content_hash,
+                &existing.text,
+                disk_text.as_deref(),
                 expected_hash,
             );
+            existing.disk_text = disk_text;
+        } else {
+            let overlay =
+                DocumentOverlay::new_with_source_hash(uri, file_path, version, text, expected_hash);
             self.overlays.insert(file_path.to_string(), overlay);
         }
     }
