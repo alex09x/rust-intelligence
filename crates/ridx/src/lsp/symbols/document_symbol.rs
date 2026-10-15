@@ -40,6 +40,11 @@ fn format_overlay_symbols(overlay: &DocumentOverlay) -> Value {
     json!(results)
 }
 
+/// Parses `DocumentSymbol[]` from disk for a closed file, using `cache` keyed by `(mtime, len)`
+/// to avoid re-reading and re-parsing unchanged files across repeated requests.
+///
+/// If `std::fs::metadata` or `std::fs::read_to_string` fails (or the path is not a regular file),
+/// any stale entry for `file` is evicted from `cache`.
 fn document_symbols_from_disk(file: &str, cache: &DocumentSymbolDiskCache) -> Value {
     let Ok(meta) = std::fs::metadata(file) else {
         cache.remove(file);

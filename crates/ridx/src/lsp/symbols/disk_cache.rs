@@ -17,6 +17,16 @@ use std::time::SystemTime;
 
 const MAX_DOCUMENT_SYMBOL_CACHE_ENTRIES: usize = 256;
 
+/// Cached `DocumentSymbol[]` response keyed by `(mtime, len)` metadata from `std::fs::metadata`.
+///
+/// # Cache Key Invariants and Trade-Offs
+/// - Checking `(mtime, len)` requires a single `stat` syscall without reading or hashing the file
+///   contents on repeated `textDocument/documentSymbol` requests for closed files.
+/// - Open editor buffers always take precedence via [`crate::overlay::OverlayManager::get`] and
+///   never consult this cache.
+/// - Limitation: an external in-place disk rewrite of a closed file that preserves the exact byte
+///   length (`len`) and completes within the filesystem's `mtime` resolution tick (sub-nanosecond
+///   on modern APFS/ext4/XFS, coarser on legacy or network filesystems) can collide on `(mtime, len)`.
 #[derive(Clone)]
 struct CachedDocumentSymbols {
     mtime: Option<SystemTime>,
