@@ -21,6 +21,8 @@ pub mod tokens;
 pub mod workspace_diag;
 
 #[cfg(test)]
+pub mod selection_range_tests;
+#[cfg(test)]
 pub mod tests;
 
 pub use color::*;
@@ -33,57 +35,88 @@ pub use reconcile::*;
 pub use tokens::*;
 pub use workspace_diag::*;
 
-
 use super::protocol::{uri_to_path, PositionConverter};
-use crate::overlay::OverlayManager;
+use crate::overlay::{DocumentOverlay, OverlayManager};
 use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
+
+fn selection_ranges_for_overlay(overlay: &DocumentOverlay, pos_list: &[Value]) -> Value {
+    let mut results = Vec::with_capacity(pos_list.len());
+    for pos in pos_list {
+        let line_0based = pos["line"].as_u64().unwrap_or(0) as u32;
+        let utf16_col_0based = pos["character"].as_u64().unwrap_or(0) as u32;
+        let byte_pos = overlay.position_to_byte_offset(line_0based, utf16_col_0based);
+
+        let mut matching_scopes: Vec<_> = overlay
+            .scopes
+            .iter()
+            .filter(|s| byte_pos >= s.start_byte && byte_pos <= s.end_byte)
+            .collect();
+
+        matching_scopes
+            .sort_by_key(|s| (s.end_byte - s.start_byte, std::cmp::Reverse(s.start_byte)));
+
+        let mut chain: Vec<&crate::overlay::parser::Scope> =
+            Vec::with_capacity(matching_scopes.len());
+        for s in matching_scopes {
+            if let Some(prev) = chain.last() {
+                let strictly_contains = s.start_byte <= prev.start_byte
+                    && s.end_byte >= prev.end_byte
+                    && (s.start_byte < prev.start_byte || s.end_byte > prev.end_byte);
+                if !strictly_contains {
+                    continue;
+                }
+            }
+            chain.push(s);
+        }
+
+        let mut current_range: Option<Value> = None;
+        for s in chain.into_iter().rev() {
+            let (sl, sc) = overlay.byte_offset_to_position(s.start_byte);
+            let (el, ec) = overlay.byte_offset_to_position(s.end_byte);
+            let r = json!({
+                "range": {
+                    "start": { "line": sl, "character": sc },
+                    "end": { "line": el, "character": ec }
+                },
+                "parent": current_range
+            });
+            current_range = Some(r);
+        }
+
+        results.push(current_range.unwrap_or_else(|| {
+            json!({
+                "range": {
+                    "start": { "line": line_0based, "character": utf16_col_0based },
+                    "end": { "line": line_0based, "character": utf16_col_0based }
+                },
+                "parent": Value::Null
+            })
+        }));
+    }
+
+    json!(results)
+}
 
 pub fn handle_selection_range(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
-    let positions = msg["params"]["positions"].as_array();
-
-    let Some(overlay) = overlay_mgr.get(&file) else {
+    let Some(pos_list) = msg["params"]["positions"]
+        .as_array()
+        .filter(|p| !p.is_empty())
+    else {
         return json!([]);
     };
 
-    let mut results = Vec::new();
-    if let Some(pos_list) = positions {
-        for pos in pos_list {
-            let line_0based = pos["line"].as_u64().unwrap_or(0) as u32;
-            let utf16_col_0based = pos["character"].as_u64().unwrap_or(0) as u32;
-            let byte_pos = overlay.position_to_byte_offset(line_0based, utf16_col_0based);
-
-            let mut matching_scopes: Vec<_> = overlay
-                .scopes
-                .iter()
-                .filter(|s| byte_pos >= s.start_byte && byte_pos <= s.end_byte)
-                .collect();
-
-            matching_scopes.sort_by_key(|s| s.end_byte - s.start_byte);
-
-            let mut current_range: Option<Value> = None;
-            for s in matching_scopes.into_iter().rev() {
-                let (sl, sc) = overlay.byte_offset_to_position(s.start_byte);
-                let (el, ec) = overlay.byte_offset_to_position(s.end_byte);
-                let r = json!({
-                    "range": {
-                        "start": { "line": sl, "character": sc },
-                        "end": { "line": el, "character": ec }
-                    },
-                    "parent": current_range
-                });
-                current_range = Some(r);
-            }
-
-            if let Some(range_val) = current_range {
-                results.push(range_val);
-            }
-        }
+    if let Some(overlay) = overlay_mgr.get(&file) {
+        return selection_ranges_for_overlay(overlay, pos_list);
     }
 
-    json!(results)
+    let Ok(content) = std::fs::read_to_string(&file) else {
+        return json!([]);
+    };
+    let overlay = DocumentOverlay::parse_detached(content);
+    selection_ranges_for_overlay(&overlay, pos_list)
 }
 
 pub fn handle_document_link(msg: &Value, overlay_mgr: &OverlayManager) -> Value {
