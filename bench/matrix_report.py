@@ -69,9 +69,10 @@ KNOWN_HARNESS_DEFECTS = [
 
 NOTES = [
     "`-32801` is `ContentModified`: the server reports that re-analysis is in progress.",
-    "RIDX `textDocument/documentSymbol` returns `[]` for files not opened via `didOpen`; the "
-    "benchmark does not open files before symbol queries, so the RIDX documentSymbol latency is "
-    "not comparable with rust-analyzer's.",
+    "The benchmark does not open files before `textDocument/documentSymbol` queries. Since RIDX "
+    "commit `cae751b` RIDX answers them for files not opened via `didOpen` by parsing the file on "
+    "disk (cached by path, mtime and length); in the previous publication (RIDX commit `5d49c84`) "
+    "RIDX returned `[]` for all 300 such requests in each corpus.",
     "The readiness canary issues `textDocument/definition` on the first three sampled positions, so "
     "the rust-analyzer cold latency for those three positions out of 300 is measured on a warm cache.",
     "`a` counts non-empty answers, `b` empty answers (`null`, `[]`, empty hover), `c` failed "
@@ -81,15 +82,15 @@ NOTES = [
     "`serde_derive` of a newer version next to the workspace one, and `trybuild` in `test_suite` "
     "then failed to compile; the lockfile was regenerated with `serde_derive` unified to the "
     "workspace version. Its sha256 is recorded as `corpus_lockfile_sha256`.",
-    "All five runs use RIDX commit `5d49c84`.",
-    "bevy: in the previous publication (RIDX commit `d72a749`) RIDX `mutation/caseA`, "
-    "`mutation/caseB` and `mutation/caseC` timed out on 122, 90 and 32 of 300 scenarios and "
-    "`textDocument/definition` on 21 requests; in these runs none time out. Two changes lie between "
-    "the runs: the harness barrier `ade610f` (see the harness defects below) and the precomputed "
-    "workspace path index for file provenance lookups in `5d49c84`.",
+    "All five runs use RIDX commit `cae751b`.",
+    "bevy: at RIDX commit `d72a749` RIDX `mutation/caseA`, `mutation/caseB` and `mutation/caseC` "
+    "timed out on 122, 90 and 32 of 300 scenarios and `textDocument/definition` on 21 requests; "
+    "since RIDX commit `5d49c84` none time out. Two changes lie between those runs: the harness "
+    "barrier `ade610f` (see the harness defects below) and the precomputed workspace path index "
+    "for file provenance lookups in `5d49c84`.",
     "Indexes were built with the driver recorded as `driver_hash` (`driver_build_commit`), which "
     "can be older than the RIDX commit. Between driver build commit `cdf975d` and RIDX commit "
-    "`5d49c84` the driver changed only in `build.rs` (link search path) and `ridx-format` only in "
+    "`cae751b` the driver changed only in `build.rs` (link search path) and `ridx-format` only in "
     "reader-side workspace code, so the index contents do not depend on the newer commit.",
 ]
 

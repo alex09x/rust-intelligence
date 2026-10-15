@@ -9,13 +9,13 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 ## Notes
 
 - `-32801` is `ContentModified`: the server reports that re-analysis is in progress.
-- RIDX `textDocument/documentSymbol` returns `[]` for files not opened via `didOpen`; the benchmark does not open files before symbol queries, so the RIDX documentSymbol latency is not comparable with rust-analyzer's.
+- The benchmark does not open files before `textDocument/documentSymbol` queries. Since RIDX commit `cae751b` RIDX answers them for files not opened via `didOpen` by parsing the file on disk (cached by path, mtime and length); in the previous publication (RIDX commit `5d49c84`) RIDX returned `[]` for all 300 such requests in each corpus.
 - The readiness canary issues `textDocument/definition` on the first three sampled positions, so the rust-analyzer cold latency for those three positions out of 300 is measured on a warm cache.
 - `a` counts non-empty answers, `b` empty answers (`null`, `[]`, empty hover), `c` failed scenarios; `errors` counts error responses, which can exceed `c` because a scenario sends several requests.
 - serde: the corpus has no committed `Cargo.lock`. The generated lockfile resolved a registry `serde_derive` of a newer version next to the workspace one, and `trybuild` in `test_suite` then failed to compile; the lockfile was regenerated with `serde_derive` unified to the workspace version. Its sha256 is recorded as `corpus_lockfile_sha256`.
-- All five runs use RIDX commit `5d49c84`.
-- bevy: in the previous publication (RIDX commit `d72a749`) RIDX `mutation/caseA`, `mutation/caseB` and `mutation/caseC` timed out on 122, 90 and 32 of 300 scenarios and `textDocument/definition` on 21 requests; in these runs none time out. Two changes lie between the runs: the harness barrier `ade610f` (see the harness defects below) and the precomputed workspace path index for file provenance lookups in `5d49c84`.
-- Indexes were built with the driver recorded as `driver_hash` (`driver_build_commit`), which can be older than the RIDX commit. Between driver build commit `cdf975d` and RIDX commit `5d49c84` the driver changed only in `build.rs` (link search path) and `ridx-format` only in reader-side workspace code, so the index contents do not depend on the newer commit.
+- All five runs use RIDX commit `cae751b`.
+- bevy: at RIDX commit `d72a749` RIDX `mutation/caseA`, `mutation/caseB` and `mutation/caseC` timed out on 122, 90 and 32 of 300 scenarios and `textDocument/definition` on 21 requests; since RIDX commit `5d49c84` none time out. Two changes lie between those runs: the harness barrier `ade610f` (see the harness defects below) and the precomputed workspace path index for file provenance lookups in `5d49c84`.
+- Indexes were built with the driver recorded as `driver_hash` (`driver_build_commit`), which can be older than the RIDX commit. Between driver build commit `cdf975d` and RIDX commit `cae751b` the driver changed only in `build.rs` (link search path) and `ridx-format` only in reader-side workspace code, so the index contents do not depend on the newer commit.
 
 ## Known harness defects (fixed, in commit order)
 
@@ -34,7 +34,7 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 
 | Field | Value |
 |:---|:---|
-| RIDX commit | `5d49c84c4a1df344fb02b30ba9fb1419b049a4f8` |
+| RIDX commit | `cae751b4d8f86387fa4107d8a2a28d6033a9f214` |
 | RIDX binary dirty | `False` |
 | Driver hash | `8884205b28dd2daa` |
 | Driver build commit | `cdf975d9dc93a314436e40188bf5e25d09144ccf` |
@@ -50,13 +50,13 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | Seed | `42` |
 | Samples per method | `300` |
 | Requests per server | `22204` |
-| Started | `2026-10-15T03:11:43.665700+00:00` |
-| Finished | `2026-10-15T03:14:40.817826+00:00` |
-| RIDX suite duration (s) | `59.3` |
-| rust-analyzer suite duration (s) | `117.53` |
-| rust-analyzer initial wait (ms) | `2560.01` |
-| rust-analyzer canary wait (ms) / attempts | `1324.0 / 2` |
-| rust-analyzer pre-query canary wait (ms) / attempts | `1005.22 / 2` |
+| Started | `2026-10-15T05:07:23.458752+00:00` |
+| Finished | `2026-10-15T05:10:20.496738+00:00` |
+| RIDX suite duration (s) | `60.37` |
+| rust-analyzer suite duration (s) | `116.34` |
+| rust-analyzer initial wait (ms) | `2555.81` |
+| rust-analyzer canary wait (ms) / attempts | `1320.53 / 2` |
+| rust-analyzer pre-query canary wait (ms) / attempts | `1005.38 / 2` |
 | RIDX requests cancelled on timeout | `0` |
 | rust-analyzer requests cancelled on timeout | `1` |
 
@@ -64,50 +64,50 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 
 | Server | Error responses | Failed scenarios | `-32603` | Peak RSS (MB) |
 |:---|---:|---:|---:|---:|
-| RIDX | 10 | 5 | 0 | 87.49 |
-| rust-analyzer | 1387 | 6483 | 0 | 2222.64 |
+| RIDX | 10 | 5 | 0 | 114.88 |
+| rust-analyzer | 1398 | 6494 | 0 | 2205.29 |
 
 ### Per method (a non-empty / b empty / c failed; warm p50 / p99 in ms)
 
 | # | Method | RIDX a/b/c | RIDX p50 | RIDX p99 | RIDX codes | RA a/b/c | RA p50 | RA p99 | RA codes |
 |---:|:---|:---|---:|---:|:---|:---|---:|---:|:---|
-| 1 | `initialize` | 1 run | 114.8 | 114.8 | - | 1 run | 6.4 | 6.4 | - |
+| 1 | `initialize` | 1 run | 104.1 | 104.1 | - | 1 run | 6.6 | 6.6 | - |
 | 2 | `initialized` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
-| 3 | `shutdown` | 1 run | 1.6 | 1.6 | - | 1 run | 0.2 | 0.2 | - |
+| 3 | `shutdown` | 1 run | 1.6 | 1.6 | - | 1 run | 0.3 | 0.3 | - |
 | 4 | `exit` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
 | 5 | `$/cancelRequest` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 6 | `$/setTrace` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 7 | `window/workDoneProgress/cancel` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 0.8 | - | 300 / 0 / 0 | 0.1 | 5.3 | - |
-| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 4.1 | - | 300 / 0 / 0 | 0.3 | 6.8 | - |
-| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.2 | - | 300 / 0 / 0 | 0.4 | 5.6 | - |
-| 11 | `textDocument/willSave` | 300 / 0 / 0 | 0.0 | 0.4 | - | 300 / 0 / 0 | 0.0 | 1.9 | - |
-| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.1 | 0.9 | - | 0 / 0 / 300 | 0.9 | 0.9 | -32601: 300 |
-| 13 | `textDocument/didSave` | 300 / 0 / 0 | 0.0 | 0.4 | - | 300 / 0 / 0 | 0.0 | 1.4 | - |
-| 14 | `textDocument/didClose` | 300 / 0 / 0 | 0.0 | 0.2 | - | 300 / 0 / 0 | 0.0 | 2.3 | - |
+| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 0.6 | - | 300 / 0 / 0 | 0.1 | 5.3 | - |
+| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 4.2 | - | 300 / 0 / 0 | 0.4 | 6.6 | - |
+| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.5 | - | 300 / 0 / 0 | 0.4 | 5.7 | - |
+| 11 | `textDocument/willSave` | 300 / 0 / 0 | 0.0 | 0.3 | - | 300 / 0 / 0 | 0.0 | 1.9 | - |
+| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.1 | 0.7 | - | 0 / 0 / 300 | 0.9 | 0.9 | -32601: 300 |
+| 13 | `textDocument/didSave` | 300 / 0 / 0 | 0.0 | 0.2 | - | 300 / 0 / 0 | 0.0 | 1.4 | - |
+| 14 | `textDocument/didClose` | 300 / 0 / 0 | 0.0 | 0.2 | - | 300 / 0 / 0 | 0.0 | 1.8 | - |
 | 15 | `textDocument/definition` | 291 / 9 / 0 | 0.0 | 0.1 | - | 294 / 6 / 0 | 0.1 | 0.2 | - |
 | 16 | `textDocument/declaration` | 294 / 6 / 0 | 0.0 | 0.1 | - | 295 / 5 / 0 | 0.1 | 0.2 | - |
-| 17 | `textDocument/typeDefinition` | 66 / 234 / 0 | 4.0 | 12.7 | - | 193 / 107 / 0 | 0.1 | 0.2 | - |
-| 18 | `textDocument/implementation` | 257 / 43 / 0 | 0.5 | 10.5 | - | 297 / 3 / 0 | 0.1 | 0.1 | - |
-| 19 | `textDocument/references` | 298 / 2 / 0 | 0.1 | 8.2 | - | 295 / 5 / 0 | 1.5 | 21.3 | - |
-| 20 | `textDocument/documentHighlight` | 281 / 19 / 0 | 0.2 | 8.4 | - | 292 / 8 / 0 | 0.6 | 10.8 | - |
-| 21 | `textDocument/documentSymbol` | 0 / 300 / 0 | 0.0 | 0.0 | - | 293 / 7 / 0 | 0.3 | 7.4 | - |
-| 22 | `workspace/symbol` | 177 / 123 / 0 | 4.4 | 10.7 | - | 178 / 122 / 0 | 0.9 | 1.1 | - |
+| 17 | `textDocument/typeDefinition` | 66 / 234 / 0 | 4.1 | 13.2 | - | 193 / 107 / 0 | 0.1 | 0.2 | - |
+| 18 | `textDocument/implementation` | 257 / 43 / 0 | 0.6 | 10.8 | - | 297 / 3 / 0 | 0.1 | 0.2 | - |
+| 19 | `textDocument/references` | 298 / 2 / 0 | 0.1 | 8.2 | - | 295 / 5 / 0 | 1.5 | 21.2 | - |
+| 20 | `textDocument/documentHighlight` | 281 / 19 / 0 | 0.2 | 8.3 | - | 292 / 8 / 0 | 0.5 | 11.0 | - |
+| 21 | `textDocument/documentSymbol` | 300 / 0 / 0 | 0.1 | 1.8 | - | 293 / 7 / 0 | 0.3 | 7.8 | - |
+| 22 | `workspace/symbol` | 177 / 123 / 0 | 4.8 | 10.8 | - | 178 / 122 / 0 | 0.9 | 1.1 | - |
 | 23 | `workspaceSymbol/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 24 | `textDocument/hover` | 293 / 7 / 0 | 0.1 | 0.1 | - | 293 / 7 / 0 | 0.1 | 0.2 | - |
-| 25 | `textDocument/completion` | 300 / 0 / 0 | 0.2 | 2.1 | - | 298 / 2 / 0 | 2.3 | 8.9 | - |
+| 25 | `textDocument/completion` | 300 / 0 / 0 | 0.2 | 2.2 | - | 298 / 2 / 0 | 2.4 | 8.9 | - |
 | 26 | `completionItem/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 27 | `textDocument/signatureHelp` | 50 / 250 / 0 | 0.1 | 6.1 | - | 60 / 240 / 0 | 0.0 | 0.1 | - |
+| 27 | `textDocument/signatureHelp` | 50 / 250 / 0 | 0.1 | 6.6 | - | 60 / 240 / 0 | 0.0 | 0.1 | - |
 | 28 | `textDocument/inlayHint` | 0 / 300 / 0 | 0.0 | 0.2 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
 | 29 | `inlayHint/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 30 | `textDocument/inlineValue` | 300 / 0 / 0 | 0.0 | 0.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 30 | `textDocument/inlineValue` | 300 / 0 / 0 | 0.1 | 0.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 31 | `textDocument/inlineCompletion` | 300 / 0 / 0 | 0.0 | 0.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 32 | `textDocument/moniker` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 33 | `moniker/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 34 | `textDocument/prepareCallHierarchy` | 290 / 10 / 0 | 0.0 | 0.1 | - | 298 / 2 / 0 | 0.0 | 0.1 | - |
-| 35 | `callHierarchy/incomingCalls` | 137 / 163 / 0 | 0.1 | 6.1 | - | 147 / 152 / 1 | 0.4 | 697.4 | TIMEOUT: 1 |
-| 36 | `callHierarchy/outgoingCalls` | 192 / 108 / 0 | 0.3 | 1.7 | - | 201 / 99 / 0 | 0.1 | 0.3 | - |
-| 37 | `textDocument/prepareTypeHierarchy` | 298 / 2 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 35 | `callHierarchy/incomingCalls` | 137 / 163 / 0 | 0.2 | 6.4 | - | 147 / 152 / 1 | 0.4 | 692.5 | TIMEOUT: 1 |
+| 36 | `callHierarchy/outgoingCalls` | 192 / 108 / 0 | 0.3 | 1.8 | - | 201 / 99 / 0 | 0.1 | 0.3 | - |
+| 37 | `textDocument/prepareTypeHierarchy` | 298 / 2 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 38 | `typeHierarchy/supertypes` | 289 / 11 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 39 | `typeHierarchy/subtypes` | 13 / 287 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 40 | `textDocument/selectionRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.3 | - |
@@ -115,24 +115,24 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | 42 | `documentLink/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 43 | `textDocument/documentColor` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 44 | `textDocument/colorPresentation` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 45 | `textDocument/formatting` | 0 / 300 / 0 | 8.9 | 28.6 | - | 0 / 300 / 0 | 9.2 | 28.7 | - |
-| 46 | `textDocument/rangeFormatting` | 18 / 282 / 0 | 15.8 | 16.3 | - | 0 / 0 / 300 | 0.0 | 0.0 | -32600: 900 |
-| 47 | `textDocument/onTypeFormatting` | 0 / 300 / 0 | 11.9 | 28.8 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
-| 48 | `textDocument/prepareRename` | 297 / 0 / 3 | 0.1 | 0.3 | -32803: 9 | 297 / 0 / 3 | 0.0 | 0.1 | -32602: 9 |
-| 49 | `textDocument/rename` | 298 / 0 / 2 | 0.4 | 7.8 | -32803: 6 | 299 / 0 / 1 | 0.4 | 119.3 | -32602: 3 |
+| 45 | `textDocument/formatting` | 0 / 300 / 0 | 8.9 | 28.8 | - | 0 / 300 / 0 | 8.9 | 28.7 | - |
+| 46 | `textDocument/rangeFormatting` | 18 / 282 / 0 | 15.9 | 16.4 | - | 0 / 0 / 300 | 0.0 | 0.0 | -32600: 900 |
+| 47 | `textDocument/onTypeFormatting` | 0 / 300 / 0 | 11.9 | 28.9 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
+| 48 | `textDocument/prepareRename` | 297 / 0 / 3 | 0.1 | 0.3 | -32803: 9 | 297 / 0 / 3 | 0.0 | 0.2 | -32602: 9 |
+| 49 | `textDocument/rename` | 298 / 0 / 2 | 0.4 | 8.4 | -32803: 6 | 299 / 0 / 1 | 0.5 | 118.2 | -32602: 3 |
 | 50 | `textDocument/linkedEditingRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 51 | `textDocument/codeAction` | 299 / 1 / 0 | 0.1 | 0.6 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
 | 52 | `codeAction/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 53 | `workspace/executeCommand` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 54 | `workspace/applyEdit` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
-| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.3 | 5.3 | - | 300 / 0 / 0 | 3.7 | 62.9 | - |
-| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.2 | 5.3 | - | 300 / 0 / 0 | 2.7 | 62.8 | - |
-| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.2 | 4.1 | - | 300 / 0 / 0 | 0.1 | 2.1 | - |
-| 58 | `textDocument/foldingRange` | 300 / 0 / 0 | 0.1 | 0.7 | - | 300 / 0 / 0 | 0.2 | 2.4 | - |
-| 59 | `textDocument/codeLens` | 295 / 5 / 0 | 0.3 | 16.3 | - | 0 / 300 / 0 | 0.1 | 2.3 | - |
+| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.3 | 5.5 | - | 300 / 0 / 0 | 3.6 | 63.0 | - |
+| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.2 | 5.6 | - | 300 / 0 / 0 | 2.6 | 62.8 | - |
+| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.2 | 4.1 | - | 300 / 0 / 0 | 0.1 | 2.0 | - |
+| 58 | `textDocument/foldingRange` | 300 / 0 / 0 | 0.1 | 0.7 | - | 300 / 0 / 0 | 0.3 | 2.4 | - |
+| 59 | `textDocument/codeLens` | 295 / 5 / 0 | 0.3 | 17.2 | - | 0 / 300 / 0 | 0.1 | 2.3 | - |
 | 60 | `codeLens/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.1 | 2.1 | - | 300 / 0 / 0 | 0.4 | 12.1 | - |
-| 62 | `workspace/diagnostic` | 300 / 0 / 0 | 5.4 | 5.5 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.1 | 1.9 | - | 300 / 0 / 0 | 0.4 | 11.0 | - |
+| 62 | `workspace/diagnostic` | 300 / 0 / 0 | 5.1 | 5.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 63 | `textDocument/publishDiagnostics` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
 | 64 | `workspace/workspaceFolders` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
 | 65 | `workspace/didChangeWorkspaceFolders` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
@@ -142,13 +142,13 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | 69 | `workspace/didCreateFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 70 | `workspace/willCreateFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 71 | `workspace/didRenameFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 72 | `workspace/willRenameFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 300 / 0 | 0.0 | 2.3 | - |
+| 72 | `workspace/willRenameFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 300 / 0 | 0.0 | 3.9 | - |
 | 73 | `workspace/didDeleteFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 74 | `workspace/willDeleteFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 75 | `textDocument/content` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.1 | 0.2 | - | 145 / 0 / 155 | 45.5 | 75.5 | -32801: 155 |
-| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.1 | 0.2 | - | 137 / 0 / 163 | 45.4 | 86.6 | -32801: 161, STALE_INDEX_LEAK_DETECTED: 2 |
-| 78 | `mutation/caseC` | 300 / 0 / 0 | 0.4 | 1.7 | - | 140 / 0 / 160 | 34.4 | 58.6 | -32801: 160 |
+| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.1 | 0.9 | - | 144 / 0 / 156 | 42.4 | 73.8 | -32801: 156 |
+| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.2 | 0.8 | - | 134 / 0 / 166 | 47.2 | 83.1 | -32801: 166 |
+| 78 | `mutation/caseC` | 300 / 0 / 0 | 0.6 | 3.0 | - | 133 / 0 / 167 | 33.1 | 57.2 | -32801: 167 |
 
 ## tokio-rs/tokio
 
@@ -156,7 +156,7 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 
 | Field | Value |
 |:---|:---|
-| RIDX commit | `5d49c84c4a1df344fb02b30ba9fb1419b049a4f8` |
+| RIDX commit | `cae751b4d8f86387fa4107d8a2a28d6033a9f214` |
 | RIDX binary dirty | `False` |
 | Driver hash | `8884205b28dd2daa` |
 | Driver build commit | `cdf975d9dc93a314436e40188bf5e25d09144ccf` |
@@ -172,13 +172,13 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | Seed | `42` |
 | Samples per method | `300` |
 | Requests per server | `22204` |
-| Started | `2026-10-15T03:14:41.002619+00:00` |
-| Finished | `2026-10-15T03:19:49.252592+00:00` |
-| RIDX suite duration (s) | `86.95` |
-| rust-analyzer suite duration (s) | `220.59` |
-| rust-analyzer initial wait (ms) | `4609.63` |
-| rust-analyzer canary wait (ms) / attempts | `1040.52 / 2` |
-| rust-analyzer pre-query canary wait (ms) / attempts | `1026.08 / 2` |
+| Started | `2026-10-15T05:10:20.677222+00:00` |
+| Finished | `2026-10-15T05:15:29.056655+00:00` |
+| RIDX suite duration (s) | `88.74` |
+| rust-analyzer suite duration (s) | `218.96` |
+| rust-analyzer initial wait (ms) | `4610.0` |
+| rust-analyzer canary wait (ms) / attempts | `1053.66 / 2` |
+| rust-analyzer pre-query canary wait (ms) / attempts | `1024.81 / 2` |
 | RIDX requests cancelled on timeout | `0` |
 | rust-analyzer requests cancelled on timeout | `5` |
 
@@ -186,50 +186,50 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 
 | Server | Error responses | Failed scenarios | `-32603` | Peak RSS (MB) |
 |:---|---:|---:|---:|---:|
-| RIDX | 242 | 121 | 0 | 176.52 |
-| rust-analyzer | 1309 | 6271 | 6 | 4345.59 |
+| RIDX | 242 | 121 | 0 | 192.77 |
+| rust-analyzer | 1331 | 6293 | 6 | 4341.40 |
 
 ### Per method (a non-empty / b empty / c failed; warm p50 / p99 in ms)
 
 | # | Method | RIDX a/b/c | RIDX p50 | RIDX p99 | RIDX codes | RA a/b/c | RA p50 | RA p99 | RA codes |
 |---:|:---|:---|---:|---:|:---|:---|---:|---:|:---|
-| 1 | `initialize` | 1 run | 1535.8 | 1535.8 | - | 1 run | 6.4 | 6.4 | - |
+| 1 | `initialize` | 1 run | 1547.3 | 1547.3 | - | 1 run | 6.5 | 6.5 | - |
 | 2 | `initialized` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
-| 3 | `shutdown` | 1 run | 11.1 | 11.1 | - | 1 run | 0.2 | 0.2 | - |
+| 3 | `shutdown` | 1 run | 11.0 | 11.0 | - | 1 run | 0.2 | 0.2 | - |
 | 4 | `exit` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
 | 5 | `$/cancelRequest` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 6 | `$/setTrace` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 7 | `window/workDoneProgress/cancel` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 2.2 | - | 300 / 0 / 0 | 0.0 | 7.9 | - |
-| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 1.2 | - | 300 / 0 / 0 | 0.0 | 6.5 | - |
-| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 1.5 | - | 300 / 0 / 0 | 0.0 | 5.7 | - |
+| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 2.1 | - | 300 / 0 / 0 | 0.0 | 7.9 | - |
+| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 1.1 | - | 300 / 0 / 0 | 0.0 | 6.1 | - |
+| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 1.6 | - | 300 / 0 / 0 | 0.0 | 6.9 | - |
 | 11 | `textDocument/willSave` | 300 / 0 / 0 | 0.0 | 0.6 | - | 300 / 0 / 0 | 0.0 | 2.3 | - |
-| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.2 | 0.6 | - | 0 / 0 / 300 | 0.9 | 0.9 | -32601: 300 |
+| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.3 | 0.5 | - | 0 / 0 / 300 | 0.9 | 0.9 | -32601: 300 |
 | 13 | `textDocument/didSave` | 300 / 0 / 0 | 0.0 | 1.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 14 | `textDocument/didClose` | 300 / 0 / 0 | 0.0 | 0.5 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 15 | `textDocument/definition` | 252 / 48 / 0 | 0.3 | 0.5 | - | 229 / 71 / 0 | 0.1 | 0.3 | - |
 | 16 | `textDocument/declaration` | 249 / 51 / 0 | 0.3 | 0.4 | - | 233 / 67 / 0 | 0.1 | 0.3 | - |
-| 17 | `textDocument/typeDefinition` | 24 / 276 / 0 | 11.1 | 47.8 | - | 142 / 158 / 0 | 0.1 | 0.3 | - |
-| 18 | `textDocument/implementation` | 167 / 133 / 0 | 2.1 | 10.6 | - | 217 / 83 / 0 | 0.1 | 0.7 | - |
-| 19 | `textDocument/references` | 258 / 42 / 0 | 1.7 | 26.1 | - | 236 / 64 / 0 | 5.1 | 270.7 | - |
-| 20 | `textDocument/documentHighlight` | 238 / 62 / 0 | 1.7 | 13.4 | - | 221 / 79 / 0 | 2.6 | 6.4 | - |
-| 21 | `textDocument/documentSymbol` | 0 / 300 / 0 | 0.0 | 0.0 | - | 291 / 9 / 0 | 0.1 | 0.9 | - |
-| 22 | `workspace/symbol` | 143 / 157 / 0 | 16.5 | 25.1 | - | 148 / 152 / 0 | 4.3 | 4.6 | - |
+| 17 | `textDocument/typeDefinition` | 24 / 276 / 0 | 11.0 | 52.6 | - | 142 / 158 / 0 | 0.1 | 0.4 | - |
+| 18 | `textDocument/implementation` | 167 / 133 / 0 | 2.1 | 10.9 | - | 217 / 83 / 0 | 0.1 | 0.7 | - |
+| 19 | `textDocument/references` | 258 / 42 / 0 | 1.7 | 25.5 | - | 236 / 64 / 0 | 5.1 | 271.9 | - |
+| 20 | `textDocument/documentHighlight` | 238 / 62 / 0 | 1.8 | 13.5 | - | 221 / 79 / 0 | 2.7 | 6.6 | - |
+| 21 | `textDocument/documentSymbol` | 296 / 4 / 0 | 0.0 | 0.3 | - | 291 / 9 / 0 | 0.1 | 1.2 | - |
+| 22 | `workspace/symbol` | 143 / 157 / 0 | 17.6 | 26.3 | - | 148 / 152 / 0 | 4.2 | 4.8 | - |
 | 23 | `workspaceSymbol/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 24 | `textDocument/hover` | 266 / 34 / 0 | 0.5 | 0.7 | - | 243 / 57 / 0 | 0.1 | 0.4 | - |
-| 25 | `textDocument/completion` | 300 / 0 / 0 | 1.2 | 4.1 | - | 261 / 39 / 0 | 2.7 | 10.0 | - |
+| 24 | `textDocument/hover` | 266 / 34 / 0 | 0.5 | 0.7 | - | 243 / 57 / 0 | 0.1 | 0.3 | - |
+| 25 | `textDocument/completion` | 300 / 0 / 0 | 1.1 | 3.8 | - | 261 / 39 / 0 | 2.6 | 9.8 | - |
 | 26 | `completionItem/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 27 | `textDocument/signatureHelp` | 68 / 232 / 0 | 0.0 | 20.3 | - | 52 / 248 / 0 | 0.0 | 0.1 | - |
+| 27 | `textDocument/signatureHelp` | 68 / 232 / 0 | 0.0 | 22.2 | - | 52 / 248 / 0 | 0.0 | 0.1 | - |
 | 28 | `textDocument/inlayHint` | 0 / 300 / 0 | 0.0 | 0.1 | - | 0 / 299 / 1 | 0.0 | 0.0 | -32603: 3 |
 | 29 | `inlayHint/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 30 | `textDocument/inlineValue` | 300 / 0 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 31 | `textDocument/inlineCompletion` | 300 / 0 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 32 | `textDocument/moniker` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 33 | `moniker/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 34 | `textDocument/prepareCallHierarchy` | 224 / 76 / 0 | 0.3 | 0.4 | - | 234 / 66 / 0 | 0.1 | 0.1 | - |
-| 35 | `callHierarchy/incomingCalls` | 92 / 208 / 0 | 1.9 | 3.3 | - | 99 / 198 / 3 | 0.3 | 974.1 | TIMEOUT: 5 |
-| 36 | `callHierarchy/outgoingCalls` | 211 / 89 / 0 | 0.7 | 7.4 | - | 217 / 83 / 0 | 0.1 | 0.3 | - |
-| 37 | `textDocument/prepareTypeHierarchy` | 217 / 83 / 0 | 0.3 | 0.4 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 34 | `textDocument/prepareCallHierarchy` | 224 / 76 / 0 | 0.3 | 0.3 | - | 234 / 66 / 0 | 0.0 | 0.1 | - |
+| 35 | `callHierarchy/incomingCalls` | 92 / 208 / 0 | 2.0 | 3.3 | - | 99 / 198 / 3 | 0.4 | 982.3 | TIMEOUT: 5 |
+| 36 | `callHierarchy/outgoingCalls` | 211 / 89 / 0 | 0.7 | 8.2 | - | 217 / 83 / 0 | 0.1 | 0.3 | - |
+| 37 | `textDocument/prepareTypeHierarchy` | 217 / 83 / 0 | 0.3 | 0.3 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 38 | `typeHierarchy/supertypes` | 226 / 74 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 39 | `typeHierarchy/subtypes` | 21 / 279 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 40 | `textDocument/selectionRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.1 | 0.6 | - |
@@ -237,23 +237,23 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | 42 | `documentLink/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 43 | `textDocument/documentColor` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 44 | `textDocument/colorPresentation` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 45 | `textDocument/formatting` | 0 / 300 / 0 | 8.5 | 13.6 | - | 0 / 300 / 0 | 8.6 | 13.3 | - |
+| 45 | `textDocument/formatting` | 0 / 300 / 0 | 8.5 | 13.3 | - | 0 / 300 / 0 | 8.5 | 13.3 | - |
 | 46 | `textDocument/rangeFormatting` | 49 / 251 / 0 | 8.0 | 16.2 | - | 0 / 0 / 300 | 0.0 | 0.0 | -32600: 900 |
-| 47 | `textDocument/onTypeFormatting` | 0 / 300 / 0 | 9.5 | 14.1 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
+| 47 | `textDocument/onTypeFormatting` | 0 / 300 / 0 | 9.5 | 14.0 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
 | 48 | `textDocument/prepareRename` | 243 / 0 / 57 | 1.6 | 1.9 | -32803: 171 | 233 / 0 / 67 | 0.1 | 0.2 | -32602: 201 |
-| 49 | `textDocument/rename` | 236 / 0 / 64 | 1.6 | 3.2 | -32803: 192 | 232 / 0 / 68 | 0.3 | 328.0 | -32602: 204 |
+| 49 | `textDocument/rename` | 236 / 0 / 64 | 1.7 | 3.2 | -32803: 192 | 232 / 0 / 68 | 0.3 | 339.4 | -32602: 204 |
 | 50 | `textDocument/linkedEditingRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 51 | `textDocument/codeAction` | 297 / 3 / 0 | 0.1 | 0.3 | - | 0 / 300 / 0 | 0.0 | 0.1 | - |
 | 52 | `codeAction/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 53 | `workspace/executeCommand` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 54 | `workspace/applyEdit` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
-| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.3 | 1.4 | - | 300 / 0 / 0 | 1.5 | 24.6 | - |
-| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.3 | 1.3 | - | 300 / 0 / 0 | 1.4 | 18.7 | - |
-| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.2 | 0.8 | - | 299 / 0 / 1 | 0.1 | 1.7 | -32603: 3 |
+| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.3 | 1.5 | - | 300 / 0 / 0 | 1.4 | 25.4 | - |
+| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.3 | 1.3 | - | 300 / 0 / 0 | 1.2 | 18.3 | - |
+| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.2 | 0.8 | - | 299 / 0 / 1 | 0.1 | 1.9 | -32603: 3 |
 | 58 | `textDocument/foldingRange` | 294 / 6 / 0 | 0.0 | 0.3 | - | 296 / 4 / 0 | 0.1 | 1.0 | - |
-| 59 | `textDocument/codeLens` | 262 / 38 / 0 | 0.3 | 2.5 | - | 0 / 300 / 0 | 0.1 | 1.7 | - |
+| 59 | `textDocument/codeLens` | 262 / 38 / 0 | 0.3 | 2.8 | - | 0 / 300 / 0 | 0.1 | 1.6 | - |
 | 60 | `codeLens/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.0 | 0.4 | - | 300 / 0 / 0 | 0.2 | 3.8 | - |
+| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.0 | 0.4 | - | 300 / 0 / 0 | 0.2 | 4.1 | - |
 | 62 | `workspace/diagnostic` | 300 / 0 / 0 | 2.0 | 2.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 63 | `textDocument/publishDiagnostics` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
 | 64 | `workspace/workspaceFolders` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
@@ -264,13 +264,13 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | 69 | `workspace/didCreateFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 70 | `workspace/willCreateFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 71 | `workspace/didRenameFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 72 | `workspace/willRenameFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 300 / 0 | 0.0 | 2.9 | - |
+| 72 | `workspace/willRenameFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 300 / 0 | 0.0 | 3.4 | - |
 | 73 | `workspace/didDeleteFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 74 | `workspace/willDeleteFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 75 | `textDocument/content` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.4 | 0.7 | - | 267 / 0 / 33 | 103.3 | 145.9 | -32801: 33 |
-| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.4 | 0.7 | - | 258 / 0 / 42 | 102.5 | 146.3 | -32801: 33, STALE_INDEX_LEAK_DETECTED: 9 |
-| 78 | `mutation/caseC` | 300 / 0 / 0 | 0.3 | 0.8 | - | 244 / 0 / 56 | 52.1 | 109.4 | -32801: 56 |
+| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.5 | 0.7 | - | 264 / 0 / 36 | 102.0 | 145.1 | -32801: 36 |
+| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.5 | 0.7 | - | 255 / 0 / 45 | 102.6 | 146.5 | -32801: 36, STALE_INDEX_LEAK_DETECTED: 9 |
+| 78 | `mutation/caseC` | 300 / 0 / 0 | 0.6 | 1.5 | - | 228 / 0 / 72 | 50.8 | 100.7 | -32801: 72 |
 
 ## rust-lang/rust-analyzer
 
@@ -278,7 +278,7 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 
 | Field | Value |
 |:---|:---|
-| RIDX commit | `5d49c84c4a1df344fb02b30ba9fb1419b049a4f8` |
+| RIDX commit | `cae751b4d8f86387fa4107d8a2a28d6033a9f214` |
 | RIDX binary dirty | `False` |
 | Driver hash | `8884205b28dd2daa` |
 | Driver build commit | `cdf975d9dc93a314436e40188bf5e25d09144ccf` |
@@ -294,13 +294,13 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | Seed | `42` |
 | Samples per method | `300` |
 | Requests per server | `22204` |
-| Started | `2026-10-15T03:19:49.428098+00:00` |
-| Finished | `2026-10-15T03:27:12.517096+00:00` |
-| RIDX suite duration (s) | `148.24` |
-| rust-analyzer suite duration (s) | `293.28` |
-| rust-analyzer initial wait (ms) | `4966.54` |
-| rust-analyzer canary wait (ms) / attempts | `1649.18 / 2` |
-| rust-analyzer pre-query canary wait (ms) / attempts | `1379.14 / 2` |
+| Started | `2026-10-15T05:15:29.227512+00:00` |
+| Finished | `2026-10-15T05:22:57.894610+00:00` |
+| RIDX suite duration (s) | `153.63` |
+| rust-analyzer suite duration (s) | `293.52` |
+| rust-analyzer initial wait (ms) | `5015.43` |
+| rust-analyzer canary wait (ms) / attempts | `1667.01 / 2` |
+| rust-analyzer pre-query canary wait (ms) / attempts | `1385.78 / 2` |
 | RIDX requests cancelled on timeout | `0` |
 | rust-analyzer requests cancelled on timeout | `17` |
 
@@ -308,91 +308,91 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 
 | Server | Error responses | Failed scenarios | `-32603` | Peak RSS (MB) |
 |:---|---:|---:|---:|---:|
-| RIDX | 56 | 28 | 0 | 383.71 |
-| rust-analyzer | 1616 | 6426 | 84 | 6183.50 |
+| RIDX | 56 | 28 | 0 | 393.62 |
+| rust-analyzer | 1629 | 6439 | 85 | 6129.69 |
 
 ### Per method (a non-empty / b empty / c failed; warm p50 / p99 in ms)
 
 | # | Method | RIDX a/b/c | RIDX p50 | RIDX p99 | RIDX codes | RA a/b/c | RA p50 | RA p99 | RA codes |
 |---:|:---|:---|---:|---:|:---|:---|---:|---:|:---|
-| 1 | `initialize` | 1 run | 1533.6 | 1533.6 | - | 1 run | 6.5 | 6.5 | - |
+| 1 | `initialize` | 1 run | 1538.8 | 1538.8 | - | 1 run | 6.9 | 6.9 | - |
 | 2 | `initialized` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
 | 3 | `shutdown` | 1 run | 9.0 | 9.0 | - | 1 run | 0.3 | 0.3 | - |
 | 4 | `exit` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
 | 5 | `$/cancelRequest` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 6 | `$/setTrace` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 7 | `window/workDoneProgress/cancel` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 2.2 | - | 300 / 0 / 0 | 0.0 | 9.5 | - |
-| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.2 | - | 300 / 0 / 0 | 0.0 | 15.2 | - |
-| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.0 | - | 300 / 0 / 0 | 0.0 | 13.1 | - |
-| 11 | `textDocument/willSave` | 300 / 0 / 0 | 0.0 | 0.4 | - | 300 / 0 / 0 | 0.0 | 1.9 | - |
-| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.2 | 1.0 | - | 0 / 0 / 300 | 0.9 | 1.3 | -32601: 300 |
+| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 2.0 | - | 300 / 0 / 0 | 0.0 | 9.5 | - |
+| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.1 | - | 300 / 0 / 0 | 0.0 | 14.3 | - |
+| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.0 | - | 300 / 0 / 0 | 0.0 | 14.7 | - |
+| 11 | `textDocument/willSave` | 300 / 0 / 0 | 0.0 | 0.4 | - | 300 / 0 / 0 | 0.0 | 2.0 | - |
+| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.2 | 0.8 | - | 0 / 0 / 300 | 0.9 | 1.7 | -32601: 300 |
 | 13 | `textDocument/didSave` | 300 / 0 / 0 | 0.0 | 0.3 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 14 | `textDocument/didClose` | 300 / 0 / 0 | 0.0 | 0.5 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 15 | `textDocument/definition` | 282 / 18 / 0 | 0.2 | 0.3 | - | 276 / 24 / 0 | 0.1 | 0.8 | - |
-| 16 | `textDocument/declaration` | 288 / 12 / 0 | 0.2 | 0.3 | - | 275 / 25 / 0 | 0.1 | 1.6 | - |
-| 17 | `textDocument/typeDefinition` | 46 / 254 / 0 | 32.7 | 101.3 | - | 218 / 82 / 0 | 0.1 | 0.3 | - |
-| 18 | `textDocument/implementation` | 68 / 232 / 0 | 0.9 | 112.8 | - | 88 / 212 / 0 | 0.0 | 0.4 | - |
-| 19 | `textDocument/references` | 283 / 17 / 0 | 0.4 | 34.3 | - | 270 / 25 / 5 | 0.9 | 482.1 | TIMEOUT: 7 |
-| 20 | `textDocument/documentHighlight` | 244 / 56 / 0 | 0.6 | 90.8 | - | 274 / 26 / 0 | 0.4 | 203.9 | - |
-| 21 | `textDocument/documentSymbol` | 0 / 300 / 0 | 0.0 | 0.0 | - | 297 / 3 / 0 | 0.2 | 2.1 | - |
-| 22 | `workspace/symbol` | 174 / 126 / 0 | 35.5 | 46.8 | - | 177 / 123 / 0 | 13.2 | 13.9 | - |
+| 15 | `textDocument/definition` | 282 / 18 / 0 | 0.2 | 0.4 | - | 276 / 24 / 0 | 0.1 | 0.6 | - |
+| 16 | `textDocument/declaration` | 288 / 12 / 0 | 0.2 | 0.3 | - | 275 / 25 / 0 | 0.1 | 1.1 | - |
+| 17 | `textDocument/typeDefinition` | 46 / 254 / 0 | 35.4 | 110.8 | - | 218 / 82 / 0 | 0.1 | 0.3 | - |
+| 18 | `textDocument/implementation` | 68 / 232 / 0 | 0.9 | 120.0 | - | 88 / 212 / 0 | 0.0 | 0.3 | - |
+| 19 | `textDocument/references` | 283 / 17 / 0 | 0.4 | 32.8 | - | 270 / 25 / 5 | 0.9 | 492.5 | TIMEOUT: 7 |
+| 20 | `textDocument/documentHighlight` | 244 / 56 / 0 | 0.6 | 91.9 | - | 274 / 26 / 0 | 0.4 | 203.9 | - |
+| 21 | `textDocument/documentSymbol` | 297 / 3 / 0 | 0.1 | 0.6 | - | 297 / 3 / 0 | 0.2 | 2.0 | - |
+| 22 | `workspace/symbol` | 174 / 126 / 0 | 38.3 | 51.2 | - | 177 / 123 / 0 | 13.0 | 14.0 | - |
 | 23 | `workspaceSymbol/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 24 | `textDocument/hover` | 291 / 9 / 0 | 0.2 | 0.4 | - | 278 / 22 / 0 | 0.1 | 3.7 | - |
-| 25 | `textDocument/completion` | 300 / 0 / 0 | 0.6 | 2.9 | - | 296 / 4 / 0 | 4.2 | 18.9 | - |
+| 25 | `textDocument/completion` | 300 / 0 / 0 | 0.6 | 2.9 | - | 296 / 4 / 0 | 4.3 | 19.1 | - |
 | 26 | `completionItem/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.1 | - |
-| 27 | `textDocument/signatureHelp` | 114 / 186 / 0 | 0.1 | 43.1 | - | 87 / 213 / 0 | 0.0 | 0.3 | - |
+| 27 | `textDocument/signatureHelp` | 114 / 186 / 0 | 0.1 | 47.6 | - | 87 / 213 / 0 | 0.0 | 0.3 | - |
 | 28 | `textDocument/inlayHint` | 0 / 300 / 0 | 0.0 | 0.5 | - | 0 / 282 / 18 | 0.0 | 0.0 | -32603: 54 |
 | 29 | `inlayHint/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 30 | `textDocument/inlineValue` | 300 / 0 / 0 | 0.0 | 0.7 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 31 | `textDocument/inlineCompletion` | 300 / 0 / 0 | 0.0 | 0.6 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 31 | `textDocument/inlineCompletion` | 300 / 0 / 0 | 0.0 | 0.7 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 32 | `textDocument/moniker` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 33 | `moniker/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 34 | `textDocument/prepareCallHierarchy` | 284 / 16 / 0 | 0.2 | 0.3 | - | 282 / 18 / 0 | 0.1 | 1.9 | - |
-| 35 | `callHierarchy/incomingCalls` | 71 / 229 / 0 | 0.6 | 2.2 | - | 87 / 211 / 2 | 0.1 | 1049.6 | TIMEOUT: 4 |
-| 36 | `callHierarchy/outgoingCalls` | 221 / 79 / 0 | 0.4 | 5.8 | - | 183 / 117 / 0 | 0.1 | 0.6 | - |
+| 35 | `callHierarchy/incomingCalls` | 71 / 229 / 0 | 0.6 | 2.2 | - | 87 / 211 / 2 | 0.1 | 1035.1 | TIMEOUT: 4 |
+| 36 | `callHierarchy/outgoingCalls` | 221 / 79 / 0 | 0.4 | 6.0 | - | 183 / 117 / 0 | 0.1 | 0.6 | - |
 | 37 | `textDocument/prepareTypeHierarchy` | 100 / 200 / 0 | 0.2 | 0.3 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 38 | `typeHierarchy/supertypes` | 198 / 102 / 0 | 0.0 | 0.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 39 | `typeHierarchy/subtypes` | 24 / 276 / 0 | 0.0 | 0.3 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 40 | `textDocument/selectionRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.2 | - |
-| 41 | `textDocument/documentLink` | 58 / 242 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 41 | `textDocument/documentLink` | 58 / 242 / 0 | 0.0 | 0.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 42 | `documentLink/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 43 | `textDocument/documentColor` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 44 | `textDocument/colorPresentation` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 45 | `textDocument/formatting` | 33 / 267 / 0 | 8.9 | 40.3 | - | 33 / 267 / 0 | 8.7 | 39.4 | - |
-| 46 | `textDocument/rangeFormatting` | 37 / 263 / 0 | 8.1 | 16.4 | - | 0 / 0 / 300 | 0.0 | 0.0 | -32600: 900 |
-| 47 | `textDocument/onTypeFormatting` | 3 / 297 / 0 | 12.7 | 88.5 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
-| 48 | `textDocument/prepareRename` | 287 / 0 / 13 | 0.4 | 5.3 | -32803: 39 | 173 / 0 / 127 | 0.0 | 0.4 | -32602: 381 |
+| 45 | `textDocument/formatting` | 33 / 267 / 0 | 8.9 | 39.6 | - | 33 / 267 / 0 | 8.8 | 39.4 | - |
+| 46 | `textDocument/rangeFormatting` | 37 / 263 / 0 | 8.1 | 16.5 | - | 0 / 0 / 300 | 0.0 | 0.0 | -32600: 900 |
+| 47 | `textDocument/onTypeFormatting` | 3 / 297 / 0 | 12.7 | 89.3 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
+| 48 | `textDocument/prepareRename` | 287 / 0 / 13 | 0.4 | 5.4 | -32803: 39 | 173 / 0 / 127 | 0.0 | 0.4 | -32602: 381 |
 | 49 | `textDocument/rename` | 285 / 0 / 15 | 0.7 | 5.4 | -32803: 45 | 165 / 0 / 135 | 0.1 | 500.9 | -32602: 396, TIMEOUT: 5 |
 | 50 | `textDocument/linkedEditingRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 51 | `textDocument/codeAction` | 299 / 1 / 0 | 0.1 | 0.8 | - | 0 / 300 / 0 | 0.0 | 0.1 | - |
 | 52 | `codeAction/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 53 | `workspace/executeCommand` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 54 | `workspace/applyEdit` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
-| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.4 | 22.2 | - | 299 / 0 / 1 | 3.3 | 139.5 | -32603: 3 |
-| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.4 | 23.4 | - | 299 / 0 / 1 | 2.9 | 112.3 | -32603: 3 |
-| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.4 | 19.3 | - | 292 / 0 / 8 | 0.1 | 2.0 | -32603: 24 |
-| 58 | `textDocument/foldingRange` | 271 / 29 / 0 | 0.1 | 2.2 | - | 278 / 22 / 0 | 0.2 | 4.1 | - |
-| 59 | `textDocument/codeLens` | 225 / 75 / 0 | 0.4 | 183.0 | - | 0 / 300 / 0 | 0.1 | 17.0 | - |
+| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.4 | 22.4 | - | 299 / 0 / 1 | 3.2 | 138.7 | -32603: 3 |
+| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.4 | 23.2 | - | 299 / 0 / 1 | 2.9 | 111.4 | -32603: 3 |
+| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.4 | 19.5 | - | 292 / 0 / 8 | 0.1 | 2.0 | -32603: 24 |
+| 58 | `textDocument/foldingRange` | 271 / 29 / 0 | 0.1 | 2.4 | - | 278 / 22 / 0 | 0.2 | 3.9 | - |
+| 59 | `textDocument/codeLens` | 225 / 75 / 0 | 0.5 | 187.0 | - | 0 / 300 / 0 | 0.1 | 17.1 | - |
 | 60 | `codeLens/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.1 | 1.0 | - | 299 / 0 / 1 | 0.2 | 13.8 | TIMEOUT: 1 |
+| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.1 | 0.9 | - | 299 / 0 / 1 | 0.2 | 13.1 | TIMEOUT: 1 |
 | 62 | `workspace/diagnostic` | 300 / 0 / 0 | 2.7 | 2.8 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 63 | `textDocument/publishDiagnostics` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
 | 64 | `workspace/workspaceFolders` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
 | 65 | `workspace/didChangeWorkspaceFolders` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 66 | `workspace/didChangeConfiguration` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
+| 66 | `workspace/didChangeConfiguration` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.1 | - |
 | 67 | `workspace/configuration` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
 | 68 | `workspace/didChangeWatchedFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 69 | `workspace/didCreateFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 70 | `workspace/willCreateFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 71 | `workspace/didRenameFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 72 | `workspace/willRenameFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 300 / 0 | 0.0 | 3.0 | - |
+| 72 | `workspace/willRenameFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 300 / 0 | 0.0 | 1.9 | - |
 | 73 | `workspace/didDeleteFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 74 | `workspace/willDeleteFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 75 | `textDocument/content` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.2 | 0.5 | - | 269 / 0 / 31 | 74.6 | 207.6 | -32801: 31 |
-| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.2 | 0.5 | - | 266 / 0 / 34 | 81.8 | 200.3 | -32801: 23, STALE_INDEX_LEAK_DETECTED: 11 |
-| 78 | `mutation/caseC` | 300 / 0 / 0 | 0.4 | 5.4 | - | 237 / 0 / 63 | 79.2 | 183.6 | -32801: 63 |
+| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.4 | 0.7 | - | 263 / 0 / 37 | 77.2 | 210.0 | -32801: 37 |
+| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.4 | 1.1 | - | 265 / 0 / 35 | 79.9 | 204.7 | -32801: 26, STALE_INDEX_LEAK_DETECTED: 9 |
+| 78 | `mutation/caseC` | 300 / 0 / 0 | 0.9 | 9.3 | - | 231 / 0 / 69 | 78.4 | 186.0 | -32801: 68, -32603: 1 |
 
 ## bevyengine/bevy
 
@@ -400,7 +400,7 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 
 | Field | Value |
 |:---|:---|
-| RIDX commit | `5d49c84c4a1df344fb02b30ba9fb1419b049a4f8` |
+| RIDX commit | `cae751b4d8f86387fa4107d8a2a28d6033a9f214` |
 | RIDX binary dirty | `False` |
 | Driver hash | `8884205b28dd2daa` |
 | Driver build commit | `cdf975d9dc93a314436e40188bf5e25d09144ccf` |
@@ -416,54 +416,54 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | Seed | `42` |
 | Samples per method | `300` |
 | Requests per server | `22204` |
-| Started | `2026-10-15T03:27:12.714468+00:00` |
-| Finished | `2026-10-15T03:58:49.624810+00:00` |
-| RIDX suite duration (s) | `402.06` |
-| rust-analyzer suite duration (s) | `1492.94` |
-| rust-analyzer initial wait (ms) | `14388.91` |
-| rust-analyzer canary wait (ms) / attempts | `1813.24 / 2` |
-| rust-analyzer pre-query canary wait (ms) / attempts | `1295.66 / 2` |
+| Started | `2026-10-15T05:22:58.088712+00:00` |
+| Finished | `2026-10-15T05:54:07.171941+00:00` |
+| RIDX suite duration (s) | `408.08` |
+| rust-analyzer suite duration (s) | `1459.1` |
+| rust-analyzer initial wait (ms) | `14239.39` |
+| rust-analyzer canary wait (ms) / attempts | `1827.98 / 2` |
+| rust-analyzer pre-query canary wait (ms) / attempts | `1257.51 / 2` |
 | RIDX requests cancelled on timeout | `0` |
-| rust-analyzer requests cancelled on timeout | `165` |
+| rust-analyzer requests cancelled on timeout | `167` |
 
 ### Totals
 
 | Server | Error responses | Failed scenarios | `-32603` | Peak RSS (MB) |
 |:---|---:|---:|---:|---:|
-| RIDX | 78 | 39 | 0 | 924.05 |
-| rust-analyzer | 1559 | 6580 | 0 | 16455.96 |
+| RIDX | 78 | 39 | 0 | 923.58 |
+| rust-analyzer | 1580 | 6602 | 0 | 16616.80 |
 
 ### Per method (a non-empty / b empty / c failed; warm p50 / p99 in ms)
 
 | # | Method | RIDX a/b/c | RIDX p50 | RIDX p99 | RIDX codes | RA a/b/c | RA p50 | RA p99 | RA codes |
 |---:|:---|:---|---:|---:|:---|:---|---:|---:|:---|
-| 1 | `initialize` | 1 run | 13434.6 | 13434.6 | - | 1 run | 6.5 | 6.5 | - |
+| 1 | `initialize` | 1 run | 13120.4 | 13120.4 | - | 1 run | 6.7 | 6.7 | - |
 | 2 | `initialized` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
-| 3 | `shutdown` | 1 run | 33.3 | 33.3 | - | 1 run | 0.5 | 0.5 | - |
+| 3 | `shutdown` | 1 run | 33.4 | 33.4 | - | 1 run | 0.5 | 0.5 | - |
 | 4 | `exit` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
 | 5 | `$/cancelRequest` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 6 | `$/setTrace` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 7 | `window/workDoneProgress/cancel` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 2.6 | - | 300 / 0 / 0 | 0.0 | 5.9 | - |
-| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.0 | - | 300 / 0 / 0 | 0.0 | 24.8 | - |
-| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.8 | - | 300 / 0 / 0 | 0.3 | 23.6 | - |
-| 11 | `textDocument/willSave` | 300 / 0 / 0 | 0.0 | 0.9 | - | 300 / 0 / 0 | 0.0 | 1.9 | - |
-| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.3 | 1.0 | - | 0 / 0 / 300 | 0.9 | 1.0 | -32601: 300 |
-| 13 | `textDocument/didSave` | 300 / 0 / 0 | 0.0 | 1.6 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 14 | `textDocument/didClose` | 300 / 0 / 0 | 0.0 | 1.1 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 15 | `textDocument/definition` | 268 / 32 / 0 | 0.4 | 0.6 | - | 283 / 16 / 1 | 0.1 | 0.9 | TIMEOUT: 3 |
-| 16 | `textDocument/declaration` | 289 / 11 / 0 | 0.4 | 0.6 | - | 293 / 7 / 0 | 0.1 | 0.2 | - |
-| 17 | `textDocument/typeDefinition` | 42 / 258 / 0 | 79.1 | 289.7 | - | 193 / 106 / 1 | 0.1 | 0.3 | TIMEOUT: 1 |
-| 18 | `textDocument/implementation` | 134 / 166 / 0 | 5.7 | 22.6 | - | 268 / 32 / 0 | 0.3 | 4.7 | - |
-| 19 | `textDocument/references` | 279 / 21 / 0 | 4.1 | 94.2 | - | 277 / 17 / 6 | 12.2 | 1292.8 | TIMEOUT: 14 |
-| 20 | `textDocument/documentHighlight` | 232 / 68 / 0 | 4.4 | 79.0 | - | 283 / 17 / 0 | 5.4 | 59.7 | - |
-| 21 | `textDocument/documentSymbol` | 0 / 300 / 0 | 0.0 | 0.0 | - | 296 / 4 / 0 | 0.3 | 2.7 | - |
-| 22 | `workspace/symbol` | 178 / 122 / 0 | 104.6 | 160.9 | - | 178 / 122 / 0 | 28.6 | 70.2 | - |
+| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 2.5 | - | 300 / 0 / 0 | 0.0 | 5.9 | - |
+| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.0 | - | 300 / 0 / 0 | 0.1 | 22.8 | - |
+| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.9 | - | 300 / 0 / 0 | 0.3 | 23.1 | - |
+| 11 | `textDocument/willSave` | 300 / 0 / 0 | 0.0 | 0.8 | - | 300 / 0 / 0 | 0.0 | 1.9 | - |
+| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.3 | 1.0 | - | 0 / 0 / 300 | 0.9 | 0.9 | -32601: 300 |
+| 13 | `textDocument/didSave` | 300 / 0 / 0 | 0.0 | 1.3 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
+| 14 | `textDocument/didClose` | 300 / 0 / 0 | 0.0 | 1.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
+| 15 | `textDocument/definition` | 268 / 32 / 0 | 0.4 | 0.6 | - | 283 / 16 / 1 | 0.1 | 1.0 | TIMEOUT: 3 |
+| 16 | `textDocument/declaration` | 289 / 11 / 0 | 0.4 | 0.6 | - | 293 / 7 / 0 | 0.1 | 0.1 | - |
+| 17 | `textDocument/typeDefinition` | 42 / 258 / 0 | 80.8 | 311.3 | - | 193 / 106 / 1 | 0.1 | 0.3 | TIMEOUT: 1 |
+| 18 | `textDocument/implementation` | 134 / 166 / 0 | 5.9 | 22.5 | - | 268 / 32 / 0 | 0.3 | 4.4 | - |
+| 19 | `textDocument/references` | 279 / 21 / 0 | 4.2 | 90.9 | - | 277 / 17 / 6 | 12.3 | 1274.1 | TIMEOUT: 13 |
+| 20 | `textDocument/documentHighlight` | 232 / 68 / 0 | 4.5 | 77.4 | - | 283 / 17 / 0 | 5.3 | 58.4 | - |
+| 21 | `textDocument/documentSymbol` | 297 / 3 / 0 | 0.0 | 0.8 | - | 296 / 4 / 0 | 0.3 | 2.7 | - |
+| 22 | `workspace/symbol` | 178 / 122 / 0 | 108.8 | 166.7 | - | 178 / 122 / 0 | 23.8 | 25.8 | - |
 | 23 | `workspaceSymbol/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 24 | `textDocument/hover` | 273 / 27 / 0 | 0.6 | 1.0 | - | 284 / 16 / 0 | 0.3 | 9.5 | - |
-| 25 | `textDocument/completion` | 300 / 0 / 0 | 1.7 | 182.0 | - | 289 / 11 / 0 | 20.1 | 197.0 | - |
+| 24 | `textDocument/hover` | 273 / 27 / 0 | 0.7 | 1.0 | - | 284 / 16 / 0 | 0.1 | 4.3 | - |
+| 25 | `textDocument/completion` | 300 / 0 / 0 | 1.8 | 183.8 | - | 289 / 11 / 0 | 7.3 | 57.5 | - |
 | 26 | `completionItem/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.1 | - |
-| 27 | `textDocument/signatureHelp` | 53 / 247 / 0 | 0.1 | 120.3 | - | 72 / 228 / 0 | 0.0 | 0.1 | - |
+| 27 | `textDocument/signatureHelp` | 53 / 247 / 0 | 0.1 | 132.4 | - | 72 / 228 / 0 | 0.0 | 0.1 | - |
 | 28 | `textDocument/inlayHint` | 0 / 300 / 0 | 0.0 | 0.1 | - | 0 / 300 / 0 | 0.0 | 0.1 | - |
 | 29 | `inlayHint/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 30 | `textDocument/inlineValue` | 300 / 0 / 0 | 0.0 | 0.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
@@ -471,34 +471,34 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | 32 | `textDocument/moniker` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 33 | `moniker/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 34 | `textDocument/prepareCallHierarchy` | 278 / 22 / 0 | 0.4 | 0.6 | - | 285 / 15 / 0 | 0.0 | 0.1 | - |
-| 35 | `callHierarchy/incomingCalls` | 101 / 199 / 0 | 6.1 | 15.8 | - | 161 / 112 / 27 | 6.0 | 2000.2 | TIMEOUT: 76 |
-| 36 | `callHierarchy/outgoingCalls` | 236 / 64 / 0 | 1.1 | 25.3 | - | 239 / 61 / 0 | 0.1 | 1.4 | - |
+| 35 | `callHierarchy/incomingCalls` | 101 / 199 / 0 | 6.1 | 15.8 | - | 161 / 112 / 27 | 5.9 | 2000.2 | TIMEOUT: 76 |
+| 36 | `callHierarchy/outgoingCalls` | 236 / 64 / 0 | 1.2 | 26.0 | - | 239 / 61 / 0 | 0.1 | 1.0 | - |
 | 37 | `textDocument/prepareTypeHierarchy` | 283 / 17 / 0 | 0.4 | 0.6 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 38 | `typeHierarchy/supertypes` | 246 / 54 / 0 | 0.1 | 0.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 39 | `typeHierarchy/subtypes` | 31 / 269 / 0 | 0.0 | 0.8 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 39 | `typeHierarchy/subtypes` | 31 / 269 / 0 | 0.0 | 0.7 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 40 | `textDocument/selectionRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.8 | - |
 | 41 | `textDocument/documentLink` | 59 / 241 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 42 | `documentLink/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 43 | `textDocument/documentColor` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 44 | `textDocument/colorPresentation` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 45 | `textDocument/formatting` | 2 / 298 / 0 | 8.8 | 20.9 | - | 2 / 298 / 0 | 8.8 | 20.8 | - |
-| 46 | `textDocument/rangeFormatting` | 41 / 259 / 0 | 8.0 | 17.2 | - | 0 / 0 / 300 | 0.0 | 0.0 | -32600: 900 |
-| 47 | `textDocument/onTypeFormatting` | 0 / 300 / 0 | 11.7 | 38.8 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
-| 48 | `textDocument/prepareRename` | 282 / 0 / 18 | 2.5 | 6.3 | -32803: 54 | 282 / 0 / 18 | 0.1 | 0.4 | -32602: 54 |
-| 49 | `textDocument/rename` | 279 / 0 / 21 | 3.2 | 12.4 | -32803: 63 | 271 / 0 / 29 | 6.2 | 2000.2 | -32602: 33, TIMEOUT: 51 |
+| 45 | `textDocument/formatting` | 2 / 298 / 0 | 8.9 | 21.3 | - | 2 / 298 / 0 | 8.9 | 20.9 | - |
+| 46 | `textDocument/rangeFormatting` | 41 / 259 / 0 | 8.1 | 16.3 | - | 0 / 0 / 300 | 0.0 | 0.0 | -32600: 900 |
+| 47 | `textDocument/onTypeFormatting` | 0 / 300 / 0 | 11.0 | 37.6 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
+| 48 | `textDocument/prepareRename` | 282 / 0 / 18 | 2.5 | 5.6 | -32803: 54 | 282 / 0 / 18 | 0.1 | 0.3 | -32602: 54 |
+| 49 | `textDocument/rename` | 279 / 0 / 21 | 3.2 | 12.2 | -32803: 63 | 270 / 0 / 30 | 6.2 | 2000.2 | -32602: 33, TIMEOUT: 52 |
 | 50 | `textDocument/linkedEditingRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 51 | `textDocument/codeAction` | 299 / 1 / 0 | 0.1 | 0.6 | - | 0 / 300 / 0 | 0.0 | 0.1 | - |
+| 51 | `textDocument/codeAction` | 299 / 1 / 0 | 0.1 | 0.5 | - | 0 / 300 / 0 | 0.0 | 0.6 | - |
 | 52 | `codeAction/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 53 | `workspace/executeCommand` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 54 | `workspace/applyEdit` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
-| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.7 | 48.2 | - | 300 / 0 / 0 | 2.3 | 38.1 | - |
-| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.7 | 46.5 | - | 300 / 0 / 0 | 2.3 | 38.1 | - |
-| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.7 | 45.5 | - | 300 / 0 / 0 | 0.1 | 1.5 | - |
+| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.7 | 47.1 | - | 300 / 0 / 0 | 2.3 | 36.8 | - |
+| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.7 | 46.9 | - | 300 / 0 / 0 | 2.2 | 38.3 | - |
+| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.7 | 45.5 | - | 300 / 0 / 0 | 0.1 | 1.4 | - |
 | 58 | `textDocument/foldingRange` | 291 / 9 / 0 | 0.1 | 0.8 | - | 298 / 2 / 0 | 0.2 | 2.0 | - |
-| 59 | `textDocument/codeLens` | 263 / 37 / 0 | 1.1 | 451.9 | - | 0 / 300 / 0 | 0.1 | 2.8 | - |
+| 59 | `textDocument/codeLens` | 263 / 37 / 0 | 1.1 | 471.9 | - | 0 / 300 / 0 | 0.1 | 2.7 | - |
 | 60 | `codeLens/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.1 | 0.8 | - | 298 / 0 / 2 | 0.5 | 15.9 | TIMEOUT: 4 |
-| 62 | `workspace/diagnostic` | 300 / 0 / 0 | 42.0 | 44.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.1 | 0.8 | - | 298 / 0 / 2 | 0.5 | 15.5 | TIMEOUT: 4 |
+| 62 | `workspace/diagnostic` | 300 / 0 / 0 | 42.3 | 43.5 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 63 | `textDocument/publishDiagnostics` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
 | 64 | `workspace/workspaceFolders` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
 | 65 | `workspace/didChangeWorkspaceFolders` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
@@ -512,9 +512,9 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | 73 | `workspace/didDeleteFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 74 | `workspace/willDeleteFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 75 | `textDocument/content` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.6 | 1.7 | - | 147 / 0 / 153 | 1062.6 | 2000.2 | TIMEOUT: 8, -32801: 145 |
-| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.6 | 1.1 | - | 127 / 0 / 173 | 1082.4 | 2000.2 | -32801: 165, TIMEOUT: 8 |
-| 78 | `mutation/caseC` | 300 / 0 / 0 | 0.5 | 1.8 | - | 130 / 0 / 170 | 669.0 | 1421.4 | -32801: 170 |
+| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.7 | 1.7 | - | 140 / 0 / 160 | 1045.5 | 2000.3 | TIMEOUT: 12, -32801: 148 |
+| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.7 | 1.3 | - | 131 / 0 / 169 | 1075.4 | 2000.1 | -32801: 162, TIMEOUT: 6, STALE_INDEX_LEAK_DETECTED: 1 |
+| 78 | `mutation/caseC` | 300 / 0 / 0 | 1.1 | 3.2 | - | 112 / 0 / 188 | 808.0 | 1424.0 | -32801: 188 |
 
 ## serde-rs/serde
 
@@ -522,7 +522,7 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 
 | Field | Value |
 |:---|:---|
-| RIDX commit | `5d49c84c4a1df344fb02b30ba9fb1419b049a4f8` |
+| RIDX commit | `cae751b4d8f86387fa4107d8a2a28d6033a9f214` |
 | RIDX binary dirty | `False` |
 | Driver hash | `8884205b28dd2daa` |
 | Driver build commit | `cdf975d9dc93a314436e40188bf5e25d09144ccf` |
@@ -538,13 +538,13 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | Seed | `42` |
 | Samples per method | `300` |
 | Requests per server | `22204` |
-| Started | `2026-10-15T03:07:35.133770+00:00` |
-| Finished | `2026-10-15T03:11:43.484093+00:00` |
-| RIDX suite duration (s) | `54.21` |
-| rust-analyzer suite duration (s) | `193.81` |
-| rust-analyzer initial wait (ms) | `3005.39` |
-| rust-analyzer canary wait (ms) / attempts | `1328.23 / 2` |
-| rust-analyzer pre-query canary wait (ms) / attempts | `1017.21 / 2` |
+| Started | `2026-10-15T05:04:40.342108+00:00` |
+| Finished | `2026-10-15T05:07:23.297333+00:00` |
+| RIDX suite duration (s) | `54.93` |
+| rust-analyzer suite duration (s) | `107.7` |
+| rust-analyzer initial wait (ms) | `3006.66` |
+| rust-analyzer canary wait (ms) / attempts | `1323.43 / 2` |
+| rust-analyzer pre-query canary wait (ms) / attempts | `1022.64 / 2` |
 | RIDX requests cancelled on timeout | `0` |
 | rust-analyzer requests cancelled on timeout | `1` |
 
@@ -552,74 +552,74 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 
 | Server | Error responses | Failed scenarios | `-32603` | Peak RSS (MB) |
 |:---|---:|---:|---:|---:|
-| RIDX | 96 | 48 | 0 | 63.24 |
-| rust-analyzer | 1481 | 6529 | 0 | 2471.87 |
+| RIDX | 96 | 48 | 0 | 83.90 |
+| rust-analyzer | 1143 | 6191 | 0 | 2438.01 |
 
 ### Per method (a non-empty / b empty / c failed; warm p50 / p99 in ms)
 
 | # | Method | RIDX a/b/c | RIDX p50 | RIDX p99 | RIDX codes | RA a/b/c | RA p50 | RA p99 | RA codes |
 |---:|:---|:---|---:|---:|:---|:---|---:|---:|:---|
-| 1 | `initialize` | 1 run | 70.9 | 70.9 | - | 1 run | 13.0 | 13.0 | - |
+| 1 | `initialize` | 1 run | 72.0 | 72.0 | - | 1 run | 6.5 | 6.5 | - |
 | 2 | `initialized` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
-| 3 | `shutdown` | 1 run | 1.6 | 1.6 | - | 1 run | 0.2 | 0.2 | - |
+| 3 | `shutdown` | 1 run | 1.5 | 1.5 | - | 1 run | 0.2 | 0.2 | - |
 | 4 | `exit` | 1 run | 0.0 | 0.0 | - | 1 run | 0.1 | 0.1 | - |
 | 5 | `$/cancelRequest` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 6 | `$/setTrace` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 7 | `window/workDoneProgress/cancel` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 1.5 | - | 300 / 0 / 0 | 0.0 | 19.1 | - |
-| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.3 | - | 300 / 0 / 0 | 0.0 | 16.7 | - |
-| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 0.7 | - | 300 / 0 / 0 | 0.0 | 17.1 | - |
-| 11 | `textDocument/willSave` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 5.0 | - |
-| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.1 | 0.5 | - | 0 / 0 / 300 | 0.9 | 0.9 | -32601: 300 |
+| 8 | `textDocument/didOpen` | 300 / 0 / 0 | 0.0 | 1.2 | - | 300 / 0 / 0 | 0.0 | 18.9 | - |
+| 9 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 2.2 | - | 300 / 0 / 0 | 0.0 | 16.0 | - |
+| 10 | `textDocument/didChange` | 300 / 0 / 0 | 0.0 | 4.0 | - | 300 / 0 / 0 | 0.0 | 16.9 | - |
+| 11 | `textDocument/willSave` | 300 / 0 / 0 | 0.0 | 0.1 | - | 300 / 0 / 0 | 0.0 | 0.9 | - |
+| 12 | `textDocument/willSaveWaitUntil` | 300 / 0 / 0 | 0.1 | 0.4 | - | 0 / 0 / 300 | 0.9 | 0.9 | -32601: 300 |
 | 13 | `textDocument/didSave` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 14 | `textDocument/didClose` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 15 | `textDocument/definition` | 265 / 35 / 0 | 0.1 | 0.4 | - | 283 / 17 / 0 | 0.1 | 0.2 | - |
-| 16 | `textDocument/declaration` | 271 / 29 / 0 | 0.0 | 0.1 | - | 270 / 30 / 0 | 0.1 | 0.2 | - |
-| 17 | `textDocument/typeDefinition` | 22 / 278 / 0 | 4.2 | 17.5 | - | 194 / 106 / 0 | 0.1 | 0.2 | - |
-| 18 | `textDocument/implementation` | 110 / 190 / 0 | 0.2 | 11.3 | - | 249 / 51 / 0 | 0.1 | 0.3 | - |
-| 19 | `textDocument/references` | 273 / 27 / 0 | 0.1 | 7.3 | - | 283 / 17 / 0 | 1.4 | 25.1 | - |
-| 20 | `textDocument/documentHighlight` | 256 / 44 / 0 | 0.2 | 4.3 | - | 278 / 22 / 0 | 0.6 | 5.2 | - |
-| 21 | `textDocument/documentSymbol` | 0 / 300 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.1 | 3.2 | - |
-| 22 | `workspace/symbol` | 178 / 122 / 0 | 5.7 | 14.1 | - | 175 / 125 / 0 | 0.8 | 1.3 | - |
+| 15 | `textDocument/definition` | 265 / 35 / 0 | 0.1 | 0.5 | - | 283 / 17 / 0 | 0.1 | 0.3 | - |
+| 16 | `textDocument/declaration` | 271 / 29 / 0 | 0.1 | 0.1 | - | 270 / 30 / 0 | 0.1 | 0.2 | - |
+| 17 | `textDocument/typeDefinition` | 22 / 278 / 0 | 4.3 | 17.4 | - | 194 / 106 / 0 | 0.1 | 0.2 | - |
+| 18 | `textDocument/implementation` | 110 / 190 / 0 | 0.2 | 11.0 | - | 249 / 51 / 0 | 0.1 | 0.3 | - |
+| 19 | `textDocument/references` | 273 / 27 / 0 | 0.1 | 7.3 | - | 283 / 17 / 0 | 1.4 | 24.5 | - |
+| 20 | `textDocument/documentHighlight` | 256 / 44 / 0 | 0.2 | 4.3 | - | 278 / 22 / 0 | 0.6 | 5.1 | - |
+| 21 | `textDocument/documentSymbol` | 300 / 0 / 0 | 0.0 | 1.2 | - | 300 / 0 / 0 | 0.1 | 3.2 | - |
+| 22 | `workspace/symbol` | 178 / 122 / 0 | 5.8 | 14.0 | - | 175 / 125 / 0 | 0.8 | 1.4 | - |
 | 23 | `workspaceSymbol/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 24 | `textDocument/hover` | 268 / 32 / 0 | 0.1 | 0.1 | - | 288 / 12 / 0 | 0.1 | 0.3 | - |
-| 25 | `textDocument/completion` | 300 / 0 / 0 | 0.2 | 0.8 | - | 299 / 1 / 0 | 3.5 | 17.4 | - |
+| 25 | `textDocument/completion` | 300 / 0 / 0 | 0.2 | 0.8 | - | 299 / 1 / 0 | 3.5 | 17.1 | - |
 | 26 | `completionItem/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.1 | - |
-| 27 | `textDocument/signatureHelp` | 62 / 238 / 0 | 0.1 | 7.8 | - | 74 / 226 / 0 | 0.0 | 0.1 | - |
+| 27 | `textDocument/signatureHelp` | 62 / 238 / 0 | 0.1 | 8.5 | - | 74 / 226 / 0 | 0.0 | 0.1 | - |
 | 28 | `textDocument/inlayHint` | 0 / 300 / 0 | 0.0 | 0.1 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
 | 29 | `inlayHint/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 30 | `textDocument/inlineValue` | 300 / 0 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 30 | `textDocument/inlineValue` | 300 / 0 / 0 | 0.1 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 31 | `textDocument/inlineCompletion` | 300 / 0 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 32 | `textDocument/moniker` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 33 | `moniker/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 34 | `textDocument/prepareCallHierarchy` | 264 / 36 / 0 | 0.0 | 0.1 | - | 280 / 20 / 0 | 0.0 | 0.1 | - |
-| 35 | `callHierarchy/incomingCalls` | 69 / 231 / 0 | 0.1 | 1.9 | - | 81 / 218 / 1 | 0.6 | 102.5 | TIMEOUT: 1 |
+| 35 | `callHierarchy/incomingCalls` | 69 / 231 / 0 | 0.1 | 1.9 | - | 81 / 218 / 1 | 0.6 | 100.6 | TIMEOUT: 1 |
 | 36 | `callHierarchy/outgoingCalls` | 224 / 76 / 0 | 0.2 | 2.0 | - | 245 / 55 / 0 | 0.1 | 0.4 | - |
 | 37 | `textDocument/prepareTypeHierarchy` | 260 / 40 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 38 | `typeHierarchy/supertypes` | 204 / 96 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
+| 38 | `typeHierarchy/supertypes` | 204 / 96 / 0 | 0.0 | 0.1 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 39 | `typeHierarchy/subtypes` | 23 / 277 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 40 | `textDocument/selectionRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.1 | - |
 | 41 | `textDocument/documentLink` | 18 / 282 / 0 | 0.0 | 0.2 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 42 | `documentLink/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 43 | `textDocument/documentColor` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 44 | `textDocument/colorPresentation` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 45 | `textDocument/formatting` | 0 / 300 / 0 | 8.2 | 19.7 | - | 0 / 300 / 0 | 8.1 | 19.5 | - |
-| 46 | `textDocument/rangeFormatting` | 22 / 278 / 0 | 15.8 | 16.7 | - | 0 / 0 / 300 | 0.0 | 0.0 | -32600: 900 |
-| 47 | `textDocument/onTypeFormatting` | 0 / 300 / 0 | 14.3 | 26.8 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
-| 48 | `textDocument/prepareRename` | 282 / 0 / 18 | 0.1 | 0.3 | -32803: 54 | 279 / 0 / 21 | 0.1 | 0.3 | -32602: 63 |
-| 49 | `textDocument/rename` | 270 / 0 / 30 | 0.3 | 1.9 | -32803: 90 | 269 / 0 / 31 | 0.7 | 102.9 | -32602: 93 |
+| 45 | `textDocument/formatting` | 0 / 300 / 0 | 8.2 | 20.0 | - | 0 / 300 / 0 | 8.1 | 19.4 | - |
+| 46 | `textDocument/rangeFormatting` | 22 / 278 / 0 | 15.9 | 16.5 | - | 0 / 0 / 300 | 0.0 | 0.0 | -32600: 900 |
+| 47 | `textDocument/onTypeFormatting` | 0 / 300 / 0 | 14.4 | 26.7 | - | 0 / 300 / 0 | 0.0 | 0.0 | - |
+| 48 | `textDocument/prepareRename` | 282 / 0 / 18 | 0.1 | 0.3 | -32803: 54 | 279 / 0 / 21 | 0.1 | 0.2 | -32602: 63 |
+| 49 | `textDocument/rename` | 270 / 0 / 30 | 0.3 | 2.0 | -32803: 90 | 269 / 0 / 31 | 0.7 | 103.6 | -32602: 93 |
 | 50 | `textDocument/linkedEditingRange` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 51 | `textDocument/codeAction` | 300 / 0 / 0 | 0.1 | 0.3 | - | 0 / 300 / 0 | 0.0 | 0.1 | - |
 | 52 | `codeAction/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 53 | `workspace/executeCommand` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 54 | `workspace/applyEdit` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
-| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.0 | 3.0 | - | 300 / 0 / 0 | 0.1 | 41.2 | - |
-| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.0 | 2.4 | - | 300 / 0 / 0 | 0.1 | 19.4 | - |
-| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.0 | 2.7 | - | 300 / 0 / 0 | 0.0 | 1.4 | - |
-| 58 | `textDocument/foldingRange` | 250 / 50 / 0 | 0.0 | 0.7 | - | 276 / 24 / 0 | 0.0 | 2.7 | - |
-| 59 | `textDocument/codeLens` | 113 / 187 / 0 | 0.1 | 18.1 | - | 0 / 300 / 0 | 0.0 | 0.6 | - |
+| 55 | `textDocument/semanticTokens/full` | 300 / 0 / 0 | 0.0 | 3.1 | - | 300 / 0 / 0 | 0.1 | 41.0 | - |
+| 56 | `textDocument/semanticTokens/full/delta` | 300 / 0 / 0 | 0.0 | 2.5 | - | 300 / 0 / 0 | 0.1 | 19.5 | - |
+| 57 | `textDocument/semanticTokens/range` | 300 / 0 / 0 | 0.0 | 2.7 | - | 300 / 0 / 0 | 0.0 | 1.3 | - |
+| 58 | `textDocument/foldingRange` | 250 / 50 / 0 | 0.0 | 0.7 | - | 276 / 24 / 0 | 0.0 | 2.8 | - |
+| 59 | `textDocument/codeLens` | 113 / 187 / 0 | 0.1 | 19.0 | - | 0 / 300 / 0 | 0.0 | 0.7 | - |
 | 60 | `codeLens/resolve` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.0 | 1.4 | - | 300 / 0 / 0 | 0.1 | 37.0 | - |
+| 61 | `textDocument/diagnostic` | 300 / 0 / 0 | 0.0 | 1.4 | - | 300 / 0 / 0 | 0.1 | 37.3 | - |
 | 62 | `workspace/diagnostic` | 300 / 0 / 0 | 0.3 | 0.3 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 63 | `textDocument/publishDiagnostics` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
 | 64 | `workspace/workspaceFolders` | 300 / 0 / 0 | n/a | n/a | - | 300 / 0 / 0 | n/a | n/a | - |
@@ -630,10 +630,10 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 | 69 | `workspace/didCreateFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 70 | `workspace/willCreateFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 71 | `workspace/didRenameFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
-| 72 | `workspace/willRenameFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 300 / 0 | 0.0 | 0.7 | - |
+| 72 | `workspace/willRenameFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 300 / 0 | 0.0 | 2.1 | - |
 | 73 | `workspace/didDeleteFiles` | 300 / 0 / 0 | 0.0 | 0.0 | - | 300 / 0 / 0 | 0.0 | 0.0 | - |
 | 74 | `workspace/willDeleteFiles` | 0 / 300 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
 | 75 | `textDocument/content` | 300 / 0 / 0 | 0.0 | 0.0 | - | 0 / 0 / 300 | n/a | n/a | -32601: 300 |
-| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.1 | 0.2 | - | 135 / 0 / 165 | 141.6 | 270.9 | -32801: 165 |
-| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.1 | 0.2 | - | 144 / 0 / 156 | 148.6 | 311.3 | -32801: 155, STALE_INDEX_LEAK_DETECTED: 1 |
-| 78 | `mutation/caseC` | 300 / 0 / 0 | 0.4 | 1.1 | - | 145 / 0 / 155 | 95.5 | 203.6 | -32801: 155 |
+| 76 | `mutation/caseA` | 300 / 0 / 0 | 0.2 | 0.4 | - | 263 / 0 / 37 | 36.9 | 65.8 | -32801: 37 |
+| 77 | `mutation/caseB` | 300 / 0 / 0 | 0.2 | 0.5 | - | 263 / 0 / 37 | 41.1 | 71.8 | -32801: 36, STALE_INDEX_LEAK_DETECTED: 1 |
+| 78 | `mutation/caseC` | 300 / 0 / 0 | 0.7 | 1.6 | - | 236 / 0 / 64 | 33.4 | 71.9 | -32801: 64 |
