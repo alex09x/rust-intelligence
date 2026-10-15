@@ -200,7 +200,10 @@ fn is_applicable_inherent_impl<'tcx>(
         return true;
     }
     match (impl_ty.kind(), ty.kind()) {
-        (rustc_middle::ty::TyKind::Adt(i_adt, i_args), rustc_middle::ty::TyKind::Adt(t_adt, t_args)) => {
+        (
+            rustc_middle::ty::TyKind::Adt(i_adt, i_args),
+            rustc_middle::ty::TyKind::Adt(t_adt, t_args),
+        ) => {
             if i_adt.did() != adt_did || t_adt.did() != adt_did || i_args.len() != t_args.len() {
                 return false;
             }
