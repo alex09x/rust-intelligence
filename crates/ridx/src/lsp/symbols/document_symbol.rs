@@ -11,26 +11,10 @@
 //! `textDocument/documentSymbol` handler with on-disk fallback and `(path, mtime, len)` cache.
 
 use crate::lsp::protocol::{lsp_symbol_kind, uri_to_path, PositionConverter};
+use crate::lsp::symbols::disk_cache::DocumentSymbolDiskCache;
 use crate::overlay::{DocumentOverlay, OverlayManager};
 use ridx_format::DefKind;
 use serde_json::{json, Value};
-use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
-use std::time::SystemTime;
-
-const MAX_DOCUMENT_SYMBOL_CACHE_ENTRIES: usize = 256;
-
-#[derive(Clone)]
-struct CachedDocumentSymbols {
-    mtime: Option<SystemTime>,
-    len: u64,
-    symbols: Value,
-    #[cfg(test)]
-    hits: usize,
-}
-
-static DOC_SYMBOL_CACHE: LazyLock<Mutex<HashMap<String, CachedDocumentSymbols>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Formats parsed overlay symbols into the LSP `DocumentSymbol[]` JSON array.
 fn format_overlay_symbols(overlay: &DocumentOverlay) -> Value {
@@ -56,60 +40,32 @@ fn format_overlay_symbols(overlay: &DocumentOverlay) -> Value {
     json!(results)
 }
 
-fn evict_cached_symbols(file: &str) {
-    if let Ok(mut cache) = DOC_SYMBOL_CACHE.lock() {
-        cache.remove(file);
-    }
-}
-
-fn document_symbols_from_disk(file: &str) -> Value {
+fn document_symbols_from_disk(file: &str, cache: &DocumentSymbolDiskCache) -> Value {
     let Ok(meta) = std::fs::metadata(file) else {
-        evict_cached_symbols(file);
+        cache.remove(file);
         return json!([]);
     };
     if !meta.is_file() {
-        evict_cached_symbols(file);
+        cache.remove(file);
         return json!([]);
     }
 
     let mtime = meta.modified().ok();
     let len = meta.len();
 
-    if let Ok(mut cache) = DOC_SYMBOL_CACHE.lock() {
-        if let Some(entry) = cache.get_mut(file) {
-            if entry.mtime == mtime && entry.len == len {
-                #[cfg(test)]
-                {
-                    entry.hits += 1;
-                }
-                return entry.symbols.clone();
-            }
-        }
+    if let Some(cached) = cache.get(file, mtime, len) {
+        return cached;
     }
 
     let Ok(text) = std::fs::read_to_string(file) else {
-        evict_cached_symbols(file);
+        cache.remove(file);
         return json!([]);
     };
 
     let overlay = DocumentOverlay::parse_detached(text);
     let symbols = format_overlay_symbols(&overlay);
 
-    if let Ok(mut cache) = DOC_SYMBOL_CACHE.lock() {
-        if cache.len() >= MAX_DOCUMENT_SYMBOL_CACHE_ENTRIES && !cache.contains_key(file) {
-            cache.clear();
-        }
-        cache.insert(
-            file.to_owned(),
-            CachedDocumentSymbols {
-                mtime,
-                len,
-                symbols: symbols.clone(),
-                #[cfg(test)]
-                hits: 0,
-            },
-        );
-    }
+    cache.insert(file.to_owned(), mtime, len, symbols.clone());
 
     symbols
 }
@@ -134,13 +90,18 @@ pub fn handle_document_symbol(
         return format_overlay_symbols(overlay);
     }
 
-    document_symbols_from_disk(&file)
+    document_symbols_from_disk(&file, overlay_mgr.doc_symbol_cache())
 }
 
 #[cfg(test)]
-pub(crate) fn document_symbol_cache_hits_for(file_path: &str) -> Option<usize> {
-    DOC_SYMBOL_CACHE
-        .lock()
-        .ok()
-        .and_then(|cache| cache.get(file_path).map(|entry| entry.hits))
+pub(crate) fn document_symbol_cache_hits_for(
+    overlay_mgr: &OverlayManager,
+    file_path: &str,
+) -> Option<usize> {
+    overlay_mgr.doc_symbol_cache().hits_for(file_path)
+}
+
+#[cfg(test)]
+pub(crate) fn document_symbol_cache_len(overlay_mgr: &OverlayManager) -> usize {
+    overlay_mgr.doc_symbol_cache().len()
 }

@@ -11,19 +11,26 @@
 //! Document overlay session management across open editor buffers.
 
 use super::{DefKind, DocumentOverlay, OverlayDefinition, OverlaySymbol};
+use crate::lsp::symbols::disk_cache::DocumentSymbolDiskCache;
 use std::collections::HashMap;
 
 /// Thread-safe manager for all open document overlays in an active LSP session.
 #[derive(Default)]
 pub struct OverlayManager {
     overlays: HashMap<String, DocumentOverlay>,
+    doc_symbol_cache: DocumentSymbolDiskCache,
 }
 
 impl OverlayManager {
     pub fn new() -> Self {
         Self {
             overlays: HashMap::new(),
+            doc_symbol_cache: DocumentSymbolDiskCache::new(),
         }
+    }
+
+    pub(crate) fn doc_symbol_cache(&self) -> &DocumentSymbolDiskCache {
+        &self.doc_symbol_cache
     }
 
     #[allow(dead_code)]

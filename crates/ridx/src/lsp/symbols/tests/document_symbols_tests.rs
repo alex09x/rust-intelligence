@@ -248,12 +248,18 @@ fn test_document_symbols_closed_file_disk_cache_hits_and_invalidates() {
     // 1. First closed-file request parses from disk and populates the cache (hits == 0).
     let res_closed_1 = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     assert_eq!(res_closed_1.as_array().unwrap().len(), 6);
-    assert_eq!(document_symbol_cache_hits_for(file_str), Some(0));
+    assert_eq!(
+        document_symbol_cache_hits_for(&h.overlay_mgr, file_str),
+        Some(0)
+    );
 
     // 2. Second closed-file request on unchanged disk file hits the (path, mtime, len) cache.
     let res_closed_2 = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     assert_eq!(res_closed_1, res_closed_2);
-    assert_eq!(document_symbol_cache_hits_for(file_str), Some(1));
+    assert_eq!(
+        document_symbol_cache_hits_for(&h.overlay_mgr, file_str),
+        Some(1)
+    );
 
     // 3. Opening the document with identical text produces the exact same JSON array.
     h.overlay_mgr.open_document(&h.uri, file_str, 1, disk_code);
@@ -271,11 +277,72 @@ fn test_document_symbols_closed_file_disk_cache_hits_and_invalidates() {
     let updated_items = res_updated.as_array().unwrap();
     assert_eq!(updated_items.len(), 2);
     assert_eq!(updated_items[0]["name"], "disk_updated_fn");
-    assert_eq!(document_symbol_cache_hits_for(file_str), Some(0));
+    assert_eq!(
+        document_symbol_cache_hits_for(&h.overlay_mgr, file_str),
+        Some(0)
+    );
 
     // 5. Deleting the file on disk evicts the cache entry and returns [].
     std::fs::remove_file(&h.src_file).unwrap();
     let res_deleted = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
     assert_eq!(res_deleted, json!([]));
-    assert_eq!(document_symbol_cache_hits_for(file_str), None);
+    assert_eq!(
+        document_symbol_cache_hits_for(&h.overlay_mgr, file_str),
+        None
+    );
+}
+
+#[test]
+fn test_document_symbol_cache_isolated_between_overlay_managers() {
+    use crate::lsp::symbols::document_symbol::{
+        document_symbol_cache_hits_for, document_symbol_cache_len,
+    };
+
+    let h = setup_test_symbols();
+    let file_a_str = h.src_file.to_str().unwrap();
+    let req_a = json!({ "params": { "textDocument": { "uri": &h.uri } } });
+
+    let file_b = h.temp_dir.join("src/isolated_second.rs");
+    std::fs::write(&file_b, "pub struct SecondItem;\n").unwrap();
+    let file_b_str = file_b.to_str().unwrap();
+    let uri_b = format!("file://{}", file_b_str);
+    let req_b = json!({ "params": { "textDocument": { "uri": &uri_b } } });
+
+    let mgr_a = OverlayManager::new();
+    let mgr_b = OverlayManager::new();
+    let mut conv = PositionConverter::new();
+
+    assert_eq!(document_symbol_cache_len(&mgr_a), 0);
+    assert_eq!(document_symbol_cache_len(&mgr_b), 0);
+    assert_eq!(document_symbol_cache_hits_for(&mgr_a, file_a_str), None);
+    assert_eq!(document_symbol_cache_hits_for(&mgr_b, file_a_str), None);
+
+    // 1. First closed-file request through mgr_a populates mgr_a's cache (len == 1, hits == 0).
+    let res_a1 = handle_document_symbol(&req_a, &mgr_a, &mut conv);
+    assert_eq!(res_a1.as_array().unwrap().len(), 6);
+    assert_eq!(document_symbol_cache_len(&mgr_a), 1);
+    assert_eq!(document_symbol_cache_hits_for(&mgr_a, file_a_str), Some(0));
+
+    // 2. First closed-file request for the SAME file through mgr_b must NOT hit mgr_a's cache:
+    // both mgr_b and mgr_a must report hits == Some(0), not Some(1).
+    let res_b1 = handle_document_symbol(&req_a, &mgr_b, &mut conv);
+    assert_eq!(res_b1, res_a1);
+    assert_eq!(document_symbol_cache_hits_for(&mgr_b, file_a_str), Some(0));
+    assert_eq!(document_symbol_cache_hits_for(&mgr_a, file_a_str), Some(0));
+    assert_eq!(document_symbol_cache_len(&mgr_b), 1);
+
+    // 3. Second request through mgr_a increments only mgr_a's hits to 1; mgr_b stays at 0.
+    let res_a2 = handle_document_symbol(&req_a, &mgr_a, &mut conv);
+    assert_eq!(res_a2, res_a1);
+    assert_eq!(document_symbol_cache_hits_for(&mgr_a, file_a_str), Some(1));
+    assert_eq!(document_symbol_cache_hits_for(&mgr_b, file_a_str), Some(0));
+
+    // 4. Requesting a second closed file through mgr_b grows only mgr_b's cache to 2 entries.
+    let res_b2 = handle_document_symbol(&req_b, &mgr_b, &mut conv);
+    assert_eq!(res_b2.as_array().unwrap().len(), 1);
+    assert_eq!(res_b2[0]["name"], "SecondItem");
+    assert_eq!(document_symbol_cache_len(&mgr_b), 2);
+    assert_eq!(document_symbol_cache_hits_for(&mgr_b, file_b_str), Some(0));
+    assert_eq!(document_symbol_cache_len(&mgr_a), 1);
+    assert_eq!(document_symbol_cache_hits_for(&mgr_a, file_b_str), None);
 }

@@ -10,6 +10,7 @@
 
 //! LSP symbol handlers: document symbols, multi-root workspace symbols, and symbol resolution.
 
+pub mod disk_cache;
 pub mod document_symbol;
 
 pub use document_symbol::handle_document_symbol;
