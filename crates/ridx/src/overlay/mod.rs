@@ -117,6 +117,24 @@ pub(crate) fn resolve_compiled_text(
 }
 
 impl DocumentOverlay {
+    /// Parses source text into a detached overlay without disk I/O or baseline cloning.
+    pub fn parse_detached(text: String) -> Self {
+        let mut overlay = Self {
+            uri: String::new(),
+            file_path: String::new(),
+            version: 0,
+            content_hash: 0,
+            text,
+            compiled_text: None,
+            disk_text: None,
+            line_starts: Vec::new(),
+            symbols: Vec::new(),
+            scopes: Vec::new(),
+        };
+        overlay.reparse();
+        overlay
+    }
+
     /// Creates and parses a new DocumentOverlay with explicit provenance tracking.
     pub fn new_with_provenance(
         uri: impl Into<String>,

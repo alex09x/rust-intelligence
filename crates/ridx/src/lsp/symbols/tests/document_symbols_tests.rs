@@ -235,3 +235,47 @@ fn test_document_symbols_multiple_documents_isolated() {
     assert_eq!(items_b.len(), 1);
     assert_eq!(items_b[0]["name"], "doc_b");
 }
+
+#[test]
+fn test_document_symbols_closed_file_disk_cache_hits_and_invalidates() {
+    use crate::lsp::symbols::document_symbol::document_symbol_cache_hits_for;
+
+    let mut h = setup_test_symbols();
+    let file_str = h.src_file.to_str().unwrap();
+    let disk_code = std::fs::read_to_string(&h.src_file).unwrap();
+    let req = json!({ "params": { "textDocument": { "uri": &h.uri } } });
+
+    // 1. First closed-file request parses from disk and populates the cache (hits == 0).
+    let res_closed_1 = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
+    assert_eq!(res_closed_1.as_array().unwrap().len(), 6);
+    assert_eq!(document_symbol_cache_hits_for(file_str), Some(0));
+
+    // 2. Second closed-file request on unchanged disk file hits the (path, mtime, len) cache.
+    let res_closed_2 = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
+    assert_eq!(res_closed_1, res_closed_2);
+    assert_eq!(document_symbol_cache_hits_for(file_str), Some(1));
+
+    // 3. Opening the document with identical text produces the exact same JSON array.
+    h.overlay_mgr.open_document(&h.uri, file_str, 1, disk_code);
+    let res_opened = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
+    assert_eq!(res_closed_1, res_opened);
+
+    // 4. Close the document and modify the file on disk -> cache invalidates (hits resets to 0).
+    h.overlay_mgr.close_document(file_str);
+    std::fs::write(
+        &h.src_file,
+        "pub fn disk_updated_fn(x: usize) -> usize { x }\n",
+    )
+    .unwrap();
+    let res_updated = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
+    let updated_items = res_updated.as_array().unwrap();
+    assert_eq!(updated_items.len(), 2);
+    assert_eq!(updated_items[0]["name"], "disk_updated_fn");
+    assert_eq!(document_symbol_cache_hits_for(file_str), Some(0));
+
+    // 5. Deleting the file on disk evicts the cache entry and returns [].
+    std::fs::remove_file(&h.src_file).unwrap();
+    let res_deleted = handle_document_symbol(&req, &h.overlay_mgr, &mut h.conv);
+    assert_eq!(res_deleted, json!([]));
+    assert_eq!(document_symbol_cache_hits_for(file_str), None);
+}

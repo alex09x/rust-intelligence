@@ -10,47 +10,13 @@
 
 //! LSP symbol handlers: document symbols, multi-root workspace symbols, and symbol resolution.
 
-use super::protocol::{lsp_symbol_kind, path_to_uri, uri_to_path, PositionConverter};
-use crate::overlay::OverlayManager;
-use ridx_format::{DefKind, WorkspaceIndex};
+pub mod document_symbol;
+
+pub use document_symbol::handle_document_symbol;
+
+use super::protocol::{lsp_symbol_kind, path_to_uri, PositionConverter};
+use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
-
-pub fn handle_document_symbol(
-    msg: &Value,
-    overlay_mgr: &OverlayManager,
-    _conv: &mut PositionConverter,
-) -> Value {
-    let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
-    let file = uri_to_path(uri);
-
-    let mut results = Vec::new();
-
-    if let Some(symbols) = overlay_mgr.document_symbols(&file) {
-        let overlay = overlay_mgr
-            .get(&file)
-            .expect("overlay must be present when document_symbols returns Some");
-        for s in symbols {
-            if s.kind == DefKind::TyParam {
-                continue;
-            }
-            let start_char = overlay.char_col_to_utf16_col(s.start_line, s.start_col);
-            let end_char = overlay.char_col_to_utf16_col(s.end_line, s.end_col);
-            let range = json!({
-                "start": { "line": s.start_line.saturating_sub(1), "character": start_char },
-                "end": { "line": s.end_line.saturating_sub(1), "character": end_char }
-            });
-            results.push(json!({
-                "name": s.name,
-                "kind": lsp_symbol_kind(s.kind),
-                "range": range,
-                "selectionRange": range,
-                "detail": s.signature
-            }));
-        }
-    }
-
-    json!(results)
-}
 
 pub fn handle_workspace_symbol<'a>(
     msg: &Value,
