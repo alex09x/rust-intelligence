@@ -60,6 +60,11 @@ KNOWN_HARNESS_DEFECTS = [
      "computing it and delayed the first requests of the next method (observed on bevy: about 20 s "
      "per `typeHierarchy/subtypes` request against a 2 s timeout); the client now sends "
      "`$/cancelRequest` on timeout and waits for outstanding answers before each method."),
+    ("ade610f", "the document synchronization methods send notifications only, so the wait for "
+     "outstanding answers did not cover them; their backlog stayed queued in the server and timed "
+     "out the first requests of the next method (observed on bevy: 21 of 300 "
+     "`textDocument/definition` requests after `didSave` and `didClose`). Before each method the "
+     "runner now sends a request no server implements and waits for its `-32601` answer."),
 ]
 
 NOTES = [
@@ -76,13 +81,15 @@ NOTES = [
     "`serde_derive` of a newer version next to the workspace one, and `trybuild` in `test_suite` "
     "then failed to compile; the lockfile was regenerated with `serde_derive` unified to the "
     "workspace version. Its sha256 is recorded as `corpus_lockfile_sha256`.",
-    "All five runs use RIDX commit `d72a749`.",
-    "bevy: RIDX `mutation/caseA`, `mutation/caseB` and `mutation/caseC` time out on 122, 90 and 32 "
-    "of 300 scenarios. The same counts were measured at RIDX commit `6ce1fa9`; the cause is not "
-    "established yet.",
+    "All five runs use RIDX commit `5d49c84`.",
+    "bevy: in the previous publication (RIDX commit `d72a749`) RIDX `mutation/caseA`, "
+    "`mutation/caseB` and `mutation/caseC` timed out on 122, 90 and 32 of 300 scenarios and "
+    "`textDocument/definition` on 21 requests; in these runs none time out. Two changes lie between "
+    "the runs: the harness barrier `ade610f` (see the harness defects below) and the precomputed "
+    "workspace path index for file provenance lookups in `5d49c84`.",
     "Indexes were built with the driver recorded as `driver_hash` (`driver_build_commit`), which "
     "can be older than the RIDX commit. Between driver build commit `cdf975d` and RIDX commit "
-    "`d72a749` the driver changed only in `build.rs` (link search path) and `ridx-format` only in "
+    "`5d49c84` the driver changed only in `build.rs` (link search path) and `ridx-format` only in "
     "reader-side workspace code, so the index contents do not depend on the newer commit.",
 ]
 
