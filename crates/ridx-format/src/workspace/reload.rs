@@ -602,7 +602,6 @@ impl WorkspaceIndex {
         if changed {
             self.rebuild_unit_match();
             self.rebuild_path_index();
-            self.generation = self.generation.wrapping_add(1);
         }
         Ok(changed)
     }

@@ -179,7 +179,7 @@ impl WorkspaceIndex {
                 instance_id: next_workspace_instance_id(),
                 generation: 1,
             };
-            ws.rebuild_path_index();
+            ws.path_index = PathIndex::build(&ws);
             return Ok(ws);
         }
 
@@ -614,7 +614,8 @@ impl WorkspaceIndex {
         if let Some(cas_key) = sysroot_cas_key {
             ws.attach_sysroot_shards_for_key(&cas_key);
         }
-        ws.rebuild_path_index();
+        ws.generation = 1;
+        ws.path_index = PathIndex::build(&ws);
         Ok(ws)
     }
 
@@ -629,7 +630,6 @@ impl WorkspaceIndex {
 
         let cur = std::env::current_dir()?;
         let mut candidates = vec![cur.join("target/ridx"), cur.join("../target/ridx")];
-
         let mut nearest_pkg = None;
         let mut enclosing_ws = None;
         for anc in cur.ancestors() {
@@ -664,7 +664,6 @@ impl WorkspaceIndex {
                     })
                 })
                 .unwrap_or(false);
-
         if has_ridx_indicators {
             candidates.push(cur.clone());
         }
@@ -690,15 +689,13 @@ impl WorkspaceIndex {
 
     /// Rebuilds the internal unit matching index after readers or extern units change.
     pub(crate) fn rebuild_unit_match(&mut self) {
-        self.unit_match = UnitMatchIndex::build(
-            &self.readers,
-            &self.unit_keys,
-            &self.reader_extern_units,
-        );
+        self.unit_match =
+            UnitMatchIndex::build(&self.readers, &self.unit_keys, &self.reader_extern_units);
     }
 
-    /// Rebuilds the internal file path provenance lookup index.
+    /// Bumps generation and rebuilds the internal file path provenance lookup index.
     pub(crate) fn rebuild_path_index(&mut self) {
+        self.generation = self.generation.wrapping_add(1);
         self.path_index = PathIndex::build(self);
     }
 

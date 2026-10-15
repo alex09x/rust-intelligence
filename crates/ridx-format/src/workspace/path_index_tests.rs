@@ -8,201 +8,18 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use super::provenance::{file_entry_matches, normalize_path};
+mod oracle;
+
 use super::WorkspaceIndex;
 use crate::format::DefKind;
 use crate::writer::{IndexWriter, RawDefinition};
+pub(crate) use oracle::{shard_mtime_for_file_oracle, source_hash_for_file_oracle};
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
-/// Reference oracle reproducing the legacy `shard_mtime_for_file` implementation verbatim.
-pub(crate) fn shard_mtime_for_file_oracle(
-    ws: &WorkspaceIndex,
-    file_path: &str,
-) -> Option<std::time::SystemTime> {
-    for idx in ws.candidate_reader_indices_for_file(file_path) {
-        if let Some(target_file) = ws.target_file_for_reader(idx, file_path) {
-            if ws.readers[idx].find_file_id(target_file.as_ref()).is_some() {
-                return ws.mtimes.get(idx).copied().flatten();
-            }
-            if ws.reader_file_hashes.get(idx).is_some_and(|h| h.contains_key(target_file.as_ref())) {
-                return ws.mtimes.get(idx).copied().flatten();
-            }
-        }
-        if ws.reader_file_hashes.get(idx).is_some_and(|h| h.contains_key(file_path)) {
-            return ws.mtimes.get(idx).copied().flatten();
-        }
-    }
-
-    let p = Path::new(file_path);
-    let (ws_abs, req_canon, ws_canon, candidate_indices) = legacy_candidates(ws, p);
-    for &i in &candidate_indices {
-        let reader = &ws.readers[i];
-        let origin = reader_origin(ws, i);
-        for fid in 0..reader.files_count() {
-            let entry_str = reader.get_file(fid);
-            if entry_str.is_empty() {
-                continue;
-            }
-            if file_entry_matches(entry_str, origin, p, req_canon.as_deref())
-                || ws_abs.as_ref().is_some_and(|a| file_entry_matches(entry_str, origin, a, ws_canon.as_deref()))
-            {
-                return ws.mtimes.get(i).copied().flatten();
-            }
-        }
-    }
-    for &i in &candidate_indices {
-        let origin = reader_origin(ws, i);
-        if let Some(map) = ws.reader_file_hashes.get(i) {
-            for k in map.keys() {
-                if file_entry_matches(k, origin, p, req_canon.as_deref())
-                    || ws_abs.as_ref().is_some_and(|a| file_entry_matches(k, origin, a, ws_canon.as_deref()))
-                {
-                    return ws.mtimes.get(i).copied().flatten();
-                }
-            }
-        }
-    }
-    None
-}
-
-/// Reference oracle reproducing the legacy `source_hash_for_file` implementation verbatim.
-pub(crate) fn source_hash_for_file_oracle(ws: &WorkspaceIndex, file_path: &str) -> Option<u64> {
-    for idx in ws.candidate_reader_indices_for_file(file_path) {
-        if let Some(target_file) = ws.target_file_for_reader(idx, file_path) {
-            if let Some(fid) = ws.readers[idx].find_file_id(target_file.as_ref()) {
-                let h = ws.readers[idx].file_source_hash(fid);
-                if h != 0 {
-                    return Some(h);
-                }
-            }
-            if let Some(&h) = ws.reader_file_hashes.get(idx).and_then(|m| m.get(target_file.as_ref())) {
-                if h != 0 {
-                    return Some(h);
-                }
-            }
-        }
-        if let Some(&h) = ws.reader_file_hashes.get(idx).and_then(|m| m.get(file_path)) {
-            if h != 0 {
-                return Some(h);
-            }
-        }
-    }
-
-    let p = Path::new(file_path);
-    let (ws_abs, req_canon, ws_canon, candidate_indices) = legacy_candidates(ws, p);
-    for &i in &candidate_indices {
-        let reader = &ws.readers[i];
-        let origin = reader_origin(ws, i);
-        for fid in 0..reader.files_count() {
-            let entry_str = reader.get_file(fid);
-            let h = reader.file_source_hash(fid);
-            if h == 0 || entry_str.is_empty() {
-                continue;
-            }
-            if file_entry_matches(entry_str, origin, p, req_canon.as_deref())
-                || ws_abs.as_ref().is_some_and(|a| file_entry_matches(entry_str, origin, a, ws_canon.as_deref()))
-            {
-                return Some(h);
-            }
-        }
-    }
-    for &i in &candidate_indices {
-        let origin = reader_origin(ws, i);
-        if let Some(map) = ws.reader_file_hashes.get(i) {
-            for (k, &h) in map {
-                if h == 0 || k.is_empty() {
-                    continue;
-                }
-                if file_entry_matches(k, origin, p, req_canon.as_deref())
-                    || ws_abs.as_ref().is_some_and(|a| file_entry_matches(k, origin, a, ws_canon.as_deref()))
-                {
-                    return Some(h);
-                }
-            }
-        }
-    }
-    None
-}
-
-fn reader_origin(ws: &WorkspaceIndex, i: usize) -> Option<&Path> {
-    ws.source_roots
-        .get(i)
-        .and_then(|r| r.as_deref())
-        .or(ws.workspace_root.as_deref())
-        .or(ws.root_dir.as_deref())
-}
-
-fn legacy_candidates(
-    ws: &WorkspaceIndex,
-    p: &Path,
-) -> (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>, Vec<usize>) {
-    let explicit_origin = ws
-        .workspace_root
-        .as_deref()
-        .or(ws.root_dir.as_deref())
-        .or_else(|| (ws.readers.len() == 1).then(|| ws.source_roots.first()?.as_deref())?);
-
-    let (ws_abs, req_canon) = if p.is_absolute() {
-        (None, p.canonicalize().ok())
-    } else if let Some(origin) = explicit_origin {
-        let abs = origin.join(p);
-        let canon = abs.canonicalize().ok();
-        (Some(abs), canon)
-    } else {
-        (None, None)
-    };
-    let ws_canon = req_canon.clone();
-
-    let mut candidate_indices: Vec<usize> = Vec::with_capacity(ws.readers.len());
-    if let Some(ref c_p) = req_canon {
-        for i in 0..ws.readers.len() {
-            if let Some(Some(ref root)) = ws.source_roots.get(i) {
-                if root.canonicalize().is_ok_and(|cr| c_p.starts_with(&cr)) && !candidate_indices.contains(&i) {
-                    candidate_indices.push(i);
-                }
-            }
-        }
-    }
-    if let Some(ref abs) = ws_abs {
-        let norm_abs = normalize_path(abs);
-        for i in 0..ws.readers.len() {
-            if let Some(Some(ref root)) = ws.source_roots.get(i) {
-                if norm_abs.starts_with(normalize_path(root)) && !candidate_indices.contains(&i) {
-                    candidate_indices.push(i);
-                }
-            }
-        }
-    } else if p.is_absolute() {
-        let norm_p = normalize_path(p);
-        for i in 0..ws.readers.len() {
-            if let Some(Some(ref root)) = ws.source_roots.get(i) {
-                if norm_p.starts_with(normalize_path(root)) && !candidate_indices.contains(&i) {
-                    candidate_indices.push(i);
-                }
-            }
-        }
-    }
-    for i in 0..ws.readers.len() {
-        let is_dep = ws.reader_is_dependency.get(i).copied().unwrap_or(false)
-            || ws.source_roots.get(i).and_then(|r| r.as_ref()).is_some();
-        if !is_dep && !candidate_indices.contains(&i) {
-            candidate_indices.push(i);
-        }
-    }
-    for i in 0..ws.readers.len() {
-        if !candidate_indices.contains(&i) {
-            candidate_indices.push(i);
-        }
-    }
-    (ws_abs, req_canon, ws_canon, candidate_indices)
-}
-
-#[test]
-fn test_path_index_oracle_equivalence_multi_reader_and_symlinks() {
-    let temp = TempDir::new().unwrap();
+fn setup_multi_reader_fixture(temp: &TempDir) -> (PathBuf, PathBuf, PathBuf, WorkspaceIndex) {
     let ws_root = temp.path().join("ws");
     let crate_a = ws_root.join("crates/crate_a");
     let dep_ext = temp.path().join("external_dep");
@@ -260,12 +77,17 @@ fn test_path_index_oracle_equivalence_multi_reader_and_symlinks() {
     fs::write(
         deps_dir.join("00_crate_a.json"),
         serde_json::to_string(&serde_json::json!({
-            "name": "crate_a", "version": "0.1.0", "unit_key": "uk_a",
+            "name": "crate_a",
+            "version": "0.1.0",
+            "unit_key": "uk_a",
             "object_path": ridx_a.display().to_string(),
             "source_root": crate_a.display().to_string(),
-            "is_dependency": false, "file_hashes": hashes_a,
-        })).unwrap(),
-    ).unwrap();
+            "is_dependency": false,
+            "file_hashes": hashes_a,
+        }))
+        .unwrap(),
+    )
+    .unwrap();
 
     let mut w_d = IndexWriter::new("external_dep", "0.1.0");
     w_d.set_unit_key("uk_d");
@@ -279,13 +101,17 @@ fn test_path_index_oracle_equivalence_multi_reader_and_symlinks() {
     fs::write(
         deps_dir.join("01_external_dep.json"),
         serde_json::to_string(&serde_json::json!({
-            "name": "external_dep", "version": "0.1.0", "unit_key": "uk_d",
+            "name": "external_dep",
+            "version": "0.1.0",
+            "unit_key": "uk_d",
             "object_path": ridx_d.display().to_string(),
             "source_root": dep_ext.display().to_string(),
             "is_dependency": true,
             "file_hashes": { "src/lib.rs": 0xD001u64, ext_file_str: 0xD002u64 },
-        })).unwrap(),
-    ).unwrap();
+        }))
+        .unwrap(),
+    )
+    .unwrap();
 
     fs::write(
         ws_root.join("target/ridx/ridx_manifest.json"),
@@ -293,12 +119,23 @@ fn test_path_index_oracle_equivalence_multi_reader_and_symlinks() {
             "version": "2.0",
             "format_version": crate::format::CURRENT_FORMAT_VERSION,
             "extractor_version": crate::format::EXTRACTOR_VERSION,
-            "active_variant_id": "v1", "variant_dir": "variants/v1",
-            "workspace_root": ws_root.display().to_string(), "dependency_shards": []
-        })).unwrap(),
-    ).unwrap();
+            "active_variant_id": "v1",
+            "variant_dir": "variants/v1",
+            "workspace_root": ws_root.display().to_string(),
+            "dependency_shards": []
+        }))
+        .unwrap(),
+    )
+    .unwrap();
 
-    let mut ws = WorkspaceIndex::open(&ws_root).unwrap();
+    let ws = WorkspaceIndex::open(&ws_root).unwrap();
+    (ws_root, crate_a, dep_ext, ws)
+}
+
+#[test]
+fn test_path_index_oracle_equivalence_multi_reader_and_symlinks() {
+    let temp = TempDir::new().unwrap();
+    let (ws_root, crate_a, dep_ext, mut ws) = setup_multi_reader_fixture(&temp);
     let queries = vec![
         "src/lib.rs".to_string(),
         "crates/crate_a/src/lib.rs".to_string(),
@@ -315,21 +152,72 @@ fn test_path_index_oracle_equivalence_multi_reader_and_symlinks() {
         crate_a.join("src/lib.rs").display().to_string(),
         crate_a.join("src/mod_67.rs").display().to_string(),
         crate_a.join("src/sidecar_only.rs").display().to_string(),
-        ws_root.join("link_crate_a/src/mod_10.rs").display().to_string(),
+        ws_root
+            .join("link_crate_a/src/mod_10.rs")
+            .display()
+            .to_string(),
         ws_root.join("shortcut/../file.rs").display().to_string(),
         dep_ext.join("src/lib.rs").display().to_string(),
         dep_ext.join("src/../src/lib.rs").display().to_string(),
     ];
 
     for q in &queries {
-        assert_eq!(ws.source_hash_for_file(q), source_hash_for_file_oracle(&ws, q), "hash: {q}");
-        assert_eq!(ws.shard_mtime_for_file(q), shard_mtime_for_file_oracle(&ws, q), "mtime: {q}");
+        assert_eq!(
+            ws.source_hash_for_file(q),
+            source_hash_for_file_oracle(&ws, q),
+            "hash: {q}"
+        );
+        assert_eq!(
+            ws.shard_mtime_for_file(q),
+            shard_mtime_for_file_oracle(&ws, q),
+            "mtime: {q}"
+        );
     }
     ws.set_workspace_root(Some(crate_a));
     for q in &queries {
-        assert_eq!(ws.source_hash_for_file(q), source_hash_for_file_oracle(&ws, q), "hash2: {q}");
-        assert_eq!(ws.shard_mtime_for_file(q), shard_mtime_for_file_oracle(&ws, q), "mtime2: {q}");
+        assert_eq!(
+            ws.source_hash_for_file(q),
+            source_hash_for_file_oracle(&ws, q),
+            "hash2: {q}"
+        );
+        assert_eq!(
+            ws.shard_mtime_for_file(q),
+            shard_mtime_for_file_oracle(&ws, q),
+            "mtime2: {q}"
+        );
     }
+}
+
+#[test]
+fn test_path_index_overwrite_existing_file_hash_and_generation_mutations() {
+    let temp = TempDir::new().unwrap();
+    let (ws_root, crate_a, _dep_ext, mut ws) = setup_multi_reader_fixture(&temp);
+    assert_eq!(ws.generation(), 1);
+    let non_canon = "crates/crate_a/src/../src/sidecar_only.rs";
+    assert_eq!(ws.source_hash_for_file(non_canon), Some(0xA999));
+
+    let prev_len = ws.reader_file_hashes[0].len();
+    *ws.reader_file_hashes[0]
+        .get_mut("src/sidecar_only.rs")
+        .unwrap() = 0xBEEF_CAFE;
+    assert_eq!(ws.reader_file_hashes[0].len(), prev_len);
+    assert_eq!(ws.bump_generation(), 2);
+    assert_eq!(ws.source_hash_for_file(non_canon), Some(0xBEEF_CAFE));
+    assert_eq!(
+        ws.source_hash_for_file(non_canon),
+        source_hash_for_file_oracle(&ws, non_canon)
+    );
+
+    ws.set_workspace_root(Some(crate_a));
+    assert_eq!(ws.generation(), 3);
+    assert_eq!(
+        ws.source_hash_for_file("src/../src/sidecar_only.rs"),
+        Some(0xBEEF_CAFE)
+    );
+    ws.set_workspace_root(Some(ws_root.clone()));
+    assert_eq!(ws.generation(), 4);
+    ws.attach_shard_paths(&[ws_root.join("target/ridx/variants/v1/01_external_dep.ridx")]);
+    assert_eq!(ws.generation(), 5);
 }
 
 fn collect_rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -350,7 +238,9 @@ fn collect_rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
 
 #[test]
 fn test_corpus_oracle_equivalence() {
-    let Ok(dirs_var) = std::env::var("RIDX_CORPUS_ORACLE_DIRS") else { return };
+    let Ok(dirs_var) = std::env::var("RIDX_CORPUS_ORACLE_DIRS") else {
+        return;
+    };
     for repo_str in dirs_var.split(':').filter(|s| !s.is_empty()) {
         let repo = Path::new(repo_str);
         let ws = WorkspaceIndex::open(repo).expect("failed to open corpus WorkspaceIndex");
@@ -361,8 +251,14 @@ fn test_corpus_oracle_equivalence() {
         let mut divergences = 0usize;
         for abs_path in &files {
             let abs_q = abs_path.to_string_lossy();
-            let rel_q = abs_path.strip_prefix(repo).ok().map(|r| r.to_string_lossy());
-            for q in [Some(abs_q.as_ref()), rel_q.as_deref()].into_iter().flatten() {
+            let rel_q = abs_path
+                .strip_prefix(repo)
+                .ok()
+                .map(|r| r.to_string_lossy());
+            for q in [Some(abs_q.as_ref()), rel_q.as_deref()]
+                .into_iter()
+                .flatten()
+            {
                 checked += 1;
                 let h_new = ws.source_hash_for_file(q);
                 let h_old = source_hash_for_file_oracle(&ws, q);
@@ -375,6 +271,9 @@ fn test_corpus_oracle_equivalence() {
             }
         }
         eprintln!("[CORPUS_ORACLE] repo={repo_str} rs_files={} queries_checked={checked} divergences={divergences}", files.len());
-        assert_eq!(divergences, 0, "corpus oracle had {divergences} divergences on {repo_str}");
+        assert_eq!(
+            divergences, 0,
+            "corpus oracle had {divergences} divergences on {repo_str}"
+        );
     }
 }
