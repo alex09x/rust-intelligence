@@ -43,6 +43,8 @@ mod sysroot_tests;
 #[cfg(test)]
 mod target_kind_routing_tests;
 #[cfg(test)]
+mod target_kind_tests;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod unit_match_tests;
