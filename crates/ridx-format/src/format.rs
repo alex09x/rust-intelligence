@@ -1356,4 +1356,134 @@ mod tests {
         let span = Span::new(1, 10, 1, 10, 5);
         assert!(!span.contains(999, 10, 2));
     }
+
+    #[test]
+    fn test_repr_c_sizes_alignments_and_field_offsets() {
+        macro_rules! check_layout {
+            ($ty:ty, $sz:expr, $al:expr, [ $( $field:ident : $off:expr ),+ $(,)? ]) => {
+                assert_eq!(std::mem::size_of::<$ty>(), $sz);
+                assert_eq!(std::mem::align_of::<$ty>(), $al);
+                $( assert_eq!(std::mem::offset_of!($ty, $field), $off); )+
+            };
+        }
+        assert_eq!(std::mem::size_of::<DefKind>(), 1);
+        assert_eq!(std::mem::align_of::<DefKind>(), 1);
+        check_layout!(FileEntry, 16, 8, [path_offset: 0, _pad: 4, source_hash: 8]);
+        check_layout!(Header, 160, 8, [
+            magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
+            string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
+            unit_key_offset: 44, defs_offset: 48, defs_count: 56, generation_offset: 60,
+            defs_by_hash_offset: 64, defs_by_hash_count: 72, _pad2: 76,
+            refs_offset: 80, refs_count: 88, _pad3: 92,
+            refs_by_target_offset: 96, refs_by_target_count: 104, _pad4: 108,
+            types_offset: 112, types_count: 120, _pad5: 124,
+            defs_by_owner_offset: 128, defs_by_owner_count: 136, _pad6: 140,
+            derefs_offset: 144, derefs_count: 152, _pad7: 156,
+        ]);
+        check_layout!(HeaderV2, 128, 8, [
+            magic: 0, version: 4, crate_name_offset: 8, crate_version_offset: 12,
+            string_pool_offset: 16, string_pool_len: 24, files_offset: 32, files_count: 40,
+            unit_key_offset: 44, defs_offset: 48, defs_count: 56, generation_offset: 60,
+            defs_by_hash_offset: 64, defs_by_hash_count: 72, _pad2: 76,
+            refs_offset: 80, refs_count: 88, _pad3: 92,
+            refs_by_target_offset: 96, refs_by_target_count: 104, _pad4: 108,
+            types_offset: 112, types_count: 120, _pad5: 124,
+        ]);
+        check_layout!(Span, 20, 4, [
+            file_id: 0, start_line: 4, start_col: 8, end_line: 12, end_col: 16,
+        ]);
+        check_layout!(DefEntry, 40, 4, [
+            def_id: 0, kind: 4, visibility: 5, flags: 6, _pad: 7,
+            name_offset: 8, path_offset: 12, sig_offset: 16, span: 20,
+        ]);
+        check_layout!(RefEntry, 48, 4, [
+            span: 0, target_def_id: 20, target_path_offset: 24, target_file_offset: 28,
+            target_unit_offset: 32, target_line: 36, target_col: 40,
+            kind: 44, is_write: 45, flags: 46, _pad: 47,
+        ]);
+        check_layout!(TypeEntry, 28, 4, [span: 0, type_offset: 20, owner_path_offset: 24]);
+        check_layout!(HashIndexEntry, 16, 8, [hash: 0, index: 8, _pad: 12]);
+        check_layout!(OwnerIndexEntry, 16, 8, [hash: 0, owner_path_offset: 8, def_index: 12]);
+        check_layout!(DerefEntry, 16, 8, [
+            source_type_hash: 0, source_type_offset: 8, target_type_offset: 12,
+        ]);
+    }
+
+    #[test]
+    fn test_index_writer_golden_bytes() {
+        use crate::writer::{IndexWriter, RawDefinition, RawReference, RawType};
+        let mut w = IndexWriter::new("golden_crate", "0.1.0");
+        w.set_unit_key("golden_crate-0123456789abcdef");
+        w.set_generation("gen-fedcba9876543210");
+        w.add_file_hash("src/lib.rs", 0x1111_2222_3333_4444);
+        w.add_file_hash("src/model.rs", 0x5555_6666_7777_8888);
+        w.add_file_hash("src/util.rs", 0x9999_aaaa_bbbb_cccc);
+        let mk_def =
+            |id, kind, vis, mac, path: &str, sig: Option<&str>, f: &str, l: u32| RawDefinition {
+                def_id: id,
+                kind,
+                visibility: vis,
+                is_macro_expansion: mac,
+                name: path.rsplit("::").next().unwrap().into(),
+                path: path.into(),
+                signature: sig.map(Into::into),
+                file: f.into(),
+                start_line: l,
+                start_col: 1,
+                end_line: l + 2,
+                end_col: 2,
+            };
+        let (p1, s1) = ("golden_crate::model::Widget", Some("pub struct Widget"));
+        let (p2, s2) = (
+            "golden_crate::model::Widget::render",
+            Some("pub fn render(&self) -> usize"),
+        );
+        let (p3, s3) = (
+            "golden_crate::util::helper",
+            Some("pub(crate) fn helper(x: u32) -> u32"),
+        );
+        let (m, p4) = ("src/model.rs", "golden_crate::Widget");
+        w.add_definition(mk_def(1, DefKind::Struct, 0, false, p1, s1, m, 1));
+        w.add_definition_with_owners(
+            mk_def(2, DefKind::AssocFn, 0, false, p2, s2, m, 12),
+            vec![p1.into()],
+        );
+        w.add_definition(mk_def(3, DefKind::Fn, 1, true, p3, s3, "src/util.rs", 3));
+        let d4 = mk_def(4, DefKind::Use, 0, false, p4, None, "src/lib.rs", 5);
+        w.add_reexport_with_owners(d4, vec!["golden_crate".into()]);
+        let mk_ref = |l, c2, id, path: &str, unit: Option<&str>, tl, tc, kind, wr| RawReference {
+            file: "src/lib.rs".into(),
+            start_line: l,
+            start_col: if wr { 9 } else { 5 },
+            end_line: l,
+            end_col: c2,
+            target_def_id: Some(id),
+            target_path: path.into(),
+            target_file: Some("src/model.rs".into()),
+            target_unit: unit.map(Into::into),
+            target_line: tl,
+            target_col: tc,
+            kind,
+            is_write: wr,
+            is_macro_expansion: wr,
+        };
+        let u_key = Some("golden_crate-0123456789abcdef");
+        w.add_reference(mk_ref(10, 11, 1, p1, u_key, 1, 1, DefKind::Struct, false));
+        w.add_reference(mk_ref(11, 15, 2, p2, None, 12, 5, DefKind::AssocFn, true));
+        let mk_ty = |f: &str, l, c2, name: &str| RawType {
+            file: f.into(),
+            start_line: l,
+            start_col: 5,
+            end_line: l,
+            end_col: c2,
+            type_name: name.into(),
+        };
+        w.add_type_with_owner(mk_ty("src/lib.rs", 10, 20, p1), Some(p1.into()));
+        w.add_type(mk_ty("src/util.rs", 4, 6, "u32"));
+        w.add_deref(p1, "golden_crate::util::Target");
+        let mut bytes = Vec::new();
+        w.write_to(&mut std::io::Cursor::new(&mut bytes)).unwrap();
+        assert_eq!(bytes.len(), 1096);
+        assert_eq!(fnv1a_64(&bytes), 0xd45a_2e34_8f1b_8421);
+    }
 }
