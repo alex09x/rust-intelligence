@@ -12,6 +12,8 @@
 
 pub mod references;
 pub mod type_definition;
+mod type_definition_lookup;
+mod type_definition_qual;
 
 #[cfg(test)]
 pub mod tests;

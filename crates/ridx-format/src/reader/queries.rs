@@ -44,120 +44,128 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         col: u32,
     ) -> Option<ResolvedDefinition<'_>> {
         let file_id = self.find_file_id(file)?;
-
-        // 1. Check references: is the cursor on a symbol reference? Pick innermost span.
-        let mut best_ref: Option<(&RefEntry, u64)> = None;
-        for r in self.references() {
-            let r_span = r.span();
-            if r_span.file_id() == file_id && r_span.contains(file_id, line, col) {
-                let size = r_span.approximate_size();
-                match best_ref {
-                    None => best_ref = Some((r, size)),
-                    Some((_, best_size)) if size < best_size => best_ref = Some((r, size)),
-                    _ => {}
-                }
-            }
+        if let Some(r) = self.find_innermost_ref_at_file_id(file_id, line, col) {
+            return Some(self.resolve_ref_definition(r));
         }
 
-        if let Some((r, _)) = best_ref {
-            // If it resolves to a local def_id:
-            if r.target_def_id() != u32::MAX {
-                let defs = self.definitions();
-                if let Some(def) = defs.iter().find(|d| d.def_id() == r.target_def_id()) {
-                    let def_span = def.span();
-                    return Some(ResolvedDefinition {
-                        name: self.get_str(def.name_offset()),
-                        path: self.get_str(def.path_offset()),
-                        kind: DefKind::from(def.kind),
-                        signature: if def.sig_offset() != 0 {
-                            Some(self.get_str(def.sig_offset()))
-                        } else {
-                            None
-                        },
-                        file: self.get_file(def_span.file_id()),
-                        start_line: def_span.start_line(),
-                        start_col: def_span.start_col(),
-                        end_line: def_span.end_line(),
-                        end_col: def_span.end_col(),
-                        is_macro_expansion: def.is_macro_expansion(),
-                        is_reexport: def.is_reexport(),
-                        source_root: None,
-                        unit_key: None,
-                        reader_idx: None,
-                    });
-                }
-            }
-            // Otherwise return target path and location
-            let target_path = self.get_str(r.target_path_offset());
-            let target_file = self.get_str(r.target_file_offset());
-            let target_unit = self.get_str(r.target_unit_offset());
-            let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
-
-            return Some(ResolvedDefinition {
-                name: target_name,
-                path: target_path,
-                kind: DefKind::from(r.kind),
-                signature: None,
-                file: if !target_file.is_empty() {
-                    target_file
-                } else {
-                    "external"
-                },
-                start_line: r.target_line(),
-                start_col: r.target_col(),
-                end_line: r.target_line(),
-                end_col: r.target_col() + (target_name.len() as u32),
-                is_macro_expansion: r.is_macro_expansion(),
-                is_reexport: false,
-                source_root: None,
-                unit_key: if !target_unit.is_empty() {
-                    Some(target_unit)
-                } else {
-                    None
-                },
-                reader_idx: None,
-            });
-        }
-
-        // 2. Check if cursor is directly on a definition span (pick innermost span, e.g. struct inside mod)
         let mut best_def: Option<(&DefEntry, u64)> = None;
         for def in self.definitions() {
             let def_span = def.span();
             if def_span.file_id() == file_id && def_span.contains(file_id, line, col) {
                 let size = def_span.approximate_size();
-                match best_def {
-                    None => best_def = Some((def, size)),
-                    Some((_, best_size)) if size < best_size => best_def = Some((def, size)),
-                    _ => {}
+                if best_def.is_none_or(|(_, best_size)| size < best_size) {
+                    best_def = Some((def, size));
                 }
             }
         }
+        best_def.map(|(def, _)| self.def_to_resolved(def))
+    }
 
-        if let Some((def, _)) = best_def {
-            let def_span = def.span();
-            return Some(ResolvedDefinition {
-                name: self.get_str(def.name_offset()),
-                path: self.get_str(def.path_offset()),
-                kind: DefKind::from(def.kind),
-                signature: if def.sig_offset() != 0 {
-                    Some(self.get_str(def.sig_offset()))
+    /// Finds the innermost `RefEntry` at `(file, line, col)` via binary search on span-sorted references.
+    pub fn find_innermost_ref_at(&self, file: &str, line: u32, col: u32) -> Option<&RefEntry> {
+        let file_id = self.find_file_id(file)?;
+        self.find_innermost_ref_at_file_id(file_id, line, col)
+    }
+
+    /// Finds the innermost `RefEntry` at `(file_id, line, col)` via binary search on span-sorted references.
+    pub fn find_innermost_ref_at_file_id(
+        &self,
+        file_id: u32,
+        line: u32,
+        col: u32,
+    ) -> Option<&RefEntry> {
+        let refs = self.references();
+        let key = (file_id, line, col);
+        let hi = refs.partition_point(|r| {
+            let s = r.span();
+            (s.file_id(), s.start_line(), s.start_col()) <= key
+        });
+
+        let mut best: Option<(&RefEntry, u64)> = None;
+        for r in refs[..hi].iter().rev() {
+            let span = r.span();
+            if span.file_id() != file_id {
+                break;
+            }
+            if let Some((_, best_size)) = best {
+                let min_size = if line > span.start_line() {
+                    (line - span.start_line()) as u64 * 80
                 } else {
-                    None
-                },
-                file: self.get_file(def_span.file_id()),
-                start_line: def_span.start_line(),
-                start_col: def_span.start_col(),
-                end_line: def_span.end_line(),
-                end_col: def_span.end_col(),
-                is_macro_expansion: def.is_macro_expansion(),
-                is_reexport: def.is_reexport(),
-                source_root: None,
-                unit_key: None,
-                reader_idx: None,
-            });
+                    (col.saturating_sub(span.start_col()) as u64).min(80)
+                };
+                if min_size > best_size {
+                    break;
+                }
+            }
+            if span.contains(file_id, line, col) {
+                let size = span.approximate_size();
+                if best.is_none_or(|(_, best_size)| size <= best_size) {
+                    best = Some((r, size));
+                }
+            }
         }
+        best.map(|(r, _)| r)
+    }
 
-        None
+    /// Resolves a `RefEntry` to its target `ResolvedDefinition`.
+    pub fn resolve_ref_definition(&self, r: &RefEntry) -> ResolvedDefinition<'_> {
+        let target_path = self.get_str(r.target_path_offset());
+        if r.target_def_id() != u32::MAX {
+            let by_hash = self
+                .find_definition_by_path(target_path)
+                .filter(|d| d.def_id() == r.target_def_id());
+            if let Some(def) = by_hash.or_else(|| {
+                self.definitions()
+                    .iter()
+                    .find(|d| d.def_id() == r.target_def_id())
+            }) {
+                return self.def_to_resolved(def);
+            }
+        }
+        let target_file = self.get_str(r.target_file_offset());
+        let target_unit = self.get_str(r.target_unit_offset());
+        let target_name = target_path.rsplit("::").next().unwrap_or(target_path);
+
+        ResolvedDefinition {
+            name: target_name,
+            path: target_path,
+            kind: DefKind::from(r.kind),
+            signature: None,
+            file: if !target_file.is_empty() {
+                target_file
+            } else {
+                "external"
+            },
+            start_line: r.target_line(),
+            start_col: r.target_col(),
+            end_line: r.target_line(),
+            end_col: r.target_col() + (target_name.len() as u32),
+            is_macro_expansion: r.is_macro_expansion(),
+            is_reexport: false,
+            source_root: None,
+            unit_key: (!target_unit.is_empty()).then_some(target_unit),
+            reader_idx: None,
+        }
+    }
+
+    pub(crate) fn def_to_resolved(&self, def: &DefEntry) -> ResolvedDefinition<'_> {
+        let def_span = def.span();
+        ResolvedDefinition {
+            name: self.get_str(def.name_offset()),
+            path: self.get_str(def.path_offset()),
+            kind: DefKind::from(def.kind),
+            signature: (def.sig_offset() != 0).then(|| self.get_str(def.sig_offset())),
+            file: self.get_file(def_span.file_id()),
+            start_line: def_span.start_line(),
+            start_col: def_span.start_col(),
+            end_line: def_span.end_line(),
+            end_col: def_span.end_col(),
+            is_macro_expansion: def.is_macro_expansion(),
+            is_reexport: def.is_reexport(),
+            source_root: None,
+            unit_key: None,
+            reader_idx: None,
+        }
     }
 
     /// Find all references to a given symbol path (e.g. `thread::Builder::allow_leak`).
@@ -331,64 +339,47 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         let mut best: Option<(&DefEntry, u32, u64)> = None;
 
         for (idx, def) in self.definitions().iter().enumerate() {
-            if def.kind != DefKind::TyParam as u8 {
+            if def.kind != DefKind::TyParam as u8
+                || def.span().file_id() != file_id
+                || self.get_str(def.name_offset()) != name
+            {
                 continue;
             }
-            if self.get_str(def.name_offset()) != name {
-                continue;
-            }
-            let span = def.span();
-            if span.file_id() != file_id {
-                continue;
-            }
-
-            // 1. Check explicit enclosing scope recorded in owners
-            let mut matched_scope = None;
-            if let Some((sl, sc, el, ec)) = self.type_param_scope(idx as u32) {
-                let in_range = (line > sl || (line == sl && col >= sc))
-                    && (line < el || (line == el && col <= ec));
-                if in_range {
-                    let size = ((el.saturating_sub(sl)) as u64) * 10_000
-                        + ((ec.saturating_sub(sc)) as u64);
-                    matched_scope = Some(size);
-                }
-            }
-
-            // 2. Fallback: check parent definition by path or def span
-            let (in_scope, size) = if let Some(scope_size) = matched_scope {
-                (true, scope_size)
-            } else {
-                let path = self.get_str(def.path_offset());
-                if let Some((parent_path, _)) = path.rsplit_once("::") {
-                    if let Some(parent_def) = self.find_definition_by_path(parent_path) {
-                        let p_span = parent_def.span();
-                        let in_range = p_span.file_id() == file_id
-                            && (line > p_span.start_line()
-                                || (line == p_span.start_line() && col >= p_span.start_col()))
-                            && (line < p_span.end_line()
-                                || (line == p_span.end_line() && col <= p_span.end_col()));
-                        (in_range, p_span.approximate_size())
-                    } else {
-                        let in_range = line >= span.start_line() && line <= span.end_line();
-                        (in_range, span.approximate_size())
-                    }
-                } else {
-                    let in_range = line >= span.start_line() && line <= span.end_line();
-                    (in_range, span.approximate_size())
-                }
-            };
-
-            if in_scope {
-                match best {
-                    None => best = Some((def, idx as u32, size)),
-                    Some((_, _, best_size)) if size < best_size => {
-                        best = Some((def, idx as u32, size))
-                    }
-                    _ => {}
+            if let Some(size) = self.check_type_param_scope(file_id, idx as u32, def, line, col) {
+                if best.is_none_or(|(_, _, best_size)| size < best_size) {
+                    best = Some((def, idx as u32, size));
                 }
             }
         }
-
         best.map(|(d, idx, _)| (d, idx))
+    }
+
+    pub(crate) fn check_type_param_scope(
+        &self,
+        file_id: u32,
+        idx: u32,
+        def: &DefEntry,
+        line: u32,
+        col: u32,
+    ) -> Option<u64> {
+        if let Some((sl, sc, el, ec)) = self.type_param_scope(idx) {
+            if (line > sl || (line == sl && col >= sc)) && (line < el || (line == el && col <= ec))
+            {
+                return Some(
+                    ((el.saturating_sub(sl)) as u64) * 10_000 + ((ec.saturating_sub(sc)) as u64),
+                );
+            }
+        }
+        let span = def.span();
+        if let Some((parent_path, _)) = self.get_str(def.path_offset()).rsplit_once("::") {
+            if let Some(parent_def) = self.find_definition_by_path(parent_path) {
+                let p = parent_def.span();
+                let in_range = p.file_id() == file_id
+                    && (line > p.start_line() || (line == p.start_line() && col >= p.start_col()))
+                    && (line < p.end_line() || (line == p.end_line() && col <= p.end_col()));
+                return in_range.then(|| p.approximate_size());
+            }
+        }
+        (line >= span.start_line() && line <= span.end_line()).then(|| span.approximate_size())
     }
 }

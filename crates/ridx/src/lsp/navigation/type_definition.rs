@@ -8,21 +8,20 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! LSP `textDocument/typeDefinition` handler using hash lookup in each reader (`defs_by_hash` / `defs_by_owner_hash`), no full-text scan.
+//! LSP `textDocument/typeDefinition` handler using indexed hash and binary-search table lookups
+//! (`defs_by_hash`, `defs_by_owner`, span-sorted `types`/`references`, and `UnitMatchIndex::defs_by_pos`)
+//! with single-line lexical checks (`PositionConverter::get_line`), avoiding full-text and full-table scans.
 
-use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
+use super::type_definition_lookup::{format_location, lookup_type_by_path, resolve_reader_file};
+use super::type_definition_qual::{
+    is_enclosing_macro_or_raw_string, is_single_token_ref, is_use_statement_line,
+    resolve_qualified_path_fallback, should_prefer_def_at,
+};
+use crate::lsp::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
-use ridx_format::workspace::std_map::std_path_candidates;
-use ridx_format::{join_resolving_overlap, DefEntry, DefKind, IndexReader, WorkspaceIndex};
-use serde_json::{json, Value};
-use std::path::{Path, PathBuf};
-
-type BestHit<'a> = (
-    (bool, bool, bool, bool, bool),
-    PathBuf,
-    &'a str,
-    (u32, u32, u32, u32),
-);
+use memmap2::Mmap;
+use ridx_format::{DefKind, IndexReader, RefEntry, TypeEntry, WorkspaceIndex};
+use serde_json::Value;
 
 const PRIMITIVES: &[&str] = &[
     "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f16",
@@ -30,26 +29,27 @@ const PRIMITIVES: &[&str] = &[
     "never", "!", "()",
 ];
 
-const PRELUDE_TYPES: [(&str, &str); 7] = [
-    ("Option", "core::option::Option"),
-    ("Result", "core::result::Result"),
-    ("Box", "alloc::boxed::Box"),
-    ("String", "alloc::string::String"),
-    ("Vec", "alloc::vec::Vec"),
-    ("Arc", "alloc::sync::Arc"),
-    ("Rc", "alloc::rc::Rc"),
-];
+/// Per-reader pre-resolved context for the queried file and cursor position,
+/// ensuring `RefEntry` and `TypeEntry` binary searches run once per reader per request.
+pub(super) struct FileReaderCtx<'a> {
+    pub idx: usize,
+    pub reader: &'a IndexReader<Mmap>,
+    pub file_id: u32,
+    pub inner_ref: Option<&'a RefEntry>,
+    pub inner_type: Option<&'a TypeEntry>,
+}
 
-/// Resolves `textDocument/typeDefinition` at the requested cursor position via hash lookup in each reader.
+/// Resolves `textDocument/typeDefinition` at the requested cursor position via indexed lookups.
 ///
 /// # Compound Type Resolution Rules
 /// - **Modifiers (`&Foo`, `&mut Foo`, `&'a Foo`, `Foo<'a>`, `dyn Trait`)**: Stripped to `Foo` / `Trait`.
 /// - **Generic wrappers (`Wrapper<i32>`, `Option<Foo>`, `Result<Foo, Bar>`, `Box<Foo>`)**: Uniformly
 ///   resolve to the **outer** type constructor (`Wrapper`, `Option`, `Result`, `Box`).
 /// - **Primitives and built-ins (`u32`, `bool`, `str`, `!`, `()`)**: Return `Value::Null`.
-/// - **Generic type parameters (`TyParam`, e.g. `T`)**: Resolved via [`WorkspaceIndex::find_type_param_in_scope`].
-/// - **Canonical `owner_path` lookup**: Hash lookup in each reader (`defs_by_hash` / `defs_by_owner_hash`), no full-text scan.
-/// - **Type identifier fallback**: Falls back to [`WorkspaceIndex::find_definition_at`].
+/// - **Generic type parameters (`TyParam`, e.g. `T`)**: Resolved via [`WorkspaceIndex::find_type_param_in_reader`].
+/// - **Canonical `owner_path` lookup**: Hash lookup in each reader (`defs_by_hash` / `defs_by_owner`).
+/// - **Type identifier fallback**: Falls back to [`WorkspaceIndex::find_def_at_in_reader`] and qualified-path lookup.
+/// - **Enum variants (`Variant` / `VariantCtor`)**: Intentionally resolve to the parent `Enum` declaration (where rust-analyzer returns `[]`).
 pub fn handle_type_definition(
     msg: &Value,
     workspace: Option<&WorkspaceIndex>,
@@ -70,19 +70,27 @@ pub fn handle_type_definition(
         return Value::Null;
     };
 
-    let mut file_readers: Vec<usize> = ws
-        .reader_indices_for_file(&file)
-        .into_iter()
-        .filter(|&i| ws.target_file_for_reader(i, &file).is_some())
-        .collect();
-    if file_readers.is_empty() {
-        file_readers = ws.candidate_reader_indices_for_file(&file);
-    }
+    let (file_readers, ctx) = build_file_reader_contexts(ws, &file, line_1based, col_1based);
     let pos = (line_1based, col_1based);
+    let line_str = conv.get_line(&file, line_1based).unwrap_or("").to_string();
+    if is_enclosing_macro_or_raw_string(&ctx, &line_str, col_1based) {
+        return Value::Null;
+    }
 
-    if let Some((ty_name, owner_opt)) = ws.type_entry_at(&file, line_1based, col_1based) {
-        if is_enclosing_type_span_multiline(ws, &file_readers, &file, pos) {
-            if let Some(loc) = resolve_from_definition_at(ws, &file_readers, &file, pos, conv) {
+    let type_entry = extract_type_entry(&ctx);
+    let mut tried_def_at = false;
+
+    if let Some((ty_name, owner_opt)) = type_entry {
+        if should_prefer_def_at(&ctx, pos, &line_str) {
+            tried_def_at = true;
+            if let Some(loc) = resolve_from_definition_at(
+                ws,
+                &file_readers,
+                &ctx,
+                (&file, pos, &line_str),
+                type_entry,
+                conv,
+            ) {
                 return loc;
             }
         }
@@ -92,21 +100,21 @@ pub fn handle_type_definition(
             is_primitive_or_builtin(base_ty) || owner_opt.is_some_and(is_primitive_or_builtin);
         if !is_prim {
             if !base_ty.contains("::") {
-                if let Some(tp) =
-                    ws.find_type_param_in_scope(&file, base_ty, line_1based, col_1based)
-                {
+                if let Some(tp) = ctx.iter().find_map(|c| {
+                    ws.find_type_param_in_reader(c.idx, c.file_id, base_ty, line_1based, col_1based)
+                }) {
                     if tp.file != "external" {
-                        let c = (tp.start_line, tp.start_col, tp.end_line, tp.end_col);
-                        return format_location(&tp.resolved_path(), tp.file, c, conv);
+                        let coords = (tp.start_line, tp.start_col, tp.end_line, tp.end_col);
+                        return format_location(&tp.resolved_path(), tp.file, coords, conv);
                     }
                 }
             }
-            if let Some(owner_base) = owner_opt
+            let owner_base = owner_opt
                 .map(|o| strip_generics(peel_type_modifiers(o)))
-                .filter(|s| !s.is_empty())
-            {
+                .filter(|s| !s.is_empty());
+            if let Some(owner_path) = owner_base {
                 if let Some(loc) =
-                    lookup_type_by_path(ws, &file_readers, &file, owner_base, true, conv)
+                    lookup_type_by_path(ws, &file_readers, &file, owner_path, true, conv)
                 {
                     return loc;
                 }
@@ -121,106 +129,203 @@ pub fn handle_type_definition(
         }
     }
 
-    resolve_from_definition_at(ws, &file_readers, &file, pos, conv).unwrap_or(Value::Null)
+    if tried_def_at {
+        return Value::Null;
+    }
+    resolve_from_definition_at(
+        ws,
+        &file_readers,
+        &ctx,
+        (&file, pos, &line_str),
+        type_entry,
+        conv,
+    )
+    .unwrap_or(Value::Null)
 }
 
-fn is_enclosing_type_span_multiline(
-    ws: &WorkspaceIndex,
-    file_readers: &[usize],
+fn build_file_reader_contexts<'a>(
+    ws: &'a WorkspaceIndex,
     file: &str,
-    (line, col): (u32, u32),
-) -> bool {
-    file_readers.iter().any(|&i| {
-        ws.target_file_for_reader(i, file)
-            .and_then(|tf| ws.readers()[i].find_innermost_type_entry(tf.as_ref(), line, col))
-            .is_some_and(|e| e.span().start_line() != e.span().end_line())
+    line: u32,
+    col: u32,
+) -> (Vec<usize>, Vec<FileReaderCtx<'a>>) {
+    let mut raw_indices = ws.reader_indices_for_file(file);
+    raw_indices
+        .sort_by_key(|&idx| usize::from(!ws.target_kind_at(idx).is_some_and(|k| k.is_lib())));
+    let mut file_readers = Vec::new();
+    let mut ctx = Vec::new();
+
+    for idx in raw_indices {
+        let Some(tf) = ws.target_file_for_reader(idx, file) else {
+            continue;
+        };
+        let reader = &ws.readers()[idx];
+        let Some(file_id) = reader.find_file_id(tf.as_ref()) else {
+            continue;
+        };
+        file_readers.push(idx);
+        ctx.push(FileReaderCtx {
+            idx,
+            reader,
+            file_id,
+            inner_ref: reader.find_innermost_ref_at_file_id(file_id, line, col),
+            inner_type: reader.find_innermost_type_entry(tf.as_ref(), line, col),
+        });
+    }
+
+    if ctx.is_empty() {
+        for idx in ws.candidate_reader_indices_for_file(file) {
+            let Some(tf) = ws.target_file_for_reader(idx, file) else {
+                continue;
+            };
+            let reader = &ws.readers()[idx];
+            let Some(file_id) = reader.find_file_id(tf.as_ref()) else {
+                continue;
+            };
+            file_readers.push(idx);
+            ctx.push(FileReaderCtx {
+                idx,
+                reader,
+                file_id,
+                inner_ref: reader.find_innermost_ref_at_file_id(file_id, line, col),
+                inner_type: reader.find_innermost_type_entry(tf.as_ref(), line, col),
+            });
+        }
+    }
+
+    (file_readers, ctx)
+}
+
+fn extract_type_entry<'a>(ctx: &[FileReaderCtx<'a>]) -> Option<(&'a str, Option<&'a str>)> {
+    ctx.iter().find_map(|c| {
+        let entry = c.inner_type?;
+        let ty_name = c.reader.get_str(entry.type_offset());
+        let owner_offset = entry.owner_path_offset();
+        let owner = (owner_offset != 0)
+            .then(|| c.reader.get_str(owner_offset))
+            .filter(|s| !s.is_empty());
+        Some((ty_name, owner))
     })
 }
 
 fn resolve_from_definition_at(
     ws: &WorkspaceIndex,
     file_readers: &[usize],
-    file: &str,
-    (line, col): (u32, u32),
+    ctx: &[FileReaderCtx<'_>],
+    (file, (line, col), line_str): (&str, (u32, u32), &str),
+    type_entry: Option<(&str, Option<&str>)>,
     conv: &mut PositionConverter,
 ) -> Option<Value> {
+    if is_use_statement_line(line_str) {
+        return None;
+    }
     let mut needs_cross = false;
-    for &i in file_readers {
-        let Some(tf) = ws.target_file_for_reader(i, file) else {
+    for c in ctx {
+        let Some(resolved) = ws.find_def_at_in_reader(c.idx, c.file_id, line, col, c.inner_ref)
+        else {
             continue;
         };
-        let Some(r) = ws.readers()[i].find_definition_at(tf.as_ref(), line, col) else {
+        if c.inner_ref
+            .is_some_and(|r| !is_single_token_ref(c.reader, r, line_str))
+        {
             continue;
-        };
-        if matches!(r.kind, DefKind::Variant | DefKind::VariantCtor) {
-            let (enum_path, _) = r.path.rsplit_once("::")?;
+        }
+        if matches!(resolved.kind, DefKind::Variant | DefKind::VariantCtor) {
+            let (enum_path, _) = resolved.path.rsplit_once("::")?;
             return lookup_type_by_path(ws, file_readers, file, enum_path, true, conv);
         }
-        if !is_type_def_kind(r.kind) && r.kind != DefKind::Use {
+        if !is_type_def_kind(resolved.kind) && resolved.kind != DefKind::Use {
+            if resolved.kind == DefKind::Mod {
+                break;
+            }
             return None;
         }
-        if r.file != "external"
-            && !r.is_reexport
-            && is_type_def_kind(r.kind)
-            && !is_primitive_or_builtin(r.name)
+        if resolved.file != "external"
+            && !resolved.is_reexport
+            && is_type_def_kind(resolved.kind)
+            && !is_primitive_or_builtin(resolved.name)
         {
-            let c = (r.start_line, r.start_col, r.end_line, r.end_col);
-            let res = resolve_reader_file(ws, i, r.file);
-            return Some(format_location(&res, r.file, c, conv));
+            let coords = (
+                resolved.start_line,
+                resolved.start_col,
+                resolved.end_line,
+                resolved.end_col,
+            );
+            let resolved_path = resolve_reader_file(ws, c.idx, resolved.file);
+            return Some(format_location(&resolved_path, resolved.file, coords, conv));
+        }
+        if is_type_def_kind(resolved.kind) && !is_primitive_or_builtin(resolved.name) {
+            if let Some(loc) =
+                lookup_type_by_path(ws, file_readers, file, resolved.path, true, conv)
+            {
+                return Some(loc);
+            }
         }
         needs_cross = true;
         break;
     }
-    if !needs_cross && !file_readers.is_empty() {
-        return None;
-    }
-    let def = ws.find_definition_at(file, line, col)?;
-    if matches!(def.kind, DefKind::Variant | DefKind::VariantCtor) {
-        let (enum_path, _) = def.path.rsplit_once("::")?;
-        return lookup_type_by_path(ws, file_readers, file, enum_path, true, conv);
-    }
-    if is_type_def_kind(def.kind) && !is_primitive_or_builtin(def.name) {
-        if def.file != "external" && !def.is_reexport {
-            let c = (def.start_line, def.start_col, def.end_line, def.end_col);
-            return Some(format_location(&def.resolved_path(), def.file, c, conv));
+    if needs_cross || ctx.is_empty() {
+        if let Some(def) = ws.find_definition_at(file, line, col) {
+            if matches!(def.kind, DefKind::Variant | DefKind::VariantCtor) {
+                let (enum_path, _) = def.path.rsplit_once("::")?;
+                return lookup_type_by_path(ws, file_readers, file, enum_path, true, conv);
+            }
+            if is_type_def_kind(def.kind) && !is_primitive_or_builtin(def.name) {
+                if def.file != "external" && !def.is_reexport {
+                    let coords = (def.start_line, def.start_col, def.end_line, def.end_col);
+                    return Some(format_location(
+                        &def.resolved_path(),
+                        def.file,
+                        coords,
+                        conv,
+                    ));
+                }
+                return lookup_type_by_path(ws, file_readers, file, def.path, true, conv);
+            }
         }
-        return lookup_type_by_path(ws, file_readers, file, def.path, true, conv);
     }
-    None
+    resolve_qualified_path_fallback(
+        ws,
+        file_readers,
+        ctx,
+        (file, (line, col), line_str),
+        type_entry,
+        conv,
+    )
 }
 
-fn is_type_def_kind(k: DefKind) -> bool {
+pub(super) fn is_type_def_kind(kind: DefKind) -> bool {
     use DefKind::*;
-    [Struct, StructCtor, Enum, Union, Trait, TyAlias, TyParam].contains(&k)
+    [Struct, StructCtor, Enum, Union, Trait, TyAlias, TyParam].contains(&kind)
 }
 
-fn is_primitive_or_builtin(ty: &str) -> bool {
-    let t = ty.trim();
-    t.is_empty()
-        || t.starts_with(['[', '('])
-        || ["fn(", "unsafe fn(", "extern "]
+pub(super) fn is_primitive_or_builtin(ty: &str) -> bool {
+    let trimmed = ty.trim();
+    trimmed.is_empty()
+        || trimmed.starts_with(['[', '(', '{'])
+        || ["fn(", "unsafe fn(", "extern ", "for<"]
             .iter()
-            .any(|p| t.starts_with(p))
-        || PRIMITIVES.contains(&t)
+            .any(|p| trimmed.starts_with(p))
+        || PRIMITIVES.contains(&trimmed)
 }
 
-fn peel_type_modifiers(mut ty: &str) -> &str {
+pub(super) fn peel_type_modifiers(mut ty: &str) -> &str {
     loop {
         ty = ty.trim();
         if let Some(rest) = ty.strip_prefix('&') {
-            let mut r = rest.trim_start();
-            if r.starts_with('\'') {
-                let Some(idx) = r.find(|c: char| c.is_whitespace() || c == '&') else {
+            let mut inner = rest.trim_start();
+            if inner.starts_with('\'') {
+                let Some(idx) = inner.find(|c: char| c.is_whitespace() || c == '&') else {
                     break;
                 };
-                r = r[idx..].trim_start();
+                inner = inner[idx..].trim_start();
             }
-            if let Some(after_mut) = r.strip_prefix("mut") {
+            if let Some(after_mut) = inner.strip_prefix("mut") {
                 if after_mut.starts_with(char::is_whitespace) || after_mut.starts_with('&') {
-                    r = after_mut.trim_start();
+                    inner = after_mut.trim_start();
                 }
             }
-            ty = r;
+            ty = inner;
             continue;
         }
         if let Some(rest) = ["*const ", "*mut ", "dyn ", "impl "]
@@ -235,162 +340,10 @@ fn peel_type_modifiers(mut ty: &str) -> &str {
     ty.split_once(" + ").map_or(ty, |(head, _)| head.trim())
 }
 
-fn strip_generics(ty: &str) -> &str {
-    let s = ty.trim().strip_suffix("::").unwrap_or(ty.trim());
-    let head = s.find('<').map_or(s, |idx| s[..idx].trim());
+pub(super) fn strip_generics(ty: &str) -> &str {
+    let trimmed = ty.trim().strip_suffix("::").unwrap_or(ty.trim());
+    let head = trimmed
+        .find('<')
+        .map_or(trimmed, |idx| trimmed[..idx].trim());
     head.strip_suffix("::").unwrap_or(head)
-}
-
-fn expand_candidates(path: &str) -> Vec<String> {
-    let mut out = std_path_candidates(path);
-    if let Some(rest) = path.strip_prefix("core::") {
-        out.extend([format!("std::{rest}"), format!("alloc::{rest}")]);
-    } else if let Some(rest) = path.strip_prefix("alloc::") {
-        out.extend([format!("std::{rest}"), format!("core::{rest}")]);
-    } else if let Some((_, c)) = PRELUDE_TYPES.into_iter().find(|(s, _)| *s == path) {
-        out.push(c.to_string());
-    }
-    out
-}
-
-fn find_matching_type_defs<'a, B: AsRef<[u8]>>(
-    reader: &'a IndexReader<B>,
-    qp: &str,
-) -> Vec<&'a DefEntry> {
-    let mut results = Vec::new();
-    if let Some(def) = reader.find_definition_by_path(qp) {
-        if is_type_def_kind(DefKind::from(def.kind)) {
-            results.push(def);
-        }
-    }
-    if let Some((parent, _)) = qp.rsplit_once("::") {
-        for d in reader.find_definitions_by_owner(parent) {
-            if reader.get_str(d.path_offset()) == qp
-                && is_type_def_kind(DefKind::from(d.kind))
-                && !results.iter().any(|existing| std::ptr::eq(*existing, d))
-            {
-                results.push(d);
-            }
-        }
-    }
-    results
-}
-
-fn lookup_type_by_path(
-    ws: &WorkspaceIndex,
-    file_readers: &[usize],
-    query_file: &str,
-    target_path: &str,
-    is_canonical_owner: bool,
-    conv: &mut PositionConverter,
-) -> Option<Value> {
-    let query_path = Path::new(query_file);
-    let crate_units: Vec<(&str, &str)> = file_readers
-        .iter()
-        .filter_map(|&idx| ws.readers().get(idx))
-        .map(|r| (r.crate_name(), r.unit_key()))
-        .collect();
-
-    let in_same_crate = |idx: usize| -> bool {
-        ws.readers().get(idx).is_some_and(|r| {
-            let (cr, uk) = (r.crate_name(), r.unit_key());
-            crate_units
-                .iter()
-                .any(|(c, u)| (!cr.is_empty() && *c == cr) || (!uk.is_empty() && *u == uk))
-        })
-    };
-
-    let candidates = expand_candidates(target_path);
-    let mut best: Option<BestHit<'_>> = None;
-
-    for priority_only in [true, false] {
-        for cand in &candidates {
-            let first_seg = cand.split("::").next().unwrap_or("");
-            for (r_idx, reader) in ws.readers().iter().enumerate() {
-                let cr_name = reader.crate_name();
-                let same_cr = in_same_crate(r_idx);
-                let cr_match = !first_seg.is_empty() && cr_name == first_seg;
-                if (same_cr || cr_match) != priority_only {
-                    continue;
-                }
-                for qp in &candidate_queries(cand, cr_name) {
-                    for def in find_matching_type_defs(reader, qp) {
-                        let s = def.span();
-                        let raw = reader.get_file(s.file_id());
-                        if raw == "external" || raw.is_empty() {
-                            continue;
-                        }
-                        let res_path = resolve_reader_file(ws, r_idx, raw);
-                        let is_dep = ws.is_reader_dependency(r_idx);
-                        let score = (
-                            !def.is_reexport(),
-                            res_path == query_path,
-                            same_cr,
-                            cr_match,
-                            !is_dep,
-                        );
-                        if best.as_ref().is_none_or(|(bs, ..)| score > *bs) {
-                            let c = (s.start_line(), s.start_col(), s.end_line(), s.end_col());
-                            best = Some((score, res_path, raw, c));
-                        }
-                    }
-                }
-            }
-            if best.as_ref().is_some_and(|(bs, ..)| bs.0) && is_canonical_owner {
-                break;
-            }
-        }
-        if best.as_ref().is_some_and(|(bs, ..)| bs.0) {
-            break;
-        }
-    }
-
-    let (_, resolved_path, raw_file, coords) = best?;
-    Some(format_location(&resolved_path, raw_file, coords, conv))
-}
-
-fn candidate_queries(cand: &str, cr: &str) -> Vec<String> {
-    match (cand.contains("::"), cr.is_empty()) {
-        (true, false) => {
-            let alt = cand
-                .strip_prefix(&format!("{cr}::"))
-                .map_or_else(|| format!("{cr}::{cand}"), str::to_string);
-            vec![cand.to_string(), alt]
-        }
-        (false, false) => vec![format!("{cr}::{cand}"), cand.to_string()],
-        _ => vec![cand.to_string()],
-    }
-}
-
-fn resolve_reader_file(ws: &WorkspaceIndex, reader_idx: usize, raw_file: &str) -> PathBuf {
-    let p = Path::new(raw_file);
-    if p.is_absolute() {
-        return p.to_path_buf();
-    }
-    let primary = ws
-        .source_root_at(reader_idx)
-        .or_else(|| ws.workspace_root())
-        .map_or_else(|| p.to_path_buf(), |r| join_resolving_overlap(r, p));
-    match (!primary.exists(), ws.workspace_root()) {
-        (true, Some(r)) if join_resolving_overlap(r, p).exists() => join_resolving_overlap(r, p),
-        _ => primary,
-    }
-}
-
-fn format_location(
-    resolved_path: &Path,
-    raw_file: &str,
-    (sl, sc, el, ec): (u32, u32, u32, u32),
-    conv: &mut PositionConverter,
-) -> Value {
-    let path_str = resolved_path.to_str().unwrap_or(raw_file);
-    let sc_u16 = conv.char_col_to_utf16_col(path_str, sl, sc);
-    let ec_u16 = conv.char_col_to_utf16_col(path_str, el, ec);
-    json!({
-        "uri": path_to_uri(path_str),
-        "range": {
-            "start": { "line": sl.saturating_sub(1), "character": sc_u16 },
-            "end": { "line": el.saturating_sub(1), "character": ec_u16 }
-        }
-    })
 }
