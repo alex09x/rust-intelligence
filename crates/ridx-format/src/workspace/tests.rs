@@ -14,6 +14,7 @@ use super::*;
 use crate::format::DefKind;
 use crate::writer::{IndexWriter, RawDefinition};
 use std::fs::File;
+use std::io;
 
 pub(super) struct TestDir(pub(super) PathBuf);
 impl Drop for TestDir {

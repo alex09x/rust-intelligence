@@ -10,7 +10,6 @@
 
 //! Incremental reload, modification detection, and variant reconciliation.
 
-use super::cache_resolver;
 use super::collect_ridx_files;
 use super::WorkspaceIndex;
 use crate::reader::IndexReader;

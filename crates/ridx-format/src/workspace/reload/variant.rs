@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use super::super::cache_resolver::CacheObjectResolver;
 use super::super::collect_ridx_files;
 use super::super::manifest::VariantManifest;
 use super::super::WorkspaceIndex;
@@ -142,8 +143,7 @@ impl WorkspaceIndex {
 
                                     // Load dependency shards for new variant if any
                                     let cache_dir = crate::format::resolve_cache_dir();
-                                    let mut cache_resolver =
-                                        super::cache_resolver::CacheObjectResolver::new(cache_dir);
+                                    let mut cache_resolver = CacheObjectResolver::new(cache_dir);
                                     for dep in &manifest.dependency_shards {
                                         let cand = cache_resolver.resolve(dep);
                                         if let Some(dep_file) = cand {
