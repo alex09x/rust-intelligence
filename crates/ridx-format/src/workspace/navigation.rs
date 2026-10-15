@@ -628,6 +628,26 @@ impl WorkspaceIndex {
         )
     }
 
+    #[inline]
+    fn matches_unit_memoized<'a>(
+        &self,
+        match_memo: &mut std::collections::HashMap<(usize, &'a str), bool>,
+        reader_idx: usize,
+        ref_target_unit: &'a str,
+        target_unit: &str,
+        target_crate: &str,
+    ) -> bool {
+        if ref_target_unit == target_unit {
+            true
+        } else if let Some(&cached) = match_memo.get(&(reader_idx, ref_target_unit)) {
+            cached
+        } else {
+            let res = self.matches_unit(reader_idx, ref_target_unit, target_unit, target_crate);
+            match_memo.insert((reader_idx, ref_target_unit), res);
+            res
+        }
+    }
+
     /// Finds all references to a symbol, optionally scoped to a target dependency unit.
     pub fn find_references_for_unit<'a>(
         &'a self,
@@ -835,16 +855,13 @@ impl WorkspaceIndex {
                     let r_target_unit = reader.target_unit(r);
                     if let Some(target_unit) = target_unit_key {
                         if !r_target_unit.is_empty() {
-                            let matches = if r_target_unit == target_unit {
-                                true
-                            } else if let Some(&cached) = match_memo.get(&(i, r_target_unit)) {
-                                cached
-                            } else {
-                                let res = self.matches_unit(i, r_target_unit, target_unit, target_crate);
-                                match_memo.insert((i, r_target_unit), res);
-                                res
-                            };
-                            if !matches {
+                            if !self.matches_unit_memoized(
+                                &mut match_memo,
+                                i,
+                                r_target_unit,
+                                target_unit,
+                                target_crate,
+                            ) {
                                 continue;
                             }
                         } else if reader_crate == target_crate {
@@ -925,16 +942,13 @@ impl WorkspaceIndex {
                 for (alias, uk) in extern_map {
                     if alias != target_crate {
                         if let Some(target_unit) = target_unit_key {
-                            let matches = if uk == target_unit {
-                                true
-                            } else if let Some(&cached) = match_memo.get(&(i, uk.as_str())) {
-                                cached
-                            } else {
-                                let res = self.matches_unit(i, uk, target_unit, target_crate);
-                                match_memo.insert((i, uk.as_str()), res);
-                                res
-                            };
-                            if !matches {
+                            if !self.matches_unit_memoized(
+                                &mut match_memo,
+                                i,
+                                uk.as_str(),
+                                target_unit,
+                                target_crate,
+                            ) {
                                 continue;
                             }
                         }
@@ -943,21 +957,13 @@ impl WorkspaceIndex {
                             let r_target_unit = reader.target_unit(r);
                             if let Some(target_unit) = target_unit_key {
                                 if !r_target_unit.is_empty() {
-                                    let matches = if r_target_unit == target_unit {
-                                        true
-                                    } else if let Some(&cached) = match_memo.get(&(i, r_target_unit)) {
-                                        cached
-                                    } else {
-                                        let res = self.matches_unit(
-                                            i,
-                                            r_target_unit,
-                                            target_unit,
-                                            target_crate,
-                                        );
-                                        match_memo.insert((i, r_target_unit), res);
-                                        res
-                                    };
-                                    if !matches {
+                                    if !self.matches_unit_memoized(
+                                        &mut match_memo,
+                                        i,
+                                        r_target_unit,
+                                        target_unit,
+                                        target_crate,
+                                    ) {
                                         continue;
                                     }
                                 } else if let Some((
