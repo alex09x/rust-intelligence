@@ -63,9 +63,10 @@ def test_compare_answers_by_digest_and_multiset():
     cmp = compare_answers(runs, answers)
     assert cmp["pairs"] == [{
         "a": "a", "b": "b", "files": 2, "identical": 1, "differing": 1, "subset_violations": 0,
-        "b_past_eof_remaining": 0,
-        "differing_details": [{"file": "src/y.rs", "lenses_a": 3, "lenses_b": 1, "removed": 2, "added": 0,
-                               "b_subset_of_a": True, "b_lenses_past_eof": 0}],
+        "set_of_a_violations": 1, "b_past_eof_remaining": 0,
+        "differing_details": [{"file": "src/y.rs", "lenses_a": 3, "lenses_b": 1, "distinct_a": 3, "distinct_b": 1,
+                               "removed": 2, "added": 0, "b_subset_of_a": True, "b_is_set_of_a": False,
+                               "b_lenses_past_eof": 0}],
     }]
     assert cmp["unstable_within_binary"] == {"a": ["src/y.rs"]}
     answers["b"]["src/y.rs"] = Counter([beta, lens_key(_lens(5, "new"))])
@@ -74,8 +75,32 @@ def test_compare_answers_by_digest_and_multiset():
     print("PASS: compare_answers pairs binaries by digest and flags unstable answers")
 
 
+def test_compare_answers_set_of_a_holds_only_when_every_distinct_lens_survives_once():
+    runs = [{"name": "a", "round": 1, "rows": [_row("y", 1.0, 5, dig="dup")]},
+            {"name": "b", "round": 1, "rows": [_row("y", 1.0, 2, dig="dedup")]}]
+    alpha, beta = lens_key(_lens(0, "alpha")), lens_key(_lens(1, "beta"))
+    a = {"src/y.rs": Counter([alpha, alpha, beta, beta, beta])}
+
+    def detail(b_keys):
+        pair = compare_answers(runs, {"a": a, "b": {"src/y.rs": Counter(b_keys)}})["pairs"][0]
+        d = pair["differing_details"][0]
+        return (d["distinct_a"], d["distinct_b"], d["removed"], d["b_subset_of_a"], d["b_is_set_of_a"],
+                pair["set_of_a_violations"])
+
+    # Every distinct lens kept exactly once: the deduplicated answer is the set of the old one.
+    assert detail([alpha, beta]) == (2, 2, 3, True, True, 0)
+    # A distinct lens lost: still a sub-multiset, but not the set of the old answer.
+    assert detail([alpha]) == (2, 1, 4, True, False, 1)
+    # A repeat left behind: a sub-multiset, but not a set.
+    assert detail([alpha, alpha, beta]) == (2, 2, 2, True, False, 1)
+    # A lens that was not there before: neither.
+    assert detail([alpha, beta, lens_key(_lens(7, "new"))]) == (2, 3, 3, False, False, 1)
+    print("PASS: compare_answers reports whether the second answer is the set of the first")
+
+
 if __name__ == "__main__":
     test_lens_checks_count_lenses_outside_the_file()
     test_summarize_percentiles_and_slowest()
     test_compare_answers_by_digest_and_multiset()
+    test_compare_answers_set_of_a_holds_only_when_every_distinct_lens_survives_once()
     print("PASS: all code_lens_latency tests passed")

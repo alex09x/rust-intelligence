@@ -160,13 +160,16 @@ def compare_answers(runs, answers):
                 ca, cb = answers.get(a, {}).get(f, Counter()), answers.get(b, {}).get(f, Counter())
                 details.append({
                     "file": f, "lenses_a": sum(ca.values()), "lenses_b": sum(cb.values()),
+                    "distinct_a": len(ca), "distinct_b": len(cb),
                     "removed": sum((ca - cb).values()), "added": sum((cb - ca).values()),
-                    "b_subset_of_a": not (cb - ca), "b_lenses_past_eof": past_eof.get(b, {}).get(f),
+                    "b_subset_of_a": not (cb - ca), "b_is_set_of_a": cb == Counter(set(ca)),
+                    "b_lenses_past_eof": past_eof.get(b, {}).get(f),
                 })
             out["pairs"].append({
                 "a": a, "b": b, "files": len(files), "identical": len(files) - len(differing),
                 "differing": len(differing),
                 "subset_violations": sum(1 for d in details if not d["b_subset_of_a"]),
+                "set_of_a_violations": sum(1 for d in details if not d["b_is_set_of_a"]),
                 "b_past_eof_remaining": sum(1 for d in details if d["b_lenses_past_eof"]),
                 "differing_details": details,
             })
@@ -228,7 +231,8 @@ def main():
             "lens_names_missing": "distinct lens names that do not occur in the file text",
             "digest": "sha256 of the warm answer serialised with sorted keys and no whitespace",
             "answers.pairs": "per pair of binaries, files with a different warm digest in any round; for each, "
-                             "the lens multisets of the first round compared (removed, added, b_subset_of_a)",
+                             "the lens multisets of the first round compared (removed, added, b_subset_of_a; "
+                             "b_is_set_of_a: the second answer holds every distinct lens of the first exactly once)",
             "slowest_warm": f"the {TOP} files with the highest warm_us in the run",
         },
     }
