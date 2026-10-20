@@ -25,6 +25,7 @@ per-run summaries (percentiles, the slowest files) and the answer comparison bet
 import argparse
 import hashlib
 import json
+from collections import Counter
 import socket
 import subprocess
 import sys
@@ -52,18 +53,26 @@ def file_facts(repo_dir, rel):
         text = (Path(repo_dir) / rel).read_bytes()
     except OSError:
         return {"bytes": None, "lines": None, "text": ""}
-    return {"bytes": len(text), "lines": text.count(b"\n"), "text": text.decode("utf-8", errors="replace")}
+    decoded = text.decode("utf-8", errors="replace")
+    return {"bytes": len(text), "lines": len(decoded.splitlines()), "text": decoded}
+
+
+def lens_key(lens):
+    r = lens.get("range", {})
+    s, e = r.get("start", {}), r.get("end", {})
+    return (s.get("line"), s.get("character"), e.get("line"), e.get("character"), lens.get("data", {}).get("name"))
 
 
 def lens_checks(result, facts):
-    """Lenses that cannot belong to the file: start line past its end, or a name absent from its text."""
+    """Lenses that cannot belong to the file: a zero-based start line at or past the number of
+    lines in the file, or a name absent from its text."""
     if not isinstance(result, list):
-        return {"lenses_beyond_eof": None, "lens_names_missing": None}
+        return {"lenses_past_eof": None, "lens_names_missing": None}
     lines = facts["lines"] or 0
-    beyond = sum(1 for lens in result if (lens.get("range", {}).get("start", {}).get("line", 0) or 0) > lines)
+    past = sum(1 for lens in result if (lens.get("range", {}).get("start", {}).get("line", 0) or 0) >= lines)
     names = {lens.get("data", {}).get("name") for lens in result} - {None}
     missing = sum(1 for n in names if n not in facts["text"])
-    return {"lenses_beyond_eof": beyond, "lens_names_missing": missing}
+    return {"lenses_past_eof": past, "lens_names_missing": missing}
 
 
 def digest(result):
@@ -78,13 +87,16 @@ def version_of(binary):
         return f"unavailable: {exc}"
 
 
-def query_files(srv, files, repo_dir, facts):
+def query_files(srv, files, repo_dir, facts, keep=None):
+    """Asks every file twice; `keep`, when given, receives the warm answer of each file as a lens multiset."""
     rows = []
     for item in files:
         params = {"textDocument": {"uri": f"file://{Path(repo_dir) / item['file']}"}}
         res_cold, cold_us, err_cold = srv.request("textDocument/codeLens", params, timeout=30.0)
         res_warm, warm_us, err_warm = srv.request("textDocument/codeLens", params, timeout=30.0)
         res = res_warm if err_warm is None else res_cold
+        if keep is not None and isinstance(res, list):
+            keep[item["file"]] = Counter(lens_key(lens) for lens in res)
         rows.append({
             "name": item["name"],
             "file": item["file"],
@@ -100,11 +112,11 @@ def query_files(srv, files, repo_dir, facts):
     return rows
 
 
-def run_binary(binary, repo_dir, files, facts):
+def run_binary(binary, repo_dir, files, facts, keep=None):
     srv = SimpleLspProcess([str(binary), "lsp"], repo_dir, is_ra=False)
     t0 = time.perf_counter()
     try:
-        rows = query_files(srv, files, repo_dir, facts)
+        rows = query_files(srv, files, repo_dir, facts, keep)
     finally:
         srv.close()
     return rows, round((time.perf_counter() - t0) * 1000.0, 1)
@@ -122,26 +134,42 @@ def summarize(rows):
         **{f"cold_p{p}_us": round(percentile(cold, p), 1) for p in (50, 90, 95, 99)},
         **{f"warm_p{p}_us": round(percentile(warm, p), 1) for p in (50, 90, 95, 99)},
         "slowest_warm": [
-            {k: r[k] for k in ("name", "file", "lenses", "lenses_beyond_eof", "lens_names_missing", "bytes", "lines",
+            {k: r[k] for k in ("name", "file", "lenses", "lenses_past_eof", "lens_names_missing", "bytes", "lines",
                                "cold_us", "warm_us")} for r in slowest
         ],
     }
 
 
-def compare_answers(runs):
-    """Per pair of binaries: files whose warm answers differ (by digest) across any round."""
-    by_binary = {}
+def compare_answers(runs, answers):
+    """Per pair of binaries: files whose warm answers differ (by digest) across any round, and for
+    each of them whether the second binary's answer (first round) is a sub-multiset of the first's."""
+    by_binary, past_eof = {}, {}
     for run in runs:
         for row in run["rows"]:
             by_binary.setdefault(run["name"], {}).setdefault(row["file"], set()).add(row["digest"])
+            if run["round"] == 1:
+                past_eof.setdefault(run["name"], {})[row["file"]] = row["lenses_past_eof"]
     names = list(by_binary)
     out = {"binaries": names, "pairs": []}
     for i, a in enumerate(names):
         for b in names[i + 1:]:
             files = sorted(set(by_binary[a]) | set(by_binary[b]))
             differing = [f for f in files if by_binary[a].get(f) != by_binary[b].get(f)]
-            out["pairs"].append({"a": a, "b": b, "files": len(files), "identical": len(files) - len(differing),
-                                 "differing": differing})
+            details = []
+            for f in differing:
+                ca, cb = answers.get(a, {}).get(f, Counter()), answers.get(b, {}).get(f, Counter())
+                details.append({
+                    "file": f, "lenses_a": sum(ca.values()), "lenses_b": sum(cb.values()),
+                    "removed": sum((ca - cb).values()), "added": sum((cb - ca).values()),
+                    "b_subset_of_a": not (cb - ca), "b_lenses_past_eof": past_eof.get(b, {}).get(f),
+                })
+            out["pairs"].append({
+                "a": a, "b": b, "files": len(files), "identical": len(files) - len(differing),
+                "differing": len(differing),
+                "subset_violations": sum(1 for d in details if not d["b_subset_of_a"]),
+                "b_past_eof_remaining": sum(1 for d in details if d["b_lenses_past_eof"]),
+                "differing_details": details,
+            })
     unstable = {name: sorted(f for f, d in files.items() if len(d) > 1) for name, files in by_binary.items()}
     out["unstable_within_binary"] = {k: v for k, v in unstable.items() if v}
     return out
@@ -167,11 +195,12 @@ def main():
     started = datetime.now(timezone.utc).isoformat()
     print(f"{repo_dir.name}: {len(files)} files, {shards} index shards", flush=True)
 
-    runs = []
+    runs, answers = [], {}
     for round_no in range(1, args.repeat + 1):
         for name, binary in ridx_bins:
             print(f"round {round_no}: ridx {name} ({binary}) ...", flush=True)
-            rows, duration_ms = run_binary(binary, repo_dir, files, facts)
+            keep = answers.setdefault(name, {}) if round_no == 1 else None
+            rows, duration_ms = run_binary(binary, repo_dir, files, facts, keep)
             summary = summarize(rows)
             runs.append({"name": name, "round": round_no, "binary": "/".join(binary.parts[-3:]),
                          "version": version_of(binary), "duration_ms": duration_ms, "summary": summary, "rows": rows})
@@ -190,14 +219,16 @@ def main():
         "timestamp_start": started,
         "timestamp_end": datetime.now(timezone.utc).isoformat(),
         "runs": runs,
-        "answers": compare_answers(runs),
+        "answers": compare_answers(runs, answers),
         "metric_definitions": {
             "cold_us": "first textDocument/codeLens round trip for the file, measured by the client",
             "warm_us": "second round trip for the same file, immediately after the first",
             "lenses": "number of items in the warm answer",
-            "lenses_beyond_eof": "lenses whose start line lies past the last line of the file",
+            "lenses_past_eof": "lenses whose zero-based start line is at or past the number of lines in the file",
             "lens_names_missing": "distinct lens names that do not occur in the file text",
             "digest": "sha256 of the warm answer serialised with sorted keys and no whitespace",
+            "answers.pairs": "per pair of binaries, files with a different warm digest in any round; for each, "
+                             "the lens multisets of the first round compared (removed, added, b_subset_of_a)",
             "slowest_warm": f"the {TOP} files with the highest warm_us in the run",
         },
     }

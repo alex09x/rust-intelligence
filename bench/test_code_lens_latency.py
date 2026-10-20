@@ -17,7 +17,9 @@ bench_dir = Path(__file__).resolve().parent
 if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
 
-from code_lens_latency import compare_answers, digest, lens_checks, summarize
+from collections import Counter
+
+from code_lens_latency import compare_answers, digest, lens_checks, lens_key, summarize
 
 
 def _lens(line, name):
@@ -27,15 +29,16 @@ def _lens(line, name):
 
 def _row(name, warm, lenses, error=None, dig="d"):
     return {"name": name, "file": f"src/{name}.rs", "bytes": 10, "lines": 3, "lenses": lenses,
-            "lenses_beyond_eof": 0, "lens_names_missing": 0, "digest": dig, "error": error,
+            "lenses_past_eof": 0, "lens_names_missing": 0, "digest": dig, "error": error,
             "cold_us": warm * 2, "warm_us": warm}
 
 
 def test_lens_checks_count_lenses_outside_the_file():
     facts = {"bytes": 30, "lines": 3, "text": "fn alpha() {}\nstruct Beta;\nfn gamma() {}\n"}
-    result = [_lens(0, "alpha"), _lens(1, "Beta"), _lens(2, "gamma"), _lens(40, "delta"), _lens(41, "delta")]
-    assert lens_checks(result, facts) == {"lenses_beyond_eof": 2, "lens_names_missing": 1}
-    assert lens_checks(None, facts) == {"lenses_beyond_eof": None, "lens_names_missing": None}
+    # Lines 0..2 exist; a lens starting on line 3 is already past the end of a three-line file.
+    result = [_lens(0, "alpha"), _lens(1, "Beta"), _lens(2, "gamma"), _lens(3, "delta"), _lens(41, "delta")]
+    assert lens_checks(result, facts) == {"lenses_past_eof": 2, "lens_names_missing": 1}
+    assert lens_checks(None, facts) == {"lenses_past_eof": None, "lens_names_missing": None}
     print("PASS: lens_checks counts lenses past the end of the file and names absent from it")
 
 
@@ -48,15 +51,25 @@ def test_summarize_percentiles_and_slowest():
     print("PASS: summarize reports percentiles over error-free rows and the slowest files")
 
 
-def test_compare_answers_by_digest():
+def test_compare_answers_by_digest_and_multiset():
     runs = [
-        {"name": "a", "rows": [_row("x", 1.0, 1, dig="same"), _row("y", 1.0, 1, dig="a-only")]},
-        {"name": "b", "rows": [_row("x", 1.0, 1, dig="same"), _row("y", 1.0, 1, dig="b-only")]},
-        {"name": "a", "rows": [_row("x", 1.0, 1, dig="same"), _row("y", 1.0, 1, dig="a-again")]},
+        {"name": "a", "round": 1, "rows": [_row("x", 1.0, 1, dig="same"), _row("y", 1.0, 3, dig="a-only")]},
+        {"name": "b", "round": 1, "rows": [_row("x", 1.0, 1, dig="same"), _row("y", 1.0, 1, dig="b-only")]},
+        {"name": "a", "round": 2, "rows": [_row("x", 1.0, 1, dig="same"), _row("y", 1.0, 3, dig="a-again")]},
     ]
-    cmp = compare_answers(runs)
-    assert cmp["pairs"] == [{"a": "a", "b": "b", "files": 2, "identical": 1, "differing": ["src/y.rs"]}]
+    alpha, beta, far = lens_key(_lens(0, "alpha")), lens_key(_lens(1, "beta")), lens_key(_lens(40, "far"))
+    answers = {"a": {"src/x.rs": Counter([alpha]), "src/y.rs": Counter([alpha, beta, far])},
+               "b": {"src/x.rs": Counter([alpha]), "src/y.rs": Counter([beta])}}
+    cmp = compare_answers(runs, answers)
+    assert cmp["pairs"] == [{
+        "a": "a", "b": "b", "files": 2, "identical": 1, "differing": 1, "subset_violations": 0,
+        "b_past_eof_remaining": 0,
+        "differing_details": [{"file": "src/y.rs", "lenses_a": 3, "lenses_b": 1, "removed": 2, "added": 0,
+                               "b_subset_of_a": True, "b_lenses_past_eof": 0}],
+    }]
     assert cmp["unstable_within_binary"] == {"a": ["src/y.rs"]}
+    answers["b"]["src/y.rs"] = Counter([beta, lens_key(_lens(5, "new"))])
+    assert compare_answers(runs, answers)["pairs"][0]["subset_violations"] == 1
     assert digest([_lens(0, "alpha")]) == digest([{"data": _lens(0, "alpha")["data"], "range": _lens(0, "alpha")["range"]}])
     print("PASS: compare_answers pairs binaries by digest and flags unstable answers")
 
@@ -64,5 +77,5 @@ def test_compare_answers_by_digest():
 if __name__ == "__main__":
     test_lens_checks_count_lenses_outside_the_file()
     test_summarize_percentiles_and_slowest()
-    test_compare_answers_by_digest()
+    test_compare_answers_by_digest_and_multiset()
     print("PASS: all code_lens_latency tests passed")
