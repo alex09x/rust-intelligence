@@ -189,6 +189,12 @@ def differing_only(report, full_name, full_sha256):
     return out
 
 
+def binary_label(binary):
+    """The file name of a server binary, the only part of its path a published report keeps; the
+    `name` given on the command line and the `--version` fields identify the build."""
+    return Path(binary).name
+
+
 def parse_servers(ridx_specs, ra_specs):
     servers = [(name, [binary, "lsp"], False, binary) for name, binary in (s.split("=", 1) for s in ridx_specs or [])]
     servers += [(name, [binary], True, binary) for name, binary in (s.split("=", 1) for s in ra_specs or [])]
@@ -240,7 +246,7 @@ def main():
         print(f"{repo_dir.name}: {'rust-analyzer' if is_ra else 'ridx'} {name} ({binary}), {len(rows)} requests ...", flush=True)
         ready, seconds = run_server(name, cmd, is_ra, rows, repo_dir, args.timeout, canary)
         summary = summarize_server(rows, name)
-        run = {"name": name, "kind": "rust-analyzer" if is_ra else "ridx", "binary": "/".join(Path(binary).parts[-3:]),
+        run = {"name": name, "kind": "rust-analyzer" if is_ra else "ridx", "binary": binary_label(binary),
                **parse_version(version_of(binary)), "ready": ready, "duration_s": seconds, "summary": summary}
         if matrix:
             run["matrix_check"] = matrix_check(summary, matrix.get("rust_analyzer" if is_ra else "ridx", {}).get("methods", {}))

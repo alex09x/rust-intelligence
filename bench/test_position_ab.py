@@ -19,7 +19,9 @@ if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
 
 from matrix_categories import build_params
-from position_ab import build_rows, compare_servers, differing_only, matrix_check, row_differs, summarize_server
+from position_ab import (
+    binary_label, build_rows, compare_servers, differing_only, matrix_check, row_differs, summarize_server,
+)
 from position_ab_classify import (
     REQUEST_KEYS, classify_outcome, cursor_kind, digest, in_cfg_test, scenario_from_record, target_kind_of,
 )
@@ -195,3 +197,9 @@ def test_differing_only_keeps_summaries_and_comparison_and_filters_rows():
     assert filtered["metric_definitions"]["outcome"] == "x" and "rows_filter" in filtered["metric_definitions"]
     assert [row_differs(r) for r in rows] == [False, True, True, False]
     assert len(report["rows"]) == 4
+
+
+def test_binary_label_keeps_only_the_file_name():
+    assert binary_label("/tmp/ridx_sec_8cb4341") == "ridx_sec_8cb4341"
+    assert binary_label("/opt/ridx-bench/target-filter/release/ridx") == "ridx"
+    assert binary_label("ridx") == "ridx"
