@@ -33,6 +33,7 @@ python3 bench/export_site.py              # site/bench.json and site/bench.data.
 | `matrix_headline.py` | Headline method list, latency formatting and the coverage sets shared by the report and the site export. |
 | `export_site.py` | Builds `site/bench.json` and `site/bench.data.js` for the website from the published runs; the page types no number by hand. |
 | `selection_range_fidelity.py` | `textDocument/selectionRange` chains of one or more ridx binaries against rust-analyzer on a corpus (methodology, section 9). |
+| `position_ab.py`, `position_ab_classify.py` | Per-position A/B of the matrix requests between ridx binaries and, optionally, rust-analyzer: outcome by the matrix rule, answer digest, target kind of the file and token kind under the cursor per position (methodology, section 10). |
 | `test_*.py` | Harness unit tests: `python3 -m pytest bench`. |
 
 ## Earlier pipelines

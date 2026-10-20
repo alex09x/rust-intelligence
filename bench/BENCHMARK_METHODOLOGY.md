@@ -26,6 +26,7 @@ Both servers are driven by the same client (`bench/lsp_process.py`): framed JSON
 
 - Items are sampled by `bench/matrix_sampling.py` from a line-based regex scan of the corpus sources (`bench/scan.py`) with seed 42; file lists are sorted, so the sample depends neither on directory order nor on `PYTHONHASHSEED` (`bench/test_sampling_determinism.py`). The sampled positions are published next to every run (`matrix_<repo>_booster.positions.json`).
 - The method list, the request parameters and the request or notification type of every row are fixed in `bench/matrix_categories.py` (section 5).
+- rust-analyzer 1.98.1 returns completion items in an order that differs between processes, and RIDX at 8cb4341 returns `callHierarchy/incomingCalls` items and `textDocument/rename` edits in an order that differs between requests; answers to these three methods are compared with every list sorted, never as ordered lists (`bench/position_ab_classify.py`).
 - The documents are regenerated from the published files only and are deterministic for a given set of files (`bench/test_matrix_report.py`, `bench/test_comparison_report.py`, `bench/test_export_site.py`).
 
 ---
@@ -149,3 +150,30 @@ the binaries' `--version` output, the corpus commit and the node. Per ridx binar
 
 Published runs: `bench/published/selection_range_fidelity_<corpus>_ram9.json` (ram9, rust-analyzer
 1.98.1, ridx 59c9402 vs 26c6aef, five corpora, 300 positions each).
+
+---
+
+## 10. Per-Position A/B of Matrix Requests
+
+`bench/position_ab.py --repo DIR --positions bench/published/matrix_<corpus>_booster.positions.json
+--ridx NAME=BIN [--ridx NAME=BIN ...] [--ra NAME=BIN] [--methods key,...] [--limit N] [--matrix FILE] --out FILE`
+rebuilds the request of every published position (Section 3) with `bench/matrix_categories.build_params`,
+so the servers answer exactly the matrix's requests, one request per position, in matrix order, with
+the drain and barrier between methods and the rust-analyzer readiness wait of Section 6. Every
+request method of the matrix outside document synchronisation can be selected. Per position the
+output records:
+
+- the outcome by the matrix rule of Section 5 (a non-empty, b empty, c error, with the error code);
+- a digest of the answer (sha256 of the canonical JSON; every list sorted first for completion,
+  incomingCalls and rename, Section 3) so that answers of two servers compare without storing them;
+- the latency of the single request in microseconds;
+- the cargo target kind of the file from the index's `target_kinds.json` (entry-path heuristic; the
+  shard file tables are the authority) and the kind of token under the cursor by the sampler's own
+  regexes (`decl:fn`, `method_call`, `path`, ...), with a flag for lines under `#[cfg(test)]`.
+
+Per server and method it reports a/b/c counts and p50/p99; with `--matrix` the a/b/c counts are
+checked against the published matrix side of the same server kind. Per pair of servers and method
+it reports positions with the same answer, differing answers, the outcome transitions and the first
+differing positions. It is the acceptance tool of routing changes (answers before and after a
+change must agree except for classified fixes) and the attribution tool for methods where RIDX
+answers empty and rust-analyzer does not.
