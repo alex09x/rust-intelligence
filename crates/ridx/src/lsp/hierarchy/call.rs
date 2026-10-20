@@ -18,15 +18,14 @@ use crate::overlay::OverlayManager;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::path::Path;
 
+#[cfg(test)]
+pub(crate) use super::scan::is_call_site;
 #[allow(unused_imports)]
 use super::scan::{
     find_definition_path_in_workspace, find_enclosing_function, find_function_body_end_line,
     is_call_site_in_lines,
 };
-#[cfg(test)]
-pub(crate) use super::scan::is_call_site;
 
 fn make_call_item(
     name: &str,
@@ -128,12 +127,9 @@ pub fn handle_call_hierarchy_incoming_calls(
         return json!([]);
     };
 
-    let item_path = Path::new(&item_file);
     let mut ref_paths: Vec<String> = Vec::new();
 
-    if let Some(path) =
-        find_definition_path_in_workspace(ws, item_path, &item_file, item_start_line)
-    {
+    if let Some(path) = find_definition_path_in_workspace(ws, &item_file, item_start_line) {
         ref_paths.push(path.to_string());
     }
 

@@ -156,106 +156,53 @@ pub(crate) fn find_enclosing_function<'a>(
     call_line: u32,
     file_lines: &[&str],
 ) -> Option<(WorkspaceSymbol<'a>, u32)> {
-    let file_path = Path::new(file);
-
-    // 1. Fast lookup via source_root strip_prefix
-    for (reader_idx, reader) in ws.readers().iter().enumerate() {
-        let sroot = ws.source_root_at(reader_idx);
-        let rel_file = if let Some(root) = sroot {
-            if let Ok(rel) = file_path.strip_prefix(root) {
-                rel.to_str().unwrap_or(file)
-            } else {
-                continue;
-            }
-        } else {
-            file
+    for reader_idx in ws.reader_indices_for_file(file) {
+        let Some(target) = ws.target_file_for_reader(reader_idx, file) else {
+            continue;
         };
+        let reader = &ws.readers()[reader_idx];
+        let Some(fid) = reader.find_file_id(target.as_ref()) else {
+            continue;
+        };
+        let sroot = ws.source_root_at(reader_idx);
+        let mut candidates: Vec<_> = reader
+            .definitions()
+            .iter()
+            .filter(|def| {
+                def.span.file_id == fid
+                    && matches!(DefKind::from(def.kind), DefKind::Fn | DefKind::AssocFn)
+                    && def.span.start_line <= call_line
+            })
+            .collect();
 
-        if let Some(fid) = reader.find_file_id(rel_file) {
-            let mut candidates: Vec<_> = reader
-                .definitions()
-                .iter()
-                .filter(|def| {
-                    def.span.file_id == fid
-                        && matches!(DefKind::from(def.kind), DefKind::Fn | DefKind::AssocFn)
-                        && def.span.start_line <= call_line
-                })
-                .collect();
+        candidates.sort_by_key(|d| std::cmp::Reverse(d.span.start_line));
 
-            candidates.sort_by_key(|d| std::cmp::Reverse(d.span.start_line));
-
-            for cand in candidates {
-                let body_end = find_function_body_end_line(file_lines, cand.span.start_line);
-                if call_line <= body_end {
-                    let sig = if cand.sig_offset > 0 {
-                        Some(reader.get_str(cand.sig_offset))
-                    } else {
-                        None
-                    };
-                    return Some((
-                        WorkspaceSymbol {
-                            crate_name: reader.crate_name(),
-                            name: reader.get_str(cand.name_offset),
-                            path: reader.get_str(cand.path_offset),
-                            kind: DefKind::from(cand.kind),
-                            file: reader.get_file(fid),
-                            span: cand.span,
-                            signature: sig,
-                            is_macro_expansion: cand.is_macro_expansion(),
-                            source_root: sroot,
-                            unit_key: None,
-                        },
-                        body_end,
-                    ));
-                }
+        for cand in candidates {
+            let body_end = find_function_body_end_line(file_lines, cand.span.start_line);
+            if call_line <= body_end {
+                let sig = if cand.sig_offset > 0 {
+                    Some(reader.get_str(cand.sig_offset))
+                } else {
+                    None
+                };
+                return Some((
+                    WorkspaceSymbol {
+                        crate_name: reader.crate_name(),
+                        name: reader.get_str(cand.name_offset),
+                        path: reader.get_str(cand.path_offset),
+                        kind: DefKind::from(cand.kind),
+                        file: reader.get_file(fid),
+                        span: cand.span,
+                        signature: sig,
+                        is_macro_expansion: cand.is_macro_expansion(),
+                        source_root: sroot,
+                        unit_key: None,
+                    },
+                    body_end,
+                ));
             }
-            return None;
         }
-    }
-
-    // 2. Direct exact match fallback across readers
-    for (reader_idx, reader) in ws.readers().iter().enumerate() {
-        if let Some(fid) = reader.find_file_id(file) {
-            let mut candidates: Vec<_> = reader
-                .definitions()
-                .iter()
-                .filter(|def| {
-                    def.span.file_id == fid
-                        && matches!(DefKind::from(def.kind), DefKind::Fn | DefKind::AssocFn)
-                        && def.span.start_line <= call_line
-                })
-                .collect();
-
-            candidates.sort_by_key(|d| std::cmp::Reverse(d.span.start_line));
-
-            for cand in candidates {
-                let body_end = find_function_body_end_line(file_lines, cand.span.start_line);
-                if call_line <= body_end {
-                    let sroot = ws.source_root_at(reader_idx);
-                    let sig = if cand.sig_offset > 0 {
-                        Some(reader.get_str(cand.sig_offset))
-                    } else {
-                        None
-                    };
-                    return Some((
-                        WorkspaceSymbol {
-                            crate_name: reader.crate_name(),
-                            name: reader.get_str(cand.name_offset),
-                            path: reader.get_str(cand.path_offset),
-                            kind: DefKind::from(cand.kind),
-                            file: reader.get_file(fid),
-                            span: cand.span,
-                            signature: sig,
-                            is_macro_expansion: cand.is_macro_expansion(),
-                            source_root: sroot,
-                            unit_key: None,
-                        },
-                        body_end,
-                    ));
-                }
-            }
-            return None;
-        }
+        return None;
     }
 
     None
@@ -360,21 +307,19 @@ pub(crate) fn get_impl_line_from_file(path: &Path, line_1based: u32) -> Option<S
 
 pub(crate) fn find_definition_path_in_workspace<'a>(
     ws: &'a WorkspaceIndex,
-    file_path: &Path,
     file_str: &str,
     start_line: u32,
 ) -> Option<&'a str> {
     if file_str.is_empty() {
         return None;
     }
-    for (idx, reader) in ws.readers().iter().enumerate() {
-        let rel_file = ws
-            .source_root_at(idx)
-            .and_then(|root| file_path.strip_prefix(root).ok())
-            .and_then(|rel| rel.to_str())
-            .unwrap_or(file_str);
+    for idx in ws.reader_indices_for_file(file_str) {
+        let Some(target) = ws.target_file_for_reader(idx, file_str) else {
+            continue;
+        };
+        let reader = &ws.readers()[idx];
 
-        if let Some(fid) = reader.find_file_id(rel_file) {
+        if let Some(fid) = reader.find_file_id(target.as_ref()) {
             if let Some(def) = reader.definitions().iter().find(|d| {
                 d.span.file_id == fid
                     && matches!(DefKind::from(d.kind), DefKind::Fn | DefKind::AssocFn)

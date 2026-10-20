@@ -250,11 +250,18 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         self.header.files_count
     }
 
-    /// Look up the file_id for a given path substring or exact match.
+    /// Looks up the file_id of the file stored as `file_path`: the same string, or the same path
+    /// by components (`./src/lib.rs` and `src//lib.rs` name `src/lib.rs`; stored paths come from
+    /// rustc's source map and carry neither, so only the query side is normalised). A path that
+    /// merely ends with a stored one, such as another crate's `src/lib.rs`, does not match. The
+    /// stored form is the one the driver wrote: relative to the workspace root for workspace
+    /// crates, relative to the package directory for dependencies, relative to the rust-src root
+    /// for the sysroot; `WorkspaceIndex::target_file_for_reader` turns any input into it.
     pub fn find_file_id(&self, file_path: &str) -> Option<u32> {
+        let wanted = Path::new(file_path.strip_prefix("./").unwrap_or(file_path));
         for id in 0..self.header.files_count {
             let f = self.get_file(id);
-            if f == file_path || f.ends_with(file_path) || file_path.ends_with(f) {
+            if f == file_path || Path::new(f) == wanted {
                 return Some(id);
             }
         }
@@ -370,6 +377,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     }
 }
 
+#[cfg(test)]
+mod file_id_exact_tests;
 #[cfg(test)]
 mod owner_and_deref_tests;
 #[cfg(test)]

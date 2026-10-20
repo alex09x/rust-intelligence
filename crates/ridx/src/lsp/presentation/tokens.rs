@@ -71,9 +71,7 @@ pub fn defkind_to_token(kind: DefKind) -> (u32, u32) {
         DefKind::Fn => (TOKEN_TYPE_FUNCTION, MOD_DEFINITION),
         DefKind::AssocFn => (TOKEN_TYPE_METHOD, MOD_DEFINITION),
         DefKind::Macro => (TOKEN_TYPE_MACRO, 0),
-        DefKind::Const | DefKind::AssocConst => {
-            (TOKEN_TYPE_VARIABLE, MOD_READONLY | MOD_STATIC)
-        }
+        DefKind::Const | DefKind::AssocConst => (TOKEN_TYPE_VARIABLE, MOD_READONLY | MOD_STATIC),
         DefKind::Static => (TOKEN_TYPE_VARIABLE, MOD_STATIC),
         DefKind::Local => (TOKEN_TYPE_VARIABLE, 0),
         DefKind::ConstParam => (TOKEN_TYPE_VARIABLE, MOD_READONLY),
@@ -89,7 +87,8 @@ fn filter_non_overlapping(mut tokens: Vec<RawToken>) -> Vec<RawToken> {
             .then_with(|| a.col.cmp(&b.col))
     });
 
-    let mut by_line: std::collections::BTreeMap<u32, Vec<RawToken>> = std::collections::BTreeMap::new();
+    let mut by_line: std::collections::BTreeMap<u32, Vec<RawToken>> =
+        std::collections::BTreeMap::new();
     for tok in tokens {
         by_line.entry(tok.line).or_default().push(tok);
     }
@@ -147,21 +146,24 @@ pub fn collect_raw_tokens(
         }
     }
 
-    // 2. Workspace compiled symbols (definitions and references)
+    // 2. Workspace compiled symbols (definitions and references) from the readers that own the
+    //    file, each asked for the path string it stores for it.
     if let Some(ws) = workspace {
-        let file_path = std::path::Path::new(file);
-        for (idx, reader) in ws.readers().iter().enumerate() {
-            let rel_file = ws
-                .source_root_at(idx)
-                .and_then(|root| file_path.strip_prefix(root).ok())
-                .and_then(|rel| rel.to_str())
-                .unwrap_or(file);
+        for idx in ws.reader_indices_for_file(file) {
+            let Some(target) = ws.target_file_for_reader(idx, file) else {
+                continue;
+            };
+            let reader = &ws.readers()[idx];
 
-            if let Some(file_id) = reader.find_file_id(rel_file) {
+            if let Some(file_id) = reader.find_file_id(target.as_ref()) {
                 for def in reader.definitions() {
                     if def.span.file_id == file_id && def.span.start_line == def.span.end_line {
-                        let (sl, sc, length) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
-                            if let Some((live_l, live_c)) = overlay.map_compiled_to_live(def.span.start_line, def.span.start_col) {
+                        let (sl, sc, length) = if let Some(overlay) =
+                            overlay_opt.filter(|o| o.is_dirty())
+                        {
+                            if let Some((live_l, live_c)) = overlay
+                                .map_compiled_to_live(def.span.start_line, def.span.start_col)
+                            {
                                 let span_len = def.span.end_col.saturating_sub(def.span.start_col);
                                 let l0 = live_l.saturating_sub(1);
                                 let c0 = overlay.char_col_to_utf16_col(live_l, live_c);
@@ -172,8 +174,16 @@ pub fn collect_raw_tokens(
                             }
                         } else {
                             let sl = def.span.start_line.saturating_sub(1);
-                            let sc = conv.char_col_to_utf16_col(file, def.span.start_line, def.span.start_col);
-                            let ec = conv.char_col_to_utf16_col(file, def.span.end_line, def.span.end_col);
+                            let sc = conv.char_col_to_utf16_col(
+                                file,
+                                def.span.start_line,
+                                def.span.start_col,
+                            );
+                            let ec = conv.char_col_to_utf16_col(
+                                file,
+                                def.span.end_line,
+                                def.span.end_col,
+                            );
                             (sl, sc, ec.saturating_sub(sc))
                         };
 
@@ -191,9 +201,16 @@ pub fn collect_raw_tokens(
                 }
 
                 for rf in reader.references() {
-                    if rf.span.file_id == file_id && !rf.is_macro_expansion() && rf.span.start_line == rf.span.end_line {
-                        let (sl, sc, length) = if let Some(overlay) = overlay_opt.filter(|o| o.is_dirty()) {
-                            if let Some((live_l, live_c)) = overlay.map_compiled_to_live(rf.span.start_line, rf.span.start_col) {
+                    if rf.span.file_id == file_id
+                        && !rf.is_macro_expansion()
+                        && rf.span.start_line == rf.span.end_line
+                    {
+                        let (sl, sc, length) = if let Some(overlay) =
+                            overlay_opt.filter(|o| o.is_dirty())
+                        {
+                            if let Some((live_l, live_c)) =
+                                overlay.map_compiled_to_live(rf.span.start_line, rf.span.start_col)
+                            {
                                 let span_len = rf.span.end_col.saturating_sub(rf.span.start_col);
                                 let l0 = live_l.saturating_sub(1);
                                 let c0 = overlay.char_col_to_utf16_col(live_l, live_c);
@@ -204,8 +221,13 @@ pub fn collect_raw_tokens(
                             }
                         } else {
                             let sl = rf.span.start_line.saturating_sub(1);
-                            let sc = conv.char_col_to_utf16_col(file, rf.span.start_line, rf.span.start_col);
-                            let ec = conv.char_col_to_utf16_col(file, rf.span.end_line, rf.span.end_col);
+                            let sc = conv.char_col_to_utf16_col(
+                                file,
+                                rf.span.start_line,
+                                rf.span.start_col,
+                            );
+                            let ec =
+                                conv.char_col_to_utf16_col(file, rf.span.end_line, rf.span.end_col);
                             (sl, sc, ec.saturating_sub(sc))
                         };
 
@@ -241,7 +263,13 @@ pub fn encode_tokens_delta(tokens: &[RawToken]) -> Vec<u32> {
             tok.col
         };
 
-        data.extend_from_slice(&[delta_line, delta_col, tok.length, tok.token_type, tok.token_modifiers]);
+        data.extend_from_slice(&[
+            delta_line,
+            delta_col,
+            tok.length,
+            tok.token_type,
+            tok.token_modifiers,
+        ]);
         prev_line = tok.line;
         prev_col = tok.col;
     }
@@ -303,7 +331,10 @@ pub fn handle_semantic_tokens_delta(
 
         // Find common prefix and suffix
         let mut prefix = 0;
-        while prefix < cached_data.len() && prefix < new_data.len() && cached_data[prefix] == new_data[prefix] {
+        while prefix < cached_data.len()
+            && prefix < new_data.len()
+            && cached_data[prefix] == new_data[prefix]
+        {
             prefix += 1;
         }
 

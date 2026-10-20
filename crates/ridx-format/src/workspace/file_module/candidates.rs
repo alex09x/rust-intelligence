@@ -12,20 +12,30 @@ use crate::workspace::WorkspaceIndex;
 use std::path::Path;
 
 impl WorkspaceIndex {
-    /// Resolves `file` (which may be absolute or relative) to the target file path
-    /// recognized by the reader at `reader_idx` (as verified by `reader.find_file_id`),
-    /// or `None` if this reader does not index the file.
+    /// Resolves `file` (absolute, relative to the workspace root, or relative to the reader's
+    /// source root) to the path string the reader at `reader_idx` stores for it, or `None` when
+    /// this reader does not index the file. Every string returned is accepted by that reader's
+    /// exact `find_file_id`: the input is re-expressed in the reader's coordinates (relative to
+    /// the workspace root or to the source root) and compared whole, never by suffix.
     pub fn target_file_for_reader<'a>(
         &self,
         reader_idx: usize,
         file: &'a str,
     ) -> Option<std::borrow::Cow<'a, str>> {
         let reader = self.readers.get(reader_idx)?;
-
         let p = Path::new(file);
+        let anchor = self.reader_root(reader_idx);
+        let root_opt = anchor.as_deref();
+        let stored = |s: &str| reader.find_file_id(s).is_some();
+        let owned = |s: &str| Some(std::borrow::Cow::Owned(s.to_string()));
+
         if p.is_absolute() {
-            // Absolute path validation: must be within source_root (if defined) or workspace_root
-            let root_opt = self.source_roots.get(reader_idx).and_then(|r| r.as_deref());
+            // C. Stored as an absolute path: the reader names this very file, whatever the roots.
+            if stored(file) {
+                return Some(std::borrow::Cow::Borrowed(file));
+            }
+            // Otherwise the file must lie under the reader's source root, else under the
+            // workspace root, before it is re-expressed in the reader's coordinates.
             if let Some(root) = root_opt {
                 let matches_root = if root.is_absolute() {
                     p.starts_with(root)
@@ -42,73 +52,60 @@ impl WorkspaceIndex {
                     return None;
                 }
             }
-
-            // A. Workspace root relative (workspace members indexed from workspace root)
+            // A. Relative to the workspace root (workspace crates).
             if let Some(ws_root) = &self.workspace_root {
-                if let Ok(rel) = p.strip_prefix(ws_root) {
-                    if let Some(s) = rel.to_str() {
-                        if reader.find_file_id(s).is_some() {
-                            return Some(std::borrow::Cow::Owned(s.to_string()));
-                        }
+                if let Some(s) = p.strip_prefix(ws_root).ok().and_then(|r| r.to_str()) {
+                    if stored(s) {
+                        return owned(s);
                     }
                 }
             }
-
-            // B. Source root relative (external dependencies indexed from package root)
+            // B. Relative to the source root (dependencies indexed from their package root).
             if let Some(root) = root_opt {
-                if let Ok(rel) = p.strip_prefix(root) {
-                    if let Some(s) = rel.to_str() {
-                        if reader.find_file_id(s).is_some() {
-                            return Some(std::borrow::Cow::Owned(s.to_string()));
-                        }
+                if let Some(s) = p.strip_prefix(root).ok().and_then(|r| r.to_str()) {
+                    if stored(s) {
+                        return owned(s);
                     }
                 }
             }
-
-            // C. Direct absolute match (if index stored absolute paths)
-            if reader.find_file_id(file).is_some() {
-                return Some(std::borrow::Cow::Borrowed(file));
-            }
-        } else {
-            // Relative path
-            let has_file = |s: &str| {
-                reader.find_file_id(s).is_some()
-                    || self
-                        .reader_file_hashes
-                        .get(reader_idx)
-                        .is_some_and(|h| h.contains_key(s))
-            };
-
-            if let Some(ws_root) = &self.workspace_root {
-                let joined = ws_root.join(p);
-                if let Some(s) = joined.to_str() {
-                    if has_file(s) {
-                        return Some(std::borrow::Cow::Owned(s.to_string()));
-                    }
-                }
-            }
-
-            if let Some(Some(root)) = self.source_roots.get(reader_idx) {
-                let joined = root.join(p);
-                if let Some(s) = joined.to_str() {
-                    if has_file(s) {
-                        return Some(std::borrow::Cow::Owned(s.to_string()));
-                    }
-                }
-                if let Ok(rel) = p.strip_prefix(root) {
-                    if let Some(s) = rel.to_str() {
-                        if reader.find_file_id(s).is_some() {
-                            return Some(std::borrow::Cow::Owned(s.to_string()));
-                        }
-                    }
-                }
-            }
-
-            if reader.find_file_id(file).is_some() {
-                return Some(std::borrow::Cow::Borrowed(file));
-            }
+            return None;
         }
 
+        // Relative input: the stored form itself; else the path anchored to the workspace root or
+        // to the source root and re-expressed relative to each of them, which are the two stored
+        // forms (`src/lib.rs` typed for the crate stored as `serde/src/lib.rs` becomes
+        // `<ws>/serde/src/lib.rs`, then `serde/src/lib.rs`). A bare relative path that no root
+        // anchors to a stored file is not resolved.
+        if stored(file) {
+            return Some(std::borrow::Cow::Borrowed(file));
+        }
+        let roots = [self.workspace_root.as_deref(), root_opt];
+        for anchor in roots.into_iter().flatten() {
+            let joined = anchor.join(p);
+            if let Some(s) = joined.to_str() {
+                if stored(s) {
+                    return owned(s);
+                }
+            }
+            for base in roots.into_iter().flatten() {
+                if let Some(s) = joined.strip_prefix(base).ok().and_then(|r| r.to_str()) {
+                    if stored(s) {
+                        return owned(s);
+                    }
+                }
+            }
+        }
+        // Readers that know the file only through their recorded hashes (an empty file table):
+        // the sidecar records both forms, the absolute one is compared here.
+        if let Some(hashes) = self.reader_file_hashes.get(reader_idx) {
+            for anchor in roots.into_iter().flatten() {
+                if let Some(s) = anchor.join(p).to_str() {
+                    if hashes.contains_key(s) {
+                        return owned(s);
+                    }
+                }
+            }
+        }
         None
     }
 

@@ -65,15 +65,10 @@ fn test_relative_path_anchored_to_workspace_root_beats_dependency_suffix_match()
     let dep_reader = IndexReader::open(&dep_ridx).expect("open dep_crate index");
     let ws_reader = IndexReader::open(&ws_ridx).expect("open ws_crate index");
 
-    // Both readers match "src/lib.rs" via loose ends_with suffix matching in find_file_id
-    assert!(
-        dep_reader.find_file_id("src/lib.rs").is_some(),
-        "dep reader matches src/lib.rs via suffix"
-    );
-    assert!(
-        ws_reader.find_file_id("src/lib.rs").is_some(),
-        "ws reader matches src/lib.rs via suffix"
-    );
+    // Both readers store absolute paths, so the exact lookup rejects the short "src/lib.rs":
+    // routing has to anchor the relative path to the workspace root itself.
+    assert!(dep_reader.find_file_id("src/lib.rs").is_none());
+    assert!(ws_reader.find_file_id("src/lib.rs").is_none());
 
     // Dependency crate is placed at index 0, workspace root crate at index 1.
     // Without workspace anchoring, index 0 would match "src/lib.rs" first via suffix.

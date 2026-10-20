@@ -11,7 +11,7 @@
 //! File-to-crate reader mapping and canonical module path resolution.
 
 use super::WorkspaceIndex;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 mod candidates;
 
@@ -50,6 +50,24 @@ impl WorkspaceIndex {
         self.target_kinds.get(idx).copied().flatten()
     }
 
+    /// The root a reader's relative stored paths are resolved against: its recorded source root,
+    /// else, for a shard opened without any workspace root (a lone `.ridx` file), the directory
+    /// the shard lies in. Readers of a rooted workspace that record no source root (the sysroot
+    /// shards) have none.
+    pub(crate) fn reader_root(&self, idx: usize) -> Option<PathBuf> {
+        if let Some(Some(root)) = self.source_roots.get(idx) {
+            return Some(root.clone());
+        }
+        if self.workspace_root.is_none() {
+            return self
+                .paths
+                .get(idx)
+                .and_then(|p| p.parent())
+                .map(Path::to_path_buf);
+        }
+        None
+    }
+
     /// Returns the indices in `self.readers` for all crate units that contain or own the specified file path.
     /// Employs longest prefix matching on `source_roots` so that subpackage targets are returned
     /// rather than broader ancestor workspace roots, invariant to reader insertion order.
@@ -64,7 +82,8 @@ impl WorkspaceIndex {
         // 1. Longest prefix match against source_roots
         let mut matching_roots: Vec<(usize, usize, usize)> = Vec::new(); // (reader_idx, comps, len)
         for (i, _) in self.readers.iter().enumerate() {
-            if let Some(Some(root)) = self.source_roots.get(i) {
+            if let Some(root) = self.reader_root(i) {
+                let root = root.as_path();
                 if !root.as_os_str().is_empty() {
                     let matches = p.starts_with(root)
                         || abs_p

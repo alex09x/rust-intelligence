@@ -31,6 +31,8 @@ pub mod unit_match;
 #[cfg(test)]
 mod cache_resolver_tests;
 #[cfg(test)]
+mod file_id_routing_tests;
+#[cfg(test)]
 mod file_module_tests;
 #[cfg(test)]
 mod path_index_tests;
