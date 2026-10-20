@@ -90,6 +90,48 @@ fn test_find_file_id_accepts_the_same_path_spelled_differently() {
 }
 
 #[test]
+fn test_find_file_id_resolves_parent_dir_components_of_an_included_file() {
+    // rust-analyzer's parser pulls its generated tests in with
+    // `include!("../test_data/generated/runner.rs")`; rustc stores the path as spelled.
+    let reader = reader_with_files(&[
+        "crates/parser/src/../test_data/generated/runner.rs",
+        "crates/parser/src/lib.rs",
+    ]);
+    let runner = reader
+        .find_file_id("crates/parser/test_data/generated/runner.rs")
+        .expect("the resolved path names the stored file");
+    assert_eq!(
+        reader.get_file(runner),
+        "crates/parser/src/../test_data/generated/runner.rs"
+    );
+    assert_eq!(
+        reader.find_file_id("crates/parser/src/../test_data/generated/runner.rs"),
+        Some(runner),
+        "the stored spelling still matches"
+    );
+    assert_eq!(
+        reader.find_file_id("crates/parser/src/lib.rs"),
+        Some(1),
+        "the plain sibling is unaffected"
+    );
+    assert_eq!(
+        reader.find_file_id("crates/parser/src/x/../lib.rs"),
+        None,
+        "a query spelled with .. is left to the filesystem-aware workspace lookup"
+    );
+    assert_eq!(
+        reader.find_file_id("test_data/generated/runner.rs"),
+        None,
+        "a shorter path is still not the stored file"
+    );
+    assert_eq!(
+        reader.find_file_id("crates/other/test_data/generated/runner.rs"),
+        None,
+        "another crate's path with the same tail does not match"
+    );
+}
+
+#[test]
 fn test_find_file_id_on_workspace_relative_and_sysroot_forms() {
     let reader = reader_with_files(&["serde/src/lib.rs", "library/core/src/lib.rs"]);
     assert_eq!(
