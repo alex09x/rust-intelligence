@@ -220,8 +220,9 @@ fn test_lsp_server_stream_stage6_relationships_and_commands() {
 
     let lens_resp = &responses[3];
     assert_eq!(lens_resp["id"], 72);
-    let lenses = lens_resp["result"].as_array().expect("lens array");
-    assert!(!lenses.is_empty());
+    // The document is open but no index describes it: lenses come from the index alone
+    // (`lens_overlay_tests`), so the answer is empty rather than a syntax scan of the buffer.
+    assert_eq!(lens_resp["result"], json!([]));
 
     let exec_resp = &responses[4];
     assert_eq!(exec_resp["id"], 73);

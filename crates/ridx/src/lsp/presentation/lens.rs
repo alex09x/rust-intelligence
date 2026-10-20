@@ -11,7 +11,7 @@
 //! LSP code lens generation and deferred resolution.
 
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
-use crate::overlay::OverlayManager;
+use crate::overlay::{DocumentOverlay, LineMap, OverlayManager};
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 use std::collections::HashSet;
@@ -44,13 +44,49 @@ const LENS_KINDS: &[DefKind] = &[
     DefKind::Macro,
 ];
 
+/// The text the lenses of a file are checked and measured against: for a closed file the file on
+/// disk through the request's `PositionConverter`, for an open file the lines of the text the
+/// index describes (see [`open_file_lenses`]).
+enum LensText<'a> {
+    Disk(&'a mut PositionConverter),
+    Lines(Vec<&'a str>),
+}
+
+impl LensText<'_> {
+    /// One line without its line ending, as `PositionConverter::get_line` returns it.
+    fn line(&mut self, file: &str, line_1based: u32) -> Option<&str> {
+        match self {
+            LensText::Disk(conv) => conv.get_line(file, line_1based),
+            LensText::Lines(lines) => lines.get(line_1based.checked_sub(1)? as usize).copied(),
+        }
+    }
+
+    /// 1-based char column to 0-based UTF-16 column, the `PositionConverter` conversion.
+    fn utf16_col(&mut self, file: &str, line_1based: u32, char_col_1based: u32) -> u32 {
+        if let LensText::Disk(conv) = self {
+            return conv.char_col_to_utf16_col(file, line_1based, char_col_1based);
+        }
+        if char_col_1based <= 1 {
+            return 0;
+        }
+        match self.line(file, line_1based) {
+            Some(line) if !line.is_ascii() => line
+                .chars()
+                .take(char_col_1based as usize - 1)
+                .map(|c| c.len_utf16() as u32)
+                .sum(),
+            _ => char_col_1based - 1,
+        }
+    }
+}
+
 /// A lens stands on its own name: the source text under the span (one line, 1-based char columns)
 /// is `name`, or `name` written as a raw identifier (`r#match` for `match`). Definitions that fail
 /// this come from macro expansions whose span is the whole invocation, from proc macros that reuse
 /// the span of a user token for a generated item, or from a file edited since it was indexed; the
-/// text is the one `PositionConverter` reads for the column conversion, so range and check agree.
+/// text is the one the columns are converted against, so range and check agree.
 fn range_spells_name(
-    conv: &mut PositionConverter,
+    text: &mut LensText,
     file: &str,
     (start_line, start_col): (u32, u32),
     (end_line, end_col): (u32, u32),
@@ -59,15 +95,130 @@ fn range_spells_name(
     if end_line != start_line || start_col == 0 || end_col <= start_col {
         return false;
     }
-    let Some(line) = conv.get_line(file, start_line) else {
+    let Some(line) = text.line(file, start_line) else {
         return false;
     };
-    let text: String = line
+    let spelled: String = line
         .chars()
         .skip((start_col - 1) as usize)
         .take((end_col - start_col) as usize)
         .collect();
-    text == name || (text.strip_prefix("r#") == Some(name))
+    spelled == name || (spelled.strip_prefix("r#") == Some(name))
+}
+
+/// A lens of the index in the coordinates of the text it was checked against: 1-based line and
+/// char column for `data`, 0-based UTF-16 columns for the range.
+struct IndexLens<'a> {
+    line: u32,
+    start_col: u32,
+    utf16_start: u32,
+    utf16_end: u32,
+    name: &'a str,
+}
+
+/// The lenses of `file` from the readers that own it. Every reader's `find_file_id` accepts suffix
+/// matches, so asking all readers with an absolute path would also return the `src/lib.rs` of
+/// every dependency shard. Several units of one crate (lib, lib test, bin) index the same file:
+/// one lens per (range, name), first occurrence kept.
+fn index_lenses<'a>(ws: &'a WorkspaceIndex, file: &str, text: &mut LensText) -> Vec<IndexLens<'a>> {
+    let mut out = Vec::new();
+    let mut seen: HashSet<(u32, u32, u32, &str)> = HashSet::new();
+    for idx in ws.reader_indices_for_file(file) {
+        let Some(target) = ws.target_file_for_reader(idx, file) else {
+            continue;
+        };
+        let r = &ws.readers()[idx];
+        let Some(fid) = r.find_file_id(target.as_ref()) else {
+            continue;
+        };
+        for def in r.definitions() {
+            if def.span.file_id != fid
+                || !LENS_KINDS.contains(&DefKind::from(def.kind))
+                || def.is_macro_expansion()
+            {
+                continue;
+            }
+            let name = r.get_str(def.name_offset);
+            if name.is_empty()
+                || !range_spells_name(
+                    text,
+                    file,
+                    (def.span.start_line, def.span.start_col),
+                    (def.span.end_line, def.span.end_col),
+                    name,
+                )
+            {
+                continue;
+            }
+            let utf16_start = text.utf16_col(file, def.span.start_line, def.span.start_col);
+            let utf16_end = text.utf16_col(file, def.span.end_line, def.span.end_col);
+            if !seen.insert((
+                def.span.start_line.saturating_sub(1),
+                utf16_start,
+                utf16_end,
+                name,
+            )) {
+                continue;
+            }
+            out.push(IndexLens {
+                line: def.span.start_line,
+                start_col: def.span.start_col,
+                utf16_start,
+                utf16_end,
+                name,
+            });
+        }
+    }
+    out
+}
+
+fn lens_json(uri: &str, lens: &IndexLens, line_1based: u32) -> Value {
+    let line = line_1based.saturating_sub(1);
+    json!({
+        "range": {
+            "start": { "line": line, "character": lens.utf16_start },
+            "end": { "line": line, "character": lens.utf16_end }
+        },
+        "data": {
+            "uri": uri,
+            "line": line_1based,
+            "character": lens.start_col,
+            "name": lens.name
+        }
+    })
+}
+
+/// Lenses of a file open in the editor: the same lenses the index gives the closed file, placed
+/// on the text the index describes and moved onto the live buffer line by line.
+///
+/// The baseline is the compiled text the overlay resolved at `didOpen` (the buffer or the file on
+/// disk, whichever carries the hash the index recorded); when neither does, the file on disk, the
+/// text a closed file is checked against, so an unmodified buffer answers exactly like the closed
+/// file. A lens whose line the edit removed or changed has no counterpart in the live buffer and
+/// is dropped; the lines that map are textually identical, so columns and names stay valid. The
+/// `data` coordinates are live, as `codeLens/resolve` expects.
+fn open_file_lenses(
+    ws: &WorkspaceIndex,
+    file: &str,
+    uri: &str,
+    overlay: &DocumentOverlay,
+) -> Vec<Value> {
+    let Some(baseline) = overlay
+        .compiled_text
+        .as_deref()
+        .or(overlay.disk_text.as_deref())
+    else {
+        return Vec::new();
+    };
+    let lenses = index_lenses(ws, file, &mut LensText::Lines(baseline.lines().collect()));
+    if baseline == overlay.text {
+        return lenses.iter().map(|l| lens_json(uri, l, l.line)).collect();
+    }
+    let map = LineMap::new(baseline, &overlay.text);
+    lenses
+        .iter()
+        .filter_map(|l| map.to_live(l.line).map(|live| lens_json(uri, l, live)))
+        .collect()
 }
 
 /// Handles `textDocument/codeLens` requests (lightweight; defers reference counting to resolve).
@@ -79,90 +230,16 @@ pub fn handle_code_lens(
 ) -> Value {
     let uri = msg["params"]["textDocument"]["uri"].as_str().unwrap_or("");
     let file = uri_to_path(uri);
-    let mut lenses = Vec::new();
-
-    // 1. Overlay symbols code lenses
-    if let Some(overlay) = overlay_mgr.get(&file) {
-        for sym in &overlay.symbols {
-            if sym.start_line == sym.end_line {
-                let sl = sym.start_line.saturating_sub(1);
-                let sc = overlay.char_col_to_utf16_col(sym.start_line, sym.start_col);
-                let ec = overlay.char_col_to_utf16_col(sym.end_line, sym.end_col);
-
-                lenses.push(json!({
-                    "range": {
-                        "start": { "line": sl, "character": sc },
-                        "end": { "line": sl, "character": ec }
-                    },
-                    "data": {
-                        "uri": uri,
-                        "line": sym.start_line,
-                        "character": sym.start_col,
-                        "name": sym.name
-                    }
-                }));
-            }
-        }
-        return json!(lenses);
-    }
-
-    // 2. Fallback to WorkspaceIndex definitions: only the readers that own the file. Every
-    // reader's `find_file_id` accepts suffix matches, so asking all readers with an absolute path
-    // would also return the `src/lib.rs` of every dependency shard.
-    if let Some(ws) = workspace {
-        // Several units of one crate (lib, lib test, bin) index the same file: one lens per
-        // (range, name), first occurrence kept.
-        let mut seen: HashSet<(u32, u32, u32, &str)> = HashSet::new();
-        for idx in ws.reader_indices_for_file(&file) {
-            let Some(target) = ws.target_file_for_reader(idx, &file) else {
-                continue;
-            };
-            let r = &ws.readers()[idx];
-            let Some(fid) = r.find_file_id(target.as_ref()) else {
-                continue;
-            };
-            for def in r.definitions() {
-                if def.span.file_id != fid
-                    || !LENS_KINDS.contains(&DefKind::from(def.kind))
-                    || def.is_macro_expansion()
-                {
-                    continue;
-                }
-                let name = r.get_str(def.name_offset);
-                if name.is_empty()
-                    || !range_spells_name(
-                        conv,
-                        &file,
-                        (def.span.start_line, def.span.start_col),
-                        (def.span.end_line, def.span.end_col),
-                        name,
-                    )
-                {
-                    continue;
-                }
-                let sl = def.span.start_line.saturating_sub(1);
-                let sc = conv.char_col_to_utf16_col(&file, def.span.start_line, def.span.start_col);
-                let ec = conv.char_col_to_utf16_col(&file, def.span.end_line, def.span.end_col);
-                if !seen.insert((sl, sc, ec, name)) {
-                    continue;
-                }
-
-                lenses.push(json!({
-                    "range": {
-                        "start": { "line": sl, "character": sc },
-                        "end": { "line": sl, "character": ec }
-                    },
-                    "data": {
-                        "uri": uri,
-                        "line": def.span.start_line,
-                        "character": def.span.start_col,
-                        "name": name
-                    }
-                }));
-            }
-        }
-    }
-
+    let Some(ws) = workspace else {
+        return json!([]);
+    };
+    let lenses = match overlay_mgr.get(&file) {
+        Some(overlay) => open_file_lenses(ws, &file, uri, overlay),
+        None => index_lenses(ws, &file, &mut LensText::Disk(conv))
+            .iter()
+            .map(|l| lens_json(uri, l, l.line))
+            .collect(),
+    };
     json!(lenses)
 }
 

@@ -24,6 +24,8 @@ pub mod workspace_diag;
 #[cfg(test)]
 pub mod lens_filter_tests;
 #[cfg(test)]
+pub mod lens_overlay_tests;
+#[cfg(test)]
 pub mod lens_tests;
 #[cfg(test)]
 pub mod selection_range_tests;

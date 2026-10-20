@@ -221,13 +221,25 @@ fn test_l2_folding_range_and_code_lens() {
         "Code lens command must match registered ridx.showReferences"
     );
 
-    // 4. Test code lens with dirty overlay
+    // 4. Code lens with a dirty overlay: the buffer is the indexed text with two lines inserted
+    // at the top, opened as `didOpen` opens it. The lenses are the index's, two lines down, and
+    // resolve maps them back onto the indexed text.
     let mut dirty_overlay = OverlayManager::new();
+    let lib_path = lib_file.to_str().unwrap();
     let dirty_code = format!("// Header line\n\n{}", std::fs::read_to_string(&lib_file).unwrap());
-    dirty_overlay.open_document(&uri, lib_file.to_str().unwrap(), 1, dirty_code);
+    dirty_overlay.open_with_source_hash(&uri, lib_path, 1, dirty_code, ws.source_hash_for_file(lib_path));
     let dirty_lenses = handle_code_lens(&lens_req, Some(ws), &dirty_overlay, &mut conv);
     let dirty_arr = dirty_lenses.as_array().unwrap();
-    assert!(!dirty_arr.is_empty());
+    assert_eq!(dirty_arr.len(), lenses.len(), "every lens of the closed file stands in the dirty buffer");
+    for (closed, dirty) in lenses.iter().zip(dirty_arr) {
+        assert_eq!(dirty["data"]["name"], closed["data"]["name"]);
+        assert_eq!(dirty["range"]["start"]["character"], closed["range"]["start"]["character"]);
+        assert_eq!(
+            dirty["range"]["start"]["line"].as_u64().unwrap(),
+            closed["range"]["start"]["line"].as_u64().unwrap() + 2
+        );
+        assert_eq!(dirty["data"]["line"].as_u64().unwrap(), closed["data"]["line"].as_u64().unwrap() + 2);
+    }
     let dirty_resolved =
         handle_code_lens_resolve(&json!({ "params": &dirty_arr[0] }), Some(ws), &dirty_overlay, &mut conv);
     assert!(

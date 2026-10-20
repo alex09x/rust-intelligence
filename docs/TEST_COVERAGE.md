@@ -4,9 +4,9 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 2779
-- **Total Unit/Src Tests**: 470
-- **Classified E2E Tests**: 2695
+- **Total E2E Tests**: 2780
+- **Total Unit/Src Tests**: 509
+- **Classified E2E Tests**: 2696
 - **Unclassified E2E Tests**: 84
 - **Rows >= 20 E2E**: 53 / 53
 - **Rows >= 50 E2E**: 53 / 53
@@ -46,7 +46,7 @@
 | Domain 7: Presentation | `textDocument/selectionRange` | 61 | 7 | 68 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/codeLens / resolve` | 50 | 0 | 50 | ✅ Complete |
+| Domain 7: Presentation | `textDocument/codeLens / resolve` | 51 | 36 | 87 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 50 | 10 | 60 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 51 | 26 | 77 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 50 | 7 | 57 | ✅ Complete |
@@ -1826,7 +1826,7 @@
 - `test_document_color_stub_sequential_requests_isolation`
 - `test_document_color_ten_rapid_consecutive_requests`
 
-#### `textDocument/codeLens / resolve` (50 e2e tests)
+#### `textDocument/codeLens / resolve` (51 e2e tests)
 - `test_code_lens_after_shutdown_returns_code_32600`
 - `test_code_lens_cancelled_request_returns_code_32800`
 - `test_code_lens_const_definition_lens`
@@ -1845,9 +1845,10 @@
 - `test_code_lens_multiple_functions_order_preserved`
 - `test_code_lens_negative_numeric_id_preserved`
 - `test_code_lens_nonexistent_file_returns_empty`
-- `test_code_lens_overlay_did_change_updates_lenses`
+- `test_code_lens_open_buffer_answers_from_the_index_not_the_syntax_scan`
+- `test_code_lens_open_buffer_edit_moves_and_removes_lenses`
+- `test_code_lens_open_file_without_index_data_is_empty`
 - `test_code_lens_overlay_did_close_falls_back_to_index`
-- `test_code_lens_overlay_symbols_precedence`
 - `test_code_lens_resolve_after_shutdown_returns_code_32600`
 - `test_code_lens_resolve_arguments_structure`
 - `test_code_lens_resolve_cancelled_request_returns_code_32800`
@@ -2980,4 +2981,4 @@ Total unclassified tests: 84 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2779 total, 53 rows >= 20, 53 rows >= 50 of 53
+coverage: e2e 2780 total, 53 rows >= 20, 53 rows >= 50 of 53

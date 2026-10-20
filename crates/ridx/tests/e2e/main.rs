@@ -219,6 +219,7 @@ mod ntm_domain7_code_lens_part4;
 mod ntm_domain7_code_lens_part5;
 mod ntm_domain7_code_lens_part6;
 mod ntm_domain7_code_lens_part7;
+mod ntm_domain7_code_lens_part8;
 mod ntm_domain7_color;
 mod ntm_domain7_color_part2;
 mod ntm_domain7_color_part3;
