@@ -9,6 +9,7 @@ window.RIDX_BENCH = {
   "method_note": "5 repositories, 78 LSP methods, 300 sampled items per method (22,204 requests per server and repository, seed 42); RIDX c4e181a, driver aed6f3b1c9a9437d, rust-analyzer 1.98.1 (48a229c 2026-09-01); node booster, CPU set 24-31. Each item is asked three times; the first answer is the cold measurement and the mean of the other two the warm one. Bars show the warm p50 and p99 over the items; the scale is logarithmic.",
   "limitations": [
     "Outside mutation case B nothing in the matrix checks that an answer is correct: a / b / c count non-empty, empty and failed answers (methodology, sections 5 and 7).",
+    "textDocument/codeLens is not counted: the matrix client declares neither textDocument.codeLens nor the rust-analyzer.* commands (experimental.commands) that rust-analyzer requires before it builds any lens, so rust-analyzer answered [] on every item (known harness defects in docs/BENCHMARK_MATRIX.md).",
     "textDocument/content is not counted: the published runs were measured before harness commit d27ac0e fixed its parameters (known harness defects in docs/BENCHMARK_MATRIX.md).",
     "rust-analyzer answers -32601 (method not found) for: textDocument/colorPresentation (all five), textDocument/documentColor (all five), textDocument/documentLink (all five), textDocument/inlineCompletion (all five), textDocument/inlineValue (all five), textDocument/linkedEditingRange (all five), textDocument/moniker (all five), textDocument/prepareTypeHierarchy (all five), textDocument/willSaveWaitUntil (all five), workspace/diagnostic (all five), workspace/willCreateFiles (all five), workspace/willDeleteFiles (all five).",
     "Peak RSS over the run: RIDX 88 to 958 MB, rust-analyzer 2227 to 16590 MB across the repositories (RIDX maps its index files, so its RSS includes page-cache pages).",
@@ -110,9 +111,9 @@ window.RIDX_BENCH = {
         "ra_peak_rss_mb": 2227.0234375
       },
       "coverage": {
-        "ridx_answered": 29,
+        "ridx_answered": 28,
         "ra_answered": 20,
-        "request_methods": 39
+        "request_methods": 38
       }
     },
     "Tokio": {
@@ -210,9 +211,9 @@ window.RIDX_BENCH = {
         "ra_peak_rss_mb": 4361.2109375
       },
       "coverage": {
-        "ridx_answered": 29,
+        "ridx_answered": 28,
         "ra_answered": 20,
-        "request_methods": 39
+        "request_methods": 38
       }
     },
     "rust-analyzer": {
@@ -310,9 +311,9 @@ window.RIDX_BENCH = {
         "ra_peak_rss_mb": 6110.4296875
       },
       "coverage": {
-        "ridx_answered": 31,
+        "ridx_answered": 30,
         "ra_answered": 21,
-        "request_methods": 39
+        "request_methods": 38
       }
     },
     "bevy": {
@@ -410,9 +411,9 @@ window.RIDX_BENCH = {
         "ra_peak_rss_mb": 16590.47265625
       },
       "coverage": {
-        "ridx_answered": 30,
+        "ridx_answered": 29,
         "ra_answered": 21,
-        "request_methods": 39
+        "request_methods": 38
       }
     },
     "serde": {
@@ -510,9 +511,9 @@ window.RIDX_BENCH = {
         "ra_peak_rss_mb": 2499.1015625
       },
       "coverage": {
-        "ridx_answered": 29,
+        "ridx_answered": 28,
         "ra_answered": 20,
-        "request_methods": 39
+        "request_methods": 38
       }
     }
   }

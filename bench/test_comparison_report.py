@@ -47,15 +47,16 @@ def test_render_from_published_json():
         assert "Published runs: `BurntSushi/ripgrep`. Pending: `tokio-rs/tokio`, `rust-lang/rust-analyzer`, `bevyengine/bevy`, `serde-rs/serde`." in lines
         assert "| RIDX commit | `d3b7810f2504452dd66570969eef2def04028be5` |" in lines
         assert "| Requests per server and repository | `22204` |" in lines
-        assert "| BurntSushi/ripgrep | `4649aa9` | 27 | 81.73 | 2176.41 | 3 / 5 | 53 / 16 | 800.0 | 110.0 | 0 / 1 | 3 / 2 of 39 |" in lines
+        assert "| BurntSushi/ripgrep | `4649aa9` | 27 | 81.73 | 2176.41 | 3 / 5 | 53 / 16 | 800.0 | 110.0 | 0 / 1 | 2 / 2 of 38 |" in lines
         assert "### BurntSushi/ripgrep (corpus commit `4649aa9`)" in lines
         assert "| Go to definition | 291 / 9 / 0 | 78 µs | 231 µs | 294 / 6 / 0 | 100 µs | 200 µs |" in lines
         assert "| Rename | 178 / 0 / 14 | 200 µs | 2.10 ms | 295 / 0 / 3 | 300 µs | 400 µs |" in lines
-        assert "| Code lens | 295 / 5 / 0 | 349 µs | 17.23 ms | 0 / 300 / 0 | 60 µs | 2.28 ms |" in lines
+        assert not any(l.startswith("| Code lens |") for l in lines), "a harness-defect row is shown in the headline table"
         assert "| Hover | n/a | n/a | n/a | n/a | n/a | n/a |" in lines
         assert "- RIDX returned no non-empty answer on any item while rust-analyzer did: none." in lines
         assert "  - `textDocument/moniker` (BurntSushi/ripgrep)" in lines
-        assert "  - `textDocument/codeLens` (BurntSushi/ripgrep)" in lines
+        assert "  - `textDocument/codeLens` (BurntSushi/ripgrep)" not in lines
+        assert "- `textDocument/codeLens` is not counted: the matrix client declares neither `textDocument.codeLens` nor the `rust-analyzer.*` commands (`experimental.commands`) that rust-analyzer requires before it builds any lens, so rust-analyzer answered `[]` on every item (known harness defects in `docs/BENCHMARK_MATRIX.md`)." in lines
         assert "- `textDocument/content` is not counted: the published runs were measured before harness commit `d27ac0e` fixed its parameters (known harness defects in `docs/BENCHMARK_MATRIX.md`)." in lines
         assert any("Outside mutation case B nothing in the matrix checks that an answer is correct" in l for l in lines)
         assert "- Completion recall and precision reruns against rust-analyzer: 0 `rerun_completion_*.jsonl` and 0 `completion_regression_*.json` files. Tooling (`run_completion_benchmark.py`, `verify_completion_regression.py`, `validate_scenarios.py`) exists up to commit `9a75047`." in lines

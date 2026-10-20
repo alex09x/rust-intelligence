@@ -72,6 +72,15 @@ KNOWN_HARNESS_DEFECTS = [
      "so row 75 of the runs measured before this commit is not a measurement of the method "
      "(rust-analyzer answers `-32601`: it does not implement the method). The row now sends "
      '`{"uri"}`.'),
+    (None, "`textDocument/codeLens`: the client declares neither `textDocument.codeLens` nor "
+     "`experimental.commands.commands`, and rust-analyzer builds its lenses (implementations, "
+     "references, run and debug) only for clients that register the `rust-analyzer.showReferences`, "
+     "`rust-analyzer.runSingle` and `rust-analyzer.debugSingle` commands, so it answered `[]` on all "
+     "300 items of every published run (checked on ram9 with rust-analyzer 1.98.1: "
+     "`serde_core/src/de/impls.rs` gets 0 lenses with the matrix client and 23 once the commands are "
+     "declared). Row 59 of the published runs is not a measurement of the method for rust-analyzer; "
+     "it is excluded from the counts, the coverage statements and the headline tables until a run "
+     "measured with the capabilities declared is published."),
 ]
 
 NOTES = [
@@ -202,10 +211,10 @@ def render(pub_dir: Path) -> str:
     for n in NOTES:
         out.append(f"- {n}")
     out.append("")
-    out.append("## Known harness defects (fixed, in commit order)")
+    out.append("## Known harness defects (in commit order; open defects last)")
     out.append("")
     for commit, text in KNOWN_HARNESS_DEFECTS:
-        out.append(f"- `{commit}`: {text}")
+        out.append(f"- `{commit}`: {text}" if commit else f"- open: {text}")
     out.append("")
     for key in published:
         with open(pub_dir / f"matrix_{key}_booster.json", "r", encoding="utf-8") as fh:

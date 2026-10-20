@@ -16,9 +16,9 @@ import argparse
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from matrix_headline import (CANONICAL, HEADLINE_METHODS, REQUEST_KEYS, abc, answered, by_method,
-                             defect_notes, distinct, fmt_us, load_published, ra_not_implemented,
-                             ra_silent, ridx_silent, short, where)
+from matrix_headline import (CANONICAL, HARNESS_DEFECT_ROWS, HEADLINE_METHODS, REQUEST_KEYS, abc,
+                             answered, by_method, defect_notes, distinct, fmt_us, load_published,
+                             ra_not_implemented, ra_silent, ridx_silent, short, where)
 
 Runs = List[Tuple[str, Dict[str, Any]]]
 
@@ -81,7 +81,8 @@ def render_headlines(runs: Runs) -> List[str]:
     out = ["## 3. Headline methods per repository", "",
            "`a / b / c` = non-empty, empty and failed answers out of the sampled items; latencies are "
            "the warm p50 and p99 over the items (methodology, sections 5 and 6). The remaining "
-           "methods are in `docs/BENCHMARK_MATRIX.md`.", ""]
+           "methods are in `docs/BENCHMARK_MATRIX.md`; rows excluded as harness defects (section 4) "
+           "are not shown.", ""]
     for key, data in runs:
         ridx, ra = data["ridx"]["methods"], data["rust_analyzer"]["methods"]
         out += [f"### {CANONICAL.get(key, key)} (corpus commit `{short(data.get('repo_commit'))}`)", "",
@@ -89,6 +90,8 @@ def render_headlines(runs: Runs) -> List[str]:
                       "rust-analyzer p50", "rust-analyzer p99"]),
                 "|:---|:---|---:|---:|:---|---:|---:|"]
         for mkey, label in HEADLINE_METHODS:
+            if mkey in HARNESS_DEFECT_ROWS:
+                continue
             m, a = ridx.get(mkey, {}), ra.get(mkey, {})
             out.append(_row([label, abc(m), fmt_us(m.get("warm_p50_us")), fmt_us(m.get("warm_p99_us")),
                              abc(a), fmt_us(a.get("warm_p50_us")), fmt_us(a.get("warm_p99_us"))]))

@@ -18,7 +18,7 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 - bevy: at RIDX commit `d72a749` RIDX `mutation/caseA`, `mutation/caseB` and `mutation/caseC` timed out on 122, 90 and 32 of 300 scenarios and `textDocument/definition` on 21 requests; since RIDX commit `5d49c84` none time out. Two changes lie between those runs: the harness barrier `ade610f` (see the harness defects below) and the precomputed workspace path index for file provenance lookups in `5d49c84`.
 - Indexes were built with the driver recorded as `driver_hash` (`driver_build_commit`), which can be older than the RIDX commit. Between driver build commit `cdf975d` and RIDX commit `cae751b` the driver changed only in `build.rs` (link search path) and `ridx-format` only in reader-side workspace code, so the index contents do not depend on the newer commit.
 
-## Known harness defects (fixed, in commit order)
+## Known harness defects (in commit order; open defects last)
 
 - `18088fc`: `$/cancelRequest` scenarios reused numeric ids that collided with query ids; string ids are used since this commit.
 - `b704408`: synchronization scenarios left overlays open, so later queries ran against modified buffers; each scenario now opens and closes its own document.
@@ -29,6 +29,7 @@ Published on the current harness: `ripgrep`, `tokio`, `rust-analyzer`, `bevy`, `
 - `1d5d2ca`: a request that hit the client timeout was never cancelled, so the server kept computing it and delayed the first requests of the next method (observed on bevy: about 20 s per `typeHierarchy/subtypes` request against a 2 s timeout); the client now sends `$/cancelRequest` on timeout and waits for outstanding answers before each method.
 - `ade610f`: the document synchronization methods send notifications only, so the wait for outstanding answers did not cover them; their backlog stayed queued in the server and timed out the first requests of the next method (observed on bevy: 21 of 300 `textDocument/definition` requests after `didSave` and `didClose`). Before each method the runner now sends a request no server implements and waits for its `-32601` answer.
 - `d27ac0e`: `textDocument/content` was sent as `{"textDocument": {"uri"}}` instead of `{"uri"}`; RIDX read an empty uri and answered `{"text": ""}`, counted as non-empty for all 300 requests, so row 75 of the runs measured before this commit is not a measurement of the method (rust-analyzer answers `-32601`: it does not implement the method). The row now sends `{"uri"}`.
+- open: `textDocument/codeLens`: the client declares neither `textDocument.codeLens` nor `experimental.commands.commands`, and rust-analyzer builds its lenses (implementations, references, run and debug) only for clients that register the `rust-analyzer.showReferences`, `rust-analyzer.runSingle` and `rust-analyzer.debugSingle` commands, so it answered `[]` on all 300 items of every published run (checked on ram9 with rust-analyzer 1.98.1: `serde_core/src/de/impls.rs` gets 0 lenses with the matrix client and 23 once the commands are declared). Row 59 of the published runs is not a measurement of the method for rust-analyzer; it is excluded from the counts, the coverage statements and the headline tables until a run measured with the capabilities declared is published.
 
 ## BurntSushi/ripgrep
 

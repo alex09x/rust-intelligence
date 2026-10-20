@@ -37,12 +37,24 @@ SITE_METHODS = ["definition", "references", "hover", "completion", "document_sym
 # Request rows whose item comes from the corpus. Statements about a/b/c are made only about these:
 # notifications, lifecycle, server-to-client and mutation rows are out, and so are the rows that send
 # an item built by the harness (SYNTHETIC_ITEM_KEYS).
-# Rows the published runs measured with malformed parameters: excluded from the counts and the
-# coverage statements and named in the notes (known harness defects in docs/BENCHMARK_MATRIX.md).
-# `textDocument/content` was sent as {"textDocument": {"uri"}} until harness commit d27ac0e and RIDX
-# answered an empty text for every item. Drop the entry once a run measured after that commit is
-# published.
-HARNESS_DEFECT_ROWS = {"text_document_content": ("textDocument/content", "d27ac0e")}
+# Rows the published runs measured with a defective harness: excluded from the counts, the coverage
+# statements and the headline tables, and named in the notes (known harness defects in
+# docs/BENCHMARK_MATRIX.md). Each entry is (rpc method, reason); the reason is the clause after
+# "is not counted:" in the notes, with code spans in backticks.
+# - `textDocument/content` was sent as {"textDocument": {"uri"}} until harness commit d27ac0e and
+#   RIDX answered an empty text for every item.
+# - `textDocument/codeLens`: the client declares neither `textDocument.codeLens` nor the
+#   `rust-analyzer.*` commands (`experimental.commands`), and rust-analyzer builds no lens without
+#   them, so it answered `[]` on every item of every published run.
+# Drop an entry once a run measured with the fixed harness is published.
+HARNESS_DEFECT_ROWS = {
+    "text_document_content": ("textDocument/content",
+                              "the published runs were measured before harness commit `d27ac0e` fixed its parameters"),
+    "code_lens": ("textDocument/codeLens",
+                  "the matrix client declares neither `textDocument.codeLens` nor the `rust-analyzer.*` commands "
+                  "(`experimental.commands`) that rust-analyzer requires before it builds any lens, so "
+                  "rust-analyzer answered `[]` on every item"),
+}
 REQUEST_KEYS = frozenset(
     key for _, key, _, _, rpc_type in LSP_SPECS if rpc_type == "request"
 ) - SYNTHETIC_ITEM_KEYS - frozenset(HARNESS_DEFECT_ROWS)
@@ -141,10 +153,10 @@ def where(repos: List[str], total: int) -> str:
 
 
 def defect_notes(code: bool) -> List[str]:
-    """One sentence per row excluded because of a harness defect in the published runs."""
+    """One sentence per row excluded because of a harness defect in the published runs; without
+    `code` the backticks are dropped for plain-text contexts."""
     out = []
-    for _, (rpc, commit) in sorted(HARNESS_DEFECT_ROWS.items()):
-        method, sha, doc = (f"`{rpc}`", f"`{commit}`", "`docs/BENCHMARK_MATRIX.md`") if code else (rpc, commit, "docs/BENCHMARK_MATRIX.md")
-        out.append(f"{method} is not counted: the published runs were measured before harness commit {sha} "
-                   f"fixed its parameters (known harness defects in {doc}).")
+    for _, (rpc, reason) in sorted(HARNESS_DEFECT_ROWS.items()):
+        note = f"`{rpc}` is not counted: {reason} (known harness defects in `docs/BENCHMARK_MATRIX.md`)."
+        out.append(note if code else note.replace("`", ""))
     return out

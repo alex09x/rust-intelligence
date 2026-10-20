@@ -53,11 +53,12 @@ def test_export_from_published_json():
         assert ws["rows"][4] == ["Hover (warm p50)", 0.0, "n/a", 0.0, "n/a"]
         assert ws["rows"][10] == ["Rename (warm p50)", 0.0002, "200 µs", 0.0003, "300 µs"]
         assert ws["memory"] == {"ridx_peak_rss_mb": 81.73, "ra_peak_rss_mb": 2176.41}
-        assert ws["coverage"] == {"ridx_answered": 2, "ra_answered": 2, "request_methods": 39}
+        assert ws["coverage"] == {"ridx_answered": 2, "ra_answered": 2, "request_methods": 38}
         assert payload["ridx_commit"] == "d3b7810f2504452dd66570969eef2def04028be5"
         assert payload["method_note"].startswith("1 repositories, 78 LSP methods, 300 sampled items per method (22,204 requests per server and repository, seed 42); RIDX d3b7810, driver 8884205b28dd2daa, rust-analyzer 1.98.1 (48a229c 2026-09-01); node booster, CPU set 24-31.")
         assert payload["limitations"][0].startswith("Outside mutation case B nothing in the matrix checks that an answer is correct")
-        assert payload["limitations"][1] == "textDocument/content is not counted: the published runs were measured before harness commit d27ac0e fixed its parameters (known harness defects in docs/BENCHMARK_MATRIX.md)."
+        assert payload["limitations"][1] == "textDocument/codeLens is not counted: the matrix client declares neither textDocument.codeLens nor the rust-analyzer.* commands (experimental.commands) that rust-analyzer requires before it builds any lens, so rust-analyzer answered [] on every item (known harness defects in docs/BENCHMARK_MATRIX.md)."
+        assert payload["limitations"][2] == "textDocument/content is not counted: the published runs were measured before harness commit d27ac0e fixed its parameters (known harness defects in docs/BENCHMARK_MATRIX.md)."
         assert "Peak RSS over the run: RIDX 82 to 82 MB, rust-analyzer 2176 to 2176 MB" in payload["limitations"][-2]
         assert payload["limitations"][-1] == "Requests cancelled on the client timeout: RIDX 0, rust-analyzer 0."
         for key in ("summary", "completion", "accuracy"):

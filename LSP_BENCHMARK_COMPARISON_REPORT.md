@@ -24,19 +24,19 @@ Values shared by the five runs; a cell lists every distinct value when the runs 
 
 ## 2. The five repositories at a glance
 
-Request methods are the 39 rows whose items come from the corpus (see section 4). Peak RSS, threads and file descriptors are process telemetry sampled during the run. Cancelled requests hit the client timeout.
+Request methods are the 38 rows whose items come from the corpus (see section 4). Peak RSS, threads and file descriptors are process telemetry sampled during the run. Cancelled requests hit the client timeout.
 
 | Repository | Corpus commit | Index shards | RIDX peak RSS (MB) | rust-analyzer peak RSS (MB) | RIDX threads / fds | rust-analyzer threads / fds | RIDX suite (s) | rust-analyzer suite (s) | Cancelled RIDX / rust-analyzer | Request methods answered RIDX / rust-analyzer |
 |:---|:---|---:|---:|---:|:---|:---|---:|---:|:---|:---|
-| BurntSushi/ripgrep | `4649aa9` | 27 | 124.64 | 2227.02 | 3 / 7 | 53 / 17 | 56.4 | 116.8 | 0 / 1 | 29 / 20 of 39 |
-| tokio-rs/tokio | `b263675` | 308 | 192.36 | 4361.21 | 3 / 4 | 53 / 11 | 77.7 | 218.9 | 0 / 5 | 29 / 20 of 39 |
-| rust-lang/rust-analyzer | `021bfc1` | 105 | 403.54 | 6110.43 | 3 / 4 | 53 / 17 | 117.7 | 292.9 | 0 / 15 | 31 / 21 of 39 |
-| bevyengine/bevy | `68c80f3` | 640 | 958.04 | 16590.47 | 4 / 7 | 38 / 11 | 353.6 | 1390.0 | 0 / 159 | 30 / 21 of 39 |
-| serde-rs/serde | `69072f2` | 31 | 87.53 | 2499.10 | 3 / 8 | 53 / 11 | 50.7 | 195.3 | 0 / 1 | 29 / 20 of 39 |
+| BurntSushi/ripgrep | `4649aa9` | 27 | 124.64 | 2227.02 | 3 / 7 | 53 / 17 | 56.4 | 116.8 | 0 / 1 | 28 / 20 of 38 |
+| tokio-rs/tokio | `b263675` | 308 | 192.36 | 4361.21 | 3 / 4 | 53 / 11 | 77.7 | 218.9 | 0 / 5 | 28 / 20 of 38 |
+| rust-lang/rust-analyzer | `021bfc1` | 105 | 403.54 | 6110.43 | 3 / 4 | 53 / 17 | 117.7 | 292.9 | 0 / 15 | 30 / 21 of 38 |
+| bevyengine/bevy | `68c80f3` | 640 | 958.04 | 16590.47 | 4 / 7 | 38 / 11 | 353.6 | 1390.0 | 0 / 159 | 29 / 21 of 38 |
+| serde-rs/serde | `69072f2` | 31 | 87.53 | 2499.10 | 3 / 8 | 53 / 11 | 50.7 | 195.3 | 0 / 1 | 28 / 20 of 38 |
 
 ## 3. Headline methods per repository
 
-`a / b / c` = non-empty, empty and failed answers out of the sampled items; latencies are the warm p50 and p99 over the items (methodology, sections 5 and 6). The remaining methods are in `docs/BENCHMARK_MATRIX.md`.
+`a / b / c` = non-empty, empty and failed answers out of the sampled items; latencies are the warm p50 and p99 over the items (methodology, sections 5 and 6). The remaining methods are in `docs/BENCHMARK_MATRIX.md`; rows excluded as harness defects (section 4) are not shown.
 
 ### BurntSushi/ripgrep (corpus commit `4649aa9`)
 
@@ -51,7 +51,6 @@ Request methods are the 39 rows whose items come from the corpus (see section 4)
 | Document symbols | 300 / 0 / 0 | 66 µs | 4.55 ms | 293 / 7 / 0 | 250 µs | 7.48 ms |
 | Workspace symbol search | 177 / 123 / 0 | 4.53 ms | 10.32 ms | 178 / 122 / 0 | 928 µs | 1.06 ms |
 | Rename | 298 / 0 / 2 | 423 µs | 8.07 ms | 299 / 0 / 1 | 479 µs | 117.12 ms |
-| Code lens | 295 / 5 / 0 | 317 µs | 16.38 ms | 0 / 300 / 0 | 62 µs | 2.47 ms |
 | Semantic tokens (full) | 300 / 0 / 0 | 271 µs | 5.23 ms | 300 / 0 / 0 | 3.65 ms | 62.48 ms |
 | Folding ranges | 300 / 0 / 0 | 72 µs | 651 µs | 300 / 0 / 0 | 300 µs | 2.76 ms |
 
@@ -68,7 +67,6 @@ Request methods are the 39 rows whose items come from the corpus (see section 4)
 | Document symbols | 297 / 3 / 0 | 39 µs | 333 µs | 291 / 9 / 0 | 148 µs | 919 µs |
 | Workspace symbol search | 143 / 157 / 0 | 16.06 ms | 24.70 ms | 148 / 152 / 0 | 4.24 ms | 4.65 ms |
 | Rename | 236 / 0 / 64 | 1.64 ms | 3.10 ms | 232 / 0 / 68 | 340 µs | 332.85 ms |
-| Code lens | 262 / 38 / 0 | 305 µs | 2.47 ms | 0 / 300 / 0 | 133 µs | 1.64 ms |
 | Semantic tokens (full) | 300 / 0 / 0 | 252 µs | 1.43 ms | 300 / 0 / 0 | 1.46 ms | 24.61 ms |
 | Folding ranges | 294 / 6 / 0 | 42 µs | 324 µs | 296 / 4 / 0 | 134 µs | 1.02 ms |
 
@@ -85,7 +83,6 @@ Request methods are the 39 rows whose items come from the corpus (see section 4)
 | Document symbols | 297 / 3 / 0 | 52 µs | 622 µs | 297 / 3 / 0 | 227 µs | 2.12 ms |
 | Workspace symbol search | 174 / 126 / 0 | 35.53 ms | 46.26 ms | 177 / 123 / 0 | 13.13 ms | 14.09 ms |
 | Rename | 285 / 0 / 15 | 648 µs | 5.41 ms | 166 / 0 / 134 | 107 µs | 509.57 ms |
-| Code lens | 225 / 75 / 0 | 443 µs | 187.38 ms | 0 / 300 / 0 | 76 µs | 16.86 ms |
 | Semantic tokens (full) | 300 / 0 / 0 | 406 µs | 23.00 ms | 299 / 0 / 1 | 3.18 ms | 138.40 ms |
 | Folding ranges | 271 / 29 / 0 | 89 µs | 2.25 ms | 278 / 22 / 0 | 230 µs | 3.94 ms |
 
@@ -102,7 +99,6 @@ Request methods are the 39 rows whose items come from the corpus (see section 4)
 | Document symbols | 297 / 3 / 0 | 50 µs | 2.33 ms | 296 / 4 / 0 | 253 µs | 2.53 ms |
 | Workspace symbol search | 178 / 122 / 0 | 102.96 ms | 161.25 ms | 178 / 122 / 0 | 23.94 ms | 25.20 ms |
 | Rename | 279 / 0 / 21 | 3.21 ms | 12.41 ms | 271 / 0 / 29 | 6.10 ms | 2.00 s |
-| Code lens | 263 / 37 / 0 | 1.06 ms | 450.02 ms | 0 / 300 / 0 | 102 µs | 2.76 ms |
 | Semantic tokens (full) | 300 / 0 / 0 | 716 µs | 46.93 ms | 300 / 0 / 0 | 2.28 ms | 38.11 ms |
 | Folding ranges | 291 / 9 / 0 | 66 µs | 832 µs | 298 / 2 / 0 | 200 µs | 2.11 ms |
 
@@ -119,13 +115,12 @@ Request methods are the 39 rows whose items come from the corpus (see section 4)
 | Document symbols | 300 / 0 / 0 | 18 µs | 1.63 ms | 300 / 0 / 0 | 54 µs | 3.24 ms |
 | Workspace symbol search | 178 / 122 / 0 | 5.57 ms | 13.56 ms | 175 / 125 / 0 | 833 µs | 1.30 ms |
 | Rename | 270 / 0 / 30 | 292 µs | 1.94 ms | 269 / 0 / 31 | 699 µs | 102.51 ms |
-| Code lens | 113 / 187 / 0 | 48 µs | 18.53 ms | 0 / 300 / 0 | 27 µs | 630 µs |
 | Semantic tokens (full) | 300 / 0 / 0 | 48 µs | 3.30 ms | 300 / 0 / 0 | 111 µs | 40.04 ms |
 | Folding ranges | 250 / 50 / 0 | 24 µs | 700 µs | 276 / 24 / 0 | 42 µs | 2.83 ms |
 
 ## 4. Coverage differences
 
-Over the 39 request methods whose items come from the corpus. The twelve rows that send an item built by the harness (the `*/resolve` methods, `workspace/executeCommand`, the call and type hierarchy methods), the notifications, the lifecycle and the mutation rows are not counted. Outside mutation case B nothing in the matrix checks that an answer is correct: `a / b / c` counts answers, and correctness is covered by the test suite and the fidelity scripts (methodology, sections 5, 7 and 9).
+Over the 38 request methods whose items come from the corpus. The twelve rows that send an item built by the harness (the `*/resolve` methods, `workspace/executeCommand`, the call and type hierarchy methods), the notifications, the lifecycle and the mutation rows are not counted. Outside mutation case B nothing in the matrix checks that an answer is correct: `a / b / c` counts answers, and correctness is covered by the test suite and the fidelity scripts (methodology, sections 5, 7 and 9).
 
 - RIDX returned no non-empty answer on any item while rust-analyzer did: none.
 - rust-analyzer answered `-32601` (method not found) on every item:
@@ -143,9 +138,9 @@ Over the 39 request methods whose items come from the corpus. The twelve rows th
   - `workspace/willDeleteFiles` (all five)
 - rust-analyzer returned no non-empty answer on any item while RIDX did:
   - `textDocument/codeAction` (all five)
-  - `textDocument/codeLens` (all five)
   - `textDocument/onTypeFormatting` (rust-lang/rust-analyzer)
   - `textDocument/rangeFormatting` (all five)
+- `textDocument/codeLens` is not counted: the matrix client declares neither `textDocument.codeLens` nor the `rust-analyzer.*` commands (`experimental.commands`) that rust-analyzer requires before it builds any lens, so rust-analyzer answered `[]` on every item (known harness defects in `docs/BENCHMARK_MATRIX.md`).
 - `textDocument/content` is not counted: the published runs were measured before harness commit `d27ac0e` fixed its parameters (known harness defects in `docs/BENCHMARK_MATRIX.md`).
 
 ## 5. Earlier publications
