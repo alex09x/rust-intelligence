@@ -72,15 +72,15 @@ KNOWN_HARNESS_DEFECTS = [
      "so row 75 of the runs measured before this commit is not a measurement of the method "
      "(rust-analyzer answers `-32601`: it does not implement the method). The row now sends "
      '`{"uri"}`.'),
-    (None, "`textDocument/codeLens`: the client declares neither `textDocument.codeLens` nor "
+    ("92b660e", "the client declared neither `textDocument.codeLens` nor "
      "`experimental.commands.commands`, and rust-analyzer builds its lenses (implementations, "
      "references, run and debug) only for clients that register the `rust-analyzer.showReferences`, "
      "`rust-analyzer.runSingle` and `rust-analyzer.debugSingle` commands, so it answered `[]` on all "
-     "300 items of every published run (checked on ram9 with rust-analyzer 1.98.1: "
-     "`serde_core/src/de/impls.rs` gets 0 lenses with the matrix client and 23 once the commands are "
-     "declared). Row 59 of the published runs is not a measurement of the method for rust-analyzer; "
-     "it is excluded from the counts, the coverage statements and the headline tables until a run "
-     "measured with the capabilities declared is published."),
+     "300 `textDocument/codeLens` items of the runs published before this commit (checked on ram9 "
+     "with rust-analyzer 1.98.1: `serde_core/src/de/impls.rs` gets 0 lenses with the old client and "
+     "23 once the commands are declared); row 59 of those runs is not a measurement of the method "
+     "for rust-analyzer. The client now declares `textDocument.codeLens` and the three commands; "
+     "the runs published from `dccff4b` on are measured with them."),
 ]
 
 NOTES = [
@@ -211,7 +211,9 @@ def render(pub_dir: Path) -> str:
     for n in NOTES:
         out.append(f"- {n}")
     out.append("")
-    out.append("## Known harness defects (in commit order; open defects last)")
+    open_defects = any(commit is None for commit, _ in KNOWN_HARNESS_DEFECTS)
+    out.append("## Known harness defects (in commit order; open defects last)" if open_defects
+               else "## Known harness defects (fixed, in commit order)")
     out.append("")
     for commit, text in KNOWN_HARNESS_DEFECTS:
         out.append(f"- `{commit}`: {text}" if commit else f"- open: {text}")

@@ -43,17 +43,12 @@ SITE_METHODS = ["definition", "references", "hover", "completion", "document_sym
 # "is not counted:" in the notes, with code spans in backticks.
 # - `textDocument/content` was sent as {"textDocument": {"uri"}} until harness commit d27ac0e and
 #   RIDX answered an empty text for every item.
-# - `textDocument/codeLens`: the client declares neither `textDocument.codeLens` nor the
-#   `rust-analyzer.*` commands (`experimental.commands`), and rust-analyzer builds no lens without
-#   them, so it answered `[]` on every item of every published run.
+# `textDocument/codeLens` left this set with the runs measured after harness commit 92b660e, which
+# declares the client commands rust-analyzer needs before it builds a lens.
 # Drop an entry once a run measured with the fixed harness is published.
 HARNESS_DEFECT_ROWS = {
     "text_document_content": ("textDocument/content",
                               "the published runs were measured before harness commit `d27ac0e` fixed its parameters"),
-    "code_lens": ("textDocument/codeLens",
-                  "the matrix client declares neither `textDocument.codeLens` nor the `rust-analyzer.*` commands "
-                  "(`experimental.commands`) that rust-analyzer requires before it builds any lens, so "
-                  "rust-analyzer answered `[]` on every item"),
 }
 REQUEST_KEYS = frozenset(
     key for _, key, _, _, rpc_type in LSP_SPECS if rpc_type == "request"
