@@ -30,8 +30,9 @@ def _sample(pool, n):
 
 def sample_full_lsp_matrix(repo_dir, per_method=300, seed=42):
     """
-    Builds the complete benchmark test matrix:
-    78 LSP 3.17 methods x per_method varieties = 23,400 tests per repository.
+    Builds the complete benchmark test matrix: 78 LSP 3.17 methods, the four lifecycle
+    methods once and the other 74 with per_method sampled items each (22,204 requests
+    per server at per_method=300).
     """
     random.seed(seed)
     usages, declarations = scan_source_positions(repo_dir)

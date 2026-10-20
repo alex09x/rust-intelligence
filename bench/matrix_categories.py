@@ -151,8 +151,11 @@ def build_params(key, sc, repo_dir, is_ra=False):
             **({"ch": ";", "options": {"tabSize": 4, "insertSpaces": True}} if key == "on_type_formatting" else {})
         }
     elif key in ("document_symbol", "folding_range", "code_lens", "document_diagnostic",
-                 "document_link", "document_color", "text_document_content"):
+                 "document_link", "document_color"):
         return {"textDocument": {"uri": uri}}
+    elif key == "text_document_content":
+        # TextDocumentContentParams carries the uri itself, not a TextDocumentIdentifier.
+        return {"uri": uri}
     elif key == "workspace_symbol":
         return {"query": sc.get("query", "test")}
     elif key == "workspace_symbol_resolve":
