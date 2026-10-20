@@ -1,0 +1,6040 @@
+{
+ "repo": "rust-lang/rust-analyzer",
+ "repo_dir_name": "rust-analyzer",
+ "repo_head": "021bfc15e24909389bd208d1622b7f4f3942b91a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 105,
+ "positions_file": "matrix_rust-analyzer_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 62,
+ "timestamp_start": "2026-10-20T15:49:00.160223+00:00",
+ "timestamp_end": "2026-10-20T15:54:37.341579+00:00",
+ "servers": [
+  {
+   "name": "606ed0e",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 606ed0e4a4b963c48001cc6995ce242cc74e98a3, dirty: false)",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 110.9,
+   "summary": {
+    "definition": {
+     "a": 282,
+     "b": 18,
+     "c": 0,
+     "n": 300,
+     "p50_us": 196.5,
+     "p99_us": 879.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 182.4,
+     "p99_us": 457.5,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 191.2,
+     "p99_us": 832.1,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 947.2,
+     "p99_us": 82901.3,
+     "unsupported": false
+    },
+    "references": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 558.5,
+     "p99_us": 29449.5,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 244,
+     "b": 56,
+     "c": 0,
+     "n": 300,
+     "p50_us": 701.2,
+     "p99_us": 90200.9,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 183.1,
+     "p99_us": 2260.7,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 36571.4,
+     "p99_us": 48339.6,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 22.5,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 258.6,
+     "p99_us": 581.8,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1237.8,
+     "p99_us": 13657.4,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 18.8,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 139.6,
+     "p99_us": 45701.7,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.6,
+     "p99_us": 460.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 15.8,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.8,
+     "p99_us": 339.6,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.3,
+     "p99_us": 289.8,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.5,
+     "p99_us": 371.3,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 17.6,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 284,
+     "b": 16,
+     "c": 0,
+     "n": 300,
+     "p50_us": 182.9,
+     "p99_us": 469.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 71,
+     "b": 229,
+     "c": 0,
+     "n": 300,
+     "p50_us": 755.5,
+     "p99_us": 3198.5,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 221,
+     "b": 79,
+     "c": 0,
+     "n": 300,
+     "p50_us": 392.9,
+     "p99_us": 5138.0,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 100,
+     "b": 200,
+     "c": 0,
+     "n": 300,
+     "p50_us": 171.1,
+     "p99_us": 452.2,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 43.7,
+     "p99_us": 2538.5,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 5052.6,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 239.3,
+     "p99_us": 2085.6,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.0,
+     "p99_us": 197.5,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.6,
+     "p99_us": 17.4,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 13.2,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86130.4,
+     "p99_us": 114919.2,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89363.9,
+     "p99_us": 183851.5,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 93222.0,
+     "p99_us": 173063.1,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 287,
+     "b": 0,
+     "c": 13,
+     "n": 300,
+     "p50_us": 424.3,
+     "p99_us": 5835.6,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 285,
+     "b": 0,
+     "c": 15,
+     "n": 300,
+     "p50_us": 786.7,
+     "p99_us": 5746.4,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 36.5,
+     "p99_us": 344.2,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 112.2,
+     "p99_us": 683.3,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 15.1,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 14.5,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 502.3,
+     "p99_us": 21525.9,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 499.4,
+     "p99_us": 22709.8,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 482.0,
+     "p99_us": 19694.5,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 120.8,
+     "p99_us": 2386.3,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 185.6,
+     "p99_us": 1423.9,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.9,
+     "p99_us": 18.0,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 67.6,
+     "p99_us": 1057.7,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2636.8,
+     "p99_us": 2906.5,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 17.0,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 12.1,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 16.2,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.6,
+     "p99_us": 140.9,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 51,
+    "mismatches": []
+   }
+  },
+  {
+   "name": "3bef7f4",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 3bef7f4a86183647b649bbaf5d0c7fb35559b1eb, dirty: false)",
+   "commit": "3bef7f4a86183647b649bbaf5d0c7fb35559b1eb",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 110.5,
+   "summary": {
+    "definition": {
+     "a": 282,
+     "b": 18,
+     "c": 0,
+     "n": 300,
+     "p50_us": 221.4,
+     "p99_us": 905.5,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 226.0,
+     "p99_us": 552.1,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 218.0,
+     "p99_us": 1061.5,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 992.8,
+     "p99_us": 90895.7,
+     "unsupported": false
+    },
+    "references": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 628.4,
+     "p99_us": 29882.1,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 244,
+     "b": 56,
+     "c": 0,
+     "n": 300,
+     "p50_us": 757.1,
+     "p99_us": 94856.1,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 175.6,
+     "p99_us": 2239.0,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35564.6,
+     "p99_us": 47788.8,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 22.9,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 353.8,
+     "p99_us": 1035.2,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1407.5,
+     "p99_us": 16069.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 17.8,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 136.4,
+     "p99_us": 43885.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.1,
+     "p99_us": 1836.9,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 15.0,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39.3,
+     "p99_us": 327.0,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.4,
+     "p99_us": 291.6,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 47.3,
+     "p99_us": 356.1,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 17.7,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 284,
+     "b": 16,
+     "c": 0,
+     "n": 300,
+     "p50_us": 217.9,
+     "p99_us": 541.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 71,
+     "b": 229,
+     "c": 0,
+     "n": 300,
+     "p50_us": 816.5,
+     "p99_us": 4532.6,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 221,
+     "b": 79,
+     "c": 0,
+     "n": 300,
+     "p50_us": 458.4,
+     "p99_us": 7296.4,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 100,
+     "b": 200,
+     "c": 0,
+     "n": 300,
+     "p50_us": 211.9,
+     "p99_us": 488.7,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 38.2,
+     "p99_us": 2584.3,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.6,
+     "p99_us": 5265.2,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 253.2,
+     "p99_us": 2162.2,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.3,
+     "p99_us": 166.4,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 18.8,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.3,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87509.6,
+     "p99_us": 124372.8,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89948.8,
+     "p99_us": 184589.3,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 93232.1,
+     "p99_us": 169240.7,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 287,
+     "b": 0,
+     "c": 13,
+     "n": 300,
+     "p50_us": 486.6,
+     "p99_us": 5804.8,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 285,
+     "b": 0,
+     "c": 15,
+     "n": 300,
+     "p50_us": 822.7,
+     "p99_us": 5841.3,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 36.2,
+     "p99_us": 332.7,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 118.4,
+     "p99_us": 697.4,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 13.7,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 335.4,
+     "p99_us": 2651.5,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 315.9,
+     "p99_us": 3635.0,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 315.5,
+     "p99_us": 3620.0,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 119.3,
+     "p99_us": 2086.0,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 180.7,
+     "p99_us": 1345.7,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 17.8,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 73.2,
+     "p99_us": 1219.9,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2726.8,
+     "p99_us": 3149.4,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 12.6,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 14.9,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.7,
+     "p99_us": 145.6,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 51,
+    "mismatches": []
+   }
+  },
+  {
+   "name": "606ed0e-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 606ed0e4a4b963c48001cc6995ce242cc74e98a3, dirty: false)",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 111.0,
+   "summary": {
+    "definition": {
+     "a": 282,
+     "b": 18,
+     "c": 0,
+     "n": 300,
+     "p50_us": 194.3,
+     "p99_us": 883.4,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 184.2,
+     "p99_us": 453.0,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 190.4,
+     "p99_us": 862.0,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 928.0,
+     "p99_us": 93121.7,
+     "unsupported": false
+    },
+    "references": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 543.2,
+     "p99_us": 30939.0,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 244,
+     "b": 56,
+     "c": 0,
+     "n": 300,
+     "p50_us": 697.7,
+     "p99_us": 92012.7,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 180.6,
+     "p99_us": 2226.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 36644.7,
+     "p99_us": 50483.1,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.7,
+     "p99_us": 19.7,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 267.6,
+     "p99_us": 606.2,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1219.2,
+     "p99_us": 13125.1,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 18.7,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 135.4,
+     "p99_us": 46309.5,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.4,
+     "p99_us": 485.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 15.9,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41.2,
+     "p99_us": 329.8,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.1,
+     "p99_us": 275.4,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 45.6,
+     "p99_us": 369.1,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 284,
+     "b": 16,
+     "c": 0,
+     "n": 300,
+     "p50_us": 184.6,
+     "p99_us": 463.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 71,
+     "b": 229,
+     "c": 0,
+     "n": 300,
+     "p50_us": 747.5,
+     "p99_us": 3209.4,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 221,
+     "b": 79,
+     "c": 0,
+     "n": 300,
+     "p50_us": 387.3,
+     "p99_us": 5214.3,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 100,
+     "b": 200,
+     "c": 0,
+     "n": 300,
+     "p50_us": 170.2,
+     "p99_us": 451.7,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41.4,
+     "p99_us": 2520.2,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.7,
+     "p99_us": 5370.6,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 235.3,
+     "p99_us": 2077.5,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.2,
+     "p99_us": 152.7,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.3,
+     "p99_us": 11.1,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87407.7,
+     "p99_us": 114448.4,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89678.8,
+     "p99_us": 185479.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92794.8,
+     "p99_us": 172488.4,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 287,
+     "b": 0,
+     "c": 13,
+     "n": 300,
+     "p50_us": 441.1,
+     "p99_us": 5654.1,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 285,
+     "b": 0,
+     "c": 15,
+     "n": 300,
+     "p50_us": 795.5,
+     "p99_us": 5902.0,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 36.5,
+     "p99_us": 347.2,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 122.7,
+     "p99_us": 704.1,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 18.9,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 15.8,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 519.7,
+     "p99_us": 21673.3,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 503.5,
+     "p99_us": 22717.2,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 480.7,
+     "p99_us": 19305.4,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 125.8,
+     "p99_us": 2370.4,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 163.3,
+     "p99_us": 1410.8,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.1,
+     "p99_us": 19.0,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 64.7,
+     "p99_us": 1014.3,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2656.8,
+     "p99_us": 2935.9,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 16.4,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.6,
+     "p99_us": 11.5,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 12.8,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.1,
+     "p99_us": 166.9,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 51,
+    "mismatches": []
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "606ed0e",
+   "b": "3bef7f4",
+   "same": 15221,
+   "differing": 79,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 276,
+     "differing": 24,
+     "transitions": {
+      "a>a": 24
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_full_2_display.rs",
+       "file": "crates/hir-ty/src/display.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dfb952e89c779391",
+        "afebadb0324c50b6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_4_range.rs",
+       "file": "lib/text-size/src/range.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3b20e2a545005f65",
+        "88b271a79beaa37a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_10_lib.rs",
+       "file": "crates/ide-diagnostics/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7fd62c0517f0eb7f",
+        "e89c395672662564"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_19_context.rs",
+       "file": "crates/ide-completion/src/context.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "935d01841ac84268",
+        "cad2614f2dcddfc7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_28_pool.rs",
+       "file": "crates/proc-macro-api/src/pool.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5832b8aebe73d32d",
+        "96f51d35c709bc0c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_51_input.rs",
+       "file": "crates/base-db/src/input.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7cb53112dfc7ebde",
+        "80f25fb785a0c84d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_58_map.rs",
+       "file": "lib/la-arena/src/map.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cf45960c1a7cb4c4",
+        "22cc46990e0f8227"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_85_reload.rs",
+       "file": "crates/rust-analyzer/src/reload.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d8081e174c7aee25",
+        "62a0cd442ed460bf"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_104_hygiene.rs",
+       "file": "crates/span/src/hygiene.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ca7594ec021fd939",
+        "7d28ba95de3e64e2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_122_lib.rs",
+       "file": "lib/la-arena/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ed5129df1584ccd2",
+        "52f499179fc4264c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_delta": {
+     "same": 268,
+     "differing": 32,
+     "transitions": {
+      "a>a": 32
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_delta_1_errors.rs",
+       "file": "crates/ide-ssr/src/errors.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e2270a621d05a897",
+        "d0ce77d812f90048"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_11_lib.rs",
+       "file": "crates/rust-analyzer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3aed7d6a974b3f41",
+        "03ff831b0244912a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_20_lib.rs",
+       "file": "crates/ide-ssr/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e0b2c1c6484d3a30",
+        "e94d5a7880903dbc"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_24_lib.rs",
+       "file": "crates/proc-macro-srv/proc-macro-test/imp/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "36eebb5bfb11aed1",
+        "1709ff2f09cdcb3c"
+       ],
+       "target_kind": "custom-build",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_28_serde_impls.rs",
+       "file": "lib/text-size/src/serde_impls.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ed899696410fc76e",
+        "af384bd82a854086"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_33_benchmark.rs",
+       "file": "crates/mbe/src/benchmark.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e5b90ce9950c76c1",
+        "1da1378cec6f52a4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_35_lib.rs",
+       "file": "lib/ungrammar/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2155772beeaf6e13",
+        "b72b0622b4135a40"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_39_lib.rs",
+       "file": "crates/hir-ty/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8876876ca729bde7",
+        "50a86cce88079f5e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_47_lib.rs",
+       "file": "crates/proc-macro-api/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "21007ca39be33d56",
+        "2db9481bbe4c062f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_48_lib.rs",
+       "file": "crates/macros/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0a74363627394baa",
+        "e056ca9d5bf4192a"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_range": {
+     "same": 277,
+     "differing": 23,
+     "transitions": {
+      "a>a": 23
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_range_17_version.rs",
+       "file": "crates/proc-macro-srv-cli/src/version.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b2f4ca457d6188dd",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_25_utils.rs",
+       "file": "crates/syntax/src/utils.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e822cc40c695eaf9",
+        "5a89677ec7763062"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_45_error.rs",
+       "file": "lib/ungrammar/src/error.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "679cada04b7b0327",
+        "5d35c98ead00cea7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_47_fixup.rs",
+       "file": "crates/hir-expand/src/fixup.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "65181ef0c99c5e5a",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_49_lib.rs",
+       "file": "crates/ide-db/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d9f8cff09ec0ff6e",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_62_db.rs",
+       "file": "crates/hir/src/db.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0b72cccce0a1db3c",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_66_lib.rs",
+       "file": "crates/mbe/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d9f8cff09ec0ff6e",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_67_req_queue.rs",
+       "file": "lib/lsp-server/src/req_queue.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7fa4f20ebab5d999",
+        "f40d015f6dffd1bf"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_93_parser.rs",
+       "file": "lib/ungrammar/src/parser.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f1d11e3ad2ca84fb",
+        "87f7587767952ed8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_109_lib.rs",
+       "file": "crates/span/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d9f8cff09ec0ff6e",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "606ed0e",
+   "b": "606ed0e-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "3bef7f4",
+   "b": "606ed0e-2",
+   "same": 15221,
+   "differing": 79,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 276,
+     "differing": 24,
+     "transitions": {
+      "a>a": 24
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_full_2_display.rs",
+       "file": "crates/hir-ty/src/display.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "afebadb0324c50b6",
+        "dfb952e89c779391"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_4_range.rs",
+       "file": "lib/text-size/src/range.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "88b271a79beaa37a",
+        "3b20e2a545005f65"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_10_lib.rs",
+       "file": "crates/ide-diagnostics/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e89c395672662564",
+        "7fd62c0517f0eb7f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_19_context.rs",
+       "file": "crates/ide-completion/src/context.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cad2614f2dcddfc7",
+        "935d01841ac84268"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_28_pool.rs",
+       "file": "crates/proc-macro-api/src/pool.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "96f51d35c709bc0c",
+        "5832b8aebe73d32d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_51_input.rs",
+       "file": "crates/base-db/src/input.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "80f25fb785a0c84d",
+        "7cb53112dfc7ebde"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_58_map.rs",
+       "file": "lib/la-arena/src/map.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "22cc46990e0f8227",
+        "cf45960c1a7cb4c4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_85_reload.rs",
+       "file": "crates/rust-analyzer/src/reload.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "62a0cd442ed460bf",
+        "d8081e174c7aee25"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_104_hygiene.rs",
+       "file": "crates/span/src/hygiene.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7d28ba95de3e64e2",
+        "ca7594ec021fd939"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_122_lib.rs",
+       "file": "lib/la-arena/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "52f499179fc4264c",
+        "ed5129df1584ccd2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_delta": {
+     "same": 268,
+     "differing": 32,
+     "transitions": {
+      "a>a": 32
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_delta_1_errors.rs",
+       "file": "crates/ide-ssr/src/errors.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d0ce77d812f90048",
+        "e2270a621d05a897"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_11_lib.rs",
+       "file": "crates/rust-analyzer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "03ff831b0244912a",
+        "3aed7d6a974b3f41"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_20_lib.rs",
+       "file": "crates/ide-ssr/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e94d5a7880903dbc",
+        "e0b2c1c6484d3a30"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_24_lib.rs",
+       "file": "crates/proc-macro-srv/proc-macro-test/imp/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1709ff2f09cdcb3c",
+        "36eebb5bfb11aed1"
+       ],
+       "target_kind": "custom-build",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_28_serde_impls.rs",
+       "file": "lib/text-size/src/serde_impls.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "af384bd82a854086",
+        "ed899696410fc76e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_33_benchmark.rs",
+       "file": "crates/mbe/src/benchmark.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1da1378cec6f52a4",
+        "e5b90ce9950c76c1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_35_lib.rs",
+       "file": "lib/ungrammar/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b72b0622b4135a40",
+        "2155772beeaf6e13"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_39_lib.rs",
+       "file": "crates/hir-ty/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "50a86cce88079f5e",
+        "8876876ca729bde7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_47_lib.rs",
+       "file": "crates/proc-macro-api/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2db9481bbe4c062f",
+        "21007ca39be33d56"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_48_lib.rs",
+       "file": "crates/macros/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e056ca9d5bf4192a",
+        "0a74363627394baa"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_range": {
+     "same": 277,
+     "differing": 23,
+     "transitions": {
+      "a>a": 23
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_range_17_version.rs",
+       "file": "crates/proc-macro-srv-cli/src/version.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "b2f4ca457d6188dd"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_25_utils.rs",
+       "file": "crates/syntax/src/utils.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5a89677ec7763062",
+        "e822cc40c695eaf9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_45_error.rs",
+       "file": "lib/ungrammar/src/error.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5d35c98ead00cea7",
+        "679cada04b7b0327"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_47_fixup.rs",
+       "file": "crates/hir-expand/src/fixup.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "65181ef0c99c5e5a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_49_lib.rs",
+       "file": "crates/ide-db/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "d9f8cff09ec0ff6e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_62_db.rs",
+       "file": "crates/hir/src/db.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "0b72cccce0a1db3c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_66_lib.rs",
+       "file": "crates/mbe/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "d9f8cff09ec0ff6e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_67_req_queue.rs",
+       "file": "lib/lsp-server/src/req_queue.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f40d015f6dffd1bf",
+        "7fa4f20ebab5d999"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_93_parser.rs",
+       "file": "lib/ungrammar/src/parser.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "87f7587767952ed8",
+        "f1d11e3ad2ca84fb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_109_lib.rs",
+       "file": "crates/span/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "d9f8cff09ec0ff6e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_2_display.rs",
+   "file": "crates/hir-ty/src/display.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "dfb952e89c779391",
+     "us": 3567.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "afebadb0324c50b6",
+     "us": 2914.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "dfb952e89c779391",
+     "us": 3659.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_4_range.rs",
+   "file": "lib/text-size/src/range.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "3b20e2a545005f65",
+     "us": 829.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "88b271a79beaa37a",
+     "us": 287.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "3b20e2a545005f65",
+     "us": 782.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_10_lib.rs",
+   "file": "crates/ide-diagnostics/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7fd62c0517f0eb7f",
+     "us": 24482.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e89c395672662564",
+     "us": 934.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7fd62c0517f0eb7f",
+     "us": 24690.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_19_context.rs",
+   "file": "crates/ide-completion/src/context.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "935d01841ac84268",
+     "us": 1305.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "cad2614f2dcddfc7",
+     "us": 952.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "935d01841ac84268",
+     "us": 1303.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_28_pool.rs",
+   "file": "crates/proc-macro-api/src/pool.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "5832b8aebe73d32d",
+     "us": 597.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "96f51d35c709bc0c",
+     "us": 203.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "5832b8aebe73d32d",
+     "us": 761.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_51_input.rs",
+   "file": "crates/base-db/src/input.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7cb53112dfc7ebde",
+     "us": 1609.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "80f25fb785a0c84d",
+     "us": 1110.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7cb53112dfc7ebde",
+     "us": 1599.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_58_map.rs",
+   "file": "lib/la-arena/src/map.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "cf45960c1a7cb4c4",
+     "us": 5935.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "22cc46990e0f8227",
+     "us": 384.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "cf45960c1a7cb4c4",
+     "us": 5652.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_85_reload.rs",
+   "file": "crates/rust-analyzer/src/reload.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d8081e174c7aee25",
+     "us": 1406.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "62a0cd442ed460bf",
+     "us": 1153.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d8081e174c7aee25",
+     "us": 1427.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_104_hygiene.rs",
+   "file": "crates/span/src/hygiene.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "ca7594ec021fd939",
+     "us": 580.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "7d28ba95de3e64e2",
+     "us": 380.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "ca7594ec021fd939",
+     "us": 581.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_122_lib.rs",
+   "file": "lib/la-arena/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "ed5129df1584ccd2",
+     "us": 21314.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "52f499179fc4264c",
+     "us": 428.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "ed5129df1584ccd2",
+     "us": 21315.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_131_version.rs",
+   "file": "crates/rust-analyzer/src/version.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0b1ca22751b568c1",
+     "us": 490.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "6f37604fbd1c570e",
+     "us": 285.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0b1ca22751b568c1",
+     "us": 476.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_135_lib.rs",
+   "file": "crates/ide/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "85daec505e46a774",
+     "us": 22323.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e313df2cdfd9551e",
+     "us": 959.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "85daec505e46a774",
+     "us": 22522.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_137_lang_items.rs",
+   "file": "crates/hir-ty/src/lang_items.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "2fa669570ff047e3",
+     "us": 1270.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "978b41a858c9faea",
+     "us": 601.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "2fa669570ff047e3",
+     "us": 1250.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_155_iter.rs",
+   "file": "crates/tt/src/iter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f110f92c111d0896",
+     "us": 781.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "56a0427819517881",
+     "us": 341.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f110f92c111d0896",
+     "us": 783.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_166_lib.rs",
+   "file": "crates/paths/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "1281164559c272aa",
+     "us": 21121.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "c1c8cb6c07e04186",
+     "us": 406.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "1281164559c272aa",
+     "us": 21436.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_206_lib.rs",
+   "file": "crates/test-utils/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f4420b61a5c7a533",
+     "us": 21336.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "86b139adec60fe30",
+     "us": 437.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f4420b61a5c7a533",
+     "us": 21428.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_213_lexer.rs",
+   "file": "lib/ungrammar/src/lexer.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "8ac41eae0e4b3d43",
+     "us": 420.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1ad994f094ca3a6a",
+     "us": 212.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "8ac41eae0e4b3d43",
+     "us": 409.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_228_generics.rs",
+   "file": "crates/hir-ty/src/generics.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "68a9f7039107a9df",
+     "us": 2391.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1b3c4a172a3b1805",
+     "us": 748.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "68a9f7039107a9df",
+     "us": 2411.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_241_lib.rs",
+   "file": "crates/vfs-notify/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "aa7b118ad3858b78",
+     "us": 21198.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "56c348687e25f801",
+     "us": 417.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "aa7b118ad3858b78",
+     "us": 21393.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_263_lib.rs",
+   "file": "crates/proc-macro-srv/proc-macro-test/imp/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "custom-build",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7ddc83bdd7b558a8",
+     "us": 21530.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "0e4ce4a0e42c15fe",
+     "us": 102.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7ddc83bdd7b558a8",
+     "us": 21670.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_276_lib.rs",
+   "file": "crates/proc-macro-api/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "ed03b4eab93e6acf",
+     "us": 21268.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f9faf4a1469c076c",
+     "us": 336.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "ed03b4eab93e6acf",
+     "us": 21982.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_277_version.rs",
+   "file": "crates/proc-macro-srv-cli/src/version.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "2f41a1f187221dcb",
+     "us": 1003.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1ee04b0ceec314c1",
+     "us": 135.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "2f41a1f187221dcb",
+     "us": 808.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_280_lib.rs",
+   "file": "crates/project-model/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d5c6e4f596989d48",
+     "us": 21525.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a886b2a60e7373f7",
+     "us": 399.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d5c6e4f596989d48",
+     "us": 21605.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_292_lib.rs",
+   "file": "crates/vfs/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "22e8edc00a269b4d",
+     "us": 21012.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "ed8081cd69eaccff",
+     "us": 344.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "22e8edc00a269b4d",
+     "us": 20805.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_1_errors.rs",
+   "file": "crates/ide-ssr/src/errors.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e2270a621d05a897",
+     "us": 360.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "d0ce77d812f90048",
+     "us": 142.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e2270a621d05a897",
+     "us": 361.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_11_lib.rs",
+   "file": "crates/rust-analyzer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "3aed7d6a974b3f41",
+     "us": 20873.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "03ff831b0244912a",
+     "us": 223.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "3aed7d6a974b3f41",
+     "us": 21326.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_20_lib.rs",
+   "file": "crates/ide-ssr/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e0b2c1c6484d3a30",
+     "us": 21758.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e94d5a7880903dbc",
+     "us": 361.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e0b2c1c6484d3a30",
+     "us": 22716.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_24_lib.rs",
+   "file": "crates/proc-macro-srv/proc-macro-test/imp/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "custom-build",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "36eebb5bfb11aed1",
+     "us": 21892.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1709ff2f09cdcb3c",
+     "us": 115.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "36eebb5bfb11aed1",
+     "us": 21801.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_28_serde_impls.rs",
+   "file": "lib/text-size/src/serde_impls.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "ed899696410fc76e",
+     "us": 389.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "af384bd82a854086",
+     "us": 100.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "ed899696410fc76e",
+     "us": 357.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_33_benchmark.rs",
+   "file": "crates/mbe/src/benchmark.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e5b90ce9950c76c1",
+     "us": 481.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1da1378cec6f52a4",
+     "us": 259.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e5b90ce9950c76c1",
+     "us": 473.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_35_lib.rs",
+   "file": "lib/ungrammar/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "2155772beeaf6e13",
+     "us": 20859.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b72b0622b4135a40",
+     "us": 191.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "2155772beeaf6e13",
+     "us": 20821.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_39_lib.rs",
+   "file": "crates/hir-ty/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "8876876ca729bde7",
+     "us": 22708.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "50a86cce88079f5e",
+     "us": 1136.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "8876876ca729bde7",
+     "us": 22752.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_47_lib.rs",
+   "file": "crates/proc-macro-api/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "21007ca39be33d56",
+     "us": 21294.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2db9481bbe4c062f",
+     "us": 315.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "21007ca39be33d56",
+     "us": 21800.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_48_lib.rs",
+   "file": "crates/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0a74363627394baa",
+     "us": 21528.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e056ca9d5bf4192a",
+     "us": 247.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0a74363627394baa",
+     "us": 21807.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_95_map.rs",
+   "file": "crates/span/src/map.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "5a356b879751fb6e",
+     "us": 5626.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e1c68659db088bcf",
+     "us": 297.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "5a356b879751fb6e",
+     "us": 5368.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_98_item.rs",
+   "file": "crates/ide-completion/src/item.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "84b0791ecb91d831",
+     "us": 5311.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "3708acaf9cd50ae3",
+     "us": 776.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "84b0791ecb91d831",
+     "us": 5246.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_99_req_queue.rs",
+   "file": "lib/lsp-server/src/req_queue.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "300d3eed6b629339",
+     "us": 439.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "3a1f1595f54e7e7a",
+     "us": 195.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "300d3eed6b629339",
+     "us": 446.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_103_lib.rs",
+   "file": "crates/test-utils/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e61489732aa1c2be",
+     "us": 21313.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "188cd97e4b622c38",
+     "us": 437.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e61489732aa1c2be",
+     "us": 21267.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_110_error.rs",
+   "file": "lib/lsp-server/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f86b02b8b238fa32",
+     "us": 3334.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "d69010e7db0cef1a",
+     "us": 166.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f86b02b8b238fa32",
+     "us": 3346.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_129_lib.rs",
+   "file": "crates/syntax-bridge/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4fa2650267efb5b6",
+     "us": 22808.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "ecf0ec668c72ae48",
+     "us": 1023.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4fa2650267efb5b6",
+     "us": 22513.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_130_range.rs",
+   "file": "lib/text-size/src/range.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "44153537d27914ce",
+     "us": 1472.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "3aaaf9379bbc362a",
+     "us": 298.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "44153537d27914ce",
+     "us": 1275.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_137_lib.rs",
+   "file": "crates/syntax/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "638282abb664f5f8",
+     "us": 21219.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "6ab05d79ea934cd8",
+     "us": 506.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "638282abb664f5f8",
+     "us": 21189.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_144_parser.rs",
+   "file": "crates/parser/src/parser.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "b1718fc09533fc60",
+     "us": 1961.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "96f9649c4fc99af5",
+     "us": 446.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "b1718fc09533fc60",
+     "us": 1977.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_155_traits.rs",
+   "file": "crates/ide-db/src/traits.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "46beccdf64f4d9bf",
+     "us": 728.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "c285612b5bf52e53",
+     "us": 451.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "46beccdf64f4d9bf",
+     "us": 733.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_163_utils.rs",
+   "file": "crates/syntax/src/utils.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "33ef9f39494f6bf3",
+     "us": 630.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a3deaa0b57774d1b",
+     "us": 241.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "33ef9f39494f6bf3",
+     "us": 624.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_166_fixup.rs",
+   "file": "crates/hir-expand/src/fixup.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7f628aeb90ed22c8",
+     "us": 1527.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "0c23b75f3bc0371d",
+     "us": 602.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7f628aeb90ed22c8",
+     "us": 1542.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_169_config.rs",
+   "file": "crates/rust-analyzer/src/config.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "800d2e6e332ce943",
+     "us": 3570.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a0a11c7fbe96e3c2",
+     "us": 3513.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "800d2e6e332ce943",
+     "us": 3604.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_173_lib.rs",
+   "file": "crates/ide/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7f57f61386961531",
+     "us": 22123.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f0c4334fbfff64fc",
+     "us": 1043.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7f57f61386961531",
+     "us": 22109.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_174_lib.rs",
+   "file": "crates/ide-db/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "15b48a1a7570c105",
+     "us": 22030.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b740d10ad464d279",
+     "us": 547.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "15b48a1a7570c105",
+     "us": 21845.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_175_lib.rs",
+   "file": "crates/hir-def/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7ce3aa56de629633",
+     "us": 24530.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "edbf60f7cf58b4c2",
+     "us": 2212.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7ce3aa56de629633",
+     "us": 24323.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_190_lib.rs",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "a1539b6d5d2c554a",
+     "us": 30401.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "cf68e7c102bd0430",
+     "us": 7308.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "a1539b6d5d2c554a",
+     "us": 30021.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_218_context.rs",
+   "file": "crates/ide-completion/src/context.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "299a55ff545a6a3d",
+     "us": 1270.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "9789bf10c29fd246",
+     "us": 1017.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "299a55ff545a6a3d",
+     "us": 1283.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_247_display.rs",
+   "file": "crates/hir/src/display.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "62df6aeab02e7e70",
+     "us": 1836.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "463782e7ac185c70",
+     "us": 1328.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "62df6aeab02e7e70",
+     "us": 1827.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_262_helpers.rs",
+   "file": "crates/ide-db/src/helpers.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "29098f2fd8df2e12",
+     "us": 523.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "128a854b4ea6d931",
+     "us": 372.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "29098f2fd8df2e12",
+     "us": 520.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_265_thread.rs",
+   "file": "crates/stdx/src/thread.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "af2a4ab5e9375f16",
+     "us": 697.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "cb7232c0da4271bb",
+     "us": 188.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "af2a4ab5e9375f16",
+     "us": 727.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_269_input.rs",
+   "file": "crates/parser/src/input.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d46409a85423585b",
+     "us": 670.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b46a3bdb90403f95",
+     "us": 228.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d46409a85423585b",
+     "us": 677.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_17_version.rs",
+   "file": "crates/proc-macro-srv-cli/src/version.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "b2f4ca457d6188dd",
+     "us": 277.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 127.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "b2f4ca457d6188dd",
+     "us": 282.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_25_utils.rs",
+   "file": "crates/syntax/src/utils.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e822cc40c695eaf9",
+     "us": 564.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "5a89677ec7763062",
+     "us": 241.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e822cc40c695eaf9",
+     "us": 567.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_45_error.rs",
+   "file": "lib/ungrammar/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "679cada04b7b0327",
+     "us": 2736.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "5d35c98ead00cea7",
+     "us": 129.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "679cada04b7b0327",
+     "us": 2707.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_47_fixup.rs",
+   "file": "crates/hir-expand/src/fixup.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "65181ef0c99c5e5a",
+     "us": 1319.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 524.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "65181ef0c99c5e5a",
+     "us": 1307.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_49_lib.rs",
+   "file": "crates/ide-db/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19689.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 492.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19110.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_62_db.rs",
+   "file": "crates/hir/src/db.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0b72cccce0a1db3c",
+     "us": 389.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 205.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0b72cccce0a1db3c",
+     "us": 388.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_66_lib.rs",
+   "file": "crates/mbe/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19326.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 466.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19054.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_67_req_queue.rs",
+   "file": "lib/lsp-server/src/req_queue.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7fa4f20ebab5d999",
+     "us": 868.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f40d015f6dffd1bf",
+     "us": 183.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7fa4f20ebab5d999",
+     "us": 849.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_93_parser.rs",
+   "file": "lib/ungrammar/src/parser.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f1d11e3ad2ca84fb",
+     "us": 1445.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "87f7587767952ed8",
+     "us": 257.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f1d11e3ad2ca84fb",
+     "us": 1424.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_109_lib.rs",
+   "file": "crates/span/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 18617.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 279.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 18256.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_117_range.rs",
+   "file": "lib/text-size/src/range.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "9b8204256e47eaa9",
+     "us": 646.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "3c5fc5cd5f5003b9",
+     "us": 258.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "9b8204256e47eaa9",
+     "us": 655.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_126_lib.rs",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 26083.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 6251.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 25795.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_140_lib.rs",
+   "file": "lib/lsp-server/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19552.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 293.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19094.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_142_ast.rs",
+   "file": "crates/syntax/src/ast.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "21a00e0f787922cc",
+     "us": 881.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "af8690abcfb7eeac",
+     "us": 446.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "21a00e0f787922cc",
+     "us": 849.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_174_lib.rs",
+   "file": "crates/stdx/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "50cd40c56302662a",
+     "us": 19035.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "87ff7b2a6ded47e9",
+     "us": 343.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "50cd40c56302662a",
+     "us": 18569.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_180_lib.rs",
+   "file": "crates/test-fixture/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 20807.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 828.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19525.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_184_util.rs",
+   "file": "xtask/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "bin",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "963690073fce09f7",
+     "us": 834.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "547cd2d6b452b34d",
+     "us": 175.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "963690073fce09f7",
+     "us": 819.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_216_lib.rs",
+   "file": "crates/vfs/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19116.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 300.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 18684.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_220_lib.rs",
+   "file": "crates/load-cargo/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 20226.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 759.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19959.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_228_lib.rs",
+   "file": "lib/text-size/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 18442.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 107.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 18124.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_241_lib.rs",
+   "file": "crates/ide-ssr/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19400.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 311.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 19303.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_270_parser.rs",
+   "file": "crates/mbe/src/parser.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7f90a20fae1798a8",
+     "us": 1701.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 501.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7f90a20fae1798a8",
+     "us": 1706.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_272_lib.rs",
+   "file": "crates/rust-analyzer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 18928.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 296.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9f8cff09ec0ff6e",
+     "us": 18752.9,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 79,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_606ed0e_vs_3bef7f4_ram9_rust-analyzer.json",
+  "sha256": "cd36819cdf86364d2c2c98d586be21b576f4a5103184e1e963930e0cac07a8d8"
+ }
+}

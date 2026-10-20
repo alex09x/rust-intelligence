@@ -1,0 +1,1023 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_606ed0e_vs_3bef7f4_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "606ed0e",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "3bef7f4",
+   "commit": "3bef7f4a86183647b649bbaf5d0c7fb35559b1eb",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "606ed0e-2",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "file_tables": [
+  "tokio.ws.tsv",
+  "tokio.deps.tsv"
+ ],
+ "stored_paths": 3381,
+ "rows_differing": 33,
+ "summary": {
+  "i_semantic_tokens": 32,
+  "vi_rename_symbol_from_another_file": 1
+ },
+ "rows": [
+  {
+   "method": "prepare_rename",
+   "file": "benches/spawn.rs",
+   "line": 70,
+   "character": 4,
+   "symbol": "threaded_scheduler_spawn10",
+   "target_kind": "bench",
+   "noise_before_vs_before2": false,
+   "class": "vi_rename_symbol_from_another_file",
+   "evidence": {
+    "before_error": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'into_iter'"
+    },
+    "before_symbol_named": "into_iter",
+    "symbol_under_cursor": "threaded_scheduler_spawn10",
+    "after_placeholder": "threaded_scheduler_spawn10",
+    "after_edits": null
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tokio/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 18532,
+    "after_tokens": 33,
+    "common": 11,
+    "removed": {
+     "past_eof": 10899,
+     "past_eol": 3993,
+     "not_identifier": 513,
+     "comment_or_keyword": 3115,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:itertools-0.10.5/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 22,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tokio-test/src/io.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 3564,
+    "after_tokens": 676,
+    "common": 657,
+    "removed": {
+     "past_eof": 2528,
+     "past_eol": 197,
+     "not_identifier": 116,
+     "comment_or_keyword": 66,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 19,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tokio-util/src/future.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 828,
+    "after_tokens": 43,
+    "common": 30,
+    "removed": {
+     "past_eof": 586,
+     "past_eol": 110,
+     "not_identifier": 28,
+     "comment_or_keyword": 74,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 13,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tokio-util/src/net/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 131,
+    "after_tokens": 122,
+    "common": 121,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 6,
+     "not_identifier": 3,
+     "comment_or_keyword": 1,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 1,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tokio-stream/src/once.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 297,
+    "after_tokens": 56,
+    "common": 55,
+    "removed": {
+     "past_eof": 213,
+     "past_eol": 22,
+     "not_identifier": 4,
+     "comment_or_keyword": 3,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 1,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tokio/src/task/spawn.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 154,
+    "after_tokens": 63,
+    "common": 63,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 49,
+     "not_identifier": 1,
+     "comment_or_keyword": 41,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tokio-test/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 18526,
+    "after_tokens": 18,
+    "common": 6,
+    "removed": {
+     "past_eof": 18309,
+     "past_eol": 137,
+     "not_identifier": 38,
+     "comment_or_keyword": 36,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 12,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tests-integration/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 18525,
+    "after_tokens": 0,
+    "common": 0,
+    "removed": {
+     "past_eof": 18518,
+     "past_eol": 3,
+     "not_identifier": 4,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tokio/src/net/tcp/listener.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 392,
+    "after_tokens": 211,
+    "common": 204,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 94,
+     "not_identifier": 25,
+     "comment_or_keyword": 69,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 7,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tokio/src/fs/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 124,
+    "after_tokens": 73,
+    "common": 73,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 22,
+     "not_identifier": 0,
+     "comment_or_keyword": 29,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio-util/src/util/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 479,
+    "after_tokens": 8,
+    "common": 7,
+    "removed": {
+     "past_eof": 430,
+     "past_eol": 21,
+     "not_identifier": 19,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 1,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio-stream/src/iter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1147,
+    "after_tokens": 61,
+    "common": 38,
+    "removed": {
+     "past_eof": 778,
+     "past_eol": 204,
+     "not_identifier": 84,
+     "comment_or_keyword": 42,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:httparse-1.10.1/src/iter.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 23,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio/src/fs/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 124,
+    "after_tokens": 73,
+    "common": 73,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 22,
+     "not_identifier": 0,
+     "comment_or_keyword": 29,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio/src/util/memchr.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 157,
+    "after_tokens": 115,
+    "common": 108,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 30,
+     "not_identifier": 19,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 7,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio-stream/src/wrappers.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 824,
+    "after_tokens": 7,
+    "common": 4,
+    "removed": {
+     "past_eof": 811,
+     "past_eol": 2,
+     "not_identifier": 7,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 3,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio-util/src/net/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 131,
+    "after_tokens": 122,
+    "common": 121,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 6,
+     "not_identifier": 3,
+     "comment_or_keyword": 1,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 1,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio/src/util/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 506,
+    "after_tokens": 46,
+    "common": 39,
+    "removed": {
+     "past_eof": 341,
+     "past_eol": 73,
+     "not_identifier": 48,
+     "comment_or_keyword": 5,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 7,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio-util/src/future.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 828,
+    "after_tokens": 43,
+    "common": 30,
+    "removed": {
+     "past_eof": 586,
+     "past_eol": 110,
+     "not_identifier": 28,
+     "comment_or_keyword": 74,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 13,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio-util/src/io/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 377,
+    "after_tokens": 26,
+    "common": 15,
+    "removed": {
+     "past_eof": 317,
+     "past_eol": 19,
+     "not_identifier": 15,
+     "comment_or_keyword": 11,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 11,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio-macros/src/select.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 367,
+    "after_tokens": 137,
+    "common": 125,
+    "removed": {
+     "past_eof": 120,
+     "past_eol": 74,
+     "not_identifier": 35,
+     "comment_or_keyword": 13,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 12,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tests-integration/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 18525,
+    "after_tokens": 0,
+    "common": 0,
+    "removed": {
+     "past_eof": 18518,
+     "past_eol": 3,
+     "not_identifier": 4,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio/src/future/maybe_done.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 223,
+    "after_tokens": 155,
+    "common": 146,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 53,
+     "not_identifier": 17,
+     "comment_or_keyword": 7,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 9,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio-util/src/either.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 278,
+    "after_tokens": 272,
+    "common": 270,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 6,
+     "not_identifier": 2,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 2,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 18532,
+    "after_tokens": 33,
+    "common": 11,
+    "removed": {
+     "past_eof": 10899,
+     "past_eol": 3993,
+     "not_identifier": 513,
+     "comment_or_keyword": 3115,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:itertools-0.10.5/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 22,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "tokio-util/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 18527,
+    "after_tokens": 16,
+    "common": 4,
+    "removed": {
+     "past_eof": 18020,
+     "past_eol": 419,
+     "not_identifier": 57,
+     "comment_or_keyword": 27,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 12,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "tokio/src/net/tcp/stream.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 889,
+    "after_tokens": 606,
+    "common": 591,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 163,
+     "not_identifier": 56,
+     "comment_or_keyword": 79,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 15,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "tokio-util/src/io/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 377,
+    "after_tokens": 26,
+    "common": 15,
+    "removed": {
+     "past_eof": 317,
+     "past_eol": 19,
+     "not_identifier": 15,
+     "comment_or_keyword": 11,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 11,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "tokio/src/future/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 186,
+    "after_tokens": 6,
+    "common": 6,
+    "removed": {
+     "past_eof": 147,
+     "past_eol": 28,
+     "not_identifier": 4,
+     "comment_or_keyword": 1,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "tokio/src/future/try_join.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 352,
+    "after_tokens": 194,
+    "common": 194,
+    "removed": {
+     "past_eof": 150,
+     "past_eol": 6,
+     "not_identifier": 2,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "tokio/src/net/tcp/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 17,
+    "after_tokens": 13,
+    "common": 13,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 3,
+     "not_identifier": 0,
+     "comment_or_keyword": 1,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "tokio-util/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 18527,
+    "after_tokens": 16,
+    "common": 4,
+    "removed": {
+     "past_eof": 18020,
+     "past_eol": 419,
+     "not_identifier": 57,
+     "comment_or_keyword": 27,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 12,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "tokio/src/util/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 506,
+    "after_tokens": 46,
+    "common": 39,
+    "removed": {
+     "past_eof": 341,
+     "past_eol": 73,
+     "not_identifier": 48,
+     "comment_or_keyword": 5,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 7,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  }
+ ]
+}

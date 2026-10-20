@@ -1,0 +1,3511 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_606ed0e_vs_3bef7f4_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "606ed0e",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "3bef7f4",
+   "commit": "3bef7f4a86183647b649bbaf5d0c7fb35559b1eb",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "606ed0e-2",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "file_tables": [
+  "bevy.ws.tsv",
+  "bevy.deps.tsv"
+ ],
+ "stored_paths": 11750,
+ "rows_differing": 105,
+ "summary": {
+  "i_semantic_tokens": 90,
+  "v_root_package_lib": 6,
+  "viii_stored_with_parent_dir": 9
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "file": "examples/helpers/theme.rs",
+   "line": 31,
+   "character": 63,
+   "symbol": "BLACK",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "viii_stored_with_parent_dir",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [
+      {
+       "shard": "2d_shapes-fede451db136cb60.ridx",
+       "stored": "examples/2d/../helpers/theme.rs"
+      },
+      {
+       "shard": "display_and_visibility-8dcf7b23ed8950e7.ridx",
+       "stored": "examples/ui/layout/../../helpers/theme.rs"
+      },
+      {
+       "shard": "light_probe_blending-b90a628d652dcef4.ridx",
+       "stored": "examples/3d/../helpers/theme.rs"
+      },
+      {
+       "shard": "mixed_lighting-a84a921659679378.ridx",
+       "stored": "examples/3d/../helpers/theme.rs"
+      },
+      {
+       "shard": "occlusion_culling-340336291bee37fb.ridx",
+       "stored": "examples/3d/../helpers/theme.rs"
+      },
+      {
+       "shard": "pccm-6db3f2b832d896bc.ridx",
+       "stored": "examples/3d/../helpers/theme.rs"
+      },
+      {
+       "shard": "transform_gizmo-c7eb6ef5a32feef6.ridx",
+       "stored": "examples/gizmos/../helpers/theme.rs"
+      },
+      {
+       "shard": "wireframe_2d-e03fbd69d38d5d74.ridx",
+       "stored": "examples/2d/../helpers/theme.rs"
+      }
+     ],
+     "same_tail": [],
+     "same_tail_count": 0
+    },
+    "before_empty_or_error": true,
+    "after_empty": false
+   }
+  },
+  {
+   "method": "hover",
+   "file": "examples/helpers/number_input_i32.rs",
+   "line": 34,
+   "character": 30,
+   "symbol": "AlignItems",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "viii_stored_with_parent_dir",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [
+      {
+       "shard": "box_shadow-7d222f89c43b1d06.ridx",
+       "stored": "examples/ui/styling/../../helpers/number_input_i32.rs"
+      }
+     ],
+     "same_tail": [],
+     "same_tail_count": 0
+    },
+    "before_empty_or_error": true,
+    "after_empty": false
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui_render/src/clipping.rs",
+   "line": 16,
+   "character": 8,
+   "symbol": "clip_polygon",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v_root_package_lib",
+   "evidence": {
+    "removed_items": [],
+    "added_items": [
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     }
+    ],
+    "root_lib_stored": true
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/schedule/config.rs",
+   "line": 403,
+   "character": 8,
+   "symbol": "after",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v_root_package_lib",
+   "evidence": {
+    "removed_items": [],
+    "added_items": [
+     {
+      "path": "ws:crates/bevy_asset/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_feathers/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_input/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_light/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_mesh/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_pbr/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_picking/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_sprite/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_text/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_window/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_winit/src/lib.rs",
+      "where": "workspace"
+     }
+    ],
+    "root_lib_stored": true
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/lifecycle.rs",
+   "line": 240,
+   "character": 12,
+   "symbol": "on_remove",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v_root_package_lib",
+   "evidence": {
+    "removed_items": [],
+    "added_items": [
+     {
+      "path": "ws:crates/bevy_world_serialization/src/lib.rs",
+      "where": "workspace"
+     }
+    ],
+    "root_lib_stored": true
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui_render/src/lib.rs",
+   "line": 320,
+   "character": 12,
+   "symbol": "get_mapper",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v_root_package_lib",
+   "evidence": {
+    "removed_items": [],
+    "added_items": [
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     },
+     {
+      "path": "ws:crates/bevy_ui_render/src/lib.rs",
+      "where": "workspace"
+     }
+    ],
+    "root_lib_stored": true
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_camera/src/visibility/mod.rs",
+   "line": 365,
+   "character": 12,
+   "symbol": "get",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v_root_package_lib",
+   "evidence": {
+    "removed_items": [],
+    "added_items": [
+     {
+      "path": "ws:crates/bevy_light/src/lib.rs",
+      "where": "workspace"
+     }
+    ],
+    "root_lib_stored": true
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_curve/src/sample_curves.rs",
+   "line": 336,
+   "character": 8,
+   "symbol": "sample_unchecked",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v_root_package_lib",
+   "evidence": {
+    "removed_items": [],
+    "added_items": [
+     {
+      "path": "ws:crates/bevy_curve/src/lib.rs",
+      "where": "workspace"
+     }
+    ],
+    "root_lib_stored": true
+   }
+  },
+  {
+   "method": "rename",
+   "file": "examples/helpers/radio.rs",
+   "line": 45,
+   "character": 8,
+   "symbol": "feathers_option_buttons",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "viii_stored_with_parent_dir",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [
+      {
+       "shard": "animation_masks-37f0784050957372.ridx",
+       "stored": "examples/animation/../helpers/radio.rs"
+      },
+      {
+       "shard": "box_shadow-7d222f89c43b1d06.ridx",
+       "stored": "examples/ui/styling/../../helpers/radio.rs"
+      },
+      {
+       "shard": "dynamic_mip_generation-970950a671e4cb57.ridx",
+       "stored": "examples/2d/../helpers/radio.rs"
+      },
+      {
+       "shard": "light_probe_blending-b90a628d652dcef4.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "mirror-06ebf9508c45ffd2.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "mixed_lighting-a84a921659679378.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "occlusion_culling-340336291bee37fb.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "order_independent_transparency-becaf5e7f3da120a.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "pccm-6db3f2b832d896bc.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "transform_gizmo-c7eb6ef5a32feef6.ridx",
+       "stored": "examples/gizmos/../helpers/radio.rs"
+      }
+     ],
+     "same_tail": [],
+     "same_tail_count": 0
+    },
+    "before_empty_or_error": true,
+    "after_empty": false
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_log/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41716,
+    "after_tokens": 179,
+    "common": 34,
+    "removed": {
+     "past_eof": 31842,
+     "past_eol": 5090,
+     "not_identifier": 2186,
+     "comment_or_keyword": 2561,
+     "identifier_starts_same_tail_token": 3,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:color-spantrace-0.3.0/src/lib.rs",
+     "registry:colorchoice-1.0.5/src/lib.rs",
+     "registry:nix-0.31.3/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 145,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_platform/src/sync/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 92,
+    "after_tokens": 32,
+    "common": 30,
+    "removed": {
+     "past_eof": 49,
+     "past_eol": 8,
+     "not_identifier": 3,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 2,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_ui_render/src/pipeline.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1226,
+    "after_tokens": 127,
+    "common": 110,
+    "removed": {
+     "past_eof": 1013,
+     "past_eol": 60,
+     "not_identifier": 37,
+     "comment_or_keyword": 6,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 17,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_asset/src/meta.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 454,
+    "after_tokens": 323,
+    "common": 321,
+    "removed": {
+     "past_eof": 89,
+     "past_eol": 32,
+     "not_identifier": 2,
+     "comment_or_keyword": 10,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 2,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_ui_render/src/gradient.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1778,
+    "after_tokens": 1528,
+    "common": 1464,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 195,
+     "not_identifier": 119,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 64,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_asset/src/io/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 881,
+    "after_tokens": 844,
+    "common": 841,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 17,
+     "not_identifier": 17,
+     "comment_or_keyword": 5,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:tokio-1.53.2/src/io/mod.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 3,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_light/src/probe.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 284,
+    "after_tokens": 283,
+    "common": 283,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 1,
+     "not_identifier": 0,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_material/src/specialize.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 68,
+    "after_tokens": 44,
+    "common": 38,
+    "removed": {
+     "past_eof": 1,
+     "past_eol": 12,
+     "not_identifier": 9,
+     "comment_or_keyword": 8,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 6,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "examples/helpers/radio.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "viii_stored_with_parent_dir",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [
+      {
+       "shard": "animation_masks-37f0784050957372.ridx",
+       "stored": "examples/animation/../helpers/radio.rs"
+      },
+      {
+       "shard": "box_shadow-7d222f89c43b1d06.ridx",
+       "stored": "examples/ui/styling/../../helpers/radio.rs"
+      },
+      {
+       "shard": "dynamic_mip_generation-970950a671e4cb57.ridx",
+       "stored": "examples/2d/../helpers/radio.rs"
+      },
+      {
+       "shard": "light_probe_blending-b90a628d652dcef4.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "mirror-06ebf9508c45ffd2.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "mixed_lighting-a84a921659679378.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "occlusion_culling-340336291bee37fb.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "order_independent_transparency-becaf5e7f3da120a.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "pccm-6db3f2b832d896bc.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "transform_gizmo-c7eb6ef5a32feef6.ridx",
+       "stored": "examples/gizmos/../helpers/radio.rs"
+      }
+     ],
+     "same_tail": [],
+     "same_tail_count": 0
+    },
+    "before_empty_or_error": true,
+    "after_empty": false
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_solari/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41696,
+    "after_tokens": 38,
+    "common": 1,
+    "removed": {
+     "past_eof": 40848,
+     "past_eol": 481,
+     "not_identifier": 230,
+     "comment_or_keyword": 136,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 37,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_utils/src/default.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 56,
+    "after_tokens": 6,
+    "common": 6,
+    "removed": {
+     "past_eof": 33,
+     "past_eol": 16,
+     "not_identifier": 0,
+     "comment_or_keyword": 1,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_mesh/src/components.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 381,
+    "after_tokens": 230,
+    "common": 218,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 91,
+     "not_identifier": 19,
+     "comment_or_keyword": 53,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 12,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_macro_utils/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 2188,
+    "after_tokens": 15,
+    "common": 10,
+    "removed": {
+     "past_eof": 2149,
+     "past_eol": 15,
+     "not_identifier": 7,
+     "comment_or_keyword": 7,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 5,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_platform/src/collections/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 105,
+    "after_tokens": 9,
+    "common": 8,
+    "removed": {
+     "past_eof": 84,
+     "past_eol": 4,
+     "not_identifier": 3,
+     "comment_or_keyword": 6,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 1,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_shader/src/shader.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 597,
+    "after_tokens": 508,
+    "common": 488,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 48,
+     "not_identifier": 43,
+     "comment_or_keyword": 18,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 20,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_tasks/src/executor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 124,
+    "after_tokens": 54,
+    "common": 53,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 36,
+     "not_identifier": 7,
+     "comment_or_keyword": 28,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 1,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_camera/src/components.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 332,
+    "after_tokens": 174,
+    "common": 167,
+    "removed": {
+     "past_eof": 95,
+     "past_eol": 37,
+     "not_identifier": 9,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 7,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_clipboard/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41707,
+    "after_tokens": 111,
+    "common": 24,
+    "removed": {
+     "past_eof": 32334,
+     "past_eol": 4979,
+     "not_identifier": 2802,
+     "comment_or_keyword": 1562,
+     "identifier_starts_same_tail_token": 6,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:accesskit_winit-0.34.0/src/lib.rs",
+     "registry:ascii-canvas-4.0.0/src/lib.rs",
+     "registry:itoa-1.0.18/src/lib.rs",
+     "registry:libyml-0.0.5/src/lib.rs",
+     "registry:logos-codegen-0.16.1/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 87,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_asset/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41716,
+    "after_tokens": 186,
+    "common": 43,
+    "removed": {
+     "past_eof": 39642,
+     "past_eol": 1052,
+     "not_identifier": 922,
+     "comment_or_keyword": 52,
+     "identifier_starts_same_tail_token": 5,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:alloca-0.4.0/src/lib.rs",
+     "registry:constant_time_eq-0.4.2/src/lib.rs",
+     "registry:crc32fast-1.5.2/src/lib.rs",
+     "registry:futures-task-0.3.34/src/lib.rs",
+     "registry:typenum-1.20.1/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 143,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tools/ci/src/args.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 140,
+    "after_tokens": 43,
+    "common": 39,
+    "removed": {
+     "past_eof": 67,
+     "past_eol": 24,
+     "not_identifier": 7,
+     "comment_or_keyword": 3,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 4,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_utils/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41699,
+    "after_tokens": 55,
+    "common": 10,
+    "removed": {
+     "past_eof": 39049,
+     "past_eol": 1747,
+     "not_identifier": 379,
+     "comment_or_keyword": 514,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 45,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_reflect/src/convert.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 504,
+    "after_tokens": 370,
+    "common": 356,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 91,
+     "not_identifier": 23,
+     "comment_or_keyword": 34,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 14,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_animation/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 2539,
+    "after_tokens": 8,
+    "common": 7,
+    "removed": {
+     "past_eof": 2406,
+     "past_eol": 103,
+     "not_identifier": 9,
+     "comment_or_keyword": 14,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 1,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "tools/build-templated-pages/src/features.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 419,
+    "after_tokens": 167,
+    "common": 163,
+    "removed": {
+     "past_eof": 229,
+     "past_eol": 19,
+     "not_identifier": 8,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 4,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_platform/src/sync/rwlock.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 501,
+    "after_tokens": 6,
+    "common": 6,
+    "removed": {
+     "past_eof": 468,
+     "past_eol": 15,
+     "not_identifier": 8,
+     "comment_or_keyword": 4,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_color/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41698,
+    "after_tokens": 126,
+    "common": 6,
+    "removed": {
+     "past_eof": 35100,
+     "past_eol": 4063,
+     "not_identifier": 1521,
+     "comment_or_keyword": 1006,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:downcast-rs-1.2.1/src/lib.rs",
+     "registry:phf_codegen-0.11.3/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 120,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_window/src/monitor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 195,
+    "after_tokens": 70,
+    "common": 60,
+    "removed": {
+     "past_eof": 55,
+     "past_eol": 31,
+     "not_identifier": 25,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 10,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_sprite/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41703,
+    "after_tokens": 449,
+    "common": 28,
+    "removed": {
+     "past_eof": 33709,
+     "past_eol": 4642,
+     "not_identifier": 2781,
+     "comment_or_keyword": 539,
+     "identifier_starts_same_tail_token": 4,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:backtrace-ext-0.2.1/src/lib.rs",
+     "registry:bit-set-0.10.0/src/lib.rs",
+     "registry:dasp_sample-0.11.0/src/lib.rs",
+     "registry:fixedbitset-0.5.7/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 421,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_reflect/src/fields.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 179,
+    "after_tokens": 114,
+    "common": 106,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 49,
+     "not_identifier": 20,
+     "comment_or_keyword": 3,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:assert_type_match-0.1.1/src/fields.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 8,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_picking/src/window.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1143,
+    "after_tokens": 57,
+    "common": 55,
+    "removed": {
+     "past_eof": 1038,
+     "past_eol": 21,
+     "not_identifier": 14,
+     "comment_or_keyword": 15,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 2,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "examples/mobile/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41700,
+    "after_tokens": 308,
+    "common": 26,
+    "removed": {
+     "past_eof": 36729,
+     "past_eol": 2782,
+     "not_identifier": 1797,
+     "comment_or_keyword": 355,
+     "identifier_starts_same_tail_token": 11,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:accesskit_winit-0.34.0/src/lib.rs",
+     "registry:addr2line-0.25.1/src/lib.rs",
+     "registry:anstyle-parse-1.0.0/src/lib.rs",
+     "registry:crc32fast-1.5.2/src/lib.rs",
+     "registry:crypto-common-0.1.7/src/lib.rs",
+     "registry:euclid-0.22.14/src/lib.rs",
+     "registry:fastrand-2.5.0/src/lib.rs",
+     "registry:fixedbitset-0.5.7/src/lib.rs",
+     "registry:fnv-1.0.7/lib.rs",
+     "registry:tiny-skia-path-0.11.4/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 282,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_reflect/src/kind.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 401,
+    "after_tokens": 275,
+    "common": 265,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 43,
+     "not_identifier": 56,
+     "comment_or_keyword": 36,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:anyhow-1.0.104/src/kind.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 10,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_ui_render/src/text.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1151,
+    "after_tokens": 454,
+    "common": 378,
+    "removed": {
+     "past_eof": 267,
+     "past_eol": 240,
+     "not_identifier": 263,
+     "comment_or_keyword": 3,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 76,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "examples/helpers/scene.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "viii_stored_with_parent_dir",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [
+      {
+       "shard": "2d_shapes-fede451db136cb60.ridx",
+       "stored": "examples/2d/../helpers/scene.rs"
+      }
+     ],
+     "same_tail": [],
+     "same_tail_count": 0
+    },
+    "before_empty_or_error": true,
+    "after_empty": false
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/bevy_text/src/cursor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 675,
+    "after_tokens": 35,
+    "common": 29,
+    "removed": {
+     "past_eof": 606,
+     "past_eol": 14,
+     "not_identifier": 13,
+     "comment_or_keyword": 13,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 6,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_platform/src/thread.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 379,
+    "after_tokens": 2,
+    "common": 2,
+    "removed": {
+     "past_eof": 341,
+     "past_eol": 20,
+     "not_identifier": 11,
+     "comment_or_keyword": 5,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_color/src/color.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 4168,
+    "after_tokens": 2304,
+    "common": 2118,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 1107,
+     "not_identifier": 526,
+     "comment_or_keyword": 414,
+     "identifier_starts_same_tail_token": 3,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:image-0.25.9/src/color.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 186,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_ecs/src/label.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 407,
+    "after_tokens": 55,
+    "common": 52,
+    "removed": {
+     "past_eof": 70,
+     "past_eol": 199,
+     "not_identifier": 30,
+     "comment_or_keyword": 56,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 3,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_picking/src/window.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1143,
+    "after_tokens": 57,
+    "common": 55,
+    "removed": {
+     "past_eof": 1038,
+     "past_eol": 21,
+     "not_identifier": 14,
+     "comment_or_keyword": 15,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 2,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_picking/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41699,
+    "after_tokens": 260,
+    "common": 8,
+    "removed": {
+     "past_eof": 31705,
+     "past_eol": 4907,
+     "not_identifier": 1724,
+     "comment_or_keyword": 3355,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 252,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_winit/src/system.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1008,
+    "after_tokens": 812,
+    "common": 770,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 127,
+     "not_identifier": 102,
+     "comment_or_keyword": 8,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:rustix-0.38.44/src/system.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 42,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_asset/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 3256,
+    "after_tokens": 1497,
+    "common": 1295,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 1165,
+     "not_identifier": 461,
+     "comment_or_keyword": 330,
+     "identifier_starts_same_tail_token": 5,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:syn-2.0.119/src/path.rs",
+     "registry:tiny-skia-path-0.11.4/src/path.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 202,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_core_pipeline/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41697,
+    "after_tokens": 82,
+    "common": 6,
+    "removed": {
+     "past_eof": 40526,
+     "past_eol": 655,
+     "not_identifier": 500,
+     "comment_or_keyword": 10,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 76,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_reflect/derive/src/ident.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 110,
+    "after_tokens": 35,
+    "common": 34,
+    "removed": {
+     "past_eof": 55,
+     "past_eol": 14,
+     "not_identifier": 1,
+     "comment_or_keyword": 6,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 1,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_utils/src/map.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 13775,
+    "after_tokens": 309,
+    "common": 199,
+    "removed": {
+     "past_eof": 12332,
+     "past_eol": 672,
+     "not_identifier": 376,
+     "comment_or_keyword": 195,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:phf-0.11.3/src/map.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 110,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_ecs/src/spawn.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1118,
+    "after_tokens": 633,
+    "common": 596,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 297,
+     "not_identifier": 93,
+     "comment_or_keyword": 132,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 37,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_winit/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41698,
+    "after_tokens": 202,
+    "common": 7,
+    "removed": {
+     "past_eof": 35647,
+     "past_eol": 3238,
+     "not_identifier": 1754,
+     "comment_or_keyword": 1046,
+     "identifier_starts_same_tail_token": 6,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:anstyle-parse-1.0.0/src/lib.rs",
+     "registry:bit-set-0.10.0/src/lib.rs",
+     "registry:percent-encoding-2.3.2/src/lib.rs",
+     "registry:pest_generator-2.9.2/src/lib.rs",
+     "registry:shlex-2.0.1/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 195,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_window/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41696,
+    "after_tokens": 185,
+    "common": 6,
+    "removed": {
+     "past_eof": 37467,
+     "past_eol": 2199,
+     "not_identifier": 1169,
+     "comment_or_keyword": 855,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 179,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_picking/src/events.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 2256,
+    "after_tokens": 1918,
+    "common": 1882,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 170,
+     "not_identifier": 71,
+     "comment_or_keyword": 132,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:inotify-0.11.5/src/events.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 36,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_ecs/src/name.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1212,
+    "after_tokens": 371,
+    "common": 356,
+    "removed": {
+     "past_eof": 614,
+     "past_eol": 183,
+     "not_identifier": 43,
+     "comment_or_keyword": 16,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 15,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_mesh/src/mesh.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 4903,
+    "after_tokens": 4506,
+    "common": 4450,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 170,
+     "not_identifier": 115,
+     "comment_or_keyword": 168,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 56,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_platform/src/collections/hash_map.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 971,
+    "after_tokens": 849,
+    "common": 828,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 72,
+     "not_identifier": 43,
+     "comment_or_keyword": 28,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 21,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_reflect/src/fields.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 179,
+    "after_tokens": 114,
+    "common": 106,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 49,
+     "not_identifier": 20,
+     "comment_or_keyword": 3,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:assert_type_match-0.1.1/src/fields.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 8,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_ui_widgets/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41698,
+    "after_tokens": 111,
+    "common": 5,
+    "removed": {
+     "past_eof": 38801,
+     "past_eol": 1680,
+     "not_identifier": 590,
+     "comment_or_keyword": 622,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 106,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_platform/src/sync/rwlock.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 501,
+    "after_tokens": 6,
+    "common": 6,
+    "removed": {
+     "past_eof": 468,
+     "past_eol": 15,
+     "not_identifier": 8,
+     "comment_or_keyword": 4,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_gltf/src/label.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 428,
+    "after_tokens": 82,
+    "common": 69,
+    "removed": {
+     "past_eof": 215,
+     "past_eol": 81,
+     "not_identifier": 26,
+     "comment_or_keyword": 37,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 13,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "examples/helpers/number_input_i32.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "viii_stored_with_parent_dir",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [
+      {
+       "shard": "box_shadow-7d222f89c43b1d06.ridx",
+       "stored": "examples/ui/styling/../../helpers/number_input_i32.rs"
+      }
+     ],
+     "same_tail": [],
+     "same_tail_count": 0
+    },
+    "before_empty_or_error": true,
+    "after_empty": false
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_ecs/src/traversal.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 377,
+    "after_tokens": 37,
+    "common": 32,
+    "removed": {
+     "past_eof": 290,
+     "past_eol": 28,
+     "not_identifier": 9,
+     "comment_or_keyword": 18,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 5,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_ui/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41701,
+    "after_tokens": 385,
+    "common": 11,
+    "removed": {
+     "past_eof": 34424,
+     "past_eol": 3603,
+     "not_identifier": 2723,
+     "comment_or_keyword": 940,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 374,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_input/src/axis.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 374,
+    "after_tokens": 151,
+    "common": 144,
+    "removed": {
+     "past_eof": 79,
+     "past_eol": 80,
+     "not_identifier": 38,
+     "comment_or_keyword": 33,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 7,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_window/src/window.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1855,
+    "after_tokens": 858,
+    "common": 811,
+    "removed": {
+     "past_eof": 186,
+     "past_eol": 507,
+     "not_identifier": 114,
+     "comment_or_keyword": 236,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:winit-0.30.13/src/window.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 47,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_sprite/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41703,
+    "after_tokens": 449,
+    "common": 28,
+    "removed": {
+     "past_eof": 33709,
+     "past_eol": 4642,
+     "not_identifier": 2781,
+     "comment_or_keyword": 539,
+     "identifier_starts_same_tail_token": 4,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:backtrace-ext-0.2.1/src/lib.rs",
+     "registry:bit-set-0.10.0/src/lib.rs",
+     "registry:dasp_sample-0.11.0/src/lib.rs",
+     "registry:fixedbitset-0.5.7/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 421,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_text/src/glyph.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 128,
+    "after_tokens": 40,
+    "common": 32,
+    "removed": {
+     "past_eof": 46,
+     "past_eol": 26,
+     "not_identifier": 10,
+     "comment_or_keyword": 14,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 8,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_state/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41695,
+    "after_tokens": 20,
+    "common": 1,
+    "removed": {
+     "past_eof": 41376,
+     "past_eol": 186,
+     "not_identifier": 92,
+     "comment_or_keyword": 40,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 19,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_ui_render/src/gradient.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1778,
+    "after_tokens": 1528,
+    "common": 1464,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 195,
+     "not_identifier": 119,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 64,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "examples/helpers/radio.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "viii_stored_with_parent_dir",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [
+      {
+       "shard": "animation_masks-37f0784050957372.ridx",
+       "stored": "examples/animation/../helpers/radio.rs"
+      },
+      {
+       "shard": "box_shadow-7d222f89c43b1d06.ridx",
+       "stored": "examples/ui/styling/../../helpers/radio.rs"
+      },
+      {
+       "shard": "dynamic_mip_generation-970950a671e4cb57.ridx",
+       "stored": "examples/2d/../helpers/radio.rs"
+      },
+      {
+       "shard": "light_probe_blending-b90a628d652dcef4.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "mirror-06ebf9508c45ffd2.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "mixed_lighting-a84a921659679378.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "occlusion_culling-340336291bee37fb.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "order_independent_transparency-becaf5e7f3da120a.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "pccm-6db3f2b832d896bc.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "transform_gizmo-c7eb6ef5a32feef6.ridx",
+       "stored": "examples/gizmos/../helpers/radio.rs"
+      }
+     ],
+     "same_tail": [],
+     "same_tail_count": 0
+    },
+    "before_empty_or_error": true,
+    "after_empty": false
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/bevy_window/src/monitor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 195,
+    "after_tokens": 70,
+    "common": 60,
+    "removed": {
+     "past_eof": 55,
+     "past_eol": 31,
+     "not_identifier": 25,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 10,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_remote/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41861,
+    "after_tokens": 1239,
+    "common": 320,
+    "removed": {
+     "past_eof": 13951,
+     "past_eol": 15926,
+     "not_identifier": 4972,
+     "comment_or_keyword": 6687,
+     "identifier_starts_same_tail_token": 5,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:blake3-1.8.7/src/lib.rs",
+     "registry:bumpalo-3.20.3/src/lib.rs",
+     "registry:once_cell-1.21.4/src/lib.rs",
+     "registry:smallvec-1.16.2/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 919,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_app/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41697,
+    "after_tokens": 51,
+    "common": 3,
+    "removed": {
+     "past_eof": 40589,
+     "past_eol": 722,
+     "not_identifier": 330,
+     "comment_or_keyword": 52,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:assert_type_match-0.1.1/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 48,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_reflect/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 43146,
+    "after_tokens": 4327,
+    "common": 2197,
+    "removed": {
+     "past_eof": 2243,
+     "past_eol": 22502,
+     "not_identifier": 9167,
+     "comment_or_keyword": 6994,
+     "identifier_starts_same_tail_token": 43,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:argh_derive-0.1.19/src/lib.rs",
+     "registry:assert_type_match-0.1.1/src/lib.rs",
+     "registry:async-channel-2.5.0/src/lib.rs",
+     "registry:async-executor-1.14.0/src/lib.rs",
+     "registry:bit-vec-0.9.1/src/lib.rs",
+     "registry:blocking-1.7.0/src/lib.rs",
+     "registry:bumpalo-3.20.3/src/lib.rs",
+     "registry:byteorder-1.5.0/src/lib.rs",
+     "registry:camino-1.2.6/src/lib.rs",
+     "registry:cc-1.6.0/src/lib.rs",
+     "registry:hexasphere-19.0.0/src/lib.rs",
+     "registry:icu_normalizer-2.1.1/src/lib.rs",
+     "registry:itertools-0.13.0/src/lib.rs",
+     "registry:itertools-0.14.0/src/lib.rs",
+     "registry:itertools-0.15.0/src/lib.rs",
+     "registry:lru-0.18.5/src/lib.rs",
+     "registry:ordered-float-5.4.0/src/lib.rs",
+     "registry:portable-atomic-1.15.0/src/lib.rs",
+     "registry:sharded-slab-0.1.7/src/lib.rs",
+     "registry:smallvec-1.16.2/src/lib.rs",
+     "registry:webpki-roots-1.0.9/src/lib.rs",
+     "registry:wgpu-hal-30.0.1/src/lib.rs",
+     "registry:xshell-0.2.7/src/lib.rs",
+     "registry:zerocopy-0.8.62/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 2130,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_android/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41695,
+    "after_tokens": 0,
+    "common": 0,
+    "removed": {
+     "past_eof": 41604,
+     "past_eol": 47,
+     "not_identifier": 23,
+     "comment_or_keyword": 21,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_gilrs/src/converter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 251,
+    "after_tokens": 138,
+    "common": 133,
+    "removed": {
+     "past_eof": 112,
+     "past_eol": 1,
+     "not_identifier": 5,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 5,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_ui/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41701,
+    "after_tokens": 385,
+    "common": 11,
+    "removed": {
+     "past_eof": 34424,
+     "past_eol": 3603,
+     "not_identifier": 2723,
+     "comment_or_keyword": 940,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 374,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_ptr/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41874,
+    "after_tokens": 874,
+    "common": 362,
+    "removed": {
+     "past_eof": 15771,
+     "past_eol": 13531,
+     "not_identifier": 3667,
+     "comment_or_keyword": 8511,
+     "identifier_starts_same_tail_token": 32,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:anstyle-parse-1.0.0/src/lib.rs",
+     "registry:anyhow-1.0.104/src/lib.rs",
+     "registry:approx-0.5.1/src/lib.rs",
+     "registry:argh_derive-0.1.19/src/lib.rs",
+     "registry:async-broadcast-0.7.2/src/lib.rs",
+     "registry:async-executor-1.14.0/src/lib.rs",
+     "registry:async-io-2.6.0/src/lib.rs",
+     "registry:bit-set-0.9.1/src/lib.rs",
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:bit-vec-0.9.1/src/lib.rs",
+     "registry:bytemuck-1.25.2/src/lib.rs",
+     "registry:byteorder-1.5.0/src/lib.rs",
+     "registry:cargo_metadata-0.18.1/src/lib.rs",
+     "registry:chacha20-0.10.2/src/lib.rs",
+     "registry:compact_str-0.9.1/src/lib.rs",
+     "registry:criterion-0.8.2/src/lib.rs",
+     "registry:dpi-0.1.2/src/lib.rs",
+     "registry:either-1.19.0/src/lib.rs",
+     "registry:event-listener-5.4.2/src/lib.rs",
+     "registry:gilrs-core-0.6.8/src/lib.rs",
+     "registry:hexasphere-19.0.0/src/lib.rs",
+     "registry:icu_normalizer-2.1.1/src/lib.rs",
+     "registry:itertools-0.13.0/src/lib.rs",
+     "registry:itoa-1.0.18/src/lib.rs",
+     "registry:lexical-7.0.5/src/lib.rs",
+     "registry:memmap2-0.9.11/src/lib.rs",
+     "registry:once_cell-1.21.4/src/lib.rs",
+     "registry:ordered-float-5.4.0/src/lib.rs",
+     "registry:zerocopy-0.8.62/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 512,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_tasks/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41702,
+    "after_tokens": 74,
+    "common": 14,
+    "removed": {
+     "past_eof": 38901,
+     "past_eol": 1881,
+     "not_identifier": 641,
+     "comment_or_keyword": 262,
+     "identifier_starts_same_tail_token": 3,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:alsa-sys-0.4.0/src/lib.rs",
+     "registry:async-channel-2.5.0/src/lib.rs",
+     "registry:gilrs-0.11.2/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 60,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_feathers/src/palette.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 241,
+    "after_tokens": 65,
+    "common": 58,
+    "removed": {
+     "past_eof": 158,
+     "past_eol": 1,
+     "not_identifier": 9,
+     "comment_or_keyword": 15,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 7,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_asset/src/event.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1475,
+    "after_tokens": 199,
+    "common": 183,
+    "removed": {
+     "past_eof": 1136,
+     "past_eol": 82,
+     "not_identifier": 57,
+     "comment_or_keyword": 17,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 16,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_picking/src/cursor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 797,
+    "after_tokens": 199,
+    "common": 172,
+    "removed": {
+     "past_eof": 479,
+     "past_eol": 72,
+     "not_identifier": 49,
+     "comment_or_keyword": 25,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 27,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_pbr/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41704,
+    "after_tokens": 541,
+    "common": 26,
+    "removed": {
+     "past_eof": 30490,
+     "past_eol": 5686,
+     "not_identifier": 4965,
+     "comment_or_keyword": 530,
+     "identifier_starts_same_tail_token": 7,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:addr2line-0.25.1/src/lib.rs",
+     "registry:bit-vec-0.9.1/src/lib.rs",
+     "registry:color-spantrace-0.3.0/src/lib.rs",
+     "registry:fastrand-2.5.0/src/lib.rs",
+     "registry:generic-array-0.14.7/src/lib.rs",
+     "registry:globset-0.4.19/src/lib.rs",
+     "registry:ignore-0.4.30/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 515,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_platform/src/sync/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 92,
+    "after_tokens": 32,
+    "common": 30,
+    "removed": {
+     "past_eof": 49,
+     "past_eol": 8,
+     "not_identifier": 3,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 2,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_core_pipeline/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41697,
+    "after_tokens": 82,
+    "common": 6,
+    "removed": {
+     "past_eof": 40526,
+     "past_eol": 655,
+     "not_identifier": 500,
+     "comment_or_keyword": 10,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 76,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_settings/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41828,
+    "after_tokens": 1654,
+    "common": 266,
+    "removed": {
+     "past_eof": 19621,
+     "past_eol": 11266,
+     "not_identifier": 7432,
+     "comment_or_keyword": 3233,
+     "identifier_starts_same_tail_token": 10,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:async-executor-1.14.0/src/lib.rs",
+     "registry:bit-set-0.10.0/src/lib.rs",
+     "registry:bit-set-0.9.1/src/lib.rs",
+     "registry:bumpalo-3.20.3/src/lib.rs",
+     "registry:camino-1.2.6/src/lib.rs",
+     "registry:dpi-0.1.2/src/lib.rs",
+     "registry:lalrpop-util-0.23.1/src/lib.rs",
+     "registry:num-integer-0.1.47/src/lib.rs",
+     "registry:rayon-core-1.13.0/src/lib.rs",
+     "registry:strict-num-0.1.1/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 1388,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_ui_render/src/pipeline.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1226,
+    "after_tokens": 127,
+    "common": 110,
+    "removed": {
+     "past_eof": 1013,
+     "past_eol": 60,
+     "not_identifier": 37,
+     "comment_or_keyword": 6,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 17,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_reflect/src/display.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 2078,
+    "after_tokens": 1110,
+    "common": 971,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 613,
+     "not_identifier": 325,
+     "comment_or_keyword": 168,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:wgsl-types-0.4.2/src/display.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 139,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_ui_render/src/image.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 305,
+    "after_tokens": 92,
+    "common": 81,
+    "removed": {
+     "past_eof": 150,
+     "past_eol": 33,
+     "not_identifier": 23,
+     "comment_or_keyword": 18,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 11,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_gltf/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41679,
+    "after_tokens": 178,
+    "common": 16,
+    "removed": {
+     "past_eof": 34726,
+     "past_eol": 3393,
+     "not_identifier": 1286,
+     "comment_or_keyword": 2256,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:clap_lex-1.1.1/src/lib.rs",
+     "registry:phf_codegen-0.11.3/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 162,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_platform/src/thread.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 379,
+    "after_tokens": 2,
+    "common": 2,
+    "removed": {
+     "past_eof": 341,
+     "past_eol": 20,
+     "not_identifier": 11,
+     "comment_or_keyword": 5,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_reflect/src/list.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 884,
+    "after_tokens": 637,
+    "common": 604,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 136,
+     "not_identifier": 57,
+     "comment_or_keyword": 87,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 33,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_shader/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41695,
+    "after_tokens": 10,
+    "common": 0,
+    "removed": {
+     "past_eof": 41200,
+     "past_eol": 309,
+     "not_identifier": 128,
+     "comment_or_keyword": 58,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 10,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_ecs/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41790,
+    "after_tokens": 1030,
+    "common": 177,
+    "removed": {
+     "past_eof": 22746,
+     "past_eol": 10363,
+     "not_identifier": 6818,
+     "comment_or_keyword": 1672,
+     "identifier_starts_same_tail_token": 14,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:anstyle-parse-1.0.0/src/lib.rs",
+     "registry:argh_derive-0.1.19/src/lib.rs",
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:bit-vec-0.9.1/src/lib.rs",
+     "registry:blocking-1.7.0/src/lib.rs",
+     "registry:bytemuck_derive-1.12.1/src/lib.rs",
+     "registry:cargo_metadata-0.18.1/src/lib.rs",
+     "registry:colored-3.1.1/src/lib.rs",
+     "registry:concurrent-queue-2.5.0/src/lib.rs",
+     "registry:criterion-0.8.2/src/lib.rs",
+     "registry:ignore-0.4.30/src/lib.rs",
+     "registry:num-rational-0.4.2/src/lib.rs",
+     "registry:xshell-0.2.7/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 853,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "examples/no_std/library/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41704,
+    "after_tokens": 138,
+    "common": 19,
+    "removed": {
+     "past_eof": 38974,
+     "past_eol": 1627,
+     "not_identifier": 634,
+     "comment_or_keyword": 449,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:itertools-0.14.0/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 119,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_time/src/time.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1784,
+    "after_tokens": 484,
+    "common": 429,
+    "removed": {
+     "past_eof": 619,
+     "past_eol": 439,
+     "not_identifier": 99,
+     "comment_or_keyword": 197,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:time-0.3.55/src/time.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 55,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_gizmos/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41700,
+    "after_tokens": 463,
+    "common": 11,
+    "removed": {
+     "past_eof": 33620,
+     "past_eol": 4703,
+     "not_identifier": 2566,
+     "comment_or_keyword": 800,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 452,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/bevy_material/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 41696,
+    "after_tokens": 48,
+    "common": 4,
+    "removed": {
+     "past_eof": 41302,
+     "past_eol": 190,
+     "not_identifier": 196,
+     "comment_or_keyword": 4,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 44,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "examples/helpers/radio.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "viii_stored_with_parent_dir",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [
+      {
+       "shard": "animation_masks-37f0784050957372.ridx",
+       "stored": "examples/animation/../helpers/radio.rs"
+      },
+      {
+       "shard": "box_shadow-7d222f89c43b1d06.ridx",
+       "stored": "examples/ui/styling/../../helpers/radio.rs"
+      },
+      {
+       "shard": "dynamic_mip_generation-970950a671e4cb57.ridx",
+       "stored": "examples/2d/../helpers/radio.rs"
+      },
+      {
+       "shard": "light_probe_blending-b90a628d652dcef4.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "mirror-06ebf9508c45ffd2.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "mixed_lighting-a84a921659679378.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "occlusion_culling-340336291bee37fb.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "order_independent_transparency-becaf5e7f3da120a.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "pccm-6db3f2b832d896bc.ridx",
+       "stored": "examples/3d/../helpers/radio.rs"
+      },
+      {
+       "shard": "transform_gizmo-c7eb6ef5a32feef6.ridx",
+       "stored": "examples/gizmos/../helpers/radio.rs"
+      }
+     ],
+     "same_tail": [],
+     "same_tail_count": 0
+    },
+    "before_empty_or_error": true,
+    "after_empty": false
+   }
+  },
+  {
+   "method": "code_lens",
+   "file": "examples/helpers/checkbox.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "viii_stored_with_parent_dir",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [
+      {
+       "shard": "2d_shapes-fede451db136cb60.ridx",
+       "stored": "examples/2d/../helpers/checkbox.rs"
+      }
+     ],
+     "same_tail": [],
+     "same_tail_count": 0
+    },
+    "before_empty_or_error": true,
+    "after_empty": false
+   }
+  }
+ ]
+}

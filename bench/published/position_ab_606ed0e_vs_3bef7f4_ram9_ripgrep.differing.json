@@ -1,0 +1,7416 @@
+{
+ "repo": "BurntSushi/ripgrep",
+ "repo_dir_name": "ripgrep",
+ "repo_head": "4649aa9700619f94cf9c66876e9549d83420e16c",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 27,
+ "positions_file": "matrix_ripgrep_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 18,
+ "timestamp_start": "2026-10-20T15:38:38.184321+00:00",
+ "timestamp_end": "2026-10-20T15:43:45.025476+00:00",
+ "servers": [
+  {
+   "name": "606ed0e",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 606ed0e4a4b963c48001cc6995ce242cc74e98a3, dirty: false)",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 102.4,
+   "summary": {
+    "definition": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 48.3,
+     "p99_us": 245.9,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41.1,
+     "p99_us": 75.3,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 182,
+     "b": 118,
+     "c": 0,
+     "n": 300,
+     "p50_us": 48.5,
+     "p99_us": 218.2,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 257,
+     "b": 43,
+     "c": 0,
+     "n": 300,
+     "p50_us": 311.2,
+     "p99_us": 4844.0,
+     "unsupported": false
+    },
+    "references": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 141.7,
+     "p99_us": 8354.5,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 281,
+     "b": 19,
+     "c": 0,
+     "n": 300,
+     "p50_us": 204.2,
+     "p99_us": 7953.5,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 115.2,
+     "p99_us": 6310.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 177,
+     "b": 123,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4677.2,
+     "p99_us": 12158.9,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 17.5,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 293,
+     "b": 7,
+     "c": 0,
+     "n": 300,
+     "p50_us": 76.1,
+     "p99_us": 168.1,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 200.4,
+     "p99_us": 1965.2,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 50,
+     "b": 250,
+     "c": 0,
+     "n": 300,
+     "p50_us": 54.8,
+     "p99_us": 6359.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.1,
+     "p99_us": 153.9,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 15.4,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 40.5,
+     "p99_us": 147.4,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.1,
+     "p99_us": 132.8,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 18.7,
+     "p99_us": 27.7,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.2,
+     "p99_us": 14.3,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 290,
+     "b": 10,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.8,
+     "p99_us": 60.7,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 137,
+     "b": 163,
+     "c": 0,
+     "n": 300,
+     "p50_us": 166.9,
+     "p99_us": 6296.7,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 192,
+     "b": 108,
+     "c": 0,
+     "n": 300,
+     "p50_us": 188.7,
+     "p99_us": 1378.2,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.0,
+     "p99_us": 110.0,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 129.9,
+     "p99_us": 688.4,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 13,
+     "b": 287,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.6,
+     "p99_us": 428.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 174.8,
+     "p99_us": 988.1,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 87,
+     "b": 213,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.1,
+     "p99_us": 227.7,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 16.4,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 13.1,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 15.2,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86993.0,
+     "p99_us": 104809.2,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 18,
+     "b": 282,
+     "c": 0,
+     "n": 300,
+     "p50_us": 165613.4,
+     "p99_us": 198868.6,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91752.4,
+     "p99_us": 112362.1,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 297,
+     "b": 0,
+     "c": 3,
+     "n": 300,
+     "p50_us": 121.0,
+     "p99_us": 321.6,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 298,
+     "b": 0,
+     "c": 2,
+     "n": 300,
+     "p50_us": 347.4,
+     "p99_us": 3390.9,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 15.5,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 137.2,
+     "p99_us": 752.8,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.9,
+     "p99_us": 19.3,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 15.2,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 322.5,
+     "p99_us": 5571.7,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 240.3,
+     "p99_us": 5469.8,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 205.7,
+     "p99_us": 4212.5,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90.0,
+     "p99_us": 705.9,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 295,
+     "b": 5,
+     "c": 0,
+     "n": 300,
+     "p50_us": 111.6,
+     "p99_us": 987.4,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.1,
+     "p99_us": 18.5,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 96.2,
+     "p99_us": 2034.3,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5131.1,
+     "p99_us": 5452.9,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 17.4,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 11.5,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 11.6,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.4,
+     "p99_us": 258.5,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 51,
+    "mismatches": []
+   }
+  },
+  {
+   "name": "3bef7f4",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 3bef7f4a86183647b649bbaf5d0c7fb35559b1eb, dirty: false)",
+   "commit": "3bef7f4a86183647b649bbaf5d0c7fb35559b1eb",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 102.1,
+   "summary": {
+    "definition": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 59.5,
+     "p99_us": 253.2,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 57.5,
+     "p99_us": 140.9,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 182,
+     "b": 118,
+     "c": 0,
+     "n": 300,
+     "p50_us": 62.8,
+     "p99_us": 279.4,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 257,
+     "b": 43,
+     "c": 0,
+     "n": 300,
+     "p50_us": 318.1,
+     "p99_us": 4703.6,
+     "unsupported": false
+    },
+    "references": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 150.1,
+     "p99_us": 9157.5,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 281,
+     "b": 19,
+     "c": 0,
+     "n": 300,
+     "p50_us": 220.8,
+     "p99_us": 8337.3,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 108.8,
+     "p99_us": 6461.3,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 177,
+     "b": 123,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4662.4,
+     "p99_us": 10667.6,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 293,
+     "b": 7,
+     "c": 0,
+     "n": 300,
+     "p50_us": 93.0,
+     "p99_us": 255.7,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 231.4,
+     "p99_us": 2150.0,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 15.5,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 50,
+     "b": 250,
+     "c": 0,
+     "n": 300,
+     "p50_us": 56.5,
+     "p99_us": 6229.8,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.9,
+     "p99_us": 157.5,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 14.9,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.0,
+     "p99_us": 156.2,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.4,
+     "p99_us": 134.3,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 19.1,
+     "p99_us": 29.2,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 14.6,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 290,
+     "b": 10,
+     "c": 0,
+     "n": 300,
+     "p50_us": 50.8,
+     "p99_us": 61.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 137,
+     "b": 163,
+     "c": 0,
+     "n": 300,
+     "p50_us": 189.8,
+     "p99_us": 8163.0,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 192,
+     "b": 108,
+     "c": 0,
+     "n": 300,
+     "p50_us": 195.6,
+     "p99_us": 1621.6,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 50.8,
+     "p99_us": 134.0,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 125.2,
+     "p99_us": 689.9,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 13,
+     "b": 287,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 356.1,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 174.3,
+     "p99_us": 1013.5,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 87,
+     "b": 213,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.0,
+     "p99_us": 215.9,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 17.0,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 14.5,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 13.7,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87096.4,
+     "p99_us": 105796.6,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 18,
+     "b": 282,
+     "c": 0,
+     "n": 300,
+     "p50_us": 164867.1,
+     "p99_us": 199951.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91455.5,
+     "p99_us": 109092.2,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 297,
+     "b": 0,
+     "c": 3,
+     "n": 300,
+     "p50_us": 118.4,
+     "p99_us": 242.7,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 298,
+     "b": 0,
+     "c": 2,
+     "n": 300,
+     "p50_us": 356.0,
+     "p99_us": 3588.6,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 14.9,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 125.8,
+     "p99_us": 485.8,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 14.8,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 14.0,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 189.8,
+     "p99_us": 2593.1,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 147.2,
+     "p99_us": 2550.5,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 129.2,
+     "p99_us": 2051.5,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 76.6,
+     "p99_us": 637.3,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 295,
+     "b": 5,
+     "c": 0,
+     "n": 300,
+     "p50_us": 108.7,
+     "p99_us": 881.7,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.6,
+     "p99_us": 21.5,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 97.3,
+     "p99_us": 2020.9,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6087.6,
+     "p99_us": 6516.9,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 18.2,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 15.0,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 11.9,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.9,
+     "p99_us": 280.8,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 51,
+    "mismatches": []
+   }
+  },
+  {
+   "name": "606ed0e-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 606ed0e4a4b963c48001cc6995ce242cc74e98a3, dirty: false)",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 101.9,
+   "summary": {
+    "definition": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 51.8,
+     "p99_us": 253.2,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 49.0,
+     "p99_us": 76.7,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 182,
+     "b": 118,
+     "c": 0,
+     "n": 300,
+     "p50_us": 57.9,
+     "p99_us": 271.1,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 257,
+     "b": 43,
+     "c": 0,
+     "n": 300,
+     "p50_us": 306.1,
+     "p99_us": 4688.2,
+     "unsupported": false
+    },
+    "references": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 138.4,
+     "p99_us": 8520.1,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 281,
+     "b": 19,
+     "c": 0,
+     "n": 300,
+     "p50_us": 204.8,
+     "p99_us": 7998.3,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 121.5,
+     "p99_us": 6074.7,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 177,
+     "b": 123,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4709.1,
+     "p99_us": 10734.6,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 21.7,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 293,
+     "b": 7,
+     "c": 0,
+     "n": 300,
+     "p50_us": 77.3,
+     "p99_us": 170.6,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 204.7,
+     "p99_us": 1942.9,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.9,
+     "p99_us": 16.9,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 50,
+     "b": 250,
+     "c": 0,
+     "n": 300,
+     "p50_us": 55.6,
+     "p99_us": 6377.1,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.4,
+     "p99_us": 155.6,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 16.2,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39.7,
+     "p99_us": 150.9,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.9,
+     "p99_us": 136.8,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 18.8,
+     "p99_us": 29.9,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.6,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 290,
+     "b": 10,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.9,
+     "p99_us": 67.5,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 137,
+     "b": 163,
+     "c": 0,
+     "n": 300,
+     "p50_us": 168.5,
+     "p99_us": 6075.3,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 192,
+     "b": 108,
+     "c": 0,
+     "n": 300,
+     "p50_us": 189.8,
+     "p99_us": 1339.9,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.9,
+     "p99_us": 112.5,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 131.7,
+     "p99_us": 684.1,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 13,
+     "b": 287,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 319.4,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 172.4,
+     "p99_us": 1000.8,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 87,
+     "b": 213,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.4,
+     "p99_us": 221.1,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.9,
+     "p99_us": 17.8,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 15.0,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 14.3,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86927.7,
+     "p99_us": 108385.5,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 18,
+     "b": 282,
+     "c": 0,
+     "n": 300,
+     "p50_us": 165290.0,
+     "p99_us": 188003.1,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92058.0,
+     "p99_us": 111238.0,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 297,
+     "b": 0,
+     "c": 3,
+     "n": 300,
+     "p50_us": 112.3,
+     "p99_us": 239.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 298,
+     "b": 0,
+     "c": 2,
+     "n": 300,
+     "p50_us": 367.6,
+     "p99_us": 4093.2,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 132.8,
+     "p99_us": 501.8,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 15.5,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 12.9,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 314.9,
+     "p99_us": 5542.4,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 239.8,
+     "p99_us": 5276.8,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 213.4,
+     "p99_us": 4326.2,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89.7,
+     "p99_us": 754.8,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 295,
+     "b": 5,
+     "c": 0,
+     "n": 300,
+     "p50_us": 109.6,
+     "p99_us": 949.4,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.0,
+     "p99_us": 18.4,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 95.8,
+     "p99_us": 2023.8,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5242.0,
+     "p99_us": 5339.4,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 15.4,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 12.0,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 11.7,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.8,
+     "p99_us": 270.3,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 51,
+    "mismatches": []
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "606ed0e",
+   "b": "3bef7f4",
+   "same": 15178,
+   "differing": 122,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 258,
+     "differing": 42,
+     "transitions": {
+      "a>a": 42
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_full_8_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "43d981c56b53c555",
+        "eddbed76947ffc20"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_10_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7dcf749b5ac39f39",
+        "9dd2fdcb9d68cd0c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_15_util.rs",
+       "file": "crates/matcher/tests/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b21f3b582e401766",
+        "22a1025c0315f1a7"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_32_lib.rs",
+       "file": "crates/searcher/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "060761cab9eb7ad0",
+        "251209c97015be36"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_39_lib.rs",
+       "file": "crates/globset/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "da945c13800bd81c",
+        "b374f5020e5d2989"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_49_counter.rs",
+       "file": "crates/printer/src/counter.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "69f05b7d3a7a3135",
+        "a4af093b547e6eca"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_53_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "31e5ebdd58695362",
+        "dd4da9ab2994bb12"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_56_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d646ba893d0cfe51",
+        "0e61c921a15941c0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_60_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "33021345f09a1c4a",
+        "6ffb290ec3d3fa4f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_63_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "25c118e4eb474559",
+        "ebb76f87a9bd1669"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_delta": {
+     "same": 267,
+     "differing": 33,
+     "transitions": {
+      "a>a": 33
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_delta_3_counter.rs",
+       "file": "crates/printer/src/counter.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d4486d581884ae52",
+        "f611b63a68ad7013"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_10_error.rs",
+       "file": "crates/pcre2/src/error.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a5b9cec899bfbf76",
+        "1d3a7754da2721ac"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_22_lib.rs",
+       "file": "crates/ignore/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b2cfc72031ff25a6",
+        "a9b728570e83a6a2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_37_lib.rs",
+       "file": "crates/globset/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8042ec17ea07237e",
+        "0649fe83e8e11b80"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_39_lib.rs",
+       "file": "crates/cli/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7e7ecd6cb97439fa",
+        "f005bbc3286151ac"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_51_util.rs",
+       "file": "crates/matcher/tests/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "fdce7abc95639c6f",
+        "42d552a983ae1a9e"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_55_error.rs",
+       "file": "crates/regex/src/error.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4caa573e4238a25e",
+        "233b7c4cff20a32a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_56_lib.rs",
+       "file": "crates/matcher/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f577afa2e241b8f8",
+        "4b44d31664076b14"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_69_lib.rs",
+       "file": "crates/searcher/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c7523b1b03166e11",
+        "dc9568aa8a7f282e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_106_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "60134ded6c9b0f6c",
+        "12b537eba76cd76a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_range": {
+     "same": 253,
+     "differing": 47,
+     "transitions": {
+      "a>a": 47
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_range_2_lib.rs",
+       "file": "crates/cli/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e19572d1602d6656",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_8_lib.rs",
+       "file": "crates/ignore/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e19572d1602d6656",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_12_util.rs",
+       "file": "crates/matcher/tests/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6668fe9f085666aa",
+        "e4d897a1da58b2d0"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_16_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d94842af40fdc4e1",
+        "2983f5ca130155b2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_17_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d94842af40fdc4e1",
+        "2983f5ca130155b2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_23_lib.rs",
+       "file": "crates/ignore/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e19572d1602d6656",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_24_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d94842af40fdc4e1",
+        "2983f5ca130155b2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_29_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e19572d1602d6656",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_40_path.rs",
+       "file": "crates/printer/src/path.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "245f249b00c4c249",
+        "a22b6b21f909069c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_42_path.rs",
+       "file": "crates/printer/src/path.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "245f249b00c4c249",
+        "a22b6b21f909069c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      }
+     ]
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "606ed0e",
+   "b": "606ed0e-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "3bef7f4",
+   "b": "606ed0e-2",
+   "same": 15178,
+   "differing": 122,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 258,
+     "differing": 42,
+     "transitions": {
+      "a>a": 42
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_full_8_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "eddbed76947ffc20",
+        "43d981c56b53c555"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_10_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9dd2fdcb9d68cd0c",
+        "7dcf749b5ac39f39"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_15_util.rs",
+       "file": "crates/matcher/tests/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "22a1025c0315f1a7",
+        "b21f3b582e401766"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_32_lib.rs",
+       "file": "crates/searcher/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "251209c97015be36",
+        "060761cab9eb7ad0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_39_lib.rs",
+       "file": "crates/globset/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b374f5020e5d2989",
+        "da945c13800bd81c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_49_counter.rs",
+       "file": "crates/printer/src/counter.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a4af093b547e6eca",
+        "69f05b7d3a7a3135"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_53_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dd4da9ab2994bb12",
+        "31e5ebdd58695362"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_56_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0e61c921a15941c0",
+        "d646ba893d0cfe51"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_60_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6ffb290ec3d3fa4f",
+        "33021345f09a1c4a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_63_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ebb76f87a9bd1669",
+        "25c118e4eb474559"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_delta": {
+     "same": 267,
+     "differing": 33,
+     "transitions": {
+      "a>a": 33
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_delta_3_counter.rs",
+       "file": "crates/printer/src/counter.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f611b63a68ad7013",
+        "d4486d581884ae52"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_10_error.rs",
+       "file": "crates/pcre2/src/error.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1d3a7754da2721ac",
+        "a5b9cec899bfbf76"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_22_lib.rs",
+       "file": "crates/ignore/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a9b728570e83a6a2",
+        "b2cfc72031ff25a6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_37_lib.rs",
+       "file": "crates/globset/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0649fe83e8e11b80",
+        "8042ec17ea07237e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_39_lib.rs",
+       "file": "crates/cli/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f005bbc3286151ac",
+        "7e7ecd6cb97439fa"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_51_util.rs",
+       "file": "crates/matcher/tests/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "42d552a983ae1a9e",
+        "fdce7abc95639c6f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_55_error.rs",
+       "file": "crates/regex/src/error.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "233b7c4cff20a32a",
+        "4caa573e4238a25e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_56_lib.rs",
+       "file": "crates/matcher/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4b44d31664076b14",
+        "f577afa2e241b8f8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_69_lib.rs",
+       "file": "crates/searcher/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dc9568aa8a7f282e",
+        "c7523b1b03166e11"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_106_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "12b537eba76cd76a",
+        "60134ded6c9b0f6c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_range": {
+     "same": 253,
+     "differing": 47,
+     "transitions": {
+      "a>a": 47
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_range_2_lib.rs",
+       "file": "crates/cli/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "e19572d1602d6656"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_8_lib.rs",
+       "file": "crates/ignore/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "e19572d1602d6656"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_12_util.rs",
+       "file": "crates/matcher/tests/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e4d897a1da58b2d0",
+        "6668fe9f085666aa"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_16_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2983f5ca130155b2",
+        "d94842af40fdc4e1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_17_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2983f5ca130155b2",
+        "d94842af40fdc4e1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_23_lib.rs",
+       "file": "crates/ignore/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "e19572d1602d6656"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_24_util.rs",
+       "file": "crates/printer/src/util.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2983f5ca130155b2",
+        "d94842af40fdc4e1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_29_lib.rs",
+       "file": "crates/printer/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "e19572d1602d6656"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_40_path.rs",
+       "file": "crates/printer/src/path.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a22b6b21f909069c",
+        "245f249b00c4c249"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_42_path.rs",
+       "file": "crates/printer/src/path.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a22b6b21f909069c",
+        "245f249b00c4c249"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      }
+     ]
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_8_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "43d981c56b53c555",
+     "us": 5549.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "eddbed76947ffc20",
+     "us": 89.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "43d981c56b53c555",
+     "us": 6233.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_10_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7dcf749b5ac39f39",
+     "us": 5069.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "9dd2fdcb9d68cd0c",
+     "us": 79.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7dcf749b5ac39f39",
+     "us": 4787.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_15_util.rs",
+   "file": "crates/matcher/tests/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "b21f3b582e401766",
+     "us": 317.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "22a1025c0315f1a7",
+     "us": 89.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "b21f3b582e401766",
+     "us": 294.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_32_lib.rs",
+   "file": "crates/searcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "060761cab9eb7ad0",
+     "us": 4886.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "251209c97015be36",
+     "us": 68.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "060761cab9eb7ad0",
+     "us": 4797.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_39_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "da945c13800bd81c",
+     "us": 5733.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b374f5020e5d2989",
+     "us": 626.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "da945c13800bd81c",
+     "us": 5541.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_49_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "69f05b7d3a7a3135",
+     "us": 196.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a4af093b547e6eca",
+     "us": 106.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "69f05b7d3a7a3135",
+     "us": 200.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_53_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "31e5ebdd58695362",
+     "us": 441.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "dd4da9ab2994bb12",
+     "us": 332.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "31e5ebdd58695362",
+     "us": 444.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_56_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d646ba893d0cfe51",
+     "us": 425.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "0e61c921a15941c0",
+     "us": 327.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d646ba893d0cfe51",
+     "us": 434.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_60_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "33021345f09a1c4a",
+     "us": 4852.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "6ffb290ec3d3fa4f",
+     "us": 71.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "33021345f09a1c4a",
+     "us": 4846.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_63_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "25c118e4eb474559",
+     "us": 4755.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "ebb76f87a9bd1669",
+     "us": 75.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "25c118e4eb474559",
+     "us": 4755.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_67_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "8a3e8ee01507c54e",
+     "us": 856.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "7f689d59f1817b83",
+     "us": 67.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "8a3e8ee01507c54e",
+     "us": 847.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_76_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "1f0f5ad3647819a9",
+     "us": 452.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "9d5a1ef80a4c3e94",
+     "us": 134.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "1f0f5ad3647819a9",
+     "us": 466.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_89_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "80a08f1be9765f85",
+     "us": 5222.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "4236445334fc40db",
+     "us": 343.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "80a08f1be9765f85",
+     "us": 5242.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_93_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "08969daf32573ac5",
+     "us": 1199.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "6c2174f3d49d87f1",
+     "us": 62.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "08969daf32573ac5",
+     "us": 855.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_95_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "1cb9326a2be58780",
+     "us": 6071.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "7fa3071fde9873dc",
+     "us": 605.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "1cb9326a2be58780",
+     "us": 5611.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_100_lib.rs",
+   "file": "crates/searcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0dec5b57d09cf5b4",
+     "us": 4752.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "29d3de56d9bf7895",
+     "us": 64.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0dec5b57d09cf5b4",
+     "us": 4829.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_106_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "1fb3f5e12c66865b",
+     "us": 494.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "9b736dc68d432aed",
+     "us": 150.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "1fb3f5e12c66865b",
+     "us": 501.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_118_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "66c83298623fc22b",
+     "us": 5439.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a225e4194278b52a",
+     "us": 341.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "66c83298623fc22b",
+     "us": 5334.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_122_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "40913df52621cc70",
+     "us": 469.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "87ad7021e98ec5ed",
+     "us": 357.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "40913df52621cc70",
+     "us": 474.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_131_lib.rs",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6e6d831e9cecbdac",
+     "us": 5806.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "88c29b826ee5552b",
+     "us": 484.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6e6d831e9cecbdac",
+     "us": 5709.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_139_lib.rs",
+   "file": "crates/searcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "97f4d70a7e03e85e",
+     "us": 4852.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "14fa82f8c6701673",
+     "us": 63.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "97f4d70a7e03e85e",
+     "us": 4745.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_151_error.rs",
+   "file": "crates/regex/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "2c3756bd33cc8287",
+     "us": 896.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "85d2d05970213eb5",
+     "us": 91.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "2c3756bd33cc8287",
+     "us": 884.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_156_lib.rs",
+   "file": "crates/searcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "b939a97a08c99381",
+     "us": 4892.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "df1c6087a4aa972d",
+     "us": 61.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "b939a97a08c99381",
+     "us": 4792.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_160_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "9a51fc0efa51f735",
+     "us": 207.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "079622a77379134e",
+     "us": 102.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "9a51fc0efa51f735",
+     "us": 202.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_162_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "2843c2d68ce75352",
+     "us": 5315.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f0210a0fea728114",
+     "us": 353.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "2843c2d68ce75352",
+     "us": 5235.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_172_lib.rs",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "733376e9ccae14d0",
+     "us": 5562.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "d719f53f3dbb1648",
+     "us": 465.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "733376e9ccae14d0",
+     "us": 5481.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_177_error.rs",
+   "file": "crates/regex/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "303fad0256debd83",
+     "us": 881.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "947b09b3746a515d",
+     "us": 84.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "303fad0256debd83",
+     "us": 920.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_200_util.rs",
+   "file": "crates/matcher/tests/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "3e5c57012132ded8",
+     "us": 287.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "0b833f99714fa666",
+     "us": 84.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "3e5c57012132ded8",
+     "us": 282.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_203_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "a6b4254a31e72cfc",
+     "us": 219.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "525779c744fcac09",
+     "us": 114.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "a6b4254a31e72cfc",
+     "us": 208.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_209_lib.rs",
+   "file": "crates/searcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "10dadcc0ec043595",
+     "us": 4996.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "100587941ccb38ec",
+     "us": 64.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "10dadcc0ec043595",
+     "us": 4897.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_214_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "02a024e521cf529b",
+     "us": 5282.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "078f537c7f0b20a8",
+     "us": 346.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "02a024e521cf529b",
+     "us": 5160.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_216_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "a71dc08b874dea91",
+     "us": 5428.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a4295e69822cf45d",
+     "us": 330.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "a71dc08b874dea91",
+     "us": 5140.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_226_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "b9190c3e3e82ec72",
+     "us": 496.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "7a068692cf3aa983",
+     "us": 134.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "b9190c3e3e82ec72",
+     "us": 485.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_234_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0a03bbc1dfd58cda",
+     "us": 5291.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2589a65995c8a0da",
+     "us": 338.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0a03bbc1dfd58cda",
+     "us": 5195.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_242_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "52abd598c5f2a36c",
+     "us": 447.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2a2958b1d7404426",
+     "us": 330.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "52abd598c5f2a36c",
+     "us": 447.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_245_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "c83588d4940a9392",
+     "us": 874.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f5d42538f6852542",
+     "us": 63.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "c83588d4940a9392",
+     "us": 850.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_268_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "3d0962f17de0bed0",
+     "us": 459.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a0d022d46576aa3b",
+     "us": 332.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "3d0962f17de0bed0",
+     "us": 452.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_275_lib.rs",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "86664030990284ce",
+     "us": 5570.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "7f3fc7b43e29e3cd",
+     "us": 473.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "86664030990284ce",
+     "us": 5415.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_280_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "000a6a8dc1568405",
+     "us": 685.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "57d8091b282175ff",
+     "us": 132.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "000a6a8dc1568405",
+     "us": 486.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_283_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "51f53bea5067e35f",
+     "us": 213.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "c2c19e408dc5c8e6",
+     "us": 109.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "51f53bea5067e35f",
+     "us": 210.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_291_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "83f60950c9e95cbd",
+     "us": 5081.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "4b15f0ad2617c8e5",
+     "us": 342.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "83f60950c9e95cbd",
+     "us": 5002.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_296_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "324f69c58d0c2ef0",
+     "us": 479.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "6953bb6fb20a30e1",
+     "us": 136.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "324f69c58d0c2ef0",
+     "us": 479.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_3_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d4486d581884ae52",
+     "us": 201.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f611b63a68ad7013",
+     "us": 107.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d4486d581884ae52",
+     "us": 205.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_10_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "a5b9cec899bfbf76",
+     "us": 856.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1d3a7754da2721ac",
+     "us": 58.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "a5b9cec899bfbf76",
+     "us": 858.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_22_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "b2cfc72031ff25a6",
+     "us": 5056.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a9b728570e83a6a2",
+     "us": 352.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "b2cfc72031ff25a6",
+     "us": 5059.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_37_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "8042ec17ea07237e",
+     "us": 5499.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "0649fe83e8e11b80",
+     "us": 605.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "8042ec17ea07237e",
+     "us": 5389.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_39_lib.rs",
+   "file": "crates/cli/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7e7ecd6cb97439fa",
+     "us": 4771.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f005bbc3286151ac",
+     "us": 91.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7e7ecd6cb97439fa",
+     "us": 4748.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_51_util.rs",
+   "file": "crates/matcher/tests/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "fdce7abc95639c6f",
+     "us": 288.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "42d552a983ae1a9e",
+     "us": 86.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "fdce7abc95639c6f",
+     "us": 298.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_55_error.rs",
+   "file": "crates/regex/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4caa573e4238a25e",
+     "us": 893.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "233b7c4cff20a32a",
+     "us": 88.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4caa573e4238a25e",
+     "us": 885.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_56_lib.rs",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f577afa2e241b8f8",
+     "us": 5386.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "4b44d31664076b14",
+     "us": 466.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f577afa2e241b8f8",
+     "us": 5276.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_69_lib.rs",
+   "file": "crates/searcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "c7523b1b03166e11",
+     "us": 4787.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "dc9568aa8a7f282e",
+     "us": 59.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "c7523b1b03166e11",
+     "us": 4660.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_106_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "60134ded6c9b0f6c",
+     "us": 452.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "12b537eba76cd76a",
+     "us": 331.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "60134ded6c9b0f6c",
+     "us": 459.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_107_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "9698c8c445678c81",
+     "us": 5214.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b726771724d79afe",
+     "us": 344.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "9698c8c445678c81",
+     "us": 5025.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_111_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0cb1533351d66d52",
+     "us": 5079.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "c43021788f1c07f5",
+     "us": 339.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0cb1533351d66d52",
+     "us": 5108.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_118_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "5c1df278888fb5ca",
+     "us": 853.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "993799b4f2db7ef8",
+     "us": 62.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "5c1df278888fb5ca",
+     "us": 864.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_121_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4623adb10cb93fa4",
+     "us": 201.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "4187ec1e928f35a1",
+     "us": 107.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4623adb10cb93fa4",
+     "us": 210.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_125_lib.rs",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "044e0899dce57699",
+     "us": 5469.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1fcaa4da9d872a92",
+     "us": 462.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "044e0899dce57699",
+     "us": 5264.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_127_error.rs",
+   "file": "crates/regex/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "99a45af4603fb584",
+     "us": 879.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "274f7ef094ba9292",
+     "us": 88.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "99a45af4603fb584",
+     "us": 901.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_128_lib.rs",
+   "file": "crates/cli/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0aeace34e65b28e9",
+     "us": 4818.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "fb40ac94be4eebc1",
+     "us": 89.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0aeace34e65b28e9",
+     "us": 4782.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_135_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f5458ff44684bb31",
+     "us": 227.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "6cdd80971b29f35e",
+     "us": 101.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f5458ff44684bb31",
+     "us": 208.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_139_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "2c84e0460e16dc95",
+     "us": 852.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2498e7e919a1ff30",
+     "us": 60.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "2c84e0460e16dc95",
+     "us": 843.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_146_util.rs",
+   "file": "crates/matcher/tests/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "37c00fbc779c246d",
+     "us": 297.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a775dc23977c37cc",
+     "us": 86.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "37c00fbc779c246d",
+     "us": 288.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_162_lib.rs",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d981011b93a252ca",
+     "us": 5496.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "eab0a8fa150df338",
+     "us": 481.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d981011b93a252ca",
+     "us": 5262.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_174_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "74c0515a1950b349",
+     "us": 868.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "d0a7ab0978e9c148",
+     "us": 63.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "74c0515a1950b349",
+     "us": 854.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_189_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4b72fa673b9ce43a",
+     "us": 474.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "507c27d367d1dcd5",
+     "us": 502.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4b72fa673b9ce43a",
+     "us": 462.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_202_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "cf103f39b04a5c3a",
+     "us": 182.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "86bbb601f1a68202",
+     "us": 101.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "cf103f39b04a5c3a",
+     "us": 191.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_203_lib.rs",
+   "file": "crates/cli/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "a9d78420bd87f708",
+     "us": 4804.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "64c77212e7e91eb8",
+     "us": 89.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "a9d78420bd87f708",
+     "us": 4696.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_216_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "15c5632c2c0f9b34",
+     "us": 849.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "23d6338aa04555d4",
+     "us": 65.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "15c5632c2c0f9b34",
+     "us": 840.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_219_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6e204ff3e65dd89d",
+     "us": 188.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "d05c2a02c4d46229",
+     "us": 103.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6e204ff3e65dd89d",
+     "us": 209.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_223_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0b29678cc9204e52",
+     "us": 825.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8d56d7a1592aa1bd",
+     "us": 65.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0b29678cc9204e52",
+     "us": 839.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_251_error.rs",
+   "file": "crates/regex/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "3f9d41ba4b58a9db",
+     "us": 844.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "d21e855e7a1466a7",
+     "us": 83.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "3f9d41ba4b58a9db",
+     "us": 865.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_255_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "cf31cec0a1a9338d",
+     "us": 434.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "3b35ec2c9b147201",
+     "us": 323.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "cf31cec0a1a9338d",
+     "us": 440.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_256_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4a53122a6506ff6b",
+     "us": 5365.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b3ef076a0760d812",
+     "us": 614.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4a53122a6506ff6b",
+     "us": 5349.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_272_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "88ed7fb68d7eb473",
+     "us": 4630.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "93dd30ef5df92700",
+     "us": 73.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "88ed7fb68d7eb473",
+     "us": 4610.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_287_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "66fab1c180c8076a",
+     "us": 5474.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "9de236534a6a8ea4",
+     "us": 617.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "66fab1c180c8076a",
+     "us": 5433.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_2_lib.rs",
+   "file": "crates/cli/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3797.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 151.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3756.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_8_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3952.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 294.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3966.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_12_util.rs",
+   "file": "crates/matcher/tests/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 217.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e4d897a1da58b2d0",
+     "us": 70.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 229.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_16_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 364.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2983f5ca130155b2",
+     "us": 279.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 380.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_17_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 344.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2983f5ca130155b2",
+     "us": 259.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 352.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_23_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3872.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 284.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3963.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_24_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 372.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2983f5ca130155b2",
+     "us": 274.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 387.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_29_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3516.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 67.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3661.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_40_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 351.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a22b6b21f909069c",
+     "us": 121.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 374.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_42_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 336.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a22b6b21f909069c",
+     "us": 109.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 343.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_43_lib.rs",
+   "file": "crates/cli/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3606.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 78.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3699.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_45_error.rs",
+   "file": "crates/regex/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 667.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 75.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 690.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_57_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 623.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 61.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 644.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_86_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 628.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 56.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 650.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_95_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4206.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 513.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4344.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_96_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4188.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 502.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4353.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_98_lib.rs",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4164.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 392.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4269.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_99_lib.rs",
+   "file": "crates/searcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3582.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 56.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3643.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_113_util.rs",
+   "file": "crates/matcher/tests/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 218.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e4d897a1da58b2d0",
+     "us": 70.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 235.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_126_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 643.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 57.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 656.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_127_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3598.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 64.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3660.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_131_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4252.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 516.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4328.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_138_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4236.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 505.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4326.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_140_util.rs",
+   "file": "crates/matcher/tests/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 232.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e4d897a1da58b2d0",
+     "us": 74.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 236.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_141_error.rs",
+   "file": "crates/regex/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 678.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 77.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 695.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_144_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 161.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1867c57782b7075a",
+     "us": 96.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 178.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_150_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 152.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1867c57782b7075a",
+     "us": 90.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 158.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_162_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 152.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1867c57782b7075a",
+     "us": 91.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 161.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_166_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 163.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1867c57782b7075a",
+     "us": 96.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 172.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_168_lib.rs",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4212.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 399.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4308.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_170_error.rs",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 639.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 57.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 654.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_172_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 357.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a22b6b21f909069c",
+     "us": 118.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 368.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_181_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3578.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 67.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3608.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_190_util.rs",
+   "file": "crates/matcher/tests/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 215.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e4d897a1da58b2d0",
+     "us": 71.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 222.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_195_util.rs",
+   "file": "crates/matcher/tests/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 218.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e4d897a1da58b2d0",
+     "us": 71.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6668fe9f085666aa",
+     "us": 226.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_211_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 164.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1867c57782b7075a",
+     "us": 97.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 169.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_214_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 354.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a22b6b21f909069c",
+     "us": 119.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 370.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_220_lib.rs",
+   "file": "crates/globset/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4297.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 531.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 4325.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_223_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 163.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1867c57782b7075a",
+     "us": 95.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 168.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_246_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3862.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 72.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3626.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_254_lib.rs",
+   "file": "crates/printer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3530.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 69.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3643.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_255_path.rs",
+   "file": "crates/printer/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 362.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a22b6b21f909069c",
+     "us": 120.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "245f249b00c4c249",
+     "us": 389.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_265_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 357.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2983f5ca130155b2",
+     "us": 291.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 383.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_271_error.rs",
+   "file": "crates/regex/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 659.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 79.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "88bd4f7a275124b4",
+     "us": 695.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_276_util.rs",
+   "file": "crates/printer/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 370.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2983f5ca130155b2",
+     "us": 288.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d94842af40fdc4e1",
+     "us": 374.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_287_counter.rs",
+   "file": "crates/printer/src/counter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 163.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1867c57782b7075a",
+     "us": 92.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4b0a02a2a4b46a9c",
+     "us": 162.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_296_lib.rs",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3976.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 303.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "e19572d1602d6656",
+     "us": 3963.8,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 122,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_606ed0e_vs_3bef7f4_ram9_ripgrep.json",
+  "sha256": "efef5fd99141c47d8da6fc0456d3284dd6bf3e9aad05a302ec1dbfbe066f91bc"
+ }
+}

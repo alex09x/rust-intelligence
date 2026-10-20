@@ -1,0 +1,7310 @@
+{
+ "repo": "bevyengine/bevy",
+ "repo_dir_name": "bevy",
+ "repo_head": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 640,
+ "positions_file": "matrix_bevy_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 571,
+ "timestamp_start": "2026-10-20T15:54:59.501152+00:00",
+ "timestamp_end": "2026-10-20T16:03:29.769281+00:00",
+ "servers": [
+  {
+   "name": "606ed0e",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 606ed0e4a4b963c48001cc6995ce242cc74e98a3, dirty: false)",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 156.7,
+   "summary": {
+    "definition": {
+     "a": 268,
+     "b": 32,
+     "c": 0,
+     "n": 300,
+     "p50_us": 433.1,
+     "p99_us": 779.9,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 443.8,
+     "p99_us": 645.0,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 187,
+     "b": 113,
+     "c": 0,
+     "n": 300,
+     "p50_us": 398.4,
+     "p99_us": 1304.7,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 134,
+     "b": 166,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6136.9,
+     "p99_us": 13218.4,
+     "unsupported": false
+    },
+    "references": {
+     "a": 279,
+     "b": 21,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4533.8,
+     "p99_us": 78345.6,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 232,
+     "b": 68,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4693.1,
+     "p99_us": 78435.2,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 185.9,
+     "p99_us": 2577.1,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 178,
+     "b": 122,
+     "c": 0,
+     "n": 300,
+     "p50_us": 104954.8,
+     "p99_us": 158341.0,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 20.1,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 273,
+     "b": 27,
+     "c": 0,
+     "n": 300,
+     "p50_us": 698.8,
+     "p99_us": 1063.5,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2665.8,
+     "p99_us": 182540.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 23.0,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 53,
+     "b": 247,
+     "c": 0,
+     "n": 300,
+     "p50_us": 103.8,
+     "p99_us": 128452.2,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.9,
+     "p99_us": 73.0,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 15.2,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.0,
+     "p99_us": 124.8,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.2,
+     "p99_us": 88.8,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 45.1,
+     "p99_us": 178.0,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 16.0,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 278,
+     "b": 22,
+     "c": 0,
+     "n": 300,
+     "p50_us": 445.1,
+     "p99_us": 655.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 101,
+     "b": 199,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6633.1,
+     "p99_us": 15261.9,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 236,
+     "b": 64,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1210.4,
+     "p99_us": 23007.9,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 429.6,
+     "p99_us": 632.5,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 246,
+     "b": 54,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5486.6,
+     "p99_us": 9150.2,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 31,
+     "b": 269,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17.6,
+     "p99_us": 7323.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 152.7,
+     "p99_us": 895.8,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 59,
+     "b": 241,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.9,
+     "p99_us": 113.9,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 13.6,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 12.1,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 2,
+     "b": 298,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86199.9,
+     "p99_us": 101521.8,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 41,
+     "b": 259,
+     "c": 0,
+     "n": 300,
+     "p50_us": 88899.8,
+     "p99_us": 186991.7,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90771.0,
+     "p99_us": 112848.2,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 282,
+     "b": 0,
+     "c": 18,
+     "n": 300,
+     "p50_us": 2601.9,
+     "p99_us": 5840.8,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 279,
+     "b": 0,
+     "c": 21,
+     "n": 300,
+     "p50_us": 3589.2,
+     "p99_us": 13303.9,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39.5,
+     "p99_us": 212.6,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92.9,
+     "p99_us": 482.9,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.2,
+     "p99_us": 17.0,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 16.5,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 804.9,
+     "p99_us": 46006.1,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 820.8,
+     "p99_us": 45946.0,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 780.7,
+     "p99_us": 45414.1,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 80.4,
+     "p99_us": 811.6,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 262,
+     "b": 38,
+     "c": 0,
+     "n": 300,
+     "p50_us": 339.1,
+     "p99_us": 1114.7,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 19.6,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86.8,
+     "p99_us": 760.6,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42597.9,
+     "p99_us": 43239.4,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 14.6,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 13.6,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.1,
+     "p99_us": 169.0,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 51,
+    "mismatches": []
+   }
+  },
+  {
+   "name": "3bef7f4",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 3bef7f4a86183647b649bbaf5d0c7fb35559b1eb, dirty: false)",
+   "commit": "3bef7f4a86183647b649bbaf5d0c7fb35559b1eb",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 157.4,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 491.1,
+     "p99_us": 1454.8,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 480.0,
+     "p99_us": 1363.8,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 187,
+     "b": 113,
+     "c": 0,
+     "n": 300,
+     "p50_us": 427.6,
+     "p99_us": 3101.6,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 134,
+     "b": 166,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6225.0,
+     "p99_us": 12886.9,
+     "unsupported": false
+    },
+    "references": {
+     "a": 279,
+     "b": 21,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4498.6,
+     "p99_us": 77862.2,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 232,
+     "b": 68,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4796.1,
+     "p99_us": 79115.1,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 170.7,
+     "p99_us": 2355.8,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 178,
+     "b": 122,
+     "c": 0,
+     "n": 300,
+     "p50_us": 100730.3,
+     "p99_us": 157819.6,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 27.1,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 274,
+     "b": 26,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1049.6,
+     "p99_us": 2778.7,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 3034.3,
+     "p99_us": 180756.2,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 17.4,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 53,
+     "b": 247,
+     "c": 0,
+     "n": 300,
+     "p50_us": 102.3,
+     "p99_us": 120522.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.4,
+     "p99_us": 80.5,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 15.2,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39.8,
+     "p99_us": 121.7,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.8,
+     "p99_us": 97.3,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 44.5,
+     "p99_us": 182.1,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.2,
+     "p99_us": 17.1,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 278,
+     "b": 22,
+     "c": 0,
+     "n": 300,
+     "p50_us": 495.1,
+     "p99_us": 1424.6,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6966.6,
+     "p99_us": 17696.1,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 236,
+     "b": 64,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1339.4,
+     "p99_us": 24780.5,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 484.8,
+     "p99_us": 1261.9,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 246,
+     "b": 54,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5515.1,
+     "p99_us": 7762.3,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 31,
+     "b": 269,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.8,
+     "p99_us": 7558.1,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 160.4,
+     "p99_us": 941.9,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 59,
+     "b": 241,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.1,
+     "p99_us": 116.9,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 19.6,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 14.8,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 14.2,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 2,
+     "b": 298,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86777.3,
+     "p99_us": 103023.8,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 41,
+     "b": 259,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89332.0,
+     "p99_us": 184208.1,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90746.1,
+     "p99_us": 114130.6,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 282,
+     "b": 0,
+     "c": 18,
+     "n": 300,
+     "p50_us": 2652.1,
+     "p99_us": 6017.4,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 280,
+     "b": 0,
+     "c": 20,
+     "n": 300,
+     "p50_us": 3703.2,
+     "p99_us": 13550.5,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 38.7,
+     "p99_us": 214.3,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90.6,
+     "p99_us": 485.7,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.0,
+     "p99_us": 18.6,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 14.3,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 534.9,
+     "p99_us": 2351.6,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 540.5,
+     "p99_us": 1786.7,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 519.6,
+     "p99_us": 1507.3,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85.7,
+     "p99_us": 782.1,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 353.5,
+     "p99_us": 1152.1,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 20.4,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 99.1,
+     "p99_us": 891.7,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 50192.8,
+     "p99_us": 51620.8,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 17.1,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 12.3,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 12.3,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.6,
+     "p99_us": 173.0,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 46,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       268,
+       32,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       274,
+       26,
+       0
+      ],
+      "matrix": [
+       273,
+       27,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       101,
+       199,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       280,
+       0,
+       20
+      ],
+      "matrix": [
+       279,
+       0,
+       21
+      ]
+     },
+     {
+      "method": "code_lens",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       262,
+       38,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "606ed0e-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 606ed0e4a4b963c48001cc6995ce242cc74e98a3, dirty: false)",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 156.0,
+   "summary": {
+    "definition": {
+     "a": 268,
+     "b": 32,
+     "c": 0,
+     "n": 300,
+     "p50_us": 437.2,
+     "p99_us": 764.5,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 441.4,
+     "p99_us": 629.5,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 187,
+     "b": 113,
+     "c": 0,
+     "n": 300,
+     "p50_us": 410.0,
+     "p99_us": 1522.2,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 134,
+     "b": 166,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6186.1,
+     "p99_us": 13295.2,
+     "unsupported": false
+    },
+    "references": {
+     "a": 279,
+     "b": 21,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4516.0,
+     "p99_us": 79228.4,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 232,
+     "b": 68,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4758.1,
+     "p99_us": 78125.4,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 185.6,
+     "p99_us": 2618.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 178,
+     "b": 122,
+     "c": 0,
+     "n": 300,
+     "p50_us": 100502.2,
+     "p99_us": 159494.8,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 19.3,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 273,
+     "b": 27,
+     "c": 0,
+     "n": 300,
+     "p50_us": 688.9,
+     "p99_us": 1046.8,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2657.3,
+     "p99_us": 183178.0,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 22.0,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 53,
+     "b": 247,
+     "c": 0,
+     "n": 300,
+     "p50_us": 101.0,
+     "p99_us": 117449.1,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.3,
+     "p99_us": 73.7,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35.0,
+     "p99_us": 120.8,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.9,
+     "p99_us": 93.9,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.2,
+     "p99_us": 179.9,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 15.0,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 278,
+     "b": 22,
+     "c": 0,
+     "n": 300,
+     "p50_us": 447.3,
+     "p99_us": 651.6,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 101,
+     "b": 199,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6603.4,
+     "p99_us": 15337.3,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 236,
+     "b": 64,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1434.6,
+     "p99_us": 26515.8,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 435.9,
+     "p99_us": 630.8,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 246,
+     "b": 54,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5626.9,
+     "p99_us": 7979.8,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 31,
+     "b": 269,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17.6,
+     "p99_us": 7253.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 151.4,
+     "p99_us": 896.6,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 59,
+     "b": 241,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.9,
+     "p99_us": 117.3,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 14.0,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 12.0,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 13.9,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 2,
+     "b": 298,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86244.2,
+     "p99_us": 105115.2,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 41,
+     "b": 259,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89523.7,
+     "p99_us": 185096.7,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90358.6,
+     "p99_us": 116484.6,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 282,
+     "b": 0,
+     "c": 18,
+     "n": 300,
+     "p50_us": 2619.8,
+     "p99_us": 5911.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 279,
+     "b": 0,
+     "c": 21,
+     "n": 300,
+     "p50_us": 3597.8,
+     "p99_us": 13859.1,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 38.4,
+     "p99_us": 217.3,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87.7,
+     "p99_us": 476.4,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 14.3,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 12.6,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 806.5,
+     "p99_us": 46027.7,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 804.8,
+     "p99_us": 45493.7,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 775.5,
+     "p99_us": 44892.3,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87.8,
+     "p99_us": 820.3,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 262,
+     "b": 38,
+     "c": 0,
+     "n": 300,
+     "p50_us": 349.8,
+     "p99_us": 1132.4,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.7,
+     "p99_us": 18.2,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 80.9,
+     "p99_us": 736.2,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42238.9,
+     "p99_us": 43709.2,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 17.1,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 14.0,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.8,
+     "p99_us": 158.2,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 51,
+    "mismatches": []
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "606ed0e",
+   "b": "3bef7f4",
+   "same": 15195,
+   "differing": 105,
+   "methods": {
+    "definition": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "definition_271_BLACK",
+       "file": "examples/helpers/theme.rs",
+       "line": 31,
+       "character": 63,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "c6c96343029cf010"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "hover_122_AlignItems",
+       "file": "examples/helpers/number_input_i32.rs",
+       "line": 34,
+       "character": 30,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "09170b11a2139cc8"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 294,
+     "differing": 6,
+     "transitions": {
+      "a>a": 5,
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_131_clip_polygon",
+       "file": "crates/bevy_ui_render/src/clipping.rs",
+       "line": 16,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "29e6476712b60776",
+        "2d14d26503cd5a6c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_142_after",
+       "file": "crates/bevy_ecs/src/schedule/config.rs",
+       "line": 403,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4b8f1e1638ad1abf",
+        "5f99002153f4cde4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_205_on_remove",
+       "file": "crates/bevy_ecs/src/lifecycle.rs",
+       "line": 240,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7751e9c12d24013f",
+        "4025323e4aa165ef"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_209_get_mapper",
+       "file": "crates/bevy_ui_render/src/lib.rs",
+       "line": 320,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ac61353144005edb",
+        "bd1d1c86e39992f3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_253_get",
+       "file": "crates/bevy_camera/src/visibility/mod.rs",
+       "line": 365,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "55f6833763ba2220",
+        "2c5c56535557d7d2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_298_sample_unchecked",
+       "file": "crates/bevy_curve/src/sample_curves.rs",
+       "line": 336,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "b56a8b0a1dc845d9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "c>a": 1
+     },
+     "examples": [
+      {
+       "name": "rename_18_feathers_option_buttons",
+       "file": "examples/helpers/radio.rs",
+       "line": 45,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "3c735b07d7afabe7"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 265,
+     "differing": 35,
+     "transitions": {
+      "a>a": 35
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_full_31_lib.rs",
+       "file": "crates/bevy_log/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "22bf262ecd6fbbcd",
+        "4df7f4476255af81"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_36_mod.rs",
+       "file": "crates/bevy_platform/src/sync/mod.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "661469df42fbec41",
+        "896a82ee155a1769"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_48_pipeline.rs",
+       "file": "crates/bevy_ui_render/src/pipeline.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cd67a231784dc06e",
+        "90279a38919d105f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_52_meta.rs",
+       "file": "crates/bevy_asset/src/meta.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8c285d41af86beeb",
+        "7b08a0991e2eaf75"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_57_gradient.rs",
+       "file": "crates/bevy_ui_render/src/gradient.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0adc37933ae2180e",
+        "a32b55ec14c527ff"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_58_mod.rs",
+       "file": "crates/bevy_asset/src/io/mod.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7d6d5f0501173b64",
+        "7a74980848c80b48"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_69_probe.rs",
+       "file": "crates/bevy_light/src/probe.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "54e147d323a31c16",
+        "1da47db7a913779c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_97_specialize.rs",
+       "file": "crates/bevy_material/src/specialize.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "77f8d687dde609db",
+        "fa894ab104da095b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_125_radio.rs",
+       "file": "examples/helpers/radio.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "70ad01aa65ecae56",
+        "63d1c510d686f502"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_140_lib.rs",
+       "file": "crates/bevy_solari/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9432fe9500f2de43",
+        "e0f9ee0fde7b46c7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_delta": {
+     "same": 268,
+     "differing": 32,
+     "transitions": {
+      "a>a": 32
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_delta_19_thread.rs",
+       "file": "crates/bevy_platform/src/thread.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "242b4233a304bdda",
+        "1cb2f8d0427c100e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_26_color.rs",
+       "file": "crates/bevy_color/src/color.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1e088ef8e98d9ba3",
+        "5c699ba8909d8fe7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_35_label.rs",
+       "file": "crates/bevy_ecs/src/label.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "91317d24828424b6",
+        "f4eb289da1eb45fb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_49_window.rs",
+       "file": "crates/bevy_picking/src/window.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4ee30e5f36a84cf6",
+        "690c1720c78b43ec"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_52_lib.rs",
+       "file": "crates/bevy_picking/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "19f756b18093f0ab",
+        "23259ef0aac34364"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_61_system.rs",
+       "file": "crates/bevy_winit/src/system.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "768916f002e8d308",
+        "7814cebe8491881a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_67_path.rs",
+       "file": "crates/bevy_asset/src/path.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "db429b4a5358ee28",
+        "304b1a1e4fca06f0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_86_lib.rs",
+       "file": "crates/bevy_core_pipeline/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ae26031bb24ca971",
+        "74adb8fd918d2cfb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_98_ident.rs",
+       "file": "crates/bevy_reflect/derive/src/ident.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8f1e2b7f09f337e0",
+        "31d2ca927ede4f9d"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_118_map.rs",
+       "file": "crates/bevy_utils/src/map.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2e2dfc554749af48",
+        "6ab086c1549ddaf6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_range": {
+     "same": 272,
+     "differing": 28,
+     "transitions": {
+      "a>a": 28
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_range_6_lib.rs",
+       "file": "crates/bevy_remote/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6c73cdbc20a3e455",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_12_lib.rs",
+       "file": "crates/bevy_app/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6c73cdbc20a3e455",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_14_lib.rs",
+       "file": "crates/bevy_reflect/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6c73cdbc20a3e455",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_17_lib.rs",
+       "file": "crates/bevy_android/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6c73cdbc20a3e455",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_44_converter.rs",
+       "file": "crates/bevy_gilrs/src/converter.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4ae78659f91fa16b",
+        "c3c96e1f92cca7e0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_47_lib.rs",
+       "file": "crates/bevy_ui/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6c73cdbc20a3e455",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_60_lib.rs",
+       "file": "crates/bevy_ptr/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6c73cdbc20a3e455",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_62_lib.rs",
+       "file": "crates/bevy_tasks/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6c73cdbc20a3e455",
+        "8fe32e407a1038ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_90_palette.rs",
+       "file": "crates/bevy_feathers/src/palette.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d2b06a5ab73a77c3",
+        "49bdc26d6714ca93"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_95_event.rs",
+       "file": "crates/bevy_asset/src/event.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "620a85e7aff417d5",
+        "21f9ea4009a8b76d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      }
+     ]
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "code_lens_123_checkbox.rs",
+       "file": "examples/helpers/checkbox.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "43c5be57390ab878"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "606ed0e",
+   "b": "606ed0e-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "3bef7f4",
+   "b": "606ed0e-2",
+   "same": 15195,
+   "differing": 105,
+   "methods": {
+    "definition": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "definition_271_BLACK",
+       "file": "examples/helpers/theme.rs",
+       "line": 31,
+       "character": 63,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "c6c96343029cf010",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "hover_122_AlignItems",
+       "file": "examples/helpers/number_input_i32.rs",
+       "line": 34,
+       "character": 30,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "09170b11a2139cc8",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 294,
+     "differing": 6,
+     "transitions": {
+      "a>a": 5,
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_131_clip_polygon",
+       "file": "crates/bevy_ui_render/src/clipping.rs",
+       "line": 16,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2d14d26503cd5a6c",
+        "29e6476712b60776"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_142_after",
+       "file": "crates/bevy_ecs/src/schedule/config.rs",
+       "line": 403,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5f99002153f4cde4",
+        "4b8f1e1638ad1abf"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_205_on_remove",
+       "file": "crates/bevy_ecs/src/lifecycle.rs",
+       "line": 240,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4025323e4aa165ef",
+        "7751e9c12d24013f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_209_get_mapper",
+       "file": "crates/bevy_ui_render/src/lib.rs",
+       "line": 320,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bd1d1c86e39992f3",
+        "ac61353144005edb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_253_get",
+       "file": "crates/bevy_camera/src/visibility/mod.rs",
+       "line": 365,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2c5c56535557d7d2",
+        "55f6833763ba2220"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_298_sample_unchecked",
+       "file": "crates/bevy_curve/src/sample_curves.rs",
+       "line": 336,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "b56a8b0a1dc845d9",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>c": 1
+     },
+     "examples": [
+      {
+       "name": "rename_18_feathers_option_buttons",
+       "file": "examples/helpers/radio.rs",
+       "line": 45,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "3c735b07d7afabe7",
+        null
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 265,
+     "differing": 35,
+     "transitions": {
+      "a>a": 35
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_full_31_lib.rs",
+       "file": "crates/bevy_log/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4df7f4476255af81",
+        "22bf262ecd6fbbcd"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_36_mod.rs",
+       "file": "crates/bevy_platform/src/sync/mod.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "896a82ee155a1769",
+        "661469df42fbec41"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_48_pipeline.rs",
+       "file": "crates/bevy_ui_render/src/pipeline.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "90279a38919d105f",
+        "cd67a231784dc06e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_52_meta.rs",
+       "file": "crates/bevy_asset/src/meta.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7b08a0991e2eaf75",
+        "8c285d41af86beeb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_57_gradient.rs",
+       "file": "crates/bevy_ui_render/src/gradient.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a32b55ec14c527ff",
+        "0adc37933ae2180e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_58_mod.rs",
+       "file": "crates/bevy_asset/src/io/mod.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7a74980848c80b48",
+        "7d6d5f0501173b64"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_69_probe.rs",
+       "file": "crates/bevy_light/src/probe.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1da47db7a913779c",
+        "54e147d323a31c16"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_97_specialize.rs",
+       "file": "crates/bevy_material/src/specialize.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "fa894ab104da095b",
+        "77f8d687dde609db"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_125_radio.rs",
+       "file": "examples/helpers/radio.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "63d1c510d686f502",
+        "70ad01aa65ecae56"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_full_140_lib.rs",
+       "file": "crates/bevy_solari/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e0f9ee0fde7b46c7",
+        "9432fe9500f2de43"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_delta": {
+     "same": 268,
+     "differing": 32,
+     "transitions": {
+      "a>a": 32
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_delta_19_thread.rs",
+       "file": "crates/bevy_platform/src/thread.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1cb2f8d0427c100e",
+        "242b4233a304bdda"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_26_color.rs",
+       "file": "crates/bevy_color/src/color.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5c699ba8909d8fe7",
+        "1e088ef8e98d9ba3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_35_label.rs",
+       "file": "crates/bevy_ecs/src/label.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f4eb289da1eb45fb",
+        "91317d24828424b6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_49_window.rs",
+       "file": "crates/bevy_picking/src/window.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "690c1720c78b43ec",
+        "4ee30e5f36a84cf6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_52_lib.rs",
+       "file": "crates/bevy_picking/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "23259ef0aac34364",
+        "19f756b18093f0ab"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_61_system.rs",
+       "file": "crates/bevy_winit/src/system.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7814cebe8491881a",
+        "768916f002e8d308"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_67_path.rs",
+       "file": "crates/bevy_asset/src/path.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "304b1a1e4fca06f0",
+        "db429b4a5358ee28"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_86_lib.rs",
+       "file": "crates/bevy_core_pipeline/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "74adb8fd918d2cfb",
+        "ae26031bb24ca971"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_98_ident.rs",
+       "file": "crates/bevy_reflect/derive/src/ident.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "31d2ca927ede4f9d",
+        "8f1e2b7f09f337e0"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_delta_118_map.rs",
+       "file": "crates/bevy_utils/src/map.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6ab086c1549ddaf6",
+        "2e2dfc554749af48"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      }
+     ]
+    },
+    "semantic_tokens_range": {
+     "same": 272,
+     "differing": 28,
+     "transitions": {
+      "a>a": 28
+     },
+     "examples": [
+      {
+       "name": "semantic_tokens_range_6_lib.rs",
+       "file": "crates/bevy_remote/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "6c73cdbc20a3e455"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_12_lib.rs",
+       "file": "crates/bevy_app/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "6c73cdbc20a3e455"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_14_lib.rs",
+       "file": "crates/bevy_reflect/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "6c73cdbc20a3e455"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_17_lib.rs",
+       "file": "crates/bevy_android/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "6c73cdbc20a3e455"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_44_converter.rs",
+       "file": "crates/bevy_gilrs/src/converter.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c3c96e1f92cca7e0",
+        "4ae78659f91fa16b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_47_lib.rs",
+       "file": "crates/bevy_ui/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "6c73cdbc20a3e455"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_60_lib.rs",
+       "file": "crates/bevy_ptr/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "6c73cdbc20a3e455"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_62_lib.rs",
+       "file": "crates/bevy_tasks/src/lib.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe32e407a1038ee",
+        "6c73cdbc20a3e455"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_90_palette.rs",
+       "file": "crates/bevy_feathers/src/palette.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "49bdc26d6714ca93",
+        "d2b06a5ab73a77c3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "semantic_tokens_range_95_event.rs",
+       "file": "crates/bevy_asset/src/event.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "21f9ea4009a8b76d",
+        "620a85e7aff417d5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      }
+     ]
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "code_lens_123_checkbox.rs",
+       "file": "examples/helpers/checkbox.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "43c5be57390ab878",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_271_BLACK",
+   "file": "examples/helpers/theme.rs",
+   "line": 31,
+   "character": 63,
+   "symbol": "BLACK",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 492.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "c6c96343029cf010",
+     "us": 605.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 493.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_122_AlignItems",
+   "file": "examples/helpers/number_input_i32.rs",
+   "line": 34,
+   "character": 30,
+   "symbol": "AlignItems",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 942.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "09170b11a2139cc8",
+     "us": 1123.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 923.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_131_clip_polygon",
+   "file": "crates/bevy_ui_render/src/clipping.rs",
+   "line": 16,
+   "character": 8,
+   "symbol": "clip_polygon",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "29e6476712b60776",
+     "us": 6668.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2d14d26503cd5a6c",
+     "us": 8894.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "29e6476712b60776",
+     "us": 6680.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_142_after",
+   "file": "crates/bevy_ecs/src/schedule/config.rs",
+   "line": 403,
+   "character": 8,
+   "symbol": "after",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4b8f1e1638ad1abf",
+     "us": 22307.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "5f99002153f4cde4",
+     "us": 60122.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4b8f1e1638ad1abf",
+     "us": 22117.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_205_on_remove",
+   "file": "crates/bevy_ecs/src/lifecycle.rs",
+   "line": 240,
+   "character": 12,
+   "symbol": "on_remove",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7751e9c12d24013f",
+     "us": 6717.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "4025323e4aa165ef",
+     "us": 8692.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7751e9c12d24013f",
+     "us": 6699.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_209_get_mapper",
+   "file": "crates/bevy_ui_render/src/lib.rs",
+   "line": 320,
+   "character": 12,
+   "symbol": "get_mapper",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "ac61353144005edb",
+     "us": 7876.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "bd1d1c86e39992f3",
+     "us": 10500.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "ac61353144005edb",
+     "us": 7764.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_253_get",
+   "file": "crates/bevy_camera/src/visibility/mod.rs",
+   "line": 365,
+   "character": 12,
+   "symbol": "get",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "55f6833763ba2220",
+     "us": 6435.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2c5c56535557d7d2",
+     "us": 7750.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "55f6833763ba2220",
+     "us": 6549.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_298_sample_unchecked",
+   "file": "crates/bevy_curve/src/sample_curves.rs",
+   "line": 336,
+   "character": 8,
+   "symbol": "sample_unchecked",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7135.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b56a8b0a1dc845d9",
+     "us": 7675.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7239.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_18_feathers_option_buttons",
+   "file": "examples/helpers/radio.rs",
+   "line": 45,
+   "character": 8,
+   "symbol": "feathers_option_buttons",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "c",
+     "digest": null,
+     "us": 561.6,
+     "error": "-32803"
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "3c735b07d7afabe7",
+     "us": 7626.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 593.7,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_31_lib.rs",
+   "file": "crates/bevy_log/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "22bf262ecd6fbbcd",
+     "us": 60163.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "4df7f4476255af81",
+     "us": 379.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "22bf262ecd6fbbcd",
+     "us": 60590.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_36_mod.rs",
+   "file": "crates/bevy_platform/src/sync/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "661469df42fbec41",
+     "us": 752.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "896a82ee155a1769",
+     "us": 301.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "661469df42fbec41",
+     "us": 718.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_48_pipeline.rs",
+   "file": "crates/bevy_ui_render/src/pipeline.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "cd67a231784dc06e",
+     "us": 1277.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "90279a38919d105f",
+     "us": 367.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "cd67a231784dc06e",
+     "us": 1266.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_52_meta.rs",
+   "file": "crates/bevy_asset/src/meta.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "8c285d41af86beeb",
+     "us": 1418.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "7b08a0991e2eaf75",
+     "us": 663.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "8c285d41af86beeb",
+     "us": 1505.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_57_gradient.rs",
+   "file": "crates/bevy_ui_render/src/gradient.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0adc37933ae2180e",
+     "us": 1610.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a32b55ec14c527ff",
+     "us": 1161.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0adc37933ae2180e",
+     "us": 1644.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_58_mod.rs",
+   "file": "crates/bevy_asset/src/io/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7d6d5f0501173b64",
+     "us": 1311.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "7a74980848c80b48",
+     "us": 819.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7d6d5f0501173b64",
+     "us": 1339.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_69_probe.rs",
+   "file": "crates/bevy_light/src/probe.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "54e147d323a31c16",
+     "us": 1001.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1da47db7a913779c",
+     "us": 626.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "54e147d323a31c16",
+     "us": 1010.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_97_specialize.rs",
+   "file": "crates/bevy_material/src/specialize.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "77f8d687dde609db",
+     "us": 707.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "fa894ab104da095b",
+     "us": 315.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "77f8d687dde609db",
+     "us": 708.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_125_radio.rs",
+   "file": "examples/helpers/radio.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "70ad01aa65ecae56",
+     "us": 579.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "63d1c510d686f502",
+     "us": 772.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "70ad01aa65ecae56",
+     "us": 581.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_140_lib.rs",
+   "file": "crates/bevy_solari/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "9432fe9500f2de43",
+     "us": 44191.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e0f9ee0fde7b46c7",
+     "us": 314.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "9432fe9500f2de43",
+     "us": 44317.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_148_default.rs",
+   "file": "crates/bevy_utils/src/default.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d5f09b617202a923",
+     "us": 640.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "03e387732812cc7a",
+     "us": 272.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d5f09b617202a923",
+     "us": 636.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_150_components.rs",
+   "file": "crates/bevy_mesh/src/components.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7fb059c24a5b3626",
+     "us": 1009.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "5842d2c5938cac81",
+     "us": 561.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7fb059c24a5b3626",
+     "us": 985.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_151_path.rs",
+   "file": "crates/bevy_macro_utils/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4fbf8063eb83bd47",
+     "us": 2340.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "0bce9cccd9b11e07",
+     "us": 294.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4fbf8063eb83bd47",
+     "us": 2316.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_157_mod.rs",
+   "file": "crates/bevy_platform/src/collections/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "034679dc98b193f7",
+     "us": 770.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "5108fa0834dc310f",
+     "us": 295.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "034679dc98b193f7",
+     "us": 765.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_164_shader.rs",
+   "file": "crates/bevy_shader/src/shader.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7b2b7ef4e9f3a870",
+     "us": 1037.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "15933671a890e00f",
+     "us": 605.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7b2b7ef4e9f3a870",
+     "us": 1044.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_175_executor.rs",
+   "file": "crates/bevy_tasks/src/executor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "8bd1feb8937c9024",
+     "us": 663.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "00abf83adb0749be",
+     "us": 308.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "8bd1feb8937c9024",
+     "us": 666.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_192_components.rs",
+   "file": "crates/bevy_camera/src/components.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "1766a7ff6317b757",
+     "us": 994.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "68c20378f87412ba",
+     "us": 586.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "1766a7ff6317b757",
+     "us": 993.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_194_lib.rs",
+   "file": "crates/bevy_clipboard/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "c26e1cd72426f82e",
+     "us": 46919.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "42d2ea08ba4f6731",
+     "us": 348.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "c26e1cd72426f82e",
+     "us": 47040.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_204_lib.rs",
+   "file": "crates/bevy_asset/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "3474cbf3a75a0c53",
+     "us": 46006.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "fff551fdcb6ccb40",
+     "us": 393.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "3474cbf3a75a0c53",
+     "us": 45813.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_205_args.rs",
+   "file": "tools/ci/src/args.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "bin",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7da5c02993ed2462",
+     "us": 2159.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "337e7df282d52981",
+     "us": 288.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7da5c02993ed2462",
+     "us": 2152.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_211_lib.rs",
+   "file": "crates/bevy_utils/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "2267a954b8136376",
+     "us": 45130.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "74dce179607fdae3",
+     "us": 303.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "2267a954b8136376",
+     "us": 45397.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_214_convert.rs",
+   "file": "crates/bevy_reflect/src/convert.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "85005d7f0706fdd3",
+     "us": 1260.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "306996e95b73985c",
+     "us": 662.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "85005d7f0706fdd3",
+     "us": 1241.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_215_util.rs",
+   "file": "crates/bevy_animation/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f05b1b9de7d64b51",
+     "us": 2467.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "9068257c177b6f65",
+     "us": 308.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f05b1b9de7d64b51",
+     "us": 2447.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_221_features.rs",
+   "file": "tools/build-templated-pages/src/features.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "bin",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "164db6c4d8c0ee3b",
+     "us": 1175.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "6559569c2798b6f3",
+     "us": 355.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "164db6c4d8c0ee3b",
+     "us": 1163.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_222_rwlock.rs",
+   "file": "crates/bevy_platform/src/sync/rwlock.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "5d3ed2717513e4be",
+     "us": 803.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "10141e204f642c6d",
+     "us": 296.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "5d3ed2717513e4be",
+     "us": 784.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_223_lib.rs",
+   "file": "crates/bevy_color/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7120d839e9c33130",
+     "us": 45936.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "d2f4e9ad43c1dd0e",
+     "us": 383.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7120d839e9c33130",
+     "us": 45738.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_238_monitor.rs",
+   "file": "crates/bevy_window/src/monitor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "ab7a46126aa0c5d1",
+     "us": 849.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "c8c6208012cfa85b",
+     "us": 408.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "ab7a46126aa0c5d1",
+     "us": 841.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_243_lib.rs",
+   "file": "crates/bevy_sprite/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f3bb861d31a043af",
+     "us": 45893.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "ec150acdaaa13c12",
+     "us": 475.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f3bb861d31a043af",
+     "us": 46026.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_247_fields.rs",
+   "file": "crates/bevy_reflect/src/fields.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "81738959d4271adf",
+     "us": 925.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "5671e94a2a1f42ed",
+     "us": 534.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "81738959d4271adf",
+     "us": 908.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_255_window.rs",
+   "file": "crates/bevy_picking/src/window.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "293c937c458693c8",
+     "us": 1116.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "4b177d922049a11a",
+     "us": 341.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "293c937c458693c8",
+     "us": 1090.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_257_lib.rs",
+   "file": "examples/mobile/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "170f7514a4d3046b",
+     "us": 46007.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e90bb694e9c341bb",
+     "us": 473.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "170f7514a4d3046b",
+     "us": 46157.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_263_kind.rs",
+   "file": "crates/bevy_reflect/src/kind.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "2eefe8427e92bcf9",
+     "us": 1059.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "ae1cf0291ac3f677",
+     "us": 616.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "2eefe8427e92bcf9",
+     "us": 1043.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_271_text.rs",
+   "file": "crates/bevy_ui_render/src/text.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d2dc8d3c926b4a00",
+     "us": 1202.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "df4bc6096eb230e2",
+     "us": 534.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d2dc8d3c926b4a00",
+     "us": 1174.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_278_scene.rs",
+   "file": "examples/helpers/scene.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "893b5d63dd4295ee",
+     "us": 588.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "3c0d9dc918cf7bc2",
+     "us": 498.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "893b5d63dd4295ee",
+     "us": 579.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "rpc_method": "textDocument/semanticTokens/full",
+   "name": "semantic_tokens_full_280_cursor.rs",
+   "file": "crates/bevy_text/src/cursor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "c0a5b31a306e477d",
+     "us": 996.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "cd3a23584f977361",
+     "us": 330.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "c0a5b31a306e477d",
+     "us": 1005.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_19_thread.rs",
+   "file": "crates/bevy_platform/src/thread.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "242b4233a304bdda",
+     "us": 1081.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1cb2f8d0427c100e",
+     "us": 281.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "242b4233a304bdda",
+     "us": 1059.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_26_color.rs",
+   "file": "crates/bevy_color/src/color.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "1e088ef8e98d9ba3",
+     "us": 2687.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "5c699ba8909d8fe7",
+     "us": 1442.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "1e088ef8e98d9ba3",
+     "us": 2626.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_35_label.rs",
+   "file": "crates/bevy_ecs/src/label.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "91317d24828424b6",
+     "us": 1093.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f4eb289da1eb45fb",
+     "us": 594.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "91317d24828424b6",
+     "us": 1008.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_49_window.rs",
+   "file": "crates/bevy_picking/src/window.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4ee30e5f36a84cf6",
+     "us": 1071.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "690c1720c78b43ec",
+     "us": 322.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4ee30e5f36a84cf6",
+     "us": 1068.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_52_lib.rs",
+   "file": "crates/bevy_picking/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "19f756b18093f0ab",
+     "us": 46884.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "23259ef0aac34364",
+     "us": 523.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "19f756b18093f0ab",
+     "us": 46852.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_61_system.rs",
+   "file": "crates/bevy_winit/src/system.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "768916f002e8d308",
+     "us": 1298.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "7814cebe8491881a",
+     "us": 765.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "768916f002e8d308",
+     "us": 1300.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_67_path.rs",
+   "file": "crates/bevy_asset/src/path.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "db429b4a5358ee28",
+     "us": 3059.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "304b1a1e4fca06f0",
+     "us": 1035.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "db429b4a5358ee28",
+     "us": 3020.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_86_lib.rs",
+   "file": "crates/bevy_core_pipeline/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "ae26031bb24ca971",
+     "us": 45113.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "74adb8fd918d2cfb",
+     "us": 356.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "ae26031bb24ca971",
+     "us": 45292.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_98_ident.rs",
+   "file": "crates/bevy_reflect/derive/src/ident.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "8f1e2b7f09f337e0",
+     "us": 1107.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "31d2ca927ede4f9d",
+     "us": 332.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "8f1e2b7f09f337e0",
+     "us": 1079.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_118_map.rs",
+   "file": "crates/bevy_utils/src/map.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "2e2dfc554749af48",
+     "us": 8364.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "6ab086c1549ddaf6",
+     "us": 412.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "2e2dfc554749af48",
+     "us": 7755.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_135_spawn.rs",
+   "file": "crates/bevy_ecs/src/spawn.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d9e049f1e240304a",
+     "us": 1392.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "56263346e0fe6315",
+     "us": 831.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d9e049f1e240304a",
+     "us": 1373.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_145_lib.rs",
+   "file": "crates/bevy_winit/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "db9db7d1984b38ed",
+     "us": 46036.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f101c8e383aa4132",
+     "us": 454.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "db9db7d1984b38ed",
+     "us": 45485.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_153_lib.rs",
+   "file": "crates/bevy_window/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d27f9360df737f99",
+     "us": 45308.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "14831ed34e0053da",
+     "us": 406.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d27f9360df737f99",
+     "us": 45089.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_168_events.rs",
+   "file": "crates/bevy_picking/src/events.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "ccfe93026a6133e4",
+     "us": 2353.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "e20291ee0b186790",
+     "us": 1786.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "ccfe93026a6133e4",
+     "us": 2367.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_172_name.rs",
+   "file": "crates/bevy_ecs/src/name.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f817b4d4eb48a952",
+     "us": 1372.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "c311bc1207e605b8",
+     "us": 754.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f817b4d4eb48a952",
+     "us": 1372.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_174_mesh.rs",
+   "file": "crates/bevy_mesh/src/mesh.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "87a8e8e1dc4ca6c7",
+     "us": 3374.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "93fae5587269bd45",
+     "us": 2749.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "87a8e8e1dc4ca6c7",
+     "us": 3348.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_178_hash_map.rs",
+   "file": "crates/bevy_platform/src/collections/hash_map.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "99d8a9742902b46e",
+     "us": 1172.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "476573dff31ac1ce",
+     "us": 720.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "99d8a9742902b46e",
+     "us": 1144.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_184_fields.rs",
+   "file": "crates/bevy_reflect/src/fields.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "9e99d8e299cc49b2",
+     "us": 926.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "530233adb1673a4d",
+     "us": 578.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "9e99d8e299cc49b2",
+     "us": 924.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_190_lib.rs",
+   "file": "crates/bevy_ui_widgets/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "15463186ba725a11",
+     "us": 45584.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1ab3e5d7936dec05",
+     "us": 451.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "15463186ba725a11",
+     "us": 46178.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_195_rwlock.rs",
+   "file": "crates/bevy_platform/src/sync/rwlock.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "79b3aaf5df68dbf6",
+     "us": 841.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "01eb14afda51abb2",
+     "us": 287.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "79b3aaf5df68dbf6",
+     "us": 804.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_196_label.rs",
+   "file": "crates/bevy_gltf/src/label.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "cbda82c1777630ff",
+     "us": 833.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b54e2d755cd54c55",
+     "us": 347.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "cbda82c1777630ff",
+     "us": 811.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_202_number_input_i32.rs",
+   "file": "examples/helpers/number_input_i32.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "850ba6cc6880896c",
+     "us": 749.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "9d637c1e649c52e0",
+     "us": 576.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "850ba6cc6880896c",
+     "us": 586.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_207_traversal.rs",
+   "file": "crates/bevy_ecs/src/traversal.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f458512987a62292",
+     "us": 1155.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "5fc6bbe57852df52",
+     "us": 538.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f458512987a62292",
+     "us": 1105.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_220_lib.rs",
+   "file": "crates/bevy_ui/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "52cc023b55247bb5",
+     "us": 45945.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "796ce06a9747bd5c",
+     "us": 597.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "52cc023b55247bb5",
+     "us": 45952.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_224_axis.rs",
+   "file": "crates/bevy_input/src/axis.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6319d48d56eb5736",
+     "us": 862.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "ed94d0901c0ea957",
+     "us": 386.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6319d48d56eb5736",
+     "us": 839.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_226_window.rs",
+   "file": "crates/bevy_window/src/window.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4823e6359430f1e2",
+     "us": 2167.3,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "00391f593c568da4",
+     "us": 1279.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4823e6359430f1e2",
+     "us": 2137.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_240_lib.rs",
+   "file": "crates/bevy_sprite/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "b412bfbf84ef8ece",
+     "us": 45984.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2e58a4333b1c492a",
+     "us": 474.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "b412bfbf84ef8ece",
+     "us": 45489.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_244_glyph.rs",
+   "file": "crates/bevy_text/src/glyph.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "15983cfbae8a9cfc",
+     "us": 808.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "184838431770a17f",
+     "us": 375.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "15983cfbae8a9cfc",
+     "us": 805.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_266_lib.rs",
+   "file": "crates/bevy_state/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "039198d4a4343609",
+     "us": 45703.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "990a4c1d7857703d",
+     "us": 282.0,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "039198d4a4343609",
+     "us": 44524.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_274_gradient.rs",
+   "file": "crates/bevy_ui_render/src/gradient.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "efd5d324a25e101e",
+     "us": 1780.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "6459a6f7aa5542d4",
+     "us": 1152.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "efd5d324a25e101e",
+     "us": 1648.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_279_radio.rs",
+   "file": "examples/helpers/radio.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "5fd0756f10af1681",
+     "us": 597.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "1b5e055c3cdd24de",
+     "us": 760.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "5fd0756f10af1681",
+     "us": 590.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "rpc_method": "textDocument/semanticTokens/full/delta",
+   "name": "semantic_tokens_delta_296_monitor.rs",
+   "file": "crates/bevy_window/src/monitor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "f9c1b2ade77e6aaf",
+     "us": 848.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "2449a8cd490cb6f5",
+     "us": 399.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "f9c1b2ade77e6aaf",
+     "us": 860.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_6_lib.rs",
+   "file": "crates/bevy_remote/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 45321.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 954.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 44759.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_12_lib.rs",
+   "file": "crates/bevy_app/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42073.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 315.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 41605.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_14_lib.rs",
+   "file": "crates/bevy_reflect/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 49022.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 3240.6,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 48437.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_17_lib.rs",
+   "file": "crates/bevy_android/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42089.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 237.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 41555.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_44_converter.rs",
+   "file": "crates/bevy_gilrs/src/converter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "4ae78659f91fa16b",
+     "us": 682.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "c3c96e1f92cca7e0",
+     "us": 302.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "4ae78659f91fa16b",
+     "us": 688.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_47_lib.rs",
+   "file": "crates/bevy_ui/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42715.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 561.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42143.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_60_lib.rs",
+   "file": "crates/bevy_ptr/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 45566.2,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 701.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 45092.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_62_lib.rs",
+   "file": "crates/bevy_tasks/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42057.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 308.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42201.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_90_palette.rs",
+   "file": "crates/bevy_feathers/src/palette.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "d2b06a5ab73a77c3",
+     "us": 896.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "49bdc26d6714ca93",
+     "us": 386.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "d2b06a5ab73a77c3",
+     "us": 893.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_95_event.rs",
+   "file": "crates/bevy_asset/src/event.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "620a85e7aff417d5",
+     "us": 1331.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "21f9ea4009a8b76d",
+     "us": 485.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "620a85e7aff417d5",
+     "us": 1338.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_113_cursor.rs",
+   "file": "crates/bevy_picking/src/cursor.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "0d24d5a453ad85d9",
+     "us": 1096.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "75819bce51139b54",
+     "us": 475.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "0d24d5a453ad85d9",
+     "us": 1082.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_115_lib.rs",
+   "file": "crates/bevy_pbr/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 43832.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 693.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 43389.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_122_mod.rs",
+   "file": "crates/bevy_platform/src/sync/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "5cfea039a14d5e39",
+     "us": 695.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 289.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "5cfea039a14d5e39",
+     "us": 690.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_125_lib.rs",
+   "file": "crates/bevy_core_pipeline/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42283.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 343.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42123.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_127_lib.rs",
+   "file": "crates/bevy_settings/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 45412.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 1058.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 44957.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_161_pipeline.rs",
+   "file": "crates/bevy_ui_render/src/pipeline.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "39e26628f1fe9837",
+     "us": 1179.6,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b25e6ea04d9fa6dd",
+     "us": 363.4,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "39e26628f1fe9837",
+     "us": 1163.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_165_display.rs",
+   "file": "crates/bevy_reflect/src/display.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "03b8fa2130d559f4",
+     "us": 1883.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 1037.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "03b8fa2130d559f4",
+     "us": 1875.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_179_image.rs",
+   "file": "crates/bevy_ui_render/src/image.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "689ff75534b7f7e2",
+     "us": 794.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "20cf4cd6c948fc82",
+     "us": 378.7,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "689ff75534b7f7e2",
+     "us": 802.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_198_lib.rs",
+   "file": "crates/bevy_gltf/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42668.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 387.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42184.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_204_thread.rs",
+   "file": "crates/bevy_platform/src/thread.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "55b35bf829399bb0",
+     "us": 1083.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "33c5223d366ff219",
+     "us": 280.5,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "55b35bf829399bb0",
+     "us": 1028.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_226_list.rs",
+   "file": "crates/bevy_reflect/src/list.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "49bc2b9b45c4fb63",
+     "us": 1185.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 715.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "49bc2b9b45c4fb63",
+     "us": 1142.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_248_lib.rs",
+   "file": "crates/bevy_shader/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 41334.4,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "a271c51af8a46fce",
+     "us": 257.2,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 40563.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_254_lib.rs",
+   "file": "crates/bevy_ecs/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 46131.8,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 914.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 44891.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_255_lib.rs",
+   "file": "examples/no_std/library/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 44134.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 330.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 43377.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_263_time.rs",
+   "file": "crates/bevy_time/src/time.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "7842ba6a2713fafa",
+     "us": 1418.7,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "f0610bec6bb71bed",
+     "us": 464.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "7842ba6a2713fafa",
+     "us": 1198.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_267_lib.rs",
+   "file": "crates/bevy_gizmos/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42336.0,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 524.3,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42131.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_272_lib.rs",
+   "file": "crates/bevy_material/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42172.9,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 275.1,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "6c73cdbc20a3e455",
+     "us": 42137.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "rpc_method": "textDocument/semanticTokens/range",
+   "name": "semantic_tokens_range_289_radio.rs",
+   "file": "examples/helpers/radio.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 581.1,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "b372b5cbcae937c9",
+     "us": 757.8,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "a",
+     "digest": "8fe32e407a1038ee",
+     "us": 605.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "code_lens",
+   "rpc_method": "textDocument/codeLens",
+   "name": "code_lens_123_checkbox.rs",
+   "file": "examples/helpers/checkbox.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "example",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "606ed0e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 394.5,
+     "error": null
+    },
+    "3bef7f4": {
+     "outcome": "a",
+     "digest": "43c5be57390ab878",
+     "us": 466.9,
+     "error": null
+    },
+    "606ed0e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 395.3,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 105,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_606ed0e_vs_3bef7f4_ram9_bevy.json",
+  "sha256": "f444e73b4b7675924f78653ca6ef03f56435f7c24839cbc4d433a694ca26adc9"
+ }
+}

@@ -1,0 +1,1122 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_606ed0e_vs_3bef7f4_ram9_serde.json",
+ "servers": [
+  {
+   "name": "606ed0e",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "3bef7f4",
+   "commit": "3bef7f4a86183647b649bbaf5d0c7fb35559b1eb",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "606ed0e-2",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "file_tables": [
+  "serde.ws.tsv",
+  "serde.deps.tsv"
+ ],
+ "stored_paths": 583,
+ "rows_differing": 35,
+ "summary": {
+  "i_semantic_tokens": 35
+ },
+ "rows": [
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 5268,
+    "after_tokens": 43,
+    "common": 30,
+    "removed": {
+     "past_eof": 4367,
+     "past_eol": 413,
+     "not_identifier": 209,
+     "comment_or_keyword": 248,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:proc-macro2-1.0.107/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 13,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 372,
+    "after_tokens": 322,
+    "common": 322,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 26,
+     "not_identifier": 0,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde_derive/src/bound.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 665,
+    "after_tokens": 580,
+    "common": 555,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 63,
+     "not_identifier": 44,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:rustversion-1.0.23/src/bound.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 25,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde_core/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 5290,
+    "after_tokens": 112,
+    "common": 67,
+    "removed": {
+     "past_eof": 4278,
+     "past_eol": 508,
+     "not_identifier": 358,
+     "comment_or_keyword": 78,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:glob-0.3.4/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 45,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde_derive/src/ser.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 4418,
+    "after_tokens": 1633,
+    "common": 1373,
+    "removed": {
+     "past_eof": 1036,
+     "past_eol": 1099,
+     "not_identifier": 847,
+     "comment_or_keyword": 61,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:serde_json-1.0.140/src/ser.rs",
+     "registry:serde_test-1.0.177/src/ser.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 260,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde_core/src/format.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 46,
+    "after_tokens": 44,
+    "common": 44,
+    "removed": {
+     "past_eof": 2,
+     "past_eol": 0,
+     "not_identifier": 0,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde_core/src/format.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 46,
+    "after_tokens": 44,
+    "common": 44,
+    "removed": {
+     "past_eof": 2,
+     "past_eol": 0,
+     "not_identifier": 0,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 372,
+    "after_tokens": 322,
+    "common": 322,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 26,
+     "not_identifier": 0,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 372,
+    "after_tokens": 322,
+    "common": 322,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 26,
+     "not_identifier": 0,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "serde_core/src/format.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 46,
+    "after_tokens": 44,
+    "common": 44,
+    "removed": {
+     "past_eof": 2,
+     "past_eol": 0,
+     "not_identifier": 0,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_derive/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 5265,
+    "after_tokens": 60,
+    "common": 30,
+    "removed": {
+     "past_eof": 4968,
+     "past_eol": 147,
+     "not_identifier": 115,
+     "comment_or_keyword": 5,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 30,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_derive/src/bound.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 665,
+    "after_tokens": 580,
+    "common": 555,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 63,
+     "not_identifier": 44,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:rustversion-1.0.23/src/bound.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 25,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 5268,
+    "after_tokens": 43,
+    "common": 30,
+    "removed": {
+     "past_eof": 4367,
+     "past_eol": 413,
+     "not_identifier": 209,
+     "comment_or_keyword": 248,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:proc-macro2-1.0.107/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 13,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/format.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 46,
+    "after_tokens": 44,
+    "common": 44,
+    "removed": {
+     "past_eof": 2,
+     "past_eol": 0,
+     "not_identifier": 0,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/format.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 46,
+    "after_tokens": 44,
+    "common": 44,
+    "removed": {
+     "past_eof": 2,
+     "past_eol": 0,
+     "not_identifier": 0,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 5290,
+    "after_tokens": 112,
+    "common": 67,
+    "removed": {
+     "past_eof": 4278,
+     "past_eol": 508,
+     "not_identifier": 358,
+     "comment_or_keyword": 78,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:glob-0.3.4/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 45,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/format.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 46,
+    "after_tokens": 44,
+    "common": 44,
+    "removed": {
+     "past_eof": 2,
+     "past_eol": 0,
+     "not_identifier": 0,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 5268,
+    "after_tokens": 43,
+    "common": 30,
+    "removed": {
+     "past_eof": 4367,
+     "past_eol": 413,
+     "not_identifier": 209,
+     "comment_or_keyword": 248,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:proc-macro2-1.0.107/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 13,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/format.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 46,
+    "after_tokens": 44,
+    "common": 44,
+    "removed": {
+     "past_eof": 2,
+     "past_eol": 0,
+     "not_identifier": 0,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1165,
+    "after_tokens": 1123,
+    "common": 1123,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 25,
+     "not_identifier": 0,
+     "comment_or_keyword": 17,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_derive/src/bound.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 665,
+    "after_tokens": 580,
+    "common": 555,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 63,
+     "not_identifier": 44,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:rustversion-1.0.23/src/bound.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 25,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1165,
+    "after_tokens": 1123,
+    "common": 1123,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 25,
+     "not_identifier": 0,
+     "comment_or_keyword": 17,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 372,
+    "after_tokens": 322,
+    "common": 322,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 26,
+     "not_identifier": 0,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_derive/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 5265,
+    "after_tokens": 60,
+    "common": 30,
+    "removed": {
+     "past_eof": 4968,
+     "past_eol": 147,
+     "not_identifier": 115,
+     "comment_or_keyword": 5,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 30,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_derive/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 5265,
+    "after_tokens": 60,
+    "common": 30,
+    "removed": {
+     "past_eof": 4968,
+     "past_eol": 147,
+     "not_identifier": 115,
+     "comment_or_keyword": 5,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 30,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/format.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 46,
+    "after_tokens": 44,
+    "common": 44,
+    "removed": {
+     "past_eof": 2,
+     "past_eol": 0,
+     "not_identifier": 0,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 372,
+    "after_tokens": 322,
+    "common": 322,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 26,
+     "not_identifier": 0,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1165,
+    "after_tokens": 1123,
+    "common": 1123,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 25,
+     "not_identifier": 0,
+     "comment_or_keyword": 17,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "serde_derive/src/bound.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 665,
+    "after_tokens": 580,
+    "common": 555,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 63,
+     "not_identifier": 44,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:rustversion-1.0.23/src/bound.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 25,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "serde_derive/src/ser.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 4418,
+    "after_tokens": 1633,
+    "common": 1373,
+    "removed": {
+     "past_eof": 1036,
+     "past_eol": 1099,
+     "not_identifier": 847,
+     "comment_or_keyword": 61,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:serde_json-1.0.140/src/ser.rs",
+     "registry:serde_test-1.0.177/src/ser.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 260,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "serde_derive/src/de.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 6556,
+    "after_tokens": 3361,
+    "common": 2984,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 2193,
+     "not_identifier": 1199,
+     "comment_or_keyword": 174,
+     "identifier_starts_same_tail_token": 6,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:serde_json-1.0.140/src/de.rs",
+     "registry:serde_test-1.0.177/src/de.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 377,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "serde_derive/src/bound.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 665,
+    "after_tokens": 580,
+    "common": 555,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 63,
+     "not_identifier": 44,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:rustversion-1.0.23/src/bound.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 25,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "serde_derive/src/bound.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 665,
+    "after_tokens": 580,
+    "common": 555,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 63,
+     "not_identifier": 44,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:rustversion-1.0.23/src/bound.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 25,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "serde_derive/src/bound.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 665,
+    "after_tokens": 580,
+    "common": 555,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 63,
+     "not_identifier": 44,
+     "comment_or_keyword": 2,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:rustversion-1.0.23/src/bound.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 25,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "serde_derive/src/de.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 6556,
+    "after_tokens": 3361,
+    "common": 2984,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 2193,
+     "not_identifier": 1199,
+     "comment_or_keyword": 174,
+     "identifier_starts_same_tail_token": 6,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:serde_json-1.0.140/src/de.rs",
+     "registry:serde_test-1.0.177/src/de.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 377,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  }
+ ]
+}

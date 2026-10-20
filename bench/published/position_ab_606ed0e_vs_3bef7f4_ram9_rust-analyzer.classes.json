@@ -1,0 +1,2769 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_606ed0e_vs_3bef7f4_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "606ed0e",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "3bef7f4",
+   "commit": "3bef7f4a86183647b649bbaf5d0c7fb35559b1eb",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "606ed0e-2",
+   "commit": "606ed0e4a4b963c48001cc6995ce242cc74e98a3",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "file_tables": [
+  "rust-analyzer.ws.tsv",
+  "rust-analyzer.deps.tsv"
+ ],
+ "stored_paths": 4734,
+ "rows_differing": 79,
+ "summary": {
+  "i_semantic_tokens": 76,
+  "iv_file_not_stored": 3
+ },
+ "rows": [
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/hir-ty/src/display.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 5204,
+    "after_tokens": 4559,
+    "common": 4425,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 392,
+     "not_identifier": 326,
+     "comment_or_keyword": 60,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:nu-ansi-term-0.50.3/src/display.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 134,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "lib/text-size/src/range.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 900,
+    "after_tokens": 342,
+    "common": 314,
+    "removed": {
+     "past_eof": 13,
+     "past_eol": 367,
+     "not_identifier": 75,
+     "comment_or_keyword": 129,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:dissimilar-1.0.11/src/range.rs",
+     "registry:fixedbitset-0.5.7/src/range.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 28,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/ide-diagnostics/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27803,
+    "after_tokens": 1521,
+    "common": 469,
+    "removed": {
+     "past_eof": 15860,
+     "past_eol": 5791,
+     "not_identifier": 5071,
+     "comment_or_keyword": 591,
+     "identifier_starts_same_tail_token": 21,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:autocfg-1.5.1/src/lib.rs",
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:derive-where-1.6.1/src/lib.rs",
+     "registry:derive_arbitrary-1.4.2/src/lib.rs",
+     "registry:fastrand-2.4.1/src/lib.rs",
+     "registry:fixedbitset-0.5.7/src/lib.rs",
+     "registry:form_urlencoded-1.2.2/src/lib.rs",
+     "registry:itertools-0.15.0/src/lib.rs",
+     "registry:la-arena-0.3.1/src/lib.rs",
+     "registry:num-traits-0.2.19/src/lib.rs",
+     "registry:percent-encoding-2.3.2/src/lib.rs",
+     "registry:plotters-backend-0.3.7/src/lib.rs",
+     "registry:ra-ap-rustc_lexer-0.166.0/src/lib.rs",
+     "registry:rand_core-0.9.5/src/lib.rs",
+     "registry:rustc_apfloat-0.2.3+llvm-462a31f5a5ab/src/lib.rs",
+     "registry:simd-adler32-0.3.9/src/lib.rs",
+     "registry:thread_local-1.1.9/src/lib.rs",
+     "registry:zerocopy-0.8.50/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 1052,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/ide-completion/src/context.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1748,
+    "after_tokens": 1372,
+    "common": 1304,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 250,
+     "not_identifier": 166,
+     "comment_or_keyword": 28,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 68,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/proc-macro-api/src/pool.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 975,
+    "after_tokens": 132,
+    "common": 128,
+    "removed": {
+     "past_eof": 821,
+     "past_eol": 14,
+     "not_identifier": 12,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 4,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/base-db/src/input.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 2437,
+    "after_tokens": 1840,
+    "common": 1728,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 401,
+     "not_identifier": 217,
+     "comment_or_keyword": 91,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 112,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "lib/la-arena/src/map.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 15248,
+    "after_tokens": 540,
+    "common": 435,
+    "removed": {
+     "past_eof": 13519,
+     "past_eol": 772,
+     "not_identifier": 351,
+     "comment_or_keyword": 169,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:toml-1.1.2+spec-1.1.0/src/map.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 105,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/rust-analyzer/src/reload.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 2005,
+    "after_tokens": 1638,
+    "common": 1584,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 208,
+     "not_identifier": 203,
+     "comment_or_keyword": 9,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:tracing-subscriber-0.3.23/src/reload.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 54,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/span/src/hygiene.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 563,
+    "after_tokens": 485,
+    "common": 473,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 55,
+     "not_identifier": 19,
+     "comment_or_keyword": 16,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 12,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "lib/la-arena/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27492,
+    "after_tokens": 615,
+    "common": 238,
+    "removed": {
+     "past_eof": 19851,
+     "past_eol": 4994,
+     "not_identifier": 1318,
+     "comment_or_keyword": 1089,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:dissimilar-1.0.11/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 377,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/rust-analyzer/src/version.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 116,
+    "after_tokens": 41,
+    "common": 36,
+    "removed": {
+     "past_eof": 15,
+     "past_eol": 39,
+     "not_identifier": 19,
+     "comment_or_keyword": 7,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 5,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/ide/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27657,
+    "after_tokens": 1488,
+    "common": 364,
+    "removed": {
+     "past_eof": 14551,
+     "past_eol": 7003,
+     "not_identifier": 4438,
+     "comment_or_keyword": 1293,
+     "identifier_starts_same_tail_token": 8,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:dot-0.1.4/src/lib.rs",
+     "registry:expect-test-1.5.1/src/lib.rs",
+     "registry:fastrand-2.4.1/src/lib.rs",
+     "registry:petgraph-0.8.3/src/lib.rs",
+     "registry:smallvec-1.15.1/src/lib.rs",
+     "registry:synstructure-0.13.2/src/lib.rs",
+     "registry:tracing-log-0.2.0/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 1124,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/hir-ty/src/lang_items.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 207,
+    "after_tokens": 200,
+    "common": 190,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 1,
+     "not_identifier": 16,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 10,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/tt/src/iter.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1051,
+    "after_tokens": 432,
+    "common": 350,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 423,
+     "not_identifier": 254,
+     "comment_or_keyword": 22,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:dashmap-6.2.1/src/iter.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 82,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/paths/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27500,
+    "after_tokens": 551,
+    "common": 109,
+    "removed": {
+     "past_eof": 21099,
+     "past_eol": 4128,
+     "not_identifier": 1533,
+     "comment_or_keyword": 626,
+     "identifier_starts_same_tail_token": 5,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:dissimilar-1.0.11/src/lib.rs",
+     "registry:foldhash-0.2.0/src/lib.rs",
+     "registry:la-arena-0.3.1/src/lib.rs",
+     "registry:time-0.3.47/src/lib.rs",
+     "registry:typed-arena-2.0.2/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 442,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/test-utils/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27516,
+    "after_tokens": 639,
+    "common": 156,
+    "removed": {
+     "past_eof": 20013,
+     "past_eol": 4240,
+     "not_identifier": 2448,
+     "comment_or_keyword": 649,
+     "identifier_starts_same_tail_token": 10,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:cov-mark-2.2.0/src/lib.rs",
+     "registry:criterion-0.7.0/src/lib.rs",
+     "registry:criterion-plot-0.6.0/src/lib.rs",
+     "registry:itertools-0.15.0/src/lib.rs",
+     "registry:synstructure-0.13.2/src/lib.rs",
+     "registry:thread_local-1.1.9/src/lib.rs",
+     "registry:utf8_iter-1.0.4/src/lib.rs",
+     "registry:write-json-0.1.4/src/lib.rs",
+     "registry:zmij-1.0.21/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 483,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "lib/ungrammar/src/lexer.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 190,
+    "after_tokens": 190,
+    "common": 189,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 0,
+     "not_identifier": 1,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 1,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/hir-ty/src/generics.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 3466,
+    "after_tokens": 562,
+    "common": 480,
+    "removed": {
+     "past_eof": 2542,
+     "past_eol": 254,
+     "not_identifier": 165,
+     "comment_or_keyword": 25,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 82,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/vfs-notify/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27516,
+    "after_tokens": 582,
+    "common": 137,
+    "removed": {
+     "past_eof": 21712,
+     "past_eol": 2599,
+     "not_identifier": 2711,
+     "comment_or_keyword": 351,
+     "identifier_starts_same_tail_token": 6,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:criterion-plot-0.6.0/src/lib.rs",
+     "registry:dissimilar-1.0.11/src/lib.rs",
+     "registry:lsp-server-0.7.9/src/lib.rs",
+     "registry:rand_core-0.9.5/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 445,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/proc-macro-srv/proc-macro-test/imp/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "custom-build",
+   "noise_before_vs_before2": false,
+   "class": "iv_file_not_stored",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [],
+     "same_tail": [
+      {
+       "shard": "proc_macro_test_impl-e259feb4911a4394.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "6d197a99b942a278.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "daf5ba3bc1192e12.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "0cf45a445f83c54c.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "915823c35fbb7a9d.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "0c4cf05b7a7c9272.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "2e839e556ff2c611.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "c8621e9560b9b2f9.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "8294e24f5b716626.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "a42435646812b7f1.ridx",
+       "stored": "src/lib.rs"
+      }
+     ],
+     "same_tail_count": 254
+    },
+    "after_empty": true,
+    "target_kind": "custom-build"
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/proc-macro-api/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27473,
+    "after_tokens": 332,
+    "common": 44,
+    "removed": {
+     "past_eof": 23365,
+     "past_eol": 2235,
+     "not_identifier": 1323,
+     "comment_or_keyword": 502,
+     "identifier_starts_same_tail_token": 4,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:num-traits-0.2.19/src/lib.rs",
+     "registry:rayon-core-1.13.0/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 288,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/proc-macro-srv-cli/src/version.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 117,
+    "after_tokens": 41,
+    "common": 35,
+    "removed": {
+     "past_eof": 12,
+     "past_eol": 42,
+     "not_identifier": 22,
+     "comment_or_keyword": 6,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 6,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/project-model/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27486,
+    "after_tokens": 429,
+    "common": 79,
+    "removed": {
+     "past_eof": 23213,
+     "past_eol": 2413,
+     "not_identifier": 1553,
+     "comment_or_keyword": 226,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:ctrlc-3.5.2/src/lib.rs",
+     "registry:fixedbitset-0.5.7/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 350,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_full",
+   "file": "crates/vfs/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27478,
+    "after_tokens": 381,
+    "common": 56,
+    "removed": {
+     "past_eof": 22592,
+     "past_eol": 2672,
+     "not_identifier": 1269,
+     "comment_or_keyword": 884,
+     "identifier_starts_same_tail_token": 5,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:ra-ap-rustc_type_ir-0.166.0/src/lib.rs",
+     "registry:unicase-2.9.0/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 325,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/ide-ssr/src/errors.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 97,
+    "after_tokens": 26,
+    "common": 22,
+    "removed": {
+     "past_eof": 34,
+     "past_eol": 25,
+     "not_identifier": 9,
+     "comment_or_keyword": 7,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 4,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/rust-analyzer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27467,
+    "after_tokens": 61,
+    "common": 13,
+    "removed": {
+     "past_eof": 26228,
+     "past_eol": 855,
+     "not_identifier": 319,
+     "comment_or_keyword": 52,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 48,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/ide-ssr/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27503,
+    "after_tokens": 450,
+    "common": 111,
+    "removed": {
+     "past_eof": 22132,
+     "past_eol": 2889,
+     "not_identifier": 1668,
+     "comment_or_keyword": 697,
+     "identifier_starts_same_tail_token": 6,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:clap_lex-1.1.0/src/lib.rs",
+     "registry:dissimilar-1.0.11/src/lib.rs",
+     "registry:form_urlencoded-1.2.2/src/lib.rs",
+     "registry:percent-encoding-2.3.2/src/lib.rs",
+     "registry:proc-macro2-1.0.106/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 339,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/proc-macro-srv/proc-macro-test/imp/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "custom-build",
+   "noise_before_vs_before2": false,
+   "class": "iv_file_not_stored",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [],
+     "same_tail": [
+      {
+       "shard": "proc_macro_test_impl-e259feb4911a4394.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "6d197a99b942a278.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "daf5ba3bc1192e12.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "0cf45a445f83c54c.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "915823c35fbb7a9d.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "0c4cf05b7a7c9272.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "2e839e556ff2c611.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "c8621e9560b9b2f9.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "8294e24f5b716626.ridx",
+       "stored": "src/lib.rs"
+      },
+      {
+       "shard": "a42435646812b7f1.ridx",
+       "stored": "src/lib.rs"
+      }
+     ],
+     "same_tail_count": 254
+    },
+    "after_empty": true,
+    "target_kind": "custom-build"
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "lib/text-size/src/serde_impls.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "iv_file_not_stored",
+   "evidence": {
+    "stored_forms": {
+     "plain": [],
+     "parent_dir": [],
+     "same_tail": [
+      {
+       "shard": "914faf7ba0c7d5cc.ridx",
+       "stored": "src/serde_impls.rs"
+      },
+      {
+       "shard": "25c4638dfc5e6afd.ridx",
+       "stored": "src/serde_impls.rs"
+      }
+     ],
+     "same_tail_count": 2
+    },
+    "after_empty": true,
+    "target_kind": "lib"
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/mbe/src/benchmark.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 518,
+    "after_tokens": 446,
+    "common": 441,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 65,
+     "not_identifier": 9,
+     "comment_or_keyword": 3,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 5,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "lib/ungrammar/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27467,
+    "after_tokens": 125,
+    "common": 17,
+    "removed": {
+     "past_eof": 25745,
+     "past_eol": 1123,
+     "not_identifier": 321,
+     "comment_or_keyword": 260,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:winnow-0.7.15/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 108,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/hir-ty/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27586,
+    "after_tokens": 1062,
+    "common": 249,
+    "removed": {
+     "past_eof": 18157,
+     "past_eol": 5257,
+     "not_identifier": 3565,
+     "comment_or_keyword": 348,
+     "identifier_starts_same_tail_token": 10,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:autocfg-1.5.1/src/lib.rs",
+     "registry:bit-set-0.8.0/src/lib.rs",
+     "registry:ciborium-ll-0.2.2/src/lib.rs",
+     "registry:crc32fast-1.5.0/src/lib.rs",
+     "registry:either-1.16.0/src/lib.rs",
+     "registry:foldhash-0.2.0/src/lib.rs",
+     "registry:pulldown-cmark-to-cmark-10.0.4/src/lib.rs",
+     "registry:ra-ap-rustc_type_ir_macros-0.166.0/src/lib.rs",
+     "registry:zerocopy-0.8.50/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 813,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/proc-macro-api/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27473,
+    "after_tokens": 332,
+    "common": 44,
+    "removed": {
+     "past_eof": 23365,
+     "past_eol": 2235,
+     "not_identifier": 1323,
+     "comment_or_keyword": 502,
+     "identifier_starts_same_tail_token": 4,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:num-traits-0.2.19/src/lib.rs",
+     "registry:rayon-core-1.13.0/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 288,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/macros/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27488,
+    "after_tokens": 201,
+    "common": 67,
+    "removed": {
+     "past_eof": 23992,
+     "past_eol": 2000,
+     "not_identifier": 1279,
+     "comment_or_keyword": 149,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:yoke-derive-0.8.2/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 134,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/span/src/map.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 15403,
+    "after_tokens": 332,
+    "common": 213,
+    "removed": {
+     "past_eof": 13802,
+     "past_eol": 693,
+     "not_identifier": 441,
+     "comment_or_keyword": 252,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:hashbrown-0.14.5/src/map.rs",
+     "registry:serde_json-1.0.150/src/map.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 119,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/ide-completion/src/item.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 10296,
+    "after_tokens": 1069,
+    "common": 851,
+    "removed": {
+     "past_eof": 8258,
+     "past_eol": 553,
+     "not_identifier": 419,
+     "comment_or_keyword": 213,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:derive-where-1.6.1/src/item.rs",
+     "registry:syn-3.0.3/src/item.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 218,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "lib/lsp-server/src/req_queue.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 213,
+    "after_tokens": 146,
+    "common": 129,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 54,
+     "not_identifier": 30,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 17,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/test-utils/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27516,
+    "after_tokens": 639,
+    "common": 156,
+    "removed": {
+     "past_eof": 20013,
+     "past_eol": 4240,
+     "not_identifier": 2448,
+     "comment_or_keyword": 649,
+     "identifier_starts_same_tail_token": 10,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:cov-mark-2.2.0/src/lib.rs",
+     "registry:criterion-0.7.0/src/lib.rs",
+     "registry:criterion-plot-0.6.0/src/lib.rs",
+     "registry:itertools-0.15.0/src/lib.rs",
+     "registry:synstructure-0.13.2/src/lib.rs",
+     "registry:thread_local-1.1.9/src/lib.rs",
+     "registry:utf8_iter-1.0.4/src/lib.rs",
+     "registry:write-json-0.1.4/src/lib.rs",
+     "registry:zmij-1.0.21/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 483,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "lib/lsp-server/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 4687,
+    "after_tokens": 82,
+    "common": 31,
+    "removed": {
+     "past_eof": 4114,
+     "past_eol": 322,
+     "not_identifier": 199,
+     "comment_or_keyword": 21,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 51,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/syntax-bridge/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27705,
+    "after_tokens": 1719,
+    "common": 525,
+    "removed": {
+     "past_eof": 13719,
+     "past_eol": 7512,
+     "not_identifier": 5100,
+     "comment_or_keyword": 834,
+     "identifier_starts_same_tail_token": 15,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-set-0.8.0/src/lib.rs",
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:cast-0.3.0/src/lib.rs",
+     "registry:criterion-plot-0.6.0/src/lib.rs",
+     "registry:dissimilar-1.0.11/src/lib.rs",
+     "registry:fixedbitset-0.5.7/src/lib.rs",
+     "registry:foldhash-0.2.0/src/lib.rs",
+     "registry:la-arena-0.3.1/src/lib.rs",
+     "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+     "registry:smol_str-0.3.6/src/lib.rs",
+     "registry:xshell-0.2.7/src/lib.rs",
+     "registry:zmij-1.0.21/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 1194,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "lib/text-size/src/range.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 900,
+    "after_tokens": 342,
+    "common": 314,
+    "removed": {
+     "past_eof": 13,
+     "past_eol": 367,
+     "not_identifier": 75,
+     "comment_or_keyword": 129,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:dissimilar-1.0.11/src/range.rs",
+     "registry:fixedbitset-0.5.7/src/range.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 28,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/syntax/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27512,
+    "after_tokens": 539,
+    "common": 132,
+    "removed": {
+     "past_eof": 20990,
+     "past_eol": 3731,
+     "not_identifier": 1830,
+     "comment_or_keyword": 824,
+     "identifier_starts_same_tail_token": 5,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:cast-0.3.0/src/lib.rs",
+     "registry:clap_lex-1.1.0/src/lib.rs",
+     "registry:derive-where-1.6.1/src/lib.rs",
+     "registry:dirs-6.0.0/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 407,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/parser/src/parser.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 4092,
+    "after_tokens": 570,
+    "common": 468,
+    "removed": {
+     "past_eof": 2584,
+     "past_eol": 534,
+     "not_identifier": 337,
+     "comment_or_keyword": 167,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:url-2.5.8/src/parser.rs",
+     "registry:winnow-0.7.15/src/parser.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 102,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/ide-db/src/traits.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 790,
+    "after_tokens": 475,
+    "common": 431,
+    "removed": {
+     "past_eof": 32,
+     "past_eol": 183,
+     "not_identifier": 113,
+     "comment_or_keyword": 31,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 44,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/syntax/src/utils.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 689,
+    "after_tokens": 23,
+    "common": 11,
+    "removed": {
+     "past_eof": 561,
+     "past_eol": 59,
+     "not_identifier": 45,
+     "comment_or_keyword": 13,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 12,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/hir-expand/src/fixup.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1653,
+    "after_tokens": 896,
+    "common": 837,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 633,
+     "not_identifier": 159,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 59,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/rust-analyzer/src/config.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 4717,
+    "after_tokens": 4661,
+    "common": 4653,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 33,
+     "not_identifier": 14,
+     "comment_or_keyword": 17,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 8,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/ide/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27657,
+    "after_tokens": 1488,
+    "common": 364,
+    "removed": {
+     "past_eof": 14551,
+     "past_eol": 7003,
+     "not_identifier": 4438,
+     "comment_or_keyword": 1293,
+     "identifier_starts_same_tail_token": 8,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:dot-0.1.4/src/lib.rs",
+     "registry:expect-test-1.5.1/src/lib.rs",
+     "registry:fastrand-2.4.1/src/lib.rs",
+     "registry:petgraph-0.8.3/src/lib.rs",
+     "registry:smallvec-1.15.1/src/lib.rs",
+     "registry:synstructure-0.13.2/src/lib.rs",
+     "registry:tracing-log-0.2.0/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 1124,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/ide-db/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27502,
+    "after_tokens": 539,
+    "common": 107,
+    "removed": {
+     "past_eof": 21274,
+     "past_eol": 3690,
+     "not_identifier": 1905,
+     "comment_or_keyword": 523,
+     "identifier_starts_same_tail_token": 3,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:nix-0.31.3/src/lib.rs",
+     "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+     "registry:rustc-literal-escaper-0.0.7/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 432,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/hir-def/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27914,
+    "after_tokens": 2388,
+    "common": 779,
+    "removed": {
+     "past_eof": 9913,
+     "past_eol": 10911,
+     "not_identifier": 5401,
+     "comment_or_keyword": 902,
+     "identifier_starts_same_tail_token": 8,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-set-0.8.0/src/lib.rs",
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:crc32fast-1.5.0/src/lib.rs",
+     "registry:dot-0.1.4/src/lib.rs",
+     "registry:pulldown-cmark-to-cmark-10.0.4/src/lib.rs",
+     "registry:ra-ap-rustc_parse_format-0.166.0/src/lib.rs",
+     "registry:zmij-1.0.21/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 1609,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 35272,
+    "after_tokens": 12413,
+    "common": 9156,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 15066,
+     "not_identifier": 9888,
+     "comment_or_keyword": 1132,
+     "identifier_starts_same_tail_token": 30,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:criterion-0.7.0/src/lib.rs",
+     "registry:criterion-plot-0.6.0/src/lib.rs",
+     "registry:dashmap-6.2.1/src/lib.rs",
+     "registry:dissimilar-1.0.11/src/lib.rs",
+     "registry:dot-0.1.4/src/lib.rs",
+     "registry:either-1.16.0/src/lib.rs",
+     "registry:fastrand-2.4.1/src/lib.rs",
+     "registry:itertools-0.13.0/src/lib.rs",
+     "registry:itertools-0.15.0/src/lib.rs",
+     "registry:la-arena-0.3.1/src/lib.rs",
+     "registry:line-index-0.1.2/src/lib.rs",
+     "registry:lsp-server-0.7.9/src/lib.rs",
+     "registry:once_cell-1.21.4/src/lib.rs",
+     "registry:portable-atomic-1.13.1/src/lib.rs",
+     "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+     "registry:url-2.5.8/src/lib.rs",
+     "registry:zerocopy-0.8.50/src/lib.rs",
+     "registry:zmij-1.0.21/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 3257,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/ide-completion/src/context.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1748,
+    "after_tokens": 1372,
+    "common": 1304,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 250,
+     "not_identifier": 166,
+     "comment_or_keyword": 28,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 68,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/hir/src/display.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 2746,
+    "after_tokens": 2124,
+    "common": 1989,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 376,
+     "not_identifier": 361,
+     "comment_or_keyword": 20,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 135,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/ide-db/src/helpers.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 351,
+    "after_tokens": 303,
+    "common": 291,
+    "removed": {
+     "past_eof": 5,
+     "past_eol": 34,
+     "not_identifier": 20,
+     "comment_or_keyword": 1,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 12,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/stdx/src/thread.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 484,
+    "after_tokens": 115,
+    "common": 108,
+    "removed": {
+     "past_eof": 309,
+     "past_eol": 37,
+     "not_identifier": 20,
+     "comment_or_keyword": 9,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:syn-2.0.117/src/thread.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 7,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_delta",
+   "file": "crates/parser/src/input.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 878,
+    "after_tokens": 130,
+    "common": 113,
+    "removed": {
+     "past_eof": 532,
+     "past_eol": 155,
+     "not_identifier": 49,
+     "comment_or_keyword": 29,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 17,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/proc-macro-srv-cli/src/version.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 117,
+    "after_tokens": 41,
+    "common": 35,
+    "removed": {
+     "past_eof": 12,
+     "past_eol": 42,
+     "not_identifier": 22,
+     "comment_or_keyword": 6,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 6,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/syntax/src/utils.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 689,
+    "after_tokens": 23,
+    "common": 11,
+    "removed": {
+     "past_eof": 561,
+     "past_eol": 59,
+     "not_identifier": 45,
+     "comment_or_keyword": 13,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 12,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "lib/ungrammar/src/error.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 4689,
+    "after_tokens": 48,
+    "common": 21,
+    "removed": {
+     "past_eof": 4256,
+     "past_eol": 271,
+     "not_identifier": 104,
+     "comment_or_keyword": 37,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 27,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/hir-expand/src/fixup.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1653,
+    "after_tokens": 896,
+    "common": 837,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 633,
+     "not_identifier": 159,
+     "comment_or_keyword": 24,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 59,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/ide-db/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27502,
+    "after_tokens": 539,
+    "common": 107,
+    "removed": {
+     "past_eof": 21274,
+     "past_eol": 3690,
+     "not_identifier": 1905,
+     "comment_or_keyword": 523,
+     "identifier_starts_same_tail_token": 3,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:nix-0.31.3/src/lib.rs",
+     "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+     "registry:rustc-literal-escaper-0.0.7/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 432,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/hir/src/db.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 148,
+    "after_tokens": 4,
+    "common": 4,
+    "removed": {
+     "past_eof": 140,
+     "past_eol": 1,
+     "not_identifier": 0,
+     "comment_or_keyword": 3,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 0,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/mbe/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27552,
+    "after_tokens": 698,
+    "common": 205,
+    "removed": {
+     "past_eof": 20939,
+     "past_eol": 3762,
+     "not_identifier": 2214,
+     "comment_or_keyword": 427,
+     "identifier_starts_same_tail_token": 5,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:autocfg-1.5.1/src/lib.rs",
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:cargo-platform-0.3.3/src/lib.rs",
+     "registry:criterion-0.7.0/src/lib.rs",
+     "registry:smol_str-0.3.6/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 493,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "lib/lsp-server/src/req_queue.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 213,
+    "after_tokens": 146,
+    "common": 129,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 54,
+     "not_identifier": 30,
+     "comment_or_keyword": 0,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 17,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "lib/ungrammar/src/parser.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 3985,
+    "after_tokens": 377,
+    "common": 303,
+    "removed": {
+     "past_eof": 3052,
+     "past_eol": 400,
+     "not_identifier": 220,
+     "comment_or_keyword": 4,
+     "identifier_starts_same_tail_token": 6,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:ungrammar-1.16.1/src/parser.rs",
+     "registry:url-2.5.8/src/parser.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 74,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/span/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27494,
+    "after_tokens": 350,
+    "common": 77,
+    "removed": {
+     "past_eof": 23934,
+     "past_eol": 1921,
+     "not_identifier": 1165,
+     "comment_or_keyword": 394,
+     "identifier_starts_same_tail_token": 3,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:ctrlc-3.5.2/src/lib.rs",
+     "registry:fixedbitset-0.5.7/src/lib.rs",
+     "registry:num-conv-0.2.2/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 273,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "lib/text-size/src/range.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 900,
+    "after_tokens": 342,
+    "common": 314,
+    "removed": {
+     "past_eof": 13,
+     "past_eol": 367,
+     "not_identifier": 75,
+     "comment_or_keyword": 129,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:dissimilar-1.0.11/src/range.rs",
+     "registry:fixedbitset-0.5.7/src/range.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 28,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 35272,
+    "after_tokens": 12413,
+    "common": 9156,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 15066,
+     "not_identifier": 9888,
+     "comment_or_keyword": 1132,
+     "identifier_starts_same_tail_token": 30,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:criterion-0.7.0/src/lib.rs",
+     "registry:criterion-plot-0.6.0/src/lib.rs",
+     "registry:dashmap-6.2.1/src/lib.rs",
+     "registry:dissimilar-1.0.11/src/lib.rs",
+     "registry:dot-0.1.4/src/lib.rs",
+     "registry:either-1.16.0/src/lib.rs",
+     "registry:fastrand-2.4.1/src/lib.rs",
+     "registry:itertools-0.13.0/src/lib.rs",
+     "registry:itertools-0.15.0/src/lib.rs",
+     "registry:la-arena-0.3.1/src/lib.rs",
+     "registry:line-index-0.1.2/src/lib.rs",
+     "registry:lsp-server-0.7.9/src/lib.rs",
+     "registry:once_cell-1.21.4/src/lib.rs",
+     "registry:portable-atomic-1.13.1/src/lib.rs",
+     "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+     "registry:url-2.5.8/src/lib.rs",
+     "registry:zerocopy-0.8.50/src/lib.rs",
+     "registry:zmij-1.0.21/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 3257,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "lib/lsp-server/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27467,
+    "after_tokens": 429,
+    "common": 115,
+    "removed": {
+     "past_eof": 21000,
+     "past_eol": 3516,
+     "not_identifier": 1619,
+     "comment_or_keyword": 1216,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:icu_provider-2.2.0/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 314,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/syntax/src/ast.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1266,
+    "after_tokens": 614,
+    "common": 524,
+    "removed": {
+     "past_eof": 0,
+     "past_eol": 551,
+     "not_identifier": 160,
+     "comment_or_keyword": 31,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 90,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/stdx/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27509,
+    "after_tokens": 534,
+    "common": 168,
+    "removed": {
+     "past_eof": 20731,
+     "past_eol": 4276,
+     "not_identifier": 2126,
+     "comment_or_keyword": 183,
+     "identifier_starts_same_tail_token": 25,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-set-0.8.0/src/lib.rs",
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:cov-mark-2.2.0/src/lib.rs",
+     "registry:criterion-0.7.0/src/lib.rs",
+     "registry:dissimilar-1.0.11/src/lib.rs",
+     "registry:drop_bomb-0.1.5/src/lib.rs",
+     "registry:either-1.16.0/src/lib.rs",
+     "registry:expect-test-1.5.1/src/lib.rs",
+     "registry:hashlink-0.12.0/src/lib.rs",
+     "registry:la-arena-0.3.1/src/lib.rs",
+     "registry:lsp-server-0.7.9/src/lib.rs",
+     "registry:once_cell-1.21.4/src/lib.rs",
+     "registry:proc-macro2-1.0.106/src/lib.rs",
+     "registry:pulldown-cmark-to-cmark-10.0.4/src/lib.rs",
+     "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+     "registry:walkdir-2.5.0/src/lib.rs",
+     "registry:zerocopy-0.8.50/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 366,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/test-fixture/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27647,
+    "after_tokens": 1529,
+    "common": 402,
+    "removed": {
+     "past_eof": 12287,
+     "past_eol": 8714,
+     "not_identifier": 5278,
+     "comment_or_keyword": 953,
+     "identifier_starts_same_tail_token": 13,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:criterion-0.7.0/src/lib.rs",
+     "registry:dashmap-6.2.1/src/lib.rs",
+     "registry:derive-where-1.6.1/src/lib.rs",
+     "registry:icu_normalizer-2.2.0/src/lib.rs",
+     "registry:itertools-0.13.0/src/lib.rs",
+     "registry:nix-0.31.3/src/lib.rs",
+     "registry:thin-vec-0.2.18/src/lib.rs",
+     "registry:typeid-1.0.3/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 1127,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "xtask/src/util.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 1543,
+    "after_tokens": 72,
+    "common": 35,
+    "removed": {
+     "past_eof": 1192,
+     "past_eol": 192,
+     "not_identifier": 121,
+     "comment_or_keyword": 1,
+     "identifier_starts_same_tail_token": 2,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:getrandom-0.3.4/src/util.rs",
+     "registry:nu-ansi-term-0.50.3/src/util.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 37,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/vfs/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27478,
+    "after_tokens": 381,
+    "common": 56,
+    "removed": {
+     "past_eof": 22592,
+     "past_eol": 2672,
+     "not_identifier": 1269,
+     "comment_or_keyword": 884,
+     "identifier_starts_same_tail_token": 5,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-vec-0.8.0/src/lib.rs",
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:ra-ap-rustc_type_ir-0.166.0/src/lib.rs",
+     "registry:unicase-2.9.0/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 325,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/load-cargo/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27700,
+    "after_tokens": 1682,
+    "common": 488,
+    "removed": {
+     "past_eof": 14734,
+     "past_eol": 6428,
+     "not_identifier": 5300,
+     "comment_or_keyword": 735,
+     "identifier_starts_same_tail_token": 15,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:bit-set-0.8.0/src/lib.rs",
+     "registry:cargo_metadata-0.23.1/src/lib.rs",
+     "registry:cast-0.3.0/src/lib.rs",
+     "registry:criterion-0.7.0/src/lib.rs",
+     "registry:criterion-plot-0.6.0/src/lib.rs",
+     "registry:dissimilar-1.0.11/src/lib.rs",
+     "registry:dot-0.1.4/src/lib.rs",
+     "registry:fastrand-2.4.1/src/lib.rs",
+     "registry:icu_normalizer-2.2.0/src/lib.rs",
+     "registry:ra-ap-rustc_ast_ir-0.166.0/src/lib.rs",
+     "registry:synstructure-0.13.2/src/lib.rs",
+     "registry:xshell-0.2.7/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 1194,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "lib/text-size/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27458,
+    "after_tokens": 7,
+    "common": 2,
+    "removed": {
+     "past_eof": 27172,
+     "past_eol": 156,
+     "not_identifier": 44,
+     "comment_or_keyword": 83,
+     "identifier_starts_same_tail_token": 1,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:ungrammar-1.16.1/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 5,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/ide-ssr/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27503,
+    "after_tokens": 450,
+    "common": 111,
+    "removed": {
+     "past_eof": 22132,
+     "past_eol": 2889,
+     "not_identifier": 1668,
+     "comment_or_keyword": 697,
+     "identifier_starts_same_tail_token": 6,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:camino-1.2.2/src/lib.rs",
+     "registry:clap_lex-1.1.0/src/lib.rs",
+     "registry:dissimilar-1.0.11/src/lib.rs",
+     "registry:form_urlencoded-1.2.2/src/lib.rs",
+     "registry:percent-encoding-2.3.2/src/lib.rs",
+     "registry:proc-macro2-1.0.106/src/lib.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 339,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/mbe/src/parser.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 4305,
+    "after_tokens": 821,
+    "common": 678,
+    "removed": {
+     "past_eof": 2481,
+     "past_eol": 622,
+     "not_identifier": 455,
+     "comment_or_keyword": 66,
+     "identifier_starts_same_tail_token": 3,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [
+     "registry:ungrammar-1.16.1/src/parser.rs",
+     "registry:url-2.5.8/src/parser.rs"
+    ],
+    "added": {
+     "displaced_by_removed_token": 143,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  },
+  {
+   "method": "semantic_tokens_range",
+   "file": "crates/rust-analyzer/src/lib.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i_semantic_tokens",
+   "evidence": {
+    "compared": "semantic_tokens_full",
+    "before_tokens": 27467,
+    "after_tokens": 61,
+    "common": 13,
+    "removed": {
+     "past_eof": 26228,
+     "past_eol": 855,
+     "not_identifier": 319,
+     "comment_or_keyword": 52,
+     "identifier_starts_same_tail_token": 0,
+     "unexplained": 0
+    },
+    "removed_identifier_files": [],
+    "added": {
+     "displaced_by_removed_token": 48,
+     "unexplained": 0
+    },
+    "unexplained_removed": []
+   }
+  }
+ ]
+}
