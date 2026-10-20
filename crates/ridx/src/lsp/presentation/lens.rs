@@ -14,7 +14,6 @@ use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
-use std::path::Path;
 
 /// Handles `textDocument/codeLens` requests (lightweight; defers reference counting to resolve).
 pub fn handle_code_lens(
@@ -52,38 +51,39 @@ pub fn handle_code_lens(
         return json!(lenses);
     }
 
-    // 2. Fallback to WorkspaceIndex definitions
+    // 2. Fallback to WorkspaceIndex definitions: only the readers that own the file. Every
+    // reader's `find_file_id` accepts suffix matches, so asking all readers with an absolute path
+    // would also return the `src/lib.rs` of every dependency shard.
     if let Some(ws) = workspace {
-        let file_path = Path::new(&file);
-        for (idx, r) in ws.readers().iter().enumerate() {
-            let rel_file = ws
-                .source_root_at(idx)
-                .and_then(|root| file_path.strip_prefix(root).ok())
-                .and_then(|rel| rel.to_str())
-                .unwrap_or(&file);
-
-            if let Some(fid) = r.find_file_id(rel_file) {
-                for def in r.definitions() {
-                    if def.span.file_id == fid {
-                        let sl = def.span.start_line.saturating_sub(1);
-                        let sc = conv.char_col_to_utf16_col(&file, def.span.start_line, def.span.start_col);
-                        let ec = conv.char_col_to_utf16_col(&file, def.span.end_line, def.span.end_col);
-                        let name = r.get_str(def.name_offset);
-
-                        lenses.push(json!({
-                            "range": {
-                                "start": { "line": sl, "character": sc },
-                                "end": { "line": sl, "character": ec }
-                            },
-                            "data": {
-                                "uri": uri,
-                                "line": def.span.start_line,
-                                "character": def.span.start_col,
-                                "name": name
-                            }
-                        }));
-                    }
+        for idx in ws.reader_indices_for_file(&file) {
+            let Some(target) = ws.target_file_for_reader(idx, &file) else {
+                continue;
+            };
+            let r = &ws.readers()[idx];
+            let Some(fid) = r.find_file_id(target.as_ref()) else {
+                continue;
+            };
+            for def in r.definitions() {
+                if def.span.file_id != fid {
+                    continue;
                 }
+                let sl = def.span.start_line.saturating_sub(1);
+                let sc = conv.char_col_to_utf16_col(&file, def.span.start_line, def.span.start_col);
+                let ec = conv.char_col_to_utf16_col(&file, def.span.end_line, def.span.end_col);
+                let name = r.get_str(def.name_offset);
+
+                lenses.push(json!({
+                    "range": {
+                        "start": { "line": sl, "character": sc },
+                        "end": { "line": sl, "character": ec }
+                    },
+                    "data": {
+                        "uri": uri,
+                        "line": def.span.start_line,
+                        "character": def.span.start_col,
+                        "name": name
+                    }
+                }));
             }
         }
     }
@@ -130,18 +130,20 @@ pub fn handle_code_lens_resolve(
                     let r_path = r.resolved_path();
                     let r_str = r_path.to_str().unwrap_or(r.file);
                     let r_uri = path_to_uri(r_str);
-                    let (live_sl, live_sc) = if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
-                        rov.map_compiled_to_live(r.span.start_line(), r.span.start_col())
-                            .unwrap_or((r.span.start_line(), r.span.start_col()))
-                    } else {
-                        (r.span.start_line(), r.span.start_col())
-                    };
-                    let (live_el, live_ec) = if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
-                        rov.map_compiled_to_live(r.span.end_line(), r.span.end_col())
-                            .unwrap_or((r.span.end_line(), r.span.end_col()))
-                    } else {
-                        (r.span.end_line(), r.span.end_col())
-                    };
+                    let (live_sl, live_sc) =
+                        if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
+                            rov.map_compiled_to_live(r.span.start_line(), r.span.start_col())
+                                .unwrap_or((r.span.start_line(), r.span.start_col()))
+                        } else {
+                            (r.span.start_line(), r.span.start_col())
+                        };
+                    let (live_el, live_ec) =
+                        if let Some(rov) = overlay_mgr.get(r_str).filter(|o| o.is_dirty()) {
+                            rov.map_compiled_to_live(r.span.end_line(), r.span.end_col())
+                                .unwrap_or((r.span.end_line(), r.span.end_col()))
+                        } else {
+                            (r.span.end_line(), r.span.end_col())
+                        };
                     let sc = conv.char_col_to_utf16_col(r_str, live_sl, live_sc);
                     let ec = conv.char_col_to_utf16_col(r_str, live_el, live_ec);
                     locations.push(json!({
