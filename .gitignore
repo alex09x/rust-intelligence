@@ -18,4 +18,3 @@ index.scip
 !bench/published/*.jsonl
 /report.html
 bench/*.html
-bench/generate_full_html.py
