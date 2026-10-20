@@ -16,6 +16,7 @@
 //! or compilation errors.
 
 pub mod imports;
+pub mod line_map;
 pub mod manager;
 pub mod mapping;
 pub mod parser;
@@ -25,6 +26,8 @@ pub mod scan;
 
 #[allow(unused_imports)]
 pub use imports::*;
+#[allow(unused_imports)]
+pub use line_map::*;
 #[allow(unused_imports)]
 pub use manager::*;
 #[allow(unused_imports)]

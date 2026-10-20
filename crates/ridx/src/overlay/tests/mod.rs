@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+pub mod line_map_tests;
 pub mod mapping_tests;
 pub mod overlay_tests;
 pub mod parser_tests;

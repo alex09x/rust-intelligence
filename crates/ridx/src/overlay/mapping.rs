@@ -10,7 +10,7 @@
 
 //! Line mapping and whitespace/comment stripping for document overlays.
 
-use super::DocumentOverlay;
+use super::{DocumentOverlay, LineMap};
 
 pub fn strip_trailing_whitespace_and_comments(s: &str) -> &str {
     let bytes = s.as_bytes();
@@ -177,53 +177,18 @@ pub fn is_byte_in_string_or_comment(line_str: &str, target_byte: usize) -> bool 
 }
 
 impl DocumentOverlay {
+    /// Line correspondence between the compiled baseline and the live text; `None` while the
+    /// buffer has no known baseline. Callers that map many lines build it once.
+    pub fn line_map(&self) -> Option<LineMap> {
+        Some(LineMap::new(self.compiled_text.as_deref()?, &self.text))
+    }
+
     pub fn map_line_to_compiled(&self, live_line: u32) -> Option<u32> {
-        let l_idx = live_line.saturating_sub(1) as usize;
-        let curr_lines: Vec<&str> = self.text.lines().collect();
-        if l_idx >= curr_lines.len() {
-            return None;
-        }
-
-        let compiled_text = self.compiled_text.as_ref()?;
-
-        let compiled_lines: Vec<&str> = compiled_text.lines().collect();
-        if self.text == *compiled_text {
-            return Some(live_line);
-        }
-
-        let mut prefix_common = 0;
-        while prefix_common < curr_lines.len()
-            && prefix_common < compiled_lines.len()
-            && curr_lines[prefix_common] == compiled_lines[prefix_common]
-        {
-            prefix_common += 1;
-        }
-
-        if l_idx < prefix_common {
-            return Some(live_line);
-        }
-
-        let mut suffix_common = 0;
-        while suffix_common < curr_lines.len().saturating_sub(prefix_common)
-            && suffix_common < compiled_lines.len().saturating_sub(prefix_common)
-            && curr_lines[curr_lines.len() - 1 - suffix_common]
-                == compiled_lines[compiled_lines.len() - 1 - suffix_common]
-        {
-            suffix_common += 1;
-        }
-
-        if l_idx >= curr_lines.len().saturating_sub(suffix_common) {
-            let offset_from_end = curr_lines.len() - 1 - l_idx;
-            let compiled_line_idx = compiled_lines.len() - 1 - offset_from_end;
-            return Some((compiled_line_idx + 1) as u32);
-        }
-
-        None
+        self.line_map()?.to_baseline(live_line)
     }
 
     pub fn map_compiled_line_to_live(&self, compiled_line: u32) -> Option<u32> {
-        let compiled_text = self.compiled_text.as_deref()?;
-        map_text_line_to_live(compiled_text, &self.text, compiled_line)
+        self.line_map()?.to_live(compiled_line)
     }
 
     pub fn map_live_to_compiled(&self, line: u32, col: u32) -> Option<(u32, u32)> {
@@ -266,49 +231,12 @@ pub fn compute_line_starts(text: &str) -> Vec<usize> {
 }
 
 /// Maps a 1-based line number from baseline text to live text based on prefix and suffix diffs.
+/// Single-line form of [`LineMap`]; callers that map many lines of one text pair build the map
+/// once instead.
 pub fn map_text_line_to_live(
     baseline_text: &str,
     live_text: &str,
     baseline_line: u32,
 ) -> Option<u32> {
-    let b_idx = baseline_line.saturating_sub(1) as usize;
-    let baseline_lines: Vec<&str> = baseline_text.lines().collect();
-    if b_idx >= baseline_lines.len() {
-        return None;
-    }
-
-    if baseline_text == live_text {
-        return Some(baseline_line);
-    }
-
-    let curr_lines: Vec<&str> = live_text.lines().collect();
-
-    let mut prefix_common = 0;
-    while prefix_common < curr_lines.len()
-        && prefix_common < baseline_lines.len()
-        && curr_lines[prefix_common] == baseline_lines[prefix_common]
-    {
-        prefix_common += 1;
-    }
-
-    if b_idx < prefix_common {
-        return Some(baseline_line);
-    }
-
-    let mut suffix_common = 0;
-    while suffix_common < curr_lines.len().saturating_sub(prefix_common)
-        && suffix_common < baseline_lines.len().saturating_sub(prefix_common)
-        && curr_lines[curr_lines.len() - 1 - suffix_common]
-            == baseline_lines[baseline_lines.len() - 1 - suffix_common]
-    {
-        suffix_common += 1;
-    }
-
-    if b_idx >= baseline_lines.len().saturating_sub(suffix_common) {
-        let offset_from_end = baseline_lines.len() - 1 - b_idx;
-        let live_line_idx = curr_lines.len() - 1 - offset_from_end;
-        return Some((live_line_idx + 1) as u32);
-    }
-
-    None
+    LineMap::new(baseline_text, live_text).to_live(baseline_line)
 }
