@@ -70,7 +70,7 @@ fn write_shard(
     defs: Vec<RawDefinition>,
 ) {
     let mut writer = IndexWriter::new(krate, "0.1.0");
-    writer.set_unit_key(&format!("{krate} 0.1.0 (lib)"));
+    writer.set_unit_key(format!("{krate} 0.1.0 (lib)"));
     for d in defs {
         writer.add_definition(d);
     }
