@@ -11,6 +11,7 @@
 //! Integration test suite for LSP streaming server.
 
 pub mod common;
+pub mod foreign_shard_tests;
 pub mod lifecycle_tests;
 pub mod reload_tests;
 pub mod stage8_dispatch_tests;

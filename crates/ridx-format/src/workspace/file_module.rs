@@ -214,10 +214,12 @@ impl WorkspaceIndex {
         let reader = &self.readers[idx];
         let cname = reader.crate_name();
 
-        // 1. Inspect definitions declared directly in this file
-        let target_file = self.target_file_for_reader(idx, file_path);
-        let target_str = target_file.as_deref().unwrap_or(file_path);
-        if let Some(fid) = reader.find_file_id(target_str) {
+        // 1. Inspect definitions declared directly in this file; a reader that does not store
+        //    the file contributes nothing here and the path-based fallback below decides.
+        if let Some(fid) = self
+            .target_file_for_reader(idx, file_path)
+            .and_then(|target| reader.find_file_id(target.as_ref()))
+        {
             for def in reader.definitions() {
                 let span = def.span();
                 if span.file_id == fid {

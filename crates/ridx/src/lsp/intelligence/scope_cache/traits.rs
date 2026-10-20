@@ -216,9 +216,10 @@ pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> H
     let mut set = HashSet::new();
     for idx in ws.candidate_reader_indices_for_file(file_path) {
         let reader = &ws.readers()[idx];
-        let target_file = ws.target_file_for_reader(idx, file_path);
-        let target_str = target_file.as_deref().unwrap_or(file_path);
-        if let Some(fid) = reader.find_file_id(target_str) {
+        let Some(target_file) = ws.target_file_for_reader(idx, file_path) else {
+            continue;
+        };
+        if let Some(fid) = reader.find_file_id(target_file.as_ref()) {
             let refs = reader.references();
             let start = refs.partition_point(|r| r.span().file_id() < fid);
             let count = refs[start..].partition_point(|r| r.span().file_id() == fid);
@@ -236,12 +237,15 @@ pub fn collect_file_referenced_traits(ws: &WorkspaceIndex, file_path: &str) -> H
 
                 if r_kind == DefKind::Use && path.ends_with("::*") {
                     let raw_prefix = path.trim_end_matches("::*");
-                    let prefix = resolve_module_prefix(ws, file_path, reader.crate_name(), raw_prefix);
+                    let prefix =
+                        resolve_module_prefix(ws, file_path, reader.crate_name(), raw_prefix);
                     let prefix_colon = format!("{prefix}::");
                     let target_crate = prefix.split("::").next().unwrap_or(&prefix);
 
                     for candidate_reader in ws.readers() {
-                        if candidate_reader.crate_name() != target_crate && candidate_reader.crate_name() != reader.crate_name() {
+                        if candidate_reader.crate_name() != target_crate
+                            && candidate_reader.crate_name() != reader.crate_name()
+                        {
                             continue;
                         }
 

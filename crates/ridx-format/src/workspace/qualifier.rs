@@ -143,9 +143,10 @@ impl WorkspaceIndex {
         // 1. File scope: check definitions and imports declared directly in `file` across matching readers
         for &idx in &reader_indices {
             let reader = &self.readers[idx];
-            let target_file = self.target_file_for_reader(idx, file);
-            let target_str = target_file.as_deref().unwrap_or(file);
-            if let Some(fid) = reader.find_file_id(target_str) {
+            let Some(target_file) = self.target_file_for_reader(idx, file) else {
+                continue;
+            };
+            if let Some(fid) = reader.find_file_id(target_file.as_ref()) {
                 // Fast path: check if local item exists with path `<mod_path>::<first_seg>`
                 if !is_sysroot && !is_dep_crate {
                     if let Some(ref mod_path) = mod_path_opt {
