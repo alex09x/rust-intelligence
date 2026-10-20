@@ -292,3 +292,28 @@ To validate behavior on unsaved editor buffers via `textDocument/didChange`:
 
 4. **Structured Results**:
    - Each entry in `bench/results/pilot_results.jsonl` contains complete percentiles, RSS breakdown (Anon/File), open file descriptors (FDs), thread counts, build durations, and Prometheus node status.
+
+---
+
+## 9. selectionRange Fidelity against rust-analyzer
+
+`bench/selection_range_fidelity.py --repo DIR --ra BIN --ridx before=BIN --ridx after=BIN --out FILE`
+takes the 300 `selection_range` positions of the matrix sample (Section 5, seed 42), asks
+rust-analyzer and every ridx binary given for the full `textDocument/selectionRange` chain
+(twice per position: cold, then warm) and stores every chain in the output file together with
+the binaries' `--version` output, the corpus commit and the node. Per ridx binary it reports:
+
+- `invariant_violations`: innermost node not containing the cursor, or a parent not strictly
+  containing its child;
+- `innermost_in_ra`, `all_in_ra`: positions whose innermost node, or every node, occurs in the
+  rust-analyzer chain; `nodes_in_ra / nodes` over all positions;
+- `innermost_eq_ra_first_nonempty`: rust-analyzer's first node is always the empty range at the
+  cursor, so the comparison is with its first non-empty node;
+- `fn_item_start`: for every ridx `fn` item node (the parent of a `{..}` body node ending at the
+  same place) whether rust-analyzer has the same range, would have it only with the start moved
+  to the first `fn`/`pub`/... keyword line, or neither (fns written inside macro calls, where
+  rust-analyzer has token trees and no FN node);
+- cold and warm latency percentiles (p50, p90, p99, in microseconds) measured by the client.
+
+Published runs: `bench/published/selection_range_fidelity_<corpus>_ram9.json` (ram9, rust-analyzer
+1.98.1, ridx 59c9402 vs 26c6aef, five corpora, 300 positions each).
