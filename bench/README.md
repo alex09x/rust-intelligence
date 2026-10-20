@@ -35,15 +35,19 @@ python3 bench/export_site.py              # site/bench.json and site/bench.data.
 | `selection_range_fidelity.py` | `textDocument/selectionRange` chains of one or more ridx binaries against rust-analyzer on a corpus (methodology, section 9). |
 | `test_*.py` | Harness unit tests: `python3 -m pytest bench`. |
 
-## Superseded by the matrix
+## Earlier pipelines
 
-The comparison report and the site are generated from the matrix runs and no longer read these
-families. They stay until the removal commit, which will record the last commit holding them:
+Their published data stays in `published/`; the tooling was removed from the tree after commit
+`9a75047`, the last commit that still contains it. Restore the files from that commit and run them
+from the current tree:
 
-- `pilot_runner.py`, `worktree_bench.py`, `corpus.py`, `sampling.py`, `report.py`: the five-repository
-  pilot (`published/pilot_5repos_2026-10-08.jsonl`).
-- `run_completion_benchmark.py`, `verify_completion_regression.py`, `validate_scenarios.py`: the
-  completion recall/precision reruns (`published/rerun_completion_*.jsonl`,
-  `published/completion_regression_*.json`).
-
-Their published data is never removed.
+- Five-repository pilot (`published/pilot_5repos_2026-10-08.jsonl`):
+  `git checkout 9a75047 -- bench/pilot_runner.py bench/worktree_bench.py bench/corpus.py bench/sampling.py bench/report.py bench/metrics.py bench/corpus`,
+  then `python3 bench/pilot_runner.py --ridx target/release/ridx --ra rust-analyzer --taskset 24-31 --samples 300`
+  and `python3 bench/report.py --results bench/published/pilot_5repos_2026-10-08.jsonl --output LSP_BENCHMARK_COMPARISON_REPORT.md`
+  for the pilot version of the comparison report.
+- Completion recall and precision reruns (`published/rerun_completion_*.jsonl`,
+  `published/completion_regression_*.json`):
+  `git checkout 9a75047 -- bench/run_completion_benchmark.py bench/verify_completion_regression.py bench/validate_scenarios.py bench/metrics.py`,
+  then `python3 bench/run_completion_benchmark.py --commit <ridx sha> --ridx-bin <ridx> --ra-bin <rust-analyzer>` and
+  `python3 bench/verify_completion_regression.py --base-commit <sha> --curr-commit <sha> --replay`.

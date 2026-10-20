@@ -152,8 +152,8 @@ Over the 39 request methods whose items come from the corpus. The twelve rows th
 
 Published data is never rewritten; the files below stay in `bench/published/` and the code that produced them is in the git history.
 
-- Five-repository pilot (strict-match scenarios against rust-analyzer, worktree and mutation cases): `pilot_5repos_2026-10-08.jsonl` with its `.provenance.json`. Tooling (`pilot_runner.py`, `worktree_bench.py`, `corpus.py`, `sampling.py`, `report.py`) last changed in commit `cdf975d`; check out that commit to run it. Earlier versions of this report were generated from the pilot.
-- Completion recall and precision reruns against rust-analyzer: 33 `rerun_completion_*.jsonl` and 42 `completion_regression_*.json` files. Tooling (`run_completion_benchmark.py`, `verify_completion_regression.py`, `validate_scenarios.py`) last changed in commit `2c1e2ac`.
+- Five-repository pilot (strict-match scenarios against rust-analyzer, worktree and mutation cases): `pilot_5repos_2026-10-08.jsonl` with its `.provenance.json`. Tooling (`pilot_runner.py`, `worktree_bench.py`, `corpus.py`, `sampling.py`, `report.py`) exists up to commit `9a75047`: `git checkout 9a75047 -- bench/<file>` restores it (`bench/README.md` lists the commands). Earlier versions of this report were generated from the pilot.
+- Completion recall and precision reruns against rust-analyzer: 33 `rerun_completion_*.jsonl` and 42 `completion_regression_*.json` files. Tooling (`run_completion_benchmark.py`, `verify_completion_regression.py`, `validate_scenarios.py`) exists up to commit `9a75047`.
 - Hover rerun after the type-table binary search: `rerun_hover_844eac0.jsonl`.
 - Rename oracle on tokio (`cargo check --all-features` after the generated `WorkspaceEdit`): `rename_oracle.json`.
 - selectionRange fidelity against rust-analyzer: 5 `selection_range_fidelity_<repo>_ram9.json` files from `bench/selection_range_fidelity.py` (methodology, section 9).

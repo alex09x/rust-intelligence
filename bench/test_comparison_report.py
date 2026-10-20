@@ -58,7 +58,7 @@ def test_render_from_published_json():
         assert "  - `textDocument/codeLens` (BurntSushi/ripgrep)" in lines
         assert "- `textDocument/content` is not counted: the published runs were measured before harness commit `d27ac0e` fixed its parameters (known harness defects in `docs/BENCHMARK_MATRIX.md`)." in lines
         assert any("Outside mutation case B nothing in the matrix checks that an answer is correct" in l for l in lines)
-        assert "- Completion recall and precision reruns against rust-analyzer: 0 `rerun_completion_*.jsonl` and 0 `completion_regression_*.json` files. Tooling (`run_completion_benchmark.py`, `verify_completion_regression.py`, `validate_scenarios.py`) last changed in commit `2c1e2ac`." in lines
+        assert "- Completion recall and precision reruns against rust-analyzer: 0 `rerun_completion_*.jsonl` and 0 `completion_regression_*.json` files. Tooling (`run_completion_benchmark.py`, `verify_completion_regression.py`, `validate_scenarios.py`) exists up to commit `9a75047`." in lines
         assert FORBIDDEN_WORDS.search(text) is None, FORBIDDEN_WORDS.search(text)
         assert FORBIDDEN_MULTIPLIERS.search(text) is None, FORBIDDEN_MULTIPLIERS.search(text)
         print("PASS: comparison report renders setup, glance, headline and coverage sections from JSON")

@@ -31,9 +31,10 @@ SETUP_FIELDS = [
 ]
 
 PILOT_TOOLS = "`pilot_runner.py`, `worktree_bench.py`, `corpus.py`, `sampling.py`, `report.py`"
-PILOT_LAST_COMMIT = "cdf975d"
 COMPLETION_TOOLS = "`run_completion_benchmark.py`, `verify_completion_regression.py`, `validate_scenarios.py`"
-COMPLETION_LAST_COMMIT = "2c1e2ac"
+# The last commit that still contains the tooling of the earlier pipelines (the parent of the commit
+# that removed it); `git checkout <commit> -- bench/<file>` restores a script.
+TOOLING_LAST_COMMIT = "9a75047"
 
 
 def _row(cells: List[str]) -> str:
@@ -132,11 +133,12 @@ def render_history(pub_dir: Path) -> List[str]:
         "code that produced them is in the git history.", "",
         "- Five-repository pilot (strict-match scenarios against rust-analyzer, worktree and "
         "mutation cases): `pilot_5repos_2026-10-08.jsonl` with its `.provenance.json`. Tooling "
-        f"({PILOT_TOOLS}) last changed in commit `{PILOT_LAST_COMMIT}`; check out that commit to run "
-        "it. Earlier versions of this report were generated from the pilot.",
+        f"({PILOT_TOOLS}) exists up to commit `{TOOLING_LAST_COMMIT}`: "
+        f"`git checkout {TOOLING_LAST_COMMIT} -- bench/<file>` restores it (`bench/README.md` lists the "
+        "commands). Earlier versions of this report were generated from the pilot.",
         f"- Completion recall and precision reruns against rust-analyzer: {reruns} "
         f"`rerun_completion_*.jsonl` and {regressions} `completion_regression_*.json` files. Tooling "
-        f"({COMPLETION_TOOLS}) last changed in commit `{COMPLETION_LAST_COMMIT}`.",
+        f"({COMPLETION_TOOLS}) exists up to commit `{TOOLING_LAST_COMMIT}`.",
         f"- Hover rerun after the type-table binary search: {hover}.",
         "- Rename oracle on tokio (`cargo check --all-features` after the generated `WorkspaceEdit`): "
         "`rename_oracle.json`.",

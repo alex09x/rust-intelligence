@@ -1,81 +1,38 @@
-# Benchmark Methodology: RIDX vs. rust-analyzer (Live) vs. rust-analyzer SCIP
+# Benchmark Methodology: RIDX vs rust-analyzer
 
-This document specifies the validated, implemented methodology for comparative benchmarking of latency, resource consumption, and semantic accuracy: **Rust Intelligence (`ridx`)** vs. **`rust-analyzer 1.98.1` (live LSP daemon)** and **`rust-analyzer scip` (static index)**.
-
----
-
-## 1. Architecture and Evaluated Systems
-
-The benchmark evaluates three distinct systems:
-
-1. **`ridx` (Rust Intelligence)**:
-   - Pre-computed content-addressed CAS index (`.ridx`), flat `mmap` format.
-   - Zero heap allocation during read queries (zero-memory cold and warm lookups).
-   - Operates in CLI mode (`ridx def`, `ridx refs`, `ridx hover`) and as a framed JSON-RPC LSP daemon (`ridx lsp`).
-
-2. **`rust-analyzer` (Live LSP daemon)**:
-   - Full-featured LSP server version 1.98.1.
-   - Incremental Salsa compiler engine, live semantic analysis, background checks.
-   - Configured with `"checkOnSave": false` to prevent uncontrolled background `cargo check` execution.
-
-3. **`rust-analyzer scip` (Static Index)**:
-   - Ahead-of-time static index generation in SCIP Protobuf format (`rust-analyzer scip <dir> --output index.scip --exclude-vendored-libraries`).
-   - Parsed into memory via the official `scip 0.10.0` crate by an in-memory loader (`ScipIndex`).
-   - Enables direct "static index vs. static index" comparison isolated from Salsa and JSON-RPC overhead.
+This document specifies the methodology behind the published benchmark data in `bench/published/`: the LSP matrix (sections 1 to 7), the selectionRange fidelity measurement (section 9) and the earlier pipelines whose data is kept but whose tooling has been removed (section 8). Every published number is produced by the scripts in `bench/` from recorded runs; `docs/BENCHMARK_MATRIX.md`, `LSP_BENCHMARK_COMPARISON_REPORT.md` and the site data are generated from the published files (`bench/README.md`).
 
 ---
 
-## 2. Test Corpus and Environment Isolation
+## 1. Evaluated Systems
 
-### 2.1. Repository Corpus
-- Reference dataset: top 100 open-source Rust repositories (`bench/corpus/rust-100.tsv`).
-- Core benchmark suite (5 diverse projects):
-  1. `serde-rs/serde` (macros, codegen, traits)
-  2. `BurntSushi/ripgrep` (CLI, system APIs, complex types)
-  3. `tokio-rs/tokio` (async runtime, concurrency)
-  4. `rust-lang/rust-analyzer` (heavy monorepo, deep AST trees)
-  5. `bevyengine/bevy` (large game engine, massive codebase)
+1. **`ridx lsp` (Rust Intelligence)**: the framed JSON-RPC LSP server over the content-addressed `.ridx` index (`mmap`, flat tables). The index of each corpus is built before the run by `ridx index` with the `ridx-driver` recorded in the provenance (`driver_hash`, `driver_build_commit`, `driver_source`); the sysroot shards are recorded by `sysroot_cas_key`.
+2. **`rust-analyzer` (live LSP server)**: the release binary of the toolchain under test (`ra_version`; 1.98.1 in the published runs), started with `"checkOnSave": false` so that no `cargo check` runs during the measurement.
 
-### 2.2. Environmental Isolation
-- Each repository is checked out into an isolated directory pinned to an exact commit SHA.
-- **Sequential Execution**: Exactly one project runs at any time. Concurrent benchmark runs on the same node are prohibited.
-- **Artifact Cleanup**: After completing measurements for each repository, `target/` directories and `index.scip` files are purged to prevent cache pollution.
+Both servers are driven by the same client (`bench/lsp_process.py`): framed JSON-RPC over stdio, a reader thread, a 2 s timeout per request after which the client sends `$/cancelRequest` and counts the request as cancelled (`ridx_cancelled_on_timeout`, `ra_cancelled_on_timeout`).
 
 ---
 
-## 3. Noise Elimination
+## 2. Corpus and Isolation
 
-To guarantee reproducibility and eliminate measurement artifacts:
-
-1. **CPU Core Pinning**:
-   - All benchmark processes (`cargo check`, `ridx index`, `rust-analyzer scip`, `ridx lsp`, `rust-analyzer lsp`) are pinned to 8 isolated cores on dedicated node `booster` via `taskset -c 24-31`.
-2. **Compiler Background Process Guard (`pgrep`)**:
-   - During query execution, a background monitor samples the process tree (`/proc/<pid>/stat`) every 5 ms.
-   - If the server spawns `cargo` or `rustc` during query evaluation, the run is flagged with `cargo_spawned: true`.
-3. **Prometheus Hardware Guard**:
-   - At the beginning and end of each project run, node health metrics are inspected via Prometheus:
-     - `CPU Steal Time > 1.0%`
-     - `CPU Throttling > 0`
-     - `Node CPU Load > 85%`
-     - `Disk IO Wait` spikes
-   - Any anomaly triggers a `NOISE_REJECTED` status and invalidates the run.
+- Five repositories: `serde-rs/serde`, `BurntSushi/ripgrep`, `tokio-rs/tokio`, `rust-lang/rust-analyzer`, `bevyengine/bevy`. Each run records the corpus commit (`repo_commit`) and the sha256 of the `Cargo.lock` the index was built from (`corpus_lockfile_sha256`). `bench/matrix_provenance.py` checks that the corpus has a RIDX index with a sysroot CAS key before anything is measured (`check_ridx_index`, `bench/test_index_precondition.py`) and records whether the driver binary is newer than that index (`driver_newer_than_index`).
+- One repository and one server at a time on the dedicated node (`node`); the runner is started under `taskset` and records the CPU set it inherited (`taskset`; `24-31` in the published runs). Nothing else runs on the node during a run.
+- Before each method the client waits for every answer the server still owes (`drain`), then sends a request no server implements and waits for its `-32601` answer, so queued notifications cannot leak into the next method's latencies (`bench/lsp_barrier.py`). Waits above 1 ms are recorded per method (`method_drains`).
+- Readiness is measured separately from query latency (section 6).
 
 ---
 
-## 4. Resource Telemetry: Descriptors, Threads, and Disaggregated Memory
+## 3. Determinism
 
-The runner polls Linux kernel `/proc/<pid>/` telemetry every 5 ms:
+- Items are sampled by `bench/matrix_sampling.py` from a line-based regex scan of the corpus sources (`bench/scan.py`) with seed 42; file lists are sorted, so the sample depends neither on directory order nor on `PYTHONHASHSEED` (`bench/test_sampling_determinism.py`). The sampled positions are published next to every run (`matrix_<repo>_booster.positions.json`).
+- The method list, the request parameters and the request or notification type of every row are fixed in `bench/matrix_categories.py` (section 5).
+- The documents are regenerated from the published files only and are deterministic for a given set of files (`bench/test_matrix_report.py`, `bench/test_comparison_report.py`, `bench/test_export_site.py`).
 
-| Metric | Source | Purpose and Description |
-| :--- | :--- | :--- |
-| **`peak_open_fds`** | `count(/proc/<pid>/fd)` | Number of open file descriptors; tracks open file handles and inotify watchers to detect FD leaks. |
-| **`peak_threads`** | `/proc/<pid>/status` (`Threads:`) | Peak OS thread count (rayon threadpools, tokio workers, Salsa workers). |
-| **`peak_rss_anon_mb`** | `/proc/<pid>/status` (`RssAnon:`) | **Anonymous Physical RAM (Heap/Stack)** that cannot be paged to disk. Reflects true runtime heap footprint. |
-| **`peak_rss_file_mb`** | `/proc/<pid>/status` (`RssFile:`) | **Page cache memory from `mmap` files**. For `ridx`, index pages can be evicted cleanly under OS memory pressure. |
+---
 
-Telemetry runs across all phases:
-- Indexing: `cargo check`, `ridx index`, `rust-analyzer scip`.
-- Serving: `ridx lsp`, `rust-analyzer`, and `scip-loader` sessions.
+## 4. Resource Telemetry
+
+After the items of each method the runner reads `/proc/<pid>/status` of the server (`VmRSS`, `Threads`) and counts the entries of `/proc/<pid>/fd` (`get_proc_metrics` in `bench/metrics.py`). The published run keeps the peaks over the whole suite per server: `peak_rss_mb`, `peak_threads`, `peak_fds`. `VmRSS` includes file-backed pages, so for `ridx` it counts the pages of the mapped `.ridx` shards the kernel currently holds; those pages can be dropped under memory pressure, anonymous heap cannot. The matrix does not publish the split into anonymous and file-backed memory.
 
 ---
 
@@ -120,19 +77,12 @@ For requests the harness asks three times per item: the first answer is the cold
 
 ---
 
-## 6. Latency Measurements: Warmup and Cold vs. Warm Separation
+## 6. Latency Measurements: Readiness and Cold vs. Warm
 
-1. **Readiness / Warmup Time**:
-   - `ridx`: time to open CAS manifest and mount `mmap` segments (`readiness_warmup_micros`).
-   - `rust-analyzer`: time from process start to background analysis completion and ping response (`readiness_warmup_micros`).
-   - `rust-analyzer` in the matrix runs: readiness is established in three steps and recorded separately: the server reports `quiescent` (`ra_initial_wait_ms`), every `$/progress` token has ended, and a `textDocument/definition` canary on the first three sampled positions returns two consecutive non-empty answers (`ra_canary_wait_ms`, `ra_canary_attempts`). The synchronization block (methods 8-14) makes rust-analyzer reload the workspace, so the same quiescence and canary check is repeated before the first query method (`ra_quiescent_pre_query_wait_ms`, `ra_canary_pre_query_wait_ms`, `ra_canary_pre_query_attempts`).
-   - `scip`: time to parse Protobuf index into memory (`scip_load_ms`).
-   - *Readiness time is strictly separated from query evaluation latency.*
-
-2. **Query Latency (3 iterations per probe)**:
-   - **Iteration 1**: `Cold latency` (first read, cold page cache and CPU cache).
-   - **Iterations 2 and 3**: `Warm latency` (median of subsequent queries).
-   - Percentile calculations: **p50, p90, p95, p99** per method (`def`, `hover`, `refs`).
+1. **Readiness**, measured and recorded separately from query latency:
+   - `ridx`: time from process start until the server reports quiescence after `initialize` (`ridx_initial_wait_ms`).
+   - `rust-analyzer`: three recorded steps: the server reports `quiescent` (`ra_initial_wait_ms`), every `$/progress` token has ended, and a `textDocument/definition` canary on the first three sampled positions answers non-empty twice in a row (`ra_canary_wait_ms`, `ra_canary_attempts`). The synchronization block (ids 8 to 14) makes rust-analyzer reload the workspace, so readiness is re-established before the first query method (`ra_quiescent_pre_query_wait_ms`, `ra_canary_pre_query_wait_ms`, `ra_canary_pre_query_attempts`).
+2. **Query latency, three asks per item**: the first answer is the cold measurement, the mean of the second and third the warm one. Percentiles p50, p90, p95 and p99 of both are kept per method (`cold_*_us`, `warm_*_us`); the documents show warm p50 and p99.
 
 ---
 
@@ -163,38 +113,17 @@ To validate behavior on unsaved editor buffers via `textDocument/didChange`:
 - From file B, definition of a symbol in file A is queried.
 - **Criterion**: The returned `targetSelectionRange` must shift by exactly +10 lines.
 
-*(For SCIP, mutation tests are marked `N/A` as SCIP is a purely static offline index format).*
-
 ---
 
-## 8. Discrepancy Arbitration and Reporting
+## 8. Earlier Pipelines (Historical Note)
 
-1. **Discrepancy Logging**:
-   - All response discrepancies (one server found a target, the other returned null, or differing ranges) are recorded in `bench/results/discrepancies.jsonl` with full JSON-RPC payloads.
+The published files of the earlier pipelines stay in `bench/published/`; their tooling was removed from the tree after commit `9a75047`, the last commit that still contains it. `bench/README.md` lists the files and the `git checkout 9a75047 -- bench/<file>` commands that restore them.
 
-2. **Attribution Categories**:
-   - `missing_in_ra`: Baseline returned `null` / `Not found` while RIDX resolved target (RIDX advantage).
-   - `missing_in_ridx`: RIDX returned `null` / `Not found` while baseline located definition (e.g. proc-macros without Salsa expansion or unindexed crates).
-   - `associated_type_binding`: Identifiers in associated type equality constraints (`hir::TypeBinding`, e.g. `where V: Visitor<'de, Value = ()>`, `S::Error`, `Serializer<Ok = ()>`).
-   - `same_file_decl_vs_impl` (Class C): Trait default method body vs declaration header (semantically equivalent locations, both valid).
-   - `line_level_match` (Class B): Coordinates within 2 lines tolerance in the same file.
-   - `divergent_target`: Different symbols, files, or macro expansion span offsets.
+1. **Five-repository pilot** (`pilot_5repos_2026-10-08.jsonl` with its `.provenance.json`): 300 read-only positions per repository plus mutation and worktree scenarios; answers compared with rust-analyzer as strict matches, line-level matches and semantically equivalent locations; discrepancies attributed to categories (missing in one server, associated type bindings, declaration vs implementation, divergent target); a `rust-analyzer scip` static index as a third system; process telemetry split into anonymous and file-backed RSS; Prometheus node-health guards and a `cargo`/`rustc` spawn guard around every run.
+2. **Completion recall and precision reruns** (`rerun_completion_*.jsonl`, `completion_regression_*.json`): 100 completion positions on serde and bevy; candidates compared with rust-analyzer per scenario (recall, non-empty precision, empty answers, regressions to empty); paired baseline and current binaries with recorded driver and sysroot provenance.
+3. **Hover rerun** after the type-table binary search (`rerun_hover_844eac0.jsonl`) and the **rename oracle** on tokio (`rename_oracle.json`: `cargo check --all-features` after the generated `WorkspaceEdit`).
 
-3. **Standard Library (Sysroot) Discrepancy Accounting & Expected Impact**:
-   - **Distinction between Discrepancy Share and Strict-Match Percentage Points**:
-     When analyzing non-matching queries targeting standard library items (`std`/`core`/`alloc`), the proportion of *discrepancies* targeting sysroot must not be conflated with percentage points ($\text{pp}$) of overall accuracy.
-     The mathematical formula for projected improvement is:
-     $$\Delta_{\text{strict-match}} = \frac{N_{\text{sysroot\_discrepancies}}}{N_{\text{total\_scenarios}}} \times 100\%$$
-     In the 5-repository pilot benchmark:
-     - Out of 426 recorded discrepancy lines (386 unique scenarios across 2,100 evaluated scenarios), **113 records (26.5% of recorded discrepancies; 99 unique scenarios or 25.6%)** target items residing in the standard library sysroot (`std`/`core`/`alloc`).
-     - Across all 2,100 evaluated scenarios, the expected impact of standard library sysroot indexing is up to **+4.71 percentage points** (raising aggregate strict match from 81.62% to 86.33%).
-     - Across the 1,500 read-only queries (300 per repository), 73 of the 182 non-matching queries target sysroot (40.1% of read-only discrepancies). The expected impact on read-only strict match is up to **+4.87 percentage points** (raising read-only strict match from 87.87% to 92.73%).
-   - **Architectural Behavior for Standard Library References**:
-     In the standard library (`std`/`core`/`alloc`), go-to-definition (`textDocument/definition`) on method calls and field accesses (e.g. `iter.next()`, `atomic.fetch_sub()`) succeeds even without a pre-indexed sysroot shard because `rustc` preserves the `target_file` path pointing into `rustlib/src` within the `RawReference` payload.
-     However, operations that require index definition shards—including hover signatures and documentation (`textDocument/hover`), find references (`textDocument/references`), and workspace symbol searches (`workspace/symbol`)—do not resolve for standard library items until sysroot crates are pre-indexed into CAS shards.
-
-4. **Structured Results**:
-   - Each entry in `bench/results/pilot_results.jsonl` contains complete percentiles, RSS breakdown (Anon/File), open file descriptors (FDs), thread counts, build durations, and Prometheus node status.
+The strict-match rates, sysroot discrepancy shares and ratios formerly quoted in this document and in `LSP_BENCHMARK_COMPARISON_REPORT.md` belong to the pilot and remain in the git history of both files.
 
 ---
 
