@@ -16,31 +16,10 @@ mod tests;
 
 use super::target_kind;
 use super::WorkspaceIndex;
+#[cfg(test)]
+use crate::paths::normalize_path;
 use std::fs;
 use std::path::{Path, PathBuf};
-
-/// Normalizes a path by removing redundant `.` and resolving `..` components lexically.
-pub(crate) fn normalize_path(path: &Path) -> PathBuf {
-    use std::path::Component;
-    let mut components = Vec::new();
-    for c in path.components() {
-        match c {
-            Component::CurDir => {}
-            Component::ParentDir => {
-                if let Some(Component::Normal(_)) = components.last() {
-                    components.pop();
-                } else if !components
-                    .iter()
-                    .any(|comp| matches!(comp, Component::RootDir | Component::Prefix(_)))
-                {
-                    components.push(c);
-                }
-            }
-            _ => components.push(c),
-        }
-    }
-    components.into_iter().collect()
-}
 
 /// Checks whether a path contains a `ParentDir` (`..`) that pops across a symlink component,
 /// meaning lexical normalization would diverge from the true filesystem target.

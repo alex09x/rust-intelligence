@@ -7,11 +7,13 @@
 
 pub mod driver_hash;
 pub mod format;
+pub(crate) mod paths;
 pub mod reader;
 pub mod workspace;
 pub mod writer;
 
 pub use format::*;
+pub use paths::normalize_path;
 pub use reader::{IndexReader, ResolvedDefinition};
 pub use workspace::*;
 pub use writer::{IndexWriter, RawDefinition, RawReference, RawType};

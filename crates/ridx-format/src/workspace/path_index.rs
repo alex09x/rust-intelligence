@@ -10,8 +10,9 @@
 
 //! Precomputed path provenance index for `WorkspaceIndex`.
 
-use super::provenance::{normalize_path, path_traverses_symlink_parent};
+use super::provenance::path_traverses_symlink_parent;
 use super::WorkspaceIndex;
+use crate::paths::normalize_path;
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
 use std::path::{Component, Path, PathBuf};

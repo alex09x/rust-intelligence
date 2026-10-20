@@ -10,7 +10,8 @@
 
 //! Reference oracle implementations for `PathIndex` equivalence tests.
 
-use crate::workspace::provenance::{file_entry_matches, normalize_path};
+use crate::paths::normalize_path;
+use crate::workspace::provenance::file_entry_matches;
 use crate::workspace::WorkspaceIndex;
 use std::path::{Path, PathBuf};
 

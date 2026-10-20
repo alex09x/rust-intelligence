@@ -26,24 +26,8 @@
 
 use std::path::{Component, Path, PathBuf};
 
+use ridx_format::normalize_path;
 use ridx_format::IndexReader;
-
-fn resolve_parent_dirs(path: &Path) -> PathBuf {
-    let mut out: Vec<Component> = Vec::new();
-    for c in path.components() {
-        match c {
-            Component::CurDir => {}
-            Component::ParentDir => match out.last() {
-                Some(Component::Normal(_)) => {
-                    out.pop();
-                }
-                _ => out.push(c),
-            },
-            _ => out.push(c),
-        }
-    }
-    out.into_iter().collect()
-}
 
 fn shards(arg: &Path) -> Vec<PathBuf> {
     if arg.is_dir() {
@@ -88,7 +72,7 @@ fn main() {
                     .components()
                     .any(|c| c == Component::ParentDir);
                 if has_parent_dir {
-                    let resolved = resolve_parent_dirs(Path::new(stored));
+                    let resolved = normalize_path(Path::new(stored));
                     let resolved = resolved.to_string_lossy();
                     let verdict = match reader.find_file_id(&resolved) {
                         Some(found) if found == id => "found",

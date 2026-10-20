@@ -11,7 +11,7 @@
 //! Builder logic for `PathIndex`.
 
 use super::{has_parent_dir, OriginMeta, PathIndex, ReaderPathMeta, UniquePathEntry};
-use crate::workspace::provenance::normalize_path;
+use crate::paths::normalize_path;
 use crate::workspace::WorkspaceIndex;
 use std::collections::HashMap;
 use std::ffi::OsString;
