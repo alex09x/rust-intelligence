@@ -10,6 +10,7 @@ window.RIDX_BENCH = {
   "limitations": [
     "Outside mutation case B nothing in the matrix checks that an answer is correct: a / b / c count non-empty, empty and failed answers (methodology, sections 5 and 7).",
     "textDocument/content is not counted: the published runs were measured before harness commit d27ac0e fixed its parameters (known harness defects in docs/BENCHMARK_MATRIX.md).",
+    "callHierarchy/incomingCalls lists a caller only where the reference to the function is followed by a call, name( or name::<...>(; rust-analyzer also lists functions passed as values, such as a system handed to add_systems or a function given to map (class c5 of the published gap sidecars).",
     "rust-analyzer answers -32601 (method not found) for: textDocument/colorPresentation (all five), textDocument/documentColor (all five), textDocument/documentLink (all five), textDocument/inlineCompletion (all five), textDocument/inlineValue (all five), textDocument/linkedEditingRange (all five), textDocument/moniker (all five), textDocument/prepareTypeHierarchy (all five), textDocument/willSaveWaitUntil (all five), workspace/diagnostic (all five), workspace/willCreateFiles (all five), workspace/willDeleteFiles (all five).",
     "Peak RSS over the run: RIDX 85 to 864 MB, rust-analyzer 2193 to 16512 MB across the repositories (RIDX maps its index files, so its RSS includes page-cache pages).",
     "Requests cancelled on the client timeout: RIDX 0, rust-analyzer 209."

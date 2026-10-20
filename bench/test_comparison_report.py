@@ -59,6 +59,7 @@ def test_render_from_published_json():
         assert not any("`textDocument/codeLens` is not counted" in l for l in lines)
         assert "- `textDocument/content` is not counted: the published runs were measured before harness commit `d27ac0e` fixed its parameters (known harness defects in `docs/BENCHMARK_MATRIX.md`)." in lines
         assert any("Outside mutation case B nothing in the matrix checks that an answer is correct" in l for l in lines)
+        assert any(l.startswith("- `callHierarchy/incomingCalls` lists a caller only where the reference to the function is followed by a call, `name(` or `name::<...>(`; rust-analyzer also lists functions passed as values") for l in lines)
         assert "- Completion recall and precision reruns against rust-analyzer: 0 `rerun_completion_*.jsonl` and 0 `completion_regression_*.json` files. Tooling (`run_completion_benchmark.py`, `verify_completion_regression.py`, `validate_scenarios.py`) exists up to commit `9a75047`." in lines
         assert FORBIDDEN_WORDS.search(text) is None, FORBIDDEN_WORDS.search(text)
         assert FORBIDDEN_MULTIPLIERS.search(text) is None, FORBIDDEN_MULTIPLIERS.search(text)

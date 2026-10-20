@@ -59,6 +59,8 @@ def test_export_from_published_json():
         assert payload["limitations"][0].startswith("Outside mutation case B nothing in the matrix checks that an answer is correct")
         assert not any("codeLens is not counted" in l for l in payload["limitations"])
         assert payload["limitations"][1] == "textDocument/content is not counted: the published runs were measured before harness commit d27ac0e fixed its parameters (known harness defects in docs/BENCHMARK_MATRIX.md)."
+        assert payload["limitations"][2].startswith("callHierarchy/incomingCalls lists a caller only where the reference to the function is followed by a call, name( or name::<...>(; rust-analyzer also lists functions passed as values")
+        assert "`" not in payload["limitations"][2]
         assert "Peak RSS over the run: RIDX 82 to 82 MB, rust-analyzer 2176 to 2176 MB" in payload["limitations"][-2]
         assert payload["limitations"][-1] == "Requests cancelled on the client timeout: RIDX 0, rust-analyzer 0."
         for key in ("summary", "completion", "accuracy"):

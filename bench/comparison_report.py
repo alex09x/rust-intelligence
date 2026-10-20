@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from matrix_headline import (CANONICAL, HARNESS_DEFECT_ROWS, HEADLINE_METHODS, REQUEST_KEYS, abc,
-                             answered, by_method, defect_notes, distinct, fmt_us, load_published,
+                             answered, by_method, defect_notes, distinct, fmt_us, load_published, semantic_notes,
                              ra_not_implemented, ra_silent, ridx_silent, short, where)
 
 Runs = List[Tuple[str, Dict[str, Any]]]
@@ -121,6 +121,7 @@ def render_coverage(runs: Runs) -> List[str]:
     out += _coverage_list("rust-analyzer returned no non-empty answer on any item while RIDX did",
                           by_method(runs, ra_silent), total)
     out += [f"- {note}" for note in defect_notes(code=True)]
+    out += [f"- {note}" for note in semantic_notes(code=True)]
     out.append("")
     return out
 

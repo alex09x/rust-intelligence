@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from matrix_headline import (CANONICAL, HEADLINE_METHODS, REQUEST_KEYS, SITE_METHODS, answered,
-                             by_method, defect_notes, distinct, fmt_us, load_published,
+                             by_method, defect_notes, distinct, fmt_us, load_published, semantic_notes,
                              ra_not_implemented, ridx_silent, seconds, short, where)
 
 Runs = List[Tuple[str, Dict[str, Any]]]
@@ -69,6 +69,7 @@ def limitations(runs: Runs) -> List[str]:
     notes = ["Outside mutation case B nothing in the matrix checks that an answer is correct: a / b / c "
              "count non-empty, empty and failed answers (methodology, sections 5 and 7)."]
     notes += defect_notes(code=False)
+    notes += semantic_notes(code=False)
     for method, repos in by_method(runs, ridx_silent).items():
         notes.append(f"RIDX returned no non-empty answer for {method} on {where(repos, total)} "
                      "while rust-analyzer did.")

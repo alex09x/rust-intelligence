@@ -147,6 +147,26 @@ def where(repos: List[str], total: int) -> str:
     return "all five" if total == 5 and len(repos) == total else ", ".join(repos)
 
 
+# Differences of definition between RIDX and rust-analyzer that the a/b/c counters cannot see: the
+# published gap sidecars (bench/published/position_ab_<sha>_vs_ra_ram9_<repo>.gap_classes.json) name
+# the rows each one explains.
+SEMANTIC_NOTES = [
+    ("`callHierarchy/incomingCalls`", "lists a caller only where the reference to the function is followed by a "
+     "call, `name(` or `name::<...>(`; rust-analyzer also lists functions passed as values, such as a system "
+     "handed to `add_systems` or a function given to `map` (class `c5` of the published gap sidecars)."),
+]
+
+
+def semantic_notes(code: bool) -> List[str]:
+    """One sentence per definition difference between the two servers; without `code` the
+    backticks are dropped for plain-text contexts."""
+    out = []
+    for rpc, text in SEMANTIC_NOTES:
+        note = f"{rpc} {text}"
+        out.append(note if code else note.replace("`", ""))
+    return out
+
+
 def defect_notes(code: bool) -> List[str]:
     """One sentence per row excluded because of a harness defect in the published runs; without
     `code` the backticks are dropped for plain-text contexts."""

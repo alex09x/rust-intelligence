@@ -146,6 +146,7 @@ Over the 39 request methods whose items come from the corpus. The twelve rows th
   - `textDocument/onTypeFormatting` (rust-lang/rust-analyzer)
   - `textDocument/rangeFormatting` (all five)
 - `textDocument/content` is not counted: the published runs were measured before harness commit `d27ac0e` fixed its parameters (known harness defects in `docs/BENCHMARK_MATRIX.md`).
+- `callHierarchy/incomingCalls` lists a caller only where the reference to the function is followed by a call, `name(` or `name::<...>(`; rust-analyzer also lists functions passed as values, such as a system handed to `add_systems` or a function given to `map` (class `c5` of the published gap sidecars).
 
 ## 5. Earlier publications
 
