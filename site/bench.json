@@ -3,516 +3,515 @@
   "source": "bench/published/matrix_<repo>_booster.json",
   "node": "booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)",
   "baseline": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
-  "ridx_commit": "c4e181a48646ff10e7922723715677b305b1cad4",
-  "driver_hash": "aed6f3b1c9a9437d",
-  "method_note": "5 repositories, 78 LSP methods, 300 sampled items per method (22,204 requests per server and repository, seed 42); RIDX c4e181a, driver aed6f3b1c9a9437d, rust-analyzer 1.98.1 (48a229c 2026-09-01); node booster, CPU set 24-31. Each item is asked three times; the first answer is the cold measurement and the mean of the other two the warm one. Bars show the warm p50 and p99 over the items; the scale is logarithmic.",
+  "ridx_commit": "55449b1530fb0cc91e3aa8e1c3ff5d2a13cd0552",
+  "driver_hash": "1b3ccaf3391f5ab5",
+  "method_note": "5 repositories, 78 LSP methods, 300 sampled items per method (22,204 requests per server and repository, seed 42); RIDX 55449b1, driver 1b3ccaf3391f5ab5, rust-analyzer 1.98.1 (48a229c 2026-09-01); node booster, CPU set 24-31. Each item is asked three times; the first answer is the cold measurement and the mean of the other two the warm one. Bars show the warm p50 and p99 over the items; the scale is logarithmic.",
   "limitations": [
     "Outside mutation case B nothing in the matrix checks that an answer is correct: a / b / c count non-empty, empty and failed answers (methodology, sections 5 and 7).",
-    "textDocument/codeLens is not counted: the matrix client declares neither textDocument.codeLens nor the rust-analyzer.* commands (experimental.commands) that rust-analyzer requires before it builds any lens, so rust-analyzer answered [] on every item (known harness defects in docs/BENCHMARK_MATRIX.md).",
     "textDocument/content is not counted: the published runs were measured before harness commit d27ac0e fixed its parameters (known harness defects in docs/BENCHMARK_MATRIX.md).",
     "rust-analyzer answers -32601 (method not found) for: textDocument/colorPresentation (all five), textDocument/documentColor (all five), textDocument/documentLink (all five), textDocument/inlineCompletion (all five), textDocument/inlineValue (all five), textDocument/linkedEditingRange (all five), textDocument/moniker (all five), textDocument/prepareTypeHierarchy (all five), textDocument/willSaveWaitUntil (all five), workspace/diagnostic (all five), workspace/willCreateFiles (all five), workspace/willDeleteFiles (all five).",
-    "Peak RSS over the run: RIDX 88 to 958 MB, rust-analyzer 2227 to 16590 MB across the repositories (RIDX maps its index files, so its RSS includes page-cache pages).",
-    "Requests cancelled on the client timeout: RIDX 0, rust-analyzer 181."
+    "Peak RSS over the run: RIDX 85 to 864 MB, rust-analyzer 2193 to 16512 MB across the repositories (RIDX maps its index files, so its RSS includes page-cache pages).",
+    "Requests cancelled on the client timeout: RIDX 0, rust-analyzer 209."
   ],
   "workspaces": {
     "ripgrep": {
       "repo": "BurntSushi/ripgrep",
-      "meta": "ripgrep · 27 index shards · RIDX c4e181a · booster",
+      "meta": "ripgrep · 27 index shards · RIDX 55449b1 · booster",
       "target": "LSP matrix · 300 items per method · warm latencies · corpus 4649aa9",
       "rows": [
         [
           "Go to definition (warm p50)",
-          4.4937e-05,
+          4.541e-05,
           "45 µs",
-          9.2939e-05,
-          "93 µs"
+          9.8387e-05,
+          "98 µs"
         ],
         [
           "Go to definition (tail p99)",
-          0.00028331,
-          "283 µs",
-          0.000286329,
-          "286 µs"
+          0.000100265,
+          "100 µs",
+          0.000256683,
+          "257 µs"
         ],
         [
           "Find references (warm p50)",
-          0.000102148,
-          "102 µs",
-          0.001469377,
-          "1.47 ms"
+          9.8685e-05,
+          "99 µs",
+          0.001441856,
+          "1.44 ms"
         ],
         [
           "Find references (tail p99)",
-          0.008111202,
-          "8.11 ms",
-          0.021388575,
-          "21.39 ms"
+          0.008692692,
+          "8.69 ms",
+          0.021633457,
+          "21.63 ms"
         ],
         [
           "Hover (warm p50)",
-          5.5932e-05,
-          "56 µs",
-          9.5443e-05,
-          "95 µs"
+          5.4928e-05,
+          "55 µs",
+          9.7405e-05,
+          "97 µs"
         ],
         [
           "Hover (tail p99)",
-          9.673e-05,
-          "97 µs",
-          0.000212967,
-          "213 µs"
+          9.0824e-05,
+          "91 µs",
+          0.000237855,
+          "238 µs"
         ],
         [
           "Completion (warm p50)",
-          0.000164361,
-          "164 µs",
-          0.002418636,
-          "2.42 ms"
+          0.00017385,
+          "174 µs",
+          0.002384358,
+          "2.38 ms"
         ],
         [
           "Completion (tail p99)",
-          0.001958229,
+          0.001962216,
           "1.96 ms",
-          0.008690589,
-          "8.69 ms"
+          0.008714809,
+          "8.71 ms"
         ],
         [
           "Document symbols (warm p50)",
-          6.569e-05,
-          "66 µs",
-          0.000250434,
-          "250 µs"
+          6.9938e-05,
+          "70 µs",
+          0.000262339,
+          "262 µs"
         ],
         [
           "Document symbols (tail p99)",
-          0.004548381,
-          "4.55 ms",
-          0.007481319,
-          "7.48 ms"
+          0.003886464,
+          "3.89 ms",
+          0.00741366,
+          "7.41 ms"
         ],
         [
           "Rename (warm p50)",
-          0.000423189,
-          "423 µs",
-          0.000478959,
-          "479 µs"
+          0.000429307,
+          "429 µs",
+          0.000453355,
+          "453 µs"
         ],
         [
           "Rename (tail p99)",
-          0.008071881,
-          "8.07 ms",
-          0.117121792,
-          "117.12 ms"
+          0.008287848,
+          "8.29 ms",
+          0.119903237,
+          "119.90 ms"
         ]
       ],
       "memory": {
-        "ridx_peak_rss_mb": 124.640625,
-        "ra_peak_rss_mb": 2227.0234375
-      },
-      "coverage": {
-        "ridx_answered": 28,
-        "ra_answered": 20,
-        "request_methods": 38
-      }
-    },
-    "Tokio": {
-      "repo": "tokio-rs/tokio",
-      "meta": "Tokio · 308 index shards · RIDX c4e181a · booster",
-      "target": "LSP matrix · 300 items per method · warm latencies · corpus b263675",
-      "rows": [
-        [
-          "Go to definition (warm p50)",
-          0.00029161,
-          "292 µs",
-          9.992e-05,
-          "100 µs"
-        ],
-        [
-          "Go to definition (tail p99)",
-          0.000500372,
-          "500 µs",
-          0.000360818,
-          "361 µs"
-        ],
-        [
-          "Find references (warm p50)",
-          0.001696889,
-          "1.70 ms",
-          0.005150968,
-          "5.15 ms"
-        ],
-        [
-          "Find references (tail p99)",
-          0.038730198,
-          "38.73 ms",
-          0.266431924,
-          "266.43 ms"
-        ],
-        [
-          "Hover (warm p50)",
-          0.000477697,
-          "478 µs",
-          0.000118613,
-          "119 µs"
-        ],
-        [
-          "Hover (tail p99)",
-          0.000874224,
-          "874 µs",
-          0.000361305,
-          "361 µs"
-        ],
-        [
-          "Completion (warm p50)",
-          0.001106403,
-          "1.11 ms",
-          0.00269159,
-          "2.69 ms"
-        ],
-        [
-          "Completion (tail p99)",
-          0.003818753,
-          "3.82 ms",
-          0.009970861,
-          "9.97 ms"
-        ],
-        [
-          "Document symbols (warm p50)",
-          3.9201e-05,
-          "39 µs",
-          0.000147541,
-          "148 µs"
-        ],
-        [
-          "Document symbols (tail p99)",
-          0.000332886,
-          "333 µs",
-          0.00091913,
-          "919 µs"
-        ],
-        [
-          "Rename (warm p50)",
-          0.001636445,
-          "1.64 ms",
-          0.000339991,
-          "340 µs"
-        ],
-        [
-          "Rename (tail p99)",
-          0.003104957,
-          "3.10 ms",
-          0.332852907,
-          "332.85 ms"
-        ]
-      ],
-      "memory": {
-        "ridx_peak_rss_mb": 192.359375,
-        "ra_peak_rss_mb": 4361.2109375
-      },
-      "coverage": {
-        "ridx_answered": 28,
-        "ra_answered": 20,
-        "request_methods": 38
-      }
-    },
-    "rust-analyzer": {
-      "repo": "rust-lang/rust-analyzer",
-      "meta": "rust-analyzer · 105 index shards · RIDX c4e181a · booster",
-      "target": "LSP matrix · 300 items per method · warm latencies · corpus 021bfc1",
-      "rows": [
-        [
-          "Go to definition (warm p50)",
-          0.000135065,
-          "135 µs",
-          0.000132683,
-          "133 µs"
-        ],
-        [
-          "Go to definition (tail p99)",
-          0.000405936,
-          "406 µs",
-          0.000577197,
-          "577 µs"
-        ],
-        [
-          "Find references (warm p50)",
-          0.000380407,
-          "380 µs",
-          0.000947225,
-          "947 µs"
-        ],
-        [
-          "Find references (tail p99)",
-          0.03872861,
-          "38.73 ms",
-          0.468913346,
-          "468.91 ms"
-        ],
-        [
-          "Hover (warm p50)",
-          0.000207606,
-          "208 µs",
-          0.000136876,
-          "137 µs"
-        ],
-        [
-          "Hover (tail p99)",
-          0.000302564,
-          "303 µs",
-          0.003634072,
-          "3.63 ms"
-        ],
-        [
-          "Completion (warm p50)",
-          0.000612466,
-          "612 µs",
-          0.004163523,
-          "4.16 ms"
-        ],
-        [
-          "Completion (tail p99)",
-          0.002859731,
-          "2.86 ms",
-          0.019148965,
-          "19.15 ms"
-        ],
-        [
-          "Document symbols (warm p50)",
-          5.1915e-05,
-          "52 µs",
-          0.000226546,
-          "227 µs"
-        ],
-        [
-          "Document symbols (tail p99)",
-          0.000622306,
-          "622 µs",
-          0.002119916,
-          "2.12 ms"
-        ],
-        [
-          "Rename (warm p50)",
-          0.000647768,
-          "648 µs",
-          0.00010692,
-          "107 µs"
-        ],
-        [
-          "Rename (tail p99)",
-          0.00540541,
-          "5.41 ms",
-          0.509565246,
-          "509.57 ms"
-        ]
-      ],
-      "memory": {
-        "ridx_peak_rss_mb": 403.53515625,
-        "ra_peak_rss_mb": 6110.4296875
-      },
-      "coverage": {
-        "ridx_answered": 30,
-        "ra_answered": 21,
-        "request_methods": 38
-      }
-    },
-    "bevy": {
-      "repo": "bevyengine/bevy",
-      "meta": "bevy · 640 index shards · RIDX c4e181a · booster",
-      "target": "LSP matrix · 300 items per method · warm latencies · corpus 68c80f3",
-      "rows": [
-        [
-          "Go to definition (warm p50)",
-          0.000368477,
-          "368 µs",
-          0.000139849,
-          "140 µs"
-        ],
-        [
-          "Go to definition (tail p99)",
-          0.000589144,
-          "589 µs",
-          0.0010328,
-          "1.03 ms"
-        ],
-        [
-          "Find references (warm p50)",
-          0.006850266,
-          "6.85 ms",
-          0.012051312,
-          "12.05 ms"
-        ],
-        [
-          "Find references (tail p99)",
-          0.166201094,
-          "166.20 ms",
-          1.283695901,
-          "1.28 s"
-        ],
-        [
-          "Hover (warm p50)",
-          0.000612444,
-          "612 µs",
-          0.00015882,
-          "159 µs"
-        ],
-        [
-          "Hover (tail p99)",
-          0.000998741,
-          "999 µs",
-          0.00411793,
-          "4.12 ms"
-        ],
-        [
-          "Completion (warm p50)",
-          0.001744573,
-          "1.74 ms",
-          0.007091122,
-          "7.09 ms"
-        ],
-        [
-          "Completion (tail p99)",
-          0.184101608,
-          "184.10 ms",
-          0.060473563,
-          "60.47 ms"
-        ],
-        [
-          "Document symbols (warm p50)",
-          5.0091e-05,
-          "50 µs",
-          0.000252776,
-          "253 µs"
-        ],
-        [
-          "Document symbols (tail p99)",
-          0.002329245,
-          "2.33 ms",
-          0.002531127,
-          "2.53 ms"
-        ],
-        [
-          "Rename (warm p50)",
-          0.003209833,
-          "3.21 ms",
-          0.00609731,
-          "6.10 ms"
-        ],
-        [
-          "Rename (tail p99)",
-          0.012409666,
-          "12.41 ms",
-          2.000183256,
-          "2.00 s"
-        ]
-      ],
-      "memory": {
-        "ridx_peak_rss_mb": 958.04296875,
-        "ra_peak_rss_mb": 16590.47265625
+        "ridx_peak_rss_mb": 125.11328125,
+        "ra_peak_rss_mb": 2193.07421875
       },
       "coverage": {
         "ridx_answered": 29,
         "ra_answered": 21,
-        "request_methods": 38
+        "request_methods": 39
+      }
+    },
+    "Tokio": {
+      "repo": "tokio-rs/tokio",
+      "meta": "Tokio · 308 index shards · RIDX 55449b1 · booster",
+      "target": "LSP matrix · 300 items per method · warm latencies · corpus b263675",
+      "rows": [
+        [
+          "Go to definition (warm p50)",
+          0.00029384,
+          "294 µs",
+          9.9341e-05,
+          "99 µs"
+        ],
+        [
+          "Go to definition (tail p99)",
+          0.000525032,
+          "525 µs",
+          0.000314594,
+          "315 µs"
+        ],
+        [
+          "Find references (warm p50)",
+          0.001687224,
+          "1.69 ms",
+          0.005062639,
+          "5.06 ms"
+        ],
+        [
+          "Find references (tail p99)",
+          0.037877203,
+          "37.88 ms",
+          0.26690239,
+          "266.90 ms"
+        ],
+        [
+          "Hover (warm p50)",
+          0.000448027,
+          "448 µs",
+          0.000115424,
+          "115 µs"
+        ],
+        [
+          "Hover (tail p99)",
+          0.000659126,
+          "659 µs",
+          0.000337799,
+          "338 µs"
+        ],
+        [
+          "Completion (warm p50)",
+          0.001080627,
+          "1.08 ms",
+          0.002724865,
+          "2.72 ms"
+        ],
+        [
+          "Completion (tail p99)",
+          0.003811384,
+          "3.81 ms",
+          0.009679742,
+          "9.68 ms"
+        ],
+        [
+          "Document symbols (warm p50)",
+          3.9431e-05,
+          "39 µs",
+          0.000146998,
+          "147 µs"
+        ],
+        [
+          "Document symbols (tail p99)",
+          0.00035348,
+          "353 µs",
+          0.000893593,
+          "894 µs"
+        ],
+        [
+          "Rename (warm p50)",
+          0.001679719,
+          "1.68 ms",
+          0.00031598,
+          "316 µs"
+        ],
+        [
+          "Rename (tail p99)",
+          0.003242949,
+          "3.24 ms",
+          0.330096955,
+          "330.10 ms"
+        ]
+      ],
+      "memory": {
+        "ridx_peak_rss_mb": 180.4921875,
+        "ra_peak_rss_mb": 4322.80078125
+      },
+      "coverage": {
+        "ridx_answered": 29,
+        "ra_answered": 21,
+        "request_methods": 39
+      }
+    },
+    "rust-analyzer": {
+      "repo": "rust-lang/rust-analyzer",
+      "meta": "rust-analyzer · 105 index shards · RIDX 55449b1 · booster",
+      "target": "LSP matrix · 300 items per method · warm latencies · corpus 021bfc1",
+      "rows": [
+        [
+          "Go to definition (warm p50)",
+          0.000141563,
+          "142 µs",
+          0.000117838,
+          "118 µs"
+        ],
+        [
+          "Go to definition (tail p99)",
+          0.00089404,
+          "894 µs",
+          0.000582647,
+          "583 µs"
+        ],
+        [
+          "Find references (warm p50)",
+          0.00039105,
+          "391 µs",
+          0.000875027,
+          "875 µs"
+        ],
+        [
+          "Find references (tail p99)",
+          0.040180999,
+          "40.18 ms",
+          0.490261272,
+          "490.26 ms"
+        ],
+        [
+          "Hover (warm p50)",
+          0.000205978,
+          "206 µs",
+          0.00013236,
+          "132 µs"
+        ],
+        [
+          "Hover (tail p99)",
+          0.000292073,
+          "292 µs",
+          0.003548459,
+          "3.55 ms"
+        ],
+        [
+          "Completion (warm p50)",
+          0.000612462,
+          "612 µs",
+          0.004136748,
+          "4.14 ms"
+        ],
+        [
+          "Completion (tail p99)",
+          0.002844186,
+          "2.84 ms",
+          0.01892241,
+          "18.92 ms"
+        ],
+        [
+          "Document symbols (warm p50)",
+          5.4642e-05,
+          "55 µs",
+          0.000198927,
+          "199 µs"
+        ],
+        [
+          "Document symbols (tail p99)",
+          0.000848428,
+          "848 µs",
+          0.001871251,
+          "1.87 ms"
+        ],
+        [
+          "Rename (warm p50)",
+          0.000642516,
+          "643 µs",
+          0.000104614,
+          "105 µs"
+        ],
+        [
+          "Rename (tail p99)",
+          0.005613465,
+          "5.61 ms",
+          0.496305678,
+          "496.31 ms"
+        ]
+      ],
+      "memory": {
+        "ridx_peak_rss_mb": 415.14453125,
+        "ra_peak_rss_mb": 6196.94921875
+      },
+      "coverage": {
+        "ridx_answered": 31,
+        "ra_answered": 22,
+        "request_methods": 39
+      }
+    },
+    "bevy": {
+      "repo": "bevyengine/bevy",
+      "meta": "bevy · 640 index shards · RIDX 55449b1 · booster",
+      "target": "LSP matrix · 300 items per method · warm latencies · corpus 68c80f3",
+      "rows": [
+        [
+          "Go to definition (warm p50)",
+          0.000357076,
+          "357 µs",
+          0.000141978,
+          "142 µs"
+        ],
+        [
+          "Go to definition (tail p99)",
+          0.000575258,
+          "575 µs",
+          0.001627191,
+          "1.63 ms"
+        ],
+        [
+          "Find references (warm p50)",
+          0.006915933,
+          "6.92 ms",
+          0.012497438,
+          "12.50 ms"
+        ],
+        [
+          "Find references (tail p99)",
+          0.131701828,
+          "131.70 ms",
+          1.314980106,
+          "1.31 s"
+        ],
+        [
+          "Hover (warm p50)",
+          0.000622285,
+          "622 µs",
+          0.00015596,
+          "156 µs"
+        ],
+        [
+          "Hover (tail p99)",
+          0.001026194,
+          "1.03 ms",
+          0.003953331,
+          "3.95 ms"
+        ],
+        [
+          "Completion (warm p50)",
+          0.001772059,
+          "1.77 ms",
+          0.007113059,
+          "7.11 ms"
+        ],
+        [
+          "Completion (tail p99)",
+          0.185048722,
+          "185.05 ms",
+          0.060850209,
+          "60.85 ms"
+        ],
+        [
+          "Document symbols (warm p50)",
+          4.5378e-05,
+          "45 µs",
+          0.000250369,
+          "250 µs"
+        ],
+        [
+          "Document symbols (tail p99)",
+          0.002006591,
+          "2.01 ms",
+          0.002698692,
+          "2.70 ms"
+        ],
+        [
+          "Rename (warm p50)",
+          0.003078466,
+          "3.08 ms",
+          0.006292615,
+          "6.29 ms"
+        ],
+        [
+          "Rename (tail p99)",
+          0.011542171,
+          "11.54 ms",
+          2.000183242,
+          "2.00 s"
+        ]
+      ],
+      "memory": {
+        "ridx_peak_rss_mb": 863.87890625,
+        "ra_peak_rss_mb": 16512.4765625
+      },
+      "coverage": {
+        "ridx_answered": 30,
+        "ra_answered": 22,
+        "request_methods": 39
       }
     },
     "serde": {
       "repo": "serde-rs/serde",
-      "meta": "serde · 31 index shards · RIDX c4e181a · booster",
+      "meta": "serde · 31 index shards · RIDX 55449b1 · booster",
       "target": "LSP matrix · 300 items per method · warm latencies · corpus 69072f2",
       "rows": [
         [
           "Go to definition (warm p50)",
-          4.6655e-05,
-          "47 µs",
-          7.2198e-05,
-          "72 µs"
+          4.8331e-05,
+          "48 µs",
+          6.8396e-05,
+          "68 µs"
         ],
         [
           "Go to definition (tail p99)",
-          0.000578995,
-          "579 µs",
-          0.000255818,
-          "256 µs"
+          0.000380911,
+          "381 µs",
+          0.000305727,
+          "306 µs"
         ],
         [
           "Find references (warm p50)",
-          0.000101342,
-          "101 µs",
-          0.001367055,
-          "1.37 ms"
+          0.000106242,
+          "106 µs",
+          0.001353713,
+          "1.35 ms"
         ],
         [
           "Find references (tail p99)",
-          0.008475544,
-          "8.48 ms",
-          0.024906277,
-          "24.91 ms"
+          0.008629956,
+          "8.63 ms",
+          0.025184643,
+          "25.18 ms"
         ],
         [
           "Hover (warm p50)",
-          7.2596e-05,
+          7.3142e-05,
           "73 µs",
-          7.9741e-05,
-          "80 µs"
+          7.6936e-05,
+          "77 µs"
         ],
         [
           "Hover (tail p99)",
-          0.0001053,
-          "105 µs",
-          0.000280514,
-          "281 µs"
+          0.0001079,
+          "108 µs",
+          0.000260354,
+          "260 µs"
         ],
         [
           "Completion (warm p50)",
-          0.000151474,
-          "151 µs",
-          0.003511596,
-          "3.51 ms"
+          0.00015873,
+          "159 µs",
+          0.003462555,
+          "3.46 ms"
         ],
         [
           "Completion (tail p99)",
-          0.000797227,
-          "797 µs",
-          0.017063897,
-          "17.06 ms"
+          0.000829991,
+          "830 µs",
+          0.017837183,
+          "17.84 ms"
         ],
         [
           "Document symbols (warm p50)",
-          1.7834e-05,
+          1.8044e-05,
           "18 µs",
-          5.4076e-05,
-          "54 µs"
+          5.5434e-05,
+          "55 µs"
         ],
         [
           "Document symbols (tail p99)",
-          0.001626415,
-          "1.63 ms",
-          0.00323528,
-          "3.24 ms"
+          0.001675528,
+          "1.68 ms",
+          0.003018597,
+          "3.02 ms"
         ],
         [
           "Rename (warm p50)",
-          0.000291573,
-          "292 µs",
-          0.000698522,
-          "699 µs"
+          0.000288746,
+          "289 µs",
+          0.000679773,
+          "680 µs"
         ],
         [
           "Rename (tail p99)",
-          0.001937938,
+          0.001944828,
           "1.94 ms",
-          0.102505051,
-          "102.51 ms"
+          0.104762787,
+          "104.76 ms"
         ]
       ],
       "memory": {
-        "ridx_peak_rss_mb": 87.53125,
-        "ra_peak_rss_mb": 2499.1015625
+        "ridx_peak_rss_mb": 84.625,
+        "ra_peak_rss_mb": 2496.08984375
       },
       "coverage": {
-        "ridx_answered": 28,
-        "ra_answered": 20,
-        "request_methods": 38
+        "ridx_answered": 29,
+        "ra_answered": 21,
+        "request_methods": 39
       }
     }
   }

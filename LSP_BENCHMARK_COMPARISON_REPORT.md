@@ -10,9 +10,9 @@ Values shared by the five runs; a cell lists every distinct value when the runs 
 
 | Field | Value |
 |:---|:---|
-| RIDX commit | `c4e181a48646ff10e7922723715677b305b1cad4` |
-| Driver hash | `aed6f3b1c9a9437d` |
-| Driver build commit | `c4e181a48646ff10e7922723715677b305b1cad4` |
+| RIDX commit | `55449b1530fb0cc91e3aa8e1c3ff5d2a13cd0552` |
+| Driver hash | `1b3ccaf3391f5ab5` |
+| Driver build commit | `55449b1530fb0cc91e3aa8e1c3ff5d2a13cd0552` |
 | rustc | `rustc 1.98.1 (48a229cea 2026-09-01)` |
 | rust-analyzer | `rust-analyzer 1.98.1 (48a229c 2026-09-01)` |
 | Node | `booster (AMD Ryzen 9 7950X 16-Core Processor, 32 threads, 125 GB RAM)` |
@@ -24,15 +24,15 @@ Values shared by the five runs; a cell lists every distinct value when the runs 
 
 ## 2. The five repositories at a glance
 
-Request methods are the 38 rows whose items come from the corpus (see section 4). Peak RSS, threads and file descriptors are process telemetry sampled during the run. Cancelled requests hit the client timeout.
+Request methods are the 39 rows whose items come from the corpus (see section 4). Peak RSS, threads and file descriptors are process telemetry sampled during the run. Cancelled requests hit the client timeout.
 
 | Repository | Corpus commit | Index shards | RIDX peak RSS (MB) | rust-analyzer peak RSS (MB) | RIDX threads / fds | rust-analyzer threads / fds | RIDX suite (s) | rust-analyzer suite (s) | Cancelled RIDX / rust-analyzer | Request methods answered RIDX / rust-analyzer |
 |:---|:---|---:|---:|---:|:---|:---|---:|---:|:---|:---|
-| BurntSushi/ripgrep | `4649aa9` | 27 | 124.64 | 2227.02 | 3 / 7 | 53 / 17 | 56.4 | 116.8 | 0 / 1 | 28 / 20 of 38 |
-| tokio-rs/tokio | `b263675` | 308 | 192.36 | 4361.21 | 3 / 4 | 53 / 11 | 77.7 | 218.9 | 0 / 5 | 28 / 20 of 38 |
-| rust-lang/rust-analyzer | `021bfc1` | 105 | 403.54 | 6110.43 | 3 / 4 | 53 / 17 | 117.7 | 292.9 | 0 / 15 | 30 / 21 of 38 |
-| bevyengine/bevy | `68c80f3` | 640 | 958.04 | 16590.47 | 4 / 7 | 38 / 11 | 353.6 | 1390.0 | 0 / 159 | 29 / 21 of 38 |
-| serde-rs/serde | `69072f2` | 31 | 87.53 | 2499.10 | 3 / 8 | 53 / 11 | 50.7 | 195.3 | 0 / 1 | 28 / 20 of 38 |
+| BurntSushi/ripgrep | `4649aa9` | 27 | 125.11 | 2193.07 | 3 / 6 | 53 / 17 | 54.4 | 117.9 | 0 / 1 | 29 / 21 of 39 |
+| tokio-rs/tokio | `b263675` | 308 | 180.49 | 4322.80 | 3 / 4 | 53 / 17 | 77.2 | 219.0 | 0 / 5 | 29 / 21 of 39 |
+| rust-lang/rust-analyzer | `021bfc1` | 105 | 415.14 | 6196.95 | 3 / 4 | 39 / 13 | 111.4 | 294.1 | 0 / 17 | 31 / 22 of 39 |
+| bevyengine/bevy | `68c80f3` | 640 | 863.88 | 16512.48 | 3 / 4 | 53 / 11 | 324.5 | 1430.0 | 0 / 185 | 30 / 22 of 39 |
+| serde-rs/serde | `69072f2` | 31 | 84.62 | 2496.09 | 4 / 5 | 53 / 12 | 49.5 | 196.5 | 0 / 1 | 29 / 21 of 39 |
 
 ## 3. Headline methods per repository
 
@@ -42,85 +42,90 @@ Request methods are the 38 rows whose items come from the corpus (see section 4)
 
 | Method | RIDX a / b / c | RIDX p50 | RIDX p99 | rust-analyzer a / b / c | rust-analyzer p50 | rust-analyzer p99 |
 |:---|:---|---:|---:|:---|---:|---:|
-| Go to definition | 291 / 9 / 0 | 45 µs | 283 µs | 294 / 6 / 0 | 93 µs | 286 µs |
-| Go to type definition | 182 / 118 / 0 | 46 µs | 92 µs | 193 / 107 / 0 | 68 µs | 183 µs |
-| Find references | 298 / 2 / 0 | 102 µs | 8.11 ms | 295 / 5 / 0 | 1.47 ms | 21.39 ms |
-| Hover | 293 / 7 / 0 | 56 µs | 97 µs | 293 / 7 / 0 | 95 µs | 213 µs |
-| Completion | 300 / 0 / 0 | 164 µs | 1.96 ms | 298 / 2 / 0 | 2.42 ms | 8.69 ms |
-| Signature help | 50 / 250 / 0 | 65 µs | 6.05 ms | 60 / 240 / 0 | 41 µs | 120 µs |
-| Document symbols | 300 / 0 / 0 | 66 µs | 4.55 ms | 293 / 7 / 0 | 250 µs | 7.48 ms |
-| Workspace symbol search | 177 / 123 / 0 | 4.53 ms | 10.32 ms | 178 / 122 / 0 | 928 µs | 1.06 ms |
-| Rename | 298 / 0 / 2 | 423 µs | 8.07 ms | 299 / 0 / 1 | 479 µs | 117.12 ms |
-| Semantic tokens (full) | 300 / 0 / 0 | 271 µs | 5.23 ms | 300 / 0 / 0 | 3.65 ms | 62.48 ms |
-| Folding ranges | 300 / 0 / 0 | 72 µs | 651 µs | 300 / 0 / 0 | 300 µs | 2.76 ms |
+| Go to definition | 291 / 9 / 0 | 45 µs | 100 µs | 294 / 6 / 0 | 98 µs | 257 µs |
+| Go to type definition | 182 / 118 / 0 | 46 µs | 128 µs | 193 / 107 / 0 | 77 µs | 191 µs |
+| Find references | 298 / 2 / 0 | 99 µs | 8.69 ms | 295 / 5 / 0 | 1.44 ms | 21.63 ms |
+| Hover | 293 / 7 / 0 | 55 µs | 91 µs | 293 / 7 / 0 | 97 µs | 238 µs |
+| Completion | 300 / 0 / 0 | 174 µs | 1.96 ms | 298 / 2 / 0 | 2.38 ms | 8.71 ms |
+| Signature help | 50 / 250 / 0 | 64 µs | 6.12 ms | 60 / 240 / 0 | 42 µs | 113 µs |
+| Document symbols | 300 / 0 / 0 | 70 µs | 3.89 ms | 293 / 7 / 0 | 262 µs | 7.41 ms |
+| Workspace symbol search | 177 / 123 / 0 | 4.53 ms | 10.59 ms | 178 / 122 / 0 | 922 µs | 1.09 ms |
+| Rename | 298 / 0 / 2 | 429 µs | 8.29 ms | 299 / 0 / 1 | 453 µs | 119.90 ms |
+| Code lens | 295 / 5 / 0 | 80 µs | 980 µs | 245 / 55 / 0 | 161 µs | 6.24 ms |
+| Semantic tokens (full) | 300 / 0 / 0 | 271 µs | 5.25 ms | 300 / 0 / 0 | 3.54 ms | 62.35 ms |
+| Folding ranges | 300 / 0 / 0 | 78 µs | 747 µs | 300 / 0 / 0 | 244 µs | 2.33 ms |
 
 ### tokio-rs/tokio (corpus commit `b263675`)
 
 | Method | RIDX a / b / c | RIDX p50 | RIDX p99 | rust-analyzer a / b / c | rust-analyzer p50 | rust-analyzer p99 |
 |:---|:---|---:|---:|:---|---:|---:|
-| Go to definition | 252 / 48 / 0 | 292 µs | 500 µs | 229 / 71 / 0 | 100 µs | 361 µs |
-| Go to type definition | 120 / 180 / 0 | 264 µs | 1.04 ms | 142 / 158 / 0 | 80 µs | 333 µs |
-| Find references | 258 / 42 / 0 | 1.70 ms | 38.73 ms | 236 / 64 / 0 | 5.15 ms | 266.43 ms |
-| Hover | 266 / 34 / 0 | 478 µs | 874 µs | 243 / 57 / 0 | 119 µs | 361 µs |
-| Completion | 300 / 0 / 0 | 1.11 ms | 3.82 ms | 261 / 39 / 0 | 2.69 ms | 9.97 ms |
-| Signature help | 68 / 232 / 0 | 43 µs | 20.40 ms | 52 / 248 / 0 | 51 µs | 105 µs |
-| Document symbols | 297 / 3 / 0 | 39 µs | 333 µs | 291 / 9 / 0 | 148 µs | 919 µs |
-| Workspace symbol search | 143 / 157 / 0 | 16.06 ms | 24.70 ms | 148 / 152 / 0 | 4.24 ms | 4.65 ms |
-| Rename | 236 / 0 / 64 | 1.64 ms | 3.10 ms | 232 / 0 / 68 | 340 µs | 332.85 ms |
-| Semantic tokens (full) | 300 / 0 / 0 | 252 µs | 1.43 ms | 300 / 0 / 0 | 1.46 ms | 24.61 ms |
-| Folding ranges | 294 / 6 / 0 | 42 µs | 324 µs | 296 / 4 / 0 | 134 µs | 1.02 ms |
+| Go to definition | 252 / 48 / 0 | 294 µs | 525 µs | 229 / 71 / 0 | 99 µs | 315 µs |
+| Go to type definition | 120 / 180 / 0 | 262 µs | 1.34 ms | 142 / 158 / 0 | 77 µs | 304 µs |
+| Find references | 258 / 42 / 0 | 1.69 ms | 37.88 ms | 236 / 64 / 0 | 5.06 ms | 266.90 ms |
+| Hover | 266 / 34 / 0 | 448 µs | 659 µs | 243 / 57 / 0 | 115 µs | 338 µs |
+| Completion | 300 / 0 / 0 | 1.08 ms | 3.81 ms | 261 / 39 / 0 | 2.72 ms | 9.68 ms |
+| Signature help | 68 / 232 / 0 | 44 µs | 20.03 ms | 52 / 248 / 0 | 51 µs | 107 µs |
+| Document symbols | 297 / 3 / 0 | 39 µs | 353 µs | 291 / 9 / 0 | 147 µs | 894 µs |
+| Workspace symbol search | 143 / 157 / 0 | 15.94 ms | 24.82 ms | 148 / 152 / 0 | 4.24 ms | 4.72 ms |
+| Rename | 236 / 0 / 64 | 1.68 ms | 3.24 ms | 232 / 0 / 68 | 316 µs | 330.10 ms |
+| Code lens | 250 / 50 / 0 | 255 µs | 456 µs | 215 / 85 / 0 | 166 µs | 2.18 ms |
+| Semantic tokens (full) | 300 / 0 / 0 | 274 µs | 1.43 ms | 300 / 0 / 0 | 1.50 ms | 25.18 ms |
+| Folding ranges | 294 / 6 / 0 | 46 µs | 351 µs | 296 / 4 / 0 | 128 µs | 963 µs |
 
 ### rust-lang/rust-analyzer (corpus commit `021bfc1`)
 
 | Method | RIDX a / b / c | RIDX p50 | RIDX p99 | rust-analyzer a / b / c | rust-analyzer p50 | rust-analyzer p99 |
 |:---|:---|---:|---:|:---|---:|---:|
-| Go to definition | 282 / 18 / 0 | 135 µs | 406 µs | 276 / 24 / 0 | 133 µs | 577 µs |
-| Go to type definition | 203 / 97 / 0 | 132 µs | 546 µs | 218 / 82 / 0 | 83 µs | 272 µs |
-| Find references | 283 / 17 / 0 | 380 µs | 38.73 ms | 270 / 25 / 5 | 947 µs | 468.91 ms |
-| Hover | 291 / 9 / 0 | 208 µs | 303 µs | 278 / 22 / 0 | 137 µs | 3.63 ms |
-| Completion | 300 / 0 / 0 | 612 µs | 2.86 ms | 296 / 4 / 0 | 4.16 ms | 19.15 ms |
-| Signature help | 114 / 186 / 0 | 78 µs | 46.04 ms | 87 / 213 / 0 | 34 µs | 316 µs |
-| Document symbols | 297 / 3 / 0 | 52 µs | 622 µs | 297 / 3 / 0 | 227 µs | 2.12 ms |
-| Workspace symbol search | 174 / 126 / 0 | 35.53 ms | 46.26 ms | 177 / 123 / 0 | 13.13 ms | 14.09 ms |
-| Rename | 285 / 0 / 15 | 648 µs | 5.41 ms | 166 / 0 / 134 | 107 µs | 509.57 ms |
-| Semantic tokens (full) | 300 / 0 / 0 | 406 µs | 23.00 ms | 299 / 0 / 1 | 3.18 ms | 138.40 ms |
-| Folding ranges | 271 / 29 / 0 | 89 µs | 2.25 ms | 278 / 22 / 0 | 230 µs | 3.94 ms |
+| Go to definition | 282 / 18 / 0 | 142 µs | 894 µs | 276 / 24 / 0 | 118 µs | 583 µs |
+| Go to type definition | 203 / 97 / 0 | 137 µs | 742 µs | 218 / 82 / 0 | 81 µs | 298 µs |
+| Find references | 283 / 17 / 0 | 391 µs | 40.18 ms | 270 / 25 / 5 | 875 µs | 490.26 ms |
+| Hover | 291 / 9 / 0 | 206 µs | 292 µs | 278 / 22 / 0 | 132 µs | 3.55 ms |
+| Completion | 300 / 0 / 0 | 612 µs | 2.84 ms | 296 / 4 / 0 | 4.14 ms | 18.92 ms |
+| Signature help | 114 / 186 / 0 | 73 µs | 43.36 ms | 87 / 213 / 0 | 35 µs | 363 µs |
+| Document symbols | 297 / 3 / 0 | 55 µs | 848 µs | 297 / 3 / 0 | 199 µs | 1.87 ms |
+| Workspace symbol search | 174 / 126 / 0 | 35.29 ms | 47.17 ms | 177 / 123 / 0 | 13.11 ms | 13.88 ms |
+| Rename | 285 / 0 / 15 | 643 µs | 5.61 ms | 165 / 0 / 135 | 105 µs | 496.31 ms |
+| Code lens | 223 / 77 / 0 | 119 µs | 1.28 ms | 195 / 105 / 0 | 136 µs | 18.04 ms |
+| Semantic tokens (full) | 300 / 0 / 0 | 393 µs | 22.29 ms | 299 / 0 / 1 | 3.17 ms | 139.13 ms |
+| Folding ranges | 271 / 29 / 0 | 94 µs | 2.50 ms | 278 / 22 / 0 | 232 µs | 4.07 ms |
 
 ### bevyengine/bevy (corpus commit `68c80f3`)
 
 | Method | RIDX a / b / c | RIDX p50 | RIDX p99 | rust-analyzer a / b / c | rust-analyzer p50 | rust-analyzer p99 |
 |:---|:---|---:|---:|:---|---:|---:|
-| Go to definition | 268 / 32 / 0 | 368 µs | 589 µs | 283 / 16 / 1 | 140 µs | 1.03 ms |
-| Go to type definition | 187 / 113 / 0 | 341 µs | 2.18 ms | 193 / 106 / 1 | 103 µs | 281 µs |
-| Find references | 279 / 21 / 0 | 6.85 ms | 166.20 ms | 277 / 17 / 6 | 12.05 ms | 1.28 s |
-| Hover | 273 / 27 / 0 | 612 µs | 999 µs | 284 / 16 / 0 | 159 µs | 4.12 ms |
-| Completion | 300 / 0 / 0 | 1.74 ms | 184.10 ms | 289 / 11 / 0 | 7.09 ms | 60.47 ms |
-| Signature help | 53 / 247 / 0 | 69 µs | 118.69 ms | 72 / 228 / 0 | 41 µs | 110 µs |
-| Document symbols | 297 / 3 / 0 | 50 µs | 2.33 ms | 296 / 4 / 0 | 253 µs | 2.53 ms |
-| Workspace symbol search | 178 / 122 / 0 | 102.96 ms | 161.25 ms | 178 / 122 / 0 | 23.94 ms | 25.20 ms |
-| Rename | 279 / 0 / 21 | 3.21 ms | 12.41 ms | 271 / 0 / 29 | 6.10 ms | 2.00 s |
-| Semantic tokens (full) | 300 / 0 / 0 | 716 µs | 46.93 ms | 300 / 0 / 0 | 2.28 ms | 38.11 ms |
-| Folding ranges | 291 / 9 / 0 | 66 µs | 832 µs | 298 / 2 / 0 | 200 µs | 2.11 ms |
+| Go to definition | 268 / 32 / 0 | 357 µs | 575 µs | 283 / 16 / 1 | 142 µs | 1.63 ms |
+| Go to type definition | 187 / 113 / 0 | 346 µs | 1.36 ms | 193 / 106 / 1 | 111 µs | 282 µs |
+| Find references | 279 / 21 / 0 | 6.92 ms | 131.70 ms | 277 / 17 / 6 | 12.50 ms | 1.31 s |
+| Hover | 273 / 27 / 0 | 622 µs | 1.03 ms | 284 / 16 / 0 | 156 µs | 3.95 ms |
+| Completion | 300 / 0 / 0 | 1.77 ms | 185.05 ms | 289 / 11 / 0 | 7.11 ms | 60.85 ms |
+| Signature help | 53 / 247 / 0 | 68 µs | 119.37 ms | 72 / 228 / 0 | 42 µs | 107 µs |
+| Document symbols | 297 / 3 / 0 | 45 µs | 2.01 ms | 296 / 4 / 0 | 250 µs | 2.70 ms |
+| Workspace symbol search | 178 / 122 / 0 | 101.28 ms | 162.95 ms | 178 / 122 / 0 | 23.89 ms | 25.49 ms |
+| Rename | 279 / 0 / 21 | 3.08 ms | 11.54 ms | 271 / 0 / 29 | 6.29 ms | 2.00 s |
+| Code lens | 262 / 38 / 0 | 298 µs | 1.10 ms | 247 / 53 / 0 | 139 µs | 3.02 ms |
+| Semantic tokens (full) | 300 / 0 / 0 | 717 µs | 47.48 ms | 300 / 0 / 0 | 2.39 ms | 37.86 ms |
+| Folding ranges | 291 / 9 / 0 | 71 µs | 880 µs | 298 / 2 / 0 | 203 µs | 2.13 ms |
 
 ### serde-rs/serde (corpus commit `69072f2`)
 
 | Method | RIDX a / b / c | RIDX p50 | RIDX p99 | rust-analyzer a / b / c | rust-analyzer p50 | rust-analyzer p99 |
 |:---|:---|---:|---:|:---|---:|---:|
-| Go to definition | 265 / 35 / 0 | 47 µs | 579 µs | 283 / 17 / 0 | 72 µs | 256 µs |
-| Go to type definition | 235 / 65 / 0 | 52 µs | 141 µs | 194 / 106 / 0 | 56 µs | 191 µs |
-| Find references | 273 / 27 / 0 | 101 µs | 8.48 ms | 283 / 17 / 0 | 1.37 ms | 24.91 ms |
-| Hover | 268 / 32 / 0 | 73 µs | 105 µs | 288 / 12 / 0 | 80 µs | 281 µs |
-| Completion | 300 / 0 / 0 | 151 µs | 797 µs | 299 / 1 / 0 | 3.51 ms | 17.06 ms |
-| Signature help | 62 / 238 / 0 | 74 µs | 7.44 ms | 74 / 226 / 0 | 36 µs | 74 µs |
-| Document symbols | 300 / 0 / 0 | 18 µs | 1.63 ms | 300 / 0 / 0 | 54 µs | 3.24 ms |
-| Workspace symbol search | 178 / 122 / 0 | 5.57 ms | 13.56 ms | 175 / 125 / 0 | 833 µs | 1.30 ms |
-| Rename | 270 / 0 / 30 | 292 µs | 1.94 ms | 269 / 0 / 31 | 699 µs | 102.51 ms |
-| Semantic tokens (full) | 300 / 0 / 0 | 48 µs | 3.30 ms | 300 / 0 / 0 | 111 µs | 40.04 ms |
-| Folding ranges | 250 / 50 / 0 | 24 µs | 700 µs | 276 / 24 / 0 | 42 µs | 2.83 ms |
+| Go to definition | 265 / 35 / 0 | 48 µs | 381 µs | 283 / 17 / 0 | 68 µs | 306 µs |
+| Go to type definition | 235 / 65 / 0 | 49 µs | 310 µs | 194 / 106 / 0 | 53 µs | 161 µs |
+| Find references | 273 / 27 / 0 | 106 µs | 8.63 ms | 283 / 17 / 0 | 1.35 ms | 25.18 ms |
+| Hover | 268 / 32 / 0 | 73 µs | 108 µs | 288 / 12 / 0 | 77 µs | 260 µs |
+| Completion | 300 / 0 / 0 | 159 µs | 830 µs | 299 / 1 / 0 | 3.46 ms | 17.84 ms |
+| Signature help | 62 / 238 / 0 | 74 µs | 7.75 ms | 74 / 226 / 0 | 36 µs | 77 µs |
+| Document symbols | 300 / 0 / 0 | 18 µs | 1.68 ms | 300 / 0 / 0 | 55 µs | 3.02 ms |
+| Workspace symbol search | 178 / 122 / 0 | 5.55 ms | 13.74 ms | 175 / 125 / 0 | 834 µs | 1.29 ms |
+| Rename | 270 / 0 / 30 | 289 µs | 1.94 ms | 269 / 0 / 31 | 680 µs | 104.76 ms |
+| Code lens | 112 / 188 / 0 | 40 µs | 1.20 ms | 82 / 218 / 0 | 32 µs | 1.85 ms |
+| Semantic tokens (full) | 300 / 0 / 0 | 48 µs | 3.04 ms | 300 / 0 / 0 | 94 µs | 40.50 ms |
+| Folding ranges | 250 / 50 / 0 | 24 µs | 803 µs | 276 / 24 / 0 | 39 µs | 2.78 ms |
 
 ## 4. Coverage differences
 
-Over the 38 request methods whose items come from the corpus. The twelve rows that send an item built by the harness (the `*/resolve` methods, `workspace/executeCommand`, the call and type hierarchy methods), the notifications, the lifecycle and the mutation rows are not counted. Outside mutation case B nothing in the matrix checks that an answer is correct: `a / b / c` counts answers, and correctness is covered by the test suite and the fidelity scripts (methodology, sections 5, 7 and 9).
+Over the 39 request methods whose items come from the corpus. The twelve rows that send an item built by the harness (the `*/resolve` methods, `workspace/executeCommand`, the call and type hierarchy methods), the notifications, the lifecycle and the mutation rows are not counted. Outside mutation case B nothing in the matrix checks that an answer is correct: `a / b / c` counts answers, and correctness is covered by the test suite and the fidelity scripts (methodology, sections 5, 7 and 9).
 
 - RIDX returned no non-empty answer on any item while rust-analyzer did: none.
 - rust-analyzer answered `-32601` (method not found) on every item:
@@ -140,7 +145,6 @@ Over the 38 request methods whose items come from the corpus. The twelve rows th
   - `textDocument/codeAction` (all five)
   - `textDocument/onTypeFormatting` (rust-lang/rust-analyzer)
   - `textDocument/rangeFormatting` (all five)
-- `textDocument/codeLens` is not counted: the matrix client declares neither `textDocument.codeLens` nor the `rust-analyzer.*` commands (`experimental.commands`) that rust-analyzer requires before it builds any lens, so rust-analyzer answered `[]` on every item (known harness defects in `docs/BENCHMARK_MATRIX.md`).
 - `textDocument/content` is not counted: the published runs were measured before harness commit `d27ac0e` fixed its parameters (known harness defects in `docs/BENCHMARK_MATRIX.md`).
 
 ## 5. Earlier publications
