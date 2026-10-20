@@ -19,7 +19,7 @@ if str(bench_dir) not in sys.path:
     sys.path.insert(0, str(bench_dir))
 
 from matrix_categories import build_params
-from position_ab import build_rows, compare_servers, matrix_check, summarize_server
+from position_ab import build_rows, compare_servers, differing_only, matrix_check, row_differs, summarize_server
 from position_ab_classify import (
     REQUEST_KEYS, classify_outcome, cursor_kind, digest, in_cfg_test, scenario_from_record, target_kind_of,
 )
@@ -180,3 +180,18 @@ def test_summary_comparison_and_matrix_check_on_fixed_rows():
     assert check == {"compared": 1, "matching": 1, "mismatches": []}
     bad = matrix_check(old, {"definition": {"tests_run": 3, "a_non_empty": 3, "b_empty": 0, "c_error": 0}})
     assert bad["mismatches"] == [{"method": "definition", "ours": [2, 1, 0], "matrix": [3, 0, 0]}]
+
+
+def test_differing_only_keeps_summaries_and_comparison_and_filters_rows():
+    rows = _rows()
+    names = ["old", "new"]
+    report = {"repo": "r", "servers": [{"name": n, "summary": summarize_server(rows, n)} for n in names],
+              "comparison": compare_servers(rows, names), "rows": rows, "metric_definitions": {"outcome": "x"}}
+    filtered = differing_only(report, "full_serde.json", "ab" * 32)
+    assert filtered["servers"] == report["servers"] and filtered["comparison"] == report["comparison"]
+    assert [r["name"] for r in filtered["rows"]] == ["definition_1_len", "definition_2_x"]
+    assert (filtered["rows_total"], filtered["rows_kept"], filtered["rows_filter"]) == (4, 2, "differing")
+    assert filtered["full_file"] == {"name": "full_serde.json", "sha256": "ab" * 32}
+    assert filtered["metric_definitions"]["outcome"] == "x" and "rows_filter" in filtered["metric_definitions"]
+    assert [row_differs(r) for r in rows] == [False, True, True, False]
+    assert len(report["rows"]) == 4

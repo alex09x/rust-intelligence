@@ -10,7 +10,8 @@ compares their answers.
 
     position_ab.py --repo DIR --positions bench/published/matrix_<corpus>_booster.positions.json \\
         --ridx NAME=BIN [--ridx NAME=BIN ...] [--ra NAME=BIN] [--methods key,key,...] \\
-        [--limit N] [--timeout 2.0] [--matrix bench/published/matrix_<corpus>_booster.json] --out FILE
+        [--limit N] [--timeout 2.0] [--matrix bench/published/matrix_<corpus>_booster.json] --out FILE \\
+        [--out-differing FILE]
 
 The positions file fixes the requests: every record is rebuilt into the scenario the sampler
 produced, so `matrix_categories.build_params` yields the request of the matrix. Each server (ridx
@@ -23,9 +24,12 @@ target_kinds.json, a path heuristic) and the kind of token under the cursor, inc
 sits under `#[cfg(test)]`. Per server and method: a/b/c counts and p50/p99, optionally checked
 against the a/b/c of a published matrix JSON. Per pair of servers and method: positions with the
 same answer, differing answers, the outcome transitions and the first differing positions.
+`--out-differing` writes a second copy that keeps the summaries and the comparison whole but only the
+rows on which some pair of servers differs, with `rows_total` and the sha256 of the full file.
 """
 
 import argparse
+import hashlib
 import json
 import socket
 import subprocess
@@ -166,6 +170,25 @@ def compare_servers(rows, names, examples=EXAMPLES):
     return pairs
 
 
+def row_differs(row):
+    """True when two servers answered the row with a different outcome or digest."""
+    seen = {(r["outcome"], r["digest"]) for r in row["results"].values()}
+    return len(seen) > 1
+
+
+def differing_only(report, full_name, full_sha256):
+    """The report with only the differing rows; summaries and comparison stay whole, `rows_total`
+    and the digest of the full file tie the copy to the full run."""
+    kept = [row for row in report["rows"] if row_differs(row)]
+    out = {k: v for k, v in report.items() if k != "rows"}
+    out.update({"rows": kept, "rows_total": len(report["rows"]), "rows_kept": len(kept), "rows_filter": "differing",
+                "full_file": {"name": full_name, "sha256": full_sha256}})
+    out["metric_definitions"] = {**report["metric_definitions"],
+                                 "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; "
+                                                "rows_total counts the rows of the full file named in full_file"}
+    return out
+
+
 def parse_servers(ridx_specs, ra_specs):
     servers = [(name, [binary, "lsp"], False, binary) for name, binary in (s.split("=", 1) for s in ridx_specs or [])]
     servers += [(name, [binary], True, binary) for name, binary in (s.split("=", 1) for s in ra_specs or [])]
@@ -182,7 +205,8 @@ def main():
     ap.add_argument("--limit", type=int, default=None, help="positions per method; default: all")
     ap.add_argument("--timeout", type=float, default=2.0, help="seconds per request, as in the matrix")
     ap.add_argument("--matrix", type=Path, help="published matrix JSON to check the a/b/c counts against")
-    ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--out", required=True, type=Path, help="full report with every row")
+    ap.add_argument("--out-differing", type=Path, help="copy of the report keeping only the rows on which some pair of servers differs, with rows_total and the sha256 of the full file")
     args = ap.parse_args()
     servers = parse_servers(args.ridx, args.ra)
     if not servers:
@@ -254,8 +278,15 @@ def main():
         },
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, indent=1), encoding="utf-8")
+    full_text = json.dumps(report, indent=1)
+    args.out.write_text(full_text, encoding="utf-8")
     print(f"wrote {args.out}")
+    if args.out_differing:
+        digest_full = hashlib.sha256(full_text.encode("utf-8")).hexdigest()
+        filtered = differing_only(report, args.out.name, digest_full)
+        args.out_differing.parent.mkdir(parents=True, exist_ok=True)
+        args.out_differing.write_text(json.dumps(filtered, indent=1), encoding="utf-8")
+        print(f"wrote {args.out_differing} ({filtered['rows_kept']} of {filtered['rows_total']} rows)")
 
 
 if __name__ == "__main__":
