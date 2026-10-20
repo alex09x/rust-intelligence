@@ -1,0 +1,8687 @@
+{
+ "repo": "bevyengine/bevy",
+ "repo_dir_name": "bevy",
+ "repo_head": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 640,
+ "positions_file": "matrix_bevy_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "implementation",
+  "incoming_calls",
+  "document_highlight"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 571,
+ "timestamp_start": "2026-10-20T17:03:44.038307+00:00",
+ "timestamp_end": "2026-10-20T17:06:36.214494+00:00",
+ "servers": [
+  {
+   "name": "efe796e",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: efe796eba23ba5bcf7bba9ea62b05b6e7f97809c, dirty: false)",
+   "commit": "efe796eba23ba5bcf7bba9ea62b05b6e7f97809c",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 6.7,
+   "summary": {
+    "implementation": {
+     "a": 134,
+     "b": 166,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6196.5,
+     "p99_us": 14130.9,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6909.1,
+     "p99_us": 17438.3,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 232,
+     "b": 68,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4686.6,
+     "p99_us": 79014.6,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 3,
+    "matching": 2,
+    "mismatches": [
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       101,
+       199,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "ra",
+   "kind": "rust-analyzer",
+   "binary": "rust-analyzer",
+   "version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+   "commit": null,
+   "dirty": null,
+   "ready": {
+    "initial_wait_ms": 15121.0,
+    "initial_quiescent": true,
+    "quiescent_wait_ms": 0.02,
+    "canary_wait_ms": 1876.2,
+    "canary_attempts": 2,
+    "cancelled_on_timeout": 54
+   },
+   "duration_s": 137.2,
+   "summary": {
+    "implementation": {
+     "a": 268,
+     "b": 32,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1118.2,
+     "p99_us": 16326.1,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 158,
+     "b": 111,
+     "c": 31,
+     "n": 300,
+     "p50_us": 10200.5,
+     "p99_us": 2000192.6,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6539.9,
+     "p99_us": 62043.9,
+     "unsupported": false
+    }
+   },
+   "retry": {
+    "implementation": {
+     "retried": 32,
+     "b": 32
+    },
+    "incoming_calls": {
+     "retried": 142,
+     "b": 116,
+     "a": 3,
+     "c": 23
+    },
+    "document_highlight": {
+     "retried": 17,
+     "b": 17
+    }
+   },
+   "matrix_check": {
+    "compared": 3,
+    "matching": 2,
+    "mismatches": [
+     {
+      "method": "incoming_calls",
+      "ours": [
+       158,
+       111,
+       31
+      ],
+      "matrix": [
+       161,
+       112,
+       27
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "efe796e",
+   "b": "ra",
+   "same": 151,
+   "differing": 749,
+   "methods": {
+    "implementation": {
+     "same": 31,
+     "differing": 269,
+     "transitions": {
+      "a>a": 133,
+      "b>a": 135,
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "impl_0_RequiredComponentConstructor",
+       "file": "crates/bevy_ecs/src/component/required.rs",
+       "line": 26,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "94ea24435228158c",
+        "ab75359c9c409ece"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_1_SpecializedPrepassMaterialPipelineCache",
+       "file": "crates/bevy_pbr/src/prepass/mod.rs",
+       "line": 902,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "f7befd193eeeaa76"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_2_PrintOnCompletionTimer",
+       "file": "examples/time/timers.rs",
+       "line": 15,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "879cc29ade6da0cc"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_4_Counter",
+       "file": "crates/bevy_ecs/src/component/required.rs",
+       "line": 1222,
+       "character": 16,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "63920babef87b480"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      },
+      {
+       "name": "impl_5_Smaa",
+       "file": "crates/bevy_anti_alias/src/smaa/mod.rs",
+       "line": 93,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "9502fd15e505fdcb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_6_FrameLowHigh",
+       "file": "examples/large_scenes/caldera_hotel/src/main.rs",
+       "line": 567,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3dd58fe71231b44b",
+        "8c9622717e252cf8"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_7_ViewClusteringReadbackData",
+       "file": "crates/bevy_pbr/src/cluster/gpu.rs",
+       "line": 333,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "94634430a9209620",
+        "735698260b0cbe70"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_8_Rotates",
+       "file": "examples/3d/motion_blur.rs",
+       "line": 51,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "246947bc553c6ee5"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_9_Signature",
+       "file": "crates/bevy_reflect/src/func/signature.rs",
+       "line": 28,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "14ddec03bf8b613a",
+        "23d9910d72808b59"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_10_Slice",
+       "file": "crates/bevy_ecs/src/entity/index_set.rs",
+       "line": 689,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ccc4bd861788da24",
+        "ec6adf83829ad859"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "incoming_calls": {
+     "same": 105,
+     "differing": 195,
+     "transitions": {
+      "a>a": 90,
+      "b>a": 68,
+      "a>c": 6,
+      "b>c": 25,
+      "a>b": 6
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_0_pop_arg",
+       "file": "crates/bevy_reflect/src/func/args/list.rs",
+       "line": 242,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "18ec7e6b5b6832f6",
+        "7ee3a0f7303bf667"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_1_scale_inner",
+       "file": "examples/ui/scroll_and_overflow/overflow_transform.rs",
+       "line": 141,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "cbf09046aeecda50"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_3_clear",
+       "file": "crates/bevy_ecs/src/system/commands/entity_command.rs",
+       "line": 252,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "d81a4115b5bb12a7",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_4_texture_2d_array",
+       "file": "crates/bevy_material/src/bind_group_layout_entries.rs",
+       "line": 453,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c35fcbcf938a18c8",
+        "ad674335cfad0970"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_5_into_bind_group_layout_entry_builder",
+       "file": "crates/bevy_material/src/bind_group_layout_entries.rs",
+       "line": 209,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "01a16cdbf2f00484",
+        "89ebe5e115d05fd9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_7_from",
+       "file": "crates/bevy_scene/src/scene.rs",
+       "line": 593,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_9_gamepad_event_processing_system",
+       "file": "crates/bevy_input/src/gamepad.rs",
+       "line": 1589,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "edb82332094d71d0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_10_prepare_taa_jitter",
+       "file": "crates/bevy_anti_alias/src/taa/mod.rs",
+       "line": 354,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "8c44868cffd85a0a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_11_prepare_ssr_pipelines",
+       "file": "crates/bevy_pbr/src/ssr/mod.rs",
+       "line": 388,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "f3c52ad0471108af"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_13_dragging",
+       "file": "crates/bevy_inspector/src/column_split.rs",
+       "line": 486,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "18ca02a79594e87c",
+        "1391b2100399ae57"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 15,
+     "differing": 285,
+     "transitions": {
+      "a>a": 230,
+      "b>a": 53,
+      "a>b": 2
+     },
+     "examples": [
+      {
+       "name": "document_highlight_0_into",
+       "file": "crates/bevy_color/src/color.rs",
+       "line": 753,
+       "character": 39,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d96110f734d5ca63",
+        "7d7ff763f1c02875"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_1_EntityEvent",
+       "file": "crates/bevy_ecs/src/observer/distributed_storage.rs",
+       "line": 606,
+       "character": 29,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2e18f20926a00564",
+        "248b38f71601bd56"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "impl",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_2_NoCpuCulling",
+       "file": "crates/bevy_pbr/src/render/mesh.rs",
+       "line": 6,
+       "character": 30,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b5db1cdef72b3612",
+        "cc289f1d7276124a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_3_map",
+       "file": "crates/bevy_picking/src/events.rs",
+       "line": 903,
+       "character": 66,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a1872c9d77d643d5",
+        "a1697e7c33c2cd24"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_4_Clone",
+       "file": "crates/bevy_render/src/render_resource/pipeline_specializer.rs",
+       "line": 87,
+       "character": 15,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a1aa07170d58c374",
+        "92a260fd2e7702e7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_5_BufferUsages",
+       "file": "crates/bevy_render/src/render_resource/buffer_vec.rs",
+       "line": 708,
+       "character": 36,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cd29213bf898bcc3",
+        "ebda49c05be1f0d3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_6_reflect_type_path",
+       "file": "crates/bevy_reflect/src/serde/ser/serializer.rs",
+       "line": 117,
+       "character": 40,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d8595820979fe409",
+        "e86a341e7fbdbc52"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_7_Res",
+       "file": "crates/bevy_pbr/src/material.rs",
+       "line": 976,
+       "character": 23,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "fb7b3cef8dec9ac6",
+        "73faa9935d2406cf"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_8_RENDER_ATTACHMENT",
+       "file": "crates/bevy_core_pipeline/src/core_3d/mod.rs",
+       "line": 886,
+       "character": 51,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "ec71b5f8f91cee0e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_9_Some",
+       "file": "crates/bevy_anti_alias/src/taa/mod.rs",
+       "line": 235,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bc4dc931737aea4c",
+        "3c51eb59138b12aa"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_bevy_booster.json",
+  "repo_commit": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {
+   "ra": true
+  }
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing-outcome: only rows on which some pair of servers differs in outcome (a/b/c of the first answer); rows that differ in digest alone are counted in comparison but not kept; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_1_SpecializedPrepassMaterialPipelineCache",
+   "file": "crates/bevy_pbr/src/prepass/mod.rs",
+   "line": 902,
+   "character": 12,
+   "symbol": "SpecializedPrepassMaterialPipelineCache",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 9330.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f7befd193eeeaa76",
+     "us": 16267.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_2_PrintOnCompletionTimer",
+   "file": "examples/time/timers.rs",
+   "line": 15,
+   "character": 8,
+   "symbol": "PrintOnCompletionTimer",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7809.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "879cc29ade6da0cc",
+     "us": 917.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_4_Counter",
+   "file": "crates/bevy_ecs/src/component/required.rs",
+   "line": 1222,
+   "character": 16,
+   "symbol": "Counter",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 9211.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "63920babef87b480",
+     "us": 1198.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_5_Smaa",
+   "file": "crates/bevy_anti_alias/src/smaa/mod.rs",
+   "line": 93,
+   "character": 12,
+   "symbol": "Smaa",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5713.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9502fd15e505fdcb",
+     "us": 2785.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_8_Rotates",
+   "file": "examples/3d/motion_blur.rs",
+   "line": 51,
+   "character": 8,
+   "symbol": "Rotates",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5778.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "246947bc553c6ee5",
+     "us": 7245.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_13_DespawnOnAdd",
+   "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+   "line": 50,
+   "character": 12,
+   "symbol": "DespawnOnAdd",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6772.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d2baab986bd72b8c",
+     "us": 2317.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_14_Args",
+   "file": "examples/stress_tests/many_glyphs.rs",
+   "line": 20,
+   "character": 8,
+   "symbol": "Args",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5052.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "59e2e9de517e09cd",
+     "us": 1000.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_15_SmaaInfoUniform",
+   "file": "crates/bevy_anti_alias/src/smaa/mod.rs",
+   "line": 205,
+   "character": 12,
+   "symbol": "SmaaInfoUniform",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5524.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4dc220c9b08d23f1",
+     "us": 739.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_16_Rotation",
+   "file": "benches/benches/bevy_ecs/iteration/iter_simple_contiguous_avx2.rs",
+   "line": 11,
+   "character": 8,
+   "symbol": "Rotation",
+   "target_kind": "bench",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6891.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "fb96ae8c13d2c959",
+     "us": 5462.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_18_GpuPreprocessingMode",
+   "file": "crates/bevy_render/src/batching/gpu_preprocessing.rs",
+   "line": 150,
+   "character": 10,
+   "symbol": "GpuPreprocessingMode",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8368.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "90aef3a6bdd05acc",
+     "us": 22153.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_20_BlitPipelineKey",
+   "file": "crates/bevy_core_pipeline/src/blit/mod.rs",
+   "line": 86,
+   "character": 12,
+   "symbol": "BlitPipelineKey",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5669.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "de8b3208284e30e1",
+     "us": 2038.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_23_BloomDownsamplingPipelineKeys",
+   "file": "crates/bevy_post_process/src/bloom/downsampling_pipeline.rs",
+   "line": 39,
+   "character": 12,
+   "symbol": "BloomDownsamplingPipelineKeys",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7260.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f9bc99e13660d796",
+     "us": 782.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_26_MyOuter",
+   "file": "crates/bevy_reflect/src/lib.rs",
+   "line": 3924,
+   "character": 14,
+   "symbol": "MyOuter",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7240.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5532b615cd857394",
+     "us": 12397.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_28_Cube",
+   "file": "examples/ui/render_ui_to_texture.rs",
+   "line": 33,
+   "character": 8,
+   "symbol": "Cube",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5507.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "56ba38fee6ac1122",
+     "us": 779.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_30_SeededRng",
+   "file": "examples/remote/app_under_test.rs",
+   "line": 46,
+   "character": 8,
+   "symbol": "SeededRng",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1513.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "af785255d3d3b359",
+     "us": 838.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_33_ResE",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 462,
+   "character": 12,
+   "symbol": "ResE",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6234.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "50d8185e64578381",
+     "us": 2548.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_35_Selected",
+   "file": "examples/asset/asset_saving.rs",
+   "line": 253,
+   "character": 8,
+   "symbol": "Selected",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5492.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1297d284a4120cc2",
+     "us": 998.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_46_MenuLayout",
+   "file": "crates/bevy_ui_widgets/src/menu.rs",
+   "line": 95,
+   "character": 10,
+   "symbol": "MenuLayout",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5723.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "980a58fe1c26e36d",
+     "us": 4953.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_47_GltfMeshExtras",
+   "file": "crates/bevy_gltf/src/assets.rs",
+   "line": 311,
+   "character": 12,
+   "symbol": "GltfMeshExtras",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5797.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a28566865ed17fca",
+     "us": 5396.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_48_EnvironmentMapLabel",
+   "file": "examples/3d/pbr.rs",
+   "line": 148,
+   "character": 8,
+   "symbol": "EnvironmentMapLabel",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6343.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1e8255bbb39887a5",
+     "us": 768.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_52_OnMonitor",
+   "file": "crates/bevy_window/src/window.rs",
+   "line": 1570,
+   "character": 12,
+   "symbol": "OnMonitor",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5803.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "53afdbbcda01a18b",
+     "us": 1867.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_54_RequiredComponentsError",
+   "file": "crates/bevy_ecs/src/component/required.rs",
+   "line": 526,
+   "character": 10,
+   "symbol": "RequiredComponentsError",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6861.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9add1c205ff0500c",
+     "us": 567.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_55_CurrentView",
+   "file": "crates/bevy_render/src/renderer/render_context.rs",
+   "line": 313,
+   "character": 12,
+   "symbol": "CurrentView",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6594.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a164a54aab7d13c3",
+     "us": 680.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_56_Rotates",
+   "file": "examples/shader/shader_prepass.rs",
+   "line": 171,
+   "character": 8,
+   "symbol": "Rotates",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5547.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "29f1d2e35fc65197",
+     "us": 697.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_57_Foo",
+   "file": "crates/bevy_scene/src/lib.rs",
+   "line": 3315,
+   "character": 16,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6793.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3a3cd5b85f76a321",
+     "us": 4806.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_58_ControlledSelection",
+   "file": "examples/ui/widgets/headless_tabs.rs",
+   "line": 22,
+   "character": 8,
+   "symbol": "ControlledSelection",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6186.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0381a95994d18ad8",
+     "us": 996.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_60_Attack",
+   "file": "examples/ecs/observer_propagation.rs",
+   "line": 56,
+   "character": 8,
+   "symbol": "Attack",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5640.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e0ad5cf4d05751ee",
+     "us": 943.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_61_RenderMeshInstanceGpuFlat",
+   "file": "crates/bevy_pbr/src/render/mesh.rs",
+   "line": 929,
+   "character": 12,
+   "symbol": "RenderMeshInstanceGpuFlat",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5884.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "967572c4f112b646",
+     "us": 821.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_67_NoFrustumCulling",
+   "file": "crates/bevy_camera/src/visibility/mod.rs",
+   "line": 318,
+   "character": 12,
+   "symbol": "NoFrustumCulling",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6702.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c2ba8929e7ce679a",
+     "us": 2717.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_71_ThemeBackgroundColor",
+   "file": "crates/bevy_feathers/src/theme.rs",
+   "line": 196,
+   "character": 12,
+   "symbol": "ThemeBackgroundColor",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7199.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "07b9bec7290949b1",
+     "us": 2296.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_72_TarjanScc",
+   "file": "crates/bevy_ecs/src/schedule/graph/tarjan_scc.rs",
+   "line": 63,
+   "character": 8,
+   "symbol": "TarjanScc",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6352.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "09437e69295b3138",
+     "us": 889.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_73_Data",
+   "file": "benches/benches/bevy_ecs/iteration/iter_frag_foreach_wide_sparse.rs",
+   "line": 16,
+   "character": 8,
+   "symbol": "Data",
+   "target_kind": "bench",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6960.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ab44cd61dce449f0",
+     "us": 478.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_76_MyComponent",
+   "file": "crates/bevy_ecs/src/relationship/related_methods.rs",
+   "line": 908,
+   "character": 16,
+   "symbol": "MyComponent",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8352.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "26812b162de27a93",
+     "us": 844.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_78_PrimaryMonitor",
+   "file": "crates/bevy_window/src/monitor.rs",
+   "line": 56,
+   "character": 12,
+   "symbol": "PrimaryMonitor",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5848.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9fa93deff7322667",
+     "us": 1437.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_81_SyncToSubWorld",
+   "file": "crates/bevy_extract/src/sync_world.rs",
+   "line": 123,
+   "character": 12,
+   "symbol": "SyncToSubWorld",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5866.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7a21f0f4efebd496",
+     "us": 1207.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_84_NoAutomaticBatching",
+   "file": "crates/bevy_render/src/batching/mod.rs",
+   "line": 26,
+   "character": 12,
+   "symbol": "NoAutomaticBatching",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6696.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "542985ad92d1b6af",
+     "us": 476.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_85_Rotation",
+   "file": "benches/benches/bevy_ecs/iteration/iter_simple_foreach_wide.rs",
+   "line": 11,
+   "character": 8,
+   "symbol": "Rotation",
+   "target_kind": "bench",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6986.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "98880f045efa1cde",
+     "us": 412.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_88_InspectorDetailsBody",
+   "file": "crates/bevy_inspector/src/details_panel.rs",
+   "line": 77,
+   "character": 12,
+   "symbol": "InspectorDetailsBody",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6806.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "934849cfebf82ff8",
+     "us": 3328.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_93_SkyboxBindGroup",
+   "file": "crates/bevy_core_pipeline/src/skybox/mod.rs",
+   "line": 221,
+   "character": 12,
+   "symbol": "SkyboxBindGroup",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5095.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "54778bb063dedecf",
+     "us": 1246.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_97_SubStates",
+   "file": "crates/bevy_state/src/state/sub_states.rs",
+   "line": 148,
+   "character": 11,
+   "symbol": "SubStates",
+   "target_kind": "lib",
+   "cursor_kind": "decl:trait",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8896.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ebb8e36e3b1bacc1",
+     "us": 1945.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_99_RotateButton",
+   "file": "examples/ui/ui_transform.rs",
+   "line": 27,
+   "character": 12,
+   "symbol": "RotateButton",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6462.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d9abd4f6a36365a1",
+     "us": 777.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_100_RadioButtonValue",
+   "file": "examples/ui/layout/size_constraints.rs",
+   "line": 43,
+   "character": 8,
+   "symbol": "RadioButtonValue",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6417.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "231f6dd1ed6576c9",
+     "us": 1055.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_101_DelayedCommandQueue",
+   "file": "crates/bevy_time/src/delayed_commands.rs",
+   "line": 134,
+   "character": 12,
+   "symbol": "DelayedCommandQueue",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5104.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "16b17eccaab5993a",
+     "us": 1803.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_102_ImageSize",
+   "file": "examples/2d/dynamic_mip_generation.rs",
+   "line": 132,
+   "character": 6,
+   "symbol": "ImageSize",
+   "target_kind": "example",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6009.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7fecad9f3a0c0cf5",
+     "us": 1900.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_105_RootNonCameraView",
+   "file": "crates/bevy_core_pipeline/src/schedule.rs",
+   "line": 126,
+   "character": 12,
+   "symbol": "RootNonCameraView",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5986.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a3ae93f5862fe177",
+     "us": 1392.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_106_GlobalClusterGpuSettings",
+   "file": "crates/bevy_light/src/cluster/mod.rs",
+   "line": 56,
+   "character": 12,
+   "symbol": "GlobalClusterGpuSettings",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6296.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1fdd5b661c9a667f",
+     "us": 2850.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_109_Changed",
+   "file": "crates/bevy_ecs/src/query/filter.rs",
+   "line": 1068,
+   "character": 12,
+   "symbol": "Changed",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 13286.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ed84c5339d2491ab",
+     "us": 1562.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_115_SparseBufferUpdateJobs",
+   "file": "crates/bevy_render/src/render_resource/sparse_buffer_vec.rs",
+   "line": 152,
+   "character": 12,
+   "symbol": "SparseBufferUpdateJobs",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7798.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e033990f2f201b71",
+     "us": 528.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_119_Foo",
+   "file": "crates/bevy_reflect/src/type_registry.rs",
+   "line": 1257,
+   "character": 16,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6939.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f3d24a635324779c",
+     "us": 2585.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_124_RaytracingSceneNeedsPreviousFrameData",
+   "file": "crates/bevy_solari/src/scene/binder/mod.rs",
+   "line": 49,
+   "character": 12,
+   "symbol": "RaytracingSceneNeedsPreviousFrameData",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6305.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "087758b197996e0a",
+     "us": 1022.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_127_ComponentA",
+   "file": "crates/bevy_world_serialization/src/dynamic_world_builder.rs",
+   "line": 434,
+   "character": 12,
+   "symbol": "ComponentA",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7278.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1c9463799d382a37",
+     "us": 2259.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_128_DependencyKind",
+   "file": "crates/bevy_ecs/src/schedule/graph/mod.rs",
+   "line": 15,
+   "character": 17,
+   "symbol": "DependencyKind",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6540.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "96b96629a6b81365",
+     "us": 866.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_129_TilemapChunkMeshCache",
+   "file": "crates/bevy_sprite_render/src/tilemap_chunk/mod.rs",
+   "line": 49,
+   "character": 12,
+   "symbol": "TilemapChunkMeshCache",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5379.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "78a1529111877d6f",
+     "us": 1690.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_130_WindowEventSystems",
+   "file": "crates/bevy_window/src/system.rs",
+   "line": 17,
+   "character": 12,
+   "symbol": "WindowEventSystems",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6222.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c5f9768c3afcb6ed",
+     "us": 707.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_133_HelpText",
+   "file": "examples/3d/mixed_lighting.rs",
+   "line": 85,
+   "character": 8,
+   "symbol": "HelpText",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5882.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9bf97e9673e5a9be",
+     "us": 1258.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_135_MyInner",
+   "file": "crates/bevy_reflect/src/lib.rs",
+   "line": 4047,
+   "character": 16,
+   "symbol": "MyInner",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7124.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "193e69fe78bd3c74",
+     "us": 7238.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_138_StrongHandle",
+   "file": "crates/bevy_inspector/src/details_panel.rs",
+   "line": 1414,
+   "character": 12,
+   "symbol": "StrongHandle",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6592.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "464b785091591b22",
+     "us": 2188.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_139_FakeBsn",
+   "file": "crates/bevy_asset/src/processor/tests.rs",
+   "line": 710,
+   "character": 8,
+   "symbol": "FakeBsn",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5974.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "952274fee751ee99",
+     "us": 3324.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_141_MipGenerationPhase",
+   "file": "crates/bevy_core_pipeline/src/mip_generation/mod.rs",
+   "line": 257,
+   "character": 12,
+   "symbol": "MipGenerationPhase",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6199.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0964388f11f4df6d",
+     "us": 710.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_143_InputCounter",
+   "file": "examples/ecs/run_conditions.rs",
+   "line": 56,
+   "character": 8,
+   "symbol": "InputCounter",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6111.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "938fa20c4708d891",
+     "us": 1064.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_145_WallShape",
+   "file": "examples/usage/debug_frustum_culling.rs",
+   "line": 88,
+   "character": 8,
+   "symbol": "WallShape",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5873.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "fd595aa419a1a0d2",
+     "us": 1953.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_146_Foo",
+   "file": "crates/bevy_reflect/src/lib.rs",
+   "line": 945,
+   "character": 16,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6073.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c82ae06c2358a010",
+     "us": 3371.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_150_RenderDebugOverlayPipelineId",
+   "file": "crates/bevy_dev_tools/src/render_debug.rs",
+   "line": 620,
+   "character": 8,
+   "symbol": "RenderDebugOverlayPipelineId",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6531.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5b14a68bb65c8eec",
+     "us": 1315.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_151_QueryDataAttributes",
+   "file": "crates/bevy_ecs/macros/src/query_data.rs",
+   "line": 20,
+   "character": 8,
+   "symbol": "QueryDataAttributes",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6143.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "6ae8c554243a8764",
+     "us": 1081.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_153_ComputePipeline",
+   "file": "examples/shader/gpu_readback.rs",
+   "line": 184,
+   "character": 8,
+   "symbol": "ComputePipeline",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5850.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1ba74d600473f0dd",
+     "us": 1032.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_160_RenderScheduleOrder",
+   "file": "crates/bevy_render/src/lib.rs",
+   "line": 282,
+   "character": 12,
+   "symbol": "RenderScheduleOrder",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5993.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d700e1bcdeb595b3",
+     "us": 755.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_161_TestEnum",
+   "file": "crates/bevy_reflect/src/enums/mod.rs",
+   "line": 359,
+   "character": 14,
+   "symbol": "TestEnum",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7106.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "58d13688b90b139f",
+     "us": 2489.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_162_ManualTextureViewHandle",
+   "file": "crates/bevy_camera/src/camera.rs",
+   "line": 982,
+   "character": 12,
+   "symbol": "ManualTextureViewHandle",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5443.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "735fa96e0840c39b",
+     "us": 1521.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_163_DemoButton",
+   "file": "examples/ui/widgets/standard_widgets_observers.rs",
+   "line": 55,
+   "character": 8,
+   "symbol": "DemoButton",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6305.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "94d65c0663c04993",
+     "us": 868.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_164_MyTupleStruct",
+   "file": "crates/bevy_reflect/src/lib.rs",
+   "line": 1967,
+   "character": 16,
+   "symbol": "MyTupleStruct",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7465.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "649625e94791b938",
+     "us": 2326.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_165_HoverMap",
+   "file": "crates/bevy_picking/src/hover.rs",
+   "line": 64,
+   "character": 12,
+   "symbol": "HoverMap",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6186.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ab96bedeb8e0b7c0",
+     "us": 2070.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_166_SelectableColor",
+   "file": "examples/asset/asset_saving.rs",
+   "line": 250,
+   "character": 8,
+   "symbol": "SelectableColor",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5612.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7ef2938725d6d0e0",
+     "us": 850.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_168_AutoExposureResources",
+   "file": "crates/bevy_post_process/src/auto_exposure/mod.rs",
+   "line": 43,
+   "character": 8,
+   "symbol": "AutoExposureResources",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5098.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "598da16c6b98eb3a",
+     "us": 709.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_170_DerivePath",
+   "file": "crates/bevy_reflect/src/lib.rs",
+   "line": 2543,
+   "character": 16,
+   "symbol": "DerivePath",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6503.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3182b4abb77a0f88",
+     "us": 4141.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_175_BrpInspectAllResourcesParams",
+   "file": "crates/bevy_remote/src/inspection_methods.rs",
+   "line": 87,
+   "character": 12,
+   "symbol": "BrpInspectAllResourcesParams",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5552.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "bb04a377fea72583",
+     "us": 1333.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_177_Mesh2dMarker",
+   "file": "crates/bevy_sprite_render/src/mesh2d/mesh.rs",
+   "line": 283,
+   "character": 12,
+   "symbol": "Mesh2dMarker",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5077.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b4e7f048b2944171",
+     "us": 2471.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_178_OtherSettings",
+   "file": "examples/app/settings.rs",
+   "line": 49,
+   "character": 8,
+   "symbol": "OtherSettings",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1405.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ad32de292e53b075",
+     "us": 1813.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_180_EditableTextContentSizeState",
+   "file": "crates/bevy_ui/src/widget/text_input_layout.rs",
+   "line": 39,
+   "character": 12,
+   "symbol": "EditableTextContentSizeState",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7048.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b7d5e009f114b0f8",
+     "us": 1235.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_181_GenericStruct16",
+   "file": "benches/benches/bevy_reflect/struct.rs",
+   "line": 623,
+   "character": 8,
+   "symbol": "GenericStruct16",
+   "target_kind": "bench",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6652.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5ab5753cc733b307",
+     "us": 3193.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_182_AtmosphereBuffer",
+   "file": "crates/bevy_pbr/src/atmosphere/resources.rs",
+   "line": 814,
+   "character": 12,
+   "symbol": "AtmosphereBuffer",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5646.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a185c2fee612218d",
+     "us": 1689.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_183_Set2",
+   "file": "crates/bevy_ecs/src/schedule/schedule.rs",
+   "line": 2171,
+   "character": 16,
+   "symbol": "Set2",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 9703.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "2e306c23ebd00e09",
+     "us": 746.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_184_FadeOut",
+   "file": "examples/audio/soundtrack.rs",
+   "line": 45,
+   "character": 8,
+   "symbol": "FadeOut",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6088.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0fff8336409ad2e4",
+     "us": 683.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_185_Table",
+   "file": "benches/benches/bevy_ecs/fragmentation.rs",
+   "line": 9,
+   "character": 8,
+   "symbol": "Table",
+   "target_kind": "bench",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6472.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8387117121d7d34c",
+     "us": 754.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_186_ImeSystems",
+   "file": "crates/bevy_ui_widgets/src/text_input.rs",
+   "line": 743,
+   "character": 10,
+   "symbol": "ImeSystems",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5154.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1bc95b4c475ecc98",
+     "us": 2281.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_187_CExtra5",
+   "file": "crates/bevy_ecs/src/query/fetch.rs",
+   "line": 4930,
+   "character": 16,
+   "symbol": "CExtra5",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8033.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "fb9553a61cdf2108",
+     "us": 5937.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_188_AssetExtractionSystems",
+   "file": "crates/bevy_render/src/erased_render_asset.rs",
+   "line": 30,
+   "character": 12,
+   "symbol": "AssetExtractionSystems",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7330.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e10cf9e2fb1651af",
+     "us": 1201.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_190_SceneSpawnerSystems",
+   "file": "crates/bevy_app/src/main_schedule.rs",
+   "line": 204,
+   "character": 10,
+   "symbol": "SceneSpawnerSystems",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6666.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "387e1f5e36b52a24",
+     "us": 1387.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_191_GpuLights",
+   "file": "crates/bevy_pbr/src/render/light.rs",
+   "line": 209,
+   "character": 12,
+   "symbol": "GpuLights",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5744.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "116f523be1af1422",
+     "us": 5535.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_192_TextureReinterpretationError",
+   "file": "crates/bevy_image/src/image.rs",
+   "line": 2229,
+   "character": 10,
+   "symbol": "TextureReinterpretationError",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6761.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4408a52b64f99cf1",
+     "us": 901.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_195_FooProcessor",
+   "file": "crates/bevy_reflect/src/serde/ser/mod.rs",
+   "line": 554,
+   "character": 16,
+   "symbol": "FooProcessor",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6680.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "615766d3d97ee75f",
+     "us": 3219.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_197_FpsText",
+   "file": "examples/ui/text/text.rs",
+   "line": 23,
+   "character": 8,
+   "symbol": "FpsText",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6167.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a084628137797cc6",
+     "us": 695.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_201_SpawnCommand",
+   "file": "crates/bevy_ecs/src/world/command_queue.rs",
+   "line": 466,
+   "character": 12,
+   "symbol": "SpawnCommand",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6916.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "cd3a39df5b4bb63e",
+     "us": 1165.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_202_SpecializedMaterialViewPipelineCache",
+   "file": "crates/bevy_pbr/src/material.rs",
+   "line": 904,
+   "character": 12,
+   "symbol": "SpecializedMaterialViewPipelineCache",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6863.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "6c11ea72240d37a0",
+     "us": 2306.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_204_AppStatus",
+   "file": "examples/2d/2d_shapes.rs",
+   "line": 36,
+   "character": 8,
+   "symbol": "AppStatus",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5268.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d54e0f4e3f80d70d",
+     "us": 1147.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_206_MyEnum",
+   "file": "crates/bevy_world_serialization/src/serde.rs",
+   "line": 620,
+   "character": 10,
+   "symbol": "MyEnum",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5003.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "824f656fa1d38e44",
+     "us": 2515.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_207_SceneDependency",
+   "file": "crates/bevy_scene/src/scene.rs",
+   "line": 149,
+   "character": 12,
+   "symbol": "SceneDependency",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "175e8c40bb0fc89a",
+     "us": 4860.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 387.7,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 237.6,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_208_UiPipelineKey",
+   "file": "crates/bevy_ui_render/src/pipeline.rs",
+   "line": 49,
+   "character": 12,
+   "symbol": "UiPipelineKey",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5929.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1e567143d8d9ef18",
+     "us": 610.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_209_SettingsGroup",
+   "file": "crates/bevy_settings/src/lib.rs",
+   "line": 195,
+   "character": 11,
+   "symbol": "SettingsGroup",
+   "target_kind": "lib",
+   "cursor_kind": "decl:trait",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6583.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "6c0e2132bb74bdcf",
+     "us": 793.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_212_SettingsPanel",
+   "file": "examples/ui/styling/box_shadow.rs",
+   "line": 128,
+   "character": 8,
+   "symbol": "SettingsPanel",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5730.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b53089ba2169c1ec",
+     "us": 1196.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_215_PipelinesReady",
+   "file": "examples/showcase/loading_screen.rs",
+   "line": 298,
+   "character": 16,
+   "symbol": "PipelinesReady",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6904.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1366550f0188315a",
+     "us": 843.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_218_NoFragmentStateError",
+   "file": "crates/bevy_material/src/descriptor.rs",
+   "line": 55,
+   "character": 12,
+   "symbol": "NoFragmentStateError",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6212.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e0c6f5fd8f0fa015",
+     "us": 411.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_222_Args",
+   "file": "examples/stress_tests/bevymark_3d.rs",
+   "line": 43,
+   "character": 8,
+   "symbol": "Args",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5185.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4be00f2ecd3936a9",
+     "us": 1663.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_223_SomeStruct",
+   "file": "crates/bevy_reflect/src/serde/ser/mod.rs",
+   "line": 65,
+   "character": 12,
+   "symbol": "SomeStruct",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5238.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a93651214643a14b",
+     "us": 1237.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_227_TextureAtlasBuilderError",
+   "file": "crates/bevy_image/src/texture_atlas_builder.rs",
+   "line": 17,
+   "character": 10,
+   "symbol": "TextureAtlasBuilderError",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6562.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c7f3e878b9ff8b17",
+     "us": 815.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_229_L2",
+   "file": "crates/bevy_ecs/src/component/required.rs",
+   "line": 1513,
+   "character": 16,
+   "symbol": "L2",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7649.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c8419ca25414649b",
+     "us": 1199.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_230_TestStruct",
+   "file": "crates/bevy_reflect/src/serde/mod.rs",
+   "line": 95,
+   "character": 16,
+   "symbol": "TestStruct",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6061.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3b7e655c0ac6c2c6",
+     "us": 1983.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_231_AtmosphereProbeTextures",
+   "file": "crates/bevy_pbr/src/atmosphere/environment.rs",
+   "line": 47,
+   "character": 12,
+   "symbol": "AtmosphereProbeTextures",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5757.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d4ad5cfce41c7c09",
+     "us": 1203.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_234_ExtractedUiNodes",
+   "file": "crates/bevy_ui_render/src/lib.rs",
+   "line": 408,
+   "character": 12,
+   "symbol": "ExtractedUiNodes",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5966.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "138d6a054554f399",
+     "us": 2351.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_235_IterCombAB",
+   "file": "crates/bevy_ecs/src/query/mod.rs",
+   "line": 695,
+   "character": 20,
+   "symbol": "IterCombAB",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6526.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "bb09fa2bbd9ef427",
+     "us": 3108.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_236_Car",
+   "file": "examples/large_scenes/bevy_city/src/main.rs",
+   "line": 388,
+   "character": 8,
+   "symbol": "Car",
+   "target_kind": "bin",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4743.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d688a6dd4ea9531d",
+     "us": 873.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_237_Rotation",
+   "file": "benches/benches/bevy_ecs/iteration/contiguous_par_iter_simple.rs",
+   "line": 12,
+   "character": 8,
+   "symbol": "Rotation",
+   "target_kind": "bench",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6832.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8e0236f1b082f34c",
+     "us": 407.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_238_VideoModeSelection",
+   "file": "crates/bevy_window/src/window.rs",
+   "line": 1189,
+   "character": 10,
+   "symbol": "VideoModeSelection",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6179.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b2a3fd50aafdef37",
+     "us": 1354.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_239_AssetReference",
+   "file": "benches/benches/bevy_scene/spawn.rs",
+   "line": 177,
+   "character": 8,
+   "symbol": "AssetReference",
+   "target_kind": "bench",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6214.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "072213ec1dc36c44",
+     "us": 1176.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_244_ShadowView",
+   "file": "crates/bevy_pbr/src/render/light.rs",
+   "line": 998,
+   "character": 12,
+   "symbol": "ShadowView",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5519.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3d16e949d56cbdda",
+     "us": 842.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_247_GameRules",
+   "file": "examples/ecs/ecs_guide.rs",
+   "line": 82,
+   "character": 8,
+   "symbol": "GameRules",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5701.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4ab0b868a1c57880",
+     "us": 994.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_250_IntoDynamicImageError",
+   "file": "crates/bevy_image/src/image_texture_conversion.rs",
+   "line": 239,
+   "character": 10,
+   "symbol": "IntoDynamicImageError",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7107.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9266dac4040713ea",
+     "us": 859.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_254_AnimationTimer",
+   "file": "examples/stress_tests/many_animated_sprites.rs",
+   "line": 106,
+   "character": 8,
+   "symbol": "AnimationTimer",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6389.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e9c0822ad0806f7e",
+     "us": 1085.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_256_FakeMesh3d",
+   "file": "crates/bevy_world_serialization/src/serde.rs",
+   "line": 585,
+   "character": 12,
+   "symbol": "FakeMesh3d",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5142.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "61d4977290c3ddae",
+     "us": 1110.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_260_PathtracerPipelines",
+   "file": "crates/bevy_solari/src/pathtracer/node.rs",
+   "line": 20,
+   "character": 12,
+   "symbol": "PathtracerPipelines",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6583.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f72a8c2c6ca4a2c3",
+     "us": 1057.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_261_ViewFogUniformOffset",
+   "file": "crates/bevy_pbr/src/render/fog.rs",
+   "line": 120,
+   "character": 12,
+   "symbol": "ViewFogUniformOffset",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5684.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0eb19cd7587bccfb",
+     "us": 666.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_264_Clips",
+   "file": "examples/tools/scene_viewer/animation_plugin.rs",
+   "line": 10,
+   "character": 8,
+   "symbol": "Clips",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2098.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "57eb4041167ed828",
+     "us": 1300.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_265_ActionState",
+   "file": "examples/ui/navigation/directional_navigation_overrides.rs",
+   "line": 648,
+   "character": 8,
+   "symbol": "ActionState",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5872.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "286f1773c1069f38",
+     "us": 1247.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_266_Rotation",
+   "file": "benches/benches/bevy_ecs/iteration/iter_simple_wide.rs",
+   "line": 11,
+   "character": 8,
+   "symbol": "Rotation",
+   "target_kind": "bench",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6721.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c6278c7875c56cbd",
+     "us": 378.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_269_TupleTestAsset",
+   "file": "crates/bevy_asset/src/lib.rs",
+   "line": 2159,
+   "character": 16,
+   "symbol": "TupleTestAsset",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5772.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "08b1e0da51028ab7",
+     "us": 659.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_271_RenderBinIndex",
+   "file": "crates/bevy_render/src/render_phase/mod.rs",
+   "line": 388,
+   "character": 19,
+   "symbol": "RenderBinIndex",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6706.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1ed266770a52b6f5",
+     "us": 612.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_272_ViewCasPipeline",
+   "file": "crates/bevy_anti_alias/src/contrast_adaptive_sharpening/mod.rs",
+   "line": 254,
+   "character": 12,
+   "symbol": "ViewCasPipeline",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6577.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "60a9d3299b84f994",
+     "us": 864.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_275_ViewKeyCache",
+   "file": "crates/bevy_sprite_render/src/mesh2d/mesh.rs",
+   "line": 135,
+   "character": 12,
+   "symbol": "ViewKeyCache",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5226.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b2b34e8945951644",
+     "us": 457.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_277_PluginGroupE",
+   "file": "crates/bevy_app/src/plugin_group.rs",
+   "line": 969,
+   "character": 16,
+   "symbol": "PluginGroupE",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5161.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f572ada4eb221c76",
+     "us": 710.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_280_FixedUpdate",
+   "file": "crates/bevy_app/src/main_schedule.rs",
+   "line": 133,
+   "character": 12,
+   "symbol": "FixedUpdate",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6125.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e61d2aa1588e1ef2",
+     "us": 575.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_282_WireframePipelineKey",
+   "file": "crates/bevy_pbr/src/wireframe.rs",
+   "line": 733,
+   "character": 12,
+   "symbol": "WireframePipelineKey",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5303.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f0a8b0d2c912e929",
+     "us": 2782.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_284_SomeIgnoredTupleStruct",
+   "file": "crates/bevy_reflect/src/serde/ser/mod.rs",
+   "line": 82,
+   "character": 12,
+   "symbol": "SomeIgnoredTupleStruct",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5734.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1085a7abeb441728",
+     "us": 939.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_285_CMain",
+   "file": "crates/bevy_ecs/src/query/fetch.rs",
+   "line": 4913,
+   "character": 16,
+   "symbol": "CMain",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7827.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7379452b24f4df20",
+     "us": 462.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_287_Bonus",
+   "file": "examples/showcase/alien_cake_addict.rs",
+   "line": 63,
+   "character": 8,
+   "symbol": "Bonus",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5056.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "2947240ef845b93c",
+     "us": 1016.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_288_Shape",
+   "file": "examples/3d/3d_shapes.rs",
+   "line": 50,
+   "character": 8,
+   "symbol": "Shape",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5092.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "10eaee477829c2ff",
+     "us": 983.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_292_TestComponent2",
+   "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+   "line": 43,
+   "character": 12,
+   "symbol": "TestComponent2",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8651.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "71f4dca7ed33a1e0",
+     "us": 1844.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_294_PitchFrequency",
+   "file": "examples/audio/pitch.rs",
+   "line": 19,
+   "character": 8,
+   "symbol": "PitchFrequency",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6643.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3cf946319b81ce2a",
+     "us": 1229.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_1_scale_inner",
+   "file": "examples/ui/scroll_and_overflow/overflow_transform.rs",
+   "line": 141,
+   "character": 4,
+   "symbol": "scale_inner",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5826.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "cbf09046aeecda50",
+     "us": 14562.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_3_clear",
+   "file": "crates/bevy_ecs/src/system/commands/entity_command.rs",
+   "line": 252,
+   "character": 8,
+   "symbol": "clear",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "d81a4115b5bb12a7",
+     "us": 6674.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000175.9,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "a",
+      "digest": "454dd50ed8d9de37",
+      "us": 18281.3,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_7_from",
+   "file": "crates/bevy_scene/src/scene.rs",
+   "line": 593,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8612.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000192.6,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000167.5,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_9_gamepad_event_processing_system",
+   "file": "crates/bevy_input/src/gamepad.rs",
+   "line": 1589,
+   "character": 8,
+   "symbol": "gamepad_event_processing_system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6426.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "edb82332094d71d0",
+     "us": 25411.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_10_prepare_taa_jitter",
+   "file": "crates/bevy_anti_alias/src/taa/mod.rs",
+   "line": 354,
+   "character": 4,
+   "symbol": "prepare_taa_jitter",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5461.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8c44868cffd85a0a",
+     "us": 20409.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_11_prepare_ssr_pipelines",
+   "file": "crates/bevy_pbr/src/ssr/mod.rs",
+   "line": 388,
+   "character": 8,
+   "symbol": "prepare_ssr_pipelines",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5783.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f3c52ad0471108af",
+     "us": 29238.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_14_spawn_camera",
+   "file": "examples/3d/pcss.rs",
+   "line": 141,
+   "character": 4,
+   "symbol": "spawn_camera",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 535.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ef8fe13276dd5efb",
+     "us": 1785.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_19_default",
+   "file": "crates/bevy_utils/src/bloom_filter.rs",
+   "line": 29,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7081.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000167.5,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000175.0,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_23_nested",
+   "file": "crates/bevy_ecs/src/system/system_registry.rs",
+   "line": 1075,
+   "character": 12,
+   "symbol": "nested",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6665.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7cd4c481b524b80e",
+     "us": 14772.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_26_main",
+   "file": "examples/3d/fog_volumes.rs",
+   "line": 16,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5169.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 461.4,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 333.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_28_insert",
+   "file": "crates/bevy_reflect/src/set.rs",
+   "line": 181,
+   "character": 12,
+   "symbol": "insert",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "43be7da74a124899",
+     "us": 8292.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000137.2,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "a",
+      "digest": "4b4f879b48b67c64",
+      "us": 48208.4,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_29_update_scroll_position",
+   "file": "examples/testbed/full_ui.rs",
+   "line": 439,
+   "character": 8,
+   "symbol": "update_scroll_position",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6507.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c0e8fa1cb3fa6e74",
+     "us": 8470.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_31_alpha",
+   "file": "crates/bevy_color/src/color_ops.rs",
+   "line": 86,
+   "character": 8,
+   "symbol": "alpha",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5961.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000167.0,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 19179.6,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_36_from",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 2590,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6838.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000183.0,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000183.3,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_41_from",
+   "file": "crates/bevy_platform/src/collections/hash_set.rs",
+   "line": 165,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8698.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000168.6,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000173.5,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_42_end",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 2445,
+   "character": 12,
+   "symbol": "end",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 11775.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ebb861d2585a8fb7",
+     "us": 31023.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_49_set_deadzone_lowerbound",
+   "file": "crates/bevy_input/src/gamepad.rs",
+   "line": 1236,
+   "character": 12,
+   "symbol": "set_deadzone_lowerbound",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8028.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "2b2f5029378521fd",
+     "us": 12379.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_53_from",
+   "file": "crates/bevy_window/src/event.rs",
+   "line": 667,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7358.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000153.4,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000170.5,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_55_add_no_frustum_culling",
+   "file": "examples/large_scenes/caldera_hotel/src/main.rs",
+   "line": 513,
+   "character": 4,
+   "symbol": "add_no_frustum_culling",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5837.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "2a2f4b833c8ffbf0",
+     "us": 25240.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_57_from",
+   "file": "crates/bevy_text/src/inline_box.rs",
+   "line": 32,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8577.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000171.1,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000159.6,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_58_split_app",
+   "file": "crates/bevy_ui_widgets/src/split_pane.rs",
+   "line": 380,
+   "character": 8,
+   "symbol": "split_app",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8448.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "6a68c7b3eb50bbd6",
+     "us": 31831.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_60_returning",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 1748,
+   "character": 12,
+   "symbol": "returning",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7564.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "92537ab12770d3a7",
+     "us": 34288.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_67_extract_wireframe_entities_needing_specialization",
+   "file": "crates/bevy_pbr/src/wireframe.rs",
+   "line": 1360,
+   "character": 8,
+   "symbol": "extract_wireframe_entities_needing_specialization",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6080.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "41a6363af21f968f",
+     "us": 55981.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_69_default",
+   "file": "crates/bevy_ecs/src/message/message_cursor.rs",
+   "line": 60,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "5c2ad3c341f76df0",
+     "us": 7417.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000187.2,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000162.2,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_72_settings_menu_setup",
+   "file": "examples/showcase/game_menu.rs",
+   "line": 523,
+   "character": 8,
+   "symbol": "settings_menu_setup",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6182.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a9f5e3b396f93c7a",
+     "us": 31772.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_75_get_data",
+   "file": "crates/bevy_ecs/src/storage/non_send.rs",
+   "line": 103,
+   "character": 12,
+   "symbol": "get_data",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6503.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "92fc6a1119d183e5",
+     "us": 8222.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_76_setup",
+   "file": "examples/ui/scroll_and_overflow/drag_to_scroll.rs",
+   "line": 22,
+   "character": 4,
+   "symbol": "setup",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4586.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e64540488953b9ab",
+     "us": 3290.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_77_setup",
+   "file": "examples/ecs/fallible_params.rs",
+   "line": 63,
+   "character": 4,
+   "symbol": "setup",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4226.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "936e7a804345957b",
+     "us": 12568.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_78_update_widget_values",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 108,
+   "character": 4,
+   "symbol": "update_widget_values",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6352.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1814f39f6f126ffb",
+     "us": 28631.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_79_from",
+   "file": "crates/bevy_color/src/hsla.rs",
+   "line": 310,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "79f30bf45fe76b97",
+     "us": 7226.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000164.0,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000176.0,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_82_clone",
+   "file": "crates/bevy_pbr/src/light_probe/mod.rs",
+   "line": 719,
+   "character": 8,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6801.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000180.3,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 983928.1,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_85_default",
+   "file": "crates/bevy_audio/src/audio_output.rs",
+   "line": 21,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6630.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000176.7,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000187.5,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_95_left",
+   "file": "crates/bevy_transform/src/components/transform.rs",
+   "line": 286,
+   "character": 12,
+   "symbol": "left",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "2583cfd8750a9a3e",
+     "us": 6576.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000201.9,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "a",
+      "digest": "399791be3c02e9aa",
+      "us": 24697.3,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_96_collect",
+   "file": "crates/bevy_ecs/src/entity/index_map.rs",
+   "line": 1283,
+   "character": 8,
+   "symbol": "collect",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7223.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000181.4,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 528250.1,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_97_default",
+   "file": "crates/bevy_color/src/linear_rgba.rs",
+   "line": 170,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6583.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000180.7,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000177.9,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_99_queue_render_sky_pipelines",
+   "file": "crates/bevy_pbr/src/atmosphere/resources.rs",
+   "line": 366,
+   "character": 15,
+   "symbol": "queue_render_sky_pipelines",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5644.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "24124e79fd58378a",
+     "us": 48481.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_101_pipe_out",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 423,
+   "character": 12,
+   "symbol": "pipe_out",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6995.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "87a54a9617133535",
+     "us": 10093.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_102_exclusive",
+   "file": "crates/bevy_ecs/src/schedule/schedule.rs",
+   "line": 3620,
+   "character": 12,
+   "symbol": "exclusive",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8027.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "974a74401f7245cd",
+     "us": 10307.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_103_update",
+   "file": "examples/testbed/ui.rs",
+   "line": 4050,
+   "character": 12,
+   "symbol": "update",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4689.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ba89373361ba1781",
+     "us": 146671.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_113_rotate",
+   "file": "examples/2d/2d_shapes.rs",
+   "line": 215,
+   "character": 4,
+   "symbol": "rotate",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4570.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5bd6d8eb21f2f126",
+     "us": 17377.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_115_init_gizmo_group",
+   "file": "crates/bevy_gizmos/src/lib.rs",
+   "line": 130,
+   "character": 8,
+   "symbol": "init_gizmo_group",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6076.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "846cd046c969662e",
+     "us": 97126.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_118_from",
+   "file": "crates/bevy_render/src/settings.rs",
+   "line": 303,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7507.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000134.2,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000169.6,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_123_spawn_helmets",
+   "file": "examples/camera/pan_orbit_camera_ortho.rs",
+   "line": 72,
+   "character": 4,
+   "symbol": "spawn_helmets",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 627.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8d07bc827e44d043",
+     "us": 335.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_128_unwrap_ref",
+   "file": "crates/bevy_reflect/src/func/return_type.rs",
+   "line": 51,
+   "character": 12,
+   "symbol": "unwrap_ref",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5825.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ba298f454507b914",
+     "us": 8849.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_129_from",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 2338,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7544.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000289.4,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000169.2,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_132_scale_around_center",
+   "file": "crates/bevy_shape/src/bounding/bounded2d/mod.rs",
+   "line": 602,
+   "character": 8,
+   "symbol": "scale_around_center",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8182.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b9336255a14732fd",
+     "us": 9383.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_134_collect_render_assets_to_reextract",
+   "file": "crates/bevy_render/src/render_asset.rs",
+   "line": 279,
+   "character": 4,
+   "symbol": "collect_render_assets_to_reextract",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6779.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "6d70238f332f7f91",
+     "us": 14044.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_135_checkbox_app",
+   "file": "crates/bevy_ui_widgets/src/checkbox.rs",
+   "line": 317,
+   "character": 8,
+   "symbol": "checkbox_app",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7327.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5a1164c802e40459",
+     "us": 6821.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_136_checkbox_on_pointer_down",
+   "file": "crates/bevy_ui_widgets/src/checkbox.rs",
+   "line": 91,
+   "character": 4,
+   "symbol": "checkbox_on_pointer_down",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6414.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e936a8b273309513",
+     "us": 17799.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_143_from",
+   "file": "crates/bevy_color/src/okhwba.rs",
+   "line": 340,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 9369.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000167.5,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000186.7,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_152_spawn_many_zst",
+   "file": "benches/benches/bevy_ecs/bundles/spawn_many_zst.rs",
+   "line": 10,
+   "character": 8,
+   "symbol": "spawn_many_zst",
+   "target_kind": "bench",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7055.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1225d5f947e2f520",
+     "us": 1980.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_154_main",
+   "file": "tools/example-showcase/src/main.rs",
+   "line": 141,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5455.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 267.6,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 277.6,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_157_default",
+   "file": "crates/bevy_ecs/src/world/command_queue.rs",
+   "line": 60,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 12998.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000151.0,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000173.4,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_163_update_custom_mesh_animation",
+   "file": "tests/3d/test_skinned_mesh_bounds.rs",
+   "line": 264,
+   "character": 4,
+   "symbol": "update_custom_mesh_animation",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6900.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "907849609498cf25",
+     "us": 419.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_166_torus",
+   "file": "benches/benches/bevy_render/torus.rs",
+   "line": 7,
+   "character": 4,
+   "symbol": "torus",
+   "target_kind": "bench",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5864.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "df746f795536387a",
+     "us": 912.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_167_debug_ensure_aligned",
+   "file": "crates/bevy_ptr/src/lib.rs",
+   "line": 1317,
+   "character": 8,
+   "symbol": "debug_ensure_aligned",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 290.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "72e836563ad572b3",
+     "us": 2307.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_170_skippable_system",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 863,
+   "character": 12,
+   "symbol": "skippable_system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7953.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "db83777beefe62af",
+     "us": 4057.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_173_length",
+   "file": "crates/bevy_math/src/rotation2d.rs",
+   "line": 262,
+   "character": 12,
+   "symbol": "length",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6456.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a9ad79dd4a3b519f",
+     "us": 33651.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_175_init_screen_space_reflections_pipeline",
+   "file": "crates/bevy_pbr/src/ssr/mod.rs",
+   "line": 321,
+   "character": 8,
+   "symbol": "init_screen_space_reflections_pipeline",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6525.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4b46fd6560fa7d5c",
+     "us": 6325.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_176_handle_delayed_save",
+   "file": "crates/bevy_settings/src/lib.rs",
+   "line": 724,
+   "character": 4,
+   "symbol": "handle_delayed_save",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5832.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e9e8c3c487b7b3b1",
+     "us": 896.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_181_rotate_camera",
+   "file": "examples/movement/physics_in_fixed_timestep.rs",
+   "line": 244,
+   "character": 4,
+   "symbol": "rotate_camera",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5850.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c752a7a7e95f9494",
+     "us": 27303.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_182_setup",
+   "file": "examples/testbed/ui.rs",
+   "line": 2085,
+   "character": 12,
+   "symbol": "setup",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6580.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "adfab96553d9f1cb",
+     "us": 861033.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_183_start_drag",
+   "file": "crates/bevy_ui_widgets/src/tabs.rs",
+   "line": 1006,
+   "character": 8,
+   "symbol": "start_drag",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 23005.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "201dc245d119b31c",
+     "us": 21768.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_185_quantize_colors",
+   "file": "crates/bevy_mesh/src/mesh.rs",
+   "line": 1249,
+   "character": 12,
+   "symbol": "quantize_colors",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7781.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b33a2866af817812",
+     "us": 6563.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_186_source_to_remove_before_add",
+   "file": "crates/bevy_ecs/src/relationship/relationship_source_collection.rs",
+   "line": 74,
+   "character": 8,
+   "symbol": "source_to_remove_before_add",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8391.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9c2734731ccf1da0",
+     "us": 18333.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_188_at",
+   "file": "crates/bevy_color/src/color_range.rs",
+   "line": 13,
+   "character": 8,
+   "symbol": "at",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6073.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "abf107607a65f2f0",
+     "us": 35442.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_190_default",
+   "file": "crates/bevy_ui/src/layout/mod.rs",
+   "line": 72,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7199.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000161.9,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000150.8,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_193_sub",
+   "file": "crates/bevy_time/src/moment.rs",
+   "line": 167,
+   "character": 8,
+   "symbol": "sub",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6710.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000193.2,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000177.0,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_194_setup_env",
+   "file": "examples/async_tasks/async_compute.rs",
+   "line": 144,
+   "character": 4,
+   "symbol": "setup_env",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4897.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f79d82df64e30396",
+     "us": 9042.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_195_drag_drop_image",
+   "file": "examples/3d/tonemapping.rs",
+   "line": 198,
+   "character": 4,
+   "symbol": "drag_drop_image",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6183.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3127ec121861160e",
+     "us": 538.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_197_nested",
+   "file": "crates/bevy_ecs/src/system/system_registry.rs",
+   "line": 1105,
+   "character": 12,
+   "symbol": "nested",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6989.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f3f51e9f26cca1e5",
+     "us": 7857.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_198_tree_view_expand_self_update",
+   "file": "crates/bevy_ui_widgets/src/tree.rs",
+   "line": 153,
+   "character": 8,
+   "symbol": "tree_view_expand_self_update",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6484.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a18b24ae44ce9bf9",
+     "us": 239710.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_199_main",
+   "file": "examples/ui/navigation/directional_navigation_overrides.rs",
+   "line": 42,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5238.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 470.2,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 310.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_201_sys",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 969,
+   "character": 12,
+   "symbol": "sys",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6459.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4f99cd839bbf7c2f",
+     "us": 2427.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_204_get_aabb",
+   "file": "crates/bevy_camera/src/primitives.rs",
+   "line": 16,
+   "character": 8,
+   "symbol": "get_aabb",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5965.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0728d38c2405cf2d",
+     "us": 12511.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_207_from",
+   "file": "crates/bevy_ecs/src/world/entity_access/entity_mut.rs",
+   "line": 802,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 9877.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000173.0,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000187.6,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_211_reparent_to_same",
+   "file": "crates/bevy_transform/src/components/global_transform.rs",
+   "line": 377,
+   "character": 12,
+   "symbol": "reparent_to_same",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7872.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "89ddedf0d70e2764",
+     "us": 440.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_212_name",
+   "file": "crates/bevy_reflect/src/func/dynamic_function_mut.rs",
+   "line": 290,
+   "character": 12,
+   "symbol": "name",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7374.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000163.7,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000166.7,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_214_main",
+   "file": "examples/ecs/extraction.rs",
+   "line": 47,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5235.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 419.8,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 714.6,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_215_from",
+   "file": "crates/bevy_ui/src/gradients.rs",
+   "line": 186,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7739.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000180.1,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000171.7,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_219_prepare_smaa_uniforms",
+   "file": "crates/bevy_anti_alias/src/smaa/mod.rs",
+   "line": 654,
+   "character": 4,
+   "symbol": "prepare_smaa_uniforms",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5698.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "cc7c9f17adafa886",
+     "us": 339.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_220_into_iter",
+   "file": "crates/bevy_ecs/src/entity/index_map.rs",
+   "line": 354,
+   "character": 8,
+   "symbol": "into_iter",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8361.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000161.6,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 184484.6,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_226_system",
+   "file": "crates/bevy_ecs/src/system/system_param.rs",
+   "line": 3430,
+   "character": 12,
+   "symbol": "system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7364.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4a4e2dd97f6586e2",
+     "us": 2605.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_228_interpolate_rendered_transform",
+   "file": "examples/movement/physics_in_fixed_timestep.rs",
+   "line": 390,
+   "character": 4,
+   "symbol": "interpolate_rendered_transform",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6719.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1464fe3f999cbcb2",
+     "us": 280.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_230_start_drag",
+   "file": "examples/showcase/desk_toy.rs",
+   "line": 246,
+   "character": 4,
+   "symbol": "start_drag",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5284.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7d11146ba0c3d8fe",
+     "us": 293.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_231_concrete_list_to_dynamic_list",
+   "file": "benches/benches/bevy_reflect/list.rs",
+   "line": 96,
+   "character": 4,
+   "symbol": "concrete_list_to_dynamic_list",
+   "target_kind": "bench",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6643.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "709246f827f481ae",
+     "us": 802.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_235_default",
+   "file": "crates/bevy_animation/src/lib.rs",
+   "line": 139,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6311.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000174.2,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000179.3,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_240_update_button_styles",
+   "file": "crates/bevy_feathers/src/controls/button.rs",
+   "line": 153,
+   "character": 4,
+   "symbol": "update_button_styles",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6158.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4a3152272400135c",
+     "us": 7063.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_244_setup",
+   "file": "examples/camera/pan_camera_controller.rs",
+   "line": 35,
+   "character": 4,
+   "symbol": "setup",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 566.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e66d63ade81c4b93",
+     "us": 451.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_247_from",
+   "file": "crates/bevy_color/src/hsla.rs",
+   "line": 340,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "0b6024d64914cdb7",
+     "us": 7411.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000171.3,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000171.9,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_249_test_handler",
+   "file": "crates/bevy_ecs/src/entity/clone_entities.rs",
+   "line": 2098,
+   "character": 12,
+   "symbol": "test_handler",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7391.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0df8369fd6be70c8",
+     "us": 376.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_261_prepare_debug_overlay_pipelines",
+   "file": "crates/bevy_dev_tools/src/render_debug.rs",
+   "line": 587,
+   "character": 4,
+   "symbol": "prepare_debug_overlay_pipelines",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6427.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c9141d13c44c4332",
+     "us": 248.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_262_touch_camera",
+   "file": "examples/mobile/src/lib.rs",
+   "line": 65,
+   "character": 4,
+   "symbol": "touch_camera",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5206.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "af806f6cc764892d",
+     "us": 1698.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_266_read",
+   "file": "crates/bevy_ecs/src/schedule/schedule.rs",
+   "line": 3569,
+   "character": 12,
+   "symbol": "read",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8804.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a92b95f447e58e7c",
+     "us": 325.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_267_setup",
+   "file": "examples/testbed/ui.rs",
+   "line": 4077,
+   "character": 12,
+   "symbol": "setup",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6123.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8ceef90642d4a20b",
+     "us": 19856.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_274_main",
+   "file": "examples/2d/mesh2d_repeated_texture.rs",
+   "line": 18,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5606.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 381.1,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 1303.0,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_275_fmt",
+   "file": "crates/bevy_ecs/src/query/iter.rs",
+   "line": 2287,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7085.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000173.2,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 860178.1,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_278_cycle_filter_methods",
+   "file": "examples/3d/shadow_biases.rs",
+   "line": 205,
+   "character": 4,
+   "symbol": "cycle_filter_methods",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6384.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "25a2594416205910",
+     "us": 289.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_279_rg_color_plane_value_change",
+   "file": "crates/bevy_feathers/src/controls/color_input.rs",
+   "line": 753,
+   "character": 4,
+   "symbol": "rg_color_plane_value_change",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7139.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0ef62afd1987d718",
+     "us": 465.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_280_curve_gradient_2d",
+   "file": "crates/bevy_gizmos/src/curves.rs",
+   "line": 114,
+   "character": 12,
+   "symbol": "curve_gradient_2d",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7074.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "cc4520b6063c16cc",
+     "us": 7154.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_283_display_loading_screen",
+   "file": "examples/showcase/loading_screen.rs",
+   "line": 264,
+   "character": 4,
+   "symbol": "display_loading_screen",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6358.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "312ee10974f5469f",
+     "us": 351.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_286_named_field",
+   "file": "crates/bevy_scene/macros/src/bsn/codegen.rs",
+   "line": 983,
+   "character": 8,
+   "symbol": "named_field",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8695.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4bcedb6546e6c447",
+     "us": 477.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_288_default",
+   "file": "crates/bevy_dev_tools/src/schedule_data/plugin.rs",
+   "line": 84,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7639.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000150.6,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000171.0,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_291_default",
+   "file": "crates/bevy_ui_render/src/ui_material_pipeline.rs",
+   "line": 91,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7495.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000170.3,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000176.2,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_296_main",
+   "file": "examples/2d/sprite_animation.rs",
+   "line": 9,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5408.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 607.6,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 998.5,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_8_RENDER_ATTACHMENT",
+   "file": "crates/bevy_core_pipeline/src/core_3d/mod.rs",
+   "line": 886,
+   "character": 51,
+   "symbol": "RENDER_ATTACHMENT",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2172.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ec71b5f8f91cee0e",
+     "us": 5688.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_14_new",
+   "file": "crates/bevy_shape/src/dim2.rs",
+   "line": 2569,
+   "character": 66,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2400.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1eaf49611f3fc3eb",
+     "us": 30446.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_15_new",
+   "file": "crates/bevy_shape/src/dim3.rs",
+   "line": 1455,
+   "character": 23,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2136.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d27e53ebf1ab609d",
+     "us": 19565.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_18_looking_at",
+   "file": "examples/stress_tests/many_cubes.rs",
+   "line": 547,
+   "character": 37,
+   "symbol": "looking_at",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2580.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "838bb257473bf151",
+     "us": 5725.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_27_EXPANDED",
+   "file": "examples/ui/text/font_query.rs",
+   "line": 188,
+   "character": 55,
+   "symbol": "EXPANDED",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "71f285bd5164f1e8",
+     "us": 8885.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 369.2,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 2341.5,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_28_UNIFORM",
+   "file": "crates/bevy_render/src/render_resource/uniform_buffer.rs",
+   "line": 56,
+   "character": 66,
+   "symbol": "UNIFORM",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2405.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ac2a60f1ef1bdb39",
+     "us": 6497.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_39_from",
+   "file": "crates/bevy_feathers/src/dark_theme.rs",
+   "line": 98,
+   "character": 37,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2445.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "622413ea24dce647",
+     "us": 7687.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_51_ZERO",
+   "file": "crates/bevy_camera/src/primitives.rs",
+   "line": 617,
+   "character": 28,
+   "symbol": "ZERO",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1935.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "bf90f6314906bddc",
+     "us": 13093.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_71_add_systems",
+   "file": "examples/ecs/delayed_commands.rs",
+   "line": 11,
+   "character": 10,
+   "symbol": "add_systems",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3720.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c5321820a7502e18",
+     "us": 10720.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_72_from_rotation_x",
+   "file": "examples/stress_tests/many_cameras_lights.rs",
+   "line": 51,
+   "character": 40,
+   "symbol": "from_rotation_x",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2245.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "79a291f6170501c9",
+     "us": 5889.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_78_delta_secs",
+   "file": "examples/large_scenes/caldera_hotel/src/main.rs",
+   "line": 447,
+   "character": 85,
+   "symbol": "delta_secs",
+   "target_kind": "bin",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2156.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "49dc348ca6da4021",
+     "us": 5410.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_83_after",
+   "file": "crates/bevy_feathers/src/controls/tree_view.rs",
+   "line": 550,
+   "character": 18,
+   "symbol": "after",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4687.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3593bf347ddee6c7",
+     "us": 5712.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_99_pressed",
+   "file": "examples/3d/visibility_range.rs",
+   "line": 245,
+   "character": 23,
+   "symbol": "pressed",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2529.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "fdae32c457cee5da",
+     "us": 5687.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_104_RADIO_TEXT",
+   "file": "examples/helpers/theme.rs",
+   "line": 10,
+   "character": 42,
+   "symbol": "RADIO_TEXT",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2143.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d4bb4151bc38aef1",
+     "us": 5493.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_109_from",
+   "file": "crates/bevy_render/src/storage.rs",
+   "line": 119,
+   "character": 32,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2440.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5d6267c9ddbbd1c0",
+     "us": 7206.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_115_new",
+   "file": "examples/3d/parallax_mapping.rs",
+   "line": 297,
+   "character": 49,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2402.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8cecc9d4279d7ec6",
+     "us": 6809.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_118_last",
+   "file": "crates/bevy_winit/src/state.rs",
+   "line": 641,
+   "character": 22,
+   "symbol": "last",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4759.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "74cb6857997c961c",
+     "us": 7363.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_119_new",
+   "file": "crates/bevy_post_process/src/dof/mod.rs",
+   "line": 402,
+   "character": 72,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2357.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "748447ca1fd2a48d",
+     "us": 5519.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_121_ReadOnly",
+   "file": "crates/bevy_ecs/src/query/state.rs",
+   "line": 1307,
+   "character": 35,
+   "symbol": "ReadOnly",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2145.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c3f0063039db9c3b",
+     "us": 7965.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_123_new",
+   "file": "examples/audio/spatial_audio_3d.rs",
+   "line": 33,
+   "character": 22,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1997.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ee00a2cde5f49739",
+     "us": 5612.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_125_Vec3",
+   "file": "examples/math/render_primitives.rs",
+   "line": 518,
+   "character": 21,
+   "symbol": "Vec3",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4003.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d51000e7b0acf295",
+     "us": 7084.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_128_primitives",
+   "file": "examples/large_scenes/bevy_city/src/assets.rs",
+   "line": 1,
+   "character": 19,
+   "symbol": "primitives",
+   "target_kind": "bin",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1730.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8b65a486932bc001",
+     "us": 5390.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_130_from_xyz",
+   "file": "examples/asset/repeated_texture.rs",
+   "line": 81,
+   "character": 20,
+   "symbol": "from_xyz",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2780.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "02f5912d253f4d46",
+     "us": 5548.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_154_insert",
+   "file": "tests/3d/test_meshlet.rs",
+   "line": 147,
+   "character": 18,
+   "symbol": "insert",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1864.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f5c122527c3b8937",
+     "us": 5431.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_160_Settings",
+   "file": "crates/bevy_asset/src/common_loaders/ron.rs",
+   "line": 235,
+   "character": 27,
+   "symbol": "Settings",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1254.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "478638a9f5986e90",
+     "us": 6143.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_164_border_box",
+   "file": "examples/ui/scroll_and_overflow/overflow_clip_margin.rs",
+   "line": 33,
+   "character": 37,
+   "symbol": "border_box",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2543.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3135b45abbe3d858",
+     "us": 5163.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_167_ZERO",
+   "file": "crates/bevy_shape/src/bounding/raycast3d.rs",
+   "line": 268,
+   "character": 38,
+   "symbol": "ZERO",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1905.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "17a5c7fecedc74bf",
+     "us": 13133.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_169_TrackClick",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 731,
+   "character": 45,
+   "symbol": "TrackClick",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2461.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a7a1643dd58b8007",
+     "us": 5421.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_171_entity",
+   "file": "crates/bevy_core_pipeline/src/schedule.rs",
+   "line": 297,
+   "character": 61,
+   "symbol": "entity",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4772.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7778c8f77b9f3ccb",
+     "us": 6785.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_186_ResMut",
+   "file": "examples/3d/clustered_decals.rs",
+   "line": 145,
+   "character": 20,
+   "symbol": "ResMut",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2291.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f40691035f67bac1",
+     "us": 5571.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_188_new",
+   "file": "examples/async_tasks/async_compute.rs",
+   "line": 159,
+   "character": 31,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2388.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7df6dde80c3db166",
+     "us": 5578.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_190_TextureUsages",
+   "file": "crates/bevy_core_pipeline/src/mip_generation/experimental/depth.rs",
+   "line": 586,
+   "character": 24,
+   "symbol": "TextureUsages",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2010.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "60d643f6f5eefa6c",
+     "us": 5493.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_196_new",
+   "file": "examples/3d/animated_material.rs",
+   "line": 30,
+   "character": 35,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2466.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "774593f83d1a588f",
+     "us": 5343.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_208_TextWrapMode",
+   "file": "crates/bevy_ui/src/widget/text_input_layout.rs",
+   "line": 285,
+   "character": 74,
+   "symbol": "TextWrapMode",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1667.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9684c72d32e9b05f",
+     "us": 5522.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_209_consts",
+   "file": "crates/bevy_shape/src/bounding/bounded3d/extrusion.rs",
+   "line": 1,
+   "character": 16,
+   "symbol": "consts",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1889.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "63d3627c0118473f",
+     "us": 7623.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_216_default",
+   "file": "crates/bevy_core_pipeline/src/fullscreen_material.rs",
+   "line": 57,
+   "character": 42,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4505.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ca3bd1170fd6ad6c",
+     "us": 7693.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_219_ExitCondition",
+   "file": "examples/window/monitor_info.rs",
+   "line": 13,
+   "character": 29,
+   "symbol": "ExitCondition",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2453.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5a2466481c8a2060",
+     "us": 5701.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_220_new",
+   "file": "crates/bevy_clipboard/src/lib.rs",
+   "line": 246,
+   "character": 46,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "a",
+     "digest": "5d552c207f486f9e",
+     "us": 6949.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 136.8,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 115.0,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_222_mesh",
+   "file": "examples/math/render_primitives.rs",
+   "line": 526,
+   "character": 24,
+   "symbol": "mesh",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2479.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0df55ff4335e7643",
+     "us": 5795.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_234_from",
+   "file": "crates/bevy_reflect/src/display.rs",
+   "line": 744,
+   "character": 32,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1690.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e4ab5ad3fa2ef689",
+     "us": 7094.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_238_component",
+   "file": "crates/bevy_ui_widgets/src/numeric.rs",
+   "line": 3,
+   "character": 15,
+   "symbol": "component",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1803.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "353437b64281374f",
+     "us": 5348.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_240_default",
+   "file": "crates/bevy_gltf/src/loader/mod.rs",
+   "line": 317,
+   "character": 53,
+   "symbol": "default",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2534.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "bf1a53e4262ce4d1",
+     "us": 8847.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_244_add_systems",
+   "file": "examples/ecs/system_closure.rs",
+   "line": 30,
+   "character": 10,
+   "symbol": "add_systems",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3595.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "349949ac66fdb0fd",
+     "us": 5413.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_253_spawn",
+   "file": "examples/camera/pan_camera_controller.rs",
+   "line": 39,
+   "character": 14,
+   "symbol": "spawn",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2300.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "93e8377c92717913",
+     "us": 5347.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_261_Item",
+   "file": "crates/bevy_ecs/src/entity/entity_set.rs",
+   "line": 611,
+   "character": 15,
+   "symbol": "Item",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1983.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "2afc5e993c2deabe",
+     "us": 8419.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_264_as_entire_binding",
+   "file": "crates/bevy_pbr/src/render/gpu_preprocess.rs",
+   "line": 3068,
+   "character": 60,
+   "symbol": "as_entire_binding",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2220.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1cd133460d2674b4",
+     "us": 7587.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_268_dispatch_workgroups",
+   "file": "crates/bevy_pbr/src/light_probe/generate.rs",
+   "line": 839,
+   "character": 26,
+   "symbol": "dispatch_workgroups",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2052.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "af1fe8e8ec157f8b",
+     "us": 9177.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_271_Error",
+   "file": "crates/bevy_ecs/src/name.rs",
+   "line": 261,
+   "character": 78,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1832.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c4a6123dcfdeadd7",
+     "us": 6326.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_274_UVec2",
+   "file": "crates/bevy_pbr/src/render/mesh.rs",
+   "line": 1057,
+   "character": 27,
+   "symbol": "UVec2",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2403.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7bbdc0a06368f6d7",
+     "us": 8509.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_277_Custom",
+   "file": "examples/2d/bloom_2d.rs",
+   "line": 26,
+   "character": 44,
+   "symbol": "Custom",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2273.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f514c8f2c6710db1",
+     "us": 5393.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_279_default",
+   "file": "examples/testbed/ui.rs",
+   "line": 4142,
+   "character": 27,
+   "symbol": "default",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4252.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e780f29dd5045dc3",
+     "us": 12047.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_282_new",
+   "file": "crates/bevy_shape/src/bounding/bounded3d/primitive_impls.rs",
+   "line": 465,
+   "character": 37,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1786.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a16a1bfa757d5099",
+     "us": 22354.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_283_clone",
+   "file": "crates/bevy_pbr/src/render/light.rs",
+   "line": 1986,
+   "character": 56,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4569.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5b61121217921700",
+     "us": 8299.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_290_ZERO",
+   "file": "examples/3d/clustered_decal_maps.rs",
+   "line": 334,
+   "character": 40,
+   "symbol": "ZERO",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2151.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "eb8bf2d54bd10486",
+     "us": 5499.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_298_add",
+   "file": "examples/testbed/3d.rs",
+   "line": 567,
+   "character": 34,
+   "symbol": "add",
+   "target_kind": "example",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "efe796e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1932.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "974890cfe8a93ce6",
+     "us": 5596.7,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 900,
+ "rows_kept": 296,
+ "rows_filter": "differing-outcome",
+ "full_file": {
+  "name": "position_ab_efe796e_vs_ra_ram9_bevy.json",
+  "sha256": "5430e162e38697b36af0745684434dad2a077772451f03b3b13c422901b41a4a"
+ }
+}
