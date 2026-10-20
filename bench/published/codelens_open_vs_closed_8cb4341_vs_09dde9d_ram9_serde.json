@@ -1,0 +1,420 @@
+{
+ "repo": "serde-rs/serde",
+ "repo_dir_name": "serde",
+ "repo_head": "69072f24232f431911ba2c41da69a1da10e805a1",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 31,
+ "warm_requests": 20,
+ "files": [
+  "serde_core/src/de/impls.rs",
+  "serde/src/private/de.rs",
+  "serde_derive_internals/lib.rs",
+  "serde_derive/src/fragment.rs"
+ ],
+ "timestamp_start": "2026-10-20T12:35:53.678914+00:00",
+ "timestamp_end": "2026-10-20T12:35:54.196300+00:00",
+ "runs": [
+  {
+   "name": "8cb4341",
+   "binary": "target-filter/release/ridx",
+   "version": "ridx 0.1.0 (commit: 8cb4341bcc543550cf34866dbf71edae6ee04dac, dirty: false)",
+   "commit": "8cb4341bcc543550cf34866dbf71edae6ee04dac",
+   "dirty": false,
+   "summary": {
+    "files": 4,
+    "errors": 0,
+    "identical_files": 1,
+    "closed_lenses": 745,
+    "open_lenses": 1233,
+    "closed": {
+     "n": 80,
+     "warm_p50_us": 656.6,
+     "warm_p99_us": 1432.9
+    },
+    "open": {
+     "n": 80,
+     "warm_p50_us": 772.6,
+     "warm_p99_us": 2251.3
+    }
+   },
+   "rows": [
+    {
+     "file": "serde_core/src/de/impls.rs",
+     "bytes": 97135,
+     "lines": 3173,
+     "error": null,
+     "closed_cold_us": 2966.9,
+     "open_cold_us": 2265.8,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 1385.2,
+      "warm_p99_us": 1456.6
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 1512.2,
+      "warm_p99_us": 1888.4
+     },
+     "closed_lenses": 365,
+     "open_lenses": 536,
+     "common": 221,
+     "only_closed": 144,
+     "only_open": 315,
+     "identical": false,
+     "only_closed_names_top": [
+      [
+       "visit_i8",
+       14
+      ],
+      [
+       "visit_i16",
+       14
+      ],
+      [
+       "visit_i32",
+       14
+      ],
+      [
+       "visit_i64",
+       14
+      ],
+      [
+       "visit_u8",
+       14
+      ],
+      [
+       "visit_u16",
+       14
+      ]
+     ],
+     "only_open_names_top": [
+      [
+       "deserializer",
+       56
+      ],
+      [
+       "formatter",
+       43
+      ],
+      [
+       "v",
+       25
+      ],
+      [
+       "value",
+       24
+      ],
+      [
+       "Some",
+       19
+      ],
+      [
+       "deserialize",
+       14
+      ]
+     ]
+    },
+    {
+     "file": "serde/src/private/de.rs",
+     "bytes": 110746,
+     "lines": 3501,
+     "error": null,
+     "closed_cold_us": 1384.2,
+     "open_cold_us": 3030.1,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 1264.8,
+      "warm_p99_us": 1314.6
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 2145.2,
+      "warm_p99_us": 2258.9
+     },
+     "closed_lenses": 369,
+     "open_lenses": 685,
+     "common": 348,
+     "only_closed": 21,
+     "only_open": 337,
+     "identical": false,
+     "only_closed_names_top": [
+      [
+       "forward_to_deserialize_other",
+       1
+      ],
+      [
+       "deserialize_bool",
+       1
+      ],
+      [
+       "deserialize_i8",
+       1
+      ],
+      [
+       "deserialize_i16",
+       1
+      ],
+      [
+       "deserialize_i32",
+       1
+      ],
+      [
+       "deserialize_i64",
+       1
+      ]
+     ],
+     "only_open_names_top": [
+      [
+       "visitor",
+       103
+      ],
+      [
+       "value",
+       51
+      ],
+      [
+       "seed",
+       18
+      ],
+      [
+       "v",
+       17
+      ],
+      [
+       "content",
+       13
+      ],
+      [
+       "deserializer",
+       12
+      ]
+     ]
+    },
+    {
+     "file": "serde_derive_internals/lib.rs",
+     "bytes": 1819,
+     "lines": 54,
+     "error": null,
+     "closed_cold_us": 74.6,
+     "open_cold_us": 61.3,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 31.9,
+      "warm_p99_us": 41.2
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 19.0,
+      "warm_p99_us": 20.4
+     },
+     "closed_lenses": 1,
+     "open_lenses": 1,
+     "common": 1,
+     "only_closed": 0,
+     "only_open": 0,
+     "identical": true,
+     "only_closed_names_top": [],
+     "only_open_names_top": []
+    },
+    {
+     "file": "serde_derive/src/fragment.rs",
+     "bytes": 2116,
+     "lines": 74,
+     "error": null,
+     "closed_cold_us": 83.7,
+     "open_cold_us": 89.3,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 59.5,
+      "warm_p99_us": 63.3
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 38.8,
+      "warm_p99_us": 47.3
+     },
+     "closed_lenses": 10,
+     "open_lenses": 11,
+     "common": 8,
+     "only_closed": 2,
+     "only_open": 3,
+     "identical": false,
+     "only_closed_names_top": [
+      [
+       "quote_expr",
+       1
+      ],
+      [
+       "quote_block",
+       1
+      ]
+     ],
+     "only_open_names_top": [
+      [
+       "out",
+       3
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "name": "09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f",
+   "binary": "target-overlay/release/ridx",
+   "version": "ridx 0.1.0 (commit: 09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f, dirty: false)",
+   "commit": "09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f",
+   "dirty": false,
+   "summary": {
+    "files": 4,
+    "errors": 0,
+    "identical_files": 4,
+    "closed_lenses": 745,
+    "open_lenses": 745,
+    "closed": {
+     "n": 80,
+     "warm_p50_us": 636.3,
+     "warm_p99_us": 1830.5
+    },
+    "open": {
+     "n": 80,
+     "warm_p50_us": 580.8,
+     "warm_p99_us": 1509.8
+    }
+   },
+   "rows": [
+    {
+     "file": "serde_core/src/de/impls.rs",
+     "bytes": 97135,
+     "lines": 3173,
+     "error": null,
+     "closed_cold_us": 3183.1,
+     "open_cold_us": 2061.9,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 1390.6,
+      "warm_p99_us": 1815.3
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 1136.6,
+      "warm_p99_us": 1614.5
+     },
+     "closed_lenses": 365,
+     "open_lenses": 365,
+     "common": 365,
+     "only_closed": 0,
+     "only_open": 0,
+     "identical": true,
+     "only_closed_names_top": [],
+     "only_open_names_top": []
+    },
+    {
+     "file": "serde/src/private/de.rs",
+     "bytes": 110746,
+     "lines": 3501,
+     "error": null,
+     "closed_cold_us": 1427.9,
+     "open_cold_us": 1878.9,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 1251.1,
+      "warm_p99_us": 1801.1
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 1122.2,
+      "warm_p99_us": 1431.7
+     },
+     "closed_lenses": 369,
+     "open_lenses": 369,
+     "common": 369,
+     "only_closed": 0,
+     "only_open": 0,
+     "identical": true,
+     "only_closed_names_top": [],
+     "only_open_names_top": []
+    },
+    {
+     "file": "serde_derive_internals/lib.rs",
+     "bytes": 1819,
+     "lines": 54,
+     "error": null,
+     "closed_cold_us": 368.9,
+     "open_cold_us": 64.6,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 29.7,
+      "warm_p99_us": 43.7
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 30.4,
+      "warm_p99_us": 33.4
+     },
+     "closed_lenses": 1,
+     "open_lenses": 1,
+     "common": 1,
+     "only_closed": 0,
+     "only_open": 0,
+     "identical": true,
+     "only_closed_names_top": [],
+     "only_open_names_top": []
+    },
+    {
+     "file": "serde_derive/src/fragment.rs",
+     "bytes": 2116,
+     "lines": 74,
+     "error": null,
+     "closed_cold_us": 73.0,
+     "open_cold_us": 100.0,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 56.9,
+      "warm_p99_us": 59.8
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 55.2,
+      "warm_p99_us": 57.1
+     },
+     "closed_lenses": 10,
+     "open_lenses": 10,
+     "common": 10,
+     "only_closed": 0,
+     "only_open": 0,
+     "identical": true,
+     "only_closed_names_top": [],
+     "only_open_names_top": []
+    }
+   ]
+  }
+ ],
+ "comparison": {
+  "binaries": [
+   "8cb4341",
+   "09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f"
+  ],
+  "pairs": [
+   {
+    "a": "8cb4341",
+    "b": "09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f",
+    "files": 4,
+    "open_differing": [
+     "serde/src/private/de.rs",
+     "serde_core/src/de/impls.rs",
+     "serde_derive/src/fragment.rs"
+    ],
+    "open_b_equals_closed_a": 4
+   }
+  ]
+ },
+ "metric_definitions": {
+  "closed": "textDocument/codeLens on the file before didOpen: one cold request, then warm_requests more",
+  "open": "the same after textDocument/didOpen with the text of the file on disk, version 1",
+  "warm_p50_us, warm_p99_us": "percentiles over the warm requests of the side (per file, or per corpus in summary)",
+  "identical": "the last warm answers of both sides are the same (range, name) multiset",
+  "common, only_closed, only_open": "multiset intersection and differences of the two last warm answers",
+  "comparison.pairs": "per pair of binaries: files whose open answers differ, and the number of files whose open answer of the second binary equals the closed answer of the first"
+ }
+}

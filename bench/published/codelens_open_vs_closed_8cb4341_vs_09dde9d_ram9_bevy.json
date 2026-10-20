@@ -1,0 +1,387 @@
+{
+ "repo": "bevyengine/bevy",
+ "repo_dir_name": "bevy",
+ "repo_head": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 640,
+ "warm_requests": 20,
+ "files": [
+  "crates/bevy_remote/src/builtin_methods.rs",
+  "crates/bevy_shape/src/dim2.rs",
+  "crates/bevy_render/src/occlusion_culling/mod.rs",
+  "crates/bevy_reflect/derive/src/impls/typed.rs"
+ ],
+ "timestamp_start": "2026-10-20T12:36:01.990803+00:00",
+ "timestamp_end": "2026-10-20T12:36:29.041401+00:00",
+ "runs": [
+  {
+   "name": "8cb4341",
+   "binary": "target-filter/release/ridx",
+   "version": "ridx 0.1.0 (commit: 8cb4341bcc543550cf34866dbf71edae6ee04dac, dirty: false)",
+   "commit": "8cb4341bcc543550cf34866dbf71edae6ee04dac",
+   "dirty": false,
+   "summary": {
+    "files": 4,
+    "errors": 0,
+    "identical_files": 0,
+    "closed_lenses": 392,
+    "open_lenses": 1000,
+    "closed": {
+     "n": 80,
+     "warm_p50_us": 585.6,
+     "warm_p99_us": 1238.0
+    },
+    "open": {
+     "n": 80,
+     "warm_p50_us": 906.4,
+     "warm_p99_us": 1995.9
+    }
+   },
+   "rows": [
+    {
+     "file": "crates/bevy_remote/src/builtin_methods.rs",
+     "bytes": 100298,
+     "lines": 2771,
+     "error": null,
+     "closed_cold_us": 32692.6,
+     "open_cold_us": 3456.9,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 919.0,
+      "warm_p99_us": 1028.6
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 1951.6,
+      "warm_p99_us": 2062.4
+     },
+     "closed_lenses": 161,
+     "open_lenses": 516,
+     "common": 161,
+     "only_closed": 0,
+     "only_open": 355,
+     "identical": false,
+     "only_closed_names_top": [],
+     "only_open_names_top": [
+      [
+       "Some",
+       32
+      ],
+      [
+       "response",
+       31
+      ],
+      [
+       "type_registry",
+       26
+      ],
+      [
+       "world",
+       23
+      ],
+      [
+       "app_type_registry",
+       14
+      ],
+      [
+       "entity_ref",
+       9
+      ]
+     ]
+    },
+    {
+     "file": "crates/bevy_shape/src/dim2.rs",
+     "bytes": 85696,
+     "lines": 2636,
+     "error": null,
+     "closed_cold_us": 1805.1,
+     "open_cold_us": 2561.0,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 1198.8,
+      "warm_p99_us": 1239.7
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 1663.5,
+      "warm_p99_us": 1756.6
+     },
+     "closed_lenses": 221,
+     "open_lenses": 435,
+     "common": 221,
+     "only_closed": 0,
+     "only_open": 214,
+     "identical": false,
+     "only_closed_names_top": [],
+     "only_open_names_top": [
+      [
+       "radius",
+       15
+      ],
+      [
+       "angle",
+       8
+      ],
+      [
+       "vertices",
+       7
+      ],
+      [
+       "point",
+       6
+      ],
+      [
+       "a",
+       6
+      ],
+      [
+       "tests",
+       5
+      ]
+     ]
+    },
+    {
+     "file": "crates/bevy_render/src/occlusion_culling/mod.rs",
+     "bytes": 4916,
+     "lines": 99,
+     "error": null,
+     "closed_cold_us": 498.6,
+     "open_cold_us": 369.3,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 250.6,
+      "warm_p99_us": 277.6
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 36.6,
+      "warm_p99_us": 39.2
+     },
+     "closed_lenses": 5,
+     "open_lenses": 6,
+     "common": 5,
+     "only_closed": 0,
+     "only_open": 1,
+     "identical": false,
+     "only_closed_names_top": [],
+     "only_open_names_top": [
+      [
+       "app",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "crates/bevy_reflect/derive/src/impls/typed.rs",
+     "bytes": 5876,
+     "lines": 174,
+     "error": null,
+     "closed_cold_us": 268.2,
+     "open_cold_us": 464.6,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 238.1,
+      "warm_p99_us": 254.9
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 149.4,
+      "warm_p99_us": 161.3
+     },
+     "closed_lenses": 5,
+     "open_lenses": 43,
+     "common": 5,
+     "only_closed": 0,
+     "only_open": 38,
+     "identical": false,
+     "only_closed_names_top": [],
+     "only_open_names_top": [
+      [
+       "meta",
+       3
+      ],
+      [
+       "bevy_reflect_path",
+       3
+      ],
+      [
+       "type_path",
+       3
+      ],
+      [
+       "cell_type",
+       2
+      ],
+      [
+       "CELL",
+       2
+      ],
+      [
+       "where_clause_options",
+       2
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "name": "09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f",
+   "binary": "target-overlay/release/ridx",
+   "version": "ridx 0.1.0 (commit: 09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f, dirty: false)",
+   "commit": "09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f",
+   "dirty": false,
+   "summary": {
+    "files": 4,
+    "errors": 0,
+    "identical_files": 4,
+    "closed_lenses": 392,
+    "open_lenses": 392,
+    "closed": {
+     "n": 80,
+     "warm_p50_us": 575.6,
+     "warm_p99_us": 1411.8
+    },
+    "open": {
+     "n": 80,
+     "warm_p50_us": 565.6,
+     "warm_p99_us": 1164.6
+    }
+   },
+   "rows": [
+    {
+     "file": "crates/bevy_remote/src/builtin_methods.rs",
+     "bytes": 100298,
+     "lines": 2771,
+     "error": null,
+     "closed_cold_us": 32916.1,
+     "open_cold_us": 2074.9,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 906.0,
+      "warm_p99_us": 983.1
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 940.0,
+      "warm_p99_us": 1185.2
+     },
+     "closed_lenses": 161,
+     "open_lenses": 161,
+     "common": 161,
+     "only_closed": 0,
+     "only_open": 0,
+     "identical": true,
+     "only_closed_names_top": [],
+     "only_open_names_top": []
+    },
+    {
+     "file": "crates/bevy_shape/src/dim2.rs",
+     "bytes": 85696,
+     "lines": 2636,
+     "error": null,
+     "closed_cold_us": 1272.1,
+     "open_cold_us": 2176.7,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 1196.0,
+      "warm_p99_us": 1458.9
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 1124.2,
+      "warm_p99_us": 1152.9
+     },
+     "closed_lenses": 221,
+     "open_lenses": 221,
+     "common": 221,
+     "only_closed": 0,
+     "only_open": 0,
+     "identical": true,
+     "only_closed_names_top": [],
+     "only_open_names_top": []
+    },
+    {
+     "file": "crates/bevy_render/src/occlusion_culling/mod.rs",
+     "bytes": 4916,
+     "lines": 99,
+     "error": null,
+     "closed_cold_us": 434.0,
+     "open_cold_us": 583.3,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 244.6,
+      "warm_p99_us": 260.1
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 241.1,
+      "warm_p99_us": 246.3
+     },
+     "closed_lenses": 5,
+     "open_lenses": 5,
+     "common": 5,
+     "only_closed": 0,
+     "only_open": 0,
+     "identical": true,
+     "only_closed_names_top": [],
+     "only_open_names_top": []
+    },
+    {
+     "file": "crates/bevy_reflect/derive/src/impls/typed.rs",
+     "bytes": 5876,
+     "lines": 174,
+     "error": null,
+     "closed_cold_us": 287.5,
+     "open_cold_us": 600.5,
+     "closed": {
+      "n": 20,
+      "warm_p50_us": 230.8,
+      "warm_p99_us": 246.0
+     },
+     "open": {
+      "n": 20,
+      "warm_p50_us": 229.3,
+      "warm_p99_us": 234.3
+     },
+     "closed_lenses": 5,
+     "open_lenses": 5,
+     "common": 5,
+     "only_closed": 0,
+     "only_open": 0,
+     "identical": true,
+     "only_closed_names_top": [],
+     "only_open_names_top": []
+    }
+   ]
+  }
+ ],
+ "comparison": {
+  "binaries": [
+   "8cb4341",
+   "09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f"
+  ],
+  "pairs": [
+   {
+    "a": "8cb4341",
+    "b": "09dde9d68343e9ef0f2d9bc710d3df6ccf5b781f",
+    "files": 4,
+    "open_differing": [
+     "crates/bevy_reflect/derive/src/impls/typed.rs",
+     "crates/bevy_remote/src/builtin_methods.rs",
+     "crates/bevy_render/src/occlusion_culling/mod.rs",
+     "crates/bevy_shape/src/dim2.rs"
+    ],
+    "open_b_equals_closed_a": 4
+   }
+  ]
+ },
+ "metric_definitions": {
+  "closed": "textDocument/codeLens on the file before didOpen: one cold request, then warm_requests more",
+  "open": "the same after textDocument/didOpen with the text of the file on disk, version 1",
+  "warm_p50_us, warm_p99_us": "percentiles over the warm requests of the side (per file, or per corpus in summary)",
+  "identical": "the last warm answers of both sides are the same (range, name) multiset",
+  "common, only_closed, only_open": "multiset intersection and differences of the two last warm answers",
+  "comparison.pairs": "per pair of binaries: files whose open answers differ, and the number of files whose open answer of the second binary equals the closed answer of the first"
+ }
+}
