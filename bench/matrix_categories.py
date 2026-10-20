@@ -128,6 +128,17 @@ LSP_SPECS = [
     (78, "mutation_case_c", "mutation/caseC", 10, "mutation"),
 ]
 
+# Rows whose request carries an item built by the harness rather than one returned by the server:
+# the seven `*/resolve` methods, `workspace/executeCommand`, and the call and type hierarchy
+# methods whose items are not taken from a `prepare*` answer. A non-empty answer there is usually
+# the item echoed back, so the report does not show their a/b/c counters as quality.
+SYNTHETIC_ITEM_KEYS = frozenset({
+    "workspace_symbol_resolve", "completion_resolve", "inlay_hint_resolve", "moniker_resolve",
+    "document_link_resolve", "code_action_resolve", "code_lens_resolve",
+    "execute_command",
+    "incoming_calls", "outgoing_calls", "supertypes", "subtypes",
+})
+
 
 def build_params(key, sc, repo_dir, is_ra=False):
     """Constructs strictly valid LSP 3.17 params conforming to spec schemas."""

@@ -17,6 +17,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from matrix_categories import SYNTHETIC_ITEM_KEYS
+
 REPO_ORDER = [
     ("ripgrep", "BurntSushi/ripgrep"), ("tokio", "tokio-rs/tokio"),
     ("rust-analyzer", "rust-lang/rust-analyzer"), ("bevy", "bevyengine/bevy"), ("serde", "serde-rs/serde"),
@@ -65,6 +67,11 @@ KNOWN_HARNESS_DEFECTS = [
      "out the first requests of the next method (observed on bevy: 21 of 300 "
      "`textDocument/definition` requests after `didSave` and `didClose`). Before each method the "
      "runner now sends a request no server implements and waits for its `-32601` answer."),
+    ("d27ac0e", '`textDocument/content` was sent as `{"textDocument": {"uri"}}` instead of `{"uri"}`; '
+     'RIDX read an empty uri and answered `{"text": ""}`, counted as non-empty for all 300 requests, '
+     "so row 75 of the runs measured before this commit is not a measurement of the method "
+     "(rust-analyzer answers `-32601`: it does not implement the method). The row now sends "
+     '`{"uri"}`.'),
 ]
 
 NOTES = [
@@ -78,6 +85,11 @@ NOTES = [
     "`a` counts non-empty answers, `b` empty answers (`null`, `[]`, empty hover), `c` failed "
     "scenarios; `errors` counts error responses, which can exceed `c` because a scenario sends "
     "several requests.",
+    "Rows marked `n/a (synthetic item)` send an item built by the harness, not one returned by "
+    "the server: the seven `*/resolve` methods, `workspace/executeCommand`, and the call and type "
+    "hierarchy methods whose items are not taken from a `prepare*` answer. A non-empty answer "
+    "there is usually the item echoed back, so only latency and error codes are shown; the a/b/c "
+    "counters stay in the published JSON.",
     "serde: the corpus has no committed `Cargo.lock`. The generated lockfile resolved a registry "
     "`serde_derive` of a newer version next to the workspace one, and `trybuild` in `test_suite` "
     "then failed to compile; the lockfile was regenerated with `serde_derive` unified to the "
@@ -105,9 +117,11 @@ def _codes(ec: Dict[str, Any]) -> str:
     return ", ".join(f"{k}: {v}" for k, v in ec.items()) if ec else "-"
 
 
-def _abc(m: Dict[str, Any]) -> str:
+def _abc(key: str, m: Dict[str, Any]) -> str:
     if "a_non_empty" not in m:
         return f"{m.get('tests_run', 0)} run"
+    if key in SYNTHETIC_ITEM_KEYS:
+        return "n/a (synthetic item)"
     return f"{m.get('a_non_empty', 0)} / {m.get('b_empty', 0)} / {m.get('c_error', 0)}"
 
 
@@ -152,8 +166,8 @@ def render_repo(data: Dict[str, Any]) -> List[str]:
     for key, m in sorted(ridx["methods"].items(), key=lambda kv: kv[1]["id"]):
         a = ra["methods"].get(key, {})
         out.append(
-            f"| {m['id']} | `{m['rpc_method']}` | {_abc(m)} | {_ms(m.get('warm_p50_us'))} | {_ms(m.get('warm_p99_us'))} | "
-            f"{_codes(m.get('error_codes', {}))} | {_abc(a)} | {_ms(a.get('warm_p50_us'))} | {_ms(a.get('warm_p99_us'))} | "
+            f"| {m['id']} | `{m['rpc_method']}` | {_abc(key, m)} | {_ms(m.get('warm_p50_us'))} | {_ms(m.get('warm_p99_us'))} | "
+            f"{_codes(m.get('error_codes', {}))} | {_abc(key, a)} | {_ms(a.get('warm_p50_us'))} | {_ms(a.get('warm_p99_us'))} | "
             f"{_codes(a.get('error_codes', {}))} |"
         )
     out.append("")

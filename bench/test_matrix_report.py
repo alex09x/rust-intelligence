@@ -49,11 +49,13 @@ def _fixture():
         "ridx": {"peak_rss_mb": 81.73, "methods": {
             "initialize": {"id": 1, "domain": "Lifecycle", "rpc_method": "initialize", "tests_run": 1, "errors": 0, "error_codes": {}, "warm_p50_us": 65298.0, "warm_p99_us": 65298.0},
             "definition": _method(15, "textDocument/definition", 291, 9, 0, 77.5, 231.3, {}),
+            "completion_resolve": _method(26, "completionItem/resolve", 300, 0, 0, 100.0, 900.0, {}),
             "rename": _method(49, "textDocument/rename", 178, 0, 14, 200.0, 2100.0, {"-32803": 42}),
         }},
         "rust_analyzer": {"peak_rss_mb": 2176.41, "methods": {
             "initialize": {"id": 1, "domain": "Lifecycle", "rpc_method": "initialize", "tests_run": 1, "errors": 0, "error_codes": {}, "warm_p50_us": 1000.0, "warm_p99_us": 1000.0},
             "definition": _method(15, "textDocument/definition", 294, 6, 0, 100.0, 200.0, {}),
+            "completion_resolve": _method(26, "completionItem/resolve", 300, 0, 0, 1200.0, 4000.0, {}),
             "rename": _method(49, "textDocument/rename", 295, 0, 3, 300.0, 400.0, {"-32602": 9, "-32603": 3}),
         }},
     }
@@ -77,7 +79,10 @@ def test_render_from_published_json():
         assert "| rust-analyzer | 12 | 3 | 3 | 2176.41 |" in lines
         assert "| 1 | `initialize` | 1 run | 65.3 | 65.3 | - | 1 run | 1.0 | 1.0 | - |" in lines
         assert "| 15 | `textDocument/definition` | 291 / 9 / 0 | 0.1 | 0.2 | - | 294 / 6 / 0 | 0.1 | 0.2 | - |" in lines
+        assert "| 26 | `completionItem/resolve` | n/a (synthetic item) | 0.1 | 0.9 | - | n/a (synthetic item) | 1.2 | 4.0 | - |" in lines
         assert "| 49 | `textDocument/rename` | 178 / 0 / 14 | 0.2 | 2.1 | -32803: 42 | 295 / 0 / 3 | 0.3 | 0.4 | -32602: 9, -32603: 3 |" in lines
+        assert "- Rows marked `n/a (synthetic item)` send an item built by the harness, not one returned by the server: the seven `*/resolve` methods, `workspace/executeCommand`, and the call and type hierarchy methods whose items are not taken from a `prepare*` answer. A non-empty answer there is usually the item echoed back, so only latency and error codes are shown; the a/b/c counters stay in the published JSON." in lines
+        assert '- `d27ac0e`: `textDocument/content` was sent as `{"textDocument": {"uri"}}` instead of `{"uri"}`; RIDX read an empty uri and answered `{"text": ""}`, counted as non-empty for all 300 requests, so row 75 of the runs measured before this commit is not a measurement of the method (rust-analyzer answers `-32601`: it does not implement the method). The row now sends `{"uri"}`.' in lines
         assert FORBIDDEN_WORDS.search(text_a) is None, FORBIDDEN_WORDS.search(text_a)
         assert FORBIDDEN_MULTIPLIERS.search(text_a) is None, FORBIDDEN_MULTIPLIERS.search(text_a)
         assert "- `d3b7810`: the synchronization block (ids 8-14) makes rust-analyzer reload the workspace and answer `textDocument/definition` with empty results for a few seconds (measured on tokio: 229/300 non-empty before the block, 0/300 right after, 229/300 sixty seconds later); the runner now re-establishes readiness before the first query method." in lines
