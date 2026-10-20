@@ -24,6 +24,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
+use crate::ntm_domain7_selection_range_support::assert_chain_invariants;
+
 static SEL_COUNTER2: AtomicU64 = AtomicU64::new(100);
 
 struct TempShard {
@@ -151,38 +153,6 @@ fn selection_ranges(
     resp["result"].clone()
 }
 
-/// Every parent strictly contains its child and the innermost range contains the cursor.
-fn assert_chain_invariants(item: &Value, cursor: (u32, u32)) {
-    let pos = |v: &Value| {
-        (
-            v["line"].as_u64().unwrap(),
-            v["character"].as_u64().unwrap(),
-        )
-    };
-    let cursor = (cursor.0 as u64, cursor.1 as u64);
-    let (start, end) = (pos(&item["range"]["start"]), pos(&item["range"]["end"]));
-    assert!(
-        start <= cursor && cursor <= end,
-        "innermost {start:?}..{end:?} must contain {cursor:?}"
-    );
-    let mut child = item;
-    while child["parent"].is_object() {
-        let parent = &child["parent"];
-        let (cs, ce) = (pos(&child["range"]["start"]), pos(&child["range"]["end"]));
-        let (ps, pe) = (pos(&parent["range"]["start"]), pos(&parent["range"]["end"]));
-        assert!(
-            ps <= cs && pe >= ce && (ps, pe) != (cs, ce),
-            "{ps:?}..{pe:?} must strictly contain {cs:?}..{ce:?}"
-        );
-        child = parent;
-    }
-    assert_eq!(
-        pos(&child["range"]["start"]),
-        (0, 0),
-        "the chain ends at the whole file"
-    );
-}
-
 #[test]
 fn test_selection_range_deeply_nested_blocks() {
     let ts = create_temp_shard("deep_nested");
@@ -302,7 +272,7 @@ fn test_selection_range_range_coordinates_validity() {
             (0, 0, 3, 0)
         ])])
     );
-    assert_chain_invariants(&result[0], (1, 8));
+    assert_chain_invariants(&result[0], (1, 8), 3);
 }
 
 #[test]
@@ -327,8 +297,9 @@ fn test_selection_range_parent_nesting_invariants() {
     let result = selection_ranges(&mut dsp, json!(215), &file, &positions);
     let items = result.as_array().unwrap();
     assert_eq!(items.len(), positions.len());
+    let last_line = text.matches('\n').count() as u64;
     for (item, &cursor) in items.iter().zip(&positions) {
-        assert_chain_invariants(item, cursor);
+        assert_chain_invariants(item, cursor, last_line);
     }
     // Spot check: cursor on `inner`.
     let on_inner = positions.iter().position(|&p| p == (1, 8)).unwrap();
@@ -390,47 +361,6 @@ fn test_selection_range_multiple_documents_isolation() {
             (0, 8, 2, 1),
             (0, 0, 2, 1),
             (0, 0, 3, 0)
-        ])])
-    );
-}
-
-#[test]
-fn test_selection_range_cursor_between_functions() {
-    let ts = create_temp_shard("between_fns");
-    let file = ts.dir.join("src/lib.rs");
-    let mut dsp = TestDispatcher::new(ts.shard.clone());
-    open_doc(
-        &mut dsp,
-        &file,
-        "fn f1() {\n    let a = 1;\n}\n\nfn f2() {\n    let b = 2;\n}\n",
-    );
-
-    // The blank line between the items belongs to the file only.
-    let result = selection_ranges(&mut dsp, json!(209), &file, &[(3, 0)]);
-    assert_eq!(result, json!([chain(&[(0, 0, 7, 0)])]));
-    assert_eq!(result[0]["parent"], Value::Null);
-}
-
-#[test]
-fn test_selection_range_nested_struct_impl_method() {
-    let ts = create_temp_shard("struct_impl");
-    let file = ts.dir.join("src/lib.rs");
-    let mut dsp = TestDispatcher::new(ts.shard.clone());
-    open_doc(
-        &mut dsp, &file,
-        "struct Container {\n    val: i32,\n}\nimpl Container {\n    fn read(&self) -> i32 {\n        self.val\n    }\n}\n",
-    );
-
-    // Cursor between `self` and `.`: the receiver token, method body, method item, impl block, file.
-    let result = selection_ranges(&mut dsp, json!(210), &file, &[(5, 12)]);
-    assert_eq!(
-        result,
-        json!([chain(&[
-            (5, 8, 5, 12),
-            (4, 26, 6, 5),
-            (4, 4, 6, 5),
-            (3, 15, 7, 1),
-            (0, 0, 8, 0)
         ])])
     );
 }

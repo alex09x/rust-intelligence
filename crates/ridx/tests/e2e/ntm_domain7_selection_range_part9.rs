@@ -23,6 +23,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
+use crate::ntm_domain7_selection_range_support::assert_chain_invariants;
+
 static SEL_P9_COUNTER: AtomicU64 = AtomicU64::new(900);
 
 fn to_uri(p: &Path) -> String {
@@ -121,36 +123,6 @@ fn selection_ranges(
     let resp = dsp.parse_response();
     assert_eq!(resp["id"], id);
     resp["result"].clone()
-}
-
-/// Every parent strictly contains its child, the innermost range contains the cursor, and the
-/// chain ends at the whole file.
-fn assert_chain_invariants(item: &Value, cursor: (u32, u32), last_line: u64) {
-    let pos = |v: &Value| {
-        (
-            v["line"].as_u64().unwrap(),
-            v["character"].as_u64().unwrap(),
-        )
-    };
-    let cursor = (cursor.0 as u64, cursor.1 as u64);
-    let (start, end) = (pos(&item["range"]["start"]), pos(&item["range"]["end"]));
-    assert!(
-        start <= cursor && cursor <= end,
-        "innermost {start:?}..{end:?} must contain {cursor:?}"
-    );
-    let mut child = item;
-    while child["parent"].is_object() {
-        let parent = &child["parent"];
-        let (cs, ce) = (pos(&child["range"]["start"]), pos(&child["range"]["end"]));
-        let (ps, pe) = (pos(&parent["range"]["start"]), pos(&parent["range"]["end"]));
-        assert!(
-            ps <= cs && pe >= ce && (ps, pe) != (cs, ce),
-            "{ps:?}..{pe:?} must strictly contain {cs:?}..{ce:?}"
-        );
-        child = parent;
-    }
-    assert_eq!(pos(&child["range"]["start"]), (0, 0));
-    assert_eq!(pos(&child["range"]["end"]), (last_line, 0));
 }
 
 #[test]
