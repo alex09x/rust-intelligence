@@ -12,7 +12,8 @@ python3 bench/matrix_runner.py --repo <corpus dir> --ridx-bin target/release/rid
     --ra-bin rust-analyzer --output bench/results/matrix_<repo>_<node>.json
 python3 bench/publish_results.py --src bench/results --pub bench/published
 python3 bench/matrix_report.py            # docs/BENCHMARK_MATRIX.md from published matrix runs
-python3 bench/export_site.py              # site data from published runs
+python3 bench/comparison_report.py        # LSP_BENCHMARK_COMPARISON_REPORT.md from published matrix runs
+python3 bench/export_site.py              # site/bench.json and site/bench.data.js from published matrix runs
 ```
 
 | File | Role |
@@ -27,17 +28,22 @@ python3 bench/export_site.py              # site data from published runs
 | `matrix_provenance.py`, `provenance.py` | Index precondition, ridx/driver/sysroot/repo provenance recorded into every run. |
 | `metrics.py` | Percentiles and process RSS/fd/thread telemetry. |
 | `publish_results.py`, `publish_common.py` | Path sanitising and provenance sidecars for `published/`. |
-| `matrix_report.py` | Renders `docs/BENCHMARK_MATRIX.md` from the published runs only. |
-| `export_site.py` | Exports published numbers for the website. |
+| `matrix_report.py` | Renders `docs/BENCHMARK_MATRIX.md` (all 78 methods per repository, provenance, known harness defects) from the published runs only. |
+| `comparison_report.py` | Renders `LSP_BENCHMARK_COMPARISON_REPORT.md` (setup, resources, headline methods, coverage differences, earlier publications) from the published runs only. |
+| `matrix_headline.py` | Headline method list, latency formatting and the coverage sets shared by the report and the site export. |
+| `export_site.py` | Builds `site/bench.json` and `site/bench.data.js` for the website from the published runs; the page types no number by hand. |
 | `selection_range_fidelity.py` | `textDocument/selectionRange` chains of one or more ridx binaries against rust-analyzer on a corpus (methodology, section 9). |
 | `test_*.py` | Harness unit tests: `python3 -m pytest bench`. |
 
-## Superseded by the matrix, kept because published data and the comparison report cite them
+## Superseded by the matrix
+
+The comparison report and the site are generated from the matrix runs and no longer read these
+families. They stay until the removal commit, which will record the last commit holding them:
 
 - `pilot_runner.py`, `worktree_bench.py`, `corpus.py`, `sampling.py`, `report.py`: the five-repository
-  pilot (`published/pilot_5repos_2026-10-08.jsonl`) and `LSP_BENCHMARK_COMPARISON_REPORT.md`.
+  pilot (`published/pilot_5repos_2026-10-08.jsonl`).
 - `run_completion_benchmark.py`, `verify_completion_regression.py`, `validate_scenarios.py`: the
   completion recall/precision reruns (`published/rerun_completion_*.jsonl`,
   `published/completion_regression_*.json`).
 
-Remove them together with a report and site regenerated from the matrix data, not before.
+Their published data is never removed.

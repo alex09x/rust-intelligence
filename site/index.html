@@ -69,15 +69,16 @@
 
 <section id="bench" class="wrap sec">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px">
-    <div class="head"><div style="display:flex;gap:12px;align-items:center"><span class="eye">Benchmarks</span><span class="pre-badge">pilot</span></div><h2 class="h2">Live measurements across 5 open-source codebases</h2></div>
+    <div class="head"><div style="display:flex;gap:12px;align-items:center"><span class="eye">Benchmarks</span><span class="pre-badge">matrix</span></div><h2 class="h2">78 LSP methods measured on 5 open-source codebases</h2></div>
     <div class="chips" id="ws-tabs"></div>
   </div>
   <div class="card bench">
     <div class="bench-head"><span class="mono" id="ws-meta"></span><span class="mono mute" id="ws-target" style="font-size:12px"></span></div>
     <div id="ws-rows"></div>
     <div class="bench-note">
-      <span><b class="cyan">Methodology &amp; Workload:</b> <span class="mute">300 uniformly sampled positions per repository (1,500 total positions, 2,100 scenario evaluations) evaluated on a 16-core / 32-thread Linux server (<span class="mono">booster</span>). Latencies report warm post-index execution (<span class="mono">p50</span> and tail <span class="mono">p95</span>) across 3 consecutive iterations after initial indexation settles.</span></span>
-      <span><b class="amber">Accuracy &amp; Known Limitations:</b> <span class="mute">87.87% strict-match (read-only queries) and 81.62% overall across all 2,100 scenarios. Standard library sysroot definitions (accounting for 25.65% of discrepancies, −4.71 pp overall) and completion indexing remain in active development. Hover latency on very large workspaces (bevy) is ~1.5x slower than rust-analyzer (354 µs vs 231 µs warm p50 post-844eac0, down from 18.4x / 3.96 ms before binary search optimization). Raw telemetry available in <a href="bench.json" class="mono" style="color:var(--cyan)">bench.json</a> and detailed audit in <a href="https://github.com/alex09x/rust-intelligence/blob/main/LSP_BENCHMARK_COMPARISON_REPORT.md" class="mono" style="color:var(--cyan)">LSP_BENCHMARK_COMPARISON_REPORT.md</a>.</span></span>
+      <span><b class="cyan">Methodology &amp; Workload:</b> <span class="mute" id="ws-method"></span></span>
+      <span><b class="amber">Coverage &amp; Known Limitations:</b> <span class="mute" id="ws-limits"></span></span>
+      <span class="mute">Raw data: <a href="bench.json" class="mono" style="color:var(--cyan)">bench.json</a>. All 78 methods per repository: <a href="https://github.com/alex09x/rust-intelligence/blob/main/docs/BENCHMARK_MATRIX.md" class="mono" style="color:var(--cyan)">docs/BENCHMARK_MATRIX.md</a>. Report: <a href="https://github.com/alex09x/rust-intelligence/blob/main/LSP_BENCHMARK_COMPARISON_REPORT.md" class="mono" style="color:var(--cyan)">LSP_BENCHMARK_COMPARISON_REPORT.md</a>.</span>
     </div>
   </div>
 </section>
