@@ -6,10 +6,10 @@
 
 - **Total E2E Tests**: 2779
 - **Total Unit/Src Tests**: 470
-- **Classified E2E Tests**: 2693
-- **Unclassified E2E Tests**: 86
+- **Classified E2E Tests**: 2695
+- **Unclassified E2E Tests**: 84
 - **Rows >= 20 E2E**: 53 / 53
-- **Rows >= 50 E2E**: 52 / 53
+- **Rows >= 50 E2E**: 53 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -45,7 +45,7 @@
 | Domain 7: Presentation | `textDocument/foldingRange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/selectionRange` | 61 | 7 | 68 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 48 | 0 | 48 | 🟡 Wave 1 Pass (>= 20) |
+| Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 50 | 10 | 60 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/rename` | 51 | 26 | 77 | ✅ Complete |
@@ -1774,7 +1774,7 @@
 - `test_document_link_with_url_anchor_fragment`
 - `test_document_link_with_url_query_parameters`
 
-#### `textDocument/documentColor / colorPresentation (stub)` (48 e2e tests)
+#### `textDocument/documentColor / colorPresentation (stub)` (50 e2e tests)
 - `test_color_presentation_after_shutdown_returns_code_32600`
 - `test_color_presentation_cancelled_request_returns_code_32800`
 - `test_color_presentation_color_clamped_extremes_zero_and_one`
@@ -1800,6 +1800,7 @@
 - `test_color_presentation_stub_zero_range`
 - `test_color_presentation_ten_rapid_consecutive_requests`
 - `test_color_presentation_zero_width_character_offsets`
+- `test_color_workflow_document_color_then_presentation`
 - `test_document_color_after_shutdown_returns_code_32600`
 - `test_document_color_cancelled_request_returns_code_32800`
 - `test_document_color_did_close_then_reopen_returns_empty`
@@ -1809,6 +1810,7 @@
 - `test_document_color_jsonrpc_protocol_version_is_2_0`
 - `test_document_color_large_numeric_id_preserved`
 - `test_document_color_multiple_consecutive_did_change_events`
+- `test_document_color_multiple_documents_independent_queries`
 - `test_document_color_negative_numeric_id_preserved`
 - `test_document_color_null_params_handled`
 - `test_document_color_string_id_with_special_characters`
@@ -2890,7 +2892,7 @@
 
 ### Unclassified E2E Tests
 
-Total unclassified tests: 86 (multi-purpose, property, or helper harness tests)
+Total unclassified tests: 84 (multi-purpose, property, or helper harness tests)
 
 - `test_atomic_closed_write_preserves_large_file_on_error`
 - `test_atomic_write_preserves_file_permissions`
@@ -2905,8 +2907,6 @@ Total unclassified tests: 86 (multi-purpose, property, or helper harness tests)
 - `test_byte_offset_to_position_roundtrip`
 - `test_char_col_to_utf16_unit_boundaries`
 - `test_cli_fixture_generation_and_query`
-- `test_color_workflow_document_color_then_presentation`
-- `test_color_workflow_multiple_documents_independent_queries`
 - `test_comparison_preserves_full_path_and_rejects_errors`
 - `test_container_matching_exact_components`
 - `test_disk_failure_rollback_and_reported_failure`
@@ -2980,4 +2980,4 @@ Total unclassified tests: 86 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2779 total, 53 rows >= 20, 52 rows >= 50 of 53
+coverage: e2e 2779 total, 53 rows >= 20, 53 rows >= 50 of 53

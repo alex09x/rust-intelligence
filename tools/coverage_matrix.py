@@ -109,7 +109,7 @@ DOMAINS = [
             ("textDocument/foldingRange", ["folding_range_", "folding_"]),
             ("textDocument/selectionRange", ["selection_range_"]),
             ("textDocument/documentLink / resolve", ["document_link_resolve_", "document_link_"]),
-            ("textDocument/documentColor / colorPresentation (stub)", ["color_presentation_", "document_color_"]),
+            ("textDocument/documentColor / colorPresentation (stub)", ["color_presentation_", "document_color_", "color_workflow_"]),
             ("textDocument/codeLens / resolve", ["code_lens_resolve_", "code_lens_"]),
         ],
     ),
