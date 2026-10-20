@@ -11,6 +11,7 @@
 //! Lexical scope tree and error-tolerant pure-Rust AST parser for document overlay.
 
 pub mod items;
+pub(crate) mod trivia;
 
 pub use super::OverlaySymbol;
 use ridx_format::DefKind;
@@ -21,6 +22,8 @@ pub(crate) struct Scope {
     pub(crate) parent: Option<usize>,
     pub(crate) start_byte: usize,
     pub(crate) end_byte: usize,
+    pub(crate) sel_start_byte: usize,
+    pub(crate) body_start_byte: Option<usize>,
 }
 
 #[inline]
@@ -154,6 +157,8 @@ pub(crate) struct OverlayParser<'a> {
     pub(crate) scopes: Vec<Scope>,
     pub(crate) symbols: Vec<OverlaySymbol>,
     pub(crate) pending_fn_scope: Option<usize>,
+    /// Comment and string/char literal spans in text order, recorded by the main parse loop.
+    pub(crate) opaque: Vec<(usize, usize)>,
 }
 
 impl<'a> OverlayParser<'a> {
@@ -164,6 +169,7 @@ impl<'a> OverlayParser<'a> {
             scopes: Vec::new(),
             symbols: Vec::new(),
             pending_fn_scope: None,
+            opaque: Vec::new(),
         }
     }
 
@@ -191,6 +197,8 @@ impl<'a> OverlayParser<'a> {
             parent: None,
             start_byte: 0,
             end_byte: len,
+            sel_start_byte: 0,
+            body_start_byte: None,
         });
 
         let mut scope_stack = vec![0];
@@ -199,18 +207,23 @@ impl<'a> OverlayParser<'a> {
             let prev = pos;
             self.skip_whitespace_and_comments(&mut pos);
             if pos != prev {
+                self.record_comment_spans(prev, pos);
                 continue;
             }
             let b = bytes[pos];
 
             // Raw string, string, char literal, or lifetime `'ident`
             if skip_string_or_char_literal(self.text, &mut pos) {
+                self.record_literal_span(prev, pos);
                 continue;
             }
 
             // Scopes { ... }
             if b == b'{' {
                 let sid = if let Some(fn_sid) = self.pending_fn_scope.take() {
+                    if fn_sid < self.scopes.len() {
+                        self.scopes[fn_sid].body_start_byte = Some(pos);
+                    }
                     fn_sid
                 } else {
                     let new_id = self.scopes.len();
@@ -220,6 +233,8 @@ impl<'a> OverlayParser<'a> {
                         parent,
                         start_byte: pos,
                         end_byte: len,
+                        sel_start_byte: pos,
+                        body_start_byte: None,
                     });
                     new_id
                 };

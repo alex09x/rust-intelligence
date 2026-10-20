@@ -16,9 +16,9 @@ use ridx::lsp::lifecycle::LifecycleManager;
 use ridx::lsp::protocol::path_to_uri;
 use ridx::lsp::workspace::MultiRootWorkspace;
 use ridx::overlay::OverlayManager;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::collections::HashSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -28,11 +28,21 @@ fn to_uri(p: &Path) -> String {
     path_to_uri(p.to_str().unwrap())
 }
 
+fn temp_file(tag: &str) -> PathBuf {
+    let id = SEL_P3_COUNTER.fetch_add(1, Ordering::Relaxed);
+    std::env::temp_dir().join(format!(
+        "ridx_sel_p3_{}_{}_{}.rs",
+        tag,
+        std::process::id(),
+        id
+    ))
+}
+
 struct TestDispatcher {
     lifecycle: LifecycleManager,
     multi_root: MultiRootWorkspace,
     overlay_mgr: OverlayManager,
-    cancelled: Arc<Mutex<HashSet<serde_json::Value>>>,
+    cancelled: Arc<Mutex<HashSet<Value>>>,
     writer: Vec<u8>,
 }
 
@@ -51,14 +61,20 @@ impl TestDispatcher {
         d
     }
 
-    fn dispatch(&mut self, msg: &serde_json::Value) -> bool {
+    fn dispatch(&mut self, msg: &Value) -> bool {
         dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+            msg.clone(),
+            &mut self.writer,
+            &mut self.lifecycle,
+            &mut self.multi_root,
+            &mut self.overlay_mgr,
+            &self.cancelled,
+            None,
+        )
+        .unwrap()
     }
 
-    fn parse_response(&mut self) -> serde_json::Value {
+    fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
         let body = text.split("\r\n\r\n").nth(1).unwrap();
@@ -66,280 +82,185 @@ impl TestDispatcher {
     }
 }
 
-#[test]
-fn test_selection_range_cursor_inside_match_arm_block() {
-    let id = SEL_P3_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let file = std::env::temp_dir().join(format!("ridx_sel_p3_match_{}_{}.rs", std::process::id(), id));
-    let mut dsp = TestDispatcher::new();
+/// Expected chain, innermost first, from `(start_line, start_char, end_line, end_char)`.
+fn chain(ranges: &[(u32, u32, u32, u32)]) -> Value {
+    let mut current = Value::Null;
+    for &(sl, sc, el, ec) in ranges.iter().rev() {
+        current = json!({
+            "range": { "start": { "line": sl, "character": sc }, "end": { "line": el, "character": ec } },
+            "parent": current
+        });
+    }
+    current
+}
 
+fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
     let open_msg = json!({
         "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": {
-                "uri": to_uri(&file), "languageId": "rust", "version": 1,
-                "text": "fn eval(x: i32) {\n    match x {\n        1 => {\n            do_one();\n        }\n        _ => (),\n    }\n}\n"
-            }
-        }
+        "params": { "textDocument": { "uri": to_uri(file), "languageId": "rust", "version": 1, "text": text } }
     });
     assert!(dsp.dispatch(&open_msg));
+}
 
+fn selection_ranges(
+    dsp: &mut TestDispatcher,
+    id: u64,
+    file: &Path,
+    positions: &[(u32, u32)],
+) -> Value {
+    let positions: Vec<Value> = positions
+        .iter()
+        .map(|&(l, c)| json!({ "line": l, "character": c }))
+        .collect();
     let req = json!({
-        "jsonrpc": "2.0", "id": 301, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 3, "character": 14 }]
-        }
+        "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
+        "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
     });
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
-    assert_eq!(resp["id"], 301);
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
+    assert_eq!(resp["id"], id);
+    resp["result"].clone()
+}
 
-    let inner = &results[0];
-    assert_eq!(inner["range"]["start"]["line"], 2);
-    assert_eq!(inner["range"]["start"]["character"], 13);
-    assert_eq!(inner["range"]["end"]["line"], 4);
-    assert_eq!(inner["range"]["end"]["character"], 9);
+#[test]
+fn test_selection_range_cursor_inside_match_arm_block() {
+    let file = temp_file("match");
+    let mut dsp = TestDispatcher::new();
+    open_doc(
+        &mut dsp, &file,
+        "fn eval(x: i32) {\n    match x {\n        1 => {\n            do_one();\n        }\n        _ => (),\n    }\n}\n",
+    );
 
-    let match_block = &inner["parent"];
-    assert_eq!(match_block["range"]["start"]["line"], 1);
-    assert_eq!(match_block["range"]["start"]["character"], 12);
-    assert_eq!(match_block["range"]["end"]["line"], 6);
-    assert_eq!(match_block["range"]["end"]["character"], 5);
-
-    let fn_scope = &match_block["parent"];
-    assert_eq!(fn_scope["range"]["start"]["line"], 0);
-    assert_eq!(fn_scope["range"]["start"]["character"], 3);
-    assert_eq!(fn_scope["range"]["end"]["line"], 7);
-    assert_eq!(fn_scope["range"]["end"]["character"], 1);
-
-    let root_scope = &fn_scope["parent"];
-    assert_eq!(root_scope["range"]["start"]["line"], 0);
-    assert_eq!(root_scope["range"]["start"]["character"], 0);
-    assert_eq!(root_scope["range"]["end"]["line"], 8);
-    assert_eq!(root_scope["range"]["end"]["character"], 0);
-    assert_eq!(root_scope["parent"], serde_json::Value::Null);
+    // `do_one`, arm block, match block, fn body, fn item, file.
+    let result = selection_ranges(&mut dsp, 301, &file, &[(3, 14)]);
+    assert_eq!(
+        result,
+        json!([chain(&[
+            (3, 12, 3, 18),
+            (2, 13, 4, 9),
+            (1, 12, 6, 5),
+            (0, 16, 7, 1),
+            (0, 0, 7, 1),
+            (0, 0, 8, 0)
+        ])])
+    );
+    assert_eq!(
+        result[0]["parent"]["parent"]["parent"]["parent"]["parent"]["parent"],
+        Value::Null
+    );
 }
 
 #[test]
 fn test_selection_range_cursor_inside_for_loop_block() {
-    let id = SEL_P3_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let file = std::env::temp_dir().join(format!("ridx_sel_p3_for_{}_{}.rs", std::process::id(), id));
+    let file = temp_file("for");
     let mut dsp = TestDispatcher::new();
+    open_doc(
+        &mut dsp,
+        &file,
+        "fn loop_test() {\n    for i in 0..10 {\n        let square = i * i;\n    }\n}\n",
+    );
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": {
-                "uri": to_uri(&file), "languageId": "rust", "version": 1,
-                "text": "fn loop_test() {\n    for i in 0..10 {\n        let square = i * i;\n    }\n}\n"
-            }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 302, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 2, "character": 12 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    assert_eq!(resp["id"], 302);
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
-
-    let inner = &results[0];
-    assert_eq!(inner["range"]["start"]["line"], 1);
-    assert_eq!(inner["range"]["start"]["character"], 19);
-    assert_eq!(inner["range"]["end"]["line"], 3);
-    assert_eq!(inner["range"]["end"]["character"], 5);
-
-    let fn_scope = &inner["parent"];
-    assert_eq!(fn_scope["range"]["start"]["line"], 0);
-    assert_eq!(fn_scope["range"]["start"]["character"], 3);
-    assert_eq!(fn_scope["range"]["end"]["line"], 4);
-    assert_eq!(fn_scope["range"]["end"]["character"], 1);
-
-    let root_scope = &fn_scope["parent"];
-    assert_eq!(root_scope["range"]["start"]["line"], 0);
-    assert_eq!(root_scope["range"]["start"]["character"], 0);
-    assert_eq!(root_scope["range"]["end"]["line"], 5);
-    assert_eq!(root_scope["range"]["end"]["character"], 0);
-    assert_eq!(root_scope["parent"], serde_json::Value::Null);
+    let result = selection_ranges(&mut dsp, 302, &file, &[(2, 12)]);
+    assert_eq!(
+        result,
+        json!([chain(&[
+            (2, 12, 2, 18),
+            (1, 19, 3, 5),
+            (0, 15, 4, 1),
+            (0, 0, 4, 1),
+            (0, 0, 5, 0)
+        ])])
+    );
 }
 
 #[test]
 fn test_selection_range_cursor_inside_while_block() {
-    let id = SEL_P3_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let file = std::env::temp_dir().join(format!("ridx_sel_p3_while_{}_{}.rs", std::process::id(), id));
+    let file = temp_file("while");
     let mut dsp = TestDispatcher::new();
+    open_doc(
+        &mut dsp,
+        &file,
+        "fn while_test() {\n    while true {\n        step();\n    }\n}\n",
+    );
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": {
-                "uri": to_uri(&file), "languageId": "rust", "version": 1,
-                "text": "fn while_test() {\n    while true {\n        step();\n    }\n}\n"
-            }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 303, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 2, "character": 10 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    assert_eq!(resp["id"], 303);
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
-
-    let inner = &results[0];
-    assert_eq!(inner["range"]["start"]["line"], 1);
-    assert_eq!(inner["range"]["start"]["character"], 15);
-    assert_eq!(inner["range"]["end"]["line"], 3);
-    assert_eq!(inner["range"]["end"]["character"], 5);
-
-    let fn_scope = &inner["parent"];
-    assert_eq!(fn_scope["range"]["start"]["line"], 0);
-    assert_eq!(fn_scope["range"]["start"]["character"], 3);
-    assert_eq!(fn_scope["range"]["end"]["line"], 4);
-    assert_eq!(fn_scope["range"]["end"]["character"], 1);
+    let result = selection_ranges(&mut dsp, 303, &file, &[(2, 10)]);
+    assert_eq!(
+        result,
+        json!([chain(&[
+            (2, 8, 2, 12),
+            (1, 15, 3, 5),
+            (0, 16, 4, 1),
+            (0, 0, 4, 1),
+            (0, 0, 5, 0)
+        ])])
+    );
 }
 
 #[test]
 fn test_selection_range_cursor_inside_if_else_blocks() {
-    let id = SEL_P3_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let file = std::env::temp_dir().join(format!("ridx_sel_p3_ifelse_{}_{}.rs", std::process::id(), id));
+    let file = temp_file("ifelse");
     let mut dsp = TestDispatcher::new();
+    open_doc(
+        &mut dsp, &file,
+        "fn branch(cond: bool) {\n    if cond {\n        do_then();\n    } else {\n        do_else();\n    }\n}\n",
+    );
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": {
-                "uri": to_uri(&file), "languageId": "rust", "version": 1,
-                "text": "fn branch(cond: bool) {\n    if cond {\n        do_then();\n    } else {\n        do_else();\n    }\n}\n"
-            }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 304, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 4, "character": 10 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    assert_eq!(resp["id"], 304);
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
-
-    let inner = &results[0];
-    assert_eq!(inner["range"]["start"]["line"], 3);
-    assert_eq!(inner["range"]["start"]["character"], 11);
-    assert_eq!(inner["range"]["end"]["line"], 5);
-    assert_eq!(inner["range"]["end"]["character"], 5);
-
-    let fn_scope = &inner["parent"];
-    assert_eq!(fn_scope["range"]["start"]["line"], 0);
-    assert_eq!(fn_scope["range"]["start"]["character"], 3);
-    assert_eq!(fn_scope["range"]["end"]["line"], 6);
-    assert_eq!(fn_scope["range"]["end"]["character"], 1);
+    // Cursor in the else branch: only the else block is an ancestor, not the if block.
+    let result = selection_ranges(&mut dsp, 304, &file, &[(4, 10)]);
+    assert_eq!(
+        result,
+        json!([chain(&[
+            (4, 8, 4, 15),
+            (3, 11, 5, 5),
+            (0, 22, 6, 1),
+            (0, 0, 6, 1),
+            (0, 0, 7, 0)
+        ])])
+    );
 }
 
 #[test]
 fn test_selection_range_cursor_inside_block_expression() {
-    let id = SEL_P3_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let file = std::env::temp_dir().join(format!("ridx_sel_p3_blockexpr_{}_{}.rs", std::process::id(), id));
+    let file = temp_file("blockexpr");
     let mut dsp = TestDispatcher::new();
+    open_doc(
+        &mut dsp,
+        &file,
+        "fn block_run() {\n    let block = {\n        perform();\n    };\n}\n",
+    );
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": {
-                "uri": to_uri(&file), "languageId": "rust", "version": 1,
-                "text": "fn block_run() {\n    let block = {\n        perform();\n    };\n}\n"
-            }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 305, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 2, "character": 10 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    assert_eq!(resp["id"], 305);
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
-
-    let inner = &results[0];
-    assert_eq!(inner["range"]["start"]["line"], 1);
-    assert_eq!(inner["range"]["start"]["character"], 16);
-    assert_eq!(inner["range"]["end"]["line"], 3);
-    assert_eq!(inner["range"]["end"]["character"], 5);
-
-    let fn_scope = &inner["parent"];
-    assert_eq!(fn_scope["range"]["start"]["line"], 0);
-    assert_eq!(fn_scope["range"]["start"]["character"], 3);
-    assert_eq!(fn_scope["range"]["end"]["line"], 4);
-    assert_eq!(fn_scope["range"]["end"]["character"], 1);
+    let result = selection_ranges(&mut dsp, 305, &file, &[(2, 10)]);
+    assert_eq!(
+        result,
+        json!([chain(&[
+            (2, 8, 2, 15),
+            (1, 16, 3, 5),
+            (0, 15, 4, 1),
+            (0, 0, 4, 1),
+            (0, 0, 5, 0)
+        ])])
+    );
 }
 
 #[test]
 fn test_selection_range_cursor_inside_unsafe_block() {
-    let id = SEL_P3_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let file = std::env::temp_dir().join(format!("ridx_sel_p3_unsafe_{}_{}.rs", std::process::id(), id));
+    let file = temp_file("unsafe");
     let mut dsp = TestDispatcher::new();
+    open_doc(
+        &mut dsp,
+        &file,
+        "fn unsafe_call() {\n    unsafe {\n        ptr_op();\n    }\n}\n",
+    );
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": {
-                "uri": to_uri(&file), "languageId": "rust", "version": 1,
-                "text": "fn unsafe_call() {\n    unsafe {\n        ptr_op();\n    }\n}\n"
-            }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 306, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 2, "character": 10 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    assert_eq!(resp["id"], 306);
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
-
-    let inner = &results[0];
-    assert_eq!(inner["range"]["start"]["line"], 1);
-    assert_eq!(inner["range"]["start"]["character"], 11);
-    assert_eq!(inner["range"]["end"]["line"], 3);
-    assert_eq!(inner["range"]["end"]["character"], 5);
-
-    let fn_scope = &inner["parent"];
-    assert_eq!(fn_scope["range"]["start"]["line"], 0);
-    assert_eq!(fn_scope["range"]["start"]["character"], 3);
-    assert_eq!(fn_scope["range"]["end"]["line"], 4);
-    assert_eq!(fn_scope["range"]["end"]["character"], 1);
+    let result = selection_ranges(&mut dsp, 306, &file, &[(2, 10)]);
+    assert_eq!(
+        result,
+        json!([chain(&[
+            (2, 8, 2, 14),
+            (1, 11, 3, 5),
+            (0, 17, 4, 1),
+            (0, 0, 4, 1),
+            (0, 0, 5, 0)
+        ])])
+    );
 }

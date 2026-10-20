@@ -60,12 +60,15 @@ impl<'a> OverlayParser<'a> {
         });
 
         // Allocate a dedicated scope for this function's parameters and body
+        let sel_start_byte = self.find_fn_item_start(start);
         let fn_scope_id = self.scopes.len();
         self.scopes.push(Scope {
             id: fn_scope_id,
             parent: Some(current_scope),
             start_byte: start,
             end_byte: len,
+            sel_start_byte,
+            body_start_byte: None,
         });
 
         // Parse parameters inside `(...)` and assign them to fn_scope_id

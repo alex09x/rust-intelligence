@@ -221,3 +221,67 @@ fn test_overlay_parser_raw_strings_escaped_quotes_and_return_arrows() {
     assert_eq!(parser.scopes.len(), 2);
     assert_eq!(parser.scopes[1].end_byte, code.len() - 1);
 }
+
+#[test]
+fn test_overlay_parser_records_comment_and_literal_opaque_spans() {
+    // Byte layout: line 0 is 22 bytes + newline, line 1 starts at 23, line 2 at 35.
+    let code = "fn f<'a>(x: &'a str) {\n    // note\n    let s = \"a // b\"; /* c */ let ch = 'x'; let r = r#\"{\"#;\n}\n";
+    let line_starts = crate::overlay::mapping::compute_line_starts(code);
+    let mut parser = OverlayParser::new(code, &line_starts);
+    parser.parse();
+
+    // `// note`, `"a // b"`, `/* c */`, `'x'`, `r#"{"#`; lifetimes are tokens, not literals.
+    assert_eq!(
+        parser.opaque,
+        vec![(27, 34), (47, 55), (57, 64), (74, 77), (87, 93)]
+    );
+    assert_eq!(&code[27..34], "// note");
+    assert_eq!(&code[47..55], "\"a // b\"");
+    assert_eq!(&code[57..64], "/* c */");
+    assert_eq!(&code[74..77], "'x'");
+    assert_eq!(&code[87..93], "r#\"{\"#");
+    // The `{` inside the raw string opens no scope: root plus the fn body only.
+    assert_eq!(parser.scopes.len(), 2);
+}
+
+#[test]
+fn test_overlay_parser_fn_item_start_covers_attributes_and_attached_comments() {
+    let code = concat!(
+        "/// Doc.\n",                  // byte 0
+        "#[inline]\n",                 // byte 9
+        "#[cfg_attr(\n",               // byte 19
+        "    test,\n",                 // byte 31
+        "    allow(dead_code)\n",      // byte 41
+        ")]\n",                        // byte 62
+        "pub fn a() {}\n",             // byte 65, `{` at 76
+        "\n",                          // byte 79
+        "// far away\n",               // byte 80
+        "\n",                          // byte 92
+        "fn b() {}\n",                 // byte 93, `{` at 100
+        "const Z: i32 = 1; /* t */\n", // byte 103
+        "fn c() {}\n",                 // byte 129, `{` at 136
+        "impl X { fn d() {} }\n",      // byte 139, `fn` at 148, `{` at 155
+    );
+    let line_starts = crate::overlay::mapping::compute_line_starts(code);
+    let mut parser = OverlayParser::new(code, &line_starts);
+    parser.parse();
+
+    let fn_scopes: Vec<(usize, usize, usize)> = parser
+        .scopes
+        .iter()
+        .filter_map(|s| s.body_start_byte.map(|b| (s.sel_start_byte, b, s.end_byte)))
+        .collect();
+    // a: doc comment and both attributes attached; b: blank line detaches `// far away`;
+    // c: a code line with a trailing block comment is not trivia; d: starts after `{`.
+    assert_eq!(
+        fn_scopes,
+        vec![
+            (0, 76, 78),
+            (93, 100, 102),
+            (129, 136, 138),
+            (148, 155, 157)
+        ]
+    );
+    assert_eq!(&code[148..150], "fn");
+    assert_eq!(&code[76..78], "{}");
+}

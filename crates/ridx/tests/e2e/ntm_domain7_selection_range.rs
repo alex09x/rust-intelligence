@@ -10,6 +10,9 @@
 
 //! Integration tests for textDocument/selectionRange (Domain 7, Part 1).
 //! Tests scope hierarchy nesting, parent chains, batch positions, and boundary queries.
+//!
+//! A chain is innermost first: token under the cursor (if any), enclosing blocks, the `fn`
+//! body `{..}`, the `fn` item (from its first attribute or doc comment), then the whole file.
 
 use ridx::lsp::dispatch::dispatch_lsp_message;
 use ridx::lsp::lifecycle::LifecycleManager;
@@ -17,7 +20,7 @@ use ridx::lsp::protocol::path_to_uri;
 use ridx::lsp::workspace::MultiRootWorkspace;
 use ridx::overlay::OverlayManager;
 use ridx_format::{DefKind, IndexWriter, RawDefinition};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -44,10 +47,18 @@ fn create_temp_shard(name: &str) -> TempShard {
     let shard = dir.join("index.ridx");
     let mut writer = IndexWriter::new(name, "0.1.0");
     writer.add_definition(RawDefinition {
-        def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
-        name: "test_fn".to_string(), path: format!("{}::test_fn", name),
-        signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        def_id: 1,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "test_fn".to_string(),
+        path: format!("{}::test_fn", name),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 10,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -61,7 +72,7 @@ struct TestDispatcher {
     lifecycle: LifecycleManager,
     multi_root: MultiRootWorkspace,
     overlay_mgr: OverlayManager,
-    cancelled: Arc<Mutex<HashSet<serde_json::Value>>>,
+    cancelled: Arc<Mutex<HashSet<Value>>>,
     writer: Vec<u8>,
 }
 
@@ -81,14 +92,20 @@ impl TestDispatcher {
         d
     }
 
-    fn dispatch(&mut self, msg: &serde_json::Value) -> bool {
+    fn dispatch(&mut self, msg: &Value) -> bool {
         dispatch_lsp_message(
-            msg.clone(), &mut self.writer, &mut self.lifecycle,
-            &mut self.multi_root, &mut self.overlay_mgr, &self.cancelled, None,
-        ).unwrap()
+            msg.clone(),
+            &mut self.writer,
+            &mut self.lifecycle,
+            &mut self.multi_root,
+            &mut self.overlay_mgr,
+            &self.cancelled,
+            None,
+        )
+        .unwrap()
     }
 
-    fn parse_response(&mut self) -> serde_json::Value {
+    fn parse_response(&mut self) -> Value {
         let text = String::from_utf8(self.writer.clone()).unwrap();
         self.writer.clear();
         let body = text.split("\r\n\r\n").nth(1).unwrap();
@@ -96,44 +113,64 @@ impl TestDispatcher {
     }
 }
 
+/// Expected chain, innermost first, from `(start_line, start_char, end_line, end_char)`.
+fn chain(ranges: &[(u32, u32, u32, u32)]) -> Value {
+    let mut current = Value::Null;
+    for &(sl, sc, el, ec) in ranges.iter().rev() {
+        current = json!({
+            "range": { "start": { "line": sl, "character": sc }, "end": { "line": el, "character": ec } },
+            "parent": current
+        });
+    }
+    current
+}
+
+fn open_doc(dsp: &mut TestDispatcher, file: &Path, text: &str) {
+    let open_msg = json!({
+        "jsonrpc": "2.0", "method": "textDocument/didOpen",
+        "params": { "textDocument": { "uri": to_uri(file), "languageId": "rust", "version": 1, "text": text } }
+    });
+    assert!(dsp.dispatch(&open_msg));
+}
+
+fn selection_ranges(
+    dsp: &mut TestDispatcher,
+    id: u64,
+    file: &Path,
+    positions: &[(u32, u32)],
+) -> Value {
+    let positions: Vec<Value> = positions
+        .iter()
+        .map(|&(l, c)| json!({ "line": l, "character": c }))
+        .collect();
+    let req = json!({
+        "jsonrpc": "2.0", "id": id, "method": "textDocument/selectionRange",
+        "params": { "textDocument": { "uri": to_uri(file) }, "positions": positions }
+    });
+    assert!(dsp.dispatch(&req));
+    let resp = dsp.parse_response();
+    assert_eq!(resp["id"], id);
+    resp["result"].clone()
+}
+
 #[test]
 fn test_selection_range_single_position_nested_scope() {
     let ts = create_temp_shard("single_pos");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
+    open_doc(&mut dsp, &file, "fn compute() {\n    let val = 42;\n}\n");
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": {
-                "uri": to_uri(&file), "languageId": "rust", "version": 1,
-                "text": "fn compute() {\n    let val = 42;\n}\n"
-            }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 201, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 1, "character": 8 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    assert_eq!(resp["id"], 201);
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
-    let inner = &results[0];
-    assert_eq!(inner["range"]["start"]["line"], 0);
-    assert_eq!(inner["range"]["start"]["character"], 3);
-    assert_eq!(inner["range"]["end"]["line"], 2);
-    assert_eq!(inner["range"]["end"]["character"], 1);
-    assert_eq!(inner["parent"]["range"]["start"]["line"], 0);
-    assert_eq!(inner["parent"]["range"]["start"]["character"], 0);
-    assert_eq!(inner["parent"]["range"]["end"]["line"], 3);
-    assert_eq!(inner["parent"]["range"]["end"]["character"], 0);
+    // Cursor on `val`: token, fn body, fn item, file.
+    let result = selection_ranges(&mut dsp, 201, &file, &[(1, 8)]);
+    assert_eq!(
+        result,
+        json!([chain(&[
+            (1, 8, 1, 11),
+            (0, 13, 2, 1),
+            (0, 0, 2, 1),
+            (0, 0, 3, 0)
+        ])])
+    );
 }
 
 #[test]
@@ -141,34 +178,24 @@ fn test_selection_range_cursor_inside_inner_block() {
     let ts = create_temp_shard("inner_block");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
+    open_doc(
+        &mut dsp,
+        &file,
+        "fn outer() {\n    if true {\n        let inner_val = 100;\n    }\n}\n",
+    );
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": {
-                "uri": to_uri(&file), "languageId": "rust", "version": 1,
-                "text": "fn outer() {\n    if true {\n        let inner_val = 100;\n    }\n}\n"
-            }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 202, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 2, "character": 12 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
-    let child = &results[0];
-    let parent = &child["parent"];
-    assert!(parent.is_object());
-    let grandparent = &parent["parent"];
-    assert!(grandparent.is_object());
+    // `inner_val` token, `if` block, fn body, fn item, file.
+    let result = selection_ranges(&mut dsp, 202, &file, &[(2, 12)]);
+    assert_eq!(
+        result,
+        json!([chain(&[
+            (2, 12, 2, 21),
+            (1, 12, 3, 5),
+            (0, 11, 4, 1),
+            (0, 0, 4, 1),
+            (0, 0, 5, 0)
+        ])])
+    );
 }
 
 #[test]
@@ -176,32 +203,20 @@ fn test_selection_range_multiple_positions_batch() {
     let ts = create_temp_shard("batch_pos");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
+    open_doc(
+        &mut dsp,
+        &file,
+        "fn f1() {\n    let a = 1;\n}\nfn f2() {\n    let b = 2;\n}\n",
+    );
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": {
-                "uri": to_uri(&file), "languageId": "rust", "version": 1,
-                "text": "fn f1() {\n    let a = 1;\n}\nfn f2() {\n    let b = 2;\n}\n"
-            }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 203, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [
-                { "line": 1, "character": 8 },
-                { "line": 4, "character": 8 }
-            ]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 2);
+    let result = selection_ranges(&mut dsp, 203, &file, &[(1, 8), (4, 8)]);
+    assert_eq!(
+        result,
+        json!([
+            chain(&[(1, 8, 1, 9), (0, 8, 2, 1), (0, 0, 2, 1), (0, 0, 6, 0)]),
+            chain(&[(4, 8, 4, 9), (3, 8, 5, 1), (3, 0, 5, 1), (0, 0, 6, 0)]),
+        ])
+    );
 }
 
 #[test]
@@ -209,38 +224,16 @@ fn test_selection_range_empty_positions_returns_empty() {
     let ts = create_temp_shard("empty_pos");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
+    open_doc(&mut dsp, &file, "fn simple() {}\n");
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": { "uri": to_uri(&file), "languageId": "rust", "version": 1, "text": "fn simple() {}\n" }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
+    assert_eq!(selection_ranges(&mut dsp, 204, &file, &[]), json!([]));
 
-    let req = json!({
-        "jsonrpc": "2.0", "id": 204, "method": "textDocument/selectionRange",
-        "params": { "textDocument": { "uri": to_uri(&file) }, "positions": [] }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 0);
-
-    // Positive control query on valid position
-    let ctrl_req = json!({
-        "jsonrpc": "2.0", "id": 2040, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 0, "character": 4 }]
-        }
-    });
-    assert!(dsp.dispatch(&ctrl_req));
-    let ctrl_resp = dsp.parse_response();
-    let ctrl_results = ctrl_resp["result"].as_array().unwrap();
-    assert_eq!(ctrl_results.len(), 1);
-    assert_eq!(ctrl_results[0]["range"]["start"]["line"], 0);
-    assert_eq!(ctrl_results[0]["range"]["end"]["line"], 0);
+    // Positive control: cursor on `simple` sits in the fn item but before its body.
+    let ctrl = selection_ranges(&mut dsp, 2040, &file, &[(0, 4)]);
+    assert_eq!(
+        ctrl,
+        json!([chain(&[(0, 3, 0, 9), (0, 0, 0, 14), (0, 0, 1, 0)])])
+    );
 }
 
 #[test]
@@ -248,14 +241,7 @@ fn test_selection_range_missing_positions_key() {
     let ts = create_temp_shard("missing_pos");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
-
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": { "uri": to_uri(&file), "languageId": "rust", "version": 1, "text": "fn simple() {}\n" }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
+    open_doc(&mut dsp, &file, "fn simple() {}\n");
 
     let req = json!({
         "jsonrpc": "2.0", "id": 205, "method": "textDocument/selectionRange",
@@ -263,23 +249,14 @@ fn test_selection_range_missing_positions_key() {
     });
     assert!(dsp.dispatch(&req));
     let resp = dsp.parse_response();
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 0);
+    assert_eq!(resp["id"], 205);
+    assert_eq!(resp["result"], json!([]));
 
-    // Positive control query with explicit positions
-    let ctrl_req = json!({
-        "jsonrpc": "2.0", "id": 2050, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 0, "character": 4 }]
-        }
-    });
-    assert!(dsp.dispatch(&ctrl_req));
-    let ctrl_resp = dsp.parse_response();
-    let ctrl_results = ctrl_resp["result"].as_array().unwrap();
-    assert_eq!(ctrl_results.len(), 1);
-    assert_eq!(ctrl_results[0]["range"]["start"]["line"], 0);
-    assert_eq!(ctrl_results[0]["range"]["end"]["line"], 0);
+    let ctrl = selection_ranges(&mut dsp, 2050, &file, &[(0, 4)]);
+    assert_eq!(
+        ctrl,
+        json!([chain(&[(0, 3, 0, 9), (0, 0, 0, 14), (0, 0, 1, 0)])])
+    );
 }
 
 #[test]
@@ -288,39 +265,16 @@ fn test_selection_range_unopened_document_returns_empty() {
     let file = ts.dir.join("src/unopened.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
 
-    let req = json!({
-        "jsonrpc": "2.0", "id": 206, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 0, "character": 0 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 0);
+    // Neither open nor on disk: nothing to select in.
+    assert_eq!(selection_ranges(&mut dsp, 206, &file, &[(0, 0)]), json!([]));
 
-    // Positive control query by opening document
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": { "uri": to_uri(&file), "languageId": "rust", "version": 1, "text": "fn opened() {}\n" }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-    let ctrl_req = json!({
-        "jsonrpc": "2.0", "id": 2060, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 0, "character": 0 }]
-        }
-    });
-    assert!(dsp.dispatch(&ctrl_req));
-    let ctrl_resp = dsp.parse_response();
-    let ctrl_results = ctrl_resp["result"].as_array().unwrap();
-    assert_eq!(ctrl_results.len(), 1);
-    assert_eq!(ctrl_results[0]["range"]["start"]["line"], 0);
-    assert_eq!(ctrl_results[0]["range"]["end"]["line"], 1);
+    // Positive control after didOpen: the `fn` keyword is the innermost token.
+    open_doc(&mut dsp, &file, "fn opened() {}\n");
+    let ctrl = selection_ranges(&mut dsp, 2060, &file, &[(0, 0)]);
+    assert_eq!(
+        ctrl,
+        json!([chain(&[(0, 0, 0, 2), (0, 0, 0, 14), (0, 0, 1, 0)])])
+    );
 }
 
 #[test]
@@ -328,28 +282,13 @@ fn test_selection_range_cursor_at_start_of_file() {
     let ts = create_temp_shard("start_file");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
+    open_doc(&mut dsp, &file, "fn simple() {\n}\n");
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": { "uri": to_uri(&file), "languageId": "rust", "version": 1, "text": "fn simple() {\n}\n" }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 207, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 0, "character": 0 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
-    assert_eq!(results[0]["range"]["start"]["line"], 0);
-    assert_eq!(results[0]["range"]["end"]["line"], 2);
+    let result = selection_ranges(&mut dsp, 207, &file, &[(0, 0)]);
+    assert_eq!(
+        result,
+        json!([chain(&[(0, 0, 0, 2), (0, 0, 1, 1), (0, 0, 2, 0)])])
+    );
 }
 
 #[test]
@@ -357,26 +296,9 @@ fn test_selection_range_cursor_at_eof() {
     let ts = create_temp_shard("eof_pos");
     let file = ts.dir.join("src/lib.rs");
     let mut dsp = TestDispatcher::new(ts.shard.clone());
+    open_doc(&mut dsp, &file, "fn simple() {\n    let x = 1;\n}\n");
 
-    let open_msg = json!({
-        "jsonrpc": "2.0", "method": "textDocument/didOpen",
-        "params": {
-            "textDocument": { "uri": to_uri(&file), "languageId": "rust", "version": 1, "text": "fn simple() {\n    let x = 1;\n}\n" }
-        }
-    });
-    assert!(dsp.dispatch(&open_msg));
-
-    let req = json!({
-        "jsonrpc": "2.0", "id": 208, "method": "textDocument/selectionRange",
-        "params": {
-            "textDocument": { "uri": to_uri(&file) },
-            "positions": [{ "line": 3, "character": 0 }]
-        }
-    });
-    assert!(dsp.dispatch(&req));
-    let resp = dsp.parse_response();
-    let results = resp["result"].as_array().unwrap();
-    assert_eq!(results.len(), 1);
-    assert_eq!(results[0]["range"]["start"]["line"], 0);
-    assert_eq!(results[0]["range"]["end"]["line"], 3);
+    // The empty line after the final newline is outside every item: file range only.
+    let result = selection_ranges(&mut dsp, 208, &file, &[(3, 0)]);
+    assert_eq!(result, json!([chain(&[(0, 0, 3, 0)])]));
 }

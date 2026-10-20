@@ -98,6 +98,8 @@ pub struct DocumentOverlay {
     pub line_starts: Vec<usize>,
     pub symbols: Vec<OverlaySymbol>,
     pub(crate) scopes: Vec<Scope>,
+    /// Comment and string/char literal byte spans, in text order.
+    pub(crate) opaque: Vec<(usize, usize)>,
 }
 
 /// Resolves the compiled baseline text by checking whether the live buffer hash or on-disk file hash matches `expected_hash`.
@@ -130,6 +132,7 @@ impl DocumentOverlay {
             line_starts: Vec::new(),
             symbols: Vec::new(),
             scopes: Vec::new(),
+            opaque: Vec::new(),
         };
         overlay.reparse();
         overlay
@@ -163,6 +166,7 @@ impl DocumentOverlay {
             line_starts: Vec::new(),
             symbols: Vec::new(),
             scopes: Vec::new(),
+            opaque: Vec::new(),
         };
         overlay.reparse();
         overlay
@@ -193,6 +197,7 @@ impl DocumentOverlay {
             line_starts: Vec::new(),
             symbols: Vec::new(),
             scopes: Vec::new(),
+            opaque: Vec::new(),
         };
         overlay.reparse();
         overlay
@@ -315,6 +320,7 @@ impl DocumentOverlay {
         parser.parse();
         self.scopes = parser.scopes;
         self.symbols = parser.symbols;
+        self.opaque = parser.opaque;
     }
 }
 

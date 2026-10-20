@@ -4,12 +4,12 @@
 > **Note on Stubs**: LSP `textDocument/documentColor / colorPresentation (stub)` handler returns `[]` unconditionally; tests pin the stub. LSP `$/setTrace (no-op)` and `initialized` notifications are no-op handlers in dispatch (`return Ok(true)`); tests pin the dispatch and notification behavior.
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
-- **Total E2E Tests**: 2328
-- **Total Unit/Src Tests**: 420
-- **Classified E2E Tests**: 2246
-- **Unclassified E2E Tests**: 82
-- **Rows >= 20 E2E**: 48 / 53
-- **Rows >= 50 E2E**: 41 / 53
+- **Total E2E Tests**: 2779
+- **Total Unit/Src Tests**: 470
+- **Classified E2E Tests**: 2693
+- **Unclassified E2E Tests**: 86
+- **Rows >= 20 E2E**: 53 / 53
+- **Rows >= 50 E2E**: 52 / 53
 
 | Domain | Method / Capability | E2E Tests | Src Tests | Total | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -19,9 +19,9 @@
 | Domain 1: Lifecycle & Control | `$/cancelRequest` | 50 | 0 | 50 | ✅ Complete |
 | Domain 1: Lifecycle & Control | `$/setTrace (no-op)` | 50 | 0 | 50 | ✅ Complete |
 | Domain 2: Diagnostics & Flycheck | `textDocument/diagnostic` | 50 | 0 | 50 | ✅ Complete |
-| Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 50 | 1 | 51 | ✅ Complete |
+| Domain 2: Diagnostics & Flycheck | `workspace/diagnostic` | 50 | 3 | 53 | ✅ Complete |
 | Domain 2: Diagnostics & Flycheck | `publishDiagnostics / flycheck` | 62 | 0 | 62 | ✅ Complete |
-| Domain 3: Synchronization & Coordinates | `textDocument/didOpen` | 50 | 0 | 50 | ✅ Complete |
+| Domain 3: Synchronization & Coordinates | `textDocument/didOpen` | 53 | 0 | 53 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didChange` | 51 | 0 | 51 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didSave` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 50 | 0 | 50 | ✅ Complete |
@@ -36,29 +36,29 @@
 | Domain 5: Intelligence & Completion | `textDocument/inlineValue` | 50 | 0 | 50 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/moniker` | 50 | 0 | 50 | ✅ Complete |
 | Domain 6: Hierarchies | `prepareCallHierarchy` | 50 | 1 | 51 | ✅ Complete |
-| Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 50 | 0 | 50 | ✅ Complete |
+| Domain 6: Hierarchies | `callHierarchy/incomingCalls` | 50 | 2 | 52 | ✅ Complete |
 | Domain 6: Hierarchies | `callHierarchy/outgoingCalls` | 50 | 1 | 51 | ✅ Complete |
 | Domain 6: Hierarchies | `prepareTypeHierarchy` | 50 | 1 | 51 | ✅ Complete |
-| Domain 6: Hierarchies | `typeHierarchy/supertypes` | 50 | 0 | 50 | ✅ Complete |
+| Domain 6: Hierarchies | `typeHierarchy/supertypes` | 50 | 3 | 53 | ✅ Complete |
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/foldingRange` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/selectionRange` | 50 | 0 | 50 | ✅ Complete |
+| Domain 7: Presentation | `textDocument/selectionRange` | 61 | 7 | 68 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 50 | 0 | 50 | ✅ Complete |
+| Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 48 | 0 | 48 | 🟡 Wave 1 Pass (>= 20) |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 50 | 10 | 60 | ✅ Complete |
-| Domain 8: Editing & Workspace Edits | `textDocument/rename` | 50 | 17 | 67 | ✅ Complete |
+| Domain 8: Editing & Workspace Edits | `textDocument/rename` | 51 | 26 | 77 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 50 | 7 | 57 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 50 | 8 | 58 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 50 | 5 | 55 | ✅ Complete |
-| Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 50 | 0 | 50 | ✅ Complete |
+| Domain 8: Editing & Workspace Edits | `workspace/executeCommand` | 50 | 1 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/definition / declaration (delegating)` | 52 | 7 | 59 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/typeDefinition` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/implementation` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/references` | 51 | 1 | 52 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `textDocument/documentHighlight` | 51 | 0 | 51 | ✅ Complete |
-| Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 51 | 0 | 51 | ✅ Complete |
+| Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 54 | 1 | 55 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `workspace/symbol` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 51 | 8 | 59 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 51 | 0 | 51 | ✅ Complete |
@@ -503,9 +503,10 @@
 
 ### Domain 3: Synchronization & Coordinates
 
-#### `textDocument/didOpen` (50 e2e tests)
+#### `textDocument/didOpen` (53 e2e tests)
 - `test_did_open_already_open_replaces_cleanly`
 - `test_did_open_async_fn_symbol`
+- `test_did_open_buffer_matches_index_while_disk_diverged_preserves_disk_text`
 - `test_did_open_comment_only_document_symbols_empty`
 - `test_did_open_const_fn_symbol`
 - `test_did_open_const_symbols`
@@ -529,6 +530,7 @@
 - `test_did_open_missing_text_defaults_to_empty`
 - `test_did_open_missing_version_defaults_to_one`
 - `test_did_open_mod_declaration_symbols`
+- `test_did_open_modified_buffer_populates_compiled_text_and_resolves_shifted_definition`
 - `test_did_open_multi_reader_provenance_fast_path`
 - `test_did_open_multibyte_unicode_and_emojis`
 - `test_did_open_negative_version_preserved`
@@ -542,6 +544,7 @@
 - `test_did_open_replaces_previously_closed_file`
 - `test_did_open_sequential_multiple_files_open_count`
 - `test_did_open_single_character_text`
+- `test_did_open_stale_index_buffer_matches_disk_preserves_disk_text`
 - `test_did_open_static_symbols`
 - `test_did_open_struct_definition_symbols`
 - `test_did_open_symbol_exact_line_and_col`
@@ -1656,11 +1659,14 @@
 - `test_folding_range_utf8_multibyte_prefix_columns`
 - `test_l2_folding_range_and_code_lens`
 
-#### `textDocument/selectionRange` (50 e2e tests)
+#### `textDocument/selectionRange` (61 e2e tests)
 - `test_selection_range_after_did_change_overlay_edit`
 - `test_selection_range_batch_positions_in_same_function_different_scopes`
 - `test_selection_range_batch_positions_ordered_descending`
 - `test_selection_range_batch_three_positions_different_functions`
+- `test_selection_range_chain_invariants_hold_for_every_cursor_position`
+- `test_selection_range_closed_file_on_disk_matches_open_document_through_dispatcher`
+- `test_selection_range_comment_and_literal_select_whole_node`
 - `test_selection_range_consecutive_requests_idempotent`
 - `test_selection_range_crlf_line_endings_position_calculation`
 - `test_selection_range_cursor_at_eof`
@@ -1691,7 +1697,10 @@
 - `test_selection_range_did_change_nested_block_added`
 - `test_selection_range_duplicate_positions_in_request`
 - `test_selection_range_empty_positions_returns_empty`
+- `test_selection_range_fn_item_includes_doc_comment_and_attributes`
 - `test_selection_range_invalid_uri_format_returns_empty`
+- `test_selection_range_keyword_tokens_fn_and_let`
+- `test_selection_range_method_call_receiver_and_name_boundaries`
 - `test_selection_range_missing_positions_key`
 - `test_selection_range_multiple_documents_isolation`
 - `test_selection_range_multiple_positions_batch`
@@ -1703,10 +1712,15 @@
 - `test_selection_range_parent_nesting_invariants`
 - `test_selection_range_position_beyond_file_length`
 - `test_selection_range_range_coordinates_validity`
+- `test_selection_range_raw_identifier_and_lifetime_tokens`
 - `test_selection_range_single_position_nested_scope`
 - `test_selection_range_string_request_id_echoed`
+- `test_selection_range_token_start_middle_and_end_boundary_share_one_range`
+- `test_selection_range_trait_method_without_body_and_nested_fn_item`
+- `test_selection_range_unicode_identifier_after_emoji_literal_uses_utf16_columns`
 - `test_selection_range_unopened_document_returns_empty`
 - `test_selection_range_utf8_multibyte_prefix_columns`
+- `test_selection_range_whitespace_punctuation_and_number_have_no_token`
 
 #### `textDocument/documentLink / resolve` (50 e2e tests)
 - `test_document_link_angle_bracket_delimiter`
@@ -1721,10 +1735,10 @@
 - `test_document_link_did_change_appends_second_link`
 - `test_document_link_did_change_removes_link`
 - `test_document_link_did_change_replaces_link`
-- `test_document_link_dispatcher_echoes_numeric_id`
-- `test_document_link_dispatcher_echoes_string_id`
 - `test_document_link_disk_fallback_file_without_overlay`
 - `test_document_link_disk_file_updates_re_read`
+- `test_document_link_dispatcher_echoes_numeric_id`
+- `test_document_link_dispatcher_echoes_string_id`
 - `test_document_link_emoji_surrogate_pair_utf16_offsets`
 - `test_document_link_empty_file_returns_empty`
 - `test_document_link_file_without_links_returns_empty`
@@ -1760,34 +1774,32 @@
 - `test_document_link_with_url_anchor_fragment`
 - `test_document_link_with_url_query_parameters`
 
-#### `textDocument/documentColor / colorPresentation (stub)` (50 e2e tests)
+#### `textDocument/documentColor / colorPresentation (stub)` (48 e2e tests)
 - `test_color_presentation_after_shutdown_returns_code_32600`
 - `test_color_presentation_cancelled_request_returns_code_32800`
 - `test_color_presentation_color_clamped_extremes_zero_and_one`
 - `test_color_presentation_color_intermediate_floats`
-- `test_color_presentation_consecutive_queries_isolation`
-- `test_color_presentation_dispatcher_echoes_numeric_id`
-- `test_color_presentation_dispatcher_echoes_string_id`
 - `test_color_presentation_empty_params_object`
 - `test_color_presentation_extra_fields_in_color_object`
 - `test_color_presentation_jsonrpc_protocol_version_is_2_0`
 - `test_color_presentation_large_numeric_id_preserved`
-- `test_color_presentation_missing_color_object`
 - `test_color_presentation_missing_params_completely`
-- `test_color_presentation_missing_range_object`
-- `test_color_presentation_multi_line_range`
 - `test_color_presentation_negative_numeric_id_preserved`
 - `test_color_presentation_null_params`
-- `test_color_presentation_overlay_document_uri`
 - `test_color_presentation_range_with_crlf_offsets`
-- `test_color_presentation_rgb_color_params`
-- `test_color_presentation_rgba_color_params`
 - `test_color_presentation_string_id_with_special_characters`
+- `test_color_presentation_stub_consecutive_queries_isolation`
+- `test_color_presentation_stub_dispatcher_echoes_numeric_id`
+- `test_color_presentation_stub_dispatcher_echoes_string_id`
+- `test_color_presentation_stub_missing_color_object`
+- `test_color_presentation_stub_missing_range_object`
+- `test_color_presentation_stub_multi_line_range`
+- `test_color_presentation_stub_overlay_document_uri`
+- `test_color_presentation_stub_rgb_color_params`
+- `test_color_presentation_stub_rgba_color_params`
+- `test_color_presentation_stub_zero_range`
 - `test_color_presentation_ten_rapid_consecutive_requests`
-- `test_color_presentation_zero_range`
 - `test_color_presentation_zero_width_character_offsets`
-- `test_color_workflow_document_color_then_presentation`
-- `test_color_workflow_multiple_documents_independent_queries`
 - `test_document_color_after_shutdown_returns_code_32600`
 - `test_document_color_cancelled_request_returns_code_32800`
 - `test_document_color_did_close_then_reopen_returns_empty`
@@ -1918,9 +1930,10 @@
 - `test_prepare_rename_while_let_unsupported_pattern_rejected_with_32803`
 - `test_prepare_rename_whitespace_rejected_error`
 
-#### `textDocument/rename` (50 e2e tests)
+#### `textDocument/rename` (51 e2e tests)
 - `test_case_10_stale_rename_overlay_resolution`
 - `test_case_8_external_dependency_rename_safety`
+- `test_l2_rename_workspace_symbol_updates_use_statement`
 - `test_ntm_overlay_mutations_and_editing_pipeline`
 - `test_refactor_cross_file_workspace_rename_execution`
 - `test_refactor_rename_local_variable_execution`
@@ -2121,10 +2134,10 @@
 - `test_on_type_formatting_trigger_dot`
 - `test_on_type_formatting_trigger_newline`
 - `test_on_type_formatting_trigger_semicolon`
-- `test_on_type_formatting_unicode_comments_preserved`
-- `test_on_type_formatting_unicode_identifier_preserved`
 - `test_on_type_formatting_unformatted_fn_params_spaces`
 - `test_on_type_formatting_unformatted_let_binding_spaces`
+- `test_on_type_formatting_unicode_comments_preserved`
+- `test_on_type_formatting_unicode_identifier_preserved`
 
 #### `workspace/executeCommand` (50 e2e tests)
 - `test_apply_edit_two_way_handshake_reject_and_accept`
@@ -2446,14 +2459,16 @@
 - `test_l1_document_highlight_utf16_multibyte_declaration_and_references`
 - `test_l1_document_highlight_workspace_references`
 
-#### `textDocument/documentSymbol` (51 e2e tests)
+#### `textDocument/documentSymbol` (54 e2e tests)
 - `test_case_11_new_symbol_in_live_buffer`
 - `test_document_symbol_buffer_mutation_updates_symbols`
 - `test_document_symbol_close_document_clears_symbols`
+- `test_document_symbol_closed_to_open_modified_to_closed_disk_fallback`
 - `test_document_symbol_comments_only_file_returns_empty`
 - `test_document_symbol_const_fn_declaration`
 - `test_document_symbol_const_item_name_kind`
 - `test_document_symbol_crlf_line_endings_preserved`
+- `test_document_symbol_disk_cache_invalidates_after_disk_write_and_delete`
 - `test_document_symbol_empty_file_returns_empty`
 - `test_document_symbol_empty_uri_returns_empty`
 - `test_document_symbol_function_with_local_let`
@@ -2482,6 +2497,7 @@
 - `test_document_symbol_type_alias_name_kind`
 - `test_document_symbol_type_parameter_filtered_out`
 - `test_document_symbol_unopened_document_returns_empty`
+- `test_document_symbol_unopened_file_matches_opened_file_exact_json`
 - `test_document_symbol_utf16_surrogate_emoji_in_comment_preserves_coords`
 - `test_l1_document_symbol_all_kinds`
 - `test_l1_document_symbol_const_static_type_alias`
@@ -2874,7 +2890,7 @@
 
 ### Unclassified E2E Tests
 
-Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
+Total unclassified tests: 86 (multi-purpose, property, or helper harness tests)
 
 - `test_atomic_closed_write_preserves_large_file_on_error`
 - `test_atomic_write_preserves_file_permissions`
@@ -2889,6 +2905,8 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_byte_offset_to_position_roundtrip`
 - `test_char_col_to_utf16_unit_boundaries`
 - `test_cli_fixture_generation_and_query`
+- `test_color_workflow_document_color_then_presentation`
+- `test_color_workflow_multiple_documents_independent_queries`
 - `test_comparison_preserves_full_path_and_rejects_errors`
 - `test_container_matching_exact_components`
 - `test_disk_failure_rollback_and_reported_failure`
@@ -2940,6 +2958,8 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_proptest_mapping_roundtrip_bijectivity`
 - `test_proptest_multibyte_random_edits_utf8_validity`
 - `test_proptest_random_incremental_edits_vs_oracle`
+- `test_reopen_without_close_refreshes_disk_text_from_disk`
+- `test_reopen_without_close_shifted_buffer_preserves_compiled_and_disk_text`
 - `test_review_v4651_closed_edit_remains_dirty`
 - `test_review_v4651_dual_edit_representation_applied_once`
 - `test_review_v4651_edits_use_original_coordinates`
@@ -2960,4 +2980,4 @@ Total unclassified tests: 82 (multi-purpose, property, or helper harness tests)
 - `test_workspace_index_source_root_at`
 
 ---
-coverage: e2e 2759 total, 53 rows >= 20, 53 rows >= 50 of 53
+coverage: e2e 2779 total, 53 rows >= 20, 52 rows >= 50 of 53
