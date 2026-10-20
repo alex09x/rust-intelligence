@@ -47,7 +47,7 @@ fn create_temp_shard(name: &str) -> TempShard {
         def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
         name: "test_fn".to_string(), path: format!("{}::test_fn", name),
         signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        start_line: 1, start_col: 4, end_line: 1, end_col: 11,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -113,7 +113,8 @@ fn test_code_lens_disk_workspace_definition() {
     let lenses = resp["result"].as_array().unwrap();
     assert_eq!(lenses.len(), 1);
     assert_eq!(lenses[0]["range"]["start"]["line"], 0);
-    assert_eq!(lenses[0]["range"]["start"]["character"], 0);
+    assert_eq!(lenses[0]["range"]["start"]["character"], 3);
+    assert_eq!(lenses[0]["range"]["end"]["character"], 10);
     assert_eq!(lenses[0]["data"]["name"], "test_fn");
 }
 
@@ -128,13 +129,13 @@ fn test_code_lens_multiple_definitions_in_file() {
         def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
         name: "first_fn".to_string(), path: "multi_crate::first_fn".to_string(),
         signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 9,
+        start_line: 1, start_col: 4, end_line: 1, end_col: 12,
     });
     writer.add_definition(RawDefinition {
         def_id: 2, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
         name: "second_fn".to_string(), path: "multi_crate::second_fn".to_string(),
         signature: None, file: "src/lib.rs".to_string(),
-        start_line: 5, start_col: 1, end_line: 5, end_col: 10,
+        start_line: 5, start_col: 4, end_line: 5, end_col: 13,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     let file = dir.join("src/lib.rs");

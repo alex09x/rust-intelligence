@@ -47,7 +47,7 @@ fn create_temp_shard(name: &str) -> TempShard {
         def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
         name: "target_fn".to_string(), path: format!("{}::target_fn", name),
         signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        start_line: 1, start_col: 4, end_line: 1, end_col: 13,
     });
     writer.write_to(&mut File::create(&shard).unwrap()).unwrap();
     TempShard { dir, shard }
@@ -128,7 +128,7 @@ fn test_code_lens_resolve_with_single_reference() {
         def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
         name: "target_fn".to_string(), path: "one_ref_crate::target_fn".to_string(),
         signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        start_line: 1, start_col: 4, end_line: 1, end_col: 13,
     });
     writer.add_reference(RawReference {
         file: "src/lib.rs".to_string(),
@@ -147,7 +147,7 @@ fn test_code_lens_resolve_with_single_reference() {
         "jsonrpc": "2.0", "id": 772, "method": "codeLens/resolve",
         "params": {
             "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 9 } },
-            "data": { "uri": to_uri(&file), "line": 1, "character": 1, "name": "target_fn" }
+            "data": { "uri": to_uri(&file), "line": 1, "character": 4, "name": "target_fn" }
         }
     });
     assert!(dsp.dispatch(&req));
@@ -166,7 +166,7 @@ fn test_code_lens_resolve_with_multiple_references() {
         def_id: 1, kind: DefKind::Fn, visibility: 1, is_macro_expansion: false,
         name: "target_fn".to_string(), path: "two_ref_crate::target_fn".to_string(),
         signature: None, file: "src/lib.rs".to_string(),
-        start_line: 1, start_col: 1, end_line: 1, end_col: 10,
+        start_line: 1, start_col: 4, end_line: 1, end_col: 13,
     });
     writer.add_reference(RawReference {
         file: "src/lib.rs".to_string(),
@@ -193,7 +193,7 @@ fn test_code_lens_resolve_with_multiple_references() {
         "jsonrpc": "2.0", "id": 773, "method": "codeLens/resolve",
         "params": {
             "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 9 } },
-            "data": { "uri": to_uri(&file), "line": 1, "character": 1, "name": "target_fn" }
+            "data": { "uri": to_uri(&file), "line": 1, "character": 4, "name": "target_fn" }
         }
     });
     assert!(dsp.dispatch(&req));

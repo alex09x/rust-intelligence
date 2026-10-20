@@ -253,17 +253,14 @@ fn test_code_lens_file_no_reader_indexes_is_empty() {
 }
 
 #[test]
-fn test_code_lens_one_lens_per_range_and_name_across_units_and_macro_expansions() {
+fn test_code_lens_one_lens_per_range_and_name_across_units() {
     let fx = fixture_with(true);
     let (uri, result) = code_lens(&fx, &fx.root.join("crates/crate_a/src/lib.rs"));
-    // Two units index the file and `generated` is expanded three times on line 5: every
-    // (range, name) appears once, in definition order, lib unit first.
+    // Two units index the file: every (range, name) appears once, in definition order, lib unit
+    // first. The three `generated` definitions expanded from `impls! {}` on line 5 get no lens
+    // (`lens_filter_tests`): they are macro expansions and their span does not spell their name.
     assert_eq!(
         result,
-        json!([
-            lens(&uri, 1, 8, 13, "alpha"),
-            lens(&uri, 3, 8, 12, "beta"),
-            lens(&uri, 5, 1, 10, "generated")
-        ])
+        json!([lens(&uri, 1, 8, 13, "alpha"), lens(&uri, 3, 8, 12, "beta")])
     );
 }

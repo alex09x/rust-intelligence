@@ -12,9 +12,63 @@
 
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
-use ridx_format::WorkspaceIndex;
+use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 use std::collections::HashSet;
+
+/// Definition kinds that get a `References` lens: the items a user names in code and looks up by
+/// name. Every other kind is left out on purpose:
+/// - `Use`, `ExternCrate`: imports; a lens there would count uses of the import line, not of the
+///   item it brings in;
+/// - `TyParam`, `ConstParam`, `LifetimeParam`: generic parameters, local to one item;
+/// - `Impl`, `ForeignMod`: blocks without a name of their own (the index names an impl by its
+///   header, `Deserialize<'de> for bool>`);
+/// - `StructCtor`, `VariantCtor`: constructor functions that double the struct or variant lens;
+/// - `Field`, `Local`, `Closure`, `AnonConst`, `InlineConst`, `OpaqueTy`, `GlobalAsm`: expression
+///   level or unnamed items;
+/// - `ForeignTy`, `TraitAlias`, `Other`: no lens behaviour to match; rust-analyzer shows none.
+const LENS_KINDS: &[DefKind] = &[
+    DefKind::Mod,
+    DefKind::Struct,
+    DefKind::Union,
+    DefKind::Enum,
+    DefKind::Variant,
+    DefKind::Trait,
+    DefKind::TyAlias,
+    DefKind::AssocTy,
+    DefKind::Fn,
+    DefKind::AssocFn,
+    DefKind::Const,
+    DefKind::AssocConst,
+    DefKind::Static,
+    DefKind::Macro,
+];
+
+/// A lens stands on its own name: the source text under the span (one line, 1-based char columns)
+/// is `name`, or `name` written as a raw identifier (`r#match` for `match`). Definitions that fail
+/// this come from macro expansions whose span is the whole invocation, from proc macros that reuse
+/// the span of a user token for a generated item, or from a file edited since it was indexed; the
+/// text is the one `PositionConverter` reads for the column conversion, so range and check agree.
+fn range_spells_name(
+    conv: &mut PositionConverter,
+    file: &str,
+    (start_line, start_col): (u32, u32),
+    (end_line, end_col): (u32, u32),
+    name: &str,
+) -> bool {
+    if end_line != start_line || start_col == 0 || end_col <= start_col {
+        return false;
+    }
+    let Some(line) = conv.get_line(file, start_line) else {
+        return false;
+    };
+    let text: String = line
+        .chars()
+        .skip((start_col - 1) as usize)
+        .take((end_col - start_col) as usize)
+        .collect();
+    text == name || (text.strip_prefix("r#") == Some(name))
+}
 
 /// Handles `textDocument/codeLens` requests (lightweight; defers reference counting to resolve).
 pub fn handle_code_lens(
@@ -56,8 +110,8 @@ pub fn handle_code_lens(
     // reader's `find_file_id` accepts suffix matches, so asking all readers with an absolute path
     // would also return the `src/lib.rs` of every dependency shard.
     if let Some(ws) = workspace {
-        // Several units of one crate (lib, lib test, bin) index the same file, and a macro can
-        // expand several times on one line: one lens per (range, name), first occurrence kept.
+        // Several units of one crate (lib, lib test, bin) index the same file: one lens per
+        // (range, name), first occurrence kept.
         let mut seen: HashSet<(u32, u32, u32, &str)> = HashSet::new();
         for idx in ws.reader_indices_for_file(&file) {
             let Some(target) = ws.target_file_for_reader(idx, &file) else {
@@ -68,13 +122,27 @@ pub fn handle_code_lens(
                 continue;
             };
             for def in r.definitions() {
-                if def.span.file_id != fid {
+                if def.span.file_id != fid
+                    || !LENS_KINDS.contains(&DefKind::from(def.kind))
+                    || def.is_macro_expansion()
+                {
+                    continue;
+                }
+                let name = r.get_str(def.name_offset);
+                if name.is_empty()
+                    || !range_spells_name(
+                        conv,
+                        &file,
+                        (def.span.start_line, def.span.start_col),
+                        (def.span.end_line, def.span.end_col),
+                        name,
+                    )
+                {
                     continue;
                 }
                 let sl = def.span.start_line.saturating_sub(1);
                 let sc = conv.char_col_to_utf16_col(&file, def.span.start_line, def.span.start_col);
                 let ec = conv.char_col_to_utf16_col(&file, def.span.end_line, def.span.end_col);
-                let name = r.get_str(def.name_offset);
                 if !seen.insert((sl, sc, ec, name)) {
                     continue;
                 }
