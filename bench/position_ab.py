@@ -11,7 +11,7 @@ compares their answers.
     position_ab.py --repo DIR --positions bench/published/matrix_<corpus>_booster.positions.json \\
         --ridx NAME=BIN [--ridx NAME=BIN ...] [--ra NAME=BIN] [--methods key,key,...] \\
         [--limit N] [--timeout 2.0] [--matrix bench/published/matrix_<corpus>_booster.json] --out FILE \\
-        [--out-differing FILE]
+        [--out-differing FILE] [--differing-by digest|outcome] [--retry-empty]
 
 The positions file fixes the requests: every record is rebuilt into the scenario the sampler
 produced, so `matrix_categories.build_params` yields the request of the matrix. Each server (ridx
@@ -25,7 +25,13 @@ sits under `#[cfg(test)]`. Per server and method: a/b/c counts and p50/p99, opti
 against the a/b/c of a published matrix JSON. Per pair of servers and method: positions with the
 same answer, differing answers, the outcome transitions and the first differing positions.
 `--out-differing` writes a second copy that keeps the summaries and the comparison whole but only the
-rows on which some pair of servers differs, with `rows_total` and the sha256 of the full file.
+rows on which some pair of servers differs, with `rows_total` and the sha256 of the full file;
+`--differing-by outcome` keeps only the rows whose outcomes differ, not those that differ in
+digest alone. `--retry-empty` asks each rust-analyzer process a second time on the rows it
+answered empty or with an error, after the whole pass, and records the second answer next to the
+first under `retry`; the first answer stays the one summarized and compared. With `--matrix`, the
+run stops before any request when the corpus HEAD is not the matrix's `repo_commit`, and the
+report records whether each rust-analyzer binary is the matrix's `ra_version`.
 """
 
 import argparse
@@ -77,11 +83,38 @@ def build_rows(positions, methods, limit, repo_dir, entries, read_lines):
     return rows
 
 
-def run_server(name, cmd, is_ra, rows, repo_dir, timeout, canary):
-    """Answers every row's request with one server process; fills `rows[i]["results"][name]`."""
+def answer(key, res, us, err):
+    """One server's answer to one row: outcome by the matrix rule, digest, latency, error code."""
+    outcome, code = classify_outcome(key, res, err)
+    return {"outcome": outcome, "digest": digest(key, res) if outcome == "a" else ("empty" if outcome == "b" else None),
+            "us": round(us, 1), "error": code}
+
+
+def retry_empty_rows(srv, name, rows, repo_dir, timeout, is_ra=True):
+    """Asks the same process again on the rows it answered empty or with an error other than
+    MethodNotFound, after the whole pass. The first answer stays in place; the second goes under
+    `retry`. Returns per method how many rows were asked again and their retry outcomes."""
+    counts = {}
+    for row in rows:
+        first = row["results"].get(name)
+        if not first or first["outcome"] == "a" or first["error"] == "-32601":
+            continue
+        params = build_params(row["method"], row["scenario"], str(repo_dir), is_ra=is_ra)
+        res, us, err = srv.request(row["rpc_method"], params, timeout=timeout)
+        first["retry"] = answer(row["method"], res, us, err)
+        per_method = counts.setdefault(row["method"], Counter())
+        per_method["retried"] += 1
+        per_method[first["retry"]["outcome"]] += 1
+    return {key: dict(c) for key, c in counts.items()}
+
+
+def run_server(name, cmd, is_ra, rows, repo_dir, timeout, canary, retry_empty=False):
+    """Answers every row's request with one server process; fills `rows[i]["results"][name]`.
+    Returns the readiness record, the wall time and, with `retry_empty`, the retry counts."""
     srv = SimpleLspProcess(cmd, str(repo_dir), is_ra=is_ra)
     t0 = time.perf_counter()
     ready = {"initial_wait_ms": round(srv.initial_wait_ms, 1), "initial_quiescent": srv.initial_quiescent}
+    retry = None
     try:
         if is_ra:
             ready.update(ensure_ra_ready(srv, canary, Path(repo_dir), timeout=600.0, interval=1.0))
@@ -98,17 +131,15 @@ def run_server(name, cmd, is_ra, rows, repo_dir, timeout, canary):
                 continue
             params = build_params(key, row["scenario"], str(repo_dir), is_ra=is_ra)
             res, us, err = srv.request(row["rpc_method"], params, timeout=timeout)
-            outcome, code = classify_outcome(key, res, err)
-            if code == "-32601":
+            row["results"][name] = answer(key, res, us, err)
+            if row["results"][name]["error"] == "-32601":
                 unsupported.add(key)
-            row["results"][name] = {
-                "outcome": outcome, "digest": digest(key, res) if outcome == "a" else ("empty" if outcome == "b" else None),
-                "us": round(us, 1), "error": code,
-            }
+        if retry_empty:
+            retry = retry_empty_rows(srv, name, rows, repo_dir, timeout, is_ra=is_ra)
     finally:
         srv.close()
     ready["cancelled_on_timeout"] = srv.cancelled_on_timeout
-    return ready, round(time.perf_counter() - t0, 1)
+    return ready, round(time.perf_counter() - t0, 1), retry
 
 
 def summarize_server(rows, name):
@@ -170,23 +201,43 @@ def compare_servers(rows, names, examples=EXAMPLES):
     return pairs
 
 
-def row_differs(row):
-    """True when two servers answered the row with a different outcome or digest."""
+def row_differs(row, by="digest"):
+    """True when two servers answered the row with a different outcome or digest (`by="digest"`),
+    or with a different outcome alone (`by="outcome"`); the first answers, not the retries."""
+    if by == "outcome":
+        return len({r["outcome"] for r in row["results"].values()}) > 1
     seen = {(r["outcome"], r["digest"]) for r in row["results"].values()}
     return len(seen) > 1
 
 
-def differing_only(report, full_name, full_sha256):
+ROWS_FILTER_DEFINITIONS = {
+    "digest": "differing: only rows on which some pair of servers differs in outcome or digest; "
+              "rows_total counts the rows of the full file named in full_file",
+    "outcome": "differing-outcome: only rows on which some pair of servers differs in outcome (a/b/c of the first "
+               "answer); rows that differ in digest alone are counted in comparison but not kept; "
+               "rows_total counts the rows of the full file named in full_file",
+}
+
+
+def differing_only(report, full_name, full_sha256, by="digest"):
     """The report with only the differing rows; summaries and comparison stay whole, `rows_total`
     and the digest of the full file tie the copy to the full run."""
-    kept = [row for row in report["rows"] if row_differs(row)]
+    kept = [row for row in report["rows"] if row_differs(row, by)]
     out = {k: v for k, v in report.items() if k != "rows"}
-    out.update({"rows": kept, "rows_total": len(report["rows"]), "rows_kept": len(kept), "rows_filter": "differing",
+    out.update({"rows": kept, "rows_total": len(report["rows"]), "rows_kept": len(kept),
+                "rows_filter": "differing" if by == "digest" else "differing-outcome",
                 "full_file": {"name": full_name, "sha256": full_sha256}})
-    out["metric_definitions"] = {**report["metric_definitions"],
-                                 "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; "
-                                                "rows_total counts the rows of the full file named in full_file"}
+    out["metric_definitions"] = {**report["metric_definitions"], "rows_filter": ROWS_FILTER_DEFINITIONS[by]}
     return out
+
+
+def matrix_provenance(matrix, matrix_name, repo_head, ra_versions):
+    """What ties the run to the published matrix: the matrix's repository commit against the
+    checkout's HEAD, and its rust-analyzer version against each rust-analyzer binary run here."""
+    return {"file": matrix_name, "repo_commit": matrix.get("repo_commit"),
+            "repo_head_matches": matrix.get("repo_commit") == repo_head,
+            "ra_version": matrix.get("ra_version"),
+            "ra_version_matches": {name: version == matrix.get("ra_version") for name, version in ra_versions.items()}}
 
 
 def binary_label(binary):
@@ -213,6 +264,8 @@ def main():
     ap.add_argument("--matrix", type=Path, help="published matrix JSON to check the a/b/c counts against")
     ap.add_argument("--out", required=True, type=Path, help="full report with every row")
     ap.add_argument("--out-differing", type=Path, help="copy of the report keeping only the rows on which some pair of servers differs, with rows_total and the sha256 of the full file")
+    ap.add_argument("--differing-by", choices=["digest", "outcome"], default="digest", help="what makes a row differing for --out-differing")
+    ap.add_argument("--retry-empty", action="store_true", help="ask each rust-analyzer process again on its empty and errored rows after the pass")
     args = ap.parse_args()
     servers = parse_servers(args.ridx, args.ra)
     if not servers:
@@ -240,14 +293,22 @@ def main():
     rows = build_rows(positions, methods, args.limit, repo_dir, entries, read_lines)
     canary = [scenario_from_record("definition", rec, repo_dir) for rec in (positions.get("definition") or [])[:3]]
     matrix = json.loads(args.matrix.read_text(encoding="utf-8")) if args.matrix else None
+    repo_head = subprocess.run(["git", "-C", str(repo_dir), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    if matrix and matrix.get("repo_commit") and matrix["repo_commit"] != repo_head:
+        sys.exit(f"{repo_dir.name}: HEAD {repo_head} is not the matrix repo_commit {matrix['repo_commit']}; not running")
     started = datetime.now(timezone.utc).isoformat()
     runs = []
     for name, cmd, is_ra, binary in servers:
         print(f"{repo_dir.name}: {'rust-analyzer' if is_ra else 'ridx'} {name} ({binary}), {len(rows)} requests ...", flush=True)
-        ready, seconds = run_server(name, cmd, is_ra, rows, repo_dir, args.timeout, canary)
+        ready, seconds, retry = run_server(name, cmd, is_ra, rows, repo_dir, args.timeout, canary,
+                                           retry_empty=args.retry_empty and is_ra)
         summary = summarize_server(rows, name)
         run = {"name": name, "kind": "rust-analyzer" if is_ra else "ridx", "binary": binary_label(binary),
                **parse_version(version_of(binary)), "ready": ready, "duration_s": seconds, "summary": summary}
+        if retry is not None:
+            run["retry"] = retry
+            for key, c in retry.items():
+                print(f"  {key:28s} retried {c.get('retried', 0)}: a/b/c {c.get('a', 0)}/{c.get('b', 0)}/{c.get('c', 0)}", flush=True)
         if matrix:
             run["matrix_check"] = matrix_check(summary, matrix.get("rust_analyzer" if is_ra else "ridx", {}).get("methods", {}))
             print(f"  matrix check: {run['matrix_check']['matching']} of {run['matrix_check']['compared']} methods match", flush=True)
@@ -261,13 +322,14 @@ def main():
     for pair in comparison:
         print(f"{pair['a']} vs {pair['b']}: same {pair['same']}, differing {pair['differing']}", flush=True)
     report = {
-        "repo": normalize_repo_identifier(repo_dir), "repo_dir_name": repo_dir.name,
-        "repo_head": subprocess.run(["git", "-C", str(repo_dir), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip(),
+        "repo": normalize_repo_identifier(repo_dir), "repo_dir_name": repo_dir.name, "repo_head": repo_head,
         "node": socket.gethostname(), "python": sys.version.split()[0], "index_shards": shards,
         "positions_file": args.positions.name, "positions_seed": payload.get("seed"), "methods": methods,
         "limit": args.limit, "timeout_s": args.timeout, "target_entries": len(entries),
         "timestamp_start": started, "timestamp_end": datetime.now(timezone.utc).isoformat(),
         "servers": runs, "comparison": comparison, "rows": rows,
+        **({"matrix": matrix_provenance(matrix, args.matrix.name, repo_head,
+                                        {r["name"]: r["version"] for r in runs if r["kind"] == "rust-analyzer"})} if matrix else {}),
         "metric_definitions": {
             "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
             "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; "
@@ -281,6 +343,10 @@ def main():
                           "outcome transitions first>second, and the first differing rows",
             "matrix_check": "a/b/c per method against the published matrix side of the same server kind, "
                             "for methods run on as many positions as the matrix",
+            "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c "
+                     "(not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+            "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and "
+                      "its ra_version against each rust-analyzer binary run here",
         },
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -289,7 +355,7 @@ def main():
     print(f"wrote {args.out}")
     if args.out_differing:
         digest_full = hashlib.sha256(full_text.encode("utf-8")).hexdigest()
-        filtered = differing_only(report, args.out.name, digest_full)
+        filtered = differing_only(report, args.out.name, digest_full, args.differing_by)
         args.out_differing.parent.mkdir(parents=True, exist_ok=True)
         args.out_differing.write_text(json.dumps(filtered, indent=1), encoding="utf-8")
         print(f"wrote {args.out_differing} ({filtered['rows_kept']} of {filtered['rows_total']} rows)")

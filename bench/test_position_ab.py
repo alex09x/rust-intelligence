@@ -20,7 +20,8 @@ if str(bench_dir) not in sys.path:
 
 from matrix_categories import build_params
 from position_ab import (
-    binary_label, build_rows, compare_servers, differing_only, matrix_check, row_differs, summarize_server,
+    binary_label, build_rows, compare_servers, differing_only, matrix_check, matrix_provenance, retry_empty_rows,
+    row_differs, summarize_server,
 )
 from position_ab_classify import (
     REQUEST_KEYS, classify_outcome, cursor_kind, digest, in_cfg_test, scenario_from_record, target_kind_of,
@@ -203,3 +204,60 @@ def test_binary_label_keeps_only_the_file_name():
     assert binary_label("/tmp/ridx_sec_8cb4341") == "ridx_sec_8cb4341"
     assert binary_label("/opt/ridx-bench/target-filter/release/ridx") == "ridx"
     assert binary_label("ridx") == "ridx"
+
+
+class _FakeServer:
+    """Answers textDocument/definition with one location and everything else with an empty list;
+    remembers every request it was asked."""
+
+    def __init__(self):
+        self.asked = []
+
+    def request(self, method, params, timeout=5.0):
+        self.asked.append((method, params["position"]["line"], params["position"]["character"]))
+        if method == "textDocument/definition":
+            return [{"uri": "file:///r/src/lib.rs", "range": {"start": {"line": 1, "character": 11}, "end": {"line": 1, "character": 14}}}], 7.25, None
+        return [], 3.0, None
+
+
+def test_retry_asks_again_only_the_empty_and_errored_rows_and_keeps_the_first_answer():
+    rows = _rows()
+    srv = _FakeServer()
+    counts = retry_empty_rows(srv, "old", rows, REPO, 2.0)
+    # definition_2_x was empty (b): asked again, answered a. hover_0_Foo failed with -32601: not asked again.
+    assert srv.asked == [("textDocument/definition", 10, 7)]
+    assert counts == {"definition": {"retried": 1, "a": 1}}
+    by_name = {r["name"]: r["results"]["old"] for r in rows}
+    assert by_name["definition_2_x"]["outcome"] == "b" and by_name["definition_2_x"]["digest"] == "empty"
+    assert by_name["definition_2_x"]["retry"]["outcome"] == "a" and by_name["definition_2_x"]["retry"]["us"] == 7.2
+    assert len(by_name["definition_2_x"]["retry"]["digest"]) == 16 and by_name["definition_2_x"]["retry"]["error"] is None
+    assert "retry" not in by_name["definition_0_Foo"] and "retry" not in by_name["hover_0_Foo"]
+    # The retry under "new" (definition_1_len is b there) goes to the other server's record only.
+    counts_new = retry_empty_rows(_FakeServer(), "new", rows, REPO, 2.0)
+    assert counts_new == {"definition": {"retried": 1, "a": 1}}
+    assert "retry" in rows[1]["results"]["new"] and "retry" not in rows[1]["results"]["old"]
+
+
+def test_differing_by_outcome_drops_rows_that_differ_in_digest_alone():
+    rows = _rows()
+    rows[0]["results"]["new"]["digest"] = "d7"  # same outcome a/a, another digest
+    assert [row_differs(r) for r in rows] == [True, True, True, False]
+    assert [row_differs(r, "outcome") for r in rows] == [False, True, True, False]
+    report = {"repo": "r", "servers": [], "comparison": [], "rows": rows, "metric_definitions": {"outcome": "x"}}
+    by_digest = differing_only(report, "full.json", "ab" * 32)
+    by_outcome = differing_only(report, "full.json", "ab" * 32, "outcome")
+    assert (by_digest["rows_kept"], by_digest["rows_filter"]) == (3, "differing")
+    assert (by_outcome["rows_kept"], by_outcome["rows_filter"]) == (2, "differing-outcome")
+    assert [r["name"] for r in by_outcome["rows"]] == ["definition_1_len", "definition_2_x"]
+    assert by_outcome["metric_definitions"]["rows_filter"].startswith("differing-outcome:")
+    assert by_outcome["rows_total"] == 4 and by_outcome["full_file"]["name"] == "full.json"
+
+
+def test_matrix_provenance_compares_repo_commit_and_ra_version():
+    matrix = {"repo_commit": "69072f24232f431911ba2c41da69a1da10e805a1", "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)"}
+    ok = matrix_provenance(matrix, "matrix_serde_booster.json", "69072f24232f431911ba2c41da69a1da10e805a1",
+                           {"ra": "rust-analyzer 1.98.1 (48a229c 2026-09-01)"})
+    assert ok["repo_head_matches"] is True and ok["ra_version_matches"] == {"ra": True}
+    assert ok["file"] == "matrix_serde_booster.json" and ok["repo_commit"] == matrix["repo_commit"]
+    bad = matrix_provenance(matrix, "m.json", "0000000000000000000000000000000000000000", {"ra": "rust-analyzer 1.97.0 (abc 2026-07-01)"})
+    assert bad["repo_head_matches"] is False and bad["ra_version_matches"] == {"ra": False}
