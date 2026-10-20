@@ -12,7 +12,24 @@
 
 use super::resolve::*;
 use colored::*;
+use ridx_format::WorkspaceReference;
 use std::time::Instant;
+
+/// One reference of a `refs --json` answer: its crate, resolved file, span, kind, whether it
+/// writes the target, and whether the compiler saw it inside a macro expansion.
+pub(crate) fn reference_json(r: &WorkspaceReference) -> serde_json::Value {
+    serde_json::json!({
+        "crate": r.crate_name,
+        "file": r.resolved_path().display().to_string(),
+        "start_line": r.span.start_line(),
+        "start_col": r.span.start_col(),
+        "end_line": r.span.end_line(),
+        "end_col": r.span.end_col(),
+        "kind": format!("{:?}", r.kind),
+        "is_write": r.is_write,
+        "is_macro_expansion": r.is_macro_expansion,
+    })
+}
 
 pub fn cmd_refs(arg1: String, arg2: Option<String>, json: bool) {
     let (ws, target) = resolve_index_and_target(arg1, arg2);
@@ -33,16 +50,7 @@ pub fn cmd_refs(arg1: String, arg2: Option<String>, json: bool) {
                     "target_col": lr.target_col,
                     "references_count": lr.references.len(),
                     "latency_us": elapsed.as_micros(),
-                    "references": lr.references.iter().map(|r| serde_json::json!({
-                        "crate": r.crate_name,
-                        "file": r.resolved_path().display().to_string(),
-                        "start_line": r.span.start_line(),
-                        "start_col": r.span.start_col(),
-                        "end_line": r.span.end_line(),
-                        "end_col": r.span.end_col(),
-                        "kind": format!("{:?}", r.kind),
-                        "is_write": r.is_write,
-                    })).collect::<Vec<_>>()
+                    "references": lr.references.iter().map(reference_json).collect::<Vec<_>>()
                 }),
                 None => serde_json::json!({
                     "target_symbol": null,
@@ -102,16 +110,7 @@ pub fn cmd_refs(arg1: String, arg2: Option<String>, json: bool) {
                 "target_symbol": target,
                 "references_count": refs.len(),
                 "latency_us": elapsed.as_micros(),
-                "references": refs.iter().map(|r| serde_json::json!({
-                    "crate": r.crate_name,
-                    "file": r.resolved_path().display().to_string(),
-                    "start_line": r.span.start_line(),
-                    "start_col": r.span.start_col(),
-                    "end_line": r.span.end_line(),
-                    "end_col": r.span.end_col(),
-                    "kind": format!("{:?}", r.kind),
-                    "is_write": r.is_write,
-                })).collect::<Vec<_>>()
+                "references": refs.iter().map(reference_json).collect::<Vec<_>>()
             });
             println!("{}", serde_json::to_string_pretty(&out).unwrap());
             return;

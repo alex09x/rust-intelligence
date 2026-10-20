@@ -16,3 +16,4 @@ pub mod inspect_tests;
 pub mod location_tests;
 pub mod manifest_tests;
 pub mod not_found_tests;
+pub mod refs_json_tests;
