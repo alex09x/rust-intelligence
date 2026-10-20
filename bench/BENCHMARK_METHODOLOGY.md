@@ -79,136 +79,39 @@ Telemetry runs across all phases:
 
 ---
 
-## 5. Comprehensive Neutral Sampling: 300 Variations per Method across LSP 3.17 (78 Methods and Scenarios)
+## 5. The LSP Matrix: 78 Methods and Scenarios, 300 Sampled Items Each
 
-The benchmark evaluates **all 78 distinct LSP 3.17 methods, notifications, and operational scenarios**. Each method is sampled across **300 diverse test cases** per repository.
+The matrix covers 78 LSP 3.17 methods, notifications and operational scenarios (`bench/matrix_categories.py`). For every method the harness draws 300 items per repository with a fixed seed (42) from a line-based regex scan of the corpus sources (`bench/scan.py`, `bench/matrix_sampling.py`); the sampled positions are published next to every run. The scanner is not a parser: it records method calls (`.name(`), path segments (`::name`), type annotations (`: Name`) and `fn`/`struct`/`enum`/`trait`/`type` declarations, skipping comment lines and the bodies of `quote!`/`macro_rules!` blocks. Items are drawn uniformly from these pools, without stratification by syntactic category, and the request parameters are built mechanically from the sampled position (`build_params` in `bench/matrix_categories.py`). What is sent, by group:
 
-Query targets and parameters are extracted using an AST scanner from source code:
+| Methods | Items and parameters |
+|---|---|
+| `initialize`, `initialized`, `shutdown`, `exit` | Run once each on a fresh server process (`tests_run` = 1); `docs/BENCHMARK_MATRIX.md` prints them as "1 run". |
+| `$/cancelRequest`, `$/setTrace`, `window/workDoneProgress/cancel`, `workspace/didChangeWorkspaceFolders`, `workspace/didChangeConfiguration`, `workspace/didChangeWatchedFiles`, `workspace/didCreateFiles`, `workspace/didRenameFiles`, `workspace/didDeleteFiles` | 300 notifications with fixed payloads (cancel ids `bench-cancel-<i>` that no request uses, trace `off`, token `token_1`, the repository root as the added folder, empty settings, one change for a random file). `a` means the notification was written to the server. |
+| `textDocument/didOpen`, `didChange` (both rows), `willSave`, `willSaveWaitUntil`, `didSave`, `didClose` | 300 random source files, each opened with its disk text and closed again. Both `didChange` rows send a full-text change (the disk text plus one appended comment line) and revert it; no incremental range edits are sent. `willSave` and `willSaveWaitUntil` always use reason 1 (manual). |
+| `definition`, `typeDefinition`, `documentHighlight`, `moniker`, `selectionRange`, `inlineValue`, `inlineCompletion` | 300 random usage positions (method call, path segment or type annotation). |
+| `declaration` | 300 random declaration positions. |
+| `implementation`, `prepareTypeHierarchy`, `typeHierarchy/supertypes`, `typeHierarchy/subtypes` | 300 random `struct`/`enum`/`trait` declarations; the `supertypes`/`subtypes` item is synthesised from the sampled position (name, zero-width range), not taken from a `prepareTypeHierarchy` answer. |
+| `references` | 150 random usages and 150 random declarations, `includeDeclaration: true`. |
+| `hover` | 210 random usages and 90 random declarations. |
+| `completion`, `signatureHelp`, `onTypeFormatting` | 300 random method-call positions (`onTypeFormatting` with `ch: ";"`). |
+| `prepareCallHierarchy`, `callHierarchy/incomingCalls`, `callHierarchy/outgoingCalls` | 300 random `fn` declarations; the `incomingCalls`/`outgoingCalls` item is synthesised from the position, not taken from a `prepareCallHierarchy` answer. |
+| `prepareRename`, `rename`, `linkedEditingRange`, `codeAction` | 300 random declarations; `rename` uses `<name>_renamed_<i>`; `codeAction` sends the zero-width range at the declaration with an empty diagnostics context. |
+| `documentSymbol`, `foldingRange`, `codeLens`, `textDocument/diagnostic`, `documentLink`, `documentColor`, `formatting`, `semanticTokens/full`, `semanticTokens/full/delta` | 300 random files, whole-document requests. Files are taken as they are on disk: nothing is injected, unformatted or edited on purpose. |
+| `textDocument/content` | 300 random files, but sent as `{"textDocument": {"uri"}}`; the method takes `{"uri"}`, so ridx answers every item with an empty text that still counts as `a`. The row is not a measurement of the method until the parameter shape is fixed. |
+| `inlayHint`, `semanticTokens/range`, `rangeFormatting`, `colorPresentation` | 300 random files with a fixed range (lines 0 to 2; a zero-width range at 0:0 and a fixed grey colour for `colorPresentation`). |
+| `workspace/symbol` | 300 queries derived from random declaration names in a five-way rotation: 60 exact names, 60 first halves, 60 inner substrings, 120 `nonexistent_<i>`. |
+| `workspaceSymbol/resolve`, `completionItem/resolve`, `inlayHint/resolve`, `moniker/resolve`, `documentLink/resolve`, `codeAction/resolve`, `codeLens/resolve` | 300 synthetic items built by the harness (a placeholder symbol or label, a `noop` command), not items returned by a previous request. These rows show whether a server accepts a well-formed resolve request and how fast it answers; a server that echoes the item back counts as `a`. |
+| `workspace/executeCommand` | One fixed command repeated 300 times: `ridx.resolveWorkspace` for ridx, `rust-analyzer.reloadWorkspace` for rust-analyzer. |
+| `workspace/diagnostic` | One fixed pull request (`identifier: "workspace"`) repeated 300 times. |
+| `workspace/workspaceFolders`, `workspace/configuration`, `workspace/applyEdit`, `textDocument/publishDiagnostics` | Server-to-client RPCs: reported as supported, no latency. |
+| `workspace/willCreateFiles`, `willRenameFiles`, `willDeleteFiles` | 300 random files, one file operation each. |
+| Mutation cases A, B, C (section 7) | 300 random file pairs or declarations each, all through unsaved overlays. Case B treats a found definition as a failure (`STALE_INDEX_LEAK_DETECTED`); cases A and C count an error-free answer as `a` without checking its target. |
 
-### Domain 1: Lifecycle & Control
-| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 1 | **`initialize`** | Request | **300** | 300 capability combinations (dynamic registration, hierarchical symbols, snippets, inlay hints, pull diagnostics, workspace folders). |
-| 2 | **`initialized`** | Notif | **300** | 300 connection establishment sessions with varying workspace root sets. |
-| 3 | **`shutdown`** | Request | **300** | 300 server shutdown sequences from varied states (cold start, background build, active overlays). |
-| 4 | **`exit`** | Notif | **300** | 300 exit validations (exit code 0 following shutdown, exit code 1 on abort without shutdown). |
-| 5 | **`$/cancelRequest`** | Notif | **300** | 300 cancellation requests (cancelling heavy `references`, `workspace/symbol`, `semanticTokens` early and late). |
-| 6 | **`$/setTrace`** | Notif | **300** | 300 dynamic trace level switches (`off`, `messages`, `verbose`) under load. |
-| 7 | **`window/workDoneProgress/cancel`** | Notif | **300** | 300 client-side cancellations of background progress tokens during indexing. |
+For requests the harness asks three times per item: the first answer is the cold measurement, the mean of the second and third the warm one (section 6). `a` counts non-empty answers, `b` empty ones (`null`, `[]`, `{}`, a hover without contents), `c` error responses and client timeouts (2 s per request, cancelled with `$/cancelRequest`). Outside case B nothing in the matrix checks that an answer is correct; correctness is measured by the test suite and by the per-method fidelity scripts (section 9).
 
-### Domain 2: Document Synchronization
-| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 8 | **`textDocument/didOpen`** | Notif | **300** | 300 diverse files: large monoliths (>3,000 lines), small modules, BOM files, emoji/surrogate pairs. |
-| 9 | **`textDocument/didChange` (Full)** | Notif | **300** | 300 full document replacement scenarios across varied code structures. |
-| 10 | **`textDocument/didChange` (Incremental)** | Notif | **300** | 300 incremental edits: token inserts, function deletes, multiline UTF-16 edits. |
-| 11 | **`textDocument/willSave`** | Notif | **300** | 300 pre-save notifications with varying `TextDocumentSaveReason` (Manual, AfterDelay, FocusOut). |
-| 12 | **`textDocument/willSaveWaitUntil`** | Request | **300** | 300 pre-save edit requests (trailing whitespace cleanup, import organization). |
-| 13 | **`textDocument/didSave`** | Notif | **300** | 300 disk saves verifying manifest reload and incremental flycheck triggers. |
-| 14 | **`textDocument/didClose`** | Notif | **300** | 300 file closures validating overlay eviction and return to compiled disk baseline. |
-
-### Domain 3: Language Intelligence
-| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 15 | **`textDocument/definition`** | Request | **300** | 100 function calls, 60 paths (`Mod::item`), 40 type annotations, 30 macro calls, 30 struct fields, 40 constructors. |
-| 16 | **`textDocument/declaration`** | Request | **300** | 120 trait method prototypes, 80 extern "C" functions, 100 associated types and constants. |
-| 17 | **`textDocument/typeDefinition`** | Request | **300** | 100 composite structs, 80 enum variants, 60 type aliases (`type Result<T>`), 60 return types. |
-| 18 | **`textDocument/implementation`** | Request | **300** | 100 standard traits (`Clone`, `Debug`), 100 domain traits, 100 generic structs with multiple `impl` blocks. |
-| 19 | **`textDocument/references`** | Request | **300** | 150 usage sites, 150 declarations: private methods, public APIs, traits, fields, static constants. |
-| 20 | **`textDocument/documentHighlight`** | Request | **300** | 120 local variables, 80 function arguments, 50 shadowing bindings, 50 struct fields. |
-| 21 | **`textDocument/documentSymbol`** | Request | **300** | 300 files: flat modules, deep `impl` hierarchies, macros, structs with 100+ fields. |
-| 22 | **`workspace/symbol`** | Request | **300** | 80 exact names, 80 prefixes, 60 fuzzy matches, 40 CamelCase, 20 short (1–2 chars), 20 non-existent. |
-| 23 | **`workspaceSymbol/resolve`** | Request | **300** | 300 symbols verifying lazy resolution of doc-comments, signatures, and container paths. |
-| 24 | **`textDocument/hover`** | Request | **300** | 90 structs and enums, 70 generic functions, 50 primitives (`u32`), 30 macros, 30 keywords (`match`, `impl`), 30 lifetimes (`'a`). |
-| 25 | **`textDocument/completion`** | Request | **300** | 100 completions after `.`, 80 after `::`, 40 auto-imports, 40 local variables, 40 snippets and keywords. |
-| 26 | **`completionItem/resolve`** | Request | **300** | 300 completion items for lazy documentation and extended text edit resolution. |
-| 27 | **`textDocument/signatureHelp`** | Request | **300** | 100 functions with 1–2 args, 80 with 4+ args, 60 generic functions, 30 `&mut self` methods, 30 closures. |
-| 28 | **`textDocument/inlayHint`** | Request | **300** | 120 `let x = ...` types, 100 parameter names, 50 `iter().map()` chains, 30 closure return types. |
-| 29 | **`inlayHint/resolve`** | Request | **300** | 300 inlay hints verifying tooltip enrichment and source definition ranges. |
-| 30 | **`textDocument/inlineValue`** | Request | **300** | 300 debugging probe positions to evaluate local variables and arguments. |
-| 31 | **`textDocument/inlineCompletion`** | Request | **300** | 300 cursor positions for ghost text inline completion evaluation. |
-| 32 | **`textDocument/moniker`** | Request | **300** | 300 symbol positions for exported LSIF/SCIP moniker verification. |
-| 33 | **`moniker/resolve`** | Request | **300** | 300 monikers verifying package, scheme, and version metadata. |
-
-### Domain 4: Hierarchies
-| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 34 | **`textDocument/prepareCallHierarchy`** | Request | **300** | 300 function positions: public APIs, private helpers, closures, trait methods. |
-| 35 | **`callHierarchy/incomingCalls`** | Request | **300** | 300 functions (from isolated leaf functions to root dispatchers with 10+ callers). |
-| 36 | **`callHierarchy/outgoingCalls`** | Request | **300** | 300 functions (from simple atomic functions to deep invocation chains). |
-| 37 | **`textDocument/prepareTypeHierarchy`** | Request | **300** | 150 structs, 100 traits, 50 enums initializing hierarchy trees. |
-| 38 | **`typeHierarchy/supertypes`** | Request | **300** | 300 queries for supertypes and base trait inheritance chains. |
-| 39 | **`typeHierarchy/subtypes`** | Request | **300** | 300 queries for implementors and subtypes across all workspace crates. |
-
-### Domain 5: Selection, Links & Colors
-| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 40 | **`textDocument/selectionRange`** | Request | **300** | 300 cursor positions for stepwise expansion (token $\to$ expression $\to$ block $\to$ fn $\to$ file). |
-| 41 | **`textDocument/documentLink`** | Request | **300** | 300 doc comments with links to external URLs and local file paths. |
-| 42 | **`documentLink/resolve`** | Request | **300** | 300 links validating destination URI normalization. |
-| 43 | **`textDocument/documentColor`** | Request | **300** | 300 color definitions in code (HEX, RGB, RGBA constants in UI crates). |
-| 44 | **`textDocument/colorPresentation`** | Request | **300** | 300 color format conversions (HEX $\to$ RGB, RGBA $\to$ HSL). |
-
-### Domain 6: Editing & Refactoring
-| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 45 | **`textDocument/formatting`** | Request | **300** | 300 unformatted files evaluated for whole-document formatting via rustfmt. |
-| 46 | **`textDocument/rangeFormatting`** | Request | **300** | 300 line ranges with misaligned indents, whitespace, and wrap anomalies. |
-| 47 | **`textDocument/onTypeFormatting`** | Request | **300** | 300 trigger characters: typing `;`, `}`, and newlines within function bodies. |
-| 48 | **`textDocument/prepareRename`** | Request | **300** | 150 valid identifiers, 100 keyword renames (`fn`, `match`), 50 macro invocations. |
-| 49 | **`textDocument/rename`** | Request | **300** | 300 transactional cross-file renames verifying multi-file replacements. |
-| 50 | **`textDocument/linkedEditingRange`**| Request | **300** | 300 synchronized paired range editing scenarios. |
-| 51 | **`textDocument/codeAction`** | Request | **300** | 100 unused imports, 100 quick-fix diagnostics, 100 refactoring candidates. |
-| 52 | **`codeAction/resolve`** | Request | **300** | 300 actions verifying accurate `WorkspaceEdit` diff generation. |
-| 53 | **`workspace/executeCommand`** | Request | **300** | 300 custom LSP commands (including `ridx.applyEdits`, `cargo.reload`, test running). |
-| 54 | **`workspace/applyEdit` (Client RPC)**| RPC | **300** | 300 two-phase edit scenarios verifying rollback on client rejection. |
-
-### Domain 7: Presentation & Tokens
-| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 55 | **`textDocument/semanticTokens/full`** | Request | **300** | 300 files: full syntax tokenization (types, macros, constants, keywords). |
-| 56 | **`textDocument/semanticTokens/full/delta`** | Request | **300** | 300 incremental delta token queries after localized buffer edits. |
-| 57 | **`textDocument/semanticTokens/range`** | Request | **300** | 300 visible screen viewports (lines 1–50, 100–160, etc.) across diverse file sizes. |
-| 58 | **`textDocument/foldingRange`** | Request | **300** | 300 files: function bodies, `match` arms, `unsafe` blocks, multiline doc-comments. |
-| 59 | **`textDocument/codeLens`** | Request | **300** | 300 code lens probe sites: reference counts above functions, `#[test]` runners. |
-| 60 | **`codeLens/resolve`** | Request | **300** | 300 lenses verifying lazy title and command parameter resolution. |
-
-### Domain 8: Diagnostics
-| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 61 | **`textDocument/diagnostic`** | Request | **300** | 150 valid clean files, 150 files with injected syntax and semantic errors. |
-| 62 | **`workspace/diagnostic`** | Request | **300** | 300 global pull-diagnostic queries across all workspace crates. |
-| 63 | **`textDocument/publishDiagnostics`** | Push | **300** | 300 streamed compiler diagnostic checks from background Flycheck. |
-
-### Domain 9: Workspace & File Operations
-| # | LSP Method | RPC | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 64 | **`workspace/workspaceFolders`** | Request | **300** | 300 folder enumeration scenarios across multi-root workspaces. |
-| 65 | **`workspace/didChangeWorkspaceFolders`**| Notif | **300** | 300 dynamic workspace root additions and removals. |
-| 66 | **`workspace/didChangeConfiguration`** | Notif | **300** | 300 live configuration updates without server restart. |
-| 67 | **`workspace/configuration`** | Request | **300** | 300 client section configuration lookups (`rust-analyzer`, `ridx`). |
-| 68 | **`workspace/didChangeWatchedFiles`** | Notif | **300** | 300 disk file change notifications verifying cache invalidation. |
-| 69 | **`workspace/didCreateFiles`** | Notif | **300** | 300 file creation notifications with automatic indexing. |
-| 70 | **`workspace/willCreateFiles`** | Request | **300** | 300 pre-creation file validations. |
-| 71 | **`workspace/didRenameFiles`** | Notif | **300** | 300 file rename notifications with overlay rebinding. |
-| 72 | **`workspace/willRenameFiles`** | Request | **300** | 300 pre-rename file validations. |
-| 73 | **`workspace/didDeleteFiles`** | Notif | **300** | 300 file deletion notifications with overlay eviction. |
-| 74 | **`workspace/willDeleteFiles`** | Request | **300** | 300 pre-deletion file validations. |
-| 75 | **`textDocument/content`** | Request | **300** | 300 virtual document buffer inspections. |
-
-### Domain 10: Memory Mutation Scenarios
-| # | Mutation Scenario | Type | Volume | Test Variations (300 per method) |
-|:---:|---|:---:|:---:|---|
-| 76 | **Case A: New Symbol (Cross-file in-scope)** | Mutation | **300** | 300 cross-file links: declare new function in file A, invoke with qualified path in file B without saving to disk. |
-| 77 | **Case B: Stale Overlay Detector** | Mutation | **300** | 300 renames in file A verifying that querying the old name in file B returns `Not Found` rather than stale disk data. |
-| 78 | **Case C: Line Displacement** | Mutation | **300** | 300 coordinate shift verifications: insert 10 empty lines in file A with target range in file B shifting by exactly +10 lines. |
-
----
-
-### Total Benchmark Scale:
-- **78 methods and scenarios x 300 variations = 23,400 tests per repository**.
-- **117,000 measurements** across the 5-project reference corpus (`serde`, `ripgrep`, `tokio`, `rust-analyzer`, `bevy`).
-- Comprehensive Error Attribution Matrix: on discrepancies, the runner categorizes the syntax class (e.g. unexpanded macro, generic, cyclic import, closure).
+### Total Benchmark Scale
+- 74 methods x 300 items + 4 lifecycle methods x 1 run = **22,204 tests per repository per server** (`total_tests_per_server` in every published run).
+- 111,020 tests per server across the five-repository corpus (`serde`, `ripgrep`, `tokio`, `rust-analyzer`, `bevy`).
 
 ### Execution and Publication:
 - The matrix is run by `bench/matrix_runner.py` on the dedicated `booster` node, one repository at a time, both servers pinned to the same CPU set (`taskset`). Sampling is deterministic for a given seed (`bench/test_sampling_determinism.py`).
