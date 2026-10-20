@@ -61,16 +61,24 @@ fn def(
     }
 }
 
+/// Marks a definition as coming from a macro expansion (same span and name as its siblings).
+fn expanded(mut d: RawDefinition) -> RawDefinition {
+    d.is_macro_expansion = true;
+    d
+}
+
+/// `unit` is `lib` or `lib test`: two units of one crate share the source root and the file.
 fn write_shard(
     var_dir: &Path,
     stem: &str,
     krate: &str,
+    unit: &str,
     source_root: &Path,
     is_dependency: bool,
     defs: Vec<RawDefinition>,
 ) {
     let mut writer = IndexWriter::new(krate, "0.1.0");
-    writer.set_unit_key(format!("{krate} 0.1.0 (lib)"));
+    writer.set_unit_key(format!("{krate} 0.1.0 ({unit})"));
     for d in defs {
         writer.add_definition(d);
     }
@@ -80,9 +88,9 @@ fn write_shard(
     let sidecar = json!({
         "name": krate,
         "version": "0.1.0",
-        "unit_key": format!("{krate} 0.1.0 (lib)"),
+        "unit_key": format!("{krate} 0.1.0 ({unit})"),
         "source_root": source_root.display().to_string(),
-        "target_kind": "lib",
+        "target_kind": if unit == "lib" { "lib" } else { "test" },
         "is_dependency": is_dependency,
     });
     fs::write(
@@ -93,6 +101,13 @@ fn write_shard(
 }
 
 fn fixture() -> Fixture {
+    fixture_with(false)
+}
+
+/// With `sibling_unit_and_macro`, crate_a is also indexed by its `lib test` unit and carries three
+/// macro-expanded definitions with one span and name, so every lens of crate_a appears several times
+/// in the raw definitions.
+fn fixture_with(sibling_unit_and_macro: bool) -> Fixture {
     let id = LENS_TEST_COUNTER.fetch_add(1, Ordering::Relaxed);
     let tag = format!("{}_{}", std::process::id(), id);
     let root = std::env::temp_dir().join(format!("ridx_lens_ws_{tag}"));
@@ -104,7 +119,10 @@ fn fixture() -> Fixture {
     let crate_b = root.join("crates/crate_b");
     let dep = registry.join("dep_crate-1.0.0");
     for (dir, text) in [
-        (&crate_a, "pub fn alpha() {}\n\npub fn beta() {}\n"),
+        (
+            &crate_a,
+            "pub fn alpha() {}\n\npub fn beta() {}\n\nimpls! {}\n",
+        ),
         (&crate_b, "pub fn gamma() {}\n"),
         (&dep, "pub fn dep_item() {}\n"),
     ] {
@@ -114,21 +132,38 @@ fn fixture() -> Fixture {
     fs::create_dir_all(crate_a.join("examples")).unwrap();
     fs::write(crate_a.join("examples/demo.rs"), "fn main() {}\n").unwrap();
 
+    let mut crate_a_defs = vec![
+        def(1, "alpha", "crate_a", 1, 8, 13),
+        def(2, "beta", "crate_a", 3, 8, 12),
+    ];
+    if sibling_unit_and_macro {
+        for id in 3..6 {
+            crate_a_defs.push(expanded(def(id, "generated", "crate_a", 5, 1, 10)));
+        }
+        write_shard(
+            &var_dir,
+            "crate_a_test",
+            "crate_a",
+            "lib test",
+            &crate_a,
+            false,
+            crate_a_defs.clone(),
+        );
+    }
     write_shard(
         &var_dir,
         "crate_a",
         "crate_a",
+        "lib",
         &crate_a,
         false,
-        vec![
-            def(1, "alpha", "crate_a", 1, 8, 13),
-            def(2, "beta", "crate_a", 3, 8, 12),
-        ],
+        crate_a_defs,
     );
     write_shard(
         &var_dir,
         "crate_b",
         "crate_b",
+        "lib",
         &crate_b,
         false,
         vec![def(1, "gamma", "crate_b", 1, 8, 13)],
@@ -137,6 +172,7 @@ fn fixture() -> Fixture {
         &var_dir,
         "dep_crate",
         "dep_crate",
+        "lib",
         &dep,
         true,
         vec![def(1, "dep_item", "dep_crate", 1, 8, 16)],
@@ -159,7 +195,12 @@ fn fixture() -> Fixture {
     .unwrap();
 
     let ws = WorkspaceIndex::open(&root).expect("open the fixture workspace");
-    assert_eq!(ws.readers().len(), 3, "three shards must be mapped");
+    let expected_readers = if sibling_unit_and_macro { 4 } else { 3 };
+    assert_eq!(
+        ws.readers().len(),
+        expected_readers,
+        "every shard must be mapped"
+    );
     Fixture { root, registry, ws }
 }
 
@@ -209,4 +250,20 @@ fn test_code_lens_file_no_reader_indexes_is_empty() {
     // Under the workspace root but under no crate's source root.
     let (_, outside) = code_lens(&fx, &fx.root.join("tools/src/lib.rs"));
     assert_eq!(outside, json!([]));
+}
+
+#[test]
+fn test_code_lens_one_lens_per_range_and_name_across_units_and_macro_expansions() {
+    let fx = fixture_with(true);
+    let (uri, result) = code_lens(&fx, &fx.root.join("crates/crate_a/src/lib.rs"));
+    // Two units index the file and `generated` is expanded three times on line 5: every
+    // (range, name) appears once, in definition order, lib unit first.
+    assert_eq!(
+        result,
+        json!([
+            lens(&uri, 1, 8, 13, "alpha"),
+            lens(&uri, 3, 8, 12, "beta"),
+            lens(&uri, 5, 1, 10, "generated")
+        ])
+    );
 }

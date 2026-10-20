@@ -14,6 +14,7 @@ use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
+use std::collections::HashSet;
 
 /// Handles `textDocument/codeLens` requests (lightweight; defers reference counting to resolve).
 pub fn handle_code_lens(
@@ -55,6 +56,9 @@ pub fn handle_code_lens(
     // reader's `find_file_id` accepts suffix matches, so asking all readers with an absolute path
     // would also return the `src/lib.rs` of every dependency shard.
     if let Some(ws) = workspace {
+        // Several units of one crate (lib, lib test, bin) index the same file, and a macro can
+        // expand several times on one line: one lens per (range, name), first occurrence kept.
+        let mut seen: HashSet<(u32, u32, u32, &str)> = HashSet::new();
         for idx in ws.reader_indices_for_file(&file) {
             let Some(target) = ws.target_file_for_reader(idx, &file) else {
                 continue;
@@ -71,6 +75,9 @@ pub fn handle_code_lens(
                 let sc = conv.char_col_to_utf16_col(&file, def.span.start_line, def.span.start_col);
                 let ec = conv.char_col_to_utf16_col(&file, def.span.end_line, def.span.end_col);
                 let name = r.get_str(def.name_offset);
+                if !seen.insert((sl, sc, ec, name)) {
+                    continue;
+                }
 
                 lenses.push(json!({
                     "range": {
