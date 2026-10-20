@@ -82,54 +82,26 @@ When combined with `mitts` (distributed compilation and build artifact store):
 
 `ridx lsp` implements core LSP 3.18 protocol capabilities backed by zero-copy index lookup and live buffer overlays (see [ROADMAP.md](ROADMAP.md) for detailed per-method status):
 
-| Category | LSP Methods | Latency (`ridx`) | Latency (`rust-analyzer`) |
-|---|---|---|---|
-| **Navigation** | `textDocument/definition`<br>`textDocument/declaration`<br>`textDocument/implementation`<br>`textDocument/typeDefinition` | **10 – 30 µs** | 30 – 10,000 ms |
-| **References** | `textDocument/references`<br>`textDocument/documentHighlight` | **0.4 – 4 ms** | 100 – 1,500 ms |
-| **Intelligence** | `textDocument/hover`<br>`textDocument/completion`<br>`textDocument/signatureHelp`<br>`textDocument/inlayHint` | **20 – 150 µs** | 20 – 350 ms |
-| **Hierarchies** | `textDocument/prepareCallHierarchy`<br>`callHierarchy/incomingCalls`<br>`callHierarchy/outgoingCalls`<br>`typeHierarchy/supertypes`<br>`typeHierarchy/subtypes` | **0.1 – 1.6 ms** | 50 – 400 ms |
-| **Refactoring** | `textDocument/prepareRename`<br>`textDocument/rename`<br>`textDocument/codeAction`<br>`workspace/executeCommand` | **0.2 – 2 ms** | 100 – 800 ms |
-| **Formatting** | `textDocument/formatting`<br>`textDocument/rangeFormatting`<br>`textDocument/onTypeFormatting` | **5 – 25 ms** | 10 – 40 ms |
-| **Symbols** | `textDocument/documentSymbol`<br>`workspace/symbol`<br>`workspaceSymbol/resolve` | **0.1 – 15 ms** | 20 – 350 ms |
-| **Diagnostics** | `textDocument/publishDiagnostics`<br>`textDocument/diagnostic`<br>`workspace/diagnostic` | **Background async (flycheck)** | 500 – 4,000 ms |
-| **Workspaces** | `workspace/didChangeWorkspaceFolders`<br>`workspace/didChangeWatchedFiles` | **< 1 ms** | 500 – 5,000 ms |
+| Category | LSP Methods |
+|---|---|
+| **Navigation** | `textDocument/definition`<br>`textDocument/declaration`<br>`textDocument/implementation`<br>`textDocument/typeDefinition` |
+| **References** | `textDocument/references`<br>`textDocument/documentHighlight` |
+| **Intelligence** | `textDocument/hover`<br>`textDocument/completion`<br>`textDocument/signatureHelp`<br>`textDocument/inlayHint` |
+| **Hierarchies** | `textDocument/prepareCallHierarchy`<br>`callHierarchy/incomingCalls`<br>`callHierarchy/outgoingCalls`<br>`typeHierarchy/supertypes`<br>`typeHierarchy/subtypes` |
+| **Refactoring** | `textDocument/prepareRename`<br>`textDocument/rename`<br>`textDocument/codeAction`<br>`workspace/executeCommand` |
+| **Formatting** | `textDocument/formatting`<br>`textDocument/rangeFormatting`<br>`textDocument/onTypeFormatting` |
+| **Symbols** | `textDocument/documentSymbol`<br>`workspace/symbol`<br>`workspaceSymbol/resolve` |
+| **Diagnostics** | `textDocument/publishDiagnostics`<br>`textDocument/diagnostic`<br>`workspace/diagnostic` |
+| **Workspaces** | `workspace/didChangeWorkspaceFolders`<br>`workspace/didChangeWatchedFiles` |
+
+Measured latencies and answer counters for all 78 methods on five repositories are in [`docs/BENCHMARK_MATRIX.md`](docs/BENCHMARK_MATRIX.md).
 
 ---
 
 ## 5. Benchmark Results
 
 > [!NOTE]
-> Detailed results from the multi-repository pilot benchmark across 5 repositories (2,100 evaluated scenarios) are published in [`LSP_BENCHMARK_COMPARISON_REPORT.md`](LSP_BENCHMARK_COMPARISON_REPORT.md) and governed by [`bench/BENCHMARK_METHODOLOGY.md`](bench/BENCHMARK_METHODOLOGY.md).
-
-### Pilot Benchmark Summary (5 Repositories, 2,100 Scenarios)
-- **Read-Only Strict Match Rate**: **87.87%** (1,318 / 1,500 queries across `serde`, `ripgrep`, `tokio`, `bevy`, and `rust-analyzer`).
-- **Overall Scenario Strict Match Rate**: **81.62%** (1,714 / 2,100 scenarios, including unsaved buffer mutations and 100-commit walk).
-- **Standard Library Sysroot Impact**: 99 of 386 unique discrepancies target sysroot (`std`/`core`/`alloc`). Expected effect of sysroot indexing: up to **+4.71 percentage points** overall (81.62% → 86.33%) and up to **+4.87 percentage points** on read-only queries (87.87% → 92.73%).
-- **Tail Latency Advantage (p90)**: Up to **26.7x faster** for `textDocument/definition` (204 µs vs 5.45 ms) and **20.7x faster** for `textDocument/references` (1.18 ms vs 24.5 ms).
-- **Memory Scaling**: **92.3x lower heap RAM** (14 MB vs 1,292 MB), and **449x lower PSS** footprint across 10 concurrent worktrees (20.5 MB vs 9,211 MB).
-
-### Single-Symbol Latency Measurements (Reference Workspaces)
-
-### A. Tokio Workspace (42 Crates, 880 Files, 298k References)
-| Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Verified Target |
-|---|---|---|---|---|
-| **Definition** | `runtime::context::blocking::try_enter_blocking_region` | **24 µs** | 10,554 ms | Identical definition span |
-| **References** | `runtime::context::blocking::try_enter_blocking_region` | **655 µs** | 1,273 ms | Full reference set |
-| **Hover** | `runtime::context::blocking::try_enter_blocking_region` | **42 µs** | 344 ms | Matching signature & docs |
-| **Callers** | `runtime::context::blocking::try_enter_blocking_region` | **262 µs** | 363 ms | Matching call hierarchy |
-| **Symbols** | `Runtime` | **16.9 ms** | 323 ms | Matching symbol list |
-| **Idle Daemon RSS**| Workspace Idle | **No daemon (CLI)** / **~12 MB (LSP)** | **1,420 MB** | Resident set size |
-
-### B. `rust-analyzer` Workspace (261 Crates, 3,050 Files, 2.3M References)
-| Capability | Target Symbol | `ridx` Latency (CLI) | `rust-analyzer` Latency | Verified Target |
-|---|---|---|---|---|
-| **Definition** | `ide::AnalysisHost` | **704 µs** | 10,905 ms | Identical definition span |
-| **References** | `ide::AnalysisHost` | **4.06 ms** | 1,487 ms | Full reference set |
-| **Hover** | `ide::AnalysisHost` | **410 µs** | 381 ms | Matching signature & docs |
-| **Callers** | `ide::AnalysisHost` | **1.61 ms** | 382 ms | Matching call hierarchy |
-| **Idle Daemon RSS**| Workspace Idle | **No daemon (CLI)** / **~15 MB (LSP)** | **3,240 MB** | Resident set size |
-
----
+> The LSP matrix benchmark runs all 78 methods against `ridx` and `rust-analyzer` on five open-source repositories (`serde`, `ripgrep`, `tokio`, `rust-analyzer`, `bevy`), 300 sampled items per method and 22,204 requests per server and repository. Results: [`LSP_BENCHMARK_COMPARISON_REPORT.md`](LSP_BENCHMARK_COMPARISON_REPORT.md) (headline methods, resources, coverage differences) and [`docs/BENCHMARK_MATRIX.md`](docs/BENCHMARK_MATRIX.md) (every method, provenance, known harness defects). Methodology: [`bench/BENCHMARK_METHODOLOGY.md`](bench/BENCHMARK_METHODOLOGY.md). Both documents are generated from `bench/published/`, so the numbers live there, not here.
 
 ## 6. Binary Format Specification (`.ridx` v2)
 
