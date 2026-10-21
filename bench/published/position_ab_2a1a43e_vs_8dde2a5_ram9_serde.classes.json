@@ -1,0 +1,6169 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_2a1a43e_vs_8dde2a5_ram9_serde.json",
+ "servers": [
+  {
+   "name": "2a1a43e",
+   "commit": "2a1a43edd329eb2a2462926e73580ee8d4be794a",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "8dde2a5",
+   "commit": "8dde2a5ca5027745cd0a319fd684f0841082d08f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "2a1a43e-2",
+   "commit": "2a1a43edd329eb2a2462926e73580ee8d4be794a",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "serde.ws.tsv",
+  "serde.deps.tsv"
+ ],
+ "self_containing_references": 460,
+ "rows_differing": 147,
+ "summary": {
+  "s1_self_containing_reference_ranges_removed": 26,
+  "s2_definition_answered_through_self_containing_reference": 23,
+  "s4_position_on_no_name_answered_through_enclosing_reference": 81,
+  "s5_outgoing_call_to_the_enclosing_test_function_itself": 17
+ },
+ "removed_counts_by_method": {
+  "document_highlight": {
+   "2": 4,
+   "3": 4
+  },
+  "hover": {
+   "0": 6
+  },
+  "implementation": {
+   "0": 11
+  },
+  "outgoing_calls": {
+   "18": 1,
+   "2": 4,
+   "4": 4,
+   "6": 6,
+   "8": 2
+  },
+  "prepare_call_hierarchy": {
+   "0": 14,
+   "1": 3
+  },
+  "prepare_rename": {
+   "1": 11,
+   "None": 2
+  },
+  "prepare_type_hierarchy": {
+   "0": 10
+  },
+  "references": {
+   "2": 20,
+   "3": 15
+  },
+  "rename": {
+   "2": 3,
+   "None": 4
+  }
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 269,
+   "character": 63,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      1045,
+      2
+     ]
+    ],
+    "before": [
+     "ws:serde_core/src/ser/impls.rs",
+     [
+      789,
+      1,
+      789,
+      8
+     ]
+    ],
+    "after": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 949,
+   "character": 24,
+   "symbol": "encode_wide",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      1045,
+      2
+     ]
+    ],
+    "before": [
+     "ws:serde_core/src/ser/impls.rs",
+     [
+      789,
+      1,
+      789,
+      8
+     ]
+    ],
+    "after": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 939,
+   "character": 28,
+   "symbol": "ffi",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      1045,
+      2
+     ]
+    ],
+    "before": [
+     "ws:serde_core/src/ser/impls.rs",
+     [
+      789,
+      1,
+      789,
+      8
+     ]
+    ],
+    "after": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "test_suite/tests/test_self.rs",
+   "line": 1,
+   "character": 18,
+   "symbol": "used_underscore_binding",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      88,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_self.rs",
+     [
+      5,
+      1,
+      5,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_self.rs",
+     [
+      1,
+      1,
+      88,
+      2
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 999,
+   "character": 63,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      1045,
+      2
+     ]
+    ],
+    "before": [
+     "ws:serde_core/src/ser/impls.rs",
+     [
+      789,
+      1,
+      789,
+      8
+     ]
+    ],
+    "after": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 948,
+   "character": 22,
+   "symbol": "windows",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      1045,
+      2
+     ]
+    ],
+    "before": [
+     "ws:serde_core/src/ser/impls.rs",
+     [
+      789,
+      1,
+      789,
+      8
+     ]
+    ],
+    "after": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 972,
+   "character": 56,
+   "symbol": "Ok",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      1045,
+      2
+     ]
+    ],
+    "before": [
+     "ws:serde_core/src/ser/impls.rs",
+     [
+      789,
+      1,
+      789,
+      8
+     ]
+    ],
+    "after": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 861,
+   "character": 8,
+   "symbol": "serialize_some_unit_variant",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      52,
+      1,
+      52,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      861,
+      8,
+      861,
+      35
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 34,
+   "character": 8,
+   "symbol": "serialize_with",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_annotations.rs",
+     [
+      1591,
+      1,
+      1591,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_annotations.rs",
+     [
+      34,
+      8,
+      34,
+      22
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 821,
+   "character": 4,
+   "symbol": "test_never_result",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      919,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_ser.rs",
+     [
+      605,
+      1,
+      605,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_ser.rs",
+     [
+      1,
+      1,
+      919,
+      2
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 841,
+   "character": 8,
+   "symbol": "de_x",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      52,
+      1,
+      52,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      841,
+      8,
+      841,
+      12
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2436,
+   "character": 24,
+   "symbol": "AnyVisitor",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ],
+     [
+      1946,
+      5,
+      3012,
+      2
+     ],
+     [
+      2427,
+      5,
+      2485,
+      6
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_annotations.rs",
+     [
+      2427,
+      8,
+      2427,
+      40
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_annotations.rs",
+     [
+      2436,
+      24,
+      2436,
+      34
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1180,
+   "character": 4,
+   "symbol": "serialize_unit_variant_as_i8",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_annotations.rs",
+     [
+      1591,
+      1,
+      1591,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_annotations.rs",
+     [
+      1180,
+      4,
+      1180,
+      32
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_self.rs",
+   "line": 21,
+   "character": 14,
+   "symbol": "Assoc",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      88,
+      2
+     ],
+     [
+      6,
+      1,
+      88,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_self.rs",
+     [
+      6,
+      4,
+      6,
+      13
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_self.rs",
+     [
+      21,
+      14,
+      21,
+      19
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 40,
+   "character": 8,
+   "symbol": "Ok",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      52,
+      1,
+      52,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      40,
+      8,
+      40,
+      10
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 824,
+   "character": 4,
+   "symbol": "assert_ser",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      52,
+      1,
+      52,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      824,
+      4,
+      824,
+      14
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 42,
+   "character": 8,
+   "symbol": "Err",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      52,
+      1,
+      52,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      42,
+      8,
+      42,
+      11
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 916,
+   "character": 4,
+   "symbol": "deserialize_generic",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      52,
+      1,
+      52,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_gen.rs",
+     [
+      916,
+      4,
+      916,
+      23
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 2294,
+   "character": 4,
+   "symbol": "test_never_result",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      2387,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_de.rs",
+     [
+      2043,
+      1,
+      2043,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_de.rs",
+     [
+      1,
+      1,
+      2387,
+      2
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1643,
+   "character": 11,
+   "symbol": "Trait",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ],
+     [
+      1642,
+      1,
+      1678,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_annotations.rs",
+     [
+      1642,
+      4,
+      1642,
+      40
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_annotations.rs",
+     [
+      1643,
+      11,
+      1643,
+      16
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_serde_path.rs",
+   "line": 39,
+   "character": 12,
+   "symbol": "deserialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      49,
+      75
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_serde_path.rs",
+     [
+      8,
+      1,
+      8,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_serde_path.rs",
+     [
+      39,
+      12,
+      39,
+      23
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 24,
+   "character": 8,
+   "symbol": "deserialize_any",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      108,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_ignored_any.rs",
+     [
+      86,
+      1,
+      86,
+      8
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_ignored_any.rs",
+     [
+      24,
+      8,
+      24,
+      23
+     ]
+    ]
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_self.rs",
+   "line": 40,
+   "character": 14,
+   "symbol": "Assoc",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s2_definition_answered_through_self_containing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      88,
+      2
+     ],
+     [
+      6,
+      1,
+      88,
+      2
+     ]
+    ],
+    "before": [
+     "ws:test_suite/tests/test_self.rs",
+     [
+      6,
+      4,
+      6,
+      13
+     ]
+    ],
+    "after": [
+     "ws:test_suite/tests/test_self.rs",
+     [
+      40,
+      14,
+      40,
+      19
+     ]
+    ]
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_value.rs",
+   "line": 60,
+   "character": 20,
+   "symbol": "PotentialVisitor",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      95,
+      2
+     ],
+     [
+      41,
+      1,
+      95,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_map_access_to_enum",
+     "start_line": 41,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "<test_map_access_to_enum::Potential as serde_core::de::Deserialize<'de>>::deserialize::PotentialVisitor",
+     "start_line": 60,
+     "start_col": 20
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_borrow.rs",
+   "line": 137,
+   "character": 12,
+   "symbol": "BorrowedStr",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      196,
+      2
+     ],
+     [
+      128,
+      1,
+      163,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_cow",
+     "start_line": 128,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "test_cow::BorrowedStr",
+     "start_line": 137,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 626,
+   "character": 11,
+   "symbol": "AssocSerde",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ],
+     [
+      53,
+      1,
+      819,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_gen",
+     "start_line": 53,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "test_gen::AssocSerde",
+     "start_line": 626,
+     "start_col": 11
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 97,
+   "character": 7,
+   "symbol": "AssociatedType",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      866,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_de_enum_map",
+     "start_line": 314,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "AssociatedType",
+     "start_line": 97,
+     "start_col": 7
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_self.rs",
+   "line": 7,
+   "character": 15,
+   "symbol": "Trait",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      88,
+      2
+     ],
+     [
+      6,
+      1,
+      88,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_self",
+     "start_line": 6,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "test_self::Trait",
+     "start_line": 7,
+     "start_col": 15
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 5
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 830,
+   "character": 7,
+   "symbol": "DeserializeWith",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "DeserializeWith",
+     "start_line": 830,
+     "start_col": 7
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 29,
+   "character": 7,
+   "symbol": "ShouldSkip",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "ShouldSkip",
+     "start_line": 29,
+     "start_col": 7
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_serde_path.rs",
+   "line": 47,
+   "character": 11,
+   "symbol": "AssertNotSerdeDeserialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      49,
+      75
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen_custom_serde",
+     "start_line": 8,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "AssertNotSerdeDeserialize",
+     "start_line": 47,
+     "start_col": 11
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1643,
+   "character": 11,
+   "symbol": "Trait",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ],
+     [
+      1642,
+      1,
+      1678,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_partially_untagged_enum_generic",
+     "start_line": 1642,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "test_partially_untagged_enum_generic::Trait",
+     "start_line": 1643,
+     "start_col": 11
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 630,
+   "character": 12,
+   "symbol": "NoSerdeImpl",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ],
+     [
+      53,
+      1,
+      819,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_gen",
+     "start_line": 53,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "test_gen::NoSerdeImpl",
+     "start_line": 630,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_serde_path.rs",
+   "line": 43,
+   "character": 11,
+   "symbol": "AssertNotSerdeSerialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      49,
+      75
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen_custom_serde",
+     "start_line": 8,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "AssertNotSerdeSerialize",
+     "start_line": 43,
+     "start_col": 11
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 8,
+   "character": 13,
+   "symbol": "uninlined_format_args",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       2043,
+       1,
+       2043,
+       8
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       2044,
+       1,
+       2046,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       2043,
+       1,
+       2043,
+       8
+      ]
+     ]
+    ],
+    "two_nested_ranges": false
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1080,
+   "character": 4,
+   "symbol": "test_serialize_with_struct",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1,
+       1,
+       3012,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1080,
+       1,
+       1111,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 584,
+   "character": 4,
+   "symbol": "test_cstr",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_ser.rs",
+      [
+       1,
+       1,
+       919,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_ser.rs",
+      [
+       584,
+       1,
+       587,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 58,
+   "character": 8,
+   "symbol": "newtype_variant_seed",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      108,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_deserialize_enum",
+     "start_line": 86,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<Enum as serde_core::de::VariantAccess<'de>>::newtype_variant_seed",
+     "start_line": 58,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 2031,
+   "character": 4,
+   "symbol": "test_rc_weak_some",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       2031,
+       1,
+       2036,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 778,
+   "character": 4,
+   "symbol": "test_unknown_field_rename_enum",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1,
+       1,
+       3012,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       778,
+       1,
+       804,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 99,
+   "character": 4,
+   "symbol": "test_floats",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_ser.rs",
+      [
+       1,
+       1,
+       919,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_ser.rs",
+      [
+       99,
+       1,
+       102,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 897,
+   "character": 4,
+   "symbol": "test_unit",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       897,
+       1,
+       899,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 295,
+   "character": 4,
+   "symbol": "test_i64",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       295,
+       1,
+       317,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 143,
+   "character": 8,
+   "symbol": "deserialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      2387,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_arc",
+     "start_line": 2043,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<IgnoredAny as serde_core::de::Deserialize<'de>>::deserialize",
+     "start_line": 143,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 1921,
+   "character": 4,
+   "symbol": "test_range_to",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1921,
+       1,
+       1938,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 265,
+   "character": 10,
+   "symbol": "PhantomDataAlias",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ],
+     [
+      53,
+      1,
+      819,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_gen",
+     "start_line": 53,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "TyAlias",
+     "path": "test_gen::PhantomDataAlias",
+     "start_line": 265,
+     "start_col": 10
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1659,
+   "character": 14,
+   "symbol": "Assoc",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ],
+     [
+      1642,
+      1,
+      1678,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_partially_untagged_enum_generic",
+     "start_line": 1642,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "AssocTy",
+     "path": "<() as test_partially_untagged_enum_generic::Trait<T>>::Assoc",
+     "start_line": 1659,
+     "start_col": 14
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_borrow.rs",
+   "line": 137,
+   "character": 12,
+   "symbol": "BorrowedStr",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      196,
+      2
+     ],
+     [
+      128,
+      1,
+      163,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_cow",
+     "start_line": 128,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "test_cow::BorrowedStr",
+     "start_line": 137,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 4
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 875,
+   "character": 8,
+   "symbol": "serialize_some_other_variant",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "serialize_some_other_variant",
+     "start_line": 875,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 8
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 163,
+   "character": 4,
+   "symbol": "newtype_unit_struct",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_enum_internally_tagged.rs",
+      [
+       1,
+       1,
+       1478,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_internally_tagged.rs",
+      [
+       163,
+       1,
+       226,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 39,
+   "character": 7,
+   "symbol": "DeserializeWith",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "DeserializeWith",
+     "start_line": 39,
+     "start_col": 7
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 10
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 511,
+   "character": 4,
+   "symbol": "contains_flatten",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       1,
+       1,
+       583,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       511,
+       1,
+       543,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 420,
+   "character": 4,
+   "symbol": "test_u32",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       420,
+       1,
+       442,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 570,
+   "character": 4,
+   "symbol": "test_nonzero_i32",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       570,
+       1,
+       592,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de_error.rs",
+   "line": 665,
+   "character": 4,
+   "symbol": "test_nonzero_i128",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de_error.rs",
+      [
+       1,
+       1,
+       1568,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de_error.rs",
+      [
+       665,
+       1,
+       701,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 52,
+   "character": 10,
+   "symbol": "Error",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      108,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_deserialize_enum",
+     "start_line": 86,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocTy",
+     "path": "<Enum as serde_core::de::VariantAccess<'de>>::Error",
+     "start_line": 52,
+     "start_col": 10
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+   "line": 329,
+   "character": 8,
+   "symbol": "map_tag_content",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_enum_adjacently_tagged.rs",
+      [
+       306,
+       5,
+       411,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_adjacently_tagged.rs",
+      [
+       329,
+       5,
+       369,
+       6
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 54,
+   "character": 8,
+   "symbol": "unit_variant",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      108,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_deserialize_enum",
+     "start_line": 86,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<Enum as serde_core::de::VariantAccess<'de>>::unit_variant",
+     "start_line": 54,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 363,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<NotDeserializeStruct as core::default::Default>::default",
+     "start_line": 363,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1481,
+   "character": 4,
+   "symbol": "test_invalid_length_enum",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1,
+       1,
+       3012,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1481,
+       1,
+       1506,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_roundtrip.rs",
+   "line": 25,
+   "character": 4,
+   "symbol": "socket_addr_roundtrip",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_roundtrip.rs",
+      [
+       1,
+       1,
+       41,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_roundtrip.rs",
+      [
+       25,
+       1,
+       41,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 632,
+   "character": 14,
+   "symbol": "Assoc",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ],
+     [
+      53,
+      1,
+      819,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_gen",
+     "start_line": 53,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "AssocTy",
+     "path": "<test_gen::NoSerdeImpl as test_gen::AssocSerde>::Assoc",
+     "start_line": 632,
+     "start_col": 14
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 58,
+   "character": 8,
+   "symbol": "serialize_with",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<i32 as SerializeWith>::serialize_with",
+     "start_line": 58,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 945,
+   "character": 12,
+   "symbol": "RemotePackedNonCopy",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "RemotePackedNonCopy",
+     "start_line": 945,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 831,
+   "character": 8,
+   "symbol": "deserialize_with",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "DeserializeWith::deserialize_with",
+     "start_line": 831,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 9
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 1606,
+   "character": 4,
+   "symbol": "test_enum_simple",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1606,
+       1,
+       1617,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 73,
+   "character": 8,
+   "symbol": "struct_variant",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      108,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_deserialize_enum",
+     "start_line": 86,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<Enum as serde_core::de::VariantAccess<'de>>::struct_variant",
+     "start_line": 73,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 622,
+   "character": 4,
+   "symbol": "test_wrapping",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_ser.rs",
+      [
+       1,
+       1,
+       919,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_ser.rs",
+      [
+       622,
+       1,
+       624,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 245,
+   "character": 4,
+   "symbol": "test_i16",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       245,
+       1,
+       267,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [],
+    "two_nested_ranges": true
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 972,
+   "character": 63,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       1045,
+       2
+      ]
+     ],
+     [
+      null,
+      [
+       789,
+       1,
+       789,
+       8
+      ]
+     ],
+     [
+      null,
+      [
+       790,
+       1,
+       803,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 3,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [
+     [
+      null,
+      [
+       789,
+       1,
+       789,
+       8
+      ]
+     ]
+    ],
+    "two_nested_ranges": false
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 6,
+   "character": 13,
+   "symbol": "nonstandard_macro_braces",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       1591,
+       1,
+       1591,
+       8
+      ]
+     ],
+     [
+      null,
+      [
+       1592,
+       1,
+       1608,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [
+     [
+      null,
+      [
+       1591,
+       1,
+       1591,
+       8
+      ]
+     ]
+    ],
+    "two_nested_ranges": false
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2445,
+   "character": 71,
+   "symbol": "Value",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ],
+     [
+      1946,
+      5,
+      3012,
+      2
+     ],
+     [
+      2427,
+      5,
+      2485,
+      6
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "flatten::flatten_any_after_flatten_struct",
+     "start_line": 2427,
+     "start_col": 8
+    },
+    "definition_after": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "after_kind": "crate_root_module",
+    "removed_count": 3,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 2310,
+   "character": 14,
+   "symbol": "os",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      2387,
+      2
+     ],
+     [
+      2309,
+      1,
+      2325,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_osstring",
+     "start_line": 2309,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "after_kind": "crate_root_module",
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 1,
+   "character": 18,
+   "symbol": "derive_partial_eq_without_eq",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       605,
+       1,
+       605,
+       8
+      ]
+     ],
+     [
+      null,
+      [
+       606,
+       1,
+       608,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [
+     [
+      null,
+      [
+       605,
+       1,
+       605,
+       8
+      ]
+     ]
+    ],
+    "two_nested_ranges": false
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 737,
+   "character": 56,
+   "symbol": "Ok",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       1045,
+       2
+      ]
+     ],
+     [
+      null,
+      [
+       789,
+       1,
+       789,
+       8
+      ]
+     ],
+     [
+      null,
+      [
+       790,
+       1,
+       803,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 3,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [
+     [
+      null,
+      [
+       789,
+       1,
+       789,
+       8
+      ]
+     ]
+    ],
+    "two_nested_ranges": false
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 65,
+   "character": 82,
+   "symbol": "Error",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       86,
+       1,
+       86,
+       8
+      ]
+     ],
+     [
+      null,
+      [
+       87,
+       1,
+       108,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [
+     [
+      null,
+      [
+       86,
+       1,
+       86,
+       8
+      ]
+     ]
+    ],
+    "two_nested_ranges": false
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 909,
+   "character": 63,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s1_self_containing_reference_ranges_removed",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       1045,
+       2
+      ]
+     ],
+     [
+      null,
+      [
+       789,
+       1,
+       789,
+       8
+      ]
+     ],
+     [
+      null,
+      [
+       790,
+       1,
+       803,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 3,
+    "added_count": 0,
+    "not_self_containing": [],
+    "test_attribute_declarations": [
+     [
+      null,
+      [
+       789,
+       1,
+       789,
+       8
+      ]
+     ]
+    ],
+    "two_nested_ranges": false
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 6,
+   "character": 13,
+   "symbol": "too_many_lines",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      583,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "complex",
+     "start_line": 15,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "after_kind": "crate_root_module",
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 20,
+   "character": 10,
+   "symbol": "fmt",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      2387,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_arc",
+     "start_line": 2043,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "after_kind": "crate_root_module",
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+   "line": 5,
+   "character": 13,
+   "symbol": "redundant_field_names",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      799,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "deny_unknown_fields",
+     "start_line": 703,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "after_kind": "crate_root_module",
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 363,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<NotDeserializeStruct as core::default::Default>::default",
+     "start_line": 363,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 882,
+   "character": 8,
+   "symbol": "deserialize_some_other_variant",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "deserialize_some_other_variant",
+     "start_line": 882,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 173,
+   "character": 8,
+   "symbol": "deserialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      2387,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_arc",
+     "start_line": 2043,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<SkipPartialEq<T> as serde_core::de::Deserialize<'de>>::deserialize",
+     "start_line": 173,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1021,
+   "character": 8,
+   "symbol": "serialize_with",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<NotSerializeEnum as SerializeWith>::serialize_with",
+     "start_line": 1021,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_serde_path.rs",
+   "line": 39,
+   "character": 12,
+   "symbol": "deserialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      49,
+      75
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen_custom_serde",
+     "start_line": 8,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "fake_serde::Deserialize::deserialize",
+     "start_line": 39,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1549,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<EnumToU32 as core::convert::From<core::option::Option<u32>>>::from",
+     "start_line": 1549,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 46,
+   "character": 8,
+   "symbol": "my_default",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<i32 as MyDefault>::my_default",
+     "start_line": 46,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 369,
+   "character": 8,
+   "symbol": "deserialize_with",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<NotDeserializeStruct as DeserializeWith>::deserialize_with",
+     "start_line": 369,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 837,
+   "character": 8,
+   "symbol": "ser_x",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "ser_x",
+     "start_line": 837,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 101,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      2387,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_arc",
+     "start_line": 2043,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<StructSkipDefault as core::default::Default>::default",
+     "start_line": 101,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 941,
+   "character": 8,
+   "symbol": "drop",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<RemotePackedDef as core::ops::drop::Drop>::drop",
+     "start_line": 941,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 959,
+   "character": 8,
+   "symbol": "drop",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<RemotePackedNonCopyDef as core::ops::drop::Drop>::drop",
+     "start_line": 959,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 73,
+   "character": 8,
+   "symbol": "struct_variant",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      108,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_deserialize_enum",
+     "start_line": 86,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<Enum as serde_core::de::VariantAccess<'de>>::struct_variant",
+     "start_line": 73,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_borrow.rs",
+   "line": 142,
+   "character": 12,
+   "symbol": "into_deserializer",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      196,
+      2
+     ],
+     [
+      128,
+      1,
+      163,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_cow",
+     "start_line": 128,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<test_cow::BorrowedStr as serde_core::de::IntoDeserializer<'de>>::into_deserializer",
+     "start_line": 142,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 916,
+   "character": 4,
+   "symbol": "deserialize_generic",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "deserialize_generic",
+     "start_line": 916,
+     "start_col": 4
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1205,
+   "character": 4,
+   "symbol": "deserialize_string_as_variant",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "deserialize_string_as_variant",
+     "start_line": 1205,
+     "start_col": 4
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2441,
+   "character": 24,
+   "symbol": "expecting",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ],
+     [
+      1946,
+      5,
+      3012,
+      2
+     ],
+     [
+      2427,
+      5,
+      2485,
+      6
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "flatten::flatten_any_after_flatten_struct",
+     "start_line": 2427,
+     "start_col": 8
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<<flatten::flatten_any_after_flatten_struct::Any as serde_core::de::Deserialize<'de>>::deserialize::AnyVisitor as serde_core::de::Visitor<'de>>::expecting",
+     "start_line": 2441,
+     "start_col": 24
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 72,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      2387,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_arc",
+     "start_line": 2043,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<StructDefault<alloc::string::String> as core::default::Default>::default",
+     "start_line": 72,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 868,
+   "character": 8,
+   "symbol": "deserialize_some_unit_variant",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "deserialize_some_unit_variant",
+     "start_line": 868,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2445,
+   "character": 24,
+   "symbol": "visit_map",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ],
+     [
+      1946,
+      5,
+      3012,
+      2
+     ],
+     [
+      2427,
+      5,
+      2485,
+      6
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "flatten::flatten_any_after_flatten_struct",
+     "start_line": 2427,
+     "start_col": 8
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<<flatten::flatten_any_after_flatten_struct::Any as serde_core::de::Deserialize<'de>>::deserialize::AnyVisitor as serde_core::de::Visitor<'de>>::visit_map",
+     "start_line": 2445,
+     "start_col": 24
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 109,
+   "character": 4,
+   "symbol": "newtype_struct",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       110,
+       7,
+       110,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       113,
+       7,
+       113,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       114,
+       7,
+       114,
+       12
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       109,
+       4,
+       109,
+       18
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       109,
+       4,
+       109,
+       18
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       109,
+       4,
+       109,
+       18
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 6,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+   "line": 62,
+   "character": 8,
+   "symbol": "map_int_tag_only",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       63,
+       17,
+       63,
+       20
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_adjacently_tagged.rs",
+      [
+       62,
+       8,
+       62,
+       24
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 655,
+   "character": 4,
+   "symbol": "test_rename_all",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       656,
+       7,
+       656,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       657,
+       7,
+       657,
+       12
+      ]
+     ],
+     [
+      null,
+      [
+       659,
+       11,
+       659,
+       16
+      ]
+     ],
+     [
+      null,
+      [
+       664,
+       11,
+       664,
+       16
+      ]
+     ],
+     [
+      null,
+      [
+       669,
+       11,
+       669,
+       16
+      ]
+     ],
+     [
+      null,
+      [
+       676,
+       7,
+       676,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       677,
+       7,
+       677,
+       12
+      ]
+     ],
+     [
+      null,
+      [
+       683,
+       7,
+       683,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       684,
+       7,
+       684,
+       12
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       655,
+       4,
+       655,
+       19
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       655,
+       4,
+       655,
+       19
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       655,
+       4,
+       655,
+       19
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       655,
+       4,
+       655,
+       19
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       655,
+       4,
+       655,
+       19
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       655,
+       4,
+       655,
+       19
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       655,
+       4,
+       655,
+       19
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       655,
+       4,
+       655,
+       19
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       655,
+       4,
+       655,
+       19
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 18,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1949,
+   "character": 8,
+   "symbol": "complex",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       1950,
+       11,
+       1950,
+       17
+      ]
+     ],
+     [
+      null,
+      [
+       1960,
+       11,
+       1960,
+       17
+      ]
+     ],
+     [
+      null,
+      [
+       1969,
+       11,
+       1969,
+       17
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1949,
+       8,
+       1949,
+       15
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1949,
+       8,
+       1949,
+       15
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1949,
+       8,
+       1949,
+       15
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 6,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2553,
+   "character": 12,
+   "symbol": "unit",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       2554,
+       15,
+       2554,
+       21
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       2553,
+       12,
+       2553,
+       16
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2053,
+   "character": 8,
+   "symbol": "map_twice",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       2054,
+       11,
+       2054,
+       17
+      ]
+     ],
+     [
+      null,
+      [
+       2064,
+       11,
+       2064,
+       17
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       2053,
+       8,
+       2053,
+       17
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       2053,
+       8,
+       2053,
+       17
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 4,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 90,
+   "character": 4,
+   "symbol": "newtype_unit_and_empty_map",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       91,
+       7,
+       91,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       94,
+       7,
+       94,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       95,
+       7,
+       95,
+       12
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       90,
+       4,
+       90,
+       30
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       90,
+       4,
+       90,
+       30
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       90,
+       4,
+       90,
+       30
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 6,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 2356,
+   "character": 4,
+   "symbol": "test_atomics",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       2382,
+       7,
+       2382,
+       10
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       2356,
+       4,
+       2356,
+       16
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 529,
+   "character": 4,
+   "symbol": "test_enum_state_field",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       530,
+       7,
+       530,
+       13
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       529,
+       4,
+       529,
+       25
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 2,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+   "line": 372,
+   "character": 8,
+   "symbol": "seq",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       389,
+       17,
+       389,
+       20
+      ]
+     ],
+     [
+      null,
+      [
+       400,
+       17,
+       400,
+       20
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_adjacently_tagged.rs",
+      [
+       372,
+       8,
+       372,
+       11
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_adjacently_tagged.rs",
+      [
+       372,
+       8,
+       372,
+       11
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 4,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_identifier.rs",
+   "line": 160,
+   "character": 8,
+   "symbol": "newtype_fallthrough",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       161,
+       11,
+       161,
+       17
+      ]
+     ],
+     [
+      null,
+      [
+       162,
+       11,
+       162,
+       16
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_identifier.rs",
+      [
+       160,
+       8,
+       160,
+       27
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_identifier.rs",
+      [
+       160,
+       8,
+       160,
+       27
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 4,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 16,
+   "character": 4,
+   "symbol": "complex",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       17,
+       7,
+       17,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       18,
+       7,
+       18,
+       12
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       16,
+       4,
+       16,
+       11
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       16,
+       4,
+       16,
+       11
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 4,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 604,
+   "character": 8,
+   "symbol": "struct_",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       607,
+       30,
+       607,
+       35
+      ]
+     ],
+     [
+      null,
+      [
+       643,
+       30,
+       643,
+       35
+      ]
+     ],
+     [
+      null,
+      [
+       682,
+       30,
+       682,
+       35
+      ]
+     ],
+     [
+      null,
+      [
+       710,
+       30,
+       710,
+       35
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_internally_tagged.rs",
+      [
+       604,
+       8,
+       604,
+       15
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_internally_tagged.rs",
+      [
+       604,
+       8,
+       604,
+       15
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_internally_tagged.rs",
+      [
+       604,
+       8,
+       604,
+       15
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_internally_tagged.rs",
+      [
+       604,
+       8,
+       604,
+       15
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 8,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 574,
+   "character": 4,
+   "symbol": "expecting_message",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       575,
+       7,
+       575,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       576,
+       7,
+       576,
+       12
+      ]
+     ],
+     [
+      null,
+      [
+       577,
+       7,
+       577,
+       12
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       574,
+       4,
+       574,
+       21
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       574,
+       4,
+       574,
+       21
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_untagged.rs",
+      [
+       574,
+       4,
+       574,
+       21
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 6,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_borrow.rs",
+   "line": 128,
+   "character": 4,
+   "symbol": "test_cow",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       129,
+       7,
+       129,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       133,
+       11,
+       133,
+       16
+      ]
+     ],
+     [
+      null,
+      [
+       137,
+       12,
+       137,
+       23
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_borrow.rs",
+      [
+       128,
+       4,
+       128,
+       12
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_borrow.rs",
+      [
+       128,
+       4,
+       128,
+       12
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_borrow.rs",
+      [
+       128,
+       4,
+       128,
+       12
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 6,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 610,
+   "character": 4,
+   "symbol": "test_internally_tagged_struct_with_flattened_field",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       611,
+       7,
+       611,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       612,
+       7,
+       612,
+       12
+      ]
+     ],
+     [
+      null,
+      [
+       618,
+       7,
+       618,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       619,
+       7,
+       619,
+       12
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       610,
+       4,
+       610,
+       54
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       610,
+       4,
+       610,
+       54
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       610,
+       4,
+       610,
+       54
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_macros.rs",
+      [
+       610,
+       4,
+       610,
+       54
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 8,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+   "line": 600,
+   "character": 4,
+   "symbol": "struct_with_flatten",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s5_outgoing_call_to_the_enclosing_test_function_itself",
+   "evidence": {
+    "removed": [
+     [
+      null,
+      [
+       601,
+       7,
+       601,
+       13
+      ]
+     ],
+     [
+      null,
+      [
+       602,
+       7,
+       602,
+       12
+      ]
+     ],
+     [
+      null,
+      [
+       611,
+       7,
+       611,
+       13
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_adjacently_tagged.rs",
+      [
+       600,
+       4,
+       600,
+       23
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_adjacently_tagged.rs",
+      [
+       600,
+       4,
+       600,
+       23
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_enum_adjacently_tagged.rs",
+      [
+       600,
+       4,
+       600,
+       23
+      ]
+     ]
+    ],
+    "added": [],
+    "removed_count": 6,
+    "added_count": 0,
+    "outside_self_containing": []
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 38,
+   "character": 8,
+   "symbol": "Result",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "Result",
+     "start_line": 38,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 46,
+   "character": 8,
+   "symbol": "Some",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "Some",
+     "start_line": 46,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 39,
+   "character": 7,
+   "symbol": "DeserializeWith",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "DeserializeWith",
+     "start_line": 39,
+     "start_col": 7
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_value.rs",
+   "line": 60,
+   "character": 20,
+   "symbol": "PotentialVisitor",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      95,
+      2
+     ],
+     [
+      41,
+      1,
+      95,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_map_access_to_enum",
+     "start_line": 41,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "<test_map_access_to_enum::Potential as serde_core::de::Deserialize<'de>>::deserialize::PotentialVisitor",
+     "start_line": 60,
+     "start_col": 20
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 48,
+   "character": 8,
+   "symbol": "None",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "None",
+     "start_line": 48,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_serde_path.rs",
+   "line": 38,
+   "character": 15,
+   "symbol": "Deserialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      49,
+      75
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen_custom_serde",
+     "start_line": 8,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "fake_serde::Deserialize",
+     "start_line": 38,
+     "start_col": 15
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 25,
+   "character": 7,
+   "symbol": "MyDefault",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "MyDefault",
+     "start_line": 25,
+     "start_col": 7
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_borrow.rs",
+   "line": 137,
+   "character": 12,
+   "symbol": "BorrowedStr",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      196,
+      2
+     ],
+     [
+      128,
+      1,
+      163,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_cow",
+     "start_line": 128,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "test_cow::BorrowedStr",
+     "start_line": 137,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 630,
+   "character": 12,
+   "symbol": "NoSerdeImpl",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ],
+     [
+      53,
+      1,
+      819,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_gen",
+     "start_line": 53,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "test_gen::NoSerdeImpl",
+     "start_line": 630,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "test_suite/tests/test_serde_path.rs",
+   "line": 33,
+   "character": 15,
+   "symbol": "Serialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      49,
+      75
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen_custom_serde",
+     "start_line": 8,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "fake_serde::Serialize",
+     "start_line": 33,
+     "start_col": 15
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_serde_path.rs",
+   "line": 34,
+   "character": 12,
+   "symbol": "serialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      49,
+      75
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen_custom_serde",
+     "start_line": 8,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "fake_serde::Serialize::serialize",
+     "start_line": 34,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_de_error.rs",
+   "line": 1558,
+   "character": 4,
+   "symbol": "test_never_type",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      1568,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_bool_from_string",
+     "start_line": 1417,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "after_kind": "crate_root_module",
+    "removed_count": null,
+    "added_count": null,
+    "error_before": null,
+    "error_after": {
+     "code": -32803,
+     "message": "Cannot prepare rename: no identifier found at this position"
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1644,
+   "character": 14,
+   "symbol": "Assoc",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ],
+     [
+      1642,
+      1,
+      1678,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_partially_untagged_enum_generic",
+     "start_line": 1642,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "AssocTy",
+     "path": "test_partially_untagged_enum_generic::Trait::Assoc",
+     "start_line": 1644,
+     "start_col": 14
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_serde_path.rs",
+   "line": 47,
+   "character": 11,
+   "symbol": "AssertNotSerdeDeserialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      49,
+      75
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen_custom_serde",
+     "start_line": 8,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "AssertNotSerdeDeserialize",
+     "start_line": 47,
+     "start_col": 11
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 33,
+   "character": 7,
+   "symbol": "SerializeWith",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "SerializeWith",
+     "start_line": 33,
+     "start_col": 7
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 188,
+   "character": 4,
+   "symbol": "assert_de_tokens_ignore",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      2387,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_arc",
+     "start_line": 2043,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "assert_de_tokens_ignore",
+     "start_line": 188,
+     "start_col": 4
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_value.rs",
+   "line": 65,
+   "character": 20,
+   "symbol": "expecting",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      95,
+      2
+     ],
+     [
+      41,
+      1,
+      95,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_map_access_to_enum",
+     "start_line": 41,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<<test_map_access_to_enum::Potential as serde_core::de::Deserialize<'de>>::deserialize::PotentialVisitor as serde_core::de::Visitor<'de>>::expecting",
+     "start_line": 65,
+     "start_col": 20
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1521,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<StructFromEnum as core::convert::From<EnumToU32>>::from",
+     "start_line": 1521,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 46,
+   "character": 8,
+   "symbol": "my_default",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<i32 as MyDefault>::my_default",
+     "start_line": 46,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 352,
+   "character": 8,
+   "symbol": "serialize",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      1045,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "ser::impls::test_format_u8",
+     "start_line": 789,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "after_kind": "none",
+    "removed_count": null,
+    "added_count": null,
+    "error_before": null,
+    "error_after": {
+     "code": -32803,
+     "message": "Cannot prepare rename: no identifier found at this position"
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 941,
+   "character": 8,
+   "symbol": "drop",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<RemotePackedDef as core::ops::drop::Drop>::drop",
+     "start_line": 941,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 830,
+   "character": 7,
+   "symbol": "DeserializeWith",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "DeserializeWith",
+     "start_line": 830,
+     "start_col": 7
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 65,
+   "character": 8,
+   "symbol": "tuple_variant",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      108,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_deserialize_enum",
+     "start_line": 86,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<Enum as serde_core::de::VariantAccess<'de>>::tuple_variant",
+     "start_line": 65,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 1,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "rename",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 944,
+   "character": 8,
+   "symbol": "serialize",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      1045,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "ser::impls::test_format_u8",
+     "start_line": 789,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "after_kind": "none",
+    "removed_count": null,
+    "added_count": null,
+    "error_before": null,
+    "error_after": {
+     "code": -32803,
+     "message": "No renameable symbol found at this position"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 40,
+   "character": 8,
+   "symbol": "Ok",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "Ok",
+     "start_line": 40,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 2,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 19,
+   "character": 8,
+   "symbol": "Enum",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      108,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_deserialize_enum",
+     "start_line": 86,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "Enum",
+     "start_line": 19,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 2,
+    "added_count": 24
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 837,
+   "character": 8,
+   "symbol": "ser_x",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen",
+     "start_line": 52,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "ser_x",
+     "start_line": 837,
+     "start_col": 8
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": null,
+    "added_count": null,
+    "error_before": null,
+    "error_after": {
+     "code": -32803,
+     "message": "Failed to locate identifier at reference position"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_serde_path.rs",
+   "line": 34,
+   "character": 12,
+   "symbol": "serialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      49,
+      75
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_gen_custom_serde",
+     "start_line": 8,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "fake_serde::Serialize::serialize",
+     "start_line": 34,
+     "start_col": 12
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": 2,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 39,
+   "character": 7,
+   "symbol": "DeserializeWith",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      1,
+      1,
+      3012,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Const",
+     "path": "test_collect_other",
+     "start_line": 1591,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "DeserializeWith",
+     "start_line": 39,
+     "start_col": 7
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": null,
+    "added_count": null,
+    "error_before": null,
+    "error_after": {
+     "code": -32803,
+     "message": "Failed to locate identifier at reference position"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 379,
+   "character": 14,
+   "symbol": "Or",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "s4_position_on_no_name_answered_through_enclosing_reference",
+   "evidence": {
+    "self_containing_spans_at_cursor": [
+     [
+      5,
+      1,
+      960,
+      2
+     ],
+     [
+      53,
+      1,
+      819,
+      2
+     ]
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "test_gen",
+     "start_line": 53,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Enum",
+     "path": "test_gen::Or",
+     "start_line": 379,
+     "start_col": 14
+    },
+    "after_kind": "item_at_cursor",
+    "removed_count": null,
+    "added_count": null,
+    "error_before": null,
+    "error_after": {
+     "code": -32803,
+     "message": "Failed to locate identifier at reference position"
+    }
+   }
+  }
+ ]
+}

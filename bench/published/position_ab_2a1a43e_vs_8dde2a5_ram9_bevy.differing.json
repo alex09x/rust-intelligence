@@ -1,0 +1,8208 @@
+{
+ "repo": "bevyengine/bevy",
+ "repo_dir_name": "bevy",
+ "repo_head": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 640,
+ "positions_file": "matrix_bevy_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 571,
+ "timestamp_start": "2026-10-21T18:50:33.597029+00:00",
+ "timestamp_end": "2026-10-21T18:59:21.303183+00:00",
+ "servers": [
+  {
+   "name": "2a1a43e",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 2a1a43edd329eb2a2462926e73580ee8d4be794a, dirty: false)",
+   "commit": "2a1a43edd329eb2a2462926e73580ee8d4be794a",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 165.8,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 477.3,
+     "p99_us": 1396.8,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 457.5,
+     "p99_us": 1330.8,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 187,
+     "b": 113,
+     "c": 0,
+     "n": 300,
+     "p50_us": 435.6,
+     "p99_us": 3154.2,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 134,
+     "b": 166,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6276.0,
+     "p99_us": 14915.5,
+     "unsupported": false
+    },
+    "references": {
+     "a": 279,
+     "b": 21,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4530.9,
+     "p99_us": 80833.4,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 232,
+     "b": 68,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4742.6,
+     "p99_us": 79595.1,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 180.1,
+     "p99_us": 2540.8,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 178,
+     "b": 122,
+     "c": 0,
+     "n": 300,
+     "p50_us": 107923.8,
+     "p99_us": 166484.2,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 21.2,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 274,
+     "b": 26,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1108.0,
+     "p99_us": 2841.5,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 3070.1,
+     "p99_us": 180546.8,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 21.4,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 53,
+     "b": 247,
+     "c": 0,
+     "n": 300,
+     "p50_us": 97.6,
+     "p99_us": 140061.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.0,
+     "p99_us": 74.0,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35.7,
+     "p99_us": 119.7,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.6,
+     "p99_us": 93.1,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 43.2,
+     "p99_us": 166.8,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 15.6,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 278,
+     "b": 22,
+     "c": 0,
+     "n": 300,
+     "p50_us": 491.6,
+     "p99_us": 1798.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 7291.7,
+     "p99_us": 18018.9,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 236,
+     "b": 64,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1434.7,
+     "p99_us": 24761.5,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 474.8,
+     "p99_us": 1565.1,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 246,
+     "b": 54,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5940.6,
+     "p99_us": 8511.7,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 31,
+     "b": 269,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.8,
+     "p99_us": 9257.7,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 149.2,
+     "p99_us": 902.9,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 59,
+     "b": 241,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.6,
+     "p99_us": 116.4,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 15.5,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.3,
+     "p99_us": 10.9,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 12.7,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 2,
+     "b": 298,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91371.6,
+     "p99_us": 106922.4,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 41,
+     "b": 259,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92790.9,
+     "p99_us": 193618.9,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 94076.8,
+     "p99_us": 125882.9,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 282,
+     "b": 0,
+     "c": 18,
+     "n": 300,
+     "p50_us": 2745.2,
+     "p99_us": 6773.9,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 280,
+     "b": 0,
+     "c": 20,
+     "n": 300,
+     "p50_us": 4038.7,
+     "p99_us": 15611.6,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.6,
+     "p99_us": 201.5,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 95.1,
+     "p99_us": 473.3,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 13.6,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 13.6,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 550.3,
+     "p99_us": 2405.0,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 551.2,
+     "p99_us": 1830.7,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 534.6,
+     "p99_us": 1561.9,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87.6,
+     "p99_us": 817.9,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 370.5,
+     "p99_us": 1233.0,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 15.2,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 101.8,
+     "p99_us": 949.4,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 52136.5,
+     "p99_us": 54138.0,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 15.3,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 14.9,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.7,
+     "p99_us": 160.6,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 46,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       268,
+       32,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       274,
+       26,
+       0
+      ],
+      "matrix": [
+       273,
+       27,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       101,
+       199,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       280,
+       0,
+       20
+      ],
+      "matrix": [
+       279,
+       0,
+       21
+      ]
+     },
+     {
+      "method": "code_lens",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       262,
+       38,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "8dde2a5",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 8dde2a5ca5027745cd0a319fd684f0841082d08f, dirty: false)",
+   "commit": "8dde2a5ca5027745cd0a319fd684f0841082d08f",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 157.1,
+   "summary": {
+    "definition": {
+     "a": 268,
+     "b": 32,
+     "c": 0,
+     "n": 300,
+     "p50_us": 515.9,
+     "p99_us": 1536.6,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 515.3,
+     "p99_us": 1444.7,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 187,
+     "b": 113,
+     "c": 0,
+     "n": 300,
+     "p50_us": 452.2,
+     "p99_us": 3249.9,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 136,
+     "b": 164,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6712.4,
+     "p99_us": 14758.0,
+     "unsupported": false
+    },
+    "references": {
+     "a": 277,
+     "b": 23,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4698.9,
+     "p99_us": 81188.6,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 232,
+     "b": 68,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4917.8,
+     "p99_us": 83066.5,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 188.2,
+     "p99_us": 2615.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 178,
+     "b": 122,
+     "c": 0,
+     "n": 300,
+     "p50_us": 108916.4,
+     "p99_us": 170780.9,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 22.1,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 274,
+     "b": 26,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1038.3,
+     "p99_us": 2752.5,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 3037.1,
+     "p99_us": 184285.4,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 19.4,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 53,
+     "b": 247,
+     "c": 0,
+     "n": 300,
+     "p50_us": 96.3,
+     "p99_us": 131054.9,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.9,
+     "p99_us": 83.9,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 14.2,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.0,
+     "p99_us": 121.1,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.2,
+     "p99_us": 91.0,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 43.0,
+     "p99_us": 161.3,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 17.7,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 533.5,
+     "p99_us": 1510.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6942.8,
+     "p99_us": 17952.2,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 236,
+     "b": 64,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1321.7,
+     "p99_us": 24908.1,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 476.1,
+     "p99_us": 1229.1,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 246,
+     "b": 54,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5482.5,
+     "p99_us": 11986.2,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 31,
+     "b": 269,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17.6,
+     "p99_us": 7609.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 155.7,
+     "p99_us": 928.1,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 59,
+     "b": 241,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.4,
+     "p99_us": 119.7,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 14.7,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 11.5,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.9,
+     "p99_us": 15.6,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 2,
+     "b": 298,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85874.0,
+     "p99_us": 100474.6,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 41,
+     "b": 259,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89383.5,
+     "p99_us": 185694.2,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89739.6,
+     "p99_us": 113859.2,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 282,
+     "b": 0,
+     "c": 18,
+     "n": 300,
+     "p50_us": 2655.4,
+     "p99_us": 6212.8,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 280,
+     "b": 0,
+     "c": 20,
+     "n": 300,
+     "p50_us": 3760.0,
+     "p99_us": 13832.1,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.7,
+     "p99_us": 201.0,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 93.3,
+     "p99_us": 481.7,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 16.4,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 12.7,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 517.6,
+     "p99_us": 2285.3,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 535.2,
+     "p99_us": 1767.3,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 505.4,
+     "p99_us": 1487.3,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91.5,
+     "p99_us": 862.0,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 361.1,
+     "p99_us": 1263.9,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.2,
+     "p99_us": 18.2,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86.8,
+     "p99_us": 741.0,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41012.1,
+     "p99_us": 42261.2,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 15.0,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 12.5,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 12.7,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.1,
+     "p99_us": 161.3,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 43,
+    "mismatches": [
+     {
+      "method": "implementation",
+      "ours": [
+       136,
+       164,
+       0
+      ],
+      "matrix": [
+       134,
+       166,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       277,
+       23,
+       0
+      ],
+      "matrix": [
+       279,
+       21,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       274,
+       26,
+       0
+      ],
+      "matrix": [
+       273,
+       27,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       278,
+       22,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       101,
+       199,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       280,
+       0,
+       20
+      ],
+      "matrix": [
+       279,
+       0,
+       21
+      ]
+     },
+     {
+      "method": "code_lens",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       262,
+       38,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "2a1a43e-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 2a1a43edd329eb2a2462926e73580ee8d4be794a, dirty: false)",
+   "commit": "2a1a43edd329eb2a2462926e73580ee8d4be794a",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 164.2,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 483.0,
+     "p99_us": 1469.2,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 466.2,
+     "p99_us": 1351.4,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 187,
+     "b": 113,
+     "c": 0,
+     "n": 300,
+     "p50_us": 445.5,
+     "p99_us": 3267.4,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 134,
+     "b": 166,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6663.6,
+     "p99_us": 14481.6,
+     "unsupported": false
+    },
+    "references": {
+     "a": 279,
+     "b": 21,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4613.8,
+     "p99_us": 82985.3,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 232,
+     "b": 68,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4840.4,
+     "p99_us": 83035.8,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 192.4,
+     "p99_us": 2648.6,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 178,
+     "b": 122,
+     "c": 0,
+     "n": 300,
+     "p50_us": 108206.3,
+     "p99_us": 170721.6,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 26.2,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 274,
+     "b": 26,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1035.2,
+     "p99_us": 2802.3,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 3118.1,
+     "p99_us": 185825.0,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 18.4,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 53,
+     "b": 247,
+     "c": 0,
+     "n": 300,
+     "p50_us": 96.3,
+     "p99_us": 132759.4,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.7,
+     "p99_us": 72.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 14.1,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 34.3,
+     "p99_us": 121.8,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.9,
+     "p99_us": 87.2,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41.5,
+     "p99_us": 162.6,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 17.0,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 278,
+     "b": 22,
+     "c": 0,
+     "n": 300,
+     "p50_us": 491.2,
+     "p99_us": 1556.7,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 7362.2,
+     "p99_us": 18197.5,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 236,
+     "b": 64,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1338.5,
+     "p99_us": 24515.2,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 476.4,
+     "p99_us": 1453.4,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 246,
+     "b": 54,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5953.0,
+     "p99_us": 8575.1,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 31,
+     "b": 269,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16.3,
+     "p99_us": 8658.4,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 155.1,
+     "p99_us": 913.5,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 59,
+     "b": 241,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.4,
+     "p99_us": 116.1,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 14.5,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 15.6,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 13.7,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 2,
+     "b": 298,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90239.1,
+     "p99_us": 106649.6,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 41,
+     "b": 259,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92613.6,
+     "p99_us": 189918.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 94624.8,
+     "p99_us": 117585.2,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 282,
+     "b": 0,
+     "c": 18,
+     "n": 300,
+     "p50_us": 2675.3,
+     "p99_us": 6077.5,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 280,
+     "b": 0,
+     "c": 20,
+     "n": 300,
+     "p50_us": 4032.5,
+     "p99_us": 15294.2,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.0,
+     "p99_us": 194.4,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 94.1,
+     "p99_us": 480.5,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 17.1,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 13.8,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 536.5,
+     "p99_us": 2428.4,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 534.5,
+     "p99_us": 1793.2,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 532.1,
+     "p99_us": 1559.4,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90.0,
+     "p99_us": 866.2,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 371.6,
+     "p99_us": 1253.4,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.8,
+     "p99_us": 20.6,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92.5,
+     "p99_us": 911.9,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 49615.9,
+     "p99_us": 52821.5,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 18.6,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 11.5,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 14.1,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 22.6,
+     "p99_us": 168.1,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 46,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       268,
+       32,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       274,
+       26,
+       0
+      ],
+      "matrix": [
+       273,
+       27,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       101,
+       199,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       280,
+       0,
+       20
+      ],
+      "matrix": [
+       279,
+       0,
+       21
+      ]
+     },
+     {
+      "method": "code_lens",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       262,
+       38,
+       0
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "2a1a43e",
+   "b": "8dde2a5",
+   "same": 15203,
+   "differing": 97,
+   "methods": {
+    "definition": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "a>a": 1,
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "definition_0_sync",
+       "file": "crates/bevy_ecs/src/event/mod.rs",
+       "line": 902,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e9fc80c145f6ae82",
+        "5a2a4999c61dca83"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": true
+      },
+      {
+       "name": "definition_49_Ambiguous",
+       "file": "crates/bevy_reflect/src/serde/de/mod.rs",
+       "line": 404,
+       "character": 48,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "57b70d78224c4350",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": true
+      }
+     ]
+    },
+    "declaration": {
+     "same": 285,
+     "differing": 15,
+     "transitions": {
+      "a>a": 15
+     },
+     "examples": [
+      {
+       "name": "decl_58_local_system",
+       "file": "crates/bevy_ecs/src/system/builder.rs",
+       "line": 855,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4c17c8b6f1f60354",
+        "77ce96222ab038c9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_78_non_send_param_set",
+       "file": "crates/bevy_ecs/src/system/system_param.rs",
+       "line": 3268,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "094ff4c336b18bbb",
+        "071d2d50e9492491"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_115_OutputLoader",
+       "file": "crates/bevy_asset/src/saver.rs",
+       "line": 615,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "120f9c16e8309ffe",
+        "d2b63a144bf3d334"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_124_Edge",
+       "file": "crates/bevy_ecs/src/schedule/graph/dag.rs",
+       "line": 738,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "45bba7d9bf50217c",
+        "ea8008e63eb13639"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_134_Output",
+       "file": "crates/bevy_scene/src/lib.rs",
+       "line": 2562,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cb2a606c4721688c",
+        "c2919a3967276ffe"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_135_run_app_until",
+       "file": "crates/bevy_asset/src/lib.rs",
+       "line": 1016,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6d29cac5951a5a71",
+        "128f14955a763fc9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_161_system2",
+       "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+       "line": 644,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d96a0af24326202b",
+        "17e1741ea419919f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_167_spawn_focused_slider",
+       "file": "crates/bevy_ui_widgets/src/slider.rs",
+       "line": 805,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1de0b0b7455a4d69",
+        "f02650386eed62b7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_174_pipe_out",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 469,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2025d8cf3db7a1e8",
+        "4a3c5f5c8e0e6ceb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_180_ord_a_hook_on_add",
+       "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+       "line": 1235,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e3f29e76487e3387",
+        "43c2ffd5f2b857b5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "b>a": 2
+     },
+     "examples": [
+      {
+       "name": "impl_195_FooProcessor",
+       "file": "crates/bevy_reflect/src/serde/ser/mod.rs",
+       "line": 554,
+       "character": 16,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "6430bc7b189a70b0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      },
+      {
+       "name": "impl_201_SpawnCommand",
+       "file": "crates/bevy_ecs/src/world/command_queue.rs",
+       "line": 466,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "afa56757a6fd806b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      }
+     ]
+    },
+    "references": {
+     "same": 279,
+     "differing": 21,
+     "transitions": {
+      "a>b": 2,
+      "a>a": 19
+     },
+     "examples": [
+      {
+       "name": "refs_34_resource",
+       "file": "crates/bevy_ui_widgets/src/menu.rs",
+       "line": 511,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "541d6d666e222faf",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_63_resource",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 496,
+       "character": 20,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "71370ed752ace8c7",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_159_enum_variant_expr_is_hoisted",
+       "file": "crates/bevy_scene/macros/src/bsn/codegen.rs",
+       "line": 1167,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9aa7d2e70dcea50c",
+        "d7d10fe67eaf5da8"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_169_test_derive_system_set",
+       "file": "crates/bevy_ecs/src/schedule/set.rs",
+       "line": 448,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "75abbc111e1dff85",
+        "9b0a4985874d37fe"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_172_with_input_from",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 1994,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1257fa036ed2fae2",
+        "3e3c1e8714f13096"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_175_load",
+       "file": "crates/bevy_asset/src/lib.rs",
+       "line": 3006,
+       "character": 22,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "da07196d8e925755",
+        "da1247c0238635e0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_187_should_use_from_reflect",
+       "file": "crates/bevy_world_serialization/src/dynamic_world_builder.rs",
+       "line": 701,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bc48598a2625719c",
+        "a7b2bc69ca1a55c2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_196_is_unique",
+       "file": "crates/bevy_app/src/app.rs",
+       "line": 1643,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d81d24986e2155a5",
+        "bdd40bed8e678797"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_199_test_derive_app_label",
+       "file": "crates/bevy_app/src/app.rs",
+       "line": 1795,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8a85ed207f859dbb",
+        "e56105b7c730d609"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_207_body_message",
+       "file": "crates/bevy_inspector/src/details_panel.rs",
+       "line": 2175,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "78922f092c10993e",
+        "7dac5df671045788"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "document_highlight_97_prelude",
+       "file": "crates/bevy_reflect/src/impls/core/time.rs",
+       "line": 28,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "af325f07620f5753",
+        "fac2c9746f3b279e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": true
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 294,
+     "differing": 6,
+     "transitions": {
+      "a>a": 6
+     },
+     "examples": [
+      {
+       "name": "hover_212_pipe_out",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 469,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7da210ad68bc3cec",
+        "2bdcf2bc770e50d1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "hover_227_run_app_until",
+       "file": "crates/bevy_asset/src/lib.rs",
+       "line": 1016,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a403b9cb7cbb76c1",
+        "4724eca6a05d25d6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "hover_228_sys",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 895,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cca077e26b573dc5",
+        "bd3bd537785f4aaf"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_242_start_drag_at",
+       "file": "crates/bevy_ui_widgets/src/tabs.rs",
+       "line": 1042,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b59ab2e1816bc7e1",
+        "ac5fca54898a8e1a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "hover_254_calculated_clip",
+       "file": "crates/bevy_ui_render/src/clipping.rs",
+       "line": 117,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "24b658c7111aff90",
+        "4c1933333179c1ac"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "hover_284_do_move_and_test",
+       "file": "crates/bevy_ui/src/layout/mod.rs",
+       "line": 1023,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7084ff07001cf00c",
+        "33be6dded9c27af9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 283,
+     "differing": 17,
+     "transitions": {
+      "b>a": 7,
+      "a>a": 10
+     },
+     "examples": [
+      {
+       "name": "prepare_call_hierarchy_45_compute",
+       "file": "crates/bevy_state/src/state/mod.rs",
+       "line": 342,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "eb1ea59d4947775f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_57_hash",
+       "file": "crates/bevy_asset/src/handle.rs",
+       "line": 725,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "a8c225eb6ef46aa8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_73_non_send_count_down",
+       "file": "crates/bevy_ecs/src/system/system.rs",
+       "line": 465,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "27bb7f1594437c93",
+        "ec4eac8e6972159c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_75_captions",
+       "file": "crates/bevy_inspector/src/details_panel.rs",
+       "line": 1551,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1f3cbb52988cecca",
+        "d4b614f29a480131"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_87_new",
+       "file": "crates/bevy_scene/macros/src/bsn/codegen.rs",
+       "line": 993,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "1c818e294f1cb22a"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_139_pipe_in",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 547,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3046c125112f9b88",
+        "0aa9c7e79ed83df1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_149_apply",
+       "file": "crates/bevy_ecs/src/world/command_queue.rs",
+       "line": 419,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "ac368709bfd9b13a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_160_tracked_paths",
+       "file": "crates/bevy_inspector/src/details_panel.rs",
+       "line": 1869,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "2d2a8424f951e94b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_163_sys",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 1016,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1a284343f7dd5a56",
+        "fca5992cce90072c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_176_single_and_populated_skipped_and_run",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 375,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "a09d44c1615af849"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 295,
+     "differing": 5,
+     "transitions": {
+      "a>a": 5
+     },
+     "examples": [
+      {
+       "name": "outgoing_calls_59_retain_some_components",
+       "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+       "line": 255,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ba1cbcbbea0efe87",
+        "edc944e922c5a77d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "outgoing_calls_80_despawn_all_command_despawns",
+       "file": "crates/bevy_ecs/src/system/commands/mod.rs",
+       "line": 3130,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "35ffc24a87a39c4c",
+        "05c98dd621b2e528"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "outgoing_calls_155_update_is_hovered_direct_self",
+       "file": "crates/bevy_picking/src/hover.rs",
+       "line": 579,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e9640c5688f91951",
+        "8236a5803efb5fb5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "outgoing_calls_202_reflect_export_struct_without_reflect_types",
+       "file": "crates/bevy_remote/src/schemas/json_schema.rs",
+       "line": 550,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bb53614a46385741",
+        "602ea4e03b57531b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "outgoing_calls_248_run_system_once_invalid_params",
+       "file": "crates/bevy_ecs/src/system/system.rs",
+       "line": 477,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7061a259e5b3f275",
+        "c1c4e4cf9e1aa841"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "prepare_type_hierarchy": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "b>a": 2
+     },
+     "examples": [
+      {
+       "name": "prepare_type_hierarchy_202_PluginB",
+       "file": "crates/bevy_app/src/app.rs",
+       "line": 1632,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "9daea690ef50ec56"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_type_hierarchy_261_ErroringProcessor",
+       "file": "crates/bevy_reflect/src/serde/ser/mod.rs",
+       "line": 608,
+       "character": 16,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "aa05f05d24b6b570"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      }
+     ]
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 288,
+     "differing": 12,
+     "transitions": {
+      "a>a": 12
+     },
+     "examples": [
+      {
+       "name": "prepare_rename_6_iter_access",
+       "file": "crates/bevy_ecs/src/query/fetch.rs",
+       "line": 4419,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e79b31476a9a42dc",
+        "5062c0bb10f14062"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_65_Edge",
+       "file": "crates/bevy_ecs/src/schedule/graph/dag.rs",
+       "line": 882,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8961eea1a99cbb3b",
+        "69bdc58e0cf2abe0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_88_exclusive_in_out",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 1753,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c78abbdc853fc2a2",
+        "81004189de706b58"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_98_State",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 610,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0961f1455ecacb80",
+        "eb0c2edab8811282"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_101_Components",
+       "file": "crates/bevy_ecs/src/observer/mod.rs",
+       "line": 522,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "edb02c60589b0318",
+        "19fad1137541f189"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_115_sys",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 842,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a5caf1a6c5a39474",
+        "b022e53766cee8cd"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_127_contains_aabb_test_frustum_with_rotation",
+       "file": "crates/bevy_camera/src/primitives.rs",
+       "line": 720,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e871256e171436e7",
+        "b8b58348daa5247d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_139_create_image_rgba8",
+       "file": "crates/bevy_winit/src/cursor/custom_cursor.rs",
+       "line": 183,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2e2cb7dd6e62a532",
+        "9c119d4438316fe8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_143_my_system",
+       "file": "crates/bevy_ecs/src/system/system_param.rs",
+       "line": 3044,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "252153e236145dc8",
+        "4ec163ada3b5f719"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_149_move_ui_node",
+       "file": "crates/bevy_ui/src/layout/mod.rs",
+       "line": 993,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d7189ec49f10d699",
+        "dc79e31e0cebe3cf"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "rename": {
+     "same": 286,
+     "differing": 14,
+     "transitions": {
+      "a>a": 14
+     },
+     "examples": [
+      {
+       "name": "rename_12_get_last_run",
+       "file": "crates/bevy_ecs/src/observer/mod.rs",
+       "line": 1995,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "05ef130e26c55f2a",
+        "a53738cddadf022d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_25_fira_mono_editor",
+       "file": "crates/bevy_text/src/text_edit.rs",
+       "line": 645,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "000433b510840e1d",
+        "42b9294eb8391b7b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_108_my_system",
+       "file": "crates/bevy_ecs/src/system/system_param.rs",
+       "line": 3142,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f1f394d5c51d8edf",
+        "602254619a2c9ad0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_113_Target",
+       "file": "crates/bevy_extract/src/extract_plugin.rs",
+       "line": 377,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "56fa9cb5cd25b781",
+        "f177b3feec2a682f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_118_my_system",
+       "file": "crates/bevy_ecs/src/system/system_param.rs",
+       "line": 3172,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "83f473add76705f1",
+        "13079b44db99f36b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_135_get_tracked",
+       "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+       "line": 1467,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5ef8387fa5a77d29",
+        "981e73844b74bba0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_164_tree_app",
+       "file": "crates/bevy_ui_widgets/src/tree.rs",
+       "line": 699,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "47b0a45cb1ee76a7",
+        "cbfbefe2b0ddbcd0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_178_In",
+       "file": "crates/bevy_ecs/src/observer/mod.rs",
+       "line": 1951,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "10c8f7647426bed7",
+        "dd308179b2f32b8b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_184_foo",
+       "file": "crates/bevy_ecs/src/schedule/mod.rs",
+       "line": 722,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e8833326fcf35904",
+        "a94df082b21d03dd"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_227_roundtrip_ron",
+       "file": "crates/bevy_world_serialization/src/serde.rs",
+       "line": 812,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9c315dbbcd7258c7",
+        "3ffa7d4ab7eaa29e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "2a1a43e",
+   "b": "2a1a43e-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "8dde2a5",
+   "b": "2a1a43e-2",
+   "same": 15203,
+   "differing": 97,
+   "methods": {
+    "definition": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "a>a": 1,
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "definition_0_sync",
+       "file": "crates/bevy_ecs/src/event/mod.rs",
+       "line": 902,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5a2a4999c61dca83",
+        "e9fc80c145f6ae82"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": true
+      },
+      {
+       "name": "definition_49_Ambiguous",
+       "file": "crates/bevy_reflect/src/serde/de/mod.rs",
+       "line": 404,
+       "character": 48,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "57b70d78224c4350"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": true
+      }
+     ]
+    },
+    "declaration": {
+     "same": 285,
+     "differing": 15,
+     "transitions": {
+      "a>a": 15
+     },
+     "examples": [
+      {
+       "name": "decl_58_local_system",
+       "file": "crates/bevy_ecs/src/system/builder.rs",
+       "line": 855,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "77ce96222ab038c9",
+        "4c17c8b6f1f60354"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_78_non_send_param_set",
+       "file": "crates/bevy_ecs/src/system/system_param.rs",
+       "line": 3268,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "071d2d50e9492491",
+        "094ff4c336b18bbb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_115_OutputLoader",
+       "file": "crates/bevy_asset/src/saver.rs",
+       "line": 615,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d2b63a144bf3d334",
+        "120f9c16e8309ffe"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_124_Edge",
+       "file": "crates/bevy_ecs/src/schedule/graph/dag.rs",
+       "line": 738,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ea8008e63eb13639",
+        "45bba7d9bf50217c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_134_Output",
+       "file": "crates/bevy_scene/src/lib.rs",
+       "line": 2562,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c2919a3967276ffe",
+        "cb2a606c4721688c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_135_run_app_until",
+       "file": "crates/bevy_asset/src/lib.rs",
+       "line": 1016,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "128f14955a763fc9",
+        "6d29cac5951a5a71"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_161_system2",
+       "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+       "line": 644,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "17e1741ea419919f",
+        "d96a0af24326202b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_167_spawn_focused_slider",
+       "file": "crates/bevy_ui_widgets/src/slider.rs",
+       "line": 805,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f02650386eed62b7",
+        "1de0b0b7455a4d69"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_174_pipe_out",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 469,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4a3c5f5c8e0e6ceb",
+        "2025d8cf3db7a1e8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "decl_180_ord_a_hook_on_add",
+       "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+       "line": 1235,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "43c2ffd5f2b857b5",
+        "e3f29e76487e3387"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "a>b": 2
+     },
+     "examples": [
+      {
+       "name": "impl_195_FooProcessor",
+       "file": "crates/bevy_reflect/src/serde/ser/mod.rs",
+       "line": 554,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "6430bc7b189a70b0",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      },
+      {
+       "name": "impl_201_SpawnCommand",
+       "file": "crates/bevy_ecs/src/world/command_queue.rs",
+       "line": 466,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "afa56757a6fd806b",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      }
+     ]
+    },
+    "references": {
+     "same": 279,
+     "differing": 21,
+     "transitions": {
+      "b>a": 2,
+      "a>a": 19
+     },
+     "examples": [
+      {
+       "name": "refs_34_resource",
+       "file": "crates/bevy_ui_widgets/src/menu.rs",
+       "line": 511,
+       "character": 19,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "541d6d666e222faf"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_63_resource",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 496,
+       "character": 20,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "71370ed752ace8c7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_159_enum_variant_expr_is_hoisted",
+       "file": "crates/bevy_scene/macros/src/bsn/codegen.rs",
+       "line": 1167,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d7d10fe67eaf5da8",
+        "9aa7d2e70dcea50c"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_169_test_derive_system_set",
+       "file": "crates/bevy_ecs/src/schedule/set.rs",
+       "line": 448,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9b0a4985874d37fe",
+        "75abbc111e1dff85"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_172_with_input_from",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 1994,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3e3c1e8714f13096",
+        "1257fa036ed2fae2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_175_load",
+       "file": "crates/bevy_asset/src/lib.rs",
+       "line": 3006,
+       "character": 22,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "da1247c0238635e0",
+        "da07196d8e925755"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_187_should_use_from_reflect",
+       "file": "crates/bevy_world_serialization/src/dynamic_world_builder.rs",
+       "line": 701,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a7b2bc69ca1a55c2",
+        "bc48598a2625719c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_196_is_unique",
+       "file": "crates/bevy_app/src/app.rs",
+       "line": 1643,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bdd40bed8e678797",
+        "d81d24986e2155a5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_199_test_derive_app_label",
+       "file": "crates/bevy_app/src/app.rs",
+       "line": 1795,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e56105b7c730d609",
+        "8a85ed207f859dbb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_207_body_message",
+       "file": "crates/bevy_inspector/src/details_panel.rs",
+       "line": 2175,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7dac5df671045788",
+        "78922f092c10993e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "document_highlight_97_prelude",
+       "file": "crates/bevy_reflect/src/impls/core/time.rs",
+       "line": 28,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "fac2c9746f3b279e",
+        "af325f07620f5753"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "use",
+       "cfg_test": true
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 294,
+     "differing": 6,
+     "transitions": {
+      "a>a": 6
+     },
+     "examples": [
+      {
+       "name": "hover_212_pipe_out",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 469,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2bdcf2bc770e50d1",
+        "7da210ad68bc3cec"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "hover_227_run_app_until",
+       "file": "crates/bevy_asset/src/lib.rs",
+       "line": 1016,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4724eca6a05d25d6",
+        "a403b9cb7cbb76c1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "hover_228_sys",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 895,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bd3bd537785f4aaf",
+        "cca077e26b573dc5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_242_start_drag_at",
+       "file": "crates/bevy_ui_widgets/src/tabs.rs",
+       "line": 1042,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ac5fca54898a8e1a",
+        "b59ab2e1816bc7e1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "hover_254_calculated_clip",
+       "file": "crates/bevy_ui_render/src/clipping.rs",
+       "line": 117,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4c1933333179c1ac",
+        "24b658c7111aff90"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "hover_284_do_move_and_test",
+       "file": "crates/bevy_ui/src/layout/mod.rs",
+       "line": 1023,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "33be6dded9c27af9",
+        "7084ff07001cf00c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 283,
+     "differing": 17,
+     "transitions": {
+      "a>b": 7,
+      "a>a": 10
+     },
+     "examples": [
+      {
+       "name": "prepare_call_hierarchy_45_compute",
+       "file": "crates/bevy_state/src/state/mod.rs",
+       "line": 342,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "eb1ea59d4947775f",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_57_hash",
+       "file": "crates/bevy_asset/src/handle.rs",
+       "line": 725,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "a8c225eb6ef46aa8",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_73_non_send_count_down",
+       "file": "crates/bevy_ecs/src/system/system.rs",
+       "line": 465,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ec4eac8e6972159c",
+        "27bb7f1594437c93"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_75_captions",
+       "file": "crates/bevy_inspector/src/details_panel.rs",
+       "line": 1551,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d4b614f29a480131",
+        "1f3cbb52988cecca"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_87_new",
+       "file": "crates/bevy_scene/macros/src/bsn/codegen.rs",
+       "line": 993,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "1c818e294f1cb22a",
+        "empty"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_139_pipe_in",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 547,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0aa9c7e79ed83df1",
+        "3046c125112f9b88"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_149_apply",
+       "file": "crates/bevy_ecs/src/world/command_queue.rs",
+       "line": 419,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "ac368709bfd9b13a",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_160_tracked_paths",
+       "file": "crates/bevy_inspector/src/details_panel.rs",
+       "line": 1869,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "2d2a8424f951e94b",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_call_hierarchy_163_sys",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 1016,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "fca5992cce90072c",
+        "1a284343f7dd5a56"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_176_single_and_populated_skipped_and_run",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 375,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "a09d44c1615af849",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 295,
+     "differing": 5,
+     "transitions": {
+      "a>a": 5
+     },
+     "examples": [
+      {
+       "name": "outgoing_calls_59_retain_some_components",
+       "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+       "line": 255,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "edc944e922c5a77d",
+        "ba1cbcbbea0efe87"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "outgoing_calls_80_despawn_all_command_despawns",
+       "file": "crates/bevy_ecs/src/system/commands/mod.rs",
+       "line": 3130,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "05c98dd621b2e528",
+        "35ffc24a87a39c4c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "outgoing_calls_155_update_is_hovered_direct_self",
+       "file": "crates/bevy_picking/src/hover.rs",
+       "line": 579,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8236a5803efb5fb5",
+        "e9640c5688f91951"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "outgoing_calls_202_reflect_export_struct_without_reflect_types",
+       "file": "crates/bevy_remote/src/schemas/json_schema.rs",
+       "line": 550,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "602ea4e03b57531b",
+        "bb53614a46385741"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "outgoing_calls_248_run_system_once_invalid_params",
+       "file": "crates/bevy_ecs/src/system/system.rs",
+       "line": 477,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c1c4e4cf9e1aa841",
+        "7061a259e5b3f275"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "prepare_type_hierarchy": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "a>b": 2
+     },
+     "examples": [
+      {
+       "name": "prepare_type_hierarchy_202_PluginB",
+       "file": "crates/bevy_app/src/app.rs",
+       "line": 1632,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "9daea690ef50ec56",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_type_hierarchy_261_ErroringProcessor",
+       "file": "crates/bevy_reflect/src/serde/ser/mod.rs",
+       "line": 608,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "aa05f05d24b6b570",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      }
+     ]
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 288,
+     "differing": 12,
+     "transitions": {
+      "a>a": 12
+     },
+     "examples": [
+      {
+       "name": "prepare_rename_6_iter_access",
+       "file": "crates/bevy_ecs/src/query/fetch.rs",
+       "line": 4419,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5062c0bb10f14062",
+        "e79b31476a9a42dc"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_65_Edge",
+       "file": "crates/bevy_ecs/src/schedule/graph/dag.rs",
+       "line": 882,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "69bdc58e0cf2abe0",
+        "8961eea1a99cbb3b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_88_exclusive_in_out",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 1753,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "81004189de706b58",
+        "c78abbdc853fc2a2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_98_State",
+       "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+       "line": 610,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "eb0c2edab8811282",
+        "0961f1455ecacb80"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_101_Components",
+       "file": "crates/bevy_ecs/src/observer/mod.rs",
+       "line": 522,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "19fad1137541f189",
+        "edb02c60589b0318"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_115_sys",
+       "file": "crates/bevy_ecs/src/system/mod.rs",
+       "line": 842,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b022e53766cee8cd",
+        "a5caf1a6c5a39474"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_127_contains_aabb_test_frustum_with_rotation",
+       "file": "crates/bevy_camera/src/primitives.rs",
+       "line": 720,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b8b58348daa5247d",
+        "e871256e171436e7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_139_create_image_rgba8",
+       "file": "crates/bevy_winit/src/cursor/custom_cursor.rs",
+       "line": 183,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9c119d4438316fe8",
+        "2e2cb7dd6e62a532"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_143_my_system",
+       "file": "crates/bevy_ecs/src/system/system_param.rs",
+       "line": 3044,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4ec163ada3b5f719",
+        "252153e236145dc8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "prepare_rename_149_move_ui_node",
+       "file": "crates/bevy_ui/src/layout/mod.rs",
+       "line": 993,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dc79e31e0cebe3cf",
+        "d7189ec49f10d699"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "rename": {
+     "same": 286,
+     "differing": 14,
+     "transitions": {
+      "a>a": 14
+     },
+     "examples": [
+      {
+       "name": "rename_12_get_last_run",
+       "file": "crates/bevy_ecs/src/observer/mod.rs",
+       "line": 1995,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a53738cddadf022d",
+        "05ef130e26c55f2a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_25_fira_mono_editor",
+       "file": "crates/bevy_text/src/text_edit.rs",
+       "line": 645,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "42b9294eb8391b7b",
+        "000433b510840e1d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_108_my_system",
+       "file": "crates/bevy_ecs/src/system/system_param.rs",
+       "line": 3142,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "602254619a2c9ad0",
+        "f1f394d5c51d8edf"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_113_Target",
+       "file": "crates/bevy_extract/src/extract_plugin.rs",
+       "line": 377,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f177b3feec2a682f",
+        "56fa9cb5cd25b781"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_118_my_system",
+       "file": "crates/bevy_ecs/src/system/system_param.rs",
+       "line": 3172,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "13079b44db99f36b",
+        "83f473add76705f1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_135_get_tracked",
+       "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+       "line": 1467,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "981e73844b74bba0",
+        "5ef8387fa5a77d29"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_164_tree_app",
+       "file": "crates/bevy_ui_widgets/src/tree.rs",
+       "line": 699,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cbfbefe2b0ddbcd0",
+        "47b0a45cb1ee76a7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_178_In",
+       "file": "crates/bevy_ecs/src/observer/mod.rs",
+       "line": 1951,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dd308179b2f32b8b",
+        "10c8f7647426bed7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:type",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_184_foo",
+       "file": "crates/bevy_ecs/src/schedule/mod.rs",
+       "line": 722,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a94df082b21d03dd",
+        "e8833326fcf35904"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "rename_227_roundtrip_ron",
+       "file": "crates/bevy_world_serialization/src/serde.rs",
+       "line": 812,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3ffa7d4ab7eaa29e",
+        "9c315dbbcd7258c7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_bevy_booster.json",
+  "repo_commit": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_0_sync",
+   "file": "crates/bevy_ecs/src/event/mod.rs",
+   "line": 902,
+   "character": 19,
+   "symbol": "sync",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "e9fc80c145f6ae82",
+     "us": 1102.0,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "5a2a4999c61dca83",
+     "us": 1500.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "e9fc80c145f6ae82",
+     "us": 1209.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_49_Ambiguous",
+   "file": "crates/bevy_reflect/src/serde/de/mod.rs",
+   "line": 404,
+   "character": 48,
+   "symbol": "Ambiguous",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "57b70d78224c4350",
+     "us": 383.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1637.5,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "57b70d78224c4350",
+     "us": 428.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_58_local_system",
+   "file": "crates/bevy_ecs/src/system/builder.rs",
+   "line": 855,
+   "character": 8,
+   "symbol": "local_system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "4c17c8b6f1f60354",
+     "us": 523.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "77ce96222ab038c9",
+     "us": 1072.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "4c17c8b6f1f60354",
+     "us": 549.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_78_non_send_param_set",
+   "file": "crates/bevy_ecs/src/system/system_param.rs",
+   "line": 3268,
+   "character": 12,
+   "symbol": "non_send_param_set",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "094ff4c336b18bbb",
+     "us": 504.2,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "071d2d50e9492491",
+     "us": 1188.0,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "094ff4c336b18bbb",
+     "us": 515.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_115_OutputLoader",
+   "file": "crates/bevy_asset/src/saver.rs",
+   "line": 615,
+   "character": 14,
+   "symbol": "OutputLoader",
+   "target_kind": "lib",
+   "cursor_kind": "decl:type",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "120f9c16e8309ffe",
+     "us": 423.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "d2b63a144bf3d334",
+     "us": 580.7,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "120f9c16e8309ffe",
+     "us": 431.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_124_Edge",
+   "file": "crates/bevy_ecs/src/schedule/graph/dag.rs",
+   "line": 738,
+   "character": 14,
+   "symbol": "Edge",
+   "target_kind": "lib",
+   "cursor_kind": "decl:type",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "45bba7d9bf50217c",
+     "us": 519.2,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "ea8008e63eb13639",
+     "us": 687.6,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "45bba7d9bf50217c",
+     "us": 530.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_134_Output",
+   "file": "crates/bevy_scene/src/lib.rs",
+   "line": 2562,
+   "character": 14,
+   "symbol": "Output",
+   "target_kind": "lib",
+   "cursor_kind": "decl:type",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "cb2a606c4721688c",
+     "us": 522.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "c2919a3967276ffe",
+     "us": 738.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "cb2a606c4721688c",
+     "us": 531.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_135_run_app_until",
+   "file": "crates/bevy_asset/src/lib.rs",
+   "line": 1016,
+   "character": 12,
+   "symbol": "run_app_until",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "6d29cac5951a5a71",
+     "us": 561.1,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "128f14955a763fc9",
+     "us": 732.8,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "6d29cac5951a5a71",
+     "us": 575.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_161_system2",
+   "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+   "line": 644,
+   "character": 12,
+   "symbol": "system2",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "d96a0af24326202b",
+     "us": 558.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "17e1741ea419919f",
+     "us": 762.7,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "d96a0af24326202b",
+     "us": 564.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_167_spawn_focused_slider",
+   "file": "crates/bevy_ui_widgets/src/slider.rs",
+   "line": 805,
+   "character": 8,
+   "symbol": "spawn_focused_slider",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "1de0b0b7455a4d69",
+     "us": 481.1,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "f02650386eed62b7",
+     "us": 569.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "1de0b0b7455a4d69",
+     "us": 445.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_174_pipe_out",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 469,
+   "character": 12,
+   "symbol": "pipe_out",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "2025d8cf3db7a1e8",
+     "us": 545.1,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "4a3c5f5c8e0e6ceb",
+     "us": 635.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "2025d8cf3db7a1e8",
+     "us": 556.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_180_ord_a_hook_on_add",
+   "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+   "line": 1235,
+   "character": 8,
+   "symbol": "ord_a_hook_on_add",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "e3f29e76487e3387",
+     "us": 483.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "43c2ffd5f2b857b5",
+     "us": 716.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "e3f29e76487e3387",
+     "us": 495.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_216_bar",
+   "file": "crates/bevy_ecs/src/schedule/mod.rs",
+   "line": 673,
+   "character": 16,
+   "symbol": "bar",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "84034388a34bf787",
+     "us": 524.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "f5ba00c86d6a9dd3",
+     "us": 685.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "84034388a34bf787",
+     "us": 541.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_230_read",
+   "file": "crates/bevy_ecs/src/schedule/schedule.rs",
+   "line": 3594,
+   "character": 12,
+   "symbol": "read",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "a7f4573b116bc57c",
+     "us": 612.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "957fbd4773685f7e",
+     "us": 1243.8,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "a7f4573b116bc57c",
+     "us": 639.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_252_second",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 702,
+   "character": 12,
+   "symbol": "second",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "1756cee8f98182d5",
+     "us": 472.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "6219d7ad2c7e2ab6",
+     "us": 598.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "1756cee8f98182d5",
+     "us": 478.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_279_from",
+   "file": "crates/bevy_scene/src/lib.rs",
+   "line": 3299,
+   "character": 16,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "5581020455b60006",
+     "us": 482.0,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "34ced48e01d9d5d7",
+     "us": 794.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "5581020455b60006",
+     "us": 502.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_298_displayed",
+   "file": "crates/bevy_inspector/src/details_panel.rs",
+   "line": 1922,
+   "character": 8,
+   "symbol": "displayed",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "de715527b7daa13c",
+     "us": 495.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "171ae0ed647fd418",
+     "us": 740.6,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "de715527b7daa13c",
+     "us": 502.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_195_FooProcessor",
+   "file": "crates/bevy_reflect/src/serde/ser/mod.rs",
+   "line": 554,
+   "character": 16,
+   "symbol": "FooProcessor",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6547.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "6430bc7b189a70b0",
+     "us": 7295.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6593.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_201_SpawnCommand",
+   "file": "crates/bevy_ecs/src/world/command_queue.rs",
+   "line": 466,
+   "character": 12,
+   "symbol": "SpawnCommand",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6885.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "afa56757a6fd806b",
+     "us": 6922.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 6771.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_34_resource",
+   "file": "crates/bevy_ui_widgets/src/menu.rs",
+   "line": 511,
+   "character": 19,
+   "symbol": "resource",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "541d6d666e222faf",
+     "us": 2718.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2247.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "541d6d666e222faf",
+     "us": 3691.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_63_resource",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 496,
+   "character": 20,
+   "symbol": "resource",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "71370ed752ace8c7",
+     "us": 5190.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2577.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "71370ed752ace8c7",
+     "us": 5791.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_159_enum_variant_expr_is_hoisted",
+   "file": "crates/bevy_scene/macros/src/bsn/codegen.rs",
+   "line": 1167,
+   "character": 8,
+   "symbol": "enum_variant_expr_is_hoisted",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "9aa7d2e70dcea50c",
+     "us": 2098.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "d7d10fe67eaf5da8",
+     "us": 2342.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "9aa7d2e70dcea50c",
+     "us": 2399.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_169_test_derive_system_set",
+   "file": "crates/bevy_ecs/src/schedule/set.rs",
+   "line": 448,
+   "character": 8,
+   "symbol": "test_derive_system_set",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "75abbc111e1dff85",
+     "us": 6177.0,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "9b0a4985874d37fe",
+     "us": 5696.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "75abbc111e1dff85",
+     "us": 5245.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_172_with_input_from",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 1994,
+   "character": 8,
+   "symbol": "with_input_from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "1257fa036ed2fae2",
+     "us": 6044.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "3e3c1e8714f13096",
+     "us": 5735.7,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "1257fa036ed2fae2",
+     "us": 5189.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_175_load",
+   "file": "crates/bevy_asset/src/lib.rs",
+   "line": 3006,
+   "character": 22,
+   "symbol": "load",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "da07196d8e925755",
+     "us": 6575.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "da1247c0238635e0",
+     "us": 6239.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "da07196d8e925755",
+     "us": 5147.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_187_should_use_from_reflect",
+   "file": "crates/bevy_world_serialization/src/dynamic_world_builder.rs",
+   "line": 701,
+   "character": 8,
+   "symbol": "should_use_from_reflect",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "bc48598a2625719c",
+     "us": 2255.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a7b2bc69ca1a55c2",
+     "us": 2329.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "bc48598a2625719c",
+     "us": 2184.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_196_is_unique",
+   "file": "crates/bevy_app/src/app.rs",
+   "line": 1643,
+   "character": 12,
+   "symbol": "is_unique",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "d81d24986e2155a5",
+     "us": 2376.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "bdd40bed8e678797",
+     "us": 2456.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "d81d24986e2155a5",
+     "us": 2367.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_199_test_derive_app_label",
+   "file": "crates/bevy_app/src/app.rs",
+   "line": 1795,
+   "character": 8,
+   "symbol": "test_derive_app_label",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "8a85ed207f859dbb",
+     "us": 3068.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "e56105b7c730d609",
+     "us": 2475.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "8a85ed207f859dbb",
+     "us": 2384.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_207_body_message",
+   "file": "crates/bevy_inspector/src/details_panel.rs",
+   "line": 2175,
+   "character": 8,
+   "symbol": "body_message",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "78922f092c10993e",
+     "us": 2079.1,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "7dac5df671045788",
+     "us": 2293.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "78922f092c10993e",
+     "us": 2078.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_208_system2",
+   "file": "crates/bevy_ecs/src/system/system_param.rs",
+   "line": 3523,
+   "character": 12,
+   "symbol": "system2",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "089aa5f118a45237",
+     "us": 5374.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "16faac8e2600da04",
+     "us": 6298.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "089aa5f118a45237",
+     "us": 5287.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_222_as_deref_mut",
+   "file": "crates/bevy_ecs/src/change_detection/mod.rs",
+   "line": 303,
+   "character": 8,
+   "symbol": "as_deref_mut",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "f58d0ad69951193e",
+     "us": 5127.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "ee34d4731e44e547",
+     "us": 5342.6,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "f58d0ad69951193e",
+     "us": 5170.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_223_compute_pixel_space_point_for_sprite_with_anchor_bottom_left",
+   "file": "crates/bevy_sprite/src/sprite.rs",
+   "line": 414,
+   "character": 8,
+   "symbol": "compute_pixel_space_point_for_sprite_with_anchor_bottom_left",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "f7607438f99314d9",
+     "us": 2098.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "b95c03614ed1e99e",
+     "us": 2132.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "f7607438f99314d9",
+     "us": 2064.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_243_unapproved_path_deny_loads_with_override",
+   "file": "crates/bevy_asset/src/lib.rs",
+   "line": 2237,
+   "character": 8,
+   "symbol": "unapproved_path_deny_loads_with_override",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "9952588facb66981",
+     "us": 5234.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "4df0edb68eb0d738",
+     "us": 5581.8,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "9952588facb66981",
+     "us": 5271.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_252_read_only",
+   "file": "crates/bevy_ecs/src/schedule/mod.rs",
+   "line": 920,
+   "character": 12,
+   "symbol": "read_only",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "a461dc12f18a9f62",
+     "us": 5221.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "11d818fbb56579ec",
+     "us": 5831.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "a461dc12f18a9f62",
+     "us": 5193.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_256_scene_with_oneshot_system",
+   "file": "crates/bevy_scene/src/lib.rs",
+   "line": 3122,
+   "character": 8,
+   "symbol": "scene_with_oneshot_system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "cf93b81ce3467587",
+     "us": 4467.0,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "5f7d7e8dfbf86c21",
+     "us": 5159.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "cf93b81ce3467587",
+     "us": 4603.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_268_should_reflect_nested_remote_type",
+   "file": "crates/bevy_reflect/src/lib.rs",
+   "line": 3865,
+   "character": 8,
+   "symbol": "should_reflect_nested_remote_type",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "f16f1ae1ba075d3c",
+     "us": 5537.0,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "1e565a7ce7a48f74",
+     "us": 7560.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "f16f1ae1ba075d3c",
+     "us": 5854.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_276_em_and_rem_sized_nodes_are_updated_on_changes_to_em_and_rem_sizes",
+   "file": "crates/bevy_ui/src/layout/mod.rs",
+   "line": 2608,
+   "character": 8,
+   "symbol": "em_and_rem_sized_nodes_are_updated_on_changes_to_em_and_rem_sizes",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "f0cec8fd892ab89b",
+     "us": 2319.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "d3c2e015ca52ed0a",
+     "us": 2712.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "f0cec8fd892ab89b",
+     "us": 2545.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_282_curve_reparam_curve",
+   "file": "crates/bevy_curve/src/derivatives/adaptor_impls.rs",
+   "line": 630,
+   "character": 8,
+   "symbol": "curve_reparam_curve",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "bda029f69838f9be",
+     "us": 2032.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "c0b0602f39a0b652",
+     "us": 2286.0,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "bda029f69838f9be",
+     "us": 2119.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_288_constants_module",
+   "file": "crates/bevy_shader/src/shader_cache.rs",
+   "line": 581,
+   "character": 8,
+   "symbol": "constants_module",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "3073c51ce49ba80e",
+     "us": 2137.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "db4a821fa3641b38",
+     "us": 2307.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "3073c51ce49ba80e",
+     "us": 2223.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_296_wider_vertex_mesh",
+   "file": "crates/bevy_render/src/mesh/allocator.rs",
+   "line": 781,
+   "character": 8,
+   "symbol": "wider_vertex_mesh",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "e247c28b19807def",
+     "us": 4963.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "4f0853c17c25775d",
+     "us": 5420.0,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "e247c28b19807def",
+     "us": 5121.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_97_prelude",
+   "file": "crates/bevy_reflect/src/impls/core/time.rs",
+   "line": 28,
+   "character": 16,
+   "symbol": "prelude",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "af325f07620f5753",
+     "us": 5341.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "fac2c9746f3b279e",
+     "us": 5477.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "af325f07620f5753",
+     "us": 5716.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_212_pipe_out",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 469,
+   "character": 12,
+   "symbol": "pipe_out",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "7da210ad68bc3cec",
+     "us": 933.2,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "2bdcf2bc770e50d1",
+     "us": 933.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "7da210ad68bc3cec",
+     "us": 834.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_227_run_app_until",
+   "file": "crates/bevy_asset/src/lib.rs",
+   "line": 1016,
+   "character": 12,
+   "symbol": "run_app_until",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "a403b9cb7cbb76c1",
+     "us": 1764.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "4724eca6a05d25d6",
+     "us": 1900.7,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "a403b9cb7cbb76c1",
+     "us": 1722.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_228_sys",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 895,
+   "character": 12,
+   "symbol": "sys",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "cca077e26b573dc5",
+     "us": 968.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "bd3bd537785f4aaf",
+     "us": 1107.7,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "cca077e26b573dc5",
+     "us": 893.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_242_start_drag_at",
+   "file": "crates/bevy_ui_widgets/src/tabs.rs",
+   "line": 1042,
+   "character": 8,
+   "symbol": "start_drag_at",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "b59ab2e1816bc7e1",
+     "us": 1588.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "ac5fca54898a8e1a",
+     "us": 1648.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "b59ab2e1816bc7e1",
+     "us": 1526.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_254_calculated_clip",
+   "file": "crates/bevy_ui_render/src/clipping.rs",
+   "line": 117,
+   "character": 8,
+   "symbol": "calculated_clip",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "24b658c7111aff90",
+     "us": 1619.1,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "4c1933333179c1ac",
+     "us": 1554.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "24b658c7111aff90",
+     "us": 1616.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_284_do_move_and_test",
+   "file": "crates/bevy_ui/src/layout/mod.rs",
+   "line": 1023,
+   "character": 12,
+   "symbol": "do_move_and_test",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "7084ff07001cf00c",
+     "us": 901.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "33be6dded9c27af9",
+     "us": 934.7,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "7084ff07001cf00c",
+     "us": 841.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_45_compute",
+   "file": "crates/bevy_state/src/state/mod.rs",
+   "line": 342,
+   "character": 12,
+   "symbol": "compute",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 418.1,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "eb1ea59d4947775f",
+     "us": 496.6,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 410.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_57_hash",
+   "file": "crates/bevy_asset/src/handle.rs",
+   "line": 725,
+   "character": 8,
+   "symbol": "hash",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 488.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a8c225eb6ef46aa8",
+     "us": 685.5,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 477.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_73_non_send_count_down",
+   "file": "crates/bevy_ecs/src/system/system.rs",
+   "line": 465,
+   "character": 12,
+   "symbol": "non_send_count_down",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "27bb7f1594437c93",
+     "us": 535.0,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "ec4eac8e6972159c",
+     "us": 682.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "27bb7f1594437c93",
+     "us": 537.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_75_captions",
+   "file": "crates/bevy_inspector/src/details_panel.rs",
+   "line": 1551,
+   "character": 12,
+   "symbol": "captions",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "1f3cbb52988cecca",
+     "us": 494.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "d4b614f29a480131",
+     "us": 676.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "1f3cbb52988cecca",
+     "us": 482.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_87_new",
+   "file": "crates/bevy_scene/macros/src/bsn/codegen.rs",
+   "line": 993,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 420.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "1c818e294f1cb22a",
+     "us": 527.6,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 433.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_139_pipe_in",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 547,
+   "character": 12,
+   "symbol": "pipe_in",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "3046c125112f9b88",
+     "us": 547.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "0aa9c7e79ed83df1",
+     "us": 618.0,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "3046c125112f9b88",
+     "us": 539.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_149_apply",
+   "file": "crates/bevy_ecs/src/world/command_queue.rs",
+   "line": 419,
+   "character": 12,
+   "symbol": "apply",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 527.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "ac368709bfd9b13a",
+     "us": 596.8,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 530.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_160_tracked_paths",
+   "file": "crates/bevy_inspector/src/details_panel.rs",
+   "line": 1869,
+   "character": 8,
+   "symbol": "tracked_paths",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 414.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "2d2a8424f951e94b",
+     "us": 547.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 386.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_163_sys",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 1016,
+   "character": 12,
+   "symbol": "sys",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "1a284343f7dd5a56",
+     "us": 580.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "fca5992cce90072c",
+     "us": 781.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "1a284343f7dd5a56",
+     "us": 559.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_176_single_and_populated_skipped_and_run",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 375,
+   "character": 8,
+   "symbol": "single_and_populated_skipped_and_run",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 489.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a09d44c1615af849",
+     "us": 545.5,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 501.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_182_compare_vectors",
+   "file": "crates/bevy_curve/src/cubic_splines/mod.rs",
+   "line": 1777,
+   "character": 12,
+   "symbol": "compare_vectors",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "749c28c0de00fc74",
+     "us": 384.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "dd52f0c627c5240d",
+     "us": 762.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "749c28c0de00fc74",
+     "us": 374.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_218_i_fail",
+   "file": "crates/bevy_ecs/src/error/bevy_error.rs",
+   "line": 721,
+   "character": 12,
+   "symbol": "i_fail",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "225450b8046b782c",
+     "us": 476.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a592113861eed61a",
+     "us": 579.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "225450b8046b782c",
+     "us": 496.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_229_get_summary_tick_is_changed",
+   "file": "crates/bevy_ecs/src/query/mod.rs",
+   "line": 951,
+   "character": 12,
+   "symbol": "get_summary_tick_is_changed",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "461ef73d91ab6138",
+     "us": 528.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "4d34dab97ed5df70",
+     "us": 853.9,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "461ef73d91ab6138",
+     "us": 557.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_240_entity_mut_system",
+   "file": "crates/bevy_ecs/src/schedule/mod.rs",
+   "line": 893,
+   "character": 12,
+   "symbol": "entity_mut_system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 540.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "0c2d471bb65e0020",
+     "us": 707.5,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 559.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_249_modify_system",
+   "file": "crates/bevy_ecs/src/query/mod.rs",
+   "line": 804,
+   "character": 12,
+   "symbol": "modify_system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "03d4110adef154e6",
+     "us": 526.4,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "62f3e26d0e166467",
+     "us": 714.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "03d4110adef154e6",
+     "us": 545.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_266_hold_components",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 1462,
+   "character": 16,
+   "symbol": "hold_components",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "7526b69ef48fd5dc",
+     "us": 589.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "456b5d9711da6523",
+     "us": 796.5,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "7526b69ef48fd5dc",
+     "us": 602.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_275_custom_debug",
+   "file": "crates/bevy_reflect/src/lib.rs",
+   "line": 3234,
+   "character": 12,
+   "symbol": "custom_debug",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "c35855f316ec50bd",
+     "us": 634.0,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "c97c7e828db74b49",
+     "us": 1591.6,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "c35855f316ec50bd",
+     "us": 642.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_59_retain_some_components",
+   "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+   "line": 255,
+   "character": 8,
+   "symbol": "retain_some_components",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "ba1cbcbbea0efe87",
+     "us": 7305.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "edc944e922c5a77d",
+     "us": 8207.5,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "ba1cbcbbea0efe87",
+     "us": 7306.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_80_despawn_all_command_despawns",
+   "file": "crates/bevy_ecs/src/system/commands/mod.rs",
+   "line": 3130,
+   "character": 8,
+   "symbol": "despawn_all_command_despawns",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "35ffc24a87a39c4c",
+     "us": 10581.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "05c98dd621b2e528",
+     "us": 15013.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "35ffc24a87a39c4c",
+     "us": 10554.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_155_update_is_hovered_direct_self",
+   "file": "crates/bevy_picking/src/hover.rs",
+   "line": 579,
+   "character": 8,
+   "symbol": "update_is_hovered_direct_self",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "e9640c5688f91951",
+     "us": 12145.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "8236a5803efb5fb5",
+     "us": 13585.0,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "e9640c5688f91951",
+     "us": 12156.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_202_reflect_export_struct_without_reflect_types",
+   "file": "crates/bevy_remote/src/schemas/json_schema.rs",
+   "line": 550,
+   "character": 8,
+   "symbol": "reflect_export_struct_without_reflect_types",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "bb53614a46385741",
+     "us": 6622.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "602ea4e03b57531b",
+     "us": 8391.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "bb53614a46385741",
+     "us": 6594.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_248_run_system_once_invalid_params",
+   "file": "crates/bevy_ecs/src/system/system.rs",
+   "line": 477,
+   "character": 8,
+   "symbol": "run_system_once_invalid_params",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "7061a259e5b3f275",
+     "us": 3461.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "c1c4e4cf9e1aa841",
+     "us": 4781.5,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "7061a259e5b3f275",
+     "us": 3433.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "rpc_method": "textDocument/prepareTypeHierarchy",
+   "name": "prepare_type_hierarchy_202_PluginB",
+   "file": "crates/bevy_app/src/app.rs",
+   "line": 1632,
+   "character": 12,
+   "symbol": "PluginB",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 468.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "9daea690ef50ec56",
+     "us": 580.8,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 452.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "rpc_method": "textDocument/prepareTypeHierarchy",
+   "name": "prepare_type_hierarchy_261_ErroringProcessor",
+   "file": "crates/bevy_reflect/src/serde/ser/mod.rs",
+   "line": 608,
+   "character": 16,
+   "symbol": "ErroringProcessor",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 438.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "aa05f05d24b6b570",
+     "us": 753.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 451.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_6_iter_access",
+   "file": "crates/bevy_ecs/src/query/fetch.rs",
+   "line": 4419,
+   "character": 16,
+   "symbol": "iter_access",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "e79b31476a9a42dc",
+     "us": 6773.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "5062c0bb10f14062",
+     "us": 7887.6,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "e79b31476a9a42dc",
+     "us": 6037.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_65_Edge",
+   "file": "crates/bevy_ecs/src/schedule/graph/dag.rs",
+   "line": 882,
+   "character": 14,
+   "symbol": "Edge",
+   "target_kind": "lib",
+   "cursor_kind": "decl:type",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "8961eea1a99cbb3b",
+     "us": 5625.3,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "69bdc58e0cf2abe0",
+     "us": 5817.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "8961eea1a99cbb3b",
+     "us": 5836.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_88_exclusive_in_out",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 1753,
+   "character": 12,
+   "symbol": "exclusive_in_out",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "c78abbdc853fc2a2",
+     "us": 5540.2,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "81004189de706b58",
+     "us": 5923.7,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "c78abbdc853fc2a2",
+     "us": 5861.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_98_State",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 610,
+   "character": 14,
+   "symbol": "State",
+   "target_kind": "lib",
+   "cursor_kind": "decl:type",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "0961f1455ecacb80",
+     "us": 5519.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "eb0c2edab8811282",
+     "us": 5583.7,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "0961f1455ecacb80",
+     "us": 5964.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_101_Components",
+   "file": "crates/bevy_ecs/src/observer/mod.rs",
+   "line": 522,
+   "character": 14,
+   "symbol": "Components",
+   "target_kind": "lib",
+   "cursor_kind": "decl:type",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "edb02c60589b0318",
+     "us": 5603.2,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "19fad1137541f189",
+     "us": 5550.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "edb02c60589b0318",
+     "us": 6175.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_115_sys",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 842,
+   "character": 12,
+   "symbol": "sys",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "a5caf1a6c5a39474",
+     "us": 5717.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "b022e53766cee8cd",
+     "us": 5703.0,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "a5caf1a6c5a39474",
+     "us": 5660.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_127_contains_aabb_test_frustum_with_rotation",
+   "file": "crates/bevy_camera/src/primitives.rs",
+   "line": 720,
+   "character": 8,
+   "symbol": "contains_aabb_test_frustum_with_rotation",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "e871256e171436e7",
+     "us": 2476.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "b8b58348daa5247d",
+     "us": 2504.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "e871256e171436e7",
+     "us": 2457.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_139_create_image_rgba8",
+   "file": "crates/bevy_winit/src/cursor/custom_cursor.rs",
+   "line": 183,
+   "character": 8,
+   "symbol": "create_image_rgba8",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "2e2cb7dd6e62a532",
+     "us": 2377.0,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "9c119d4438316fe8",
+     "us": 2302.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "2e2cb7dd6e62a532",
+     "us": 2353.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_143_my_system",
+   "file": "crates/bevy_ecs/src/system/system_param.rs",
+   "line": 3044,
+   "character": 12,
+   "symbol": "my_system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "252153e236145dc8",
+     "us": 5668.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "4ec163ada3b5f719",
+     "us": 6210.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "252153e236145dc8",
+     "us": 5644.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_149_move_ui_node",
+   "file": "crates/bevy_ui/src/layout/mod.rs",
+   "line": 993,
+   "character": 12,
+   "symbol": "move_ui_node",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "d7189ec49f10d699",
+     "us": 2556.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "dc79e31e0cebe3cf",
+     "us": 2610.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "d7189ec49f10d699",
+     "us": 2611.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_173_drop",
+   "file": "crates/bevy_scene/src/lib.rs",
+   "line": 2928,
+   "character": 16,
+   "symbol": "drop",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "f4ca26455dda9022",
+     "us": 4874.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a0a0c90b37f0e6b8",
+     "us": 5052.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "f4ca26455dda9022",
+     "us": 4788.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_231_mutable_query",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 1518,
+   "character": 16,
+   "symbol": "mutable_query",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "a385fba32ec11be3",
+     "us": 6123.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "923e51dc4e8c5c9a",
+     "us": 5775.0,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "a385fba32ec11be3",
+     "us": 5526.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_12_get_last_run",
+   "file": "crates/bevy_ecs/src/observer/mod.rs",
+   "line": 1995,
+   "character": 16,
+   "symbol": "get_last_run",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "05ef130e26c55f2a",
+     "us": 9207.2,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a53738cddadf022d",
+     "us": 7504.6,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "05ef130e26c55f2a",
+     "us": 8416.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_25_fira_mono_editor",
+   "file": "crates/bevy_text/src/text_edit.rs",
+   "line": 645,
+   "character": 8,
+   "symbol": "fira_mono_editor",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "000433b510840e1d",
+     "us": 3279.4,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "42b9294eb8391b7b",
+     "us": 3305.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "000433b510840e1d",
+     "us": 3339.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_108_my_system",
+   "file": "crates/bevy_ecs/src/system/system_param.rs",
+   "line": 3142,
+   "character": 12,
+   "symbol": "my_system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "f1f394d5c51d8edf",
+     "us": 7936.9,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "602254619a2c9ad0",
+     "us": 7371.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "f1f394d5c51d8edf",
+     "us": 7129.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_113_Target",
+   "file": "crates/bevy_extract/src/extract_plugin.rs",
+   "line": 377,
+   "character": 14,
+   "symbol": "Target",
+   "target_kind": "lib",
+   "cursor_kind": "decl:type",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "56fa9cb5cd25b781",
+     "us": 6170.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "f177b3feec2a682f",
+     "us": 5525.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "56fa9cb5cd25b781",
+     "us": 5583.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_118_my_system",
+   "file": "crates/bevy_ecs/src/system/system_param.rs",
+   "line": 3172,
+   "character": 12,
+   "symbol": "my_system",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "83f473add76705f1",
+     "us": 7084.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "13079b44db99f36b",
+     "us": 7571.6,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "83f473add76705f1",
+     "us": 6697.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_135_get_tracked",
+   "file": "crates/bevy_ecs/src/world/entity_access/mod.rs",
+   "line": 1467,
+   "character": 12,
+   "symbol": "get_tracked",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "5ef8387fa5a77d29",
+     "us": 6597.1,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "981e73844b74bba0",
+     "us": 6814.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "5ef8387fa5a77d29",
+     "us": 6472.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_164_tree_app",
+   "file": "crates/bevy_ui_widgets/src/tree.rs",
+   "line": 699,
+   "character": 8,
+   "symbol": "tree_app",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "47b0a45cb1ee76a7",
+     "us": 3501.5,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "cbfbefe2b0ddbcd0",
+     "us": 4016.7,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "47b0a45cb1ee76a7",
+     "us": 3570.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_178_In",
+   "file": "crates/bevy_ecs/src/observer/mod.rs",
+   "line": 1951,
+   "character": 18,
+   "symbol": "In",
+   "target_kind": "lib",
+   "cursor_kind": "decl:type",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "10c8f7647426bed7",
+     "us": 7408.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "dd308179b2f32b8b",
+     "us": 6932.1,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "10c8f7647426bed7",
+     "us": 8215.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_184_foo",
+   "file": "crates/bevy_ecs/src/schedule/mod.rs",
+   "line": 722,
+   "character": 16,
+   "symbol": "foo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "e8833326fcf35904",
+     "us": 7189.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a94df082b21d03dd",
+     "us": 6645.2,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "e8833326fcf35904",
+     "us": 7419.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_227_roundtrip_ron",
+   "file": "crates/bevy_world_serialization/src/serde.rs",
+   "line": 812,
+   "character": 8,
+   "symbol": "roundtrip_ron",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "9c315dbbcd7258c7",
+     "us": 3651.6,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "3ffa7d4ab7eaa29e",
+     "us": 3793.8,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "9c315dbbcd7258c7",
+     "us": 3440.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_248_ref_eq",
+   "file": "crates/bevy_ecs/src/intern.rs",
+   "line": 232,
+   "character": 16,
+   "symbol": "ref_eq",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "674ad6c80df86778",
+     "us": 7182.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "475376342c1b4d8f",
+     "us": 6104.0,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "674ad6c80df86778",
+     "us": 6694.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_259_b0",
+   "file": "crates/bevy_dev_tools/src/schedule_data/serde.rs",
+   "line": 1168,
+   "character": 12,
+   "symbol": "b0",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "d6824ea076ac3234",
+     "us": 3788.4,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "c7f70890ecdd144f",
+     "us": 3395.4,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "d6824ea076ac3234",
+     "us": 3523.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_267_rect_contains_value",
+   "file": "crates/bevy_image/src/dynamic_texture_atlas_builder.rs",
+   "line": 160,
+   "character": 8,
+   "symbol": "rect_contains_value",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "6079ee3e6ead92fb",
+     "us": 6289.8,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "9b578fd0facc3438",
+     "us": 5989.3,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "6079ee3e6ead92fb",
+     "us": 5939.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_297_foo",
+   "file": "crates/bevy_reflect/src/func/registry.rs",
+   "line": 402,
+   "character": 12,
+   "symbol": "foo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "2a1a43e": {
+     "outcome": "a",
+     "digest": "f0620f41bdda6bbd",
+     "us": 7072.7,
+     "error": null
+    },
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "595a5ed5a5e833fa",
+     "us": 6616.5,
+     "error": null
+    },
+    "2a1a43e-2": {
+     "outcome": "a",
+     "digest": "f0620f41bdda6bbd",
+     "us": 6768.9,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 97,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_2a1a43e_vs_8dde2a5_ram9_bevy.json",
+  "sha256": "50d38566be528d936a79239350af28d9d8a7d6992982cc2ef22c0158e673d625"
+ }
+}
