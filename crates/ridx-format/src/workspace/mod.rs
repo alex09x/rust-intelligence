@@ -13,6 +13,7 @@
 //! Provides unified zero-copy queries across all crates in a cargo workspace.
 
 pub mod cache_resolver;
+mod definition_at;
 mod discover;
 pub mod file_module;
 pub mod manifest;
@@ -30,6 +31,8 @@ pub mod unit_match;
 
 #[cfg(test)]
 mod cache_resolver_tests;
+#[cfg(test)]
+mod definition_at_tests;
 #[cfg(test)]
 mod file_id_routing_tests;
 #[cfg(test)]

@@ -13,7 +13,7 @@
 //! Provides O(1) unit matching across workspace crates, avoiding quadratic scans
 //! over readers and extern unit mappings.
 
-use crate::format::{DefEntry, DefKind, RefEntry};
+use crate::format::{DefEntry, DefKind};
 use crate::reader::{IndexReader, ResolvedDefinition};
 use std::collections::{HashMap, HashSet};
 
@@ -330,38 +330,5 @@ impl super::WorkspaceIndex {
             }
         }
         best.map(|(def, _)| self.make_resolved_definition(reader_idx, def))
-    }
-
-    /// Resolves a definition at `(file_id, line, col)` in `reader_idx`, reusing a pre-looked-up
-    /// `inner_ref` if present, or binary-searching `defs_by_pos` for `file_id`.
-    pub fn find_def_at_in_reader<'a>(
-        &'a self,
-        reader_idx: usize,
-        file_id: u32,
-        line: u32,
-        col: u32,
-        inner_ref: Option<&'a RefEntry>,
-    ) -> Option<ResolvedDefinition<'a>> {
-        let reader = self.readers.get(reader_idx)?;
-        if let Some(r) = inner_ref {
-            return Some(reader.resolve_ref_definition(r));
-        }
-        let defs = reader.definitions();
-        let slice = self
-            .unit_match
-            .defs_in_file_up_to(reader_idx, file_id, line);
-        let mut best_def: Option<(&DefEntry, u64)> = None;
-        for &(_, _, def_idx) in slice {
-            if let Some(def) = defs.get(def_idx as usize) {
-                let def_span = def.span();
-                if def_span.contains(file_id, line, col) {
-                    let size = def_span.approximate_size();
-                    if best_def.is_none_or(|(_, best_size)| size < best_size) {
-                        best_def = Some((def, size));
-                    }
-                }
-            }
-        }
-        best_def.map(|(def, _)| reader.def_to_resolved(def))
     }
 }

@@ -18,9 +18,11 @@ use std::path::Path;
 
 use crate::format::*;
 
+mod definition_at;
 mod file_lookup;
 mod name_reference;
 mod queries;
+pub(crate) use self::name_reference::span_strictly_inside;
 mod search;
 
 use self::search::validate_sections;
@@ -361,6 +363,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     }
 }
 
+#[cfg(test)]
+pub(crate) mod cursor_precedence_tests;
 #[cfg(test)]
 mod file_id_exact_tests;
 #[cfg(test)]

@@ -168,7 +168,7 @@ fn build_file_reader_contexts<'a>(
             idx,
             reader,
             file_id,
-            inner_ref: reader.find_innermost_ref_at_file_id(file_id, line, col),
+            inner_ref: inner_ref_at(ws, idx, file_id, line, col),
             inner_type: reader.find_innermost_type_entry(tf.as_ref(), line, col),
         });
     }
@@ -187,13 +187,30 @@ fn build_file_reader_contexts<'a>(
                 idx,
                 reader,
                 file_id,
-                inner_ref: reader.find_innermost_ref_at_file_id(file_id, line, col),
+                inner_ref: inner_ref_at(ws, idx, file_id, line, col),
                 inner_type: reader.find_innermost_type_entry(tf.as_ref(), line, col),
             });
         }
     }
 
     (file_readers, ctx)
+}
+
+/// The innermost reference at the cursor, unless a definition at the cursor lies inside its span:
+/// then the definition is the answer and the reference is not consulted.
+fn inner_ref_at(
+    ws: &WorkspaceIndex,
+    idx: usize,
+    file_id: u32,
+    line: u32,
+    col: u32,
+) -> Option<&RefEntry> {
+    ws.readers()[idx]
+        .find_innermost_ref_at_file_id(file_id, line, col)
+        .filter(|r| {
+            ws.definition_inside_reference_at(idx, file_id, line, col, r)
+                .is_none()
+        })
 }
 
 fn extract_type_entry<'a>(ctx: &[FileReaderCtx<'a>]) -> Option<(&'a str, Option<&'a str>)> {
