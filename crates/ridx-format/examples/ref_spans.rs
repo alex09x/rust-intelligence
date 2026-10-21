@@ -13,18 +13,25 @@
 //!
 //! ```text
 //! REF <tab> <shard> <tab> <stored path> <tab> <start line>:<start col>-<end line>:<end col>
-//!     <tab> <kind> <tab> macro|plain <tab> <lines> <tab> <text> <tab> <def span> <tab> <target path>
+//!     <tab> <kind> <tab> macro|plain <tab> <lines> <tab> <text> <tab> <def span> <tab> <covers>
+//!     <tab> <self> <tab> <target path>
 //! ```
 //!
 //! `lines` is the number of lines the span covers; `text` says whether the source text under the
 //! span equals the last segment of the target path (`name`), differs from it (`other`), or could
 //! not be read (`unread`); `def span` says whether the span equals the span of the target's own
 //! definition in the same shard (`same`), differs (`differs`) or the target is not in the shard
-//! (`none`). Relative stored paths are read under the directory given with `--root`.
+//! (`none`); `covers` says whether the span is the span of some definition in the shard (`item`),
+//! the whole file (`file`: from 1:1 to the last line of the file, or past it), or neither
+//! (`other`); `self` says how the span relates to the start of its own target's definition in the
+//! same shard: `equal` (the span is the definition's span), `contains` (the span properly encloses
+//! the definition's span: the span of the item or file that defines the target, which the reader's
+//! lookups skip), `apart` (it does not) or `none` (the target is not in the shard). Relative stored
+//! paths are read under the directory given with `--root`.
 //!
 //!     cargo run -p ridx-format --example ref_spans -- --root <workspace> target/ridx/variants/<id>
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use ridx_format::{DefKind, IndexReader};
@@ -46,9 +53,26 @@ fn shards(arg: &Path) -> Vec<PathBuf> {
     }
 }
 
-/// The last `::` segment of a target path, without a trailing generic list.
+/// The last `::` segment of a target path, without a trailing balanced generic list
+/// (`Foo<Bar<T>>` gives `Foo`).
 fn last_segment(path: &str) -> &str {
-    let trimmed = path.trim_end_matches('>');
+    let mut trimmed = path;
+    if trimmed.ends_with('>') {
+        let mut depth = 0usize;
+        for (i, c) in trimmed.char_indices().rev() {
+            match c {
+                '>' => depth += 1,
+                '<' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        trimmed = &trimmed[..i];
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
     trimmed.rsplit("::").next().unwrap_or(trimmed)
 }
 
@@ -97,6 +121,20 @@ fn main() {
                 .iter()
                 .map(|d| (d.def_id(), d.span()))
                 .collect();
+            let item_spans: HashSet<(u32, u32, u32, u32, u32)> = reader
+                .definitions()
+                .iter()
+                .map(|d| {
+                    let s = d.span();
+                    (
+                        s.file_id(),
+                        s.start_line(),
+                        s.start_col(),
+                        s.end_line(),
+                        s.end_col(),
+                    )
+                })
+                .collect();
             for r in reader.references() {
                 let span = r.span();
                 let stored = reader.get_file(span.file_id());
@@ -104,7 +142,9 @@ fn main() {
                 let abs = if path.is_absolute() {
                     path.to_path_buf()
                 } else {
-                    root.as_deref().map(|d| d.join(path)).unwrap_or_else(|| path.to_path_buf())
+                    root.as_deref()
+                        .map(|d| d.join(path))
+                        .unwrap_or_else(|| path.to_path_buf())
                 };
                 let lines = cache.entry(abs.clone()).or_insert_with(|| {
                     std::fs::read_to_string(&abs)
@@ -112,7 +152,12 @@ fn main() {
                         .map(|t| t.split('\n').map(str::to_string).collect())
                 });
                 let target_path = reader.get_str(r.target_path_offset());
-                let (sl, sc, el, ec) = (span.start_line(), span.start_col(), span.end_line(), span.end_col());
+                let (sl, sc, el, ec) = (
+                    span.start_line(),
+                    span.start_col(),
+                    span.end_line(),
+                    span.end_col(),
+                );
                 let text = match lines.as_deref().and_then(|l| span_text(l, sl, sc, el, ec)) {
                     None => "unread",
                     Some(t) if t == last_segment(target_path) => "name",
@@ -120,11 +165,48 @@ fn main() {
                 };
                 let def_span = match def_spans.get(&r.target_def_id()) {
                     None => "none",
-                    Some(d) if d.start_line() == sl && d.start_col() == sc && d.end_line() == el && d.end_col() == ec => "same",
+                    Some(d)
+                        if d.start_line() == sl
+                            && d.start_col() == sc
+                            && d.end_line() == el
+                            && d.end_col() == ec =>
+                    {
+                        "same"
+                    }
                     Some(_) => "differs",
                 };
+                let last_line = lines
+                    .as_deref()
+                    .map(|l| l.len() as u32 - u32::from(l.last().is_some_and(|t| t.is_empty())));
+                let own = match def_spans.get(&r.target_def_id()) {
+                    None => "none",
+                    Some(d)
+                        if d.start_line() == sl
+                            && d.start_col() == sc
+                            && d.end_line() == el
+                            && d.end_col() == ec =>
+                    {
+                        "equal"
+                    }
+                    Some(d)
+                        if (d.end_line(), d.end_col()) >= (d.start_line(), d.start_col())
+                            && d.file_id() == span.file_id()
+                            && (sl, sc) <= (d.start_line(), d.start_col())
+                            && (el, ec) >= (d.end_line(), d.end_col()) =>
+                    {
+                        "contains"
+                    }
+                    Some(_) => "apart",
+                };
+                let covers = if item_spans.contains(&(span.file_id(), sl, sc, el, ec)) {
+                    "item"
+                } else if sl == 1 && sc == 1 && last_line.is_some_and(|n| el >= n) {
+                    "file"
+                } else {
+                    "other"
+                };
                 println!(
-                    "REF\t{name}\t{stored}\t{sl}:{sc}-{el}:{ec}\t{:?}\t{}\t{}\t{text}\t{def_span}\t{target_path}",
+                    "REF\t{name}\t{stored}\t{sl}:{sc}-{el}:{ec}\t{:?}\t{}\t{}\t{text}\t{def_span}\t{covers}\t{own}\t{target_path}",
                     DefKind::from(r.kind),
                     if r.is_macro_expansion() { "macro" } else { "plain" },
                     el.saturating_sub(sl) + 1,
