@@ -69,6 +69,17 @@ pub(crate) fn is_call_site(file: &str, span_end_line: u32, span_end_col: u32) ->
     is_call_site_in_lines(&lines, span_end_line, span_end_col)
 }
 
+/// True when the quote just consumed opens a char literal: the next character is an escape
+/// (`'\n'`, `'\u{1F980}'`) or the character after the next one is the closing quote (`'x'`,
+/// `'{'`). A lifetime or label (`'a`, `'static`, `'_`) has no closing quote within reach.
+fn opens_char_literal(chars: &std::iter::Peekable<std::str::Chars<'_>>) -> bool {
+    let mut ahead = chars.clone();
+    matches!(
+        (ahead.next(), ahead.next()),
+        (Some('\\'), _) | (Some(_), Some('\''))
+    )
+}
+
 pub(crate) fn find_function_body_end_line(lines: &[&str], start_line_1based: u32) -> u32 {
     let start_idx = start_line_1based.saturating_sub(1) as usize;
     let mut depth = 0i32;
@@ -107,7 +118,13 @@ pub(crate) fn find_function_body_end_line(lines: &[&str], start_line_1based: u32
             }
 
             if ch == '\'' && !in_string {
-                in_char = !in_char;
+                if in_char {
+                    in_char = false;
+                } else if opens_char_literal(&chars) {
+                    in_char = true;
+                }
+                // A lifetime or label (`'a`, `'static`, `'_`, `'outer:`) is neither: the rest of
+                // the line keeps being scanned for braces and terminators.
                 continue;
             }
 
