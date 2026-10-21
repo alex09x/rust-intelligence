@@ -81,12 +81,11 @@ impl WorkspaceIndex {
             let Some(def) = defs.get(def_idx as usize) else {
                 continue;
             };
-            if reader.get_str(def.name_offset()).is_empty() {
-                continue;
-            }
             let def_span = def.span();
+            // Span checks first; the name is read only for a definition that contains the cursor.
             if !def_span.contains(file_id, line, col)
                 || !inside.is_none_or(|r| span_strictly_inside(&def_span, &r.span()))
+                || reader.get_str(def.name_offset()).is_empty()
             {
                 continue;
             }

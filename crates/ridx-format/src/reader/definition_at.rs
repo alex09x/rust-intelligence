@@ -43,12 +43,12 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
         let mut best_def: Option<(&DefEntry, u64)> = None;
         for def in self.definitions() {
-            if self.get_str(def.name_offset()).is_empty() {
-                continue;
-            }
             let def_span = def.span();
+            // Span checks first: they are integer comparisons on every definition; the name is
+            // read only for a definition that contains the cursor.
             if def_span.contains(file_id, line, col)
                 && inner.is_none_or(|r| span_strictly_inside(&def_span, &r.span()))
+                && !self.get_str(def.name_offset()).is_empty()
             {
                 let size = def_span.approximate_size();
                 if best_def.is_none_or(|(_, best_size)| size < best_size) {
