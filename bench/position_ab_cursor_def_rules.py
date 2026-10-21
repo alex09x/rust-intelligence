@@ -14,6 +14,8 @@ Spans are 1-based, end-exclusive `(start line, start col, end line, end col)` in
 from position_ab_name_span_rules import contains_pos
 
 CLASS_ITEM = "d1_item_at_cursor_answers_instead_of_the_enclosing_reference"
+CLASS_ROOT = "d2_nameless_crate_root_module_no_longer_answers"
+CLASS_TYPE_DEF = "d3_type_definition_no_longer_stopped_by_the_crate_root_module"
 TEST_DIRS = frozenset({"tests", "test", "benches", "examples"})
 
 
@@ -91,6 +93,29 @@ def classify_cursor_definition(cursor, def_before, def_after, enclosing_in_file)
         "enclosing_spans_at_cursor": [list(s) for s in spans], "enclosing_targets_at_cursor": targets,
         "definition_before": brief(def_before), "definition_after": brief(def_after), "before_kind": before_kind,
     }
+
+
+def classify_nameless_root(def_before, def_after, added_count):
+    """The reader's definition at the cursor used to be the nameless crate-root module (kind `Mod`,
+    empty path: the fallback to the smallest definition containing the cursor, on a position with
+    no name) and is now nothing; the method's answer lost locations and gained none."""
+    before_root = bool(def_before and def_before.get("found")) and def_before.get("kind") == "Mod" and not def_before.get("path")
+    after_none = not (def_after and def_after.get("found"))
+    ok = before_root and after_none and added_count == 0
+    return ok, {"definition_before": brief(def_before), "definition_after": brief(def_after)}
+
+
+def classify_type_definition_unblocked(method, def_after, removed, added):
+    """typeDefinition used to answer nothing: one of the file's readers resolved the cursor to the
+    nameless crate-root module through the fallback, and the resolver stops at a `Mod` answer.
+    Now that reader answers nothing and the next one resolves the type: exactly one location was
+    added, at the definition the reader gives for the cursor, and nothing was removed."""
+    span = def_span(def_after)
+    ok = (
+        method == "type_definition" and not removed and len(added) == 1 and span is not None
+        and (added[0][1][0], added[0][1][1]) == (span[0], span[1])
+    )
+    return ok, {"definition_after": brief(def_after), "added": [[p, list(s)] for p, s in added]}
 
 
 def in_test_file(rel):

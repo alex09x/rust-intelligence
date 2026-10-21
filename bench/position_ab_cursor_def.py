@@ -25,6 +25,12 @@ added locations, and the reader's definition at the cursor is asked from both bi
       whether the file is a test, bench or example target and whether the item sits in a `tests`
       module, and carries the class the row had in `--previous` (the A/B of the name-reference
       rule: s6 rows are the ones this rule was written for).
+  d2  the reader's definition at the cursor used to be the nameless crate-root module (the
+      fallback to the smallest definition containing a position with no name) and is now nothing;
+      the method lost locations and gained none.
+  d3  typeDefinition used to answer nothing because one of the file's readers resolved the cursor
+      to the nameless crate-root module and the resolver stops at a `Mod` answer; now exactly one
+      location was added, at the definition the reader gives for the cursor, and none removed.
 A row failing its check is `unclassified`. Paths in the evidence are relative to the workspace,
 the cargo registry, a git checkout or the sysroot source tree; no private prefix is kept.
 """
@@ -47,7 +53,8 @@ from position_ab_classify import scenario_from_record  # noqa: E402
 from position_ab_content import differing_rows  # noqa: E402
 from position_ab_content_rules import RPC, scrub_path  # noqa: E402
 from position_ab_cursor_def_rules import (  # noqa: E402
-    CLASS_ITEM, classify_cursor_definition, in_test_file, in_test_module, load_enclosing_refs, one_edit_form,
+    CLASS_ITEM, CLASS_ROOT, CLASS_TYPE_DEF, classify_cursor_definition, classify_nameless_root,
+    classify_type_definition_unblocked, in_test_file, in_test_module, load_enclosing_refs, one_edit_form,
 )
 from position_ab_name_span_rules import locations_of, utf16_to_char  # noqa: E402
 
@@ -109,7 +116,16 @@ class Checker:
         added = sorted((ca - cb).elements(), key=loc_key)
         db = self.cli_def(self.before_bin, rel, line1, col1)
         da = self.cli_def(self.after_bin, rel, line1, col1)
+        cls = CLASS_ITEM
         ok, ev = classify_cursor_definition((line1, col1), db, da, self.enclosing.get(abs_path, []))
+        if not ok:
+            ok2, ev2 = classify_nameless_root(db, da, len(added))
+            if ok2:
+                cls, ok, ev = CLASS_ROOT, True, ev2
+            else:
+                ok3, ev3 = classify_type_definition_unblocked(key, da, removed, added)
+                if ok3:
+                    cls, ok, ev = CLASS_TYPE_DEF, True, ev3
         ev.update({
             "removed_count": len(removed), "added_count": len(added),
             "removed": [[p, list(s)] for p, s in removed[:8]], "added": [[p, list(s)] for p, s in added[:8]],
@@ -117,7 +133,7 @@ class Checker:
         })
         if err_b or err_a:
             ev["error_before"], ev["error_after"] = err_b, err_a
-        return (CLASS_ITEM if ok else "unclassified"), self.scrub(ev)
+        return (cls if ok else "unclassified"), self.scrub(ev)
 
     def scrub(self, evidence):
         def walk(x):

@@ -13,7 +13,8 @@ import tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from position_ab_cursor_def_rules import (  # noqa: E402
-    classify_cursor_definition, in_test_file, in_test_module, load_enclosing_refs, one_edit_form,
+    classify_cursor_definition, classify_nameless_root, classify_type_definition_unblocked, in_test_file,
+    in_test_module, load_enclosing_refs, one_edit_form,
 )
 
 FILE = "/opt/ws/tests/rt_common.rs"
@@ -106,3 +107,24 @@ def test_a_workspace_edit_with_both_forms_keeps_only_document_changes():
     assert list(one_edit_form(edit)) == ["documentChanges"]
     assert one_edit_form({"changes": {}}) == {"changes": {}}
     assert one_edit_form([{"uri": "file:///a.rs"}]) == [{"uri": "file:///a.rs"}]
+
+
+def test_a_crate_root_module_before_and_nothing_after_is_the_root_class():
+    root = found("Mod", "", (1, 1, 583, 2))
+    ok, ev = classify_nameless_root(root, {"found": False}, 0)
+    assert ok and ev["definition_before"]["kind"] == "Mod" and ev["definition_after"] is None
+    assert not classify_nameless_root(root, {"found": False}, 1)[0]
+    assert not classify_nameless_root(found("Mod", "fx::tests", (40, 1, 50, 2)), {"found": False}, 0)[0]
+    assert not classify_nameless_root(root, found("Fn", "fx::f", (3, 4, 3, 5)), 0)[0]
+    assert not classify_nameless_root({"found": False}, {"found": False}, 0)[0]
+
+
+def test_type_definition_gaining_exactly_the_definition_at_the_cursor_is_the_type_class():
+    handle = found("Enum", "handle::Handle", (115, 10, 115, 16))
+    added = [("/opt/ws/crates/bevy_asset/src/handle.rs", (115, 10, 115, 16))]
+    assert classify_type_definition_unblocked("type_definition", handle, [], added)[0]
+    assert not classify_type_definition_unblocked("definition", handle, [], added)[0]
+    assert not classify_type_definition_unblocked("type_definition", handle, added, added)[0]
+    assert not classify_type_definition_unblocked("type_definition", handle, [], added + added)[0]
+    assert not classify_type_definition_unblocked("type_definition", found("Enum", "x::Y", (1, 1, 1, 2)), [], added)[0]
+    assert not classify_type_definition_unblocked("type_definition", {"found": False}, [], added)[0]
