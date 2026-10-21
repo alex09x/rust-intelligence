@@ -17,7 +17,12 @@ use crate::format::DefKind;
 use crate::writer::{IndexWriter, RawDefinition, RawReference};
 use std::path::{Path, PathBuf};
 
-fn def(def_id: u32, kind: DefKind, name: &str, span: (u32, u32, u32, u32)) -> RawDefinition {
+pub(crate) fn def(
+    def_id: u32,
+    kind: DefKind,
+    name: &str,
+    span: (u32, u32, u32, u32),
+) -> RawDefinition {
     RawDefinition {
         def_id,
         kind,

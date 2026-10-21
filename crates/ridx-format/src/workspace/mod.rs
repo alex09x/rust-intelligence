@@ -40,6 +40,8 @@ mod file_module_tests;
 #[cfg(test)]
 mod path_index_tests;
 #[cfg(test)]
+mod root_module_tests;
+#[cfg(test)]
 mod routing_tests;
 #[cfg(test)]
 mod sibling_tests;

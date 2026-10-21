@@ -24,7 +24,9 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// encloses every item written inside it, and on such an item's name the item is the answer.
     /// Equal spans (a self-reference) keep the reference. A reference as wide as its target's name
     /// cannot enclose a definition, so no definition is looked for behind it. Without a reference
-    /// the smallest definition containing the cursor answers.
+    /// the smallest named definition containing the cursor answers; the nameless crate-root module
+    /// the driver records with the span of the whole file never does, so a position on no name
+    /// has no definition.
     pub fn find_definition_at(
         &self,
         file: &str,
@@ -41,6 +43,9 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
         let mut best_def: Option<(&DefEntry, u64)> = None;
         for def in self.definitions() {
+            if self.get_str(def.name_offset()).is_empty() {
+                continue;
+            }
             let def_span = def.span();
             if def_span.contains(file_id, line, col)
                 && inner.is_none_or(|r| span_strictly_inside(&def_span, &r.span()))

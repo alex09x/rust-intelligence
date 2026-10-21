@@ -60,8 +60,9 @@ impl WorkspaceIndex {
         self.smallest_def_at(reader_idx, file_id, line, col, Some(r))
     }
 
-    /// The smallest definition of `reader_idx` containing `(file_id, line, col)`, restricted to
-    /// definitions whose span lies inside the span of `inside` when given.
+    /// The smallest named definition of `reader_idx` containing `(file_id, line, col)`, restricted
+    /// to definitions whose span lies inside the span of `inside` when given. The nameless
+    /// crate-root module spanning the whole file is never an answer.
     fn smallest_def_at(
         &self,
         reader_idx: usize,
@@ -70,7 +71,8 @@ impl WorkspaceIndex {
         col: u32,
         inside: Option<&RefEntry>,
     ) -> Option<&DefEntry> {
-        let defs = self.readers.get(reader_idx)?.definitions();
+        let reader = self.readers.get(reader_idx)?;
+        let defs = reader.definitions();
         let slice = self
             .unit_match
             .defs_in_file_up_to(reader_idx, file_id, line);
@@ -79,6 +81,9 @@ impl WorkspaceIndex {
             let Some(def) = defs.get(def_idx as usize) else {
                 continue;
             };
+            if reader.get_str(def.name_offset()).is_empty() {
+                continue;
+            }
             let def_span = def.span();
             if !def_span.contains(file_id, line, col)
                 || !inside.is_none_or(|r| span_strictly_inside(&def_span, &r.span()))

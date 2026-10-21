@@ -372,6 +372,8 @@ mod name_span_tests;
 #[cfg(test)]
 mod owner_and_deref_tests;
 #[cfg(test)]
+pub(crate) mod root_module_tests;
+#[cfg(test)]
 mod search_symbols_tests;
 #[cfg(test)]
 mod spans_and_sections_tests;
