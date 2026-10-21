@@ -1,0 +1,4203 @@
+{
+ "repo": "BurntSushi/ripgrep",
+ "repo_dir_name": "ripgrep",
+ "repo_head": "4649aa9700619f94cf9c66876e9549d83420e16c",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 27,
+ "positions_file": "matrix_ripgrep_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 18,
+ "timestamp_start": "2026-10-21T22:36:51.644631+00:00",
+ "timestamp_end": "2026-10-21T22:42:13.705974+00:00",
+ "servers": [
+  {
+   "name": "0d9e1c8",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 0d9e1c8b8903ab70697b96cc28471bb026f4d16b, dirty: false)",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 103.0,
+   "summary": {
+    "definition": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 72.3,
+     "p99_us": 619.2,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 75.2,
+     "p99_us": 303.8,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 182,
+     "b": 118,
+     "c": 0,
+     "n": 300,
+     "p50_us": 62.6,
+     "p99_us": 569.8,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 257,
+     "b": 43,
+     "c": 0,
+     "n": 300,
+     "p50_us": 319.4,
+     "p99_us": 5238.2,
+     "unsupported": false
+    },
+    "references": {
+     "a": 295,
+     "b": 5,
+     "c": 0,
+     "n": 300,
+     "p50_us": 195.7,
+     "p99_us": 9111.2,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 275,
+     "b": 25,
+     "c": 0,
+     "n": 300,
+     "p50_us": 227.2,
+     "p99_us": 8351.4,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 125.0,
+     "p99_us": 6664.7,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 177,
+     "b": 123,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4830.1,
+     "p99_us": 16233.7,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 19.9,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 131.8,
+     "p99_us": 328.5,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 234.3,
+     "p99_us": 2109.4,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 50,
+     "b": 250,
+     "c": 0,
+     "n": 300,
+     "p50_us": 57.2,
+     "p99_us": 6507.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.1,
+     "p99_us": 164.6,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 14.8,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.8,
+     "p99_us": 152.6,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.8,
+     "p99_us": 143.6,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 19.7,
+     "p99_us": 30.3,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 16.5,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 75.8,
+     "p99_us": 287.0,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 137,
+     "b": 163,
+     "c": 0,
+     "n": 300,
+     "p50_us": 174.6,
+     "p99_us": 8373.4,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 192,
+     "b": 108,
+     "c": 0,
+     "n": 300,
+     "p50_us": 208.0,
+     "p99_us": 3121.0,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 53.4,
+     "p99_us": 138.2,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 139.7,
+     "p99_us": 708.4,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 13,
+     "b": 287,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.4,
+     "p99_us": 440.9,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 178.9,
+     "p99_us": 996.3,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 87,
+     "b": 213,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.4,
+     "p99_us": 233.2,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 15.4,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 14.1,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 14.9,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91307.1,
+     "p99_us": 108760.2,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 18,
+     "b": 282,
+     "c": 0,
+     "n": 300,
+     "p50_us": 162899.8,
+     "p99_us": 185220.9,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92808.4,
+     "p99_us": 113488.9,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 297,
+     "b": 0,
+     "c": 3,
+     "n": 300,
+     "p50_us": 154.3,
+     "p99_us": 475.6,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 298,
+     "b": 0,
+     "c": 2,
+     "n": 300,
+     "p50_us": 400.0,
+     "p99_us": 4287.3,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 21.1,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 135.8,
+     "p99_us": 533.5,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 18.1,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 17.0,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 227.5,
+     "p99_us": 2804.6,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 162.8,
+     "p99_us": 2766.4,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 133.6,
+     "p99_us": 2197.7,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89.3,
+     "p99_us": 837.1,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 295,
+     "b": 5,
+     "c": 0,
+     "n": 300,
+     "p50_us": 120.7,
+     "p99_us": 1104.7,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.6,
+     "p99_us": 16.2,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 96.0,
+     "p99_us": 1912.2,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5366.9,
+     "p99_us": 6828.7,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 18.2,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 16.5,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 13.9,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.6,
+     "p99_us": 278.5,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 46,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       295,
+       5,
+       0
+      ],
+      "matrix": [
+       298,
+       2,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       275,
+       25,
+       0
+      ],
+      "matrix": [
+       281,
+       19,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       293,
+       7,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       298,
+       2,
+       0
+      ],
+      "matrix": [
+       290,
+       10,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "eb9ba2e",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: eb9ba2e4de194abfcf9a37c859c84c4ea85a210f, dirty: false)",
+   "commit": "eb9ba2e4de194abfcf9a37c859c84c4ea85a210f",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 112.2,
+   "summary": {
+    "definition": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 67.0,
+     "p99_us": 299.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 71.1,
+     "p99_us": 309.0,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 182,
+     "b": 118,
+     "c": 0,
+     "n": 300,
+     "p50_us": 63.0,
+     "p99_us": 285.0,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 257,
+     "b": 43,
+     "c": 0,
+     "n": 300,
+     "p50_us": 322.4,
+     "p99_us": 4879.5,
+     "unsupported": false
+    },
+    "references": {
+     "a": 295,
+     "b": 5,
+     "c": 0,
+     "n": 300,
+     "p50_us": 191.4,
+     "p99_us": 9583.6,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 275,
+     "b": 25,
+     "c": 0,
+     "n": 300,
+     "p50_us": 233.1,
+     "p99_us": 8067.9,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 122.4,
+     "p99_us": 7365.1,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 177,
+     "b": 123,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5165.2,
+     "p99_us": 11281.9,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 21.7,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 134.2,
+     "p99_us": 330.7,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 233.7,
+     "p99_us": 2041.3,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 18.8,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 50,
+     "b": 250,
+     "c": 0,
+     "n": 300,
+     "p50_us": 57.8,
+     "p99_us": 6930.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.7,
+     "p99_us": 162.8,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 14.3,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.3,
+     "p99_us": 156.5,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.1,
+     "p99_us": 137.4,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 18.8,
+     "p99_us": 28.7,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 75.5,
+     "p99_us": 306.9,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 142,
+     "b": 158,
+     "c": 0,
+     "n": 300,
+     "p50_us": 173.0,
+     "p99_us": 8618.8,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 191.9,
+     "p99_us": 2832.9,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 50.4,
+     "p99_us": 99.1,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 129.9,
+     "p99_us": 705.1,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 13,
+     "b": 287,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 356.7,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 183.3,
+     "p99_us": 1024.4,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 87,
+     "b": 213,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.3,
+     "p99_us": 235.6,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.8,
+     "p99_us": 16.4,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 12.5,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 14.3,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92096.3,
+     "p99_us": 110840.5,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 18,
+     "b": 282,
+     "c": 0,
+     "n": 300,
+     "p50_us": 184532.1,
+     "p99_us": 217183.6,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 96981.4,
+     "p99_us": 303920.6,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 297,
+     "b": 0,
+     "c": 3,
+     "n": 300,
+     "p50_us": 150.7,
+     "p99_us": 472.7,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 298,
+     "b": 0,
+     "c": 2,
+     "n": 300,
+     "p50_us": 395.6,
+     "p99_us": 3985.3,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 19.2,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 142.9,
+     "p99_us": 535.6,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.2,
+     "p99_us": 25.1,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 13.1,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 222.9,
+     "p99_us": 2785.7,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 167.4,
+     "p99_us": 2799.3,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 138.2,
+     "p99_us": 2181.7,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 93.7,
+     "p99_us": 763.5,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 295,
+     "b": 5,
+     "c": 0,
+     "n": 300,
+     "p50_us": 117.9,
+     "p99_us": 1035.4,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.7,
+     "p99_us": 23.0,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 109.5,
+     "p99_us": 2374.0,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6321.9,
+     "p99_us": 6829.0,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 18.6,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 16.4,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 15.5,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.1,
+     "p99_us": 302.3,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 44,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       295,
+       5,
+       0
+      ],
+      "matrix": [
+       298,
+       2,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       275,
+       25,
+       0
+      ],
+      "matrix": [
+       281,
+       19,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       293,
+       7,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       298,
+       2,
+       0
+      ],
+      "matrix": [
+       290,
+       10,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       142,
+       158,
+       0
+      ],
+      "matrix": [
+       137,
+       163,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       192,
+       108,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "0d9e1c8-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 0d9e1c8b8903ab70697b96cc28471bb026f4d16b, dirty: false)",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 106.3,
+   "summary": {
+    "definition": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 69.8,
+     "p99_us": 291.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 74.7,
+     "p99_us": 323.0,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 182,
+     "b": 118,
+     "c": 0,
+     "n": 300,
+     "p50_us": 60.4,
+     "p99_us": 293.3,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 257,
+     "b": 43,
+     "c": 0,
+     "n": 300,
+     "p50_us": 329.8,
+     "p99_us": 5215.5,
+     "unsupported": false
+    },
+    "references": {
+     "a": 295,
+     "b": 5,
+     "c": 0,
+     "n": 300,
+     "p50_us": 193.4,
+     "p99_us": 8717.2,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 275,
+     "b": 25,
+     "c": 0,
+     "n": 300,
+     "p50_us": 255.3,
+     "p99_us": 8920.8,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 131.4,
+     "p99_us": 7085.7,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 177,
+     "b": 123,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4942.2,
+     "p99_us": 11689.8,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 22.0,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 130.3,
+     "p99_us": 340.0,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 235.2,
+     "p99_us": 2084.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 14.8,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 50,
+     "b": 250,
+     "c": 0,
+     "n": 300,
+     "p50_us": 59.2,
+     "p99_us": 6683.9,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.9,
+     "p99_us": 161.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 12.5,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 40.0,
+     "p99_us": 148.9,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.2,
+     "p99_us": 136.1,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 19.9,
+     "p99_us": 31.1,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 16.0,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 77.8,
+     "p99_us": 292.3,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 137,
+     "b": 163,
+     "c": 0,
+     "n": 300,
+     "p50_us": 191.8,
+     "p99_us": 8477.0,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 192,
+     "b": 108,
+     "c": 0,
+     "n": 300,
+     "p50_us": 218.6,
+     "p99_us": 2946.6,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 298,
+     "b": 2,
+     "c": 0,
+     "n": 300,
+     "p50_us": 52.9,
+     "p99_us": 135.2,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 137.8,
+     "p99_us": 727.8,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 13,
+     "b": 287,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.8,
+     "p99_us": 328.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 181.1,
+     "p99_us": 1055.1,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 87,
+     "b": 213,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.0,
+     "p99_us": 261.0,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.4,
+     "p99_us": 23.6,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 15.8,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 13.2,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 95029.5,
+     "p99_us": 126888.8,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 18,
+     "b": 282,
+     "c": 0,
+     "n": 300,
+     "p50_us": 167937.0,
+     "p99_us": 198586.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92110.5,
+     "p99_us": 110898.6,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 297,
+     "b": 0,
+     "c": 3,
+     "n": 300,
+     "p50_us": 144.9,
+     "p99_us": 459.1,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 298,
+     "b": 0,
+     "c": 2,
+     "n": 300,
+     "p50_us": 366.5,
+     "p99_us": 3488.0,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 20.4,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 130.7,
+     "p99_us": 493.5,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.6,
+     "p99_us": 16.9,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 16.2,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 209.8,
+     "p99_us": 2674.4,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 149.9,
+     "p99_us": 2658.1,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 133.7,
+     "p99_us": 2163.2,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 93.6,
+     "p99_us": 748.5,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 295,
+     "b": 5,
+     "c": 0,
+     "n": 300,
+     "p50_us": 110.0,
+     "p99_us": 1029.0,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.6,
+     "p99_us": 18.8,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92.7,
+     "p99_us": 1996.4,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4902.4,
+     "p99_us": 5418.7,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 12.6,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 12.4,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.2,
+     "p99_us": 256.4,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 46,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       295,
+       5,
+       0
+      ],
+      "matrix": [
+       298,
+       2,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       275,
+       25,
+       0
+      ],
+      "matrix": [
+       281,
+       19,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       293,
+       7,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       298,
+       2,
+       0
+      ],
+      "matrix": [
+       290,
+       10,
+       0
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "0d9e1c8",
+   "b": "eb9ba2e",
+   "same": 15275,
+   "differing": 25,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 285,
+     "differing": 15,
+     "transitions": {
+      "a>a": 10,
+      "b>a": 5
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_35_is_match",
+       "file": "crates/globset/src/lib.rs",
+       "line": 828,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4b9757ca37913639",
+        "ed226a848f634a34"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_67_clear",
+       "file": "crates/searcher/src/line_buffer.rs",
+       "line": 335,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b33638402d922d9c",
+        "baa94c3a3e4c3fd6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_77_invert",
+       "file": "crates/ignore/src/lib.rs",
+       "line": 450,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "a3f94c9c8aa0112f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_88_matches_into",
+       "file": "crates/globset/src/lib.rs",
+       "line": 380,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "0141fd2d7babced7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_110_hidden",
+       "file": "crates/ignore/src/dir.rs",
+       "line": 64,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "37a896c4187729e6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_122_starts_with",
+       "file": "crates/globset/src/glob.rs",
+       "line": 1003,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f4fe22c427b23458",
+        "50a67a58cfc97e38"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "incoming_calls_129_replace_separator",
+       "file": "crates/printer/src/util.rs",
+       "line": 315,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "4e8f105daa740de5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_142_new",
+       "file": "crates/searcher/src/lines.rs",
+       "line": 25,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "af0a194fd5ac7de3",
+        "e1a8131622fcea9e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_178_absolute_byte_offset",
+       "file": "crates/searcher/src/sink.rs",
+       "line": 401,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1eb969027c4057da",
+        "67a5b74866e38f2c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_179_empty",
+       "file": "crates/printer/src/util.rs",
+       "line": 174,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3e98c3abf49bd20a",
+        "da75c85e8f487117"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 290,
+     "differing": 10,
+     "transitions": {
+      "a>b": 8,
+      "a>a": 2
+     },
+     "examples": [
+      {
+       "name": "outgoing_calls_59_doc_short",
+       "file": "crates/core/flags/defs.rs",
+       "line": 3982,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "52256e2a8ca9fbc1",
+        "empty"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_92_doc_long",
+       "file": "crates/core/flags/defs.rs",
+       "line": 4458,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "7f5614a8a768aba8",
+        "empty"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_146_matched",
+       "file": "crates/ignore/src/overrides.rs",
+       "line": 96,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9eaa23683b46efc2",
+        "b3ae4d5e44970bf1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_192_doc_long",
+       "file": "crates/core/flags/defs.rs",
+       "line": 4506,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "4799f1f92546151c",
+        "empty"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_225_doc_short",
+       "file": "crates/core/flags/defs.rs",
+       "line": 4995,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "1a975457b3d9eb45",
+        "empty"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_263_matched",
+       "file": "crates/ignore/src/dir.rs",
+       "line": 365,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3ec5275b43249072",
+        "aad2ad4a4b8927e0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_266_doc_short",
+       "file": "crates/core/flags/defs.rs",
+       "line": 6630,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "68fd761f46c8f221",
+        "empty"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_274_doc_long",
+       "file": "crates/core/flags/defs.rs",
+       "line": 2681,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "42d82691eebf901f",
+        "empty"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_277_doc_short",
+       "file": "crates/core/flags/defs.rs",
+       "line": 5324,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "b809866b07052a29",
+        "empty"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_294_strip_prefix",
+       "file": "crates/ignore/src/pathutil.rs",
+       "line": 82,
+       "character": 15,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "12437c091f051ffa",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "0d9e1c8",
+   "b": "0d9e1c8-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "eb9ba2e",
+   "b": "0d9e1c8-2",
+   "same": 15275,
+   "differing": 25,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 285,
+     "differing": 15,
+     "transitions": {
+      "a>a": 10,
+      "a>b": 5
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_35_is_match",
+       "file": "crates/globset/src/lib.rs",
+       "line": 828,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ed226a848f634a34",
+        "4b9757ca37913639"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_67_clear",
+       "file": "crates/searcher/src/line_buffer.rs",
+       "line": 335,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "baa94c3a3e4c3fd6",
+        "b33638402d922d9c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_77_invert",
+       "file": "crates/ignore/src/lib.rs",
+       "line": 450,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "a3f94c9c8aa0112f",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_88_matches_into",
+       "file": "crates/globset/src/lib.rs",
+       "line": 380,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "0141fd2d7babced7",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_110_hidden",
+       "file": "crates/ignore/src/dir.rs",
+       "line": 64,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "37a896c4187729e6",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_122_starts_with",
+       "file": "crates/globset/src/glob.rs",
+       "line": 1003,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "50a67a58cfc97e38",
+        "f4fe22c427b23458"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "incoming_calls_129_replace_separator",
+       "file": "crates/printer/src/util.rs",
+       "line": 315,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "4e8f105daa740de5",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_142_new",
+       "file": "crates/searcher/src/lines.rs",
+       "line": 25,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e1a8131622fcea9e",
+        "af0a194fd5ac7de3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_178_absolute_byte_offset",
+       "file": "crates/searcher/src/sink.rs",
+       "line": 401,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "67a5b74866e38f2c",
+        "1eb969027c4057da"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_179_empty",
+       "file": "crates/printer/src/util.rs",
+       "line": 174,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "da75c85e8f487117",
+        "3e98c3abf49bd20a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 290,
+     "differing": 10,
+     "transitions": {
+      "b>a": 8,
+      "a>a": 2
+     },
+     "examples": [
+      {
+       "name": "outgoing_calls_59_doc_short",
+       "file": "crates/core/flags/defs.rs",
+       "line": 3982,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "52256e2a8ca9fbc1"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_92_doc_long",
+       "file": "crates/core/flags/defs.rs",
+       "line": 4458,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "7f5614a8a768aba8"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_146_matched",
+       "file": "crates/ignore/src/overrides.rs",
+       "line": 96,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b3ae4d5e44970bf1",
+        "9eaa23683b46efc2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_192_doc_long",
+       "file": "crates/core/flags/defs.rs",
+       "line": 4506,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "4799f1f92546151c"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_225_doc_short",
+       "file": "crates/core/flags/defs.rs",
+       "line": 4995,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "1a975457b3d9eb45"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_263_matched",
+       "file": "crates/ignore/src/dir.rs",
+       "line": 365,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "aad2ad4a4b8927e0",
+        "3ec5275b43249072"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_266_doc_short",
+       "file": "crates/core/flags/defs.rs",
+       "line": 6630,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "68fd761f46c8f221"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_274_doc_long",
+       "file": "crates/core/flags/defs.rs",
+       "line": 2681,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "42d82691eebf901f"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_277_doc_short",
+       "file": "crates/core/flags/defs.rs",
+       "line": 5324,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "b809866b07052a29"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_294_strip_prefix",
+       "file": "crates/ignore/src/pathutil.rs",
+       "line": 82,
+       "character": 15,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "12437c091f051ffa"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_ripgrep_booster.json",
+  "repo_commit": "4649aa9700619f94cf9c66876e9549d83420e16c",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_35_is_match",
+   "file": "crates/globset/src/lib.rs",
+   "line": 828,
+   "character": 8,
+   "symbol": "is_match",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "4b9757ca37913639",
+     "us": 191.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "ed226a848f634a34",
+     "us": 180.9,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "4b9757ca37913639",
+     "us": 182.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_67_clear",
+   "file": "crates/searcher/src/line_buffer.rs",
+   "line": 335,
+   "character": 8,
+   "symbol": "clear",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "b33638402d922d9c",
+     "us": 177.6,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "baa94c3a3e4c3fd6",
+     "us": 178.4,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "b33638402d922d9c",
+     "us": 205.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_77_invert",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 450,
+   "character": 12,
+   "symbol": "invert",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 153.1,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "a3f94c9c8aa0112f",
+     "us": 161.8,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 153.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_88_matches_into",
+   "file": "crates/globset/src/lib.rs",
+   "line": 380,
+   "character": 12,
+   "symbol": "matches_into",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 171.4,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "0141fd2d7babced7",
+     "us": 178.4,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 157.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_110_hidden",
+   "file": "crates/ignore/src/dir.rs",
+   "line": 64,
+   "character": 8,
+   "symbol": "hidden",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 209.0,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "37a896c4187729e6",
+     "us": 201.6,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 302.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_122_starts_with",
+   "file": "crates/globset/src/glob.rs",
+   "line": 1003,
+   "character": 4,
+   "symbol": "starts_with",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": true,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "f4fe22c427b23458",
+     "us": 182.3,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "50a67a58cfc97e38",
+     "us": 179.2,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "f4fe22c427b23458",
+     "us": 170.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_129_replace_separator",
+   "file": "crates/printer/src/util.rs",
+   "line": 315,
+   "character": 12,
+   "symbol": "replace_separator",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 199.5,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "4e8f105daa740de5",
+     "us": 195.0,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 269.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_142_new",
+   "file": "crates/searcher/src/lines.rs",
+   "line": 25,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "af0a194fd5ac7de3",
+     "us": 272.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "e1a8131622fcea9e",
+     "us": 270.5,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "af0a194fd5ac7de3",
+     "us": 264.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_178_absolute_byte_offset",
+   "file": "crates/searcher/src/sink.rs",
+   "line": 401,
+   "character": 12,
+   "symbol": "absolute_byte_offset",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "1eb969027c4057da",
+     "us": 308.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "67a5b74866e38f2c",
+     "us": 311.7,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "1eb969027c4057da",
+     "us": 346.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_179_empty",
+   "file": "crates/printer/src/util.rs",
+   "line": 174,
+   "character": 19,
+   "symbol": "empty",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "3e98c3abf49bd20a",
+     "us": 246.9,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "da75c85e8f487117",
+     "us": 236.6,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "3e98c3abf49bd20a",
+     "us": 237.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_214_is_match",
+   "file": "crates/globset/src/lib.rs",
+   "line": 683,
+   "character": 8,
+   "symbol": "is_match",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "2251dbde4d7ca00a",
+     "us": 186.1,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "988911eb23f58c66",
+     "us": 179.9,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "2251dbde4d7ca00a",
+     "us": 194.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_241_as_byte",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 236,
+   "character": 12,
+   "symbol": "as_byte",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "3b94de4643458c7c",
+     "us": 1558.6,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "d0166f51b2d638d1",
+     "us": 1550.3,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "3b94de4643458c7c",
+     "us": 1574.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_293_build",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 1133,
+   "character": 8,
+   "symbol": "build",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "f6fcb16b1a105ef2",
+     "us": 406.1,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "45cdd6bec5f35613",
+     "us": 350.3,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "f6fcb16b1a105ef2",
+     "us": 425.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_295_kind",
+   "file": "crates/searcher/src/sink.rs",
+   "line": 460,
+   "character": 12,
+   "symbol": "kind",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "88991e4749bcb20c",
+     "us": 353.9,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "71e26fbcde78ac9b",
+     "us": 347.3,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "88991e4749bcb20c",
+     "us": 380.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_299_run",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 1498,
+   "character": 8,
+   "symbol": "run",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 243.3,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "aaeb8dc7ab746ab9",
+     "us": 202.4,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 375.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_59_doc_short",
+   "file": "crates/core/flags/defs.rs",
+   "line": 3982,
+   "character": 8,
+   "symbol": "doc_short",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "52256e2a8ca9fbc1",
+     "us": 232.4,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 172.3,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "52256e2a8ca9fbc1",
+     "us": 264.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_92_doc_long",
+   "file": "crates/core/flags/defs.rs",
+   "line": 4458,
+   "character": 8,
+   "symbol": "doc_long",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "7f5614a8a768aba8",
+     "us": 581.2,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 537.9,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "7f5614a8a768aba8",
+     "us": 607.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_146_matched",
+   "file": "crates/ignore/src/overrides.rs",
+   "line": 96,
+   "character": 12,
+   "symbol": "matched",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "9eaa23683b46efc2",
+     "us": 89.6,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "b3ae4d5e44970bf1",
+     "us": 495.9,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "9eaa23683b46efc2",
+     "us": 94.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_192_doc_long",
+   "file": "crates/core/flags/defs.rs",
+   "line": 4506,
+   "character": 8,
+   "symbol": "doc_long",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "4799f1f92546151c",
+     "us": 246.9,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 170.0,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "4799f1f92546151c",
+     "us": 274.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_225_doc_short",
+   "file": "crates/core/flags/defs.rs",
+   "line": 4995,
+   "character": 8,
+   "symbol": "doc_short",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "1a975457b3d9eb45",
+     "us": 241.3,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 157.5,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "1a975457b3d9eb45",
+     "us": 267.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_263_matched",
+   "file": "crates/ignore/src/dir.rs",
+   "line": 365,
+   "character": 8,
+   "symbol": "matched",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "3ec5275b43249072",
+     "us": 102.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "aad2ad4a4b8927e0",
+     "us": 537.0,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "3ec5275b43249072",
+     "us": 107.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_266_doc_short",
+   "file": "crates/core/flags/defs.rs",
+   "line": 6630,
+   "character": 8,
+   "symbol": "doc_short",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "68fd761f46c8f221",
+     "us": 660.2,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 160.8,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "68fd761f46c8f221",
+     "us": 695.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_274_doc_long",
+   "file": "crates/core/flags/defs.rs",
+   "line": 2681,
+   "character": 8,
+   "symbol": "doc_long",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "42d82691eebf901f",
+     "us": 269.3,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 176.6,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "42d82691eebf901f",
+     "us": 261.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_277_doc_short",
+   "file": "crates/core/flags/defs.rs",
+   "line": 5324,
+   "character": 8,
+   "symbol": "doc_short",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "b809866b07052a29",
+     "us": 298.4,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 172.1,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "b809866b07052a29",
+     "us": 301.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_294_strip_prefix",
+   "file": "crates/ignore/src/pathutil.rs",
+   "line": 82,
+   "character": 15,
+   "symbol": "strip_prefix",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "12437c091f051ffa",
+     "us": 670.7,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 287.2,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "12437c091f051ffa",
+     "us": 682.7,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 25,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_0d9e1c8_vs_eb9ba2e_ram9_ripgrep.json",
+  "sha256": "76298420884b235fdc85b6c635dbeee4f3485067aeac6c5bbe41ddeaf6f6f4e3"
+ }
+}

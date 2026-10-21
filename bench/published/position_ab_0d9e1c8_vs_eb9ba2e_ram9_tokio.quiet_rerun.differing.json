@@ -1,0 +1,2150 @@
+{
+ "repo": "tokio-rs/tokio",
+ "repo_dir_name": "tokio",
+ "repo_head": "b2636752450484955e7ad334bac678424d51bc4a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 308,
+ "positions_file": "matrix_tokio_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_call_hierarchy",
+  "definition"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 301,
+ "timestamp_start": "2026-10-21T23:04:28.123198+00:00",
+ "timestamp_end": "2026-10-21T23:04:37.520389+00:00",
+ "servers": [
+  {
+   "name": "0d9e1c8",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 0d9e1c8b8903ab70697b96cc28471bb026f4d16b, dirty: false)",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 1.6,
+   "summary": {
+    "incoming_calls": {
+     "a": 92,
+     "b": 208,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2089.4,
+     "p99_us": 5545.7,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 211,
+     "b": 89,
+     "c": 0,
+     "n": 300,
+     "p50_us": 958.8,
+     "p99_us": 12074.5,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 386.8,
+     "p99_us": 740.3,
+     "unsupported": false
+    },
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 433.4,
+     "p99_us": 714.7,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 4,
+    "matching": 2,
+    "mismatches": [
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "eb9ba2e",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: eb9ba2e4de194abfcf9a37c859c84c4ea85a210f, dirty: false)",
+   "commit": "eb9ba2e4de194abfcf9a37c859c84c4ea85a210f",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 1.6,
+   "summary": {
+    "incoming_calls": {
+     "a": 93,
+     "b": 207,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2046.8,
+     "p99_us": 4708.8,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 926.8,
+     "p99_us": 11606.9,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 394.8,
+     "p99_us": 737.4,
+     "unsupported": false
+    },
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 429.7,
+     "p99_us": 691.4,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 4,
+    "matching": 0,
+    "mismatches": [
+     {
+      "method": "incoming_calls",
+      "ours": [
+       93,
+       207,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "0d9e1c8-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 0d9e1c8b8903ab70697b96cc28471bb026f4d16b, dirty: false)",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 1.6,
+   "summary": {
+    "incoming_calls": {
+     "a": 92,
+     "b": 208,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2088.0,
+     "p99_us": 5071.0,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 211,
+     "b": 89,
+     "c": 0,
+     "n": 300,
+     "p50_us": 955.0,
+     "p99_us": 11789.6,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 410.4,
+     "p99_us": 729.7,
+     "unsupported": false
+    },
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 433.4,
+     "p99_us": 684.9,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 4,
+    "matching": 2,
+    "mismatches": [
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "0d9e1c8",
+   "b": "eb9ba2e",
+   "same": 1168,
+   "differing": 32,
+   "methods": {
+    "incoming_calls": {
+     "same": 286,
+     "differing": 14,
+     "transitions": {
+      "a>a": 13,
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_41_lock",
+       "file": "tokio/src/loom/std/parking_lot.rs",
+       "line": 61,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d24d77d6831b63cc",
+        "f5588574ce0594f1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_50_poll_next",
+       "file": "tokio-util/src/codec/framed_impl.rs",
+       "line": 125,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "61cfed6957e3c7f6",
+        "c3ee86d688727015"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_53_take_waker",
+       "file": "tokio/src/sync/task/atomic_waker.rs",
+       "line": 313,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6765eb2a15bdb9f9",
+        "5aa36b9412a05259"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_55_poll_send_to",
+       "file": "tokio/src/net/udp.rs",
+       "line": 1214,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "011ba3092cf2b937",
+        "3b3cf6338b208c18"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_66_recv_ref",
+       "file": "tokio/src/sync/broadcast.rs",
+       "line": 1256,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b52c02a8c180b54b",
+        "972f9450089844ed"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_102_wake_all",
+       "file": "tokio/src/util/wake_list.rs",
+       "line": 39,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7c6cff523a41440a",
+        "59ca182d50ab56ab"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_112_unset_tx_task",
+       "file": "tokio/src/sync/oneshot.rs",
+       "line": 1581,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "329aed99a6a57ab7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_116_time",
+       "file": "tokio/src/runtime/driver.rs",
+       "line": 114,
+       "character": 23,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5b423d744a30472b",
+        "d6c9a8b2d536cf02"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_132_poll",
+       "file": "tokio/src/signal/reusable_box.rs",
+       "line": 117,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9310690e60a2d32c",
+        "9c283748115d11e5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_171_closed",
+       "file": "tokio/src/sync/oneshot.rs",
+       "line": 727,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9cf96a71905a4212",
+        "f48f68b3192d544f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 282,
+     "differing": 18,
+     "transitions": {
+      "a>a": 13,
+      "b>a": 4,
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "outgoing_calls_3_poll_shutdown",
+       "file": "tokio/tests/io_buf_writer.rs",
+       "line": 361,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a53503b66c56e43e",
+        "2f4bad4cf6d6ad6b"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_45_poll_complete",
+       "file": "tokio/tests/io_buf_writer.rs",
+       "line": 265,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3cda8142d65e320f",
+        "ae986c90b1d01a4d"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_83_take_core",
+       "file": "tokio/src/runtime/scheduler/current_thread/mod.rs",
+       "line": 241,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7878b3ffe4a74b27",
+        "d929fe764a640c3e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_98_drop",
+       "file": "tokio/src/sync/broadcast.rs",
+       "line": 1586,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "9abfd5a9b7819723"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_134_into_panic",
+       "file": "tokio/src/runtime/task/error.rs",
+       "line": 93,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3a302348c1ad9d64",
+        "249e4bd90f7fff46"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_151_poll_close",
+       "file": "tokio-util/src/compat.rs",
+       "line": 328,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "25b09e90ad92a072",
+        "482289c7a3d756ea"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_162_insert_idle",
+       "file": "tokio/src/util/idle_notified_set.rs",
+       "line": 147,
+       "character": 19,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "5c98333d77df4087"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_163_pop",
+       "file": "tokio/src/runtime/scheduler/inject/synced.rs",
+       "line": 23,
+       "character": 19,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "31a04802bfd4bdf4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_187_eagerly_drops_futures_on_shutdown",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 909,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "88038deabc9b72db"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_191_poll_flush",
+       "file": "tokio/tests/io_buf_writer.rs",
+       "line": 251,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "210cc957ab815d79",
+        "020a5ae38fa49a40"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "0d9e1c8",
+   "b": "0d9e1c8-2",
+   "same": 1200,
+   "differing": 0,
+   "methods": {
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "eb9ba2e",
+   "b": "0d9e1c8-2",
+   "same": 1168,
+   "differing": 32,
+   "methods": {
+    "incoming_calls": {
+     "same": 286,
+     "differing": 14,
+     "transitions": {
+      "a>a": 13,
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_41_lock",
+       "file": "tokio/src/loom/std/parking_lot.rs",
+       "line": 61,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f5588574ce0594f1",
+        "d24d77d6831b63cc"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_50_poll_next",
+       "file": "tokio-util/src/codec/framed_impl.rs",
+       "line": 125,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c3ee86d688727015",
+        "61cfed6957e3c7f6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_53_take_waker",
+       "file": "tokio/src/sync/task/atomic_waker.rs",
+       "line": 313,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5aa36b9412a05259",
+        "6765eb2a15bdb9f9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_55_poll_send_to",
+       "file": "tokio/src/net/udp.rs",
+       "line": 1214,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3b3cf6338b208c18",
+        "011ba3092cf2b937"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_66_recv_ref",
+       "file": "tokio/src/sync/broadcast.rs",
+       "line": 1256,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "972f9450089844ed",
+        "b52c02a8c180b54b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_102_wake_all",
+       "file": "tokio/src/util/wake_list.rs",
+       "line": 39,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "59ca182d50ab56ab",
+        "7c6cff523a41440a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_112_unset_tx_task",
+       "file": "tokio/src/sync/oneshot.rs",
+       "line": 1581,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "329aed99a6a57ab7",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_116_time",
+       "file": "tokio/src/runtime/driver.rs",
+       "line": 114,
+       "character": 23,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d6c9a8b2d536cf02",
+        "5b423d744a30472b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_132_poll",
+       "file": "tokio/src/signal/reusable_box.rs",
+       "line": 117,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9c283748115d11e5",
+        "9310690e60a2d32c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_171_closed",
+       "file": "tokio/src/sync/oneshot.rs",
+       "line": 727,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f48f68b3192d544f",
+        "9cf96a71905a4212"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 282,
+     "differing": 18,
+     "transitions": {
+      "a>a": 13,
+      "a>b": 4,
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "outgoing_calls_3_poll_shutdown",
+       "file": "tokio/tests/io_buf_writer.rs",
+       "line": 361,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2f4bad4cf6d6ad6b",
+        "a53503b66c56e43e"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_45_poll_complete",
+       "file": "tokio/tests/io_buf_writer.rs",
+       "line": 265,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ae986c90b1d01a4d",
+        "3cda8142d65e320f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_83_take_core",
+       "file": "tokio/src/runtime/scheduler/current_thread/mod.rs",
+       "line": 241,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d929fe764a640c3e",
+        "7878b3ffe4a74b27"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_98_drop",
+       "file": "tokio/src/sync/broadcast.rs",
+       "line": 1586,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "9abfd5a9b7819723",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_134_into_panic",
+       "file": "tokio/src/runtime/task/error.rs",
+       "line": 93,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "249e4bd90f7fff46",
+        "3a302348c1ad9d64"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_151_poll_close",
+       "file": "tokio-util/src/compat.rs",
+       "line": 328,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "482289c7a3d756ea",
+        "25b09e90ad92a072"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_162_insert_idle",
+       "file": "tokio/src/util/idle_notified_set.rs",
+       "line": 147,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "5c98333d77df4087",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_163_pop",
+       "file": "tokio/src/runtime/scheduler/inject/synced.rs",
+       "line": 23,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "31a04802bfd4bdf4",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_187_eagerly_drops_futures_on_shutdown",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 909,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "88038deabc9b72db",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "outgoing_calls_191_poll_flush",
+       "file": "tokio/tests/io_buf_writer.rs",
+       "line": 251,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "020a5ae38fa49a40",
+        "210cc957ab815d79"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_tokio_booster.json",
+  "repo_commit": "b2636752450484955e7ad334bac678424d51bc4a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_41_lock",
+   "file": "tokio/src/loom/std/parking_lot.rs",
+   "line": 61,
+   "character": 19,
+   "symbol": "lock",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "d24d77d6831b63cc",
+     "us": 37593.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "f5588574ce0594f1",
+     "us": 31455.3,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "d24d77d6831b63cc",
+     "us": 32914.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_50_poll_next",
+   "file": "tokio-util/src/codec/framed_impl.rs",
+   "line": 125,
+   "character": 8,
+   "symbol": "poll_next",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "61cfed6957e3c7f6",
+     "us": 2744.5,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "c3ee86d688727015",
+     "us": 2667.3,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "61cfed6957e3c7f6",
+     "us": 2735.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_53_take_waker",
+   "file": "tokio/src/sync/task/atomic_waker.rs",
+   "line": 313,
+   "character": 19,
+   "symbol": "take_waker",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "6765eb2a15bdb9f9",
+     "us": 5199.1,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "5aa36b9412a05259",
+     "us": 4363.8,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "6765eb2a15bdb9f9",
+     "us": 4384.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_55_poll_send_to",
+   "file": "tokio/src/net/udp.rs",
+   "line": 1214,
+   "character": 12,
+   "symbol": "poll_send_to",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "011ba3092cf2b937",
+     "us": 4938.3,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "3b3cf6338b208c18",
+     "us": 4701.1,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "011ba3092cf2b937",
+     "us": 5066.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_66_recv_ref",
+   "file": "tokio/src/sync/broadcast.rs",
+   "line": 1256,
+   "character": 8,
+   "symbol": "recv_ref",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "b52c02a8c180b54b",
+     "us": 2948.5,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "972f9450089844ed",
+     "us": 3277.6,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "b52c02a8c180b54b",
+     "us": 3013.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_102_wake_all",
+   "file": "tokio/src/util/wake_list.rs",
+   "line": 39,
+   "character": 19,
+   "symbol": "wake_all",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "7c6cff523a41440a",
+     "us": 4622.0,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "59ca182d50ab56ab",
+     "us": 4453.8,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "7c6cff523a41440a",
+     "us": 4607.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_112_unset_tx_task",
+   "file": "tokio/src/sync/oneshot.rs",
+   "line": 1581,
+   "character": 8,
+   "symbol": "unset_tx_task",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2426.4,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "329aed99a6a57ab7",
+     "us": 2367.3,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2418.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_116_time",
+   "file": "tokio/src/runtime/driver.rs",
+   "line": 114,
+   "character": 23,
+   "symbol": "time",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "5b423d744a30472b",
+     "us": 7014.2,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "d6c9a8b2d536cf02",
+     "us": 6711.2,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "5b423d744a30472b",
+     "us": 6954.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_132_poll",
+   "file": "tokio/src/signal/reusable_box.rs",
+   "line": 117,
+   "character": 19,
+   "symbol": "poll",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "9310690e60a2d32c",
+     "us": 2139.7,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "9c283748115d11e5",
+     "us": 2115.3,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "9310690e60a2d32c",
+     "us": 2135.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_171_closed",
+   "file": "tokio/src/sync/oneshot.rs",
+   "line": 727,
+   "character": 18,
+   "symbol": "closed",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "9cf96a71905a4212",
+     "us": 3825.5,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "f48f68b3192d544f",
+     "us": 3095.7,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "9cf96a71905a4212",
+     "us": 3186.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_198_drain_filter",
+   "file": "tokio/src/util/linked_list.rs",
+   "line": 276,
+   "character": 23,
+   "symbol": "drain_filter",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "152fece7ba752c7b",
+     "us": 2425.4,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "1790e3c96d9a2d01",
+     "us": 2390.2,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "152fece7ba752c7b",
+     "us": 2434.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_220_send",
+   "file": "tokio/src/net/udp.rs",
+   "line": 570,
+   "character": 18,
+   "symbol": "send",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "5b907ad95b939232",
+     "us": 4913.4,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "e3d697cd98bc400f",
+     "us": 4486.7,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "5b907ad95b939232",
+     "us": 4623.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_228_num_unparked",
+   "file": "tokio/src/runtime/scheduler/multi_thread/idle.rs",
+   "line": 214,
+   "character": 8,
+   "symbol": "num_unparked",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "37d3ce41684fe84a",
+     "us": 3468.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "abaeccf465cbf5b8",
+     "us": 3381.6,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "37d3ce41684fe84a",
+     "us": 3442.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_232_load",
+   "file": "tokio/src/sync/notify.rs",
+   "line": 289,
+   "character": 8,
+   "symbol": "load",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "d0fa6e9b83a1edb9",
+     "us": 2978.0,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "4525493f596c304b",
+     "us": 2900.2,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "d0fa6e9b83a1edb9",
+     "us": 2951.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_3_poll_shutdown",
+   "file": "tokio/tests/io_buf_writer.rs",
+   "line": 361,
+   "character": 8,
+   "symbol": "poll_shutdown",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "a53503b66c56e43e",
+     "us": 4165.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "2f4bad4cf6d6ad6b",
+     "us": 930.9,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "a53503b66c56e43e",
+     "us": 3973.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_45_poll_complete",
+   "file": "tokio/tests/io_buf_writer.rs",
+   "line": 265,
+   "character": 12,
+   "symbol": "poll_complete",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "3cda8142d65e320f",
+     "us": 2178.1,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "ae986c90b1d01a4d",
+     "us": 2750.5,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "3cda8142d65e320f",
+     "us": 2002.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_83_take_core",
+   "file": "tokio/src/runtime/scheduler/current_thread/mod.rs",
+   "line": 241,
+   "character": 8,
+   "symbol": "take_core",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "7878b3ffe4a74b27",
+     "us": 482.5,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "d929fe764a640c3e",
+     "us": 10775.5,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "7878b3ffe4a74b27",
+     "us": 398.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_98_drop",
+   "file": "tokio/src/sync/broadcast.rs",
+   "line": 1586,
+   "character": 8,
+   "symbol": "drop",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 111.9,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "9abfd5a9b7819723",
+     "us": 2659.0,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 90.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_134_into_panic",
+   "file": "tokio/src/runtime/task/error.rs",
+   "line": 93,
+   "character": 12,
+   "symbol": "into_panic",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "3a302348c1ad9d64",
+     "us": 4928.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "249e4bd90f7fff46",
+     "us": 673.7,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "3a302348c1ad9d64",
+     "us": 4833.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_151_poll_close",
+   "file": "tokio-util/src/compat.rs",
+   "line": 328,
+   "character": 8,
+   "symbol": "poll_close",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "25b09e90ad92a072",
+     "us": 2087.1,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "482289c7a3d756ea",
+     "us": 433.7,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "25b09e90ad92a072",
+     "us": 1967.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_162_insert_idle",
+   "file": "tokio/src/util/idle_notified_set.rs",
+   "line": 147,
+   "character": 19,
+   "symbol": "insert_idle",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 105.7,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "5c98333d77df4087",
+     "us": 2939.9,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 76.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_163_pop",
+   "file": "tokio/src/runtime/scheduler/inject/synced.rs",
+   "line": 23,
+   "character": 19,
+   "symbol": "pop",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 56.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "31a04802bfd4bdf4",
+     "us": 1532.3,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 38.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_187_eagerly_drops_futures_on_shutdown",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 909,
+   "character": 8,
+   "symbol": "eagerly_drops_futures_on_shutdown",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 97.0,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "88038deabc9b72db",
+     "us": 3752.6,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 77.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_191_poll_flush",
+   "file": "tokio/tests/io_buf_writer.rs",
+   "line": 251,
+   "character": 12,
+   "symbol": "poll_flush",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "210cc957ab815d79",
+     "us": 3221.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "020a5ae38fa49a40",
+     "us": 881.5,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "210cc957ab815d79",
+     "us": 3291.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_195_poll_shutdown",
+   "file": "tokio/tests/io_write_all_buf.rs",
+   "line": 48,
+   "character": 12,
+   "symbol": "poll_shutdown",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "da0db26325dd7324",
+     "us": 1294.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "8548a09e2de004bd",
+     "us": 851.2,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "da0db26325dd7324",
+     "us": 1292.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_210_poll_shutdown",
+   "file": "tokio-util/src/io/sink_writer.rs",
+   "line": 114,
+   "character": 8,
+   "symbol": "poll_shutdown",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "3360d300381ab232",
+     "us": 827.6,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "a45e4de9eedc1d4d",
+     "us": 540.2,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "3360d300381ab232",
+     "us": 890.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_217_poll_flush",
+   "file": "tokio/src/process/unix/mod.rs",
+   "line": 310,
+   "character": 8,
+   "symbol": "poll_flush",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "c3544b06ce276535",
+     "us": 1343.4,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 579.5,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "c3544b06ce276535",
+     "us": 1446.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_229_fmt",
+   "file": "tokio/src/sync/mutex.rs",
+   "line": 1180,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "e1e5fccb7de0c6f3",
+     "us": 2762.5,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "7fb01b2cdc9b3f5f",
+     "us": 438.1,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "e1e5fccb7de0c6f3",
+     "us": 2854.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_248_parse",
+   "file": "tokio-macros/src/entry.rs",
+   "line": 720,
+   "character": 8,
+   "symbol": "parse",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "0db618c8dff0a85d",
+     "us": 2135.2,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "882f111d460044dc",
+     "us": 2466.7,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "0db618c8dff0a85d",
+     "us": 2180.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_262_poll_shutdown",
+   "file": "tokio-util/src/compat.rs",
+   "line": 307,
+   "character": 8,
+   "symbol": "poll_shutdown",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "2d318d8e9954955d",
+     "us": 719.8,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "de21075cc2c91ee5",
+     "us": 426.5,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "2d318d8e9954955d",
+     "us": 752.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_272_fmt",
+   "file": "tokio/src/io/split.rs",
+   "line": 157,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "9a034587e81e812f",
+     "us": 1110.2,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "c006725080f11f6e",
+     "us": 618.7,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "9a034587e81e812f",
+     "us": 1140.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "rpc_method": "callHierarchy/outgoingCalls",
+   "name": "outgoing_calls_280_poll_next",
+   "file": "tokio/tests/time_interval.rs",
+   "line": 402,
+   "character": 8,
+   "symbol": "poll_next",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "0d9e1c8": {
+     "outcome": "a",
+     "digest": "d7647b4ff565570b",
+     "us": 857.7,
+     "error": null
+    },
+    "eb9ba2e": {
+     "outcome": "a",
+     "digest": "69a3a18fb1c7601e",
+     "us": 3330.7,
+     "error": null
+    },
+    "0d9e1c8-2": {
+     "outcome": "a",
+     "digest": "d7647b4ff565570b",
+     "us": 890.6,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 1200,
+ "rows_kept": 32,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_0d9e1c8_vs_eb9ba2e_ram9_tokio.json",
+  "sha256": "e9f8b8e049776ff170b9344e15c2532b6dccd667f21a7a55001a5ccedd74c7a4"
+ }
+}

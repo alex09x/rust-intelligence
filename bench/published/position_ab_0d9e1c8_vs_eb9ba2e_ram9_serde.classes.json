@@ -1,0 +1,431 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_0d9e1c8_vs_eb9ba2e_ram9_serde.json",
+ "servers": [
+  {
+   "name": "0d9e1c8",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "eb9ba2e",
+   "commit": "eb9ba2e4de194abfcf9a37c859c84c4ea85a210f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "0d9e1c8-2",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 11,
+ "summary": {
+  "f1_call_sites_follow_the_corrected_body_end_of_their_callers": 6,
+  "f2_callees_follow_the_corrected_body_end_of_the_function": 5
+ },
+ "rows_by_method": {
+  "incoming_calls": 6,
+  "outgoing_calls": 5
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "serde_derive/src/internals/ast.rs",
+   "line": 133,
+   "character": 4,
+   "symbol": "enum_from_ast",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:serde_derive/src/internals/ast.rs",
+       62,
+       "from_ast"
+      ],
+      "old_end": 68,
+      "new_end": 115,
+      "range_end_before": null,
+      "range_end_after": 115,
+      "added_sites": [
+       72
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 555,
+   "character": 12,
+   "symbol": "rename_all_fields_rules",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:serde_derive/src/internals/ast.rs",
+       62,
+       "from_ast"
+      ],
+      "old_end": 68,
+      "new_end": 115,
+      "range_end_before": null,
+      "range_end_after": 115,
+      "added_sites": [
+       94
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_derive/src/bound.rs",
+   "line": 124,
+   "character": 12,
+   "symbol": "visit_path",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:serde_derive/src/bound.rs",
+       145,
+       "visit_type"
+      ],
+      "old_end": 186,
+      "new_end": 187,
+      "range_end_before": 186,
+      "range_end_after": 187,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:serde_derive/src/bound.rs",
+       226,
+       "visit_type_param_bound"
+      ],
+      "old_end": 234,
+      "new_end": 235,
+      "range_end_before": 234,
+      "range_end_after": 235,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 146,
+   "character": 12,
+   "symbol": "or",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:serde_derive/src/internals/ast.rs",
+       62,
+       "from_ast"
+      ],
+      "old_end": 68,
+      "new_end": 115,
+      "range_end_before": null,
+      "range_end_after": 115,
+      "added_sites": [
+       94
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_derive/src/internals/ctxt.rs",
+   "line": 31,
+   "character": 12,
+   "symbol": "error_spanned_by",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:serde_derive/src/internals/ast.rs",
+       62,
+       "from_ast"
+      ],
+      "old_end": 68,
+      "new_end": 115,
+      "range_end_before": null,
+      "range_end_after": 115,
+      "added_sites": [
+       80
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:serde_derive/src/internals/ast.rs",
+       133,
+       "enum_from_ast"
+      ],
+      "old_end": 157,
+      "new_end": 172,
+      "range_end_before": null,
+      "range_end_after": 172,
+      "added_sites": [
+       166
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_derive/src/bound.rs",
+   "line": 189,
+   "character": 12,
+   "symbol": "visit_path_segment",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:serde_derive/src/bound.rs",
+       124,
+       "visit_path"
+      ],
+      "old_end": 131,
+      "new_end": 141,
+      "range_end_before": null,
+      "range_end_after": 141,
+      "added_sites": [
+       139
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "serde_derive/src/bound.rs",
+   "line": 243,
+   "character": 12,
+   "symbol": "visit_macro",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 243,
+    "old_end": 255,
+    "new_end": 243,
+    "added_sites": [],
+    "removed_sites": [
+     247,
+     248,
+     248,
+     249,
+     253,
+     254
+    ],
+    "removed_count": 6,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1006,
+   "character": 8,
+   "symbol": "deserialize_u16",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 1006,
+    "old_end": 1029,
+    "new_end": 1008,
+    "added_sites": [],
+    "removed_sites": [
+     1028
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 1993,
+   "character": 8,
+   "symbol": "skip_field",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 1993,
+    "old_end": 2009,
+    "new_end": 1996,
+    "added_sites": [],
+    "removed_sites": [
+     2006
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1848,
+   "character": 8,
+   "symbol": "next_key_seed",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 1848,
+    "old_end": 1890,
+    "new_end": 1850,
+    "added_sites": [],
+    "removed_sites": [
+     1883,
+     1885
+    ],
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "serde_derive/src/bound.rs",
+   "line": 91,
+   "character": 8,
+   "symbol": "with_bound",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 91,
+    "old_end": 110,
+    "new_end": 310,
+    "added_sites": [
+     114,
+     115,
+     115,
+     116,
+     117,
+     121,
+     125,
+     132,
+     132,
+     134,
+     135,
+     135,
+     139,
+     148,
+     151,
+     153,
+     155,
+     158,
+     161,
+     162,
+     165,
+     167,
+     169,
+     170,
+     171,
+     174,
+     179,
+     190,
+     199,
+     200,
+     201,
+     212,
+     214,
+     222,
+     229,
+     247,
+     248,
+     248,
+     249,
+     253,
+     254,
+     261,
+     262,
+     264,
+     269,
+     269,
+     270,
+     278,
+     279,
+     279,
+     280,
+     280,
+     281,
+     283,
+     285,
+     285,
+     285,
+     286,
+     291,
+     297,
+     299,
+     300,
+     304,
+     306,
+     308
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 65
+   }
+  }
+ ]
+}

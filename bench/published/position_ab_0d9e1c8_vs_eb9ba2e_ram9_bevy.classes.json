@@ -1,0 +1,846 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_0d9e1c8_vs_eb9ba2e_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "0d9e1c8",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "eb9ba2e",
+   "commit": "eb9ba2e4de194abfcf9a37c859c84c4ea85a210f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "0d9e1c8-2",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 25,
+ "summary": {
+  "f1_call_sites_follow_the_corrected_body_end_of_their_callers": 11,
+  "f2_callees_follow_the_corrected_body_end_of_the_function": 14
+ },
+ "rows_by_method": {
+  "incoming_calls": 11,
+  "outgoing_calls": 14
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/src/func/args/list.rs",
+   "line": 242,
+   "character": 12,
+   "symbol": "pop_arg",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/func/args/list.rs",
+       268,
+       "pop"
+      ],
+      "old_end": 289,
+      "new_end": 270,
+      "range_end_before": 289,
+      "range_end_after": 270,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/func/args/list.rs",
+       306,
+       "pop_ref"
+      ],
+      "old_end": 332,
+      "new_end": 308,
+      "range_end_before": 332,
+      "range_end_after": 308,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/func/args/list.rs",
+       325,
+       "pop_mut"
+      ],
+      "old_end": 332,
+      "new_end": 327,
+      "range_end_before": 332,
+      "range_end_after": 327,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/src/enums/variants.rs",
+   "line": 231,
+   "character": 8,
+   "symbol": "collect_field_indices",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/enums/variants.rs",
+       166,
+       "new"
+      ],
+      "old_end": 177,
+      "new_end": 178,
+      "range_end_before": 177,
+      "range_end_after": 178,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/src/enums/enum_trait.rs",
+   "line": 106,
+   "character": 8,
+   "symbol": "field_mut",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/path/access.rs",
+       160,
+       "element_inner_mut"
+      ],
+      "old_end": 164,
+      "new_end": 214,
+      "range_end_before": null,
+      "range_end_after": 214,
+      "added_sites": [
+       172
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/storage/non_send.rs",
+   "line": 103,
+   "character": 12,
+   "symbol": "get_data",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/unsafe_world_cell.rs",
+       561,
+       "get_non_send_by_id"
+      ],
+      "old_end": 564,
+      "new_end": 568,
+      "range_end_before": null,
+      "range_end_after": 568,
+      "added_sites": [
+       567
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_render/src/render_phase/draw.rs",
+   "line": 89,
+   "character": 12,
+   "symbol": "get_id",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_render/src/render_phase/draw.rs",
+       99,
+       "id"
+      ],
+      "old_end": 106,
+      "new_end": 107,
+      "range_end_before": 106,
+      "range_end_after": 107,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/src/enums/enum_trait.rs",
+   "line": 100,
+   "character": 8,
+   "symbol": "field",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/path/access.rs",
+       84,
+       "element_inner"
+      ],
+      "old_end": 88,
+      "new_end": 146,
+      "range_end_before": null,
+      "range_end_after": 146,
+      "added_sites": [
+       96
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/src/display.rs",
+   "line": 336,
+   "character": 4,
+   "symbol": "write_function",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/display.rs",
+       397,
+       "fmt"
+      ],
+      "old_end": 412,
+      "new_end": 399,
+      "range_end_before": 412,
+      "range_end_after": 399,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/world/unsafe_world_cell.rs",
+   "line": 315,
+   "character": 12,
+   "symbol": "entities",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/fetch.rs",
+       634,
+       "init_fetch"
+      ],
+      "old_end": 645,
+      "new_end": 641,
+      "range_end_before": 645,
+      "range_end_after": 641,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/fetch.rs",
+       822,
+       "init_fetch"
+      ],
+      "old_end": 832,
+      "new_end": 833,
+      "range_end_before": 832,
+      "range_end_after": 833,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/fetch.rs",
+       1745,
+       "init_fetch"
+      ],
+      "old_end": 1756,
+      "new_end": 1752,
+      "range_end_before": 1756,
+      "range_end_after": 1752,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/filter.rs",
+       1333,
+       "init_fetch"
+      ],
+      "old_end": 1343,
+      "new_end": 1344,
+      "range_end_before": 1343,
+      "range_end_after": 1344,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/entity_fetch.rs",
+       214,
+       "fetch_mut"
+      ],
+      "old_end": 218,
+      "new_end": 223,
+      "range_end_before": 218,
+      "range_end_after": 223,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/unsafe_world_cell.rs",
+       439,
+       "get_entity"
+      ],
+      "old_end": 440,
+      "new_end": 448,
+      "range_end_before": 440,
+      "range_end_after": 448,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/unsafe_world_cell.rs",
+       453,
+       "get_entity_with_ticks"
+      ],
+      "old_end": 459,
+      "new_end": 463,
+      "range_end_before": 459,
+      "range_end_after": 463,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/world/entity_access/filtered.rs",
+   "line": 217,
+   "character": 12,
+   "symbol": "get_by_id",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/entity_access/filtered.rs",
+       678,
+       "get_by_id"
+      ],
+      "old_end": 694,
+      "new_end": 680,
+      "range_end_before": 694,
+      "range_end_after": 680,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_platform/src/collections/hash_set.rs",
+   "line": 370,
+   "character": 12,
+   "symbol": "iter",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/entity/hash_set.rs",
+       78,
+       "iter"
+      ],
+      "old_end": 96,
+      "new_end": 80,
+      "range_end_before": 96,
+      "range_end_after": 80,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/graph/graph_map.rs",
+       286,
+       "all_edges"
+      ],
+      "old_end": 292,
+      "new_end": 288,
+      "range_end_before": 292,
+      "range_end_after": 288,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_render/src/render_resource/pipeline_cache.rs",
+       242,
+       "waiting_pipelines"
+      ],
+      "old_end": 254,
+      "new_end": 244,
+      "range_end_before": 254,
+      "range_end_after": 244,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_world_serialization/src/world_filter.rs",
+       187,
+       "iter"
+      ],
+      "old_end": 191,
+      "new_end": 192,
+      "range_end_before": 191,
+      "range_end_after": 192,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/derive/src/where_clause_options.rs",
+   "line": 137,
+   "character": 8,
+   "symbol": "predicates",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/derive/src/where_clause_options.rs",
+       104,
+       "extend_where_clause"
+      ],
+      "old_end": 169,
+      "new_end": 134,
+      "range_end_before": 169,
+      "range_end_after": 134,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_ecs/src/entity/index_map.rs",
+   "line": 1203,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 1203,
+    "old_end": 1214,
+    "new_end": 1208,
+    "added_sites": [],
+    "removed_sites": [
+     1214,
+     1214
+    ],
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_reflect/derive/src/remote.rs",
+   "line": 453,
+   "character": 12,
+   "symbol": "type_path",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 453,
+    "old_end": 477,
+    "new_end": 455,
+    "added_sites": [],
+    "removed_sites": [
+     463,
+     464,
+     468,
+     471,
+     472
+    ],
+    "removed_count": 5,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_scene/src/spawn.rs",
+   "line": 361,
+   "character": 8,
+   "symbol": "spawn_scene",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 361,
+    "old_end": 362,
+    "new_end": 372,
+    "added_sites": [
+     363,
+     364,
+     364,
+     365,
+     366
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 5
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_reflect/src/func/args/list.rs",
+   "line": 61,
+   "character": 12,
+   "symbol": "push_arg",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 61,
+    "old_end": 67,
+    "new_end": 71,
+    "added_sites": [
+     69,
+     70,
+     70
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 3
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_render/src/render_phase/draw.rs",
+   "line": 131,
+   "character": 12,
+   "symbol": "read",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 131,
+    "old_end": 220,
+    "new_end": 133,
+    "added_sites": [],
+    "removed_sites": [
+     138,
+     139
+    ],
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_ecs/src/entity/index_map.rs",
+   "line": 973,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 973,
+    "old_end": 981,
+    "new_end": 975,
+    "added_sites": [],
+    "removed_sites": [
+     981,
+     981
+    ],
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_reflect/src/structs.rs",
+   "line": 190,
+   "character": 12,
+   "symbol": "iter",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 190,
+    "old_end": 197,
+    "new_end": 192,
+    "added_sites": [],
+    "removed_sites": [
+     196
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_reflect/src/structs.rs",
+   "line": 753,
+   "character": 8,
+   "symbol": "struct_debug",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 753,
+    "old_end": 766,
+    "new_end": 768,
+    "added_sites": [
+     767
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_asset/src/io/mod.rs",
+   "line": 498,
+   "character": 8,
+   "symbol": "write_meta",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 498,
+    "old_end": 506,
+    "new_end": 503,
+    "added_sites": [],
+    "removed_sites": [
+     505,
+     505
+    ],
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_asset/src/id.rs",
+   "line": 347,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 347,
+    "old_end": 362,
+    "new_end": 353,
+    "added_sites": [],
+    "removed_sites": [
+     361,
+     361,
+     361,
+     361,
+     361
+    ],
+    "removed_count": 5,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_light/src/atmosphere.rs",
+   "line": 499,
+   "character": 12,
+   "symbol": "from_curve",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 499,
+    "old_end": 511,
+    "new_end": 501,
+    "added_sites": [],
+    "removed_sites": [
+     505
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_ecs/src/entity/index_map.rs",
+   "line": 1506,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 1506,
+    "old_end": 1517,
+    "new_end": 1511,
+    "added_sites": [],
+    "removed_sites": [
+     1517,
+     1517
+    ],
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_ecs/src/change_detection/params.rs",
+   "line": 1577,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 1577,
+    "old_end": 1589,
+    "new_end": 1581,
+    "added_sites": [],
+    "removed_sites": [
+     1587
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "crates/bevy_ecs/src/entity/unique_vec.rs",
+   "line": 968,
+   "character": 8,
+   "symbol": "extend",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 968,
+    "old_end": 974,
+    "new_end": 988,
+    "added_sites": [
+     975,
+     976,
+     978,
+     978,
+     980,
+     983,
+     984,
+     985
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 8
+   }
+  }
+ ]
+}

@@ -1,0 +1,1245 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_0d9e1c8_vs_eb9ba2e_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "0d9e1c8",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "eb9ba2e",
+   "commit": "eb9ba2e4de194abfcf9a37c859c84c4ea85a210f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "0d9e1c8-2",
+   "commit": "0d9e1c8b8903ab70697b96cc28471bb026f4d16b",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 32,
+ "summary": {
+  "f1_call_sites_follow_the_corrected_body_end_of_their_callers": 14,
+  "f2_callees_follow_the_corrected_body_end_of_the_function": 18
+ },
+ "rows_by_method": {
+  "incoming_calls": 14,
+  "outgoing_calls": 18
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/loom/std/parking_lot.rs",
+   "line": 61,
+   "character": 19,
+   "symbol": "lock",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/runtime/blocking/pool.rs",
+       644,
+       "run_worker"
+      ],
+      "old_end": 713,
+      "new_end": 737,
+      "range_end_before": 713,
+      "range_end_after": 737,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/runtime/blocking/sharded.rs",
+       238,
+       "run_worker"
+      ],
+      "old_end": 309,
+      "new_end": 331,
+      "range_end_before": 309,
+      "range_end_after": 331,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/runtime/io/scheduled_io.rs",
+       251,
+       "wake"
+      ],
+      "old_end": 295,
+      "new_end": 301,
+      "range_end_before": 295,
+      "range_end_after": 301,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/runtime/io/scheduled_io.rs",
+       442,
+       "poll"
+      ],
+      "old_end": 455,
+      "new_end": 578,
+      "range_end_before": null,
+      "range_end_after": 578,
+      "added_sites": [
+       480,
+       527
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/runtime/scheduler/inject/rt_multi_thread.rs",
+       196,
+       "pop_n"
+      ],
+      "old_end": 199,
+      "new_end": 200,
+      "range_end_before": 199,
+      "range_end_after": 200,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/runtime/time/mod.rs",
+       469,
+       "lock"
+      ],
+      "old_end": 474,
+      "new_end": 475,
+      "range_end_before": 474,
+      "range_end_after": 475,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/batch_semaphore.rs",
+       313,
+       "add_permits_locked"
+      ],
+      "old_end": 347,
+      "new_end": 384,
+      "range_end_before": 347,
+      "range_end_after": 384,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/broadcast.rs",
+       1022,
+       "notify_rx"
+      ],
+      "old_end": 1025,
+      "new_end": 1084,
+      "range_end_before": null,
+      "range_end_after": 1084,
+      "added_sites": [
+       1077
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/broadcast.rs",
+       1256,
+       "recv_ref"
+      ],
+      "old_end": 1260,
+      "new_end": 1361,
+      "range_end_before": null,
+      "range_end_after": 1361,
+      "added_sites": [
+       1263,
+       1277,
+       1280
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/broadcast.rs",
+       1586,
+       "drop"
+      ],
+      "old_end": 1590,
+      "new_end": 1628,
+      "range_end_before": null,
+      "range_end_after": 1628,
+      "added_sites": [
+       1600
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/notify.rs",
+       744,
+       "inner_notify_waiters"
+      ],
+      "old_end": 809,
+      "new_end": 815,
+      "range_end_before": 809,
+      "range_end_after": 815,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/notify.rs",
+       817,
+       "lock_waiter_list"
+      ],
+      "old_end": 818,
+      "new_end": 829,
+      "range_end_before": 818,
+      "range_end_after": 829,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/notify.rs",
+       1105,
+       "poll_notified"
+      ],
+      "old_end": 1111,
+      "new_end": 1328,
+      "range_end_before": null,
+      "range_end_after": 1328,
+      "added_sites": [
+       1146,
+       1246
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/time/clock.rs",
+       322,
+       "pause"
+      ],
+      "old_end": 323,
+      "new_end": 341,
+      "range_end_before": 323,
+      "range_end_after": 341,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/time/clock.rs",
+       359,
+       "advance"
+      ],
+      "old_end": 360,
+      "new_end": 368,
+      "range_end_before": 360,
+      "range_end_after": 368,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/util/idle_notified_set.rs",
+       147,
+       "insert_idle"
+      ],
+      "old_end": 148,
+      "new_end": 165,
+      "range_end_before": null,
+      "range_end_after": 165,
+      "added_sites": [
+       159
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/util/idle_notified_set.rs",
+       169,
+       "pop_notified"
+      ],
+      "old_end": 175,
+      "new_end": 204,
+      "range_end_before": null,
+      "range_end_after": 204,
+      "added_sites": [
+       180
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/util/idle_notified_set.rs",
+       208,
+       "try_pop_notified"
+      ],
+      "old_end": 214,
+      "new_end": 232,
+      "range_end_before": null,
+      "range_end_after": 232,
+      "added_sites": [
+       216
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/util/sharded_list.rs",
+       127,
+       "shard_inner"
+      ],
+      "old_end": 129,
+      "new_end": 130,
+      "range_end_before": 129,
+      "range_end_after": 130,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 12
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio-util/src/codec/framed_impl.rs",
+   "line": 125,
+   "character": 8,
+   "symbol": "poll_next",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio-util/src/codec/framed.rs",
+       309,
+       "poll_next"
+      ],
+      "old_end": 325,
+      "new_end": 311,
+      "range_end_before": 325,
+      "range_end_after": 311,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/src/codec/framed_read.rs",
+       174,
+       "poll_next"
+      ],
+      "old_end": 188,
+      "new_end": 176,
+      "range_end_before": 188,
+      "range_end_after": 176,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/sync/task/atomic_waker.rs",
+   "line": 313,
+   "character": 19,
+   "symbol": "take_waker",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/sync/mpsc/chan.rs",
+       504,
+       "drop"
+      ],
+      "old_end": 544,
+      "new_end": 545,
+      "range_end_before": 544,
+      "range_end_after": 545,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/net/udp.rs",
+   "line": 1214,
+   "character": 12,
+   "symbol": "poll_send_to",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio-util/src/udp/frame.rs",
+       144,
+       "poll_flush"
+      ],
+      "old_end": 147,
+      "new_end": 169,
+      "range_end_before": null,
+      "range_end_after": 169,
+      "added_sites": [
+       156
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/sync/broadcast.rs",
+   "line": 1256,
+   "character": 8,
+   "symbol": "recv_ref",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/sync/broadcast.rs",
+       1586,
+       "drop"
+      ],
+      "old_end": 1590,
+      "new_end": 1628,
+      "range_end_before": null,
+      "range_end_after": 1628,
+      "added_sites": [
+       1618
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/broadcast.rs",
+       1663,
+       "poll"
+      ],
+      "old_end": 1673,
+      "new_end": 1676,
+      "range_end_before": 1673,
+      "range_end_after": 1676,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/util/wake_list.rs",
+   "line": 39,
+   "character": 19,
+   "symbol": "wake_all",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/runtime/io/scheduled_io.rs",
+       251,
+       "wake"
+      ],
+      "old_end": 295,
+      "new_end": 301,
+      "range_end_before": 295,
+      "range_end_after": 301,
+      "added_sites": [
+       300
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/batch_semaphore.rs",
+       313,
+       "add_permits_locked"
+      ],
+      "old_end": 347,
+      "new_end": 384,
+      "range_end_before": null,
+      "range_end_after": 384,
+      "added_sites": [
+       380
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/broadcast.rs",
+       1022,
+       "notify_rx"
+      ],
+      "old_end": 1025,
+      "new_end": 1084,
+      "range_end_before": null,
+      "range_end_after": 1084,
+      "added_sites": [
+       1074,
+       1083
+      ],
+      "removed_sites": [],
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/notify.rs",
+       744,
+       "inner_notify_waiters"
+      ],
+      "old_end": 809,
+      "new_end": 815,
+      "range_end_before": 809,
+      "range_end_after": 815,
+      "added_sites": [
+       814
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 5
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/sync/oneshot.rs",
+   "line": 1581,
+   "character": 8,
+   "symbol": "unset_tx_task",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/sync/oneshot.rs",
+       820,
+       "poll_closed"
+      ],
+      "old_end": 833,
+      "new_end": 868,
+      "range_end_before": null,
+      "range_end_after": 868,
+      "added_sites": [
+       839
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/runtime/driver.rs",
+   "line": 114,
+   "character": 23,
+   "symbol": "time",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/time/sleep.rs",
+       396,
+       "poll_elapsed"
+      ],
+      "old_end": 442,
+      "new_end": 454,
+      "range_end_before": 442,
+      "range_end_after": 454,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/signal/reusable_box.rs",
+   "line": 117,
+   "character": 19,
+   "symbol": "poll",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/signal/mod.rs",
+       84,
+       "poll_recv"
+      ],
+      "old_end": 89,
+      "new_end": 88,
+      "range_end_before": 89,
+      "range_end_after": 88,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/sync/oneshot.rs",
+   "line": 727,
+   "character": 18,
+   "symbol": "closed",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/tests/sync_oneshot.rs",
+       31,
+       "poll_closed"
+      ],
+      "old_end": 34,
+      "new_end": 36,
+      "range_end_before": 34,
+      "range_end_after": 36,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/util/linked_list.rs",
+   "line": 276,
+   "character": 23,
+   "symbol": "drain_filter",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/runtime/io/scheduled_io.rs",
+       251,
+       "wake"
+      ],
+      "old_end": 295,
+      "new_end": 301,
+      "range_end_before": 295,
+      "range_end_after": 301,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/net/udp.rs",
+   "line": 570,
+   "character": 18,
+   "symbol": "send",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/net/udp.rs",
+       600,
+       "poll_send"
+      ],
+      "old_end": 658,
+      "new_end": 604,
+      "range_end_before": 658,
+      "range_end_after": 604,
+      "added_sites": [],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/runtime/scheduler/multi_thread/idle.rs",
+   "line": 214,
+   "character": 8,
+   "symbol": "num_unparked",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/runtime/scheduler/multi_thread/idle.rs",
+       232,
+       "fmt"
+      ],
+      "old_end": 248,
+      "new_end": 237,
+      "range_end_before": 248,
+      "range_end_after": 237,
+      "added_sites": [],
+      "removed_sites": [
+       246
+      ],
+      "ok": true
+     }
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/sync/notify.rs",
+   "line": 289,
+   "character": 8,
+   "symbol": "load",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f1_call_sites_follow_the_corrected_body_end_of_their_callers",
+   "evidence": {
+    "callers": [
+     {
+      "caller": [
+       "ws:tokio/src/sync/notify.rs",
+       1105,
+       "poll_notified"
+      ],
+      "old_end": 1111,
+      "new_end": 1328,
+      "range_end_before": null,
+      "range_end_after": 1328,
+      "added_sites": [
+       1231,
+       1251
+      ],
+      "removed_sites": [],
+      "ok": true
+     }
+    ],
+    "removed_count": 0,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/tests/io_buf_writer.rs",
+   "line": 361,
+   "character": 8,
+   "symbol": "poll_shutdown",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 361,
+    "old_end": 378,
+    "new_end": 363,
+    "added_sites": [],
+    "removed_sites": [
+     368,
+     368,
+     369,
+     372,
+     373,
+     376,
+     377,
+     377
+    ],
+    "removed_count": 8,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/tests/io_buf_writer.rs",
+   "line": 265,
+   "character": 12,
+   "symbol": "poll_complete",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 265,
+    "old_end": 270,
+    "new_end": 275,
+    "added_sites": [
+     272,
+     272
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/src/runtime/scheduler/current_thread/mod.rs",
+   "line": 241,
+   "character": 8,
+   "symbol": "take_core",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 241,
+    "old_end": 242,
+    "new_end": 252,
+    "added_sites": [
+     246,
+     247,
+     248
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 3
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/src/sync/broadcast.rs",
+   "line": 1586,
+   "character": 8,
+   "symbol": "drop",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 1586,
+    "old_end": 1590,
+    "new_end": 1628,
+    "added_sites": [
+     1595,
+     1600,
+     1610,
+     1618
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 4
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/src/runtime/task/error.rs",
+   "line": 93,
+   "character": 12,
+   "symbol": "into_panic",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 93,
+    "old_end": 123,
+    "new_end": 96,
+    "added_sites": [],
+    "removed_sites": [
+     121
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio-util/src/compat.rs",
+   "line": 328,
+   "character": 8,
+   "symbol": "poll_close",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 328,
+    "old_end": 344,
+    "new_end": 330,
+    "added_sites": [],
+    "removed_sites": [
+     341,
+     341,
+     341,
+     342,
+     342,
+     342,
+     343,
+     343
+    ],
+    "removed_count": 8,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/src/util/idle_notified_set.rs",
+   "line": 147,
+   "character": 19,
+   "symbol": "insert_idle",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 147,
+    "old_end": 148,
+    "new_end": 165,
+    "added_sites": [
+     150,
+     151,
+     152,
+     152,
+     153,
+     154,
+     159,
+     160,
+     160
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 9
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/src/runtime/scheduler/inject/synced.rs",
+   "line": 23,
+   "character": 19,
+   "symbol": "pop",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 23,
+    "old_end": 24,
+    "new_end": 36,
+    "added_sites": [
+     26,
+     28,
+     32,
+     35
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 4
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 909,
+   "character": 8,
+   "symbol": "eagerly_drops_futures_on_shutdown",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 909,
+    "old_end": 922,
+    "new_end": 948,
+    "added_sites": [
+     926,
+     926,
+     930,
+     932,
+     933,
+     935,
+     936,
+     937,
+     945,
+     947
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 10
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/tests/io_buf_writer.rs",
+   "line": 251,
+   "character": 12,
+   "symbol": "poll_flush",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 251,
+    "old_end": 264,
+    "new_end": 253,
+    "added_sites": [],
+    "removed_sites": [
+     256,
+     256,
+     262,
+     262
+    ],
+    "removed_count": 4,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/tests/io_write_all_buf.rs",
+   "line": 48,
+   "character": 12,
+   "symbol": "poll_shutdown",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 48,
+    "old_end": 56,
+    "new_end": 50,
+    "added_sites": [],
+    "removed_sites": [
+     54
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio-util/src/io/sink_writer.rs",
+   "line": 114,
+   "character": 8,
+   "symbol": "poll_shutdown",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 114,
+    "old_end": 123,
+    "new_end": 116,
+    "added_sites": [],
+    "removed_sites": [
+     122,
+     122
+    ],
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/src/process/unix/mod.rs",
+   "line": 310,
+   "character": 8,
+   "symbol": "poll_flush",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 310,
+    "old_end": 324,
+    "new_end": 312,
+    "added_sites": [],
+    "removed_sites": [
+     323
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/src/sync/mutex.rs",
+   "line": 1180,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 1180,
+    "old_end": 1194,
+    "new_end": 1182,
+    "added_sites": [],
+    "removed_sites": [
+     1189
+    ],
+    "removed_count": 1,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio-macros/src/entry.rs",
+   "line": 720,
+   "character": 8,
+   "symbol": "parse",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 720,
+    "old_end": 750,
+    "new_end": 764,
+    "added_sites": [
+     752,
+     753
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 2
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio-util/src/compat.rs",
+   "line": 307,
+   "character": 8,
+   "symbol": "poll_shutdown",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 307,
+    "old_end": 322,
+    "new_end": 309,
+    "added_sites": [],
+    "removed_sites": [
+     321,
+     321
+    ],
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/src/io/split.rs",
+   "line": 157,
+   "character": 8,
+   "symbol": "fmt",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 157,
+    "old_end": 165,
+    "new_end": 159,
+    "added_sites": [],
+    "removed_sites": [
+     164,
+     164
+    ],
+    "removed_count": 2,
+    "added_count": 0
+   }
+  },
+  {
+   "method": "outgoing_calls",
+   "file": "tokio/tests/time_interval.rs",
+   "line": 402,
+   "character": 8,
+   "symbol": "poll_next",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "f2_callees_follow_the_corrected_body_end_of_the_function",
+   "evidence": {
+    "item_line": 402,
+    "old_end": 407,
+    "new_end": 424,
+    "added_sites": [
+     409,
+     418,
+     418
+    ],
+    "removed_sites": [],
+    "removed_count": 0,
+    "added_count": 3
+   }
+  }
+ ]
+}
