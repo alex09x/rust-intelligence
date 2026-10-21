@@ -1,0 +1,5867 @@
+{
+ "repo": "serde-rs/serde",
+ "repo_dir_name": "serde",
+ "repo_head": "69072f24232f431911ba2c41da69a1da10e805a1",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 31,
+ "positions_file": "matrix_serde_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "implementation",
+  "incoming_calls",
+  "document_highlight"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 28,
+ "timestamp_start": "2026-10-21T19:00:01.704895+00:00",
+ "timestamp_end": "2026-10-21T19:00:15.762924+00:00",
+ "servers": [
+  {
+   "name": "8dde2a5",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 8dde2a5ca5027745cd0a319fd684f0841082d08f, dirty: false)",
+   "commit": "8dde2a5ca5027745cd0a319fd684f0841082d08f",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 0.4,
+   "summary": {
+    "implementation": {
+     "a": 121,
+     "b": 179,
+     "c": 0,
+     "n": 300,
+     "p50_us": 223.5,
+     "p99_us": 6572.0,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 69,
+     "b": 231,
+     "c": 0,
+     "n": 300,
+     "p50_us": 117.0,
+     "p99_us": 1937.1,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 253,
+     "b": 47,
+     "c": 0,
+     "n": 300,
+     "p50_us": 252.1,
+     "p99_us": 4346.3,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 3,
+    "matching": 1,
+    "mismatches": [
+     {
+      "method": "implementation",
+      "ours": [
+       121,
+       179,
+       0
+      ],
+      "matrix": [
+       110,
+       190,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       253,
+       47,
+       0
+      ],
+      "matrix": [
+       256,
+       44,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "ra",
+   "kind": "rust-analyzer",
+   "binary": "rust-analyzer",
+   "version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+   "commit": null,
+   "dirty": null,
+   "ready": {
+    "initial_wait_ms": 3055.4,
+    "initial_quiescent": true,
+    "quiescent_wait_ms": 0.02,
+    "canary_wait_ms": 1315.2,
+    "canary_attempts": 2,
+    "cancelled_on_timeout": 1
+   },
+   "duration_s": 10.5,
+   "summary": {
+    "implementation": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 152.7,
+     "p99_us": 5650.8,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 80,
+     "b": 219,
+     "c": 1,
+     "n": 300,
+     "p50_us": 1116.3,
+     "p99_us": 452134.1,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 278,
+     "b": 22,
+     "c": 0,
+     "n": 300,
+     "p50_us": 954.4,
+     "p99_us": 16100.6,
+     "unsupported": false
+    }
+   },
+   "retry": {
+    "implementation": {
+     "retried": 51,
+     "b": 51
+    },
+    "incoming_calls": {
+     "retried": 220,
+     "b": 220
+    },
+    "document_highlight": {
+     "retried": 22,
+     "b": 22
+    }
+   },
+   "matrix_check": {
+    "compared": 3,
+    "matching": 2,
+    "mismatches": [
+     {
+      "method": "incoming_calls",
+      "ours": [
+       80,
+       219,
+       1
+      ],
+      "matrix": [
+       81,
+       218,
+       1
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "8dde2a5",
+   "b": "ra",
+   "same": 278,
+   "differing": 622,
+   "methods": {
+    "implementation": {
+     "same": 51,
+     "differing": 249,
+     "transitions": {
+      "a>a": 121,
+      "b>a": 128
+     },
+     "examples": [
+      {
+       "name": "impl_0_BorrowedStrDeserializer",
+       "file": "serde_core/src/de/value.rs",
+       "line": 546,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "21e0a25be8fb80a5",
+        "1256d5570c474fc2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_1_RenameStructSerializeDeserialize",
+       "file": "test_suite/tests/test_annotations.rs",
+       "line": 487,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "00b44ca648927a6b"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_2_Struct",
+       "file": "test_suite/tests/test_self.rs",
+       "line": 25,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e7092db97b42a6eb",
+        "798e9d5004dccaa3"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_3_CowBytesVisitor",
+       "file": "serde/src/private/de.rs",
+       "line": 143,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b04801e12209beee",
+        "0c050f0b82f0f31a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_4_SerializeTuple",
+       "file": "serde/src/private/ser.rs",
+       "line": 796,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3f7a6b1d5353a004",
+        "0b19dfcfea50ccb4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_5_SeqDeserializer",
+       "file": "serde/src/private/de.rs",
+       "line": 1504,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "fb6f5ae97981aebc",
+        "3fdfa99ab9f97d33"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_6_InvalidLengthEnum",
+       "file": "test_suite/tests/test_annotations.rs",
+       "line": 1475,
+       "character": 6,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "b8886d5934776e31"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_7_SerializeTupleVariant",
+       "file": "serde/src/private/ser.rs",
+       "line": 851,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1ff827a30e262314",
+        "53b44e879d4f1213"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_8_DefaultTyParam",
+       "file": "test_suite/tests/test_macros.rs",
+       "line": 106,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "b7fb93c6eb486b5c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_9_WithTogether",
+       "file": "test_suite/tests/test_gen.rs",
+       "line": 63,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "86dc729d3d8665a7"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "incoming_calls": {
+     "same": 219,
+     "differing": 81,
+     "transitions": {
+      "b>a": 11,
+      "a>a": 69,
+      "b>c": 1
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_1_enum_from_ast",
+       "file": "serde_derive/src/internals/ast.rs",
+       "line": 133,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "0151022f311f17b0"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_3_new",
+       "file": "serde/src/private/de.rs",
+       "line": 1496,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "972e984dc0fd5fd1",
+        "76da9c94905711ed"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_5_check_flatten_field",
+       "file": "serde_derive/src/internals/check.rs",
+       "line": 117,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "22b6d468107f617f",
+        "1ac5933af47ecc8b"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_7_next_key",
+       "file": "serde_core/src/de/mod.rs",
+       "line": 1898,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b2bdf07db344f8df",
+        "21d12ceb374a9bea"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_8_rename_all_fields_rules",
+       "file": "serde_derive/src/internals/attr.rs",
+       "line": 555,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "2991d057978391f7"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_9_collect_lifetimes",
+       "file": "serde_derive/src/internals/attr.rs",
+       "line": 1745,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9c580cef6bcbaa88",
+        "d470eeaecd77eb74"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_12_visit_path",
+       "file": "serde_derive/src/bound.rs",
+       "line": 124,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c3d5a0f577ff9498",
+        "e6e9b4256b45e856"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_13_visit_u16",
+       "file": "serde/src/private/de.rs",
+       "line": 362,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5c908d3bd8a8cb42",
+        "1b1fa44925dfc372"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_17_new",
+       "file": "serde_core/src/de/value.rs",
+       "line": 668,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7b3cc1d2ed7874ba",
+        "10036f22a9410756"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_21_serialize",
+       "file": "serde_core/src/ser/impls.rs",
+       "line": 831,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "610dca0824449800",
+        "94501b2ba08a3c19"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 8,
+     "differing": 292,
+     "transitions": {
+      "a>a": 239,
+      "b>a": 39,
+      "a>b": 14
+     },
+     "examples": [
+      {
+       "name": "document_highlight_0_size_hint",
+       "file": "serde_core/src/de/impls.rs",
+       "line": 1198,
+       "character": 57,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "03d408e92e81f958",
+        "4311a90e6d219d2a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_1_core",
+       "file": "serde_core/src/lib.rs",
+       "line": 178,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c39161c3620a75ef",
+        "8c5314e914c034c1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_2_set",
+       "file": "serde_derive/src/internals/attr.rs",
+       "line": 472,
+       "character": 36,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6a6b7f33c3abe1a2",
+        "dbbc89d264e28fb1"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_3_Error",
+       "file": "serde/src/private/ser.rs",
+       "line": 1051,
+       "character": 62,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "ed5acb1799a22154"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_4_I32",
+       "file": "test_suite/tests/test_de.rs",
+       "line": 1148,
+       "character": 20,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0a5415fa1dc433f3",
+        "2b2298d6d01730c6"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_5_unwrap",
+       "file": "test_suite/tests/test_de.rs",
+       "line": 852,
+       "character": 43,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d70234392abcc7e3",
+        "500bd2c6179a01d4"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_6_Unit",
+       "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+       "line": 147,
+       "character": 24,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a6faa639fc149c5b",
+        "f4e5bcd19d95d7c7"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_7_Str",
+       "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+       "line": 766,
+       "character": 20,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c674d5529a9d23c6",
+        "eade970de3d929dd"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_8_syn_error",
+       "file": "serde_derive/src/internals/attr.rs",
+       "line": 427,
+       "character": 40,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "28c0c3e39bb1dc5f",
+        "c42cff6779ccc238"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_9_deserialize_identifier",
+       "file": "serde/src/private/de.rs",
+       "line": 913,
+       "character": 26,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "300bc22f5180717d",
+        "ea6c2a77935edae6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_serde_booster.json",
+  "repo_commit": "69072f24232f431911ba2c41da69a1da10e805a1",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {
+   "ra": true
+  }
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing-outcome: only rows on which some pair of servers differs in outcome (a/b/c of the first answer); rows that differ in digest alone are counted in comparison but not kept; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_1_RenameStructSerializeDeserialize",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 487,
+   "character": 8,
+   "symbol": "RenameStructSerializeDeserialize",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 438.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "00b44ca648927a6b",
+     "us": 1420.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_6_InvalidLengthEnum",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1475,
+   "character": 6,
+   "symbol": "InvalidLengthEnum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 301.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b8886d5934776e31",
+     "us": 607.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_8_DefaultTyParam",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 106,
+   "character": 8,
+   "symbol": "DefaultTyParam",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 223.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b7fb93c6eb486b5c",
+     "us": 5619.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_9_WithTogether",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 63,
+   "character": 12,
+   "symbol": "WithTogether",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 185.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "86dc729d3d8665a7",
+     "us": 49579.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_10_PhantomDataWrapper",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 269,
+   "character": 12,
+   "symbol": "PhantomDataWrapper",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 134.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "628f869e8df37f9e",
+     "us": 351.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_15_SkipDeserializing",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 567,
+   "character": 16,
+   "symbol": "SkipDeserializing",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 146.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e3a9bba77a5725e6",
+     "us": 220.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_17_StructDenyUnknown",
+   "file": "test_suite/tests/test_de_error.rs",
+   "line": 32,
+   "character": 8,
+   "symbol": "StructDenyUnknown",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 244.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5926ee7b99a11f0e",
+     "us": 955.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_18_Exp",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1613,
+   "character": 10,
+   "symbol": "Exp",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 348.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5fccea8d275fdedf",
+     "us": 794.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_19_FlattenWith",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 547,
+   "character": 12,
+   "symbol": "FlattenWith",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 139.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3239471f50b7c243",
+     "us": 278.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_20_UnitStruct",
+   "file": "test_suite/tests/test_de_error.rs",
+   "line": 20,
+   "character": 8,
+   "symbol": "UnitStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 191.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e5001dbd0da1ae24",
+     "us": 229.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_21_TestStruct",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2170,
+   "character": 16,
+   "symbol": "TestStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 239.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "edd48e6704670590",
+     "us": 1078.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_23_TreeNode",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 140,
+   "character": 10,
+   "symbol": "TreeNode",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 143.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0b6f591eea0e151f",
+     "us": 215.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_29_Enum",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 47,
+   "character": 6,
+   "symbol": "Enum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 397.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ef4a8a354d853f66",
+     "us": 501.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_31_EmptyVariantsDenyUnknown",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 360,
+   "character": 14,
+   "symbol": "EmptyVariantsDenyUnknown",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 128.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "87a97840bb491e53",
+     "us": 155.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_33_DeEnum",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 59,
+   "character": 6,
+   "symbol": "DeEnum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 213.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3fa2cc48682acc16",
+     "us": 1923.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_34_Response",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2555,
+   "character": 20,
+   "symbol": "Response",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 242.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c1061d2a5d724a90",
+     "us": 951.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_36_NewtypeStruct",
+   "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+   "line": 416,
+   "character": 12,
+   "symbol": "NewtypeStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 192.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "83809a2abe49cbad",
+     "us": 651.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_38_Target",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 12,
+   "character": 6,
+   "symbol": "Target",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 222.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a1a772c676dcec64",
+     "us": 813.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_40_EnumWith",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 101,
+   "character": 10,
+   "symbol": "EnumWith",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 121.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3c87ea5c34dc251f",
+     "us": 245.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_41_ExternallyTagged1",
+   "file": "test_suite/tests/regression/issue1904.rs",
+   "line": 9,
+   "character": 10,
+   "symbol": "ExternallyTagged1",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 121.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "85b51edd43ab4161",
+     "us": 956.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_42_Enum",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2819,
+   "character": 18,
+   "symbol": "Enum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 438.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ad7df065738e513a",
+     "us": 1752.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_43_UnitStruct",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 45,
+   "character": 8,
+   "symbol": "UnitStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 190.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c9981cfe0b8a74c4",
+     "us": 383.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_44_DeserializeWithStruct",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1327,
+   "character": 8,
+   "symbol": "DeserializeWithStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 228.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a3fa0b39f97d734d",
+     "us": 1037.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_45_SerEnum",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 44,
+   "character": 6,
+   "symbol": "SerEnum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 215.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "15166b8f3ad6ffd5",
+     "us": 341.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_47_UnitDef",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 142,
+   "character": 8,
+   "symbol": "UnitDef",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 189.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1d0bee11f6f7cbde",
+     "us": 239.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_52_SDef",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 418,
+   "character": 20,
+   "symbol": "SDef",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 142.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "24e2ffa6321d68e8",
+     "us": 292.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_54_SkipSerializingStruct",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 807,
+   "character": 8,
+   "symbol": "SkipSerializingStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 196.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b120d8713520bff4",
+     "us": 207.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_55_Unit",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 92,
+   "character": 12,
+   "symbol": "Unit",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 176.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9e06a9c3212fd4e2",
+     "us": 617.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_57_Struct",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 23,
+   "character": 8,
+   "symbol": "Struct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 500.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "fc28af68b5ce4b36",
+     "us": 953.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_59_RecursiveGenericA",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 171,
+   "character": 12,
+   "symbol": "RecursiveGenericA",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 135.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "bfceefffe07ff5f0",
+     "us": 164.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_60_TupleStruct",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 54,
+   "character": 8,
+   "symbol": "TupleStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 201.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "cd5e58fc56992921",
+     "us": 396.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_62_Untagged2",
+   "file": "test_suite/tests/regression/issue1904.rs",
+   "line": 60,
+   "character": 10,
+   "symbol": "Untagged2",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 127.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b682975ad15dc471",
+     "us": 1130.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_68_Outer",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2459,
+   "character": 16,
+   "symbol": "Outer",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 252.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c1157bd4de977200",
+     "us": 1468.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_71_AliasEnum",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 642,
+   "character": 6,
+   "symbol": "AliasEnum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 233.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a013bf5a5a0cb0b8",
+     "us": 1015.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_72_ExternallyTaggedVariantWith",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 433,
+   "character": 10,
+   "symbol": "ExternallyTaggedVariantWith",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 148.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7420f228f409580c",
+     "us": 194.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_74_Void",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 18,
+   "character": 6,
+   "symbol": "Void",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 127.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c8172edfa8ccc44b",
+     "us": 133.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_77_ErrorKind",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 218,
+   "character": 6,
+   "symbol": "ErrorKind",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 156.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9049e690ab4bd379",
+     "us": 83.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_79_EmptyTupleDenyUnknown",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 324,
+   "character": 16,
+   "symbol": "EmptyTupleDenyUnknown",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 128.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "774acd462c64dbc0",
+     "us": 130.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_82_SkippedVariant",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 679,
+   "character": 10,
+   "symbol": "SkippedVariant",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 143.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "21b8f3b0d1050e4b",
+     "us": 127.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_84_NotSerializeStruct",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1013,
+   "character": 8,
+   "symbol": "NotSerializeStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 185.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "07ff671e918ee23a",
+     "us": 97.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_86_FieldEnum",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1903,
+   "character": 10,
+   "symbol": "FieldEnum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 226.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9d4528b136ef7648",
+     "us": 496.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_87_Enum",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 117,
+   "character": 6,
+   "symbol": "Enum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 340.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "40f465bd4a82a5f7",
+     "us": 886.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_88_EmptyTuple",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 320,
+   "character": 16,
+   "symbol": "EmptyTuple",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 115.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "37a788ae83270c08",
+     "us": 229.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_89_AdjacentlyTagged",
+   "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+   "line": 14,
+   "character": 6,
+   "symbol": "AdjacentlyTagged",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 776.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7764425c3d1b23ec",
+     "us": 1868.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_98_EmptyBracedDenyUnknown",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 304,
+   "character": 16,
+   "symbol": "EmptyBracedDenyUnknown",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 130.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "01502411715d8726",
+     "us": 211.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_99_CowT",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 281,
+   "character": 12,
+   "symbol": "CowT",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 134.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5d0432fd2b3b3ea5",
+     "us": 180.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_100_NewtypeVariant",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2825,
+   "character": 20,
+   "symbol": "NewtypeVariant",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 306.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b6f751af69ca1443",
+     "us": 703.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_105_ContainsNotDeserialize",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 390,
+   "character": 8,
+   "symbol": "ContainsNotDeserialize",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 223.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1f9689a7a81167cd",
+     "us": 1009.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_108_AdjacentlyTagged2",
+   "file": "test_suite/tests/regression/issue1904.rs",
+   "line": 40,
+   "character": 10,
+   "symbol": "AdjacentlyTagged2",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 120.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b61a38274a864143",
+     "us": 1910.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_109_Airebo",
+   "file": "test_suite/tests/test_value.rs",
+   "line": 51,
+   "character": 12,
+   "symbol": "Airebo",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 166.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "66e18cd0c616e511",
+     "us": 1063.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_110_Outer",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2098,
+   "character": 16,
+   "symbol": "Outer",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 246.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "385a5464d59adc99",
+     "us": 976.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_114_DenyUnknown",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 425,
+   "character": 8,
+   "symbol": "DenyUnknown",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 156.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1d388b3c6aef09d4",
+     "us": 1117.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_118_TypeMacro",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 613,
+   "character": 12,
+   "symbol": "TypeMacro",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 141.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "125182bf9e36d40b",
+     "us": 135.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_123_Flat",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 1407,
+   "character": 12,
+   "symbol": "Flat",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 221.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f033796f5bedd12d",
+     "us": 1816.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_125_InternallyTaggedVariantWith",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 463,
+   "character": 10,
+   "symbol": "InternallyTaggedVariantWith",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 150.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3d8ca1143556f9e7",
+     "us": 220.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_126_Untagged",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 372,
+   "character": 10,
+   "symbol": "Untagged",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 260.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c5c507cefa1d8c41",
+     "us": 1121.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_127_NewtypeStruct",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 111,
+   "character": 12,
+   "symbol": "NewtypeStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 161.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "be9e17addc306b29",
+     "us": 866.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_131_Flatten",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 554,
+   "character": 16,
+   "symbol": "Flatten",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 126.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "be413ebe47423ed5",
+     "us": 170.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_136_Enum",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 578,
+   "character": 10,
+   "symbol": "Enum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 182.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1247beab24dd1406",
+     "us": 341.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_140_Unit",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1838,
+   "character": 12,
+   "symbol": "Unit",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 217.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "260ccc0b14b7d094",
+     "us": 1373.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_142_InternallyTagged",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 1071,
+   "character": 10,
+   "symbol": "InternallyTagged",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 295.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c5705be5b07088eb",
+     "us": 1251.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_148_AdjacentlyTagged1",
+   "file": "test_suite/tests/regression/issue1904.rs",
+   "line": 30,
+   "character": 10,
+   "symbol": "AdjacentlyTagged1",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 118.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "41f6855a4ebb9581",
+     "us": 1874.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_149_BigArray",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 620,
+   "character": 12,
+   "symbol": "BigArray",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 134.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d1dff45662f536b5",
+     "us": 216.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_150_ScreamingKebab",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 685,
+   "character": 12,
+   "symbol": "ScreamingKebab",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 166.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0ea411fd1b229897",
+     "us": 2884.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_152_RecursiveA",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 159,
+   "character": 12,
+   "symbol": "RecursiveA",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 124.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7b0cafcb98829b0d",
+     "us": 210.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_153_Inner1",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2342,
+   "character": 16,
+   "symbol": "Inner1",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 259.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "40bded139ddf9239",
+     "us": 1975.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_156_RenameEnumSerializeDeserialize",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 630,
+   "character": 6,
+   "symbol": "RenameEnumSerializeDeserialize",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 222.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0d56bfb498086227",
+     "us": 789.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_158_UnitDenyUnknown",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 372,
+   "character": 16,
+   "symbol": "UnitDenyUnknown",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 115.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "25b9c7e1fdde9ad3",
+     "us": 219.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_159_EmptyEnum",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 334,
+   "character": 14,
+   "symbol": "EmptyEnum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 101.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4b5be9535bf9d069",
+     "us": 210.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_164_UntaggedVariantWith",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 518,
+   "character": 10,
+   "symbol": "UntaggedVariantWith",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 137.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e0ef2f52d8737953",
+     "us": 138.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_165_Test",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 101,
+   "character": 8,
+   "symbol": "Test",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 113.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "fb896fd8bec00f3f",
+     "us": 2661.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_169_RemoteSelf",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 430,
+   "character": 16,
+   "symbol": "RemoteSelf",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 112.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "671d6ad2d5a2d390",
+     "us": 411.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_172_GenericNewTypeStruct",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 84,
+   "character": 12,
+   "symbol": "GenericNewTypeStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 143.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "80dac1b1b998c739",
+     "us": 431.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_173_StructConcrete",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 205,
+   "character": 8,
+   "symbol": "StructConcrete",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 126.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8151e2eec5da5cfa",
+     "us": 515.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_174_StructSkipAllDenyUnknown",
+   "file": "test_suite/tests/test_de_error.rs",
+   "line": 40,
+   "character": 8,
+   "symbol": "StructSkipAllDenyUnknown",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 161.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b8395d4a98a8e84a",
+     "us": 594.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_176_TupleStruct",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 34,
+   "character": 8,
+   "symbol": "TupleStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 194.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c8f2f5c714b14139",
+     "us": 179.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_177_Flatten",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2899,
+   "character": 24,
+   "symbol": "Flatten",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 252.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a569414ce3501f8e",
+     "us": 2321.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_179_StrDef",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 395,
+   "character": 12,
+   "symbol": "StrDef",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 129.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b4c17012e9b57203",
+     "us": 598.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_183_StaticStrEnum",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 592,
+   "character": 14,
+   "symbol": "StaticStrEnum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 115.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "bb9831fbcdb94757",
+     "us": 135.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_184_FlattenDenyUnknown",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 561,
+   "character": 16,
+   "symbol": "FlattenDenyUnknown",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 110.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d1ea50b3c13ee67e",
+     "us": 197.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_185_ContainsNoStdDefault",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 319,
+   "character": 8,
+   "symbol": "ContainsNoStdDefault",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 158.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ab8452afff040ed1",
+     "us": 689.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_186_OrDef",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 386,
+   "character": 14,
+   "symbol": "OrDef",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 116.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "921efb5da37530da",
+     "us": 371.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_190_AssocDeriveMulti",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 643,
+   "character": 12,
+   "symbol": "AssocDeriveMulti",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 131.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "de085d9352281afa",
+     "us": 180.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_192_ImplicitlyBorrowedOption",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 689,
+   "character": 16,
+   "symbol": "ImplicitlyBorrowedOption",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 124.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "14f16942f11e6436",
+     "us": 219.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_194_NotSerializable",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 44,
+   "character": 8,
+   "symbol": "NotSerializable",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 151.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3a1596f431b4cc09",
+     "us": 94.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_195_Flat",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2621,
+   "character": 24,
+   "symbol": "Flat",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 273.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ce0e31b8040d4843",
+     "us": 1789.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_196_DefaultStruct",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 84,
+   "character": 8,
+   "symbol": "DefaultStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 160.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "281c612a9c2f81a9",
+     "us": 1078.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_198_TuplePubDef",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 172,
+   "character": 8,
+   "symbol": "TuplePubDef",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 124.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7c668028c1a560f6",
+     "us": 422.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_200_Message",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 769,
+   "character": 14,
+   "symbol": "Message",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 114.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "10e1fd8d307e8300",
+     "us": 220.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_202_Data",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 1365,
+   "character": 10,
+   "symbol": "Data",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 245.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5be254ad422990ce",
+     "us": 711.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_214_StructSkipAll",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 81,
+   "character": 8,
+   "symbol": "StructSkipAll",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 190.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "23f5f453a52e383e",
+     "us": 631.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_215_Struct",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 57,
+   "character": 8,
+   "symbol": "Struct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 442.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "13ad970371b533d1",
+     "us": 772.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_217_NotDeserializable",
+   "file": "test_suite/tests/test_de_error.rs",
+   "line": 46,
+   "character": 8,
+   "symbol": "NotDeserializable",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 176.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "cf15b019d0ca6c55",
+     "us": 94.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_221_UntaggedWithBorrow",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 716,
+   "character": 14,
+   "symbol": "UntaggedWithBorrow",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 120.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "554141e463f1a1cd",
+     "us": 143.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_222_SerializeWithStruct",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1070,
+   "character": 8,
+   "symbol": "SerializeWithStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 189.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c7a33447e5736b72",
+     "us": 242.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_225_CowStr",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 276,
+   "character": 12,
+   "symbol": "CowStr",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 117.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8f5e0d3a777f0eb1",
+     "us": 184.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_228_AdjacentlyTagged",
+   "file": "test_suite/tests/regression/issue2371.rs",
+   "line": 33,
+   "character": 10,
+   "symbol": "AdjacentlyTagged",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 118.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "03dd068fc0e985cf",
+     "us": 1792.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_231_Outer",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1951,
+   "character": 16,
+   "symbol": "Outer",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 240.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "110bca4fb915538c",
+     "us": 2902.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_232_TransparentWith",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 707,
+   "character": 16,
+   "symbol": "TransparentWith",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 118.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b30ce5ebf61ee680",
+     "us": 214.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_234_Outer",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2285,
+   "character": 14,
+   "symbol": "Outer",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 303.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1869eaa937f2bae8",
+     "us": 2096.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_236_BracedSkipAllDenyUnknown",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 314,
+   "character": 16,
+   "symbol": "BracedSkipAllDenyUnknown",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 120.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9a40860ddd80133d",
+     "us": 162.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_238_CPacked2",
+   "file": "test_suite/tests/test_macros.rs",
+   "line": 856,
+   "character": 12,
+   "symbol": "CPacked2",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 161.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3b0d56a82813bdfc",
+     "us": 674.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_239_Tuple",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 133,
+   "character": 12,
+   "symbol": "Tuple",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 109.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5788686983b5b055",
+     "us": 126.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_244_Test",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1696,
+   "character": 25,
+   "symbol": "Test",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 332.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3e67c24316e978ce",
+     "us": 1743.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_251_FieldStr",
+   "file": "test_suite/tests/test_borrow.rs",
+   "line": 107,
+   "character": 10,
+   "symbol": "FieldStr",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 154.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "574a79e862a28ffb",
+     "us": 687.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_256_SkipSerializingEnum",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 929,
+   "character": 6,
+   "symbol": "SkipSerializingEnum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 267.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1d2d44fb490a34ab",
+     "us": 177.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_257_Second",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1970,
+   "character": 16,
+   "symbol": "Second",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 252.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a103d3ccfdf94ddf",
+     "us": 113.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_260_NewtypePubDef",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 160,
+   "character": 8,
+   "symbol": "NewtypePubDef",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 124.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7e414f5deb171b4c",
+     "us": 394.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_264_Data",
+   "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+   "line": 603,
+   "character": 10,
+   "symbol": "Data",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 178.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "193edad973fd95a6",
+     "us": 2915.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_266_UnitStruct",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 31,
+   "character": 8,
+   "symbol": "UnitStruct",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 178.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a10ce62224529e86",
+     "us": 97.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_267_Inner",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2065,
+   "character": 16,
+   "symbol": "Inner",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 238.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5f82588f5a4b31d6",
+     "us": 1265.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_269_Data",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 1398,
+   "character": 10,
+   "symbol": "Data",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 223.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3cc2aabd934c4da1",
+     "us": 97.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_270_Flatten",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2648,
+   "character": 20,
+   "symbol": "Flatten",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 369.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d878ff5cf2a13287",
+     "us": 1006.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_272_NonAsciiIdents",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 295,
+   "character": 16,
+   "symbol": "NonAsciiIdents",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 111.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0c8418c1c1a6a6d2",
+     "us": 165.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_273_EmptyBraced",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 300,
+   "character": 16,
+   "symbol": "EmptyBraced",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 104.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4dea94e961367a1e",
+     "us": 128.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_276_Enum",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2992,
+   "character": 18,
+   "symbol": "Enum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 328.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9046ea810a652bb6",
+     "us": 442.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_278_Enum",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 28,
+   "character": 6,
+   "symbol": "Enum",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 353.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "de10cdbd6765b3c6",
+     "us": 718.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_279_Flatten",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2985,
+   "character": 20,
+   "symbol": "Flatten",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 251.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "aa02f39b63030ee4",
+     "us": 933.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_282_Response",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2578,
+   "character": 20,
+   "symbol": "Response",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 250.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5e6a9489def28e66",
+     "us": 962.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_283_Outer",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2490,
+   "character": 16,
+   "symbol": "Outer",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 241.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "15f83e3a1bc53ad0",
+     "us": 720.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_284_ArrayInPlaceVisitor",
+   "file": "serde_core/src/de/impls.rs",
+   "line": 1231,
+   "character": 8,
+   "symbol": "ArrayInPlaceVisitor",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 278.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "dbac6d98fdd7e30e",
+     "us": 201.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_285_StructSkipDefaultGeneric",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 95,
+   "character": 12,
+   "symbol": "StructSkipDefaultGeneric",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 144.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e5ffe2a7a9d186ef",
+     "us": 606.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_290_Packed",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 780,
+   "character": 12,
+   "symbol": "Packed",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 119.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "00d4c3c51214a2c3",
+     "us": 118.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_294_StructPubDef",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 188,
+   "character": 8,
+   "symbol": "StructPubDef",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 129.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "6cf3698492b923de",
+     "us": 655.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_295_Newtype",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 20,
+   "character": 8,
+   "symbol": "Newtype",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 140.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "6dc64e3b076f06e9",
+     "us": 325.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_296_EnumSkipAll",
+   "file": "test_suite/tests/test_de_error.rs",
+   "line": 65,
+   "character": 6,
+   "symbol": "EnumSkipAll",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 145.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "aea8f8460a06476f",
+     "us": 327.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_298_With",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 55,
+   "character": 12,
+   "symbol": "With",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 114.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0f805b8b9927e70f",
+     "us": 137.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_299_ContainsNotSerialize",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1030,
+   "character": 8,
+   "symbol": "ContainsNotSerialize",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 169.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "196871a7ed5d2097",
+     "us": 129.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_1_enum_from_ast",
+   "file": "serde_derive/src/internals/ast.rs",
+   "line": 133,
+   "character": 4,
+   "symbol": "enum_from_ast",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 135.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0151022f311f17b0",
+     "us": 9464.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_8_rename_all_fields_rules",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 555,
+   "character": 12,
+   "symbol": "rename_all_fields_rules",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 199.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "2991d057978391f7",
+     "us": 61630.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_28_requires_default",
+   "file": "serde_derive/src/de.rs",
+   "line": 218,
+   "character": 4,
+   "symbol": "requires_default",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 168.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "2b7028f52df86f9f",
+     "us": 4455.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_42_from",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1521,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 111.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000154.0,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 628343.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_46_test",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 155,
+   "character": 4,
+   "symbol": "test",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 80.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c1f0b93e16f56ef3",
+     "us": 72604.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_65_or",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 146,
+   "character": 12,
+   "symbol": "or",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 131.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "07e1c7e1810657ee",
+     "us": 6331.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_71_deserialize",
+   "file": "serde_core/src/de/impls.rs",
+   "line": 71,
+   "character": 8,
+   "symbol": "deserialize",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 102.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "37b425ebb45df44c",
+     "us": 5506.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_73_into_deserializer",
+   "file": "serde_core/src/de/value.rs",
+   "line": 660,
+   "character": 8,
+   "symbol": "into_deserializer",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 122.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b5c58ffc90964c2b",
+     "us": 2534.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_139_visit_path_segment",
+   "file": "serde_derive/src/bound.rs",
+   "line": 189,
+   "character": 12,
+   "symbol": "visit_path_segment",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 153.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "75804b12caaf0ebd",
+     "us": 1452.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_176_deserialize_u8",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1001,
+   "character": 8,
+   "symbol": "deserialize_u8",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 185.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "538768c91e8cc1a1",
+     "us": 1574.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_249_needs_deserialize_bound",
+   "file": "serde_derive/src/de.rs",
+   "line": 205,
+   "character": 4,
+   "symbol": "needs_deserialize_bound",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 188.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "25d1cee76a4cd5f2",
+     "us": 175.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_291_deserialize_f32",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1032,
+   "character": 8,
+   "symbol": "deserialize_f32",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 189.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "78a60a5ceba7f82b",
+     "us": 919.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_3_Error",
+   "file": "serde/src/private/ser.rs",
+   "line": 1051,
+   "character": 62,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 308.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ed5acb1799a22154",
+     "us": 5648.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_13_Error",
+   "file": "serde_core/src/de/value.rs",
+   "line": 425,
+   "character": 82,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 542.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9191e3469eef660b",
+     "us": 5776.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_14_Error",
+   "file": "serde/src/private/de.rs",
+   "line": 1173,
+   "character": 75,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 309.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "749b204dedf048cd",
+     "us": 12618.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_16_too_many_lines",
+   "file": "serde_derive/src/lib.rs",
+   "line": 59,
+   "character": 13,
+   "symbol": "too_many_lines",
+   "target_kind": "proc-macro",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a8b941c507752ddc",
+     "us": 189.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 94.3,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 109.5,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_17_Value",
+   "file": "serde_core/src/de/value.rs",
+   "line": 1849,
+   "character": 25,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "decl:type",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 878.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "44cd12e4b1bd8300",
+     "us": 2060.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_19_Value",
+   "file": "serde/src/private/de.rs",
+   "line": 362,
+   "character": 59,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 180.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "05665b4ea7eb374c",
+     "us": 5144.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_29_Value",
+   "file": "serde/src/private/de.rs",
+   "line": 2780,
+   "character": 73,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 628.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "2032d79b8375de65",
+     "us": 4645.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_32_Error",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 972,
+   "character": 63,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 397.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "30023a98717cdd08",
+     "us": 1011.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_34_next",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 1817,
+   "character": 61,
+   "symbol": "next",
+   "target_kind": "proc-macro",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 91.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a0ad2ccb34c92d83",
+     "us": 1672.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_44_Macro",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 1798,
+   "character": 20,
+   "symbol": "Macro",
+   "target_kind": "proc-macro",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 142.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0fa29f365523a0ab",
+     "us": 233.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_45_Error",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 960,
+   "character": 71,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 163.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9b9ccd5a881ec489",
+     "us": 7264.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_55_my_default",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 96,
+   "character": 55,
+   "symbol": "my_default",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "1cb2197403c28e56",
+     "us": 112.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 422.0,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 187.3,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_61_wildcard_in_or_patterns",
+   "file": "serde_derive_internals/lib.rs",
+   "line": 17,
+   "character": 13,
+   "symbol": "wildcard_in_or_patterns",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "3939bc320ede95d2",
+     "us": 196.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 173.8,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 49.8,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_64_StructPub",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 186,
+   "character": 27,
+   "symbol": "StructPub",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a3efb4fcd7154bb1",
+     "us": 86.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 565.2,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 224.9,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_69_Value",
+   "file": "serde_core/src/de/impls.rs",
+   "line": 2558,
+   "character": 59,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1397.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "78bbe0917ecb6f17",
+     "us": 3715.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_74_cell",
+   "file": "serde_derive/src/internals/ctxt.rs",
+   "line": 2,
+   "character": 10,
+   "symbol": "cell",
+   "target_kind": "proc-macro",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 150.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4d255832ffa456d5",
+     "us": 955.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_76_deserialize_any",
+   "file": "serde_derive/src/de.rs",
+   "line": 1921,
+   "character": 45,
+   "symbol": "deserialize_any",
+   "target_kind": "proc-macro",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "152ad80fb53940cb",
+     "us": 204.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 209.1,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 159.3,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_83_internals",
+   "file": "serde_derive/src/this.rs",
+   "line": 1,
+   "character": 12,
+   "symbol": "internals",
+   "target_kind": "proc-macro",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 136.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b2f7caa7b30cc5b7",
+     "us": 91.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_86_Error",
+   "file": "serde/src/private/ser.rs",
+   "line": 271,
+   "character": 52,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 160.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ed5acb1799a22154",
+     "us": 2009.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_94_let_underscore_untyped",
+   "file": "serde_derive/src/lib.rs",
+   "line": 48,
+   "character": 13,
+   "symbol": "let_underscore_untyped",
+   "target_kind": "proc-macro",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a8b941c507752ddc",
+     "us": 177.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 60.4,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 37.0,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_110_TuplePriv",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 165,
+   "character": 31,
+   "symbol": "TuplePriv",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "150e1cf0126e6818",
+     "us": 96.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 149.8,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 91.1,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_117_Error",
+   "file": "serde_core/src/de/value.rs",
+   "line": 1869,
+   "character": 76,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 877.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1201e63f7a495cb3",
+     "us": 3220.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_120_nonstandard_macro_braces",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 6,
+   "character": 13,
+   "symbol": "nonstandard_macro_braces",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "5ac0b324336f6f2c",
+     "us": 207.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 47.1,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 46.4,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_121_Value",
+   "file": "serde/src/private/de.rs",
+   "line": 355,
+   "character": 57,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 173.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "05665b4ea7eb374c",
+     "us": 4446.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_122_StructPriv",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 177,
+   "character": 31,
+   "symbol": "StructPriv",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "7bed44018cb9e881",
+     "us": 87.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 159.3,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 93.8,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_125_Value",
+   "file": "serde/src/private/de.rs",
+   "line": 120,
+   "character": 64,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 156.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "05665b4ea7eb374c",
+     "us": 4203.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_126_unnested_or_patterns",
+   "file": "serde_derive/src/lib.rs",
+   "line": 37,
+   "character": 13,
+   "symbol": "unnested_or_patterns",
+   "target_kind": "proc-macro",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "a8b941c507752ddc",
+     "us": 169.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 56.6,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 35.3,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_133_Item",
+   "file": "serde_core/src/de/value.rs",
+   "line": 1233,
+   "character": 29,
+   "symbol": "Item",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 670.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "52fecf598a30dc33",
+     "us": 2193.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_136_Error",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 556,
+   "character": 60,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 143.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b5a8ab5c66d2be9a",
+     "us": 3566.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_141_span",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 1137,
+   "character": 69,
+   "symbol": "span",
+   "target_kind": "proc-macro",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 135.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f0779e06a48adb50",
+     "us": 711.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_165_Value",
+   "file": "serde/src/private/de.rs",
+   "line": 3294,
+   "character": 59,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 723.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "05665b4ea7eb374c",
+     "us": 4471.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_179_Error",
+   "file": "serde/src/private/ser.rs",
+   "line": 1255,
+   "character": 38,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 323.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "02a9c59a881c9f10",
+     "us": 1913.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_180_my_default",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 222,
+   "character": 39,
+   "symbol": "my_default",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "1cb2197403c28e56",
+     "us": 120.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 747.7,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 154.9,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_182_Error",
+   "file": "serde_core/src/de/value.rs",
+   "line": 569,
+   "character": 71,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 481.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1201e63f7a495cb3",
+     "us": 3106.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_212_Value",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1587,
+   "character": 55,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 217.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "abf7bcca99601ea7",
+     "us": 3239.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_214_Deserializer",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1189,
+   "character": 8,
+   "symbol": "Deserializer",
+   "target_kind": "test",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 911.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5f16379a02119868",
+     "us": 269.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_216_derive_partial_eq_without_eq",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 1,
+   "character": 18,
+   "symbol": "derive_partial_eq_without_eq",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "b909b91f1a47bec0",
+     "us": 145.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 47.0,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 50.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_220_match_same_arms",
+   "file": "serde_derive_internals/lib.rs",
+   "line": 29,
+   "character": 13,
+   "symbol": "match_same_arms",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "3939bc320ede95d2",
+     "us": 178.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 90.7,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 36.3,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_226_Ok",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 737,
+   "character": 56,
+   "symbol": "Ok",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 354.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "00d2dd3352aeef1b",
+     "us": 837.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_241_Error",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1648,
+   "character": 71,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 223.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9b9ccd5a881ec489",
+     "us": 4341.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_243_Error",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 861,
+   "character": 82,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 142.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b5a8ab5c66d2be9a",
+     "us": 3541.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_248_Error",
+   "file": "serde_core/src/de/value.rs",
+   "line": 1491,
+   "character": 71,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 745.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1201e63f7a495cb3",
+     "us": 3292.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_261_private",
+   "file": "serde_core/src/de/impls.rs",
+   "line": 2626,
+   "character": 16,
+   "symbol": "private",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 180.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4ef1e5f3c14e99b1",
+     "us": 290.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_263_Error",
+   "file": "serde/src/private/ser.rs",
+   "line": 157,
+   "character": 62,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 142.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ed5acb1799a22154",
+     "us": 1915.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_266_should_skip",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 937,
+   "character": 52,
+   "symbol": "should_skip",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "a",
+     "digest": "d74c95526b11b6ef",
+     "us": 86.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 129.4,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 129.8,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_267_Error",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 909,
+   "character": 63,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 372.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "30023a98717cdd08",
+     "us": 817.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_269_Value",
+   "file": "serde/src/private/de.rs",
+   "line": 1289,
+   "character": 65,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 322.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "05665b4ea7eb374c",
+     "us": 4268.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_270_Error",
+   "file": "serde/src/private/ser.rs",
+   "line": 1299,
+   "character": 38,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 305.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "91466d1a5932f17f",
+     "us": 2104.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_280_Windows",
+   "file": "serde_core/src/de/impls.rs",
+   "line": 1931,
+   "character": 28,
+   "symbol": "Windows",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1246.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "600761610c8fbc44",
+     "us": 1282.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_282_Error",
+   "file": "serde/src/private/de.rs",
+   "line": 2143,
+   "character": 75,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 478.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "749b204dedf048cd",
+     "us": 5274.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_287_Error",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 1999,
+   "character": 44,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 172.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "79476f5ef1056e29",
+     "us": 3501.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_298_deserialize",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 105,
+   "character": 17,
+   "symbol": "deserialize",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 88.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ce1e5ece97b4f0cd",
+     "us": 400.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_299_Value",
+   "file": "serde_core/src/de/impls.rs",
+   "line": 62,
+   "character": 53,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "8dde2a5": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 143.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "78bbe0917ecb6f17",
+     "us": 3642.6,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 900,
+ "rows_kept": 193,
+ "rows_filter": "differing-outcome",
+ "full_file": {
+  "name": "position_ab_8dde2a5_vs_ra_ram9_serde.json",
+  "sha256": "9911b1aa7bd3dfa0155c97a2b760396fcae21dddc5358f224e4516839a93ca0c"
+ }
+}
