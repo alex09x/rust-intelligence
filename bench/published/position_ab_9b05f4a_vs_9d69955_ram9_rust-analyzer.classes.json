@@ -1,0 +1,181 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_9b05f4a_vs_9d69955_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "9b05f4a",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9d69955",
+   "commit": "9d6995518460929b718a8ec1a0eff4435bff6db4",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9b05f4a-2",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "rust-analyzer.ws.tsv",
+  "rust-analyzer.deps.tsv"
+ ],
+ "previous": "rust-analyzer.classes.json",
+ "enclosing_references": 562389,
+ "rows_differing": 5,
+ "summary": {
+  "d2_nameless_crate_root_module_no_longer_answers": 5
+ },
+ "rows_by_method": {
+  "hover": 4,
+  "references": 1
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "lib/smol_str/tests/test.rs",
+   "line": 134,
+   "character": 16,
+   "symbol": "SmolStr",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:lib/smol_str/tests/test.rs",
+      [
+       1,
+       1,
+       472,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/hir-def/src/lib.rs",
+   "line": 1017,
+   "character": 18,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/proc-macro-srv-cli/tests/legacy_json.rs",
+   "line": 137,
+   "character": 53,
+   "symbol": "default",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "lib/smol_str/tests/test.rs",
+   "line": 158,
+   "character": 13,
+   "symbol": "insert",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/proc-macro-srv-cli/tests/legacy_json.rs",
+   "line": 173,
+   "character": 4,
+   "symbol": "test_basic_call_flow",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  }
+ ]
+}

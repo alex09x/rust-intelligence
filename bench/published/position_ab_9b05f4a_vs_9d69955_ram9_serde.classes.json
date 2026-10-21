@@ -1,0 +1,832 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_9b05f4a_vs_9d69955_ram9_serde.json",
+ "servers": [
+  {
+   "name": "9b05f4a",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9d69955",
+   "commit": "9d6995518460929b718a8ec1a0eff4435bff6db4",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9b05f4a-2",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "serde.ws.tsv",
+  "serde.deps.tsv"
+ ],
+ "previous": "serde.classes.json",
+ "enclosing_references": 75161,
+ "rows_differing": 23,
+ "summary": {
+  "d2_nameless_crate_root_module_no_longer_answers": 23
+ },
+ "rows_by_method": {
+  "declaration": 2,
+  "definition": 4,
+  "document_highlight": 12,
+  "hover": 4,
+  "references": 1
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "file": "serde_core/src/lib.rs",
+   "line": 163,
+   "character": 20,
+   "symbol": "collections",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:serde_core/src/lib.rs",
+      [
+       1,
+       1,
+       279,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_derive/src/lib.rs",
+   "line": 64,
+   "character": 13,
+   "symbol": "wildcard_imports",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:serde_derive/src/lib.rs",
+      [
+       1,
+       1,
+       126,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_core/src/lib.rs",
+   "line": 70,
+   "character": 13,
+   "symbol": "zero_prefixed_literal",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:serde_core/src/lib.rs",
+      [
+       1,
+       1,
+       279,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "test_suite/tests/test_self.rs",
+   "line": 1,
+   "character": 18,
+   "symbol": "used_underscore_binding",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:test_suite/tests/test_self.rs",
+      [
+       1,
+       1,
+       88,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 821,
+   "character": 4,
+   "symbol": "test_never_result",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:test_suite/tests/test_ser.rs",
+      [
+       1,
+       1,
+       919,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 2294,
+   "character": 4,
+   "symbol": "test_never_result",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 8,
+   "character": 13,
+   "symbol": "uninlined_format_args",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_core/src/lib.rs",
+   "line": 178,
+   "character": 19,
+   "symbol": "core",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       279,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive/src/lib.rs",
+   "line": 59,
+   "character": 13,
+   "symbol": "too_many_lines",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       126,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive_internals/lib.rs",
+   "line": 17,
+   "character": 13,
+   "symbol": "wildcard_in_or_patterns",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       54,
+       22
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive/src/lib.rs",
+   "line": 48,
+   "character": 13,
+   "symbol": "let_underscore_untyped",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       126,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 6,
+   "character": 13,
+   "symbol": "nonstandard_macro_braces",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       3012,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive/src/lib.rs",
+   "line": 37,
+   "character": 13,
+   "symbol": "unnested_or_patterns",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       126,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2445,
+   "character": 71,
+   "symbol": "Value",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       3012,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_core/src/lib.rs",
+   "line": 209,
+   "character": 24,
+   "symbol": "atomic",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       279,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 2310,
+   "character": 14,
+   "symbol": "os",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       2387,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_ser.rs",
+   "line": 1,
+   "character": 18,
+   "symbol": "derive_partial_eq_without_eq",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       919,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive_internals/lib.rs",
+   "line": 29,
+   "character": 13,
+   "symbol": "match_same_arms",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       54,
+       22
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 65,
+   "character": 82,
+   "symbol": "Error",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       108,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_enum_untagged.rs",
+   "line": 6,
+   "character": 13,
+   "symbol": "too_many_lines",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "serde_core/src/lib.rs",
+   "line": 129,
+   "character": 19,
+   "symbol": "core",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 20,
+   "character": 10,
+   "symbol": "fmt",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_enum_adjacently_tagged.rs",
+   "line": 5,
+   "character": 13,
+   "symbol": "redundant_field_names",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  }
+ ]
+}

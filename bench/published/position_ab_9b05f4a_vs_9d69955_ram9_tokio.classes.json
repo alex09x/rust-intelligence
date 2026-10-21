@@ -1,0 +1,4666 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_9b05f4a_vs_9d69955_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "9b05f4a",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9d69955",
+   "commit": "9d6995518460929b718a8ec1a0eff4435bff6db4",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9b05f4a-2",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "tokio.ws.tsv",
+  "tokio.deps.tsv"
+ ],
+ "previous": "tokio.classes.json",
+ "enclosing_references": 247583,
+ "rows_differing": 137,
+ "summary": {
+  "d2_nameless_crate_root_module_no_longer_answers": 137
+ },
+ "rows_by_method": {
+  "declaration": 14,
+  "definition": 35,
+  "document_highlight": 32,
+  "hover": 31,
+  "references": 25
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 283,
+   "character": 18,
+   "symbol": "read_to_end",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_file_read.rs",
+      [
+       1,
+       1,
+       495,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/fs_open_options_windows.rs",
+   "line": 12,
+   "character": 48,
+   "symbol": "access_mode",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_open_options_windows.rs",
+      [
+       1,
+       1,
+       51,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/dump.rs",
+   "line": 368,
+   "character": 26,
+   "symbol": "block_on",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/dump.rs",
+      [
+       1,
+       1,
+       378,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/process_issue_42.rs",
+   "line": 7,
+   "character": 10,
+   "symbol": "process",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/process_issue_42.rs",
+      [
+       1,
+       1,
+       39,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/rt_worker_index.rs",
+   "line": 88,
+   "character": 34,
+   "symbol": "worker_index",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/rt_worker_index.rs",
+      [
+       1,
+       1,
+       137,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/sync_mpsc.rs",
+   "line": 463,
+   "character": 30,
+   "symbol": "task",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/sync_mpsc.rs",
+      [
+       1,
+       1,
+       1804,
+       37
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/async_send_sync.rs",
+   "line": 288,
+   "character": 21,
+   "symbol": "windows",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/async_send_sync.rs",
+      [
+       1,
+       1,
+       777,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 160,
+   "character": 20,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_hooks.rs",
+      [
+       1,
+       1,
+       411,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/io_poll_aio.rs",
+   "line": 188,
+   "character": 33,
+   "symbol": "new",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/io_poll_aio.rs",
+      [
+       1,
+       1,
+       339,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/io_copy_bidirectional.rs",
+   "line": 121,
+   "character": 29,
+   "symbol": "io",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/io_copy_bidirectional.rs",
+      [
+       1,
+       1,
+       218,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/tracing_time.rs",
+   "line": 54,
+   "character": 38,
+   "symbol": "field",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/tracing_time.rs",
+      [
+       1,
+       1,
+       82,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio-util/tests/compat.rs",
+   "line": 8,
+   "character": 12,
+   "symbol": "fs",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio-util/tests/compat.rs",
+      [
+       1,
+       1,
+       44,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/fs_uring.rs",
+   "line": 162,
+   "character": 18,
+   "symbol": "IoUring",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring.rs",
+      [
+       1,
+       1,
+       204,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tests-integration/tests/process_stdio.rs",
+   "line": 245,
+   "character": 14,
+   "symbol": "io",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tests-integration/tests/process_stdio.rs",
+      [
+       1,
+       1,
+       259,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 146,
+   "character": 46,
+   "symbol": "Read",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_read.rs",
+      [
+       1,
+       1,
+       215,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 360,
+   "character": 39,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_file_read.rs",
+      [
+       1,
+       1,
+       495,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/fs_uring.rs",
+   "line": 196,
+   "character": 26,
+   "symbol": "with_capacity",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring.rs",
+      [
+       1,
+       1,
+       204,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/io_poll_aio.rs",
+   "line": 315,
+   "character": 30,
+   "symbol": "as_ptr",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/io_poll_aio.rs",
+      [
+       1,
+       1,
+       339,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "benches/sync_semaphore.rs",
+   "line": 9,
+   "character": 12,
+   "symbol": "runtime",
+   "target_kind": "bench",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:benches/sync_semaphore.rs",
+      [
+       1,
+       1,
+       147,
+       42
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/task_builder.rs",
+   "line": 27,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_builder.rs",
+      [
+       1,
+       1,
+       105,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "examples/named-pipe.rs",
+   "line": 11,
+   "character": 39,
+   "symbol": "create",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:examples/named-pipe.rs",
+      [
+       1,
+       1,
+       60,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio-util/tests/panic.rs",
+   "line": 16,
+   "character": 17,
+   "symbol": "time",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio-util/tests/panic.rs",
+      [
+       1,
+       1,
+       242,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/signal_info.rs",
+   "line": 24,
+   "character": 27,
+   "symbol": "unix",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/signal_info.rs",
+      [
+       1,
+       1,
+       35,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 60,
+   "character": 46,
+   "symbol": "Statx",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_statx.rs",
+      [
+       1,
+       1,
+       309,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/rt_emscripten_jspi.rs",
+   "line": 172,
+   "character": 26,
+   "symbol": "now",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/rt_emscripten_jspi.rs",
+      [
+       1,
+       1,
+       256,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "examples/udp-client.rs",
+   "line": 32,
+   "character": 10,
+   "symbol": "error",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:examples/udp-client.rs",
+      [
+       1,
+       1,
+       72,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio-util/tests/io_inspect.rs",
+   "line": 100,
+   "character": 34,
+   "symbol": "io",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio-util/tests/io_inspect.rs",
+      [
+       1,
+       1,
+       218,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/sync_mutex_owned.rs",
+   "line": 13,
+   "character": 17,
+   "symbol": "task",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/sync_mutex_owned.rs",
+      [
+       1,
+       1,
+       137,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 153,
+   "character": 10,
+   "symbol": "build",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_hooks.rs",
+      [
+       1,
+       1,
+       411,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 41,
+   "character": 60,
+   "symbol": "build",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_read.rs",
+      [
+       1,
+       1,
+       215,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/io_poll_aio.rs",
+   "line": 113,
+   "character": 27,
+   "symbol": "Pin",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/io_poll_aio.rs",
+      [
+       1,
+       1,
+       339,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 235,
+   "character": 36,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_statx.rs",
+      [
+       1,
+       1,
+       309,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/rt_unstable_eager_driver_handoff.rs",
+   "line": 9,
+   "character": 10,
+   "symbol": "time",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 6,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/rt_unstable_eager_driver_handoff.rs",
+      [
+       6,
+       1,
+       149,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/io_poll_aio.rs",
+   "line": 59,
+   "character": 40,
+   "symbol": "Ready",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/io_poll_aio.rs",
+      [
+       1,
+       1,
+       339,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "tokio/tests/udp.rs",
+   "line": 13,
+   "character": 10,
+   "symbol": "future",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/udp.rs",
+      [
+       1,
+       1,
+       774,
+       36
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/fs_file.rs",
+   "line": 264,
+   "character": 10,
+   "symbol": "file_debug_fmt",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_file.rs",
+      [
+       1,
+       1,
+       313,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/sync_emscripten_blocking.rs",
+   "line": 44,
+   "character": 4,
+   "symbol": "assert_panics_cannot_block_on",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/sync_emscripten_blocking.rs",
+      [
+       1,
+       1,
+       118,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/fs_uring_no_io.rs",
+   "line": 19,
+   "character": 4,
+   "symbol": "runtime_without_io",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_no_io.rs",
+      [
+       1,
+       1,
+       110,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/fs_uring_runtime_shutdown.rs",
+   "line": 28,
+   "character": 4,
+   "symbol": "shutdown_runtime_while_performing_io_uring_ops",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_runtime_shutdown.rs",
+      [
+       1,
+       1,
+       96,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/dump.rs",
+   "line": 249,
+   "character": 8,
+   "symbol": "assert_dump_preserves_idle_bookkeeping",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/dump.rs",
+      [
+       1,
+       1,
+       378,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/tracing_task.rs",
+   "line": 202,
+   "character": 4,
+   "symbol": "expect_task_named",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/tracing_task.rs",
+      [
+       1,
+       1,
+       209,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/net_named_pipe.rs",
+   "line": 328,
+   "character": 10,
+   "symbol": "test_named_pipe_mode_message",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/net_named_pipe.rs",
+      [
+       1,
+       1,
+       399,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/dump.rs",
+   "line": 307,
+   "character": 8,
+   "symbol": "many_workers",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/dump.rs",
+      [
+       1,
+       1,
+       378,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/tracing_sync.rs",
+   "line": 299,
+   "character": 12,
+   "symbol": "PanicOnEvent",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/tracing_sync.rs",
+      [
+       1,
+       1,
+       386,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/task_builder.rs",
+   "line": 38,
+   "character": 10,
+   "symbol": "spawn_local_panics_in_multi_thread_runtime",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_builder.rs",
+      [
+       1,
+       1,
+       105,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 16,
+   "character": 4,
+   "symbol": "spawn_task_hook_fires",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_hooks.rs",
+      [
+       1,
+       1,
+       411,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/tracing_task.rs",
+   "line": 96,
+   "character": 4,
+   "symbol": "task_builder_loc_file_recorded",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/tracing_task.rs",
+      [
+       1,
+       1,
+       209,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 359,
+   "character": 4,
+   "symbol": "log_histogram",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/rt_unstable_metrics.rs",
+      [
+       1,
+       1,
+       953,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/fs_uring.rs",
+   "line": 195,
+   "character": 4,
+   "symbol": "create_tmp_files",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring.rs",
+      [
+       1,
+       1,
+       204,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/task_builder.rs",
+   "line": 104,
+   "character": 24,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_builder.rs",
+      [
+       1,
+       1,
+       105,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/signal_info.rs",
+   "line": 18,
+   "character": 12,
+   "symbol": "signal",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/signal_info.rs",
+      [
+       1,
+       1,
+       35,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 157,
+   "character": 16,
+   "symbol": "pin",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_read.rs",
+      [
+       1,
+       1,
+       215,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/task_id.rs",
+   "line": 24,
+   "character": 14,
+   "symbol": "panic",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_id.rs",
+      [
+       1,
+       1,
+       312,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/task_trace_wake.rs",
+   "line": 318,
+   "character": 47,
+   "symbol": "into_iter",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_trace_wake.rs",
+      [
+       1,
+       1,
+       340,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/io_read.rs",
+   "line": 22,
+   "character": 14,
+   "symbol": "leaked_buffers",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/io_read.rs",
+      [
+       1,
+       1,
+       83,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 575,
+   "character": 16,
+   "symbol": "spawn",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/rt_unstable_metrics.rs",
+      [
+       1,
+       1,
+       953,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 81,
+   "character": 19,
+   "symbol": "pretty",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_trace_self.rs",
+      [
+       1,
+       1,
+       304,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/task_trace_wake.rs",
+   "line": 225,
+   "character": 28,
+   "symbol": "load",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_trace_wake.rs",
+      [
+       1,
+       1,
+       340,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 352,
+   "character": 26,
+   "symbol": "spawn",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_hooks.rs",
+      [
+       1,
+       1,
+       411,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/tracing_sync.rs",
+   "line": 288,
+   "character": 14,
+   "symbol": "future",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/tracing_sync.rs",
+      [
+       1,
+       1,
+       386,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 44,
+   "character": 32,
+   "symbol": "num_idle_blocking_threads",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/rt_unstable_metrics.rs",
+      [
+       1,
+       1,
+       953,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/process_smoke.rs",
+   "line": 4,
+   "character": 12,
+   "symbol": "process",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/process_smoke.rs",
+      [
+       1,
+       1,
+       34,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/named-pipe.rs",
+   "line": 29,
+   "character": 37,
+   "symbol": "new",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:examples/named-pipe.rs",
+      [
+       1,
+       1,
+       60,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/fs_uring_no_io.rs",
+   "line": 75,
+   "character": 26,
+   "symbol": "Ok",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_no_io.rs",
+      [
+       1,
+       1,
+       110,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/fs_uring.rs",
+   "line": 187,
+   "character": 18,
+   "symbol": "now_or_never",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring.rs",
+      [
+       1,
+       1,
+       204,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 42,
+   "character": 21,
+   "symbol": "State",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_trace_self.rs",
+      [
+       1,
+       1,
+       304,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 201,
+   "character": 41,
+   "symbol": "worker_thread_id",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/rt_unstable_metrics.rs",
+      [
+       1,
+       1,
+       953,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/tracing_task.rs",
+   "line": 179,
+   "character": 34,
+   "symbol": "field",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/tracing_task.rs",
+      [
+       1,
+       1,
+       209,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/dump.rs",
+   "line": 367,
+   "character": 14,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/dump.rs",
+      [
+       1,
+       1,
+       378,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/task_builder.rs",
+   "line": 18,
+   "character": 10,
+   "symbol": "spawn_local_on_local_runtime",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_builder.rs",
+      [
+       1,
+       1,
+       105,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/task_trace_wake.rs",
+   "line": 245,
+   "character": 10,
+   "symbol": "trace_capture_futures_unordered",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/task_trace_wake.rs",
+      [
+       1,
+       1,
+       340,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/named-pipe.rs",
+   "line": 4,
+   "character": 10,
+   "symbol": "windows_main",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:examples/named-pipe.rs",
+      [
+       1,
+       1,
+       60,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 475,
+   "character": 10,
+   "symbol": "test_file_read_4gib_buf_size",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/fs_uring_file_read.rs",
+      [
+       1,
+       1,
+       495,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/dump.rs",
+   "line": 78,
+   "character": 14,
+   "symbol": "dump",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:tokio/tests/dump.rs",
+      [
+       1,
+       1,
+       378,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/dump.rs",
+   "line": 55,
+   "character": 44,
+   "symbol": "task",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       378,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio-util/tests/sync_cancellation_token.rs",
+   "line": 4,
+   "character": 12,
+   "symbol": "sync",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       654,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio-stream/tests/chunks_timeout.rs",
+   "line": 65,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       84,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 187,
+   "character": 15,
+   "symbol": "push",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       215,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 51,
+   "character": 19,
+   "symbol": "Pin",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       304,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/macros_select.rs",
+   "line": 676,
+   "character": 35,
+   "symbol": "mpsc",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       760,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/fs_open_options_windows.rs",
+   "line": 8,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       51,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/io_read_to_string.rs",
+   "line": 14,
+   "character": 12,
+   "symbol": "io",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       89,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/time_alt.rs",
+   "line": 215,
+   "character": 19,
+   "symbol": "now_or_never",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       272,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/net_named_pipe.rs",
+   "line": 32,
+   "character": 49,
+   "symbol": "Result",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       399,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/time_alt.rs",
+   "line": 230,
+   "character": 10,
+   "symbol": "build",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       272,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/rt_basic.rs",
+   "line": 406,
+   "character": 25,
+   "symbol": "clone",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       532,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 184,
+   "character": 26,
+   "symbol": "open",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       495,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 66,
+   "character": 48,
+   "symbol": "dump",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       304,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/tracing_task.rs",
+   "line": 182,
+   "character": 75,
+   "symbol": "run_with_handle",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       209,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/rt_multi_thread_emscripten.rs",
+   "line": 43,
+   "character": 30,
+   "symbol": "spawn_blocking",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       72,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 47,
+   "character": 31,
+   "symbol": "from_millis",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       953,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/net_named_pipe.rs",
+   "line": 265,
+   "character": 43,
+   "symbol": "WRITABLE",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       399,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio-util/tests/udp.rs",
+   "line": 13,
+   "character": 14,
+   "symbol": "future",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       150,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 182,
+   "character": 32,
+   "symbol": "remote_schedule_count",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       953,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/fs_canonicalize_dir.rs",
+   "line": 32,
+   "character": 22,
+   "symbol": "starts_with",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       34,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/rt_emscripten_jspi.rs",
+   "line": 116,
+   "character": 23,
+   "symbol": "elapsed",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       256,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 350,
+   "character": 22,
+   "symbol": "poll_time_histogram_enabled",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       953,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/rt_threaded.rs",
+   "line": 897,
+   "character": 27,
+   "symbol": "Builder",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       954,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 268,
+   "character": 12,
+   "symbol": "abort",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       309,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/tracing_time.rs",
+   "line": 53,
+   "character": 40,
+   "symbol": "has_explicit_parent",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       82,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/named-pipe-ready.rs",
+   "line": 58,
+   "character": 30,
+   "symbol": "try_write",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       161,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/process_issue_2174.rs",
+   "line": 14,
+   "character": 12,
+   "symbol": "io",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       46,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s1_self_containing_reference_ranges_removed"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/time_rt.rs",
+   "line": 87,
+   "character": 30,
+   "symbol": "now",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       201,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/async_send_sync.rs",
+   "line": 331,
+   "character": 43,
+   "symbol": "CtrlC",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       777,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/tests/tracing_sync.rs",
+   "line": 315,
+   "character": 22,
+   "symbol": "target",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       386,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio-stream/tests/chunks_timeout.rs",
+   "line": 47,
+   "character": 28,
+   "symbol": "then",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       84,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/dump.rs",
+   "line": 324,
+   "character": 42,
+   "symbol": "channel",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 16,
+   "character": 16,
+   "symbol": "File",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 17,
+   "character": 12,
+   "symbol": "time",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 343,
+   "character": 35,
+   "symbol": "num_workers",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio-test/tests/io.rs",
+   "line": 101,
+   "character": 21,
+   "symbol": "io",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 475,
+   "character": 14,
+   "symbol": "metrics_poll_time_histogram_configuration",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/sync_notify_owned.rs",
+   "line": 188,
+   "character": 14,
+   "symbol": "sync",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 31,
+   "character": 10,
+   "symbol": "build",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio-util/tests/task_join_map.rs",
+   "line": 424,
+   "character": 49,
+   "symbol": "sync",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 136,
+   "character": 40,
+   "symbol": "new",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/sync_rwlock.rs",
+   "line": 5,
+   "character": 24,
+   "symbol": "wasm_bindgen_test",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio-stream/tests/stream_timeout.rs",
+   "line": 30,
+   "character": 28,
+   "symbol": "spawn",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 147,
+   "character": 42,
+   "symbol": "join",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 104,
+   "character": 16,
+   "symbol": "Runtime",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/fs_uring_runtime_shutdown.rs",
+   "line": 36,
+   "character": 37,
+   "symbol": "read_dir",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/rt_emscripten_jspi.rs",
+   "line": 17,
+   "character": 10,
+   "symbol": "sync",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 61,
+   "character": 30,
+   "symbol": "schedule_latency",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/sync_broadcast.rs",
+   "line": 622,
+   "character": 47,
+   "symbol": "task",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio-util/tests/task_tracker.rs",
+   "line": 6,
+   "character": 12,
+   "symbol": "task",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "benches/sync_mpsc.rs",
+   "line": 3,
+   "character": 16,
+   "symbol": "measurement",
+   "target_kind": "bench",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/rt_unstable_eager_driver_handoff.rs",
+   "line": 34,
+   "character": 57,
+   "symbol": "build",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 6,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/fs_open_options_windows.rs",
+   "line": 22,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio-stream/tests/stream_accessors.rs",
+   "line": 5,
+   "character": 24,
+   "symbol": "vec",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio-stream/tests/time_throttle.rs",
+   "line": 18,
+   "character": 39,
+   "symbol": "new_current_thread",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/task_trace_wake.rs",
+   "line": 154,
+   "character": 23,
+   "symbol": "Arc",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/fs_symlink_file_windows.rs",
+   "line": 12,
+   "character": 27,
+   "symbol": "path",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/io_copy_bidirectional.rs",
+   "line": 158,
+   "character": 29,
+   "symbol": "io",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio-stream/tests/watch.rs",
+   "line": 34,
+   "character": 10,
+   "symbol": "watch_stream_from_rx",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 241,
+   "character": 10,
+   "symbol": "cancel_op_future",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 24,
+   "character": 16,
+   "symbol": "PrettyFuture",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/rt_unstable_eager_driver_handoff.rs",
+   "line": 33,
+   "character": 4,
+   "symbol": "eager_driver_handoff_fixes_deadlock",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 6,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  }
+ ]
+}

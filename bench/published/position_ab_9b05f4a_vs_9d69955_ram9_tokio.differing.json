@@ -1,0 +1,8901 @@
+{
+ "repo": "tokio-rs/tokio",
+ "repo_dir_name": "tokio",
+ "repo_head": "b2636752450484955e7ad334bac678424d51bc4a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 308,
+ "positions_file": "matrix_tokio_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 301,
+ "timestamp_start": "2026-10-21T21:06:48.492060+00:00",
+ "timestamp_end": "2026-10-21T21:11:52.141469+00:00",
+ "servers": [
+  {
+   "name": "9b05f4a",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 9b05f4a2e7610af195fa0ddf0350813eb050e5a2, dirty: false)",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 98.4,
+   "summary": {
+    "definition": {
+     "a": 247,
+     "b": 53,
+     "c": 0,
+     "n": 300,
+     "p50_us": 445.8,
+     "p99_us": 783.3,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 391.6,
+     "p99_us": 734.0,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 408.2,
+     "p99_us": 1583.1,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2184.3,
+     "p99_us": 3443.7,
+     "unsupported": false
+    },
+    "references": {
+     "a": 258,
+     "b": 42,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1876.1,
+     "p99_us": 21535.5,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1915.2,
+     "p99_us": 14212.5,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 127.5,
+     "p99_us": 1555.4,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17057.8,
+     "p99_us": 27920.5,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 22.5,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 841.2,
+     "p99_us": 1313.8,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2024.2,
+     "p99_us": 13377.2,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 16.9,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 73.8,
+     "p99_us": 21107.9,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.8,
+     "p99_us": 58.9,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 22.0,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 32.0,
+     "p99_us": 63.4,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.5,
+     "p99_us": 58.7,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.0,
+     "p99_us": 106.6,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 14.0,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 411.0,
+     "p99_us": 783.3,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 92,
+     "b": 208,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2154.1,
+     "p99_us": 4880.4,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 211,
+     "b": 89,
+     "c": 0,
+     "n": 300,
+     "p50_us": 977.7,
+     "p99_us": 12263.4,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 361.2,
+     "p99_us": 723.7,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1591.3,
+     "p99_us": 3259.4,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16.1,
+     "p99_us": 2092.4,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 96.2,
+     "p99_us": 275.3,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.4,
+     "p99_us": 92.8,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 14.5,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.2,
+     "p99_us": 12.0,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 12.6,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85648.5,
+     "p99_us": 98492.1,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87519.4,
+     "p99_us": 180210.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 88777.1,
+     "p99_us": 100802.2,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 1874.8,
+     "p99_us": 2397.4,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 1955.6,
+     "p99_us": 2945.8,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.5,
+     "p99_us": 108.1,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 60.0,
+     "p99_us": 237.0,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.9,
+     "p99_us": 18.4,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 13.8,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 421.4,
+     "p99_us": 1014.2,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 414.5,
+     "p99_us": 1006.1,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 429.9,
+     "p99_us": 1005.9,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 56.3,
+     "p99_us": 359.5,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 400.9,
+     "p99_us": 664.9,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.1,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 45.8,
+     "p99_us": 398.8,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1996.4,
+     "p99_us": 2082.8,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 16.9,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 11.8,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 12.9,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 19.2,
+     "p99_us": 75.2,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 44,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       247,
+       53,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "9d69955",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 9d6995518460929b718a8ec1a0eff4435bff6db4, dirty: false)",
+   "commit": "9d6995518460929b718a8ec1a0eff4435bff6db4",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 102.6,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 446.6,
+     "p99_us": 1348.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 515.6,
+     "p99_us": 1265.7,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 393.0,
+     "p99_us": 1569.1,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2388.8,
+     "p99_us": 3935.4,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2163.3,
+     "p99_us": 28607.7,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1945.2,
+     "p99_us": 14200.9,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 122.7,
+     "p99_us": 1459.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17528.7,
+     "p99_us": 27443.0,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 21.2,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 857.4,
+     "p99_us": 1894.9,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2069.4,
+     "p99_us": 24589.5,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 24.4,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 68.9,
+     "p99_us": 23625.8,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.1,
+     "p99_us": 61.6,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 16.4,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.7,
+     "p99_us": 88.3,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.8,
+     "p99_us": 77.7,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41.2,
+     "p99_us": 172.1,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17.5,
+     "p99_us": 29.4,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 748.5,
+     "p99_us": 2524.8,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 92,
+     "b": 208,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5194.8,
+     "p99_us": 11968.6,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 211,
+     "b": 89,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1180.6,
+     "p99_us": 16894.6,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 611.9,
+     "p99_us": 1961.8,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4915.0,
+     "p99_us": 7956.7,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.2,
+     "p99_us": 6410.4,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 189.9,
+     "p99_us": 585.6,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.7,
+     "p99_us": 257.2,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.9,
+     "p99_us": 66.4,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.7,
+     "p99_us": 32.9,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.3,
+     "p99_us": 22.5,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89922.2,
+     "p99_us": 106559.7,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87421.6,
+     "p99_us": 182188.7,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87983.5,
+     "p99_us": 99307.7,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 1854.5,
+     "p99_us": 2911.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 1817.2,
+     "p99_us": 3220.1,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.1,
+     "p99_us": 106.4,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 62.3,
+     "p99_us": 238.1,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 16.9,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 11.7,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 427.8,
+     "p99_us": 1031.1,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 425.6,
+     "p99_us": 1034.3,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 425.4,
+     "p99_us": 1004.4,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 51.3,
+     "p99_us": 352.0,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 399.8,
+     "p99_us": 668.8,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.0,
+     "p99_us": 19.0,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 45.5,
+     "p99_us": 390.3,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1921.6,
+     "p99_us": 1966.2,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 16.3,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 13.8,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 12.2,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.8,
+     "p99_us": 79.7,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 42,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       203,
+       97,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "9b05f4a-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 9b05f4a2e7610af195fa0ddf0350813eb050e5a2, dirty: false)",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 97.9,
+   "summary": {
+    "definition": {
+     "a": 247,
+     "b": 53,
+     "c": 0,
+     "n": 300,
+     "p50_us": 474.8,
+     "p99_us": 812.4,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 417.4,
+     "p99_us": 773.3,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 417.1,
+     "p99_us": 1630.7,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2218.3,
+     "p99_us": 3484.3,
+     "unsupported": false
+    },
+    "references": {
+     "a": 258,
+     "b": 42,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1897.4,
+     "p99_us": 21966.8,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1892.5,
+     "p99_us": 14068.6,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 122.4,
+     "p99_us": 1493.3,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16702.1,
+     "p99_us": 26426.5,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 19.0,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 836.3,
+     "p99_us": 1302.2,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1970.9,
+     "p99_us": 13616.7,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 17.2,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 81.3,
+     "p99_us": 20576.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.8,
+     "p99_us": 58.3,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 13.3,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.9,
+     "p99_us": 64.7,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.8,
+     "p99_us": 59.2,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.2,
+     "p99_us": 112.8,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 413.6,
+     "p99_us": 859.3,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 92,
+     "b": 208,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2129.8,
+     "p99_us": 4779.0,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 211,
+     "b": 89,
+     "c": 0,
+     "n": 300,
+     "p50_us": 958.4,
+     "p99_us": 12382.3,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 382.4,
+     "p99_us": 729.8,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1576.3,
+     "p99_us": 3115.6,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.8,
+     "p99_us": 2097.3,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 100.5,
+     "p99_us": 280.2,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.9,
+     "p99_us": 91.0,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 14.8,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.1,
+     "p99_us": 11.0,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 15.9,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 84253.1,
+     "p99_us": 95785.5,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87480.9,
+     "p99_us": 180213.0,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 88628.8,
+     "p99_us": 100155.4,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 1865.8,
+     "p99_us": 2326.6,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 1889.1,
+     "p99_us": 2857.7,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.8,
+     "p99_us": 107.6,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 61.5,
+     "p99_us": 233.0,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.1,
+     "p99_us": 17.4,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 12.6,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 426.6,
+     "p99_us": 1010.7,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 409.6,
+     "p99_us": 998.3,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 419.0,
+     "p99_us": 992.9,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 54.9,
+     "p99_us": 347.9,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 412.8,
+     "p99_us": 692.7,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.2,
+     "p99_us": 22.1,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 44.5,
+     "p99_us": 398.6,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1957.2,
+     "p99_us": 2280.5,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.9,
+     "p99_us": 13.9,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 13.6,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.5,
+     "p99_us": 76.6,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 44,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       247,
+       53,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "9b05f4a",
+   "b": "9d69955",
+   "same": 15163,
+   "differing": 137,
+   "methods": {
+    "definition": {
+     "same": 265,
+     "differing": 35,
+     "transitions": {
+      "a>b": 35
+     },
+     "examples": [
+      {
+       "name": "definition_30_read_to_end",
+       "file": "tokio/tests/fs_uring_file_read.rs",
+       "line": 283,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "b4e1905fc991eb40",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_40_access_mode",
+       "file": "tokio/tests/fs_open_options_windows.rs",
+       "line": 12,
+       "character": 48,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "7a099a0ed337a335",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_50_block_on",
+       "file": "tokio/tests/dump.rs",
+       "line": 368,
+       "character": 26,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "02edd5bc06371a72",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_51_process",
+       "file": "tokio/tests/process_issue_42.rs",
+       "line": 7,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "86e3842823ced36c",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_54_worker_index",
+       "file": "tokio/tests/rt_worker_index.rs",
+       "line": 88,
+       "character": 34,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "e390c954c555511e",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_55_task",
+       "file": "tokio/tests/sync_mpsc.rs",
+       "line": 463,
+       "character": 30,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "83699975b0611d67",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_56_windows",
+       "file": "tokio/tests/async_send_sync.rs",
+       "line": 288,
+       "character": 21,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3c12a96998d6a3a4",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_66_unwrap",
+       "file": "tokio/tests/task_hooks.rs",
+       "line": 160,
+       "character": 20,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "f0a9229dc38a6b27",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_75_new",
+       "file": "tokio/tests/io_poll_aio.rs",
+       "line": 188,
+       "character": 33,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "75678dd44ab2927c",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_85_io",
+       "file": "tokio/tests/io_copy_bidirectional.rs",
+       "line": 121,
+       "character": 29,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "449c95f832876966",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      }
+     ]
+    },
+    "declaration": {
+     "same": 286,
+     "differing": 14,
+     "transitions": {
+      "a>b": 14
+     },
+     "examples": [
+      {
+       "name": "decl_19_file_debug_fmt",
+       "file": "tokio/tests/fs_file.rs",
+       "line": 264,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "ccfca79889388a46",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_43_assert_panics_cannot_block_on",
+       "file": "tokio/tests/sync_emscripten_blocking.rs",
+       "line": 44,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "0b1b13bb38026845",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_52_runtime_without_io",
+       "file": "tokio/tests/fs_uring_no_io.rs",
+       "line": 19,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "535612b0a8968bb2",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_70_shutdown_runtime_while_performing_io_uring_ops",
+       "file": "tokio/tests/fs_uring_runtime_shutdown.rs",
+       "line": 28,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "a00e10201e387cf7",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_78_assert_dump_preserves_idle_bookkeeping",
+       "file": "tokio/tests/dump.rs",
+       "line": 249,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "02edd5bc06371a72",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_90_expect_task_named",
+       "file": "tokio/tests/tracing_task.rs",
+       "line": 202,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "d851b617695ac85f",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_108_test_named_pipe_mode_message",
+       "file": "tokio/tests/net_named_pipe.rs",
+       "line": 328,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "e7e54e290868390a",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_137_many_workers",
+       "file": "tokio/tests/dump.rs",
+       "line": 307,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "02edd5bc06371a72",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_145_PanicOnEvent",
+       "file": "tokio/tests/tracing_sync.rs",
+       "line": 299,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "21c463a604fd1b8f",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_164_spawn_local_panics_in_multi_thread_runtime",
+       "file": "tokio/tests/task_builder.rs",
+       "line": 38,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3699862b6fe54ed1",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 275,
+     "differing": 25,
+     "transitions": {
+      "a>b": 25
+     },
+     "examples": [
+      {
+       "name": "refs_3_unwrap",
+       "file": "tokio/tests/task_builder.rs",
+       "line": 104,
+       "character": 24,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "2999a49b36995be3",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_8_signal",
+       "file": "tokio/tests/signal_info.rs",
+       "line": 18,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "8e8313166f3f3f52",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_19_pin",
+       "file": "tokio/tests/fs_uring_read.rs",
+       "line": 157,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "319d5d07dd41fff0",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_38_panic",
+       "file": "tokio/tests/task_id.rs",
+       "line": 24,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "599dac6839b29f82",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_50_into_iter",
+       "file": "tokio/tests/task_trace_wake.rs",
+       "line": 318,
+       "character": 47,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "1787326df9577694",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_59_leaked_buffers",
+       "file": "tokio/tests/io_read.rs",
+       "line": 22,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "cd9797d5430ae95b",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_62_spawn",
+       "file": "tokio/tests/rt_unstable_metrics.rs",
+       "line": 575,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "bece779bcbd58777",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_69_pretty",
+       "file": "tokio/tests/task_trace_self.rs",
+       "line": 81,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "1cf9c8558b7849b5",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_82_load",
+       "file": "tokio/tests/task_trace_wake.rs",
+       "line": 225,
+       "character": 28,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "1787326df9577694",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_85_spawn",
+       "file": "tokio/tests/task_hooks.rs",
+       "line": 352,
+       "character": 26,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "e94fae534632eea6",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 268,
+     "differing": 32,
+     "transitions": {
+      "a>b": 32
+     },
+     "examples": [
+      {
+       "name": "document_highlight_3_task",
+       "file": "tokio/tests/dump.rs",
+       "line": 55,
+       "character": 44,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "869f2c5ea6c9a5ad",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_6_sync",
+       "file": "tokio-util/tests/sync_cancellation_token.rs",
+       "line": 4,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "bfcc5f4d28550dbe",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_16_test",
+       "file": "tokio-stream/tests/chunks_timeout.rs",
+       "line": 65,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "a105d8d0d9cd2c66",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_17_push",
+       "file": "tokio/tests/fs_uring_read.rs",
+       "line": 187,
+       "character": 15,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "5beac9ac772c08c7",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_24_Pin",
+       "file": "tokio/tests/task_trace_self.rs",
+       "line": 51,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "fcad3db06f9eb15d",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_26_mpsc",
+       "file": "tokio/tests/macros_select.rs",
+       "line": 676,
+       "character": 35,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "7c5b0d64fc82357d",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_28_test",
+       "file": "tokio/tests/fs_open_options_windows.rs",
+       "line": 8,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "e58854897e10eee1",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_35_io",
+       "file": "tokio/tests/io_read_to_string.rs",
+       "line": 14,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3ec981784a4d8aec",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_62_now_or_never",
+       "file": "tokio/tests/time_alt.rs",
+       "line": 215,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "a2d6a46862921d40",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_63_Result",
+       "file": "tokio/tests/net_named_pipe.rs",
+       "line": 32,
+       "character": 49,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "f9632f52135a86d1",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 269,
+     "differing": 31,
+     "transitions": {
+      "a>b": 26,
+      "a>a": 5
+     },
+     "examples": [
+      {
+       "name": "hover_1_channel",
+       "file": "tokio/tests/dump.rs",
+       "line": 324,
+       "character": 42,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3278d2cd5b447788",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_6_File",
+       "file": "tokio/tests/fs_uring_file_read.rs",
+       "line": 16,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3278d2cd5b447788",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_13_time",
+       "file": "tokio/tests/rt_unstable_metrics.rs",
+       "line": 17,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3278d2cd5b447788",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_45_num_workers",
+       "file": "tokio/tests/rt_unstable_metrics.rs",
+       "line": 343,
+       "character": 35,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3278d2cd5b447788",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_54_io",
+       "file": "tokio-test/tests/io.rs",
+       "line": 101,
+       "character": 21,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4739ab84529b8b5f",
+        "4865917fac29cad7"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_74_metrics_poll_time_histogram_configuration",
+       "file": "tokio/tests/rt_unstable_metrics.rs",
+       "line": 475,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3278d2cd5b447788",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_80_sync",
+       "file": "tokio/tests/sync_notify_owned.rs",
+       "line": 188,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4739ab84529b8b5f",
+        "4865917fac29cad7"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_81_build",
+       "file": "tokio/tests/task_hooks.rs",
+       "line": 31,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3278d2cd5b447788",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_83_sync",
+       "file": "tokio-util/tests/task_join_map.rs",
+       "line": 424,
+       "character": 49,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "db59c2550730752f",
+        "ee359865d40ec0e0"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_107_new",
+       "file": "tokio/tests/task_hooks.rs",
+       "line": 136,
+       "character": 40,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "3278d2cd5b447788",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "9b05f4a",
+   "b": "9b05f4a-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "9d69955",
+   "b": "9b05f4a-2",
+   "same": 15163,
+   "differing": 137,
+   "methods": {
+    "definition": {
+     "same": 265,
+     "differing": 35,
+     "transitions": {
+      "b>a": 35
+     },
+     "examples": [
+      {
+       "name": "definition_30_read_to_end",
+       "file": "tokio/tests/fs_uring_file_read.rs",
+       "line": 283,
+       "character": 18,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "b4e1905fc991eb40"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_40_access_mode",
+       "file": "tokio/tests/fs_open_options_windows.rs",
+       "line": 12,
+       "character": 48,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "7a099a0ed337a335"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_50_block_on",
+       "file": "tokio/tests/dump.rs",
+       "line": 368,
+       "character": 26,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "02edd5bc06371a72"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_51_process",
+       "file": "tokio/tests/process_issue_42.rs",
+       "line": 7,
+       "character": 10,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "86e3842823ced36c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_54_worker_index",
+       "file": "tokio/tests/rt_worker_index.rs",
+       "line": 88,
+       "character": 34,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "e390c954c555511e"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_55_task",
+       "file": "tokio/tests/sync_mpsc.rs",
+       "line": 463,
+       "character": 30,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "83699975b0611d67"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_56_windows",
+       "file": "tokio/tests/async_send_sync.rs",
+       "line": 288,
+       "character": 21,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3c12a96998d6a3a4"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_66_unwrap",
+       "file": "tokio/tests/task_hooks.rs",
+       "line": 160,
+       "character": 20,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "f0a9229dc38a6b27"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_75_new",
+       "file": "tokio/tests/io_poll_aio.rs",
+       "line": 188,
+       "character": 33,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "75678dd44ab2927c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_85_io",
+       "file": "tokio/tests/io_copy_bidirectional.rs",
+       "line": 121,
+       "character": 29,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "449c95f832876966"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      }
+     ]
+    },
+    "declaration": {
+     "same": 286,
+     "differing": 14,
+     "transitions": {
+      "b>a": 14
+     },
+     "examples": [
+      {
+       "name": "decl_19_file_debug_fmt",
+       "file": "tokio/tests/fs_file.rs",
+       "line": 264,
+       "character": 10,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "ccfca79889388a46"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_43_assert_panics_cannot_block_on",
+       "file": "tokio/tests/sync_emscripten_blocking.rs",
+       "line": 44,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "0b1b13bb38026845"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_52_runtime_without_io",
+       "file": "tokio/tests/fs_uring_no_io.rs",
+       "line": 19,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "535612b0a8968bb2"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_70_shutdown_runtime_while_performing_io_uring_ops",
+       "file": "tokio/tests/fs_uring_runtime_shutdown.rs",
+       "line": 28,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "a00e10201e387cf7"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_78_assert_dump_preserves_idle_bookkeeping",
+       "file": "tokio/tests/dump.rs",
+       "line": 249,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "02edd5bc06371a72"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_90_expect_task_named",
+       "file": "tokio/tests/tracing_task.rs",
+       "line": 202,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "d851b617695ac85f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_108_test_named_pipe_mode_message",
+       "file": "tokio/tests/net_named_pipe.rs",
+       "line": 328,
+       "character": 10,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "e7e54e290868390a"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_137_many_workers",
+       "file": "tokio/tests/dump.rs",
+       "line": 307,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "02edd5bc06371a72"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_145_PanicOnEvent",
+       "file": "tokio/tests/tracing_sync.rs",
+       "line": 299,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "21c463a604fd1b8f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_164_spawn_local_panics_in_multi_thread_runtime",
+       "file": "tokio/tests/task_builder.rs",
+       "line": 38,
+       "character": 10,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3699862b6fe54ed1"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 275,
+     "differing": 25,
+     "transitions": {
+      "b>a": 25
+     },
+     "examples": [
+      {
+       "name": "refs_3_unwrap",
+       "file": "tokio/tests/task_builder.rs",
+       "line": 104,
+       "character": 24,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "2999a49b36995be3"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_8_signal",
+       "file": "tokio/tests/signal_info.rs",
+       "line": 18,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "8e8313166f3f3f52"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_19_pin",
+       "file": "tokio/tests/fs_uring_read.rs",
+       "line": 157,
+       "character": 16,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "319d5d07dd41fff0"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_38_panic",
+       "file": "tokio/tests/task_id.rs",
+       "line": 24,
+       "character": 14,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "599dac6839b29f82"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_50_into_iter",
+       "file": "tokio/tests/task_trace_wake.rs",
+       "line": 318,
+       "character": 47,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "1787326df9577694"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_59_leaked_buffers",
+       "file": "tokio/tests/io_read.rs",
+       "line": 22,
+       "character": 14,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "cd9797d5430ae95b"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_62_spawn",
+       "file": "tokio/tests/rt_unstable_metrics.rs",
+       "line": 575,
+       "character": 16,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "bece779bcbd58777"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_69_pretty",
+       "file": "tokio/tests/task_trace_self.rs",
+       "line": 81,
+       "character": 19,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "1cf9c8558b7849b5"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_82_load",
+       "file": "tokio/tests/task_trace_wake.rs",
+       "line": 225,
+       "character": 28,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "1787326df9577694"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_85_spawn",
+       "file": "tokio/tests/task_hooks.rs",
+       "line": 352,
+       "character": 26,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "e94fae534632eea6"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 268,
+     "differing": 32,
+     "transitions": {
+      "b>a": 32
+     },
+     "examples": [
+      {
+       "name": "document_highlight_3_task",
+       "file": "tokio/tests/dump.rs",
+       "line": 55,
+       "character": 44,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "869f2c5ea6c9a5ad"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_6_sync",
+       "file": "tokio-util/tests/sync_cancellation_token.rs",
+       "line": 4,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "bfcc5f4d28550dbe"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_16_test",
+       "file": "tokio-stream/tests/chunks_timeout.rs",
+       "line": 65,
+       "character": 10,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "a105d8d0d9cd2c66"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_17_push",
+       "file": "tokio/tests/fs_uring_read.rs",
+       "line": 187,
+       "character": 15,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "5beac9ac772c08c7"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_24_Pin",
+       "file": "tokio/tests/task_trace_self.rs",
+       "line": 51,
+       "character": 19,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "fcad3db06f9eb15d"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_26_mpsc",
+       "file": "tokio/tests/macros_select.rs",
+       "line": 676,
+       "character": 35,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "7c5b0d64fc82357d"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_28_test",
+       "file": "tokio/tests/fs_open_options_windows.rs",
+       "line": 8,
+       "character": 10,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "e58854897e10eee1"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_35_io",
+       "file": "tokio/tests/io_read_to_string.rs",
+       "line": 14,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3ec981784a4d8aec"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_62_now_or_never",
+       "file": "tokio/tests/time_alt.rs",
+       "line": 215,
+       "character": 19,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "a2d6a46862921d40"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_63_Result",
+       "file": "tokio/tests/net_named_pipe.rs",
+       "line": 32,
+       "character": 49,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "f9632f52135a86d1"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 269,
+     "differing": 31,
+     "transitions": {
+      "b>a": 26,
+      "a>a": 5
+     },
+     "examples": [
+      {
+       "name": "hover_1_channel",
+       "file": "tokio/tests/dump.rs",
+       "line": 324,
+       "character": 42,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3278d2cd5b447788"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_6_File",
+       "file": "tokio/tests/fs_uring_file_read.rs",
+       "line": 16,
+       "character": 16,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3278d2cd5b447788"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_13_time",
+       "file": "tokio/tests/rt_unstable_metrics.rs",
+       "line": 17,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3278d2cd5b447788"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_45_num_workers",
+       "file": "tokio/tests/rt_unstable_metrics.rs",
+       "line": 343,
+       "character": 35,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3278d2cd5b447788"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_54_io",
+       "file": "tokio-test/tests/io.rs",
+       "line": 101,
+       "character": 21,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4865917fac29cad7",
+        "4739ab84529b8b5f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_74_metrics_poll_time_histogram_configuration",
+       "file": "tokio/tests/rt_unstable_metrics.rs",
+       "line": 475,
+       "character": 14,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3278d2cd5b447788"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_80_sync",
+       "file": "tokio/tests/sync_notify_owned.rs",
+       "line": 188,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4865917fac29cad7",
+        "4739ab84529b8b5f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_81_build",
+       "file": "tokio/tests/task_hooks.rs",
+       "line": 31,
+       "character": 10,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3278d2cd5b447788"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_83_sync",
+       "file": "tokio-util/tests/task_join_map.rs",
+       "line": 424,
+       "character": 49,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ee359865d40ec0e0",
+        "db59c2550730752f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_107_new",
+       "file": "tokio/tests/task_hooks.rs",
+       "line": 136,
+       "character": 40,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "3278d2cd5b447788"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_tokio_booster.json",
+  "repo_commit": "b2636752450484955e7ad334bac678424d51bc4a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_30_read_to_end",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 283,
+   "character": 18,
+   "symbol": "read_to_end",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "b4e1905fc991eb40",
+     "us": 667.4,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 643.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "b4e1905fc991eb40",
+     "us": 698.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_40_access_mode",
+   "file": "tokio/tests/fs_open_options_windows.rs",
+   "line": 12,
+   "character": 48,
+   "symbol": "access_mode",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "7a099a0ed337a335",
+     "us": 628.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 618.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "7a099a0ed337a335",
+     "us": 679.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_50_block_on",
+   "file": "tokio/tests/dump.rs",
+   "line": 368,
+   "character": 26,
+   "symbol": "block_on",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "02edd5bc06371a72",
+     "us": 618.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 591.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "02edd5bc06371a72",
+     "us": 662.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_51_process",
+   "file": "tokio/tests/process_issue_42.rs",
+   "line": 7,
+   "character": 10,
+   "symbol": "process",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "86e3842823ced36c",
+     "us": 622.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 612.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "86e3842823ced36c",
+     "us": 662.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_54_worker_index",
+   "file": "tokio/tests/rt_worker_index.rs",
+   "line": 88,
+   "character": 34,
+   "symbol": "worker_index",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "e390c954c555511e",
+     "us": 631.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 621.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "e390c954c555511e",
+     "us": 668.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_55_task",
+   "file": "tokio/tests/sync_mpsc.rs",
+   "line": 463,
+   "character": 30,
+   "symbol": "task",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "83699975b0611d67",
+     "us": 758.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 714.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "83699975b0611d67",
+     "us": 803.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_56_windows",
+   "file": "tokio/tests/async_send_sync.rs",
+   "line": 288,
+   "character": 21,
+   "symbol": "windows",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3c12a96998d6a3a4",
+     "us": 680.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 629.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3c12a96998d6a3a4",
+     "us": 716.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_66_unwrap",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 160,
+   "character": 20,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "f0a9229dc38a6b27",
+     "us": 635.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 616.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "f0a9229dc38a6b27",
+     "us": 684.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_75_new",
+   "file": "tokio/tests/io_poll_aio.rs",
+   "line": 188,
+   "character": 33,
+   "symbol": "new",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "75678dd44ab2927c",
+     "us": 649.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 631.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "75678dd44ab2927c",
+     "us": 658.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_85_io",
+   "file": "tokio/tests/io_copy_bidirectional.rs",
+   "line": 121,
+   "character": 29,
+   "symbol": "io",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "449c95f832876966",
+     "us": 656.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 645.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "449c95f832876966",
+     "us": 683.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_98_field",
+   "file": "tokio/tests/tracing_time.rs",
+   "line": 54,
+   "character": 38,
+   "symbol": "field",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "d98efa9e28c87ac7",
+     "us": 628.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 630.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "d98efa9e28c87ac7",
+     "us": 658.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_102_fs",
+   "file": "tokio-util/tests/compat.rs",
+   "line": 8,
+   "character": 12,
+   "symbol": "fs",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "6f5e6a6b4d05fb6c",
+     "us": 438.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 432.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "6f5e6a6b4d05fb6c",
+     "us": 467.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_108_IoUring",
+   "file": "tokio/tests/fs_uring.rs",
+   "line": 162,
+   "character": 18,
+   "symbol": "IoUring",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "0ce9ac283742a80d",
+     "us": 612.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 612.4,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "0ce9ac283742a80d",
+     "us": 653.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_113_io",
+   "file": "tests-integration/tests/process_stdio.rs",
+   "line": 245,
+   "character": 14,
+   "symbol": "io",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "57083793142df9d9",
+     "us": 425.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 422.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "57083793142df9d9",
+     "us": 460.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_119_Read",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 146,
+   "character": 46,
+   "symbol": "Read",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "7d26b6757de28fcd",
+     "us": 639.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 618.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "7d26b6757de28fcd",
+     "us": 670.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_124_unwrap",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 360,
+   "character": 39,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "b4e1905fc991eb40",
+     "us": 664.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 634.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "b4e1905fc991eb40",
+     "us": 706.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_141_with_capacity",
+   "file": "tokio/tests/fs_uring.rs",
+   "line": 196,
+   "character": 26,
+   "symbol": "with_capacity",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "0ce9ac283742a80d",
+     "us": 595.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 614.2,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "0ce9ac283742a80d",
+     "us": 635.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_145_as_ptr",
+   "file": "tokio/tests/io_poll_aio.rs",
+   "line": 315,
+   "character": 30,
+   "symbol": "as_ptr",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "75678dd44ab2927c",
+     "us": 646.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 635.2,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "75678dd44ab2927c",
+     "us": 674.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_149_runtime",
+   "file": "benches/sync_semaphore.rs",
+   "line": 9,
+   "character": 12,
+   "symbol": "runtime",
+   "target_kind": "bench",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a32b71e1489f1eb5",
+     "us": 421.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 422.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a32b71e1489f1eb5",
+     "us": 455.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_160_test",
+   "file": "tokio/tests/task_builder.rs",
+   "line": 27,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3699862b6fe54ed1",
+     "us": 630.4,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 633.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3699862b6fe54ed1",
+     "us": 664.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_164_create",
+   "file": "examples/named-pipe.rs",
+   "line": 11,
+   "character": 39,
+   "symbol": "create",
+   "target_kind": "example",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a33737f11f3a4c68",
+     "us": 413.2,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 406.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a33737f11f3a4c68",
+     "us": 446.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_168_time",
+   "file": "tokio-util/tests/panic.rs",
+   "line": 16,
+   "character": 17,
+   "symbol": "time",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "b333526f7594c424",
+     "us": 449.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 444.4,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "b333526f7594c424",
+     "us": 483.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_169_unix",
+   "file": "tokio/tests/signal_info.rs",
+   "line": 24,
+   "character": 27,
+   "symbol": "unix",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "8b9889e8aab7ec6e",
+     "us": 627.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 619.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "8b9889e8aab7ec6e",
+     "us": 655.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_181_Statx",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 60,
+   "character": 46,
+   "symbol": "Statx",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "8e1b867a39ea778f",
+     "us": 646.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 628.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "8e1b867a39ea778f",
+     "us": 681.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_184_now",
+   "file": "tokio/tests/rt_emscripten_jspi.rs",
+   "line": 172,
+   "character": 26,
+   "symbol": "now",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "e62934c93e1b3a4b",
+     "us": 654.2,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 614.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "e62934c93e1b3a4b",
+     "us": 687.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_192_error",
+   "file": "examples/udp-client.rs",
+   "line": 32,
+   "character": 10,
+   "symbol": "error",
+   "target_kind": "example",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "abaedb4a7050ff6a",
+     "us": 405.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 375.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "abaedb4a7050ff6a",
+     "us": 441.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_194_io",
+   "file": "tokio-util/tests/io_inspect.rs",
+   "line": 100,
+   "character": 34,
+   "symbol": "io",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a90bf786d011873f",
+     "us": 439.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 412.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a90bf786d011873f",
+     "us": 478.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_204_task",
+   "file": "tokio/tests/sync_mutex_owned.rs",
+   "line": 13,
+   "character": 17,
+   "symbol": "task",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "c29a61f372a50c18",
+     "us": 649.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 601.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "c29a61f372a50c18",
+     "us": 687.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_215_build",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 153,
+   "character": 10,
+   "symbol": "build",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "f0a9229dc38a6b27",
+     "us": 646.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 607.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "f0a9229dc38a6b27",
+     "us": 671.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_219_build",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 41,
+   "character": 60,
+   "symbol": "build",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "7d26b6757de28fcd",
+     "us": 629.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 585.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "7d26b6757de28fcd",
+     "us": 663.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_221_Pin",
+   "file": "tokio/tests/io_poll_aio.rs",
+   "line": 113,
+   "character": 27,
+   "symbol": "Pin",
+   "target_kind": "test",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "75678dd44ab2927c",
+     "us": 639.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 595.4,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "75678dd44ab2927c",
+     "us": 677.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_226_unwrap",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 235,
+   "character": 36,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "8e1b867a39ea778f",
+     "us": 648.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 594.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "8e1b867a39ea778f",
+     "us": 682.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_242_time",
+   "file": "tokio/tests/rt_unstable_eager_driver_handoff.rs",
+   "line": 9,
+   "character": 10,
+   "symbol": "time",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "1e92d222d9f4a2fa",
+     "us": 671.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 644.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "1e92d222d9f4a2fa",
+     "us": 713.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_269_Ready",
+   "file": "tokio/tests/io_poll_aio.rs",
+   "line": 59,
+   "character": 40,
+   "symbol": "Ready",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "75678dd44ab2927c",
+     "us": 618.4,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 600.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "75678dd44ab2927c",
+     "us": 641.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_272_future",
+   "file": "tokio/tests/udp.rs",
+   "line": 13,
+   "character": 10,
+   "symbol": "future",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "33ed4b19e3ae7560",
+     "us": 665.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 608.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "33ed4b19e3ae7560",
+     "us": 692.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_19_file_debug_fmt",
+   "file": "tokio/tests/fs_file.rs",
+   "line": 264,
+   "character": 10,
+   "symbol": "file_debug_fmt",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "ccfca79889388a46",
+     "us": 623.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 604.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "ccfca79889388a46",
+     "us": 652.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_43_assert_panics_cannot_block_on",
+   "file": "tokio/tests/sync_emscripten_blocking.rs",
+   "line": 44,
+   "character": 4,
+   "symbol": "assert_panics_cannot_block_on",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "0b1b13bb38026845",
+     "us": 661.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 619.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "0b1b13bb38026845",
+     "us": 676.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_52_runtime_without_io",
+   "file": "tokio/tests/fs_uring_no_io.rs",
+   "line": 19,
+   "character": 4,
+   "symbol": "runtime_without_io",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "535612b0a8968bb2",
+     "us": 638.2,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 616.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "535612b0a8968bb2",
+     "us": 654.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_70_shutdown_runtime_while_performing_io_uring_ops",
+   "file": "tokio/tests/fs_uring_runtime_shutdown.rs",
+   "line": 28,
+   "character": 4,
+   "symbol": "shutdown_runtime_while_performing_io_uring_ops",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a00e10201e387cf7",
+     "us": 660.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 618.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a00e10201e387cf7",
+     "us": 673.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_78_assert_dump_preserves_idle_bookkeeping",
+   "file": "tokio/tests/dump.rs",
+   "line": 249,
+   "character": 8,
+   "symbol": "assert_dump_preserves_idle_bookkeeping",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "02edd5bc06371a72",
+     "us": 625.4,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 594.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "02edd5bc06371a72",
+     "us": 653.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_90_expect_task_named",
+   "file": "tokio/tests/tracing_task.rs",
+   "line": 202,
+   "character": 4,
+   "symbol": "expect_task_named",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "d851b617695ac85f",
+     "us": 631.4,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 600.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "d851b617695ac85f",
+     "us": 659.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_108_test_named_pipe_mode_message",
+   "file": "tokio/tests/net_named_pipe.rs",
+   "line": 328,
+   "character": 10,
+   "symbol": "test_named_pipe_mode_message",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "e7e54e290868390a",
+     "us": 658.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 608.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "e7e54e290868390a",
+     "us": 680.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_137_many_workers",
+   "file": "tokio/tests/dump.rs",
+   "line": 307,
+   "character": 8,
+   "symbol": "many_workers",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "02edd5bc06371a72",
+     "us": 588.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 589.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "02edd5bc06371a72",
+     "us": 612.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_145_PanicOnEvent",
+   "file": "tokio/tests/tracing_sync.rs",
+   "line": 299,
+   "character": 12,
+   "symbol": "PanicOnEvent",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "21c463a604fd1b8f",
+     "us": 653.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 616.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "21c463a604fd1b8f",
+     "us": 687.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_164_spawn_local_panics_in_multi_thread_runtime",
+   "file": "tokio/tests/task_builder.rs",
+   "line": 38,
+   "character": 10,
+   "symbol": "spawn_local_panics_in_multi_thread_runtime",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3699862b6fe54ed1",
+     "us": 623.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 604.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3699862b6fe54ed1",
+     "us": 773.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_197_spawn_task_hook_fires",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 16,
+   "character": 4,
+   "symbol": "spawn_task_hook_fires",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "f0a9229dc38a6b27",
+     "us": 653.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 616.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "f0a9229dc38a6b27",
+     "us": 675.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_216_task_builder_loc_file_recorded",
+   "file": "tokio/tests/tracing_task.rs",
+   "line": 96,
+   "character": 4,
+   "symbol": "task_builder_loc_file_recorded",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "d851b617695ac85f",
+     "us": 645.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 599.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "d851b617695ac85f",
+     "us": 671.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_272_log_histogram",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 359,
+   "character": 4,
+   "symbol": "log_histogram",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "7054c3246ae2dbaf",
+     "us": 707.4,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 647.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "7054c3246ae2dbaf",
+     "us": 732.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_292_create_tmp_files",
+   "file": "tokio/tests/fs_uring.rs",
+   "line": 195,
+   "character": 4,
+   "symbol": "create_tmp_files",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "0ce9ac283742a80d",
+     "us": 633.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 593.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "0ce9ac283742a80d",
+     "us": 652.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_3_unwrap",
+   "file": "tokio/tests/task_builder.rs",
+   "line": 104,
+   "character": 24,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "2999a49b36995be3",
+     "us": 1760.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 693.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "2999a49b36995be3",
+     "us": 1735.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_8_signal",
+   "file": "tokio/tests/signal_info.rs",
+   "line": 18,
+   "character": 12,
+   "symbol": "signal",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "8e8313166f3f3f52",
+     "us": 1894.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1188.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "8e8313166f3f3f52",
+     "us": 1768.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_19_pin",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 157,
+   "character": 16,
+   "symbol": "pin",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "319d5d07dd41fff0",
+     "us": 2009.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 947.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "319d5d07dd41fff0",
+     "us": 2013.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_38_panic",
+   "file": "tokio/tests/task_id.rs",
+   "line": 24,
+   "character": 14,
+   "symbol": "panic",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "599dac6839b29f82",
+     "us": 2085.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 890.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "599dac6839b29f82",
+     "us": 2112.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_50_into_iter",
+   "file": "tokio/tests/task_trace_wake.rs",
+   "line": 318,
+   "character": 47,
+   "symbol": "into_iter",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "1787326df9577694",
+     "us": 1984.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 956.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "1787326df9577694",
+     "us": 2003.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_59_leaked_buffers",
+   "file": "tokio/tests/io_read.rs",
+   "line": 22,
+   "character": 14,
+   "symbol": "leaked_buffers",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "cd9797d5430ae95b",
+     "us": 1943.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1210.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "cd9797d5430ae95b",
+     "us": 2011.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_62_spawn",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 575,
+   "character": 16,
+   "symbol": "spawn",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "bece779bcbd58777",
+     "us": 2257.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1441.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "bece779bcbd58777",
+     "us": 2446.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_69_pretty",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 81,
+   "character": 19,
+   "symbol": "pretty",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "1cf9c8558b7849b5",
+     "us": 1849.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 941.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "1cf9c8558b7849b5",
+     "us": 1876.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_82_load",
+   "file": "tokio/tests/task_trace_wake.rs",
+   "line": 225,
+   "character": 28,
+   "symbol": "load",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "1787326df9577694",
+     "us": 1770.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 874.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "1787326df9577694",
+     "us": 1822.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_85_spawn",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 352,
+   "character": 26,
+   "symbol": "spawn",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "e94fae534632eea6",
+     "us": 1769.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 851.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "e94fae534632eea6",
+     "us": 1802.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_91_future",
+   "file": "tokio/tests/tracing_sync.rs",
+   "line": 288,
+   "character": 14,
+   "symbol": "future",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "5f4b060a8b504df7",
+     "us": 2498.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 684.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "5f4b060a8b504df7",
+     "us": 2572.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_95_num_idle_blocking_threads",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 44,
+   "character": 32,
+   "symbol": "num_idle_blocking_threads",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "bece779bcbd58777",
+     "us": 1853.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 708.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "bece779bcbd58777",
+     "us": 1916.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_100_process",
+   "file": "tokio/tests/process_smoke.rs",
+   "line": 4,
+   "character": 12,
+   "symbol": "process",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "edfab2fb7a24a8d2",
+     "us": 1775.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 976.4,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "edfab2fb7a24a8d2",
+     "us": 1836.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_107_new",
+   "file": "examples/named-pipe.rs",
+   "line": 29,
+   "character": 37,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a30f3c463eb3a02a",
+     "us": 2293.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 725.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a30f3c463eb3a02a",
+     "us": 2392.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_114_Ok",
+   "file": "tokio/tests/fs_uring_no_io.rs",
+   "line": 75,
+   "character": 26,
+   "symbol": "Ok",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "b6ee51183beda985",
+     "us": 1834.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 680.4,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "b6ee51183beda985",
+     "us": 1830.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_116_now_or_never",
+   "file": "tokio/tests/fs_uring.rs",
+   "line": 187,
+   "character": 18,
+   "symbol": "now_or_never",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "303b2cd08973b357",
+     "us": 1789.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 684.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "303b2cd08973b357",
+     "us": 1755.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_118_State",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 42,
+   "character": 21,
+   "symbol": "State",
+   "target_kind": "test",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "1cf9c8558b7849b5",
+     "us": 1838.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 699.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "1cf9c8558b7849b5",
+     "us": 1781.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_121_worker_thread_id",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 201,
+   "character": 41,
+   "symbol": "worker_thread_id",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "bece779bcbd58777",
+     "us": 1817.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 722.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "bece779bcbd58777",
+     "us": 1899.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_125_field",
+   "file": "tokio/tests/tracing_task.rs",
+   "line": 179,
+   "character": 34,
+   "symbol": "field",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "9bc463d90f3f37ad",
+     "us": 1855.4,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 962.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "9bc463d90f3f37ad",
+     "us": 1870.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_128_unwrap",
+   "file": "tokio/tests/dump.rs",
+   "line": 367,
+   "character": 14,
+   "symbol": "unwrap",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a607bbf0239ef354",
+     "us": 1743.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 655.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a607bbf0239ef354",
+     "us": 1770.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_167_spawn_local_on_local_runtime",
+   "file": "tokio/tests/task_builder.rs",
+   "line": 18,
+   "character": 10,
+   "symbol": "spawn_local_on_local_runtime",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "2999a49b36995be3",
+     "us": 1988.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 763.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "2999a49b36995be3",
+     "us": 1997.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_190_trace_capture_futures_unordered",
+   "file": "tokio/tests/task_trace_wake.rs",
+   "line": 245,
+   "character": 10,
+   "symbol": "trace_capture_futures_unordered",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "1787326df9577694",
+     "us": 1781.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 870.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "1787326df9577694",
+     "us": 1878.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_199_windows_main",
+   "file": "examples/named-pipe.rs",
+   "line": 4,
+   "character": 10,
+   "symbol": "windows_main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a30f3c463eb3a02a",
+     "us": 1510.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 449.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a30f3c463eb3a02a",
+     "us": 1545.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_212_test_file_read_4gib_buf_size",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 475,
+   "character": 10,
+   "symbol": "test_file_read_4gib_buf_size",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "f57f40394304dda5",
+     "us": 1769.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 684.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "f57f40394304dda5",
+     "us": 1816.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_269_dump",
+   "file": "tokio/tests/dump.rs",
+   "line": 78,
+   "character": 14,
+   "symbol": "dump",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a607bbf0239ef354",
+     "us": 1791.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 699.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a607bbf0239ef354",
+     "us": 1818.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_3_task",
+   "file": "tokio/tests/dump.rs",
+   "line": 55,
+   "character": 44,
+   "symbol": "task",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "869f2c5ea6c9a5ad",
+     "us": 1749.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 622.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "869f2c5ea6c9a5ad",
+     "us": 1682.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_6_sync",
+   "file": "tokio-util/tests/sync_cancellation_token.rs",
+   "line": 4,
+   "character": 12,
+   "symbol": "sync",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "bfcc5f4d28550dbe",
+     "us": 1586.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 500.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "bfcc5f4d28550dbe",
+     "us": 1536.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_16_test",
+   "file": "tokio-stream/tests/chunks_timeout.rs",
+   "line": 65,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a105d8d0d9cd2c66",
+     "us": 1571.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 460.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a105d8d0d9cd2c66",
+     "us": 1518.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_17_push",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 187,
+   "character": 15,
+   "symbol": "push",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "5beac9ac772c08c7",
+     "us": 1740.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 639.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "5beac9ac772c08c7",
+     "us": 1682.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_24_Pin",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 51,
+   "character": 19,
+   "symbol": "Pin",
+   "target_kind": "test",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "fcad3db06f9eb15d",
+     "us": 1789.2,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 657.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "fcad3db06f9eb15d",
+     "us": 1693.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_26_mpsc",
+   "file": "tokio/tests/macros_select.rs",
+   "line": 676,
+   "character": 35,
+   "symbol": "mpsc",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "7c5b0d64fc82357d",
+     "us": 1811.2,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 708.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "7c5b0d64fc82357d",
+     "us": 1709.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_28_test",
+   "file": "tokio/tests/fs_open_options_windows.rs",
+   "line": 8,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "e58854897e10eee1",
+     "us": 1808.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 714.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "e58854897e10eee1",
+     "us": 1717.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_35_io",
+   "file": "tokio/tests/io_read_to_string.rs",
+   "line": 14,
+   "character": 12,
+   "symbol": "io",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3ec981784a4d8aec",
+     "us": 1777.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 715.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3ec981784a4d8aec",
+     "us": 1699.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_62_now_or_never",
+   "file": "tokio/tests/time_alt.rs",
+   "line": 215,
+   "character": 19,
+   "symbol": "now_or_never",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a2d6a46862921d40",
+     "us": 1767.4,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 677.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a2d6a46862921d40",
+     "us": 1763.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_63_Result",
+   "file": "tokio/tests/net_named_pipe.rs",
+   "line": 32,
+   "character": 49,
+   "symbol": "Result",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "f9632f52135a86d1",
+     "us": 1778.4,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 652.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "f9632f52135a86d1",
+     "us": 1757.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_76_build",
+   "file": "tokio/tests/time_alt.rs",
+   "line": 230,
+   "character": 10,
+   "symbol": "build",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a2d6a46862921d40",
+     "us": 1761.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 671.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a2d6a46862921d40",
+     "us": 1731.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_92_clone",
+   "file": "tokio/tests/rt_basic.rs",
+   "line": 406,
+   "character": 25,
+   "symbol": "clone",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "eaa4df6c5627bf65",
+     "us": 1782.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 659.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "eaa4df6c5627bf65",
+     "us": 1771.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_105_open",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 184,
+   "character": 26,
+   "symbol": "open",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "d5134e858984d498",
+     "us": 1774.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 693.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "d5134e858984d498",
+     "us": 1770.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_119_dump",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 66,
+   "character": 48,
+   "symbol": "dump",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "fcad3db06f9eb15d",
+     "us": 1765.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 705.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "fcad3db06f9eb15d",
+     "us": 1764.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_126_run_with_handle",
+   "file": "tokio/tests/tracing_task.rs",
+   "line": 182,
+   "character": 75,
+   "symbol": "run_with_handle",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "8b15aff06bdd90d3",
+     "us": 1769.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 702.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "8b15aff06bdd90d3",
+     "us": 1741.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_140_spawn_blocking",
+   "file": "tokio/tests/rt_multi_thread_emscripten.rs",
+   "line": 43,
+   "character": 30,
+   "symbol": "spawn_blocking",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "69a07c2c20d196bc",
+     "us": 1776.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 745.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "69a07c2c20d196bc",
+     "us": 1749.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_142_from_millis",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 47,
+   "character": 31,
+   "symbol": "from_millis",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "1d83cd3ece5e6717",
+     "us": 1994.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 772.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "1d83cd3ece5e6717",
+     "us": 1799.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_145_WRITABLE",
+   "file": "tokio/tests/net_named_pipe.rs",
+   "line": 265,
+   "character": 43,
+   "symbol": "WRITABLE",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "f9632f52135a86d1",
+     "us": 1764.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 639.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "f9632f52135a86d1",
+     "us": 1707.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_151_future",
+   "file": "tokio-util/tests/udp.rs",
+   "line": 13,
+   "character": 14,
+   "symbol": "future",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "b9c94446dd9dce7b",
+     "us": 1554.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 455.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "b9c94446dd9dce7b",
+     "us": 1529.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_155_remote_schedule_count",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 182,
+   "character": 32,
+   "symbol": "remote_schedule_count",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "1d83cd3ece5e6717",
+     "us": 1780.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 639.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "1d83cd3ece5e6717",
+     "us": 1754.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_177_starts_with",
+   "file": "tokio/tests/fs_canonicalize_dir.rs",
+   "line": 32,
+   "character": 22,
+   "symbol": "starts_with",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "2031a274fdcdaf06",
+     "us": 1746.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 637.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "2031a274fdcdaf06",
+     "us": 1712.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_194_elapsed",
+   "file": "tokio/tests/rt_emscripten_jspi.rs",
+   "line": 116,
+   "character": 23,
+   "symbol": "elapsed",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "2d96fb2dece1c719",
+     "us": 1830.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 670.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "2d96fb2dece1c719",
+     "us": 1777.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_197_poll_time_histogram_enabled",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 350,
+   "character": 22,
+   "symbol": "poll_time_histogram_enabled",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "1d83cd3ece5e6717",
+     "us": 1911.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 630.4,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "1d83cd3ece5e6717",
+     "us": 1774.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_211_Builder",
+   "file": "tokio/tests/rt_threaded.rs",
+   "line": 897,
+   "character": 27,
+   "symbol": "Builder",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "65beb63cd0b43e97",
+     "us": 1782.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 707.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "65beb63cd0b43e97",
+     "us": 1761.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_214_abort",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 268,
+   "character": 12,
+   "symbol": "abort",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "d9bb98f2e519210a",
+     "us": 1759.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 645.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "d9bb98f2e519210a",
+     "us": 1736.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_220_has_explicit_parent",
+   "file": "tokio/tests/tracing_time.rs",
+   "line": 53,
+   "character": 40,
+   "symbol": "has_explicit_parent",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "026e8ea950e2e7c2",
+     "us": 1765.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 640.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "026e8ea950e2e7c2",
+     "us": 1741.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_239_try_write",
+   "file": "examples/named-pipe-ready.rs",
+   "line": 58,
+   "character": 30,
+   "symbol": "try_write",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "70d2259a600c5415",
+     "us": 1519.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 411.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "70d2259a600c5415",
+     "us": 1504.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_241_io",
+   "file": "tokio/tests/process_issue_2174.rs",
+   "line": 14,
+   "character": 12,
+   "symbol": "io",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "891329187b9cefb1",
+     "us": 1753.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 622.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "891329187b9cefb1",
+     "us": 1722.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_246_now",
+   "file": "tokio/tests/time_rt.rs",
+   "line": 87,
+   "character": 30,
+   "symbol": "now",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3913e28296244c7b",
+     "us": 1742.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 640.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3913e28296244c7b",
+     "us": 1739.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_251_CtrlC",
+   "file": "tokio/tests/async_send_sync.rs",
+   "line": 331,
+   "character": 43,
+   "symbol": "CtrlC",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "8734cae00d745f89",
+     "us": 1768.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 666.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "8734cae00d745f89",
+     "us": 1735.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_266_target",
+   "file": "tokio/tests/tracing_sync.rs",
+   "line": 315,
+   "character": 22,
+   "symbol": "target",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "30b65c5e29534d30",
+     "us": 1753.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 654.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "30b65c5e29534d30",
+     "us": 1728.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_283_then",
+   "file": "tokio-stream/tests/chunks_timeout.rs",
+   "line": 47,
+   "character": 28,
+   "symbol": "then",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a105d8d0d9cd2c66",
+     "us": 1578.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 454.2,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a105d8d0d9cd2c66",
+     "us": 1565.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_1_channel",
+   "file": "tokio/tests/dump.rs",
+   "line": 324,
+   "character": 42,
+   "symbol": "channel",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1190.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1162.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1162.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_6_File",
+   "file": "tokio/tests/fs_uring_file_read.rs",
+   "line": 16,
+   "character": 16,
+   "symbol": "File",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1264.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1253.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1205.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_13_time",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 17,
+   "character": 12,
+   "symbol": "time",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1251.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1235.2,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1216.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_45_num_workers",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 343,
+   "character": 35,
+   "symbol": "num_workers",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1234.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1249.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1183.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_54_io",
+   "file": "tokio-test/tests/io.rs",
+   "line": 101,
+   "character": 21,
+   "symbol": "io",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "4739ab84529b8b5f",
+     "us": 517.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "a",
+     "digest": "4865917fac29cad7",
+     "us": 533.4,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "4739ab84529b8b5f",
+     "us": 518.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_74_metrics_poll_time_histogram_configuration",
+   "file": "tokio/tests/rt_unstable_metrics.rs",
+   "line": 475,
+   "character": 14,
+   "symbol": "metrics_poll_time_histogram_configuration",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1230.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1194.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1188.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_80_sync",
+   "file": "tokio/tests/sync_notify_owned.rs",
+   "line": 188,
+   "character": 14,
+   "symbol": "sync",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "4739ab84529b8b5f",
+     "us": 1030.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "a",
+     "digest": "4865917fac29cad7",
+     "us": 1014.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "4739ab84529b8b5f",
+     "us": 994.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_81_build",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 31,
+   "character": 10,
+   "symbol": "build",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1207.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1201.2,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1159.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_83_sync",
+   "file": "tokio-util/tests/task_join_map.rs",
+   "line": 424,
+   "character": 49,
+   "symbol": "sync",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "db59c2550730752f",
+     "us": 624.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "a",
+     "digest": "ee359865d40ec0e0",
+     "us": 638.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "db59c2550730752f",
+     "us": 618.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_107_new",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 136,
+   "character": 40,
+   "symbol": "new",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1175.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1199.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1140.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_124_wasm_bindgen_test",
+   "file": "tokio/tests/sync_rwlock.rs",
+   "line": 5,
+   "character": 24,
+   "symbol": "wasm_bindgen_test",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1230.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1232.6,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1188.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_125_spawn",
+   "file": "tokio-stream/tests/stream_timeout.rs",
+   "line": 30,
+   "character": 28,
+   "symbol": "spawn",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 781.1,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 822.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 790.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_127_join",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 147,
+   "character": 42,
+   "symbol": "join",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1202.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1236.2,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1172.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_139_Runtime",
+   "file": "tokio/tests/fs_uring_read.rs",
+   "line": 104,
+   "character": 16,
+   "symbol": "Runtime",
+   "target_kind": "test",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1198.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1217.2,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1167.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_140_read_dir",
+   "file": "tokio/tests/fs_uring_runtime_shutdown.rs",
+   "line": 36,
+   "character": 37,
+   "symbol": "read_dir",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1228.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1254.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1210.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_143_sync",
+   "file": "tokio/tests/rt_emscripten_jspi.rs",
+   "line": 17,
+   "character": 10,
+   "symbol": "sync",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1233.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1246.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1206.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_147_schedule_latency",
+   "file": "tokio/tests/task_hooks.rs",
+   "line": 61,
+   "character": 30,
+   "symbol": "schedule_latency",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1172.8,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1192.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1145.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_151_task",
+   "file": "tokio/tests/sync_broadcast.rs",
+   "line": 622,
+   "character": 47,
+   "symbol": "task",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "a16c298b9a07969b",
+     "us": 1005.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "a",
+     "digest": "b1f4e99f8577dc8b",
+     "us": 1012.2,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "a16c298b9a07969b",
+     "us": 976.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_160_task",
+   "file": "tokio-util/tests/task_tracker.rs",
+   "line": 6,
+   "character": 12,
+   "symbol": "task",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 797.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 807.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 801.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_163_measurement",
+   "file": "benches/sync_mpsc.rs",
+   "line": 3,
+   "character": 16,
+   "symbol": "measurement",
+   "target_kind": "bench",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 732.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 750.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 749.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_164_build",
+   "file": "tokio/tests/rt_unstable_eager_driver_handoff.rs",
+   "line": 34,
+   "character": 57,
+   "symbol": "build",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1269.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1272.4,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1238.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_167_test",
+   "file": "tokio/tests/fs_open_options_windows.rs",
+   "line": 22,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1213.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1234.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1193.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_168_vec",
+   "file": "tokio-stream/tests/stream_accessors.rs",
+   "line": 5,
+   "character": 24,
+   "symbol": "vec",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 797.5,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 815.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 796.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_172_new_current_thread",
+   "file": "tokio-stream/tests/time_throttle.rs",
+   "line": 18,
+   "character": 39,
+   "symbol": "new_current_thread",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 789.3,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 829.3,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 795.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_175_Arc",
+   "file": "tokio/tests/task_trace_wake.rs",
+   "line": 154,
+   "character": 23,
+   "symbol": "Arc",
+   "target_kind": "test",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1249.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1188.9,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1211.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_183_path",
+   "file": "tokio/tests/fs_symlink_file_windows.rs",
+   "line": 12,
+   "character": 27,
+   "symbol": "path",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1231.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1198.5,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1196.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_185_io",
+   "file": "tokio/tests/io_copy_bidirectional.rs",
+   "line": 158,
+   "character": 29,
+   "symbol": "io",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "ab2fa82ca0edc4b8",
+     "us": 1018.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "a",
+     "digest": "d213ee18e3a14c91",
+     "us": 1015.8,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "ab2fa82ca0edc4b8",
+     "us": 996.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_244_watch_stream_from_rx",
+   "file": "tokio-stream/tests/watch.rs",
+   "line": 34,
+   "character": 10,
+   "symbol": "watch_stream_from_rx",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 755.7,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 778.0,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 769.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_256_cancel_op_future",
+   "file": "tokio/tests/fs_uring_statx.rs",
+   "line": 241,
+   "character": 10,
+   "symbol": "cancel_op_future",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1194.6,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1188.1,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1209.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_270_PrettyFuture",
+   "file": "tokio/tests/task_trace_self.rs",
+   "line": 24,
+   "character": 16,
+   "symbol": "PrettyFuture",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1228.9,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1204.7,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1235.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_276_eager_driver_handoff_fixes_deadlock",
+   "file": "tokio/tests/rt_unstable_eager_driver_handoff.rs",
+   "line": 33,
+   "character": 4,
+   "symbol": "eager_driver_handoff_fixes_deadlock",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9b05f4a": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1257.0,
+     "error": null
+    },
+    "9d69955": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1247.2,
+     "error": null
+    },
+    "9b05f4a-2": {
+     "outcome": "a",
+     "digest": "3278d2cd5b447788",
+     "us": 1281.9,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 137,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_9b05f4a_vs_9d69955_ram9_tokio.json",
+  "sha256": "ed60abae27a3b54f9f92dd1cbc3aa9ff81688c1d9680cd80672db3a7ff0c6c8b"
+ }
+}

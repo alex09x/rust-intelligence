@@ -1,0 +1,477 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "ripgrep",
+ "report": "position_ab_9b05f4a_vs_9d69955_ram9_ripgrep.json",
+ "servers": [
+  {
+   "name": "9b05f4a",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9d69955",
+   "commit": "9d6995518460929b718a8ec1a0eff4435bff6db4",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9b05f4a-2",
+   "commit": "9b05f4a2e7610af195fa0ddf0350813eb050e5a2",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "ripgrep.ws.tsv",
+  "ripgrep.deps.tsv"
+ ],
+ "previous": "ripgrep.classes.json",
+ "enclosing_references": 79584,
+ "rows_differing": 14,
+ "summary": {
+  "d2_nameless_crate_root_module_no_longer_answers": 14
+ },
+ "rows_by_method": {
+  "definition": 3,
+  "document_highlight": 2,
+  "hover": 7,
+  "references": 2
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "file": "crates/cli/src/lib.rs",
+   "line": 291,
+   "character": 53,
+   "symbol": "IsTerminal",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:crates/cli/src/lib.rs",
+      [
+       1,
+       1,
+       295,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1300,
+   "character": 27,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       1,
+       1,
+       1370,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 751,
+   "character": 25,
+   "symbol": "Captures",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       1,
+       1,
+       1370,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/cli/src/lib.rs",
+   "line": 278,
+   "character": 49,
+   "symbol": "io",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:crates/cli/src/lib.rs",
+      [
+       1,
+       1,
+       295,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/cli/src/lib.rs",
+   "line": 232,
+   "character": 27,
+   "symbol": "is_disk",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      "ws:crates/cli/src/lib.rs",
+      [
+       1,
+       1,
+       295,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 790,
+   "character": 26,
+   "symbol": "Captures",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       1370,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 751,
+   "character": 25,
+   "symbol": "Captures",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 1,
+    "added_count": 0,
+    "removed": [
+     [
+      null,
+      [
+       1,
+       1,
+       1370,
+       2
+      ]
+     ]
+    ],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/searcher/src/lib.rs",
+   "line": 69,
+   "character": 26,
+   "symbol": "to_string",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1133,
+   "character": 38,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 751,
+   "character": 25,
+   "symbol": "Captures",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/searcher/src/lib.rs",
+   "line": 38,
+   "character": 27,
+   "symbol": "UTF8",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/cli/src/lib.rs",
+   "line": 221,
+   "character": 44,
+   "symbol": "typ",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 1230,
+   "character": 26,
+   "symbol": "Captures",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/core/main.rs",
+   "line": 440,
+   "character": 24,
+   "symbol": "time",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "d2_nameless_crate_root_module_no_longer_answers",
+   "evidence": {
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": null,
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  }
+ ]
+}
