@@ -1,0 +1,35 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_4d12a60_vs_9e80f44_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "4d12a60",
+   "commit": "4d12a60561eef63022e543292d8cd9fc73cd6f35",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9e80f44",
+   "commit": "9e80f44156ce5171b3789de008f61153a308009f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "4d12a60-2",
+   "commit": "4d12a60561eef63022e543292d8cd9fc73cd6f35",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "bevy.ws.tsv",
+  "bevy.deps.tsv"
+ ],
+ "previous": null,
+ "enclosing_references": 1207368,
+ "rows_differing": 0,
+ "summary": {},
+ "rows_by_method": {},
+ "rows": []
+}
