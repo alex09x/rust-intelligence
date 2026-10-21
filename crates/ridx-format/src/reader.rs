@@ -19,6 +19,7 @@ use std::path::Path;
 use crate::format::*;
 
 mod file_lookup;
+mod name_reference;
 mod queries;
 mod search;
 
@@ -362,6 +363,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
 
 #[cfg(test)]
 mod file_id_exact_tests;
+#[cfg(test)]
+mod name_span_tests;
 #[cfg(test)]
 mod owner_and_deref_tests;
 #[cfg(test)]

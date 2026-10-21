@@ -68,6 +68,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     }
 
     /// Finds the innermost `RefEntry` at `(file_id, line, col)` via binary search on span-sorted references.
+    /// References that are not uses of a name (`is_name_reference`) are skipped.
     pub fn find_innermost_ref_at_file_id(
         &self,
         file_id: u32,
@@ -86,6 +87,9 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             let span = r.span();
             if span.file_id() != file_id {
                 break;
+            }
+            if !self.is_name_reference(r) {
+                continue;
             }
             if let Some((_, best_size)) = best {
                 let min_size = if line > span.start_line() {
@@ -169,6 +173,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     }
 
     /// Find all references to a given symbol path (e.g. `thread::Builder::allow_leak`).
+    /// References that are not uses of a name (`is_name_reference`) are left out.
     pub fn find_references(&self, target_path: &str) -> Vec<&RefEntry> {
         let hash = fnv1a_64(target_path.as_bytes());
         let ref_hashes = self.refs_by_target();
@@ -182,7 +187,8 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             }
             while i < ref_hashes.len() && ref_hashes[i].hash() == hash {
                 let r = &refs[ref_hashes[i].index() as usize];
-                if self.get_str(r.target_path_offset()) == target_path {
+                if self.get_str(r.target_path_offset()) == target_path && self.is_name_reference(r)
+                {
                     results.push(r);
                 }
                 i += 1;
