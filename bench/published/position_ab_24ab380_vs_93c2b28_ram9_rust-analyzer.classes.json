@@ -1,0 +1,834 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_24ab380_vs_93c2b28_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "24ab380",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "93c2b28",
+   "commit": "93c2b28a7cec5c77599a65c5ce8ebf14c798d71e",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "24ab380-2",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "rust-analyzer.ws.tsv",
+  "rust-analyzer.deps.tsv"
+ ],
+ "previous": "rust-analyzer.classes.json",
+ "enclosing_references": 562389,
+ "rows_differing": 9,
+ "summary": {
+  "d1_item_at_cursor_answers_instead_of_the_enclosing_reference": 9
+ },
+ "rows_by_method": {
+  "declaration": 1,
+  "implementation": 1,
+  "prepare_rename": 1,
+  "prepare_type_hierarchy": 3,
+  "references": 2,
+  "rename": 1
+ },
+ "rows": [
+  {
+   "method": "declaration",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 461,
+   "character": 20,
+   "symbol": "EmptyWaker",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      447,
+      5,
+      474,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arguments",
+     "align_of_val",
+     "check_size_and_align_expr",
+     "format",
+     "from_str_nonconst",
+     "must_use",
+     "size_of_val",
+     "val"
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "layout::tests::check_size_and_align_expr",
+     "start_line": 165,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "layout::tests::return_position_impl_trait::unwrap_fut::EmptyWaker",
+     "start_line": 461,
+     "start_col": 20
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       165,
+       4,
+       165,
+       29
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       461,
+       20,
+       461,
+       30
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": true,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 452,
+   "character": 15,
+   "symbol": "Tr",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      447,
+      5,
+      474,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arguments",
+     "align_of_val",
+     "check_size_and_align_expr",
+     "format",
+     "from_str_nonconst",
+     "must_use",
+     "size_of_val",
+     "val"
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "layout::tests::check_size_and_align_expr",
+     "start_line": 165,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "layout::tests::return_position_impl_trait::Tr",
+     "start_line": 452,
+     "start_col": 15
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 4,
+    "removed": [],
+    "added": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       439,
+       14,
+       439,
+       16
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       440,
+       47,
+       440,
+       49
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       453,
+       14,
+       453,
+       16
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       454,
+       30,
+       454,
+       32
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": true,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 365,
+   "character": 15,
+   "symbol": "Tr",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      364,
+      5,
+      376,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "align_of",
+     "check_size_and_align",
+     "size_of"
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "layout::tests::check_size_and_align",
+     "start_line": 153,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Trait",
+     "path": "layout::tests::associated_types::Tr",
+     "start_line": 365,
+     "start_col": 15
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 43,
+    "added_count": 4,
+    "removed": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       153,
+       4,
+       153,
+       24
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       245,
+       5,
+       247,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       255,
+       5,
+       257,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       258,
+       5,
+       261,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       266,
+       5,
+       271,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       272,
+       5,
+       275,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       276,
+       5,
+       282,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       307,
+       5,
+       310,
+       6
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       365,
+       15,
+       365,
+       17
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       369,
+       14,
+       369,
+       16
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       373,
+       23,
+       373,
+       25
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       374,
+       23,
+       374,
+       25
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": true,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 317,
+   "character": 16,
+   "symbol": "Goal",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      315,
+      5,
+      318,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "align_of",
+     "check_size_and_align",
+     "size_of"
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "layout::tests::check_size_and_align",
+     "start_line": 153,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "layout::tests::repr_packed::Goal",
+     "start_line": 317,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 43,
+    "added_count": 1,
+    "removed": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       153,
+       4,
+       153,
+       24
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       245,
+       5,
+       247,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       255,
+       5,
+       257,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       258,
+       5,
+       261,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       266,
+       5,
+       271,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       272,
+       5,
+       275,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       276,
+       5,
+       282,
+       6
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       307,
+       5,
+       310,
+       6
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       317,
+       16,
+       317,
+       20
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": true,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 627,
+   "character": 14,
+   "symbol": "Goal",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      626,
+      5,
+      630,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "align_of",
+     "check_size_and_align",
+     "size_of"
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "layout::tests::check_size_and_align",
+     "start_line": 153,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Enum",
+     "path": "layout::tests::enums_with_discriminants::Goal",
+     "start_line": 627,
+     "start_col": 14
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       627,
+       14,
+       627,
+       18
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": true,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 499,
+   "character": 16,
+   "symbol": "S4",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      495,
+      5,
+      508,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "align_of",
+     "check_size_and_align",
+     "size_of"
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "layout::tests::check_size_and_align",
+     "start_line": 153,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "layout::tests::unsized_ref::S4",
+     "start_line": 499,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       499,
+       16,
+       499,
+       18
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": true,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 655,
+   "character": 16,
+   "symbol": "Goal",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      647,
+      5,
+      656,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arguments",
+     "align_of",
+     "check_size_and_align",
+     "format",
+     "from_str_nonconst",
+     "must_use",
+     "size_of"
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "layout::tests::check_size_and_align",
+     "start_line": 153,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "layout::tests::core_mem_discriminant::Goal",
+     "start_line": 655,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       655,
+       16,
+       655,
+       20
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": true,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 457,
+   "character": 12,
+   "symbol": "unwrap_fut",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      447,
+      5,
+      474,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arguments",
+     "align_of_val",
+     "check_size_and_align_expr",
+     "format",
+     "from_str_nonconst",
+     "must_use",
+     "size_of_val",
+     "val"
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "layout::tests::check_size_and_align_expr",
+     "start_line": 165,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "layout::tests::return_position_impl_trait::unwrap_fut",
+     "start_line": 457,
+     "start_col": 12
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      null,
+      [
+       457,
+       12,
+       457,
+       37
+      ]
+     ]
+    ],
+    "added": [
+     [
+      null,
+      [
+       457,
+       12,
+       457,
+       22
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": true,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 246,
+   "character": 16,
+   "symbol": "Goal",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      245,
+      5,
+      247,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "align_of",
+     "check_size_and_align",
+     "size_of"
+    ],
+    "definition_before": {
+     "kind": "Fn",
+     "path": "layout::tests::check_size_and_align",
+     "start_line": 153,
+     "start_col": 4
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "layout::tests::hello_world::Goal",
+     "start_line": 246,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 6,
+    "added_count": 1,
+    "removed": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       153,
+       4,
+       153,
+       24
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       332,
+       5,
+       332,
+       25
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       377,
+       5,
+       377,
+       25
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       407,
+       5,
+       407,
+       25
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       554,
+       5,
+       554,
+       25
+      ]
+     ],
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       563,
+       5,
+       563,
+       25
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:crates/hir-ty/src/layout/tests.rs",
+      [
+       246,
+       16,
+       246,
+       20
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": true,
+    "previous_class": null
+   }
+  }
+ ]
+}

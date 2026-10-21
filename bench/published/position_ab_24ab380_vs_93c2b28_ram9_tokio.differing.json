@@ -1,0 +1,5345 @@
+{
+ "repo": "tokio-rs/tokio",
+ "repo_dir_name": "tokio",
+ "repo_head": "b2636752450484955e7ad334bac678424d51bc4a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 308,
+ "positions_file": "matrix_tokio_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 301,
+ "timestamp_start": "2026-10-21T20:03:27.736712+00:00",
+ "timestamp_end": "2026-10-21T20:08:26.649260+00:00",
+ "servers": [
+  {
+   "name": "24ab380",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 24ab380d7f32349810967a4259fbb36716d8c2c0, dirty: false)",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 98.3,
+   "summary": {
+    "definition": {
+     "a": 247,
+     "b": 53,
+     "c": 0,
+     "n": 300,
+     "p50_us": 436.0,
+     "p99_us": 2097.6,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 379.4,
+     "p99_us": 729.7,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 398.3,
+     "p99_us": 1742.4,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 206,
+     "b": 94,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2126.1,
+     "p99_us": 6530.1,
+     "unsupported": false
+    },
+    "references": {
+     "a": 258,
+     "b": 42,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1819.9,
+     "p99_us": 21533.8,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1839.5,
+     "p99_us": 14036.7,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 128.8,
+     "p99_us": 1519.3,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 18168.7,
+     "p99_us": 33964.5,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 18.7,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 823.9,
+     "p99_us": 1278.0,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1934.3,
+     "p99_us": 13400.3,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 20.2,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 71.7,
+     "p99_us": 23089.0,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.7,
+     "p99_us": 60.3,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 15.9,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 32.2,
+     "p99_us": 64.4,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 19.4,
+     "p99_us": 59.8,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.4,
+     "p99_us": 99.9,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 18.1,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 236,
+     "b": 64,
+     "c": 0,
+     "n": 300,
+     "p50_us": 408.1,
+     "p99_us": 798.8,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 92,
+     "b": 208,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2083.3,
+     "p99_us": 4716.9,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 211,
+     "b": 89,
+     "c": 0,
+     "n": 300,
+     "p50_us": 957.1,
+     "p99_us": 12209.5,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 356.2,
+     "p99_us": 683.1,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1566.0,
+     "p99_us": 2849.5,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.2,
+     "p99_us": 2063.6,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 102.0,
+     "p99_us": 279.1,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.4,
+     "p99_us": 94.4,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 14.8,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 13.5,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 13.0,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85190.9,
+     "p99_us": 99024.8,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86426.2,
+     "p99_us": 184142.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86871.6,
+     "p99_us": 100006.4,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 235,
+     "b": 0,
+     "c": 65,
+     "n": 300,
+     "p50_us": 1776.9,
+     "p99_us": 3497.7,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 230,
+     "b": 0,
+     "c": 70,
+     "n": 300,
+     "p50_us": 1884.3,
+     "p99_us": 3686.3,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.6,
+     "p99_us": 95.9,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 57.8,
+     "p99_us": 239.1,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 15.2,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 13.5,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 431.4,
+     "p99_us": 1134.4,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 409.6,
+     "p99_us": 1006.1,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 412.6,
+     "p99_us": 976.8,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 50.8,
+     "p99_us": 385.9,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 391.6,
+     "p99_us": 771.3,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.2,
+     "p99_us": 18.5,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41.7,
+     "p99_us": 407.8,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1950.9,
+     "p99_us": 2234.5,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 15.4,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 12.5,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 12.1,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.4,
+     "p99_us": 76.0,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 43,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       247,
+       53,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       206,
+       94,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       236,
+       64,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       235,
+       0,
+       65
+      ],
+      "matrix": [
+       243,
+       0,
+       57
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       230,
+       0,
+       70
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "93c2b28",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 93c2b28a7cec5c77599a65c5ce8ebf14c798d71e, dirty: false)",
+   "commit": "93c2b28a7cec5c77599a65c5ce8ebf14c798d71e",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 97.7,
+   "summary": {
+    "definition": {
+     "a": 247,
+     "b": 53,
+     "c": 0,
+     "n": 300,
+     "p50_us": 449.5,
+     "p99_us": 775.6,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 396.1,
+     "p99_us": 735.3,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 415.9,
+     "p99_us": 1644.2,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2190.2,
+     "p99_us": 3459.1,
+     "unsupported": false
+    },
+    "references": {
+     "a": 258,
+     "b": 42,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1942.3,
+     "p99_us": 21638.8,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1947.9,
+     "p99_us": 14349.9,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 125.5,
+     "p99_us": 1466.6,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16268.4,
+     "p99_us": 25455.6,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 834.2,
+     "p99_us": 1274.3,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1972.8,
+     "p99_us": 13451.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 17.7,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 75.3,
+     "p99_us": 20964.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.9,
+     "p99_us": 61.0,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 12.7,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.2,
+     "p99_us": 63.8,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.3,
+     "p99_us": 59.5,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.1,
+     "p99_us": 109.1,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 14.1,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 415.0,
+     "p99_us": 795.1,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 92,
+     "b": 208,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2134.8,
+     "p99_us": 4849.1,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 211,
+     "b": 89,
+     "c": 0,
+     "n": 300,
+     "p50_us": 958.8,
+     "p99_us": 12115.8,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 357.3,
+     "p99_us": 714.9,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1590.1,
+     "p99_us": 3085.8,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.7,
+     "p99_us": 2099.8,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 100.3,
+     "p99_us": 277.3,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 22.1,
+     "p99_us": 92.9,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 16.0,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 14.2,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 14.3,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85592.1,
+     "p99_us": 97438.9,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86852.1,
+     "p99_us": 180790.7,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87725.2,
+     "p99_us": 98428.7,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 1947.2,
+     "p99_us": 2530.1,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 1944.8,
+     "p99_us": 2982.6,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.4,
+     "p99_us": 108.8,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 57.9,
+     "p99_us": 228.9,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 15.9,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 11.9,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 434.7,
+     "p99_us": 1023.7,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 412.9,
+     "p99_us": 999.2,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 426.3,
+     "p99_us": 988.8,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 52.2,
+     "p99_us": 349.7,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 405.4,
+     "p99_us": 674.5,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.6,
+     "p99_us": 17.2,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 44.8,
+     "p99_us": 403.7,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1967.2,
+     "p99_us": 2525.8,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.9,
+     "p99_us": 15.8,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 15.8,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 12.7,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.5,
+     "p99_us": 74.7,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 44,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       247,
+       53,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "24ab380-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 24ab380d7f32349810967a4259fbb36716d8c2c0, dirty: false)",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 98.1,
+   "summary": {
+    "definition": {
+     "a": 247,
+     "b": 53,
+     "c": 0,
+     "n": 300,
+     "p50_us": 436.2,
+     "p99_us": 765.6,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 386.2,
+     "p99_us": 700.8,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 403.9,
+     "p99_us": 1550.1,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 206,
+     "b": 94,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2140.3,
+     "p99_us": 5137.2,
+     "unsupported": false
+    },
+    "references": {
+     "a": 258,
+     "b": 42,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1792.5,
+     "p99_us": 21837.4,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1841.6,
+     "p99_us": 14040.4,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 129.0,
+     "p99_us": 1622.2,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17507.1,
+     "p99_us": 26712.1,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 22.5,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 823.0,
+     "p99_us": 1274.9,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1933.2,
+     "p99_us": 13380.5,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 21.3,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 72.9,
+     "p99_us": 22445.0,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.0,
+     "p99_us": 59.8,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 16.3,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35.5,
+     "p99_us": 76.1,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.4,
+     "p99_us": 59.5,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.1,
+     "p99_us": 100.4,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 17.0,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 236,
+     "b": 64,
+     "c": 0,
+     "n": 300,
+     "p50_us": 424.6,
+     "p99_us": 793.9,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 92,
+     "b": 208,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2097.4,
+     "p99_us": 5222.5,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 211,
+     "b": 89,
+     "c": 0,
+     "n": 300,
+     "p50_us": 960.0,
+     "p99_us": 12213.4,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 358.5,
+     "p99_us": 697.6,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1569.5,
+     "p99_us": 3071.5,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.5,
+     "p99_us": 2086.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 99.5,
+     "p99_us": 279.2,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.4,
+     "p99_us": 93.7,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 14.5,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 11.6,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 13.1,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86065.6,
+     "p99_us": 97090.0,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87093.1,
+     "p99_us": 181288.1,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87494.8,
+     "p99_us": 102281.7,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 235,
+     "b": 0,
+     "c": 65,
+     "n": 300,
+     "p50_us": 1849.9,
+     "p99_us": 3462.8,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 230,
+     "b": 0,
+     "c": 70,
+     "n": 300,
+     "p50_us": 1919.0,
+     "p99_us": 3475.2,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.4,
+     "p99_us": 94.8,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 60.9,
+     "p99_us": 239.2,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 16.4,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 439.4,
+     "p99_us": 1044.2,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 420.8,
+     "p99_us": 1047.9,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 432.7,
+     "p99_us": 1013.4,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 53.6,
+     "p99_us": 350.8,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 402.8,
+     "p99_us": 670.2,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 18.4,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 43.8,
+     "p99_us": 401.8,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1941.0,
+     "p99_us": 1973.2,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.6,
+     "p99_us": 18.7,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 11.6,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.6,
+     "p99_us": 11.5,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.4,
+     "p99_us": 85.5,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 43,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       247,
+       53,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       206,
+       94,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       236,
+       64,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       235,
+       0,
+       65
+      ],
+      "matrix": [
+       243,
+       0,
+       57
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       230,
+       0,
+       70
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "24ab380",
+   "b": "93c2b28",
+   "same": 15262,
+   "differing": 38,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 292,
+     "differing": 8,
+     "transitions": {
+      "a>a": 8
+     },
+     "examples": [
+      {
+       "name": "decl_33_write_u64_le",
+       "file": "tokio/src/io/util/async_write_ext.rs",
+       "line": 1046,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3c184194112397b8",
+        "0585be16acb0feb6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_115_spawn_many_from_block_on",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 191,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e9f23526809cb37c",
+        "abea88e307f41b7f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_177_spawn_from_blocking",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 533,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e9f23526809cb37c",
+        "292f9092cf221af0"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_181_Never",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 912,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e9f23526809cb37c",
+        "221afabe1129c8ca"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_225_read_u64",
+       "file": "tokio/src/io/util/async_read_ext.rs",
+       "line": 638,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3c184194112397b8",
+        "74b6ce266ab109d3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_249_unix_listener_shutdown_after_accept",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 374,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c5a3b51d5a18a1e7",
+        "4c551790269e0a06"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_256_client_server",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1119,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e9f23526809cb37c",
+        "0cb30269eec58bde"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_284_TLData",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1401,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e9f23526809cb37c",
+        "f903f3a3aa25bb53"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "b>a": 1,
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "impl_43_Never",
+       "file": "tokio/tests/rt_threaded.rs",
+       "line": 242,
+       "character": 16,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "48de8611150e2d1e"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_251_WakeReceiverOnDrop",
+       "file": "tokio/src/sync/mpsc/bounded.rs",
+       "line": 1286,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e0ad4b334203e129",
+        "dc8957c8f278f29f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "references": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "refs_295_shutdown_timeout_max",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1075,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "989c73d467e1758d",
+        "b89f32951d9a1f40"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "hover_240_outstanding_tasks_dropped",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 335,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "49838f04077a1ec3",
+        "29c5b040b0d8370c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 294,
+     "differing": 6,
+     "transitions": {
+      "b>a": 6
+     },
+     "examples": [
+      {
+       "name": "prepare_call_hierarchy_91_spawn_await_chain",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 320,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "6751c7e3eccb1244"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_139_spawn_many_from_task",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 243,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "87099bfb13f09c6c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_186_read_f32_le",
+       "file": "tokio/src/io/util/async_read_ext.rs",
+       "line": 1259,
+       "character": 16,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "0cd3174131fe5448"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_216_io_driver_called_when_under_load",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 656,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "04748a4b9b61cd69"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_223_panic_in_task",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 849,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "d3e6c4c73e91164a"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_247_yield_defers_until_park_inner",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 743,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "cd8ce8161c9bab1f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "a>a": 2
+     },
+     "examples": [
+      {
+       "name": "prepare_type_hierarchy_93_OnDrop",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 954,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "14d213ffc71fde2b",
+        "e38747eab878ceff"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_type_hierarchy_244_TLData",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1401,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "14d213ffc71fde2b",
+        "39b90523b54cd665"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 292,
+     "differing": 8,
+     "transitions": {
+      "c>a": 8
+     },
+     "examples": [
+      {
+       "name": "prepare_rename_69_unix_listener_shutdown_after_accept",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 374,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "da18185a9a47a04e"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_125_socket_from_blocking",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 586,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "0ee9e175ddc433ea"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_207_spawn_blocking_from_blocking",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 549,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "57c5bb91c34244af"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_212_poll",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 919,
+       "character": 16,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "0eb3b6b4aaea9ed7"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_234_sleep_before_shutdown_panics",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 471,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "143db91cef9a2711"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_283_sleep",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 462,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "5d2339445f910894"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_291_spawn_blocking_after_shutdown_fails",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 201,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "a69a1ba5b9e727a5"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_296_Boom",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 853,
+       "character": 16,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "9c7c4b931935f602"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "rename": {
+     "same": 290,
+     "differing": 10,
+     "transitions": {
+      "c>a": 9,
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "rename_9_spawn_from_other_thread_under_load",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 451,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "eb924b87bb03569d"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_88_socket_from_blocking",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 586,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "45c8af95218f2fa4"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_101_write_i16_le",
+       "file": "tokio/src/io/util/async_write_ext.rs",
+       "line": 932,
+       "character": 16,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "ee8716ffbdb803ce"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_129_Never",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 912,
+       "character": 16,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "5f6f25a445c1d5f5"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_144_read_i128_le",
+       "file": "tokio/src/io/util/async_read_ext.rs",
+       "line": 1216,
+       "character": 16,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "615603a0e2e0aaa4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_163_iter",
+       "file": "benches/rt_current_thread.rs",
+       "line": 56,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "745e945dd9f03dfc",
+        "dd098b984e518e82"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_221_wake_by_ref_from_thread_local",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1386,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "a1d41dbd98bfa9ca"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_239_basic_fs",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 140,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "d6ae53998e693b47"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_277_coop",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1205,
+       "character": 8,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "95e84bd4d085dabb"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_278_write_f32",
+       "file": "tokio/src/io/util/async_write_ext.rs",
+       "line": 817,
+       "character": 16,
+       "outcomes": [
+        "c",
+        "a"
+       ],
+       "digests": [
+        null,
+        "72fb55941b7d2b3c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "24ab380",
+   "b": "24ab380-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "93c2b28",
+   "b": "24ab380-2",
+   "same": 15262,
+   "differing": 38,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 292,
+     "differing": 8,
+     "transitions": {
+      "a>a": 8
+     },
+     "examples": [
+      {
+       "name": "decl_33_write_u64_le",
+       "file": "tokio/src/io/util/async_write_ext.rs",
+       "line": 1046,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0585be16acb0feb6",
+        "3c184194112397b8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_115_spawn_many_from_block_on",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 191,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "abea88e307f41b7f",
+        "e9f23526809cb37c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_177_spawn_from_blocking",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 533,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "292f9092cf221af0",
+        "e9f23526809cb37c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_181_Never",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 912,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "221afabe1129c8ca",
+        "e9f23526809cb37c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_225_read_u64",
+       "file": "tokio/src/io/util/async_read_ext.rs",
+       "line": 638,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "74b6ce266ab109d3",
+        "3c184194112397b8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_249_unix_listener_shutdown_after_accept",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 374,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4c551790269e0a06",
+        "c5a3b51d5a18a1e7"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_256_client_server",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1119,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0cb30269eec58bde",
+        "e9f23526809cb37c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "decl_284_TLData",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1401,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f903f3a3aa25bb53",
+        "e9f23526809cb37c"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "a>b": 1,
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "impl_43_Never",
+       "file": "tokio/tests/rt_threaded.rs",
+       "line": 242,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "48de8611150e2d1e",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_251_WakeReceiverOnDrop",
+       "file": "tokio/src/sync/mpsc/bounded.rs",
+       "line": 1286,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dc8957c8f278f29f",
+        "e0ad4b334203e129"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "references": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "refs_295_shutdown_timeout_max",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1075,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b89f32951d9a1f40",
+        "989c73d467e1758d"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "hover_240_outstanding_tasks_dropped",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 335,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "29c5b040b0d8370c",
+        "49838f04077a1ec3"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 294,
+     "differing": 6,
+     "transitions": {
+      "a>b": 6
+     },
+     "examples": [
+      {
+       "name": "prepare_call_hierarchy_91_spawn_await_chain",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 320,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "6751c7e3eccb1244",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_139_spawn_many_from_task",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 243,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "87099bfb13f09c6c",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_186_read_f32_le",
+       "file": "tokio/src/io/util/async_read_ext.rs",
+       "line": 1259,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "0cd3174131fe5448",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_216_io_driver_called_when_under_load",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 656,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "04748a4b9b61cd69",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_223_panic_in_task",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 849,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "d3e6c4c73e91164a",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_call_hierarchy_247_yield_defers_until_park_inner",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 743,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "cd8ce8161c9bab1f",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 298,
+     "differing": 2,
+     "transitions": {
+      "a>a": 2
+     },
+     "examples": [
+      {
+       "name": "prepare_type_hierarchy_93_OnDrop",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 954,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e38747eab878ceff",
+        "14d213ffc71fde2b"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_type_hierarchy_244_TLData",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1401,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "39b90523b54cd665",
+        "14d213ffc71fde2b"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 292,
+     "differing": 8,
+     "transitions": {
+      "a>c": 8
+     },
+     "examples": [
+      {
+       "name": "prepare_rename_69_unix_listener_shutdown_after_accept",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 374,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "da18185a9a47a04e",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_125_socket_from_blocking",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 586,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "0ee9e175ddc433ea",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_207_spawn_blocking_from_blocking",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 549,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "57c5bb91c34244af",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_212_poll",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 919,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "0eb3b6b4aaea9ed7",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_234_sleep_before_shutdown_panics",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 471,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "143db91cef9a2711",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_283_sleep",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 462,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "5d2339445f910894",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_291_spawn_blocking_after_shutdown_fails",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 201,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "a69a1ba5b9e727a5",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "prepare_rename_296_Boom",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 853,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "9c7c4b931935f602",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "rename": {
+     "same": 290,
+     "differing": 10,
+     "transitions": {
+      "a>c": 9,
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "rename_9_spawn_from_other_thread_under_load",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 451,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "eb924b87bb03569d",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_88_socket_from_blocking",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 586,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "45c8af95218f2fa4",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_101_write_i16_le",
+       "file": "tokio/src/io/util/async_write_ext.rs",
+       "line": 932,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "ee8716ffbdb803ce",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_129_Never",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 912,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "5f6f25a445c1d5f5",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_144_read_i128_le",
+       "file": "tokio/src/io/util/async_read_ext.rs",
+       "line": 1216,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "615603a0e2e0aaa4",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_163_iter",
+       "file": "benches/rt_current_thread.rs",
+       "line": 56,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dd098b984e518e82",
+        "745e945dd9f03dfc"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_221_wake_by_ref_from_thread_local",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1386,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "a1d41dbd98bfa9ca",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_239_basic_fs",
+       "file": "tokio/tests/rt_handle_block_on.rs",
+       "line": 140,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "d6ae53998e693b47",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_277_coop",
+       "file": "tokio/tests/rt_common.rs",
+       "line": 1205,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "95e84bd4d085dabb",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_278_write_f32",
+       "file": "tokio/src/io/util/async_write_ext.rs",
+       "line": 817,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "c"
+       ],
+       "digests": [
+        "72fb55941b7d2b3c",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_tokio_booster.json",
+  "repo_commit": "b2636752450484955e7ad334bac678424d51bc4a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_33_write_u64_le",
+   "file": "tokio/src/io/util/async_write_ext.rs",
+   "line": 1046,
+   "character": 16,
+   "symbol": "write_u64_le",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "3c184194112397b8",
+     "us": 355.2,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "0585be16acb0feb6",
+     "us": 390.2,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "3c184194112397b8",
+     "us": 359.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_115_spawn_many_from_block_on",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 191,
+   "character": 8,
+   "symbol": "spawn_many_from_block_on",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 527.0,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "abea88e307f41b7f",
+     "us": 541.2,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 509.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_177_spawn_from_blocking",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 533,
+   "character": 8,
+   "symbol": "spawn_from_blocking",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 497.4,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "292f9092cf221af0",
+     "us": 532.8,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 495.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_181_Never",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 912,
+   "character": 16,
+   "symbol": "Never",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 445.9,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "221afabe1129c8ca",
+     "us": 478.7,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 447.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_225_read_u64",
+   "file": "tokio/src/io/util/async_read_ext.rs",
+   "line": 638,
+   "character": 16,
+   "symbol": "read_u64",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "3c184194112397b8",
+     "us": 365.6,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "74b6ce266ab109d3",
+     "us": 391.5,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "3c184194112397b8",
+     "us": 369.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_249_unix_listener_shutdown_after_accept",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 374,
+   "character": 8,
+   "symbol": "unix_listener_shutdown_after_accept",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "c5a3b51d5a18a1e7",
+     "us": 677.6,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "4c551790269e0a06",
+     "us": 489.1,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "c5a3b51d5a18a1e7",
+     "us": 674.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_256_client_server",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1119,
+   "character": 14,
+   "symbol": "client_server",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 466.5,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "0cb30269eec58bde",
+     "us": 515.5,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 480.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "declaration",
+   "rpc_method": "textDocument/declaration",
+   "name": "decl_284_TLData",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1401,
+   "character": 16,
+   "symbol": "TLData",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 517.2,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "f903f3a3aa25bb53",
+     "us": 498.9,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "e9f23526809cb37c",
+     "us": 473.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_43_Never",
+   "file": "tokio/tests/rt_threaded.rs",
+   "line": 242,
+   "character": 16,
+   "symbol": "Never",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 9279.9,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "48de8611150e2d1e",
+     "us": 2346.2,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 9080.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_251_WakeReceiverOnDrop",
+   "file": "tokio/src/sync/mpsc/bounded.rs",
+   "line": 1286,
+   "character": 16,
+   "symbol": "WakeReceiverOnDrop",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "e0ad4b334203e129",
+     "us": 34889.7,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "dc8957c8f278f29f",
+     "us": 2762.2,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "e0ad4b334203e129",
+     "us": 25371.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_295_shutdown_timeout_max",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1075,
+   "character": 8,
+   "symbol": "shutdown_timeout_max",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "989c73d467e1758d",
+     "us": 7856.3,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "b89f32951d9a1f40",
+     "us": 1006.3,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "989c73d467e1758d",
+     "us": 7698.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_240_outstanding_tasks_dropped",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 335,
+   "character": 8,
+   "symbol": "outstanding_tasks_dropped",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "49838f04077a1ec3",
+     "us": 1076.7,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "29c5b040b0d8370c",
+     "us": 1119.0,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "49838f04077a1ec3",
+     "us": 1082.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_91_spawn_await_chain",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 320,
+   "character": 8,
+   "symbol": "spawn_await_chain",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 512.5,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "6751c7e3eccb1244",
+     "us": 548.7,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 532.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_139_spawn_many_from_task",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 243,
+   "character": 8,
+   "symbol": "spawn_many_from_task",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 461.4,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "87099bfb13f09c6c",
+     "us": 545.0,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 451.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_186_read_f32_le",
+   "file": "tokio/src/io/util/async_read_ext.rs",
+   "line": 1259,
+   "character": 16,
+   "symbol": "read_f32_le",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 373.6,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "0cd3174131fe5448",
+     "us": 393.9,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 385.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_216_io_driver_called_when_under_load",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 656,
+   "character": 8,
+   "symbol": "io_driver_called_when_under_load",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 520.7,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "04748a4b9b61cd69",
+     "us": 490.4,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 519.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_223_panic_in_task",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 849,
+   "character": 8,
+   "symbol": "panic_in_task",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 481.2,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "d3e6c4c73e91164a",
+     "us": 478.2,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 481.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "rpc_method": "textDocument/prepareCallHierarchy",
+   "name": "prepare_call_hierarchy_247_yield_defers_until_park_inner",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 743,
+   "character": 8,
+   "symbol": "yield_defers_until_park_inner",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 457.3,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "cd8ce8161c9bab1f",
+     "us": 489.4,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 473.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "rpc_method": "textDocument/prepareTypeHierarchy",
+   "name": "prepare_type_hierarchy_93_OnDrop",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 954,
+   "character": 16,
+   "symbol": "OnDrop",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "14d213ffc71fde2b",
+     "us": 537.9,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "e38747eab878ceff",
+     "us": 547.9,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "14d213ffc71fde2b",
+     "us": 583.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "rpc_method": "textDocument/prepareTypeHierarchy",
+   "name": "prepare_type_hierarchy_244_TLData",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1401,
+   "character": 16,
+   "symbol": "TLData",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "14d213ffc71fde2b",
+     "us": 524.8,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "39b90523b54cd665",
+     "us": 563.8,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "14d213ffc71fde2b",
+     "us": 561.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_69_unix_listener_shutdown_after_accept",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 374,
+   "character": 8,
+   "symbol": "unix_listener_shutdown_after_accept",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 1823.3,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "da18185a9a47a04e",
+     "us": 1063.2,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2369.2,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_125_socket_from_blocking",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 586,
+   "character": 8,
+   "symbol": "socket_from_blocking",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 4054.9,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "0ee9e175ddc433ea",
+     "us": 1108.5,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3972.8,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_207_spawn_blocking_from_blocking",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 549,
+   "character": 8,
+   "symbol": "spawn_blocking_from_blocking",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3496.9,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "57c5bb91c34244af",
+     "us": 1092.9,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3458.7,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_212_poll",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 919,
+   "character": 16,
+   "symbol": "poll",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3426.3,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "0eb3b6b4aaea9ed7",
+     "us": 1050.9,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3433.5,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_234_sleep_before_shutdown_panics",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 471,
+   "character": 8,
+   "symbol": "sleep_before_shutdown_panics",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 1731.7,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "143db91cef9a2711",
+     "us": 1033.7,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 1818.2,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_283_sleep",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 462,
+   "character": 8,
+   "symbol": "sleep",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 1725.8,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "5d2339445f910894",
+     "us": 1003.7,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 1831.7,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_291_spawn_blocking_after_shutdown_fails",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 201,
+   "character": 8,
+   "symbol": "spawn_blocking_after_shutdown_fails",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 1734.2,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "a69a1ba5b9e727a5",
+     "us": 1012.0,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 1889.2,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "rpc_method": "textDocument/prepareRename",
+   "name": "prepare_rename_296_Boom",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 853,
+   "character": 16,
+   "symbol": "Boom",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3578.2,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "9c7c4b931935f602",
+     "us": 1207.0,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3868.0,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_9_spawn_from_other_thread_under_load",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 451,
+   "character": 8,
+   "symbol": "spawn_from_other_thread_under_load",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3429.7,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "eb924b87bb03569d",
+     "us": 1311.4,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3431.8,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_88_socket_from_blocking",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 586,
+   "character": 8,
+   "symbol": "socket_from_blocking",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3684.6,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "45c8af95218f2fa4",
+     "us": 1282.1,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3462.6,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_101_write_i16_le",
+   "file": "tokio/src/io/util/async_write_ext.rs",
+   "line": 932,
+   "character": 16,
+   "symbol": "write_i16_le",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2936.4,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "ee8716ffbdb803ce",
+     "us": 2403.6,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3030.0,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_129_Never",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 912,
+   "character": 16,
+   "symbol": "Never",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3464.9,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "5f6f25a445c1d5f5",
+     "us": 1315.5,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3659.5,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_144_read_i128_le",
+   "file": "tokio/src/io/util/async_read_ext.rs",
+   "line": 1216,
+   "character": 16,
+   "symbol": "read_i128_le",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2715.8,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "615603a0e2e0aaa4",
+     "us": 2319.5,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2931.0,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_163_iter",
+   "file": "benches/rt_current_thread.rs",
+   "line": 56,
+   "character": 12,
+   "symbol": "iter",
+   "target_kind": "bench",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "a",
+     "digest": "745e945dd9f03dfc",
+     "us": 1034.2,
+     "error": null
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "dd098b984e518e82",
+     "us": 857.1,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "a",
+     "digest": "745e945dd9f03dfc",
+     "us": 1048.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_221_wake_by_ref_from_thread_local",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1386,
+   "character": 8,
+   "symbol": "wake_by_ref_from_thread_local",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3631.3,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "a1d41dbd98bfa9ca",
+     "us": 1307.9,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3748.8,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_239_basic_fs",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 140,
+   "character": 8,
+   "symbol": "basic_fs",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 1740.1,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "d6ae53998e693b47",
+     "us": 1171.6,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 1820.8,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_277_coop",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1205,
+   "character": 8,
+   "symbol": "coop",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3556.3,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "95e84bd4d085dabb",
+     "us": 1268.4,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 3710.5,
+     "error": "-32803"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_278_write_f32",
+   "file": "tokio/src/io/util/async_write_ext.rs",
+   "line": 817,
+   "character": 16,
+   "symbol": "write_f32",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "24ab380": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2788.6,
+     "error": "-32803"
+    },
+    "93c2b28": {
+     "outcome": "a",
+     "digest": "72fb55941b7d2b3c",
+     "us": 2272.3,
+     "error": null
+    },
+    "24ab380-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2908.8,
+     "error": "-32803"
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 38,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_24ab380_vs_93c2b28_ram9_tokio.json",
+  "sha256": "de04b31d346d455a5daca2875e46b6d4cfddb7fcc7899571e54a3f9f0b839612"
+ }
+}

@@ -1,0 +1,2771 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_24ab380_vs_93c2b28_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "24ab380",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "93c2b28",
+   "commit": "93c2b28a7cec5c77599a65c5ce8ebf14c798d71e",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "24ab380-2",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "tokio.ws.tsv",
+  "tokio.deps.tsv"
+ ],
+ "previous": "tokio.classes.json",
+ "enclosing_references": 247583,
+ "rows_differing": 38,
+ "summary": {
+  "d1_item_at_cursor_answers_instead_of_the_enclosing_reference": 38
+ },
+ "rows_by_method": {
+  "declaration": 8,
+  "hover": 1,
+  "implementation": 2,
+  "prepare_call_hierarchy": 6,
+  "prepare_rename": 8,
+  "prepare_type_hierarchy": 2,
+  "references": 1,
+  "rename": 10
+ },
+ "rows": [
+  {
+   "method": "declaration",
+   "file": "tokio/src/io/util/async_write_ext.rs",
+   "line": 1046,
+   "character": 16,
+   "symbol": "write_u64_le",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      399,
+      9,
+      1241,
+      10
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Unpin",
+     "n",
+     "new",
+     "self"
+    ],
+    "definition_before": {
+     "kind": "Trait",
+     "path": "core::marker::Unpin",
+     "start_line": 1014,
+     "start_col": 16
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "io::util::async_write_ext::AsyncWriteExt::write_u64_le",
+     "start_line": 1046,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "external:src/marker.rs",
+      [
+       1014,
+       16,
+       1014,
+       21
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/src/io/util/async_write_ext.rs",
+      [
+       1046,
+       16,
+       1046,
+       28
+      ]
+     ]
+    ],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 191,
+   "character": 8,
+   "symbol": "spawn_many_from_block_on",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::spawn_many_from_block_on",
+     "start_line": 191,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "external:src/sync.rs",
+      [
+       269,
+       12,
+       269,
+       15
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       191,
+       8,
+       191,
+       32
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 533,
+   "character": 8,
+   "symbol": "spawn_from_blocking",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::spawn_from_blocking",
+     "start_line": 533,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "external:src/sync.rs",
+      [
+       269,
+       12,
+       269,
+       15
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       533,
+       8,
+       533,
+       27
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 912,
+   "character": 16,
+   "symbol": "Never",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "current_thread_scheduler::eagerly_drops_futures_on_shutdown::Never",
+     "start_line": 912,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "external:src/sync.rs",
+      [
+       269,
+       12,
+       269,
+       15
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       912,
+       16,
+       912,
+       21
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/src/io/util/async_read_ext.rs",
+   "line": 638,
+   "character": 16,
+   "symbol": "read_u64",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      331,
+      9,
+      1305,
+      10
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Unpin",
+     "new",
+     "self"
+    ],
+    "definition_before": {
+     "kind": "Trait",
+     "path": "core::marker::Unpin",
+     "start_line": 1014,
+     "start_col": 16
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "io::util::async_read_ext::AsyncReadExt::read_u64",
+     "start_line": 638,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "external:src/marker.rs",
+      [
+       1014,
+       16,
+       1014,
+       21
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/src/io/util/async_read_ext.rs",
+      [
+       638,
+       16,
+       638,
+       24
+      ]
+     ]
+    ],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 374,
+   "character": 8,
+   "symbol": "unix_listener_shutdown_after_accept",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      135,
+      1,
+      431,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::unix_listener_shutdown_after_accept",
+     "start_line": 374,
+     "start_col": 8
+    },
+    "before_kind": "crate_root_module",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "ws:tokio/tests/rt_handle_block_on.rs",
+      [
+       1,
+       1,
+       547,
+       2
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/tests/rt_handle_block_on.rs",
+      [
+       374,
+       8,
+       374,
+       43
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s2_definition_answered_through_self_containing_reference"
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1119,
+   "character": 14,
+   "symbol": "client_server",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::client_server",
+     "start_line": 1119,
+     "start_col": 14
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "external:src/sync.rs",
+      [
+       269,
+       12,
+       269,
+       15
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       1119,
+       14,
+       1119,
+       27
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "declaration",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1401,
+   "character": 16,
+   "symbol": "TLData",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "current_thread_scheduler::wake_from_thread_local::TLData",
+     "start_line": 1401,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "external:src/sync.rs",
+      [
+       269,
+       12,
+       269,
+       15
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       1401,
+       16,
+       1401,
+       22
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/tests/rt_threaded.rs",
+   "line": 242,
+   "character": 16,
+   "symbol": "Never",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      237,
+      5,
+      288,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "None",
+     "Some",
+     "into_iter",
+     "next"
+    ],
+    "definition_before": {
+     "kind": "AssocFn",
+     "path": "core::iter::traits::collect::IntoIterator::into_iter",
+     "start_line": 312,
+     "start_col": 8
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "drop_threadpool_drops_futures::Never",
+     "start_line": 242,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 2,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_threaded.rs",
+      [
+       244,
+       25,
+       244,
+       30
+      ]
+     ],
+     [
+      "ws:tokio/tests/rt_threaded.rs",
+      [
+       252,
+       23,
+       252,
+       28
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/sync/mpsc/bounded.rs",
+   "line": 1286,
+   "character": 16,
+   "symbol": "WakeReceiverOnDrop",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      1272,
+      74,
+      1311,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "ResumeTy"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "core::future::ResumeTy",
+     "start_line": 51,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "sync::mpsc::bounded::Sender<T>::reserve_inner::{closure#0}::WakeReceiverOnDrop",
+     "start_line": 1286,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 25,
+    "added_count": 1,
+    "removed": [
+     [
+      "ws:tokio/src/fs/canonicalize.rs",
+      [
+       46,
+       74,
+       49,
+       2
+      ]
+     ],
+     [
+      "ws:tokio/src/fs/copy.rs",
+      [
+       20,
+       96,
+       24,
+       2
+      ]
+     ],
+     [
+      "ws:tokio/src/fs/create_dir.rs",
+      [
+       47,
+       67,
+       50,
+       2
+      ]
+     ],
+     [
+      "ws:tokio/src/fs/create_dir_all.rs",
+      [
+       51,
+       71,
+       54,
+       2
+      ]
+     ],
+     [
+      "ws:tokio/src/fs/dir_builder.rs",
+      [
+       91,
+       74,
+       104,
+       6
+      ]
+     ],
+     [
+      "ws:tokio/src/fs/file.rs",
+      [
+       157,
+       67,
+       159,
+       6
+      ]
+     ],
+     [
+      "ws:tokio/src/fs/file.rs",
+      [
+       192,
+       69,
+       199,
+       6
+      ]
+     ],
+     [
+      "ws:tokio/src/fs/hard_link.rs",
+      [
+       39,
+       94,
+       44,
+       2
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/src/sync/mpsc/bounded.rs",
+      [
+       1290,
+       26,
+       1290,
+       44
+      ]
+     ]
+    ],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1075,
+   "character": 8,
+   "symbol": "shutdown_timeout_max",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::shutdown_timeout_max",
+     "start_line": 1075,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 692,
+    "added_count": 1,
+    "removed": [
+     [
+      "ws:benches/net_accept.rs",
+      [
+       24,
+       16,
+       24,
+       19
+      ]
+     ],
+     [
+      "ws:benches/net_accept.rs",
+      [
+       88,
+       11,
+       88,
+       14
+      ]
+     ],
+     [
+      "ws:benches/net_accept.rs",
+      [
+       91,
+       20,
+       91,
+       23
+      ]
+     ],
+     [
+      "ws:benches/net_accept.rs",
+      [
+       113,
+       32,
+       113,
+       35
+      ]
+     ],
+     [
+      "ws:benches/net_accept.rs",
+      [
+       120,
+       34,
+       120,
+       37
+      ]
+     ],
+     [
+      "ws:benches/net_accept.rs",
+      [
+       195,
+       11,
+       195,
+       14
+      ]
+     ],
+     [
+      "ws:benches/net_accept.rs",
+      [
+       196,
+       14,
+       196,
+       17
+      ]
+     ],
+     [
+      "ws:benches/net_accept.rs",
+      [
+       221,
+       20,
+       221,
+       23
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       1075,
+       8,
+       1075,
+       28
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "hover",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 335,
+   "character": 8,
+   "symbol": "outstanding_tasks_dropped",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::outstanding_tasks_dropped",
+     "start_line": 335,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 0,
+    "removed": [],
+    "added": [],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 320,
+   "character": 8,
+   "symbol": "spawn_await_chain",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::spawn_await_chain",
+     "start_line": 320,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       320,
+       8,
+       320,
+       25
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 243,
+   "character": 8,
+   "symbol": "spawn_many_from_task",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::spawn_many_from_task",
+     "start_line": 243,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       243,
+       8,
+       243,
+       28
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "tokio/src/io/util/async_read_ext.rs",
+   "line": 1259,
+   "character": 16,
+   "symbol": "read_f32_le",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      331,
+      9,
+      1305,
+      10
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Unpin",
+     "new",
+     "self"
+    ],
+    "definition_before": {
+     "kind": "Trait",
+     "path": "core::marker::Unpin",
+     "start_line": 1014,
+     "start_col": 16
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "io::util::async_read_ext::AsyncReadExt::read_f32_le",
+     "start_line": 1259,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/src/io/util/async_read_ext.rs",
+      [
+       1259,
+       16,
+       1259,
+       27
+      ]
+     ]
+    ],
+    "in_test_file": false,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 656,
+   "character": 8,
+   "symbol": "io_driver_called_when_under_load",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::io_driver_called_when_under_load",
+     "start_line": 656,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       656,
+       8,
+       656,
+       40
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 849,
+   "character": 8,
+   "symbol": "panic_in_task",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::panic_in_task",
+     "start_line": 849,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       849,
+       8,
+       849,
+       21
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "prepare_call_hierarchy",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 743,
+   "character": 8,
+   "symbol": "yield_defers_until_park_inner",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::yield_defers_until_park_inner",
+     "start_line": 743,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       743,
+       8,
+       743,
+       37
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 954,
+   "character": 16,
+   "symbol": "OnDrop",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "current_thread_scheduler::wake_while_rt_is_dropping::OnDrop",
+     "start_line": 954,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "external:src/sync.rs",
+      [
+       269,
+       12,
+       269,
+       15
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       954,
+       16,
+       954,
+       22
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "prepare_type_hierarchy",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1401,
+   "character": 16,
+   "symbol": "TLData",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "current_thread_scheduler::wake_from_thread_local::TLData",
+     "start_line": 1401,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 1,
+    "removed": [
+     [
+      "external:src/sync.rs",
+      [
+       269,
+       12,
+       269,
+       15
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       1401,
+       16,
+       1401,
+       22
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 374,
+   "character": 8,
+   "symbol": "unix_listener_shutdown_after_accept",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      135,
+      1,
+      431,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::unix_listener_shutdown_after_accept",
+     "start_line": 374,
+     "start_col": 8
+    },
+    "before_kind": "crate_root_module",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      null,
+      [
+       374,
+       8,
+       374,
+       43
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot prepare rename: no identifier found at this position"
+    },
+    "error_after": null,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 586,
+   "character": 8,
+   "symbol": "socket_from_blocking",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::socket_from_blocking",
+     "start_line": 586,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      null,
+      [
+       586,
+       8,
+       586,
+       28
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Arc'"
+    },
+    "error_after": null,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 549,
+   "character": 8,
+   "symbol": "spawn_blocking_from_blocking",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::spawn_blocking_from_blocking",
+     "start_line": 549,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      null,
+      [
+       549,
+       8,
+       549,
+       36
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Arc'"
+    },
+    "error_after": null,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 919,
+   "character": 16,
+   "symbol": "poll",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<current_thread_scheduler::eagerly_drops_futures_on_shutdown::Never as core::future::future::Future>::poll",
+     "start_line": 919,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      null,
+      [
+       919,
+       16,
+       919,
+       20
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Arc'"
+    },
+    "error_after": null,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 471,
+   "character": 8,
+   "symbol": "sleep_before_shutdown_panics",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      434,
+      1,
+      492,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "threaded_scheduler_4_threads_only::sleep_before_shutdown_panics",
+     "start_line": 471,
+     "start_col": 8
+    },
+    "before_kind": "crate_root_module",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      null,
+      [
+       471,
+       8,
+       471,
+       36
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot prepare rename: no identifier found at this position"
+    },
+    "error_after": null,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 462,
+   "character": 8,
+   "symbol": "sleep",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      434,
+      1,
+      492,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "threaded_scheduler_4_threads_only::sleep",
+     "start_line": 462,
+     "start_col": 8
+    },
+    "before_kind": "crate_root_module",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      null,
+      [
+       462,
+       8,
+       462,
+       13
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot prepare rename: no identifier found at this position"
+    },
+    "error_after": null,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 201,
+   "character": 8,
+   "symbol": "spawn_blocking_after_shutdown_fails",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      135,
+      1,
+      431,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::spawn_blocking_after_shutdown_fails",
+     "start_line": 201,
+     "start_col": 8
+    },
+    "before_kind": "crate_root_module",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      null,
+      [
+       201,
+       8,
+       201,
+       43
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot prepare rename: no identifier found at this position"
+    },
+    "error_after": null,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "prepare_rename",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 853,
+   "character": 16,
+   "symbol": "Boom",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "current_thread_scheduler::panic_in_task::Boom",
+     "start_line": 853,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      null,
+      [
+       853,
+       16,
+       853,
+       20
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Arc'"
+    },
+    "error_after": null,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 451,
+   "character": 8,
+   "symbol": "spawn_from_other_thread_under_load",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::spawn_from_other_thread_under_load",
+     "start_line": 451,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       451,
+       8,
+       451,
+       42
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Arc'"
+    },
+    "error_after": null,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 586,
+   "character": 8,
+   "symbol": "socket_from_blocking",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::socket_from_blocking",
+     "start_line": 586,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       586,
+       8,
+       586,
+       28
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Arc'"
+    },
+    "error_after": null,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio/src/io/util/async_write_ext.rs",
+   "line": 932,
+   "character": 16,
+   "symbol": "write_i16_le",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      399,
+      9,
+      1241,
+      10
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Unpin",
+     "n",
+     "new",
+     "self"
+    ],
+    "definition_before": {
+     "kind": "Trait",
+     "path": "core::marker::Unpin",
+     "start_line": 1014,
+     "start_col": 16
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "io::util::async_write_ext::AsyncWriteExt::write_i16_le",
+     "start_line": 932,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 3,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/src/io/util/async_write_ext.rs",
+      [
+       932,
+       16,
+       932,
+       28
+      ]
+     ],
+     [
+      "ws:tokio/tests/async_send_sync.rs",
+      [
+       704,
+       31,
+       704,
+       43
+      ]
+     ],
+     [
+      "ws:tokio/tests/io_write_int.rs",
+      [
+       84,
+       17,
+       84,
+       29
+      ]
+     ]
+    ],
+    "in_test_file": false,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Unpin'"
+    },
+    "error_after": null,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 912,
+   "character": 16,
+   "symbol": "Never",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Struct",
+     "path": "current_thread_scheduler::eagerly_drops_futures_on_shutdown::Never",
+     "start_line": 912,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 4,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       912,
+       16,
+       912,
+       21
+      ]
+     ],
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       916,
+       25,
+       916,
+       30
+      ]
+     ],
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       924,
+       23,
+       924,
+       28
+      ]
+     ],
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       939,
+       17,
+       939,
+       22
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Arc'"
+    },
+    "error_after": null,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio/src/io/util/async_read_ext.rs",
+   "line": 1216,
+   "character": 16,
+   "symbol": "read_i128_le",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      331,
+      9,
+      1305,
+      10
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Unpin",
+     "new",
+     "self"
+    ],
+    "definition_before": {
+     "kind": "Trait",
+     "path": "core::marker::Unpin",
+     "start_line": 1014,
+     "start_col": 16
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "io::util::async_read_ext::AsyncReadExt::read_i128_le",
+     "start_line": 1216,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 3,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/src/io/util/async_read_ext.rs",
+      [
+       1216,
+       16,
+       1216,
+       28
+      ]
+     ],
+     [
+      "ws:tokio/tests/async_send_sync.rs",
+      [
+       642,
+       43,
+       642,
+       55
+      ]
+     ],
+     [
+      "ws:tokio/tests/io_read_int.rs",
+      [
+       77,
+       18,
+       77,
+       30
+      ]
+     ]
+    ],
+    "in_test_file": false,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Unpin'"
+    },
+    "error_after": null,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "rename",
+   "file": "benches/rt_current_thread.rs",
+   "line": 56,
+   "character": 12,
+   "symbol": "iter",
+   "target_kind": "bench",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      55,
+      14,
+      61,
+      6
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "ResumeTy"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "core::future::ResumeTy",
+     "start_line": 51,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "rt_curr_spawn_many_remote_busy::{closure#0}::iter",
+     "start_line": 56,
+     "start_col": 12
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 1,
+    "added_count": 3,
+    "removed": [
+     [
+      "sysroot:library/core/src/future/mod.rs",
+      [
+       51,
+       12,
+       51,
+       20
+      ]
+     ]
+    ],
+    "added": [
+     [
+      "ws:benches/rt_current_thread.rs",
+      [
+       56,
+       12,
+       56,
+       16
+      ]
+     ],
+     [
+      "ws:benches/rt_current_thread.rs",
+      [
+       57,
+       34,
+       57,
+       38
+      ]
+     ],
+     [
+      "ws:benches/rt_current_thread.rs",
+      [
+       60,
+       9,
+       60,
+       13
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "previous_class": null
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1386,
+   "character": 8,
+   "symbol": "wake_by_ref_from_thread_local",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::wake_by_ref_from_thread_local",
+     "start_line": 1386,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       1386,
+       8,
+       1386,
+       37
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Arc'"
+    },
+    "error_after": null,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio/tests/rt_handle_block_on.rs",
+   "line": 140,
+   "character": 8,
+   "symbol": "basic_fs",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      135,
+      1,
+      431,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Mod",
+     "path": "",
+     "start_line": 1,
+     "start_col": 1
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::basic_fs",
+     "start_line": 140,
+     "start_col": 8
+    },
+    "before_kind": "crate_root_module",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_handle_block_on.rs",
+      [
+       140,
+       8,
+       140,
+       16
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "No renameable symbol found at this position"
+    },
+    "error_after": null,
+    "previous_class": "s4_position_on_no_name_answered_through_enclosing_reference"
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio/tests/rt_common.rs",
+   "line": 1205,
+   "character": 8,
+   "symbol": "coop",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      66,
+      1,
+      1445,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Arc",
+     "Builder",
+     "Runtime",
+     "build",
+     "enable_all",
+     "into",
+     "new_current_thread",
+     "new_multi_thread",
+     "unwrap",
+     "worker_threads"
+    ],
+    "definition_before": {
+     "kind": "Struct",
+     "path": "alloc::sync::Arc",
+     "start_line": 269,
+     "start_col": 12
+    },
+    "definition_after": {
+     "kind": "Fn",
+     "path": "current_thread_scheduler::coop",
+     "start_line": 1205,
+     "start_col": 8
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/tests/rt_common.rs",
+      [
+       1205,
+       8,
+       1205,
+       12
+      ]
+     ]
+    ],
+    "in_test_file": true,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Arc'"
+    },
+    "error_after": null,
+    "previous_class": "s6_innermost_reference_is_now_a_macro_invocation_span"
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio/src/io/util/async_write_ext.rs",
+   "line": 817,
+   "character": 16,
+   "symbol": "write_f32",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      399,
+      9,
+      1241,
+      10
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Unpin",
+     "n",
+     "new",
+     "self"
+    ],
+    "definition_before": {
+     "kind": "Trait",
+     "path": "core::marker::Unpin",
+     "start_line": 1014,
+     "start_col": 16
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "io::util::async_write_ext::AsyncWriteExt::write_f32",
+     "start_line": 817,
+     "start_col": 16
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 3,
+    "removed": [],
+    "added": [
+     [
+      "ws:tokio/src/io/util/async_write_ext.rs",
+      [
+       817,
+       16,
+       817,
+       25
+      ]
+     ],
+     [
+      "ws:tokio/tests/async_send_sync.rs",
+      [
+       695,
+       31,
+       695,
+       40
+      ]
+     ],
+     [
+      "ws:tokio/tests/io_write_int.rs",
+      [
+       95,
+       14,
+       95,
+       23
+      ]
+     ]
+    ],
+    "in_test_file": false,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Unpin'"
+    },
+    "error_after": null,
+    "previous_class": null
+   }
+  }
+ ]
+}

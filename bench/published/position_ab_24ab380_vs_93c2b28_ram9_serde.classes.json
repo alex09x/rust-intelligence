@@ -1,0 +1,35 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_24ab380_vs_93c2b28_ram9_serde.json",
+ "servers": [
+  {
+   "name": "24ab380",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "93c2b28",
+   "commit": "93c2b28a7cec5c77599a65c5ce8ebf14c798d71e",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "24ab380-2",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "serde.ws.tsv",
+  "serde.deps.tsv"
+ ],
+ "previous": "serde.classes.json",
+ "enclosing_references": 75161,
+ "rows_differing": 0,
+ "summary": {},
+ "rows_by_method": {},
+ "rows": []
+}

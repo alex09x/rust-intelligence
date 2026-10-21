@@ -1,0 +1,128 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_24ab380_vs_93c2b28_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "24ab380",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "93c2b28",
+   "commit": "93c2b28a7cec5c77599a65c5ce8ebf14c798d71e",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "24ab380-2",
+   "commit": "24ab380d7f32349810967a4259fbb36716d8c2c0",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "census": [
+  "bevy.ws.tsv",
+  "bevy.deps.tsv"
+ ],
+ "previous": "bevy.classes.json",
+ "enclosing_references": 1207368,
+ "rows_differing": 1,
+ "summary": {
+  "d1_item_at_cursor_answers_instead_of_the_enclosing_reference": 1
+ },
+ "rows_by_method": {
+  "prepare_rename": 1
+ },
+ "rows": [
+  {
+   "method": "prepare_rename",
+   "file": "crates/bevy_ecs/src/schedule/set.rs",
+   "line": 163,
+   "character": 12,
+   "symbol": "system_type",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "d1_item_at_cursor_answers_instead_of_the_enclosing_reference",
+   "evidence": {
+    "enclosing_spans_at_cursor": [
+     [
+      59,
+      1,
+      171,
+      2
+     ]
+    ],
+    "enclosing_targets_at_cursor": [
+     "Box",
+     "Debug",
+     "DynEq",
+     "DynHash",
+     "Eq",
+     "H",
+     "Hash",
+     "Hasher",
+     "INTERNER",
+     "Internable",
+     "Interned",
+     "Interner",
+     "PartialEq",
+     "Send",
+     "Sized",
+     "Sync",
+     "addr_eq",
+     "cast",
+     "dyn_clone",
+     "dyn_eq",
+     "dyn_hash",
+     "from_ref",
+     "hash",
+     "intern",
+     "leak",
+     "new",
+     "other",
+     "ptr",
+     "self",
+     "state",
+     "type_id"
+    ],
+    "definition_before": {
+     "kind": "Trait",
+     "path": "core::marker::Send",
+     "start_line": 92,
+     "start_col": 23
+    },
+    "definition_after": {
+     "kind": "AssocFn",
+     "path": "<intern::Interned<(dyn schedule::set::SystemSet + 'static)> as schedule::set::SystemSet>::system_type",
+     "start_line": 163,
+     "start_col": 12
+    },
+    "before_kind": "enclosing_target",
+    "removed_count": 0,
+    "added_count": 1,
+    "removed": [],
+    "added": [
+     [
+      null,
+      [
+       163,
+       12,
+       163,
+       23
+      ]
+     ]
+    ],
+    "in_test_file": false,
+    "in_test_module": false,
+    "error_before": {
+     "code": -32803,
+     "message": "Cannot rename external symbol 'Send'"
+    },
+    "error_after": null,
+    "previous_class": null
+   }
+  }
+ ]
+}
