@@ -12,6 +12,7 @@ pub mod call_tests;
 pub mod call_trait_tests;
 pub mod enclosing_shard_tests;
 pub mod impl_table_tests;
+pub mod item_position_tests;
 pub mod scan_tests;
 pub mod type_tests;
 

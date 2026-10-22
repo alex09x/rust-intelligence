@@ -127,83 +127,94 @@ pub fn handle_call_hierarchy_incoming_calls(
         return json!([]);
     };
 
-    let mut ref_paths: Vec<String> = Vec::new();
-
-    if let Some(path) = find_definition_path_in_workspace(ws, &item_file, item_start_line) {
-        ref_paths.push(path.to_string());
-    }
+    // The item is resolved by position: the definition at the start of its selection range (its
+    // name, as prepareCallHierarchy answers it) and the references of that definition within its
+    // compilation unit. The item's path alone is ambiguous: a crate-root item of a test target
+    // (`test`, `main`) shares its path with same-named items of other shards, and references
+    // recorded by sibling units spell the target path differently. A position that resolves to
+    // no function falls back to the path of the function starting on the item's line.
+    let name_pos = if item["selectionRange"]["start"]["line"].is_u64() {
+        &item["selectionRange"]["start"]
+    } else {
+        &item["range"]["start"]
+    };
+    let name_line = name_pos["line"].as_u64().unwrap_or(0) as u32 + 1;
+    let name_col = conv.utf16_col_to_char_col(
+        &item_file,
+        name_line,
+        name_pos["character"].as_u64().unwrap_or(0) as u32,
+    );
+    let refs = match ws.find_references_at(&item_file, name_line, name_col) {
+        Some(loc) if matches!(loc.target_kind, DefKind::Fn | DefKind::AssocFn) => loc.references,
+        _ => find_definition_path_in_workspace(ws, &item_file, item_start_line)
+            .map(|path| ws.find_references(path))
+            .unwrap_or_default(),
+    };
 
     let mut incoming_map: HashMap<String, (Value, Vec<Value>)> = HashMap::new();
     let mut file_cache: HashMap<String, String> = HashMap::new();
 
-    for path in &ref_paths {
-        let refs = ws.find_references(path);
-        for r in refs {
-            let r_path = r.resolved_path();
-            let r_str = r_path.to_str().unwrap_or(r.file);
-            let span = r.span;
+    for r in refs {
+        let r_path = r.resolved_path();
+        let r_str = r_path.to_str().unwrap_or(r.file);
+        let span = r.span;
 
-            let content = file_cache.entry(r_str.to_string()).or_insert_with(|| {
-                if let Some(overlay) = overlay_mgr.get(r_str) {
-                    overlay.text.clone()
-                } else {
-                    std::fs::read_to_string(r_str).unwrap_or_default()
-                }
-            });
-
-            let file_lines: Vec<&str> = content.lines().collect();
-
-            if !is_call_site_in_lines(&file_lines, span.end_line(), span.end_col()) {
-                continue;
+        let content = file_cache.entry(r_str.to_string()).or_insert_with(|| {
+            if let Some(overlay) = overlay_mgr.get(r_str) {
+                overlay.text.clone()
+            } else {
+                std::fs::read_to_string(r_str).unwrap_or_default()
             }
+        });
 
-            let sc = conv.char_col_to_utf16_col(r_str, span.start_line(), span.start_col());
-            let ec = conv.char_col_to_utf16_col(r_str, span.end_line(), span.end_col());
-            let call_range = json!({
-                "start": { "line": span.start_line().saturating_sub(1), "character": sc },
-                "end": { "line": span.end_line().saturating_sub(1), "character": ec }
-            });
+        let file_lines: Vec<&str> = content.lines().collect();
 
-            let caller_def = find_enclosing_function(ws, r_str, span.start_line(), &file_lines);
-
-            let Some((caller, c_body_end)) = caller_def else {
-                continue;
-            };
-
-            let c_path = caller.resolved_path();
-            let c_str = c_path.to_str().unwrap_or(caller.file);
-            let c_uri = path_to_uri(c_str);
-            let c_sc = conv.char_col_to_utf16_col(
-                c_str,
-                caller.span.start_line(),
-                caller.span.start_col(),
-            );
-            let c_ec =
-                conv.char_col_to_utf16_col(c_str, caller.span.end_line(), caller.span.end_col());
-            let c_range = json!({
-                "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
-                "end": { "line": c_body_end.saturating_sub(1), "character": 0 }
-            });
-            let c_sel_range = json!({
-                "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
-                "end": { "line": caller.span.end_line().saturating_sub(1), "character": c_ec }
-            });
-            let caller_item = json!({
-                "name": caller.name,
-                "kind": lsp_symbol_kind(caller.kind),
-                "detail": caller.signature,
-                "uri": c_uri,
-                "range": c_range,
-                "selectionRange": c_sel_range
-            });
-
-            let key = format!("{}:{}:{}", caller.path, c_str, caller.span.start_line());
-            incoming_map
-                .entry(key)
-                .or_insert_with(|| (caller_item, Vec::new()))
-                .1
-                .push(call_range);
+        if !is_call_site_in_lines(&file_lines, span.end_line(), span.end_col()) {
+            continue;
         }
+
+        let sc = conv.char_col_to_utf16_col(r_str, span.start_line(), span.start_col());
+        let ec = conv.char_col_to_utf16_col(r_str, span.end_line(), span.end_col());
+        let call_range = json!({
+            "start": { "line": span.start_line().saturating_sub(1), "character": sc },
+            "end": { "line": span.end_line().saturating_sub(1), "character": ec }
+        });
+
+        let caller_def = find_enclosing_function(ws, r_str, span.start_line(), &file_lines);
+
+        let Some((caller, c_body_end)) = caller_def else {
+            continue;
+        };
+
+        let c_path = caller.resolved_path();
+        let c_str = c_path.to_str().unwrap_or(caller.file);
+        let c_uri = path_to_uri(c_str);
+        let c_sc =
+            conv.char_col_to_utf16_col(c_str, caller.span.start_line(), caller.span.start_col());
+        let c_ec = conv.char_col_to_utf16_col(c_str, caller.span.end_line(), caller.span.end_col());
+        let c_range = json!({
+            "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
+            "end": { "line": c_body_end.saturating_sub(1), "character": 0 }
+        });
+        let c_sel_range = json!({
+            "start": { "line": caller.span.start_line().saturating_sub(1), "character": c_sc },
+            "end": { "line": caller.span.end_line().saturating_sub(1), "character": c_ec }
+        });
+        let caller_item = json!({
+            "name": caller.name,
+            "kind": lsp_symbol_kind(caller.kind),
+            "detail": caller.signature,
+            "uri": c_uri,
+            "range": c_range,
+            "selectionRange": c_sel_range
+        });
+
+        let key = format!("{}:{}:{}", caller.path, c_str, caller.span.start_line());
+        incoming_map
+            .entry(key)
+            .or_insert_with(|| (caller_item, Vec::new()))
+            .1
+            .push(call_range);
     }
 
     let incoming: Vec<Value> = incoming_map
