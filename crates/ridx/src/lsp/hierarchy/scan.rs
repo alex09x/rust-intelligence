@@ -10,7 +10,7 @@
 
 //! Source text scanning helpers for call and type hierarchies.
 
-use ridx_format::{DefKind, WorkspaceIndex, WorkspaceSymbol};
+use ridx_format::{DefEntry, DefKind, WorkspaceIndex, WorkspaceSymbol};
 use std::path::Path;
 
 pub(crate) fn is_call_site_in_lines(lines: &[&str], span_end_line: u32, span_end_col: u32) -> bool {
@@ -167,12 +167,21 @@ pub(crate) fn find_function_body_end_line(lines: &[&str], start_line_1based: u32
     lines.len() as u32
 }
 
+/// The function whose body contains `call_line` of `file`: of every shard indexing the file, the
+/// latest-starting `Fn` or `AssocFn` definition whose body scanned from the text reaches the line,
+/// and across shards the one starting latest; equal start lines keep the shard that comes first in
+/// `reader_indices_for_file`. The lib target of a crate indexes a file without its `#[cfg(test)]`
+/// functions, which exist only in the test target's shard, so a shard without a containing
+/// function does not end the lookup, and a function nested in one the other shard also holds wins
+/// whichever shard sorts first.
 pub(crate) fn find_enclosing_function<'a>(
     ws: &'a WorkspaceIndex,
     file: &str,
     call_line: u32,
     file_lines: &[&str],
 ) -> Option<(WorkspaceSymbol<'a>, u32)> {
+    // (start line, reader index, definition, file id, body end) of the best candidate so far
+    let mut best: Option<(u32, usize, &DefEntry, u32, u32)> = None;
     for reader_idx in ws.reader_indices_for_file(file) {
         let Some(target) = ws.target_file_for_reader(reader_idx, file) else {
             continue;
@@ -181,7 +190,6 @@ pub(crate) fn find_enclosing_function<'a>(
         let Some(fid) = reader.find_file_id(target.as_ref()) else {
             continue;
         };
-        let sroot = ws.source_root_at(reader_idx);
         let mut candidates: Vec<_> = reader
             .definitions()
             .iter()
@@ -195,34 +203,41 @@ pub(crate) fn find_enclosing_function<'a>(
         candidates.sort_by_key(|d| std::cmp::Reverse(d.span.start_line));
 
         for cand in candidates {
+            // Candidates come latest first: one not starting after the best found so far cannot
+            // win, nor can any after it.
+            if best.is_some_and(|(line, ..)| cand.span.start_line <= line) {
+                break;
+            }
             let body_end = find_function_body_end_line(file_lines, cand.span.start_line);
             if call_line <= body_end {
-                let sig = if cand.sig_offset > 0 {
-                    Some(reader.get_str(cand.sig_offset))
-                } else {
-                    None
-                };
-                return Some((
-                    WorkspaceSymbol {
-                        crate_name: reader.crate_name(),
-                        name: reader.get_str(cand.name_offset),
-                        path: reader.get_str(cand.path_offset),
-                        kind: DefKind::from(cand.kind),
-                        file: reader.get_file(fid),
-                        span: cand.span,
-                        signature: sig,
-                        is_macro_expansion: cand.is_macro_expansion(),
-                        source_root: sroot,
-                        unit_key: None,
-                    },
-                    body_end,
-                ));
+                best = Some((cand.span.start_line, reader_idx, cand, fid, body_end));
+                break;
             }
         }
-        return None;
     }
 
-    None
+    let (_, reader_idx, cand, fid, body_end) = best?;
+    let reader = &ws.readers()[reader_idx];
+    let sig = if cand.sig_offset > 0 {
+        Some(reader.get_str(cand.sig_offset))
+    } else {
+        None
+    };
+    Some((
+        WorkspaceSymbol {
+            crate_name: reader.crate_name(),
+            name: reader.get_str(cand.name_offset),
+            path: reader.get_str(cand.path_offset),
+            kind: DefKind::from(cand.kind),
+            file: reader.get_file(fid),
+            span: cand.span,
+            signature: sig,
+            is_macro_expansion: cand.is_macro_expansion(),
+            source_root: ws.source_root_at(reader_idx),
+            unit_key: None,
+        },
+        body_end,
+    ))
 }
 
 pub(crate) fn strip_leading_generics(s: &str) -> &str {
