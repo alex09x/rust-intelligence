@@ -1,0 +1,432 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_6af1075_vs_f79eebb_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "6af1075",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "6af1075-2",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 7,
+ "summary": {
+  "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file": 7
+ },
+ "rows_by_method": {
+  "incoming_calls": 7
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/loom/std/parking_lot.rs",
+   "line": 61,
+   "character": 19,
+   "symbol": "lock",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/src/process/unix/orphan.rs",
+       210,
+       "drain_attempts_a_single_reap_of_all_queued_orphans"
+      ],
+      "body_end": 252,
+      "range_end": 252,
+      "call_sites": [
+       229,
+       236,
+       243,
+       251
+      ],
+      "def_path": "process::imp::orphan::test::drain_attempts_a_single_reap_of_all_queued_orphans",
+      "def_line": 210,
+      "test_module": "test",
+      "mod_line": 133,
+      "cfg_line": 132,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/process/unix/orphan.rs",
+       255,
+       "no_reap_if_no_signal_received"
+      ],
+      "body_end": 276,
+      "range_end": 276,
+      "call_sites": [
+       261
+      ],
+      "def_path": "process::imp::orphan::test::no_reap_if_no_signal_received",
+      "def_line": 255,
+      "test_module": "test",
+      "mod_line": 133,
+      "cfg_line": 132,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/process/unix/orphan.rs",
+       279,
+       "no_reap_if_signal_lock_held"
+      ],
+      "body_end": 293,
+      "range_end": 293,
+      "call_sites": [
+       283
+      ],
+      "def_path": "process::imp::orphan::test::no_reap_if_signal_lock_held",
+      "def_line": 279,
+      "test_module": "test",
+      "mod_line": 133,
+      "cfg_line": 132,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/process/unix/orphan.rs",
+       297,
+       "does_not_register_signal_if_queue_empty"
+      ],
+      "body_end": 316,
+      "range_end": 316,
+      "call_sites": [
+       303,
+       307,
+       314
+      ],
+      "def_path": "process::imp::orphan::test::does_not_register_signal_if_queue_empty",
+      "def_line": 297,
+      "test_module": "test",
+      "mod_line": 133,
+      "cfg_line": 132,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/process/unix/orphan.rs",
+       319,
+       "does_nothing_if_signal_could_not_be_registered"
+      ],
+      "body_end": 333,
+      "range_end": 333,
+      "call_sites": [
+       323,
+       331
+      ],
+      "def_path": "process::imp::orphan::test::does_nothing_if_signal_could_not_be_registered",
+      "def_line": 319,
+      "test_module": "test",
+      "mod_line": 133,
+      "cfg_line": 132,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/process/unix/orphan.rs",
+       66,
+       "len"
+      ],
+      "body_end": 68,
+      "range_end": 68,
+      "call_sites": [
+       67
+      ],
+      "def_path": "process::imp::orphan::OrphanQueueImpl::<T>::len",
+      "def_line": 66,
+      "test_attribute_line": 65,
+      "ok": true
+     }
+    ],
+    "added_count": 6,
+    "added_sites": 12,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/runtime/driver.rs",
+   "line": 114,
+   "character": 23,
+   "symbol": "time",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/src/runtime/driver.rs",
+       133,
+       "now"
+      ],
+      "body_end": 135,
+      "range_end": 135,
+      "call_sites": [
+       134
+      ],
+      "def_path": "runtime::driver::Handle::now",
+      "def_line": 133,
+      "test_attribute_line": 132,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/signal/registry.rs",
+   "line": 65,
+   "character": 8,
+   "symbol": "register_listener",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/src/signal/registry.rs",
+       163,
+       "smoke"
+      ],
+      "body_end": 211,
+      "range_end": 211,
+      "call_sites": [
+       172,
+       173,
+       174
+      ],
+      "def_path": "signal::registry::tests::smoke",
+      "def_line": 163,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/signal/registry.rs",
+       215,
+       "register_panics_on_invalid_input"
+      ],
+      "body_end": 219,
+      "range_end": 219,
+      "call_sites": [
+       218
+      ],
+      "def_path": "signal::registry::tests::register_panics_on_invalid_input",
+      "def_line": 215,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/signal/registry.rs",
+       228,
+       "broadcast_returns_if_at_least_one_event_fired"
+      ],
+      "body_end": 245,
+      "range_end": 245,
+      "call_sites": [
+       234,
+       235
+      ],
+      "def_path": "signal::registry::tests::broadcast_returns_if_at_least_one_event_fired",
+      "def_line": 228,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     }
+    ],
+    "added_count": 3,
+    "added_sites": 6,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/sync/mutex.rs",
+   "line": 307,
+   "character": 8,
+   "symbol": "check_unpin",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/src/sync/mutex.rs",
+       305,
+       "bounds"
+      ],
+      "body_end": 325,
+      "range_end": 325,
+      "call_sites": [
+       316
+      ],
+      "def_path": "sync::mutex::bounds",
+      "def_line": 305,
+      "test_attribute_line": 303,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/sync/broadcast.rs",
+   "line": 1424,
+   "character": 12,
+   "symbol": "resubscribe",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/src/sync/broadcast.rs",
+       1784,
+       "receiver_count_on_sender_constructor"
+      ],
+      "body_end": 1803,
+      "range_end": 1803,
+      "call_sites": [
+       1791
+      ],
+      "def_path": "sync::broadcast::tests::receiver_count_on_sender_constructor",
+      "def_line": 1784,
+      "test_module": "tests",
+      "mod_line": 1780,
+      "cfg_line": 1779,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/broadcast.rs",
+       1807,
+       "receiver_count_on_channel_constructor"
+      ],
+      "body_end": 1813,
+      "range_end": 1813,
+      "call_sites": [
+       1811
+      ],
+      "def_path": "sync::broadcast::tests::receiver_count_on_channel_constructor",
+      "def_line": 1807,
+      "test_module": "tests",
+      "mod_line": 1780,
+      "cfg_line": 1779,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/runtime/scheduler/multi_thread/idle.rs",
+   "line": 214,
+   "character": 8,
+   "symbol": "num_unparked",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/src/runtime/scheduler/multi_thread/idle.rs",
+       241,
+       "test_state"
+      ],
+      "body_end": 248,
+      "range_end": 248,
+      "call_sites": [
+       246
+      ],
+      "def_path": "runtime::scheduler::multi_thread::idle::test_state",
+      "def_line": 241,
+      "test_attribute_line": 240,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/sync/mpsc/block.rs",
+   "line": 290,
+   "character": 19,
+   "symbol": "load_next",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/src/sync/mpsc/list.rs",
+       475,
+       "wraparound"
+      ],
+      "body_end": 523,
+      "range_end": 523,
+      "call_sites": [
+       504,
+       515
+      ],
+      "def_path": "sync::mpsc::list::tests::wraparound",
+      "def_line": 475,
+      "test_module": "tests",
+      "mod_line": 466,
+      "cfg_line": 465,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  }
+ ]
+}

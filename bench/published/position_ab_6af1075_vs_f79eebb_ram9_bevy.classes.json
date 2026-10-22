@@ -1,0 +1,3460 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_6af1075_vs_f79eebb_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "6af1075",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "6af1075-2",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 35,
+ "summary": {
+  "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file": 35
+ },
+ "rows_by_method": {
+  "incoming_calls": 35
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/src/func/args/list.rs",
+   "line": 242,
+   "character": 12,
+   "symbol": "pop_arg",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/func/dynamic_function.rs",
+       583,
+       "should_allow_recursive_dynamic_function"
+      ],
+      "body_end": 617,
+      "range_end": 617,
+      "call_sites": [
+       591
+      ],
+      "def_path": "func::dynamic_function::tests::should_allow_recursive_dynamic_function",
+      "def_line": 583,
+      "test_module": "tests",
+      "mod_line": 478,
+      "cfg_line": 477,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/src/set.rs",
+   "line": 181,
+   "character": 12,
+   "symbol": "insert",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/display.rs",
+       1013,
+       "set_with_one_element"
+      ],
+      "body_end": 1017,
+      "range_end": 1017,
+      "call_sites": [
+       1015
+      ],
+      "def_path": "display::tests::set_with_one_element",
+      "def_line": 1013,
+      "test_module": "tests",
+      "mod_line": 503,
+      "cfg_line": 502,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/display.rs",
+       1020,
+       "set_with_struct_element"
+      ],
+      "body_end": 1030,
+      "range_end": 1030,
+      "call_sites": [
+       1022
+      ],
+      "def_path": "display::tests::set_with_struct_element",
+      "def_line": 1020,
+      "test_module": "tests",
+      "mod_line": 503,
+      "cfg_line": 502,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/set.rs",
+       504,
+       "test_into_iter"
+      ],
+      "body_end": 522,
+      "range_end": 522,
+      "call_sites": [
+       508,
+       509,
+       510
+      ],
+      "def_path": "set::tests::test_into_iter",
+      "def_line": 504,
+      "test_module": "tests",
+      "mod_line": 497,
+      "cfg_line": 496,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/set.rs",
+       525,
+       "apply"
+      ],
+      "body_end": 539,
+      "range_end": 539,
+      "call_sites": [
+       527,
+       528,
+       531,
+       532
+      ],
+      "def_path": "set::tests::apply",
+      "def_line": 525,
+      "test_module": "tests",
+      "mod_line": 497,
+      "cfg_line": 496,
+      "ok": true
+     }
+    ],
+    "added_count": 4,
+    "added_sites": 9,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 2445,
+   "character": 12,
+   "symbol": "end",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ui/src/ui_node.rs",
+       3579,
+       "invalid_grid_placement_values"
+      ],
+      "body_end": 3592,
+      "range_end": 3592,
+      "call_sites": [
+       3582
+      ],
+      "def_path": "ui_node::tests::invalid_grid_placement_values",
+      "def_line": 3579,
+      "test_module": "tests",
+      "mod_line": 3569,
+      "cfg_line": 3568,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui/src/ui_node.rs",
+       3595,
+       "grid_placement_accessors"
+      ],
+      "body_end": 3602,
+      "range_end": 3602,
+      "call_sites": [
+       3597
+      ],
+      "def_path": "ui_node::tests::grid_placement_accessors",
+      "def_line": 3595,
+      "test_module": "tests",
+      "mod_line": 3569,
+      "cfg_line": 3568,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/entity/mod.rs",
+   "line": 801,
+   "character": 12,
+   "symbol": "free",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/entity/mod.rs",
+       1642,
+       "allocator"
+      ],
+      "body_end": 1663,
+      "range_end": 1663,
+      "call_sites": [
+       1655
+      ],
+      "def_path": "entity::tests::allocator",
+      "def_line": 1642,
+      "test_module": "tests",
+      "mod_line": 1302,
+      "cfg_line": 1301,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/lib.rs",
+       370,
+       "spawning_with_manual_entity_allocation"
+      ],
+      "body_end": 400,
+      "range_end": 400,
+      "call_sites": [
+       384
+      ],
+      "def_path": "tests::spawning_with_manual_entity_allocation",
+      "def_line": 370,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_input/src/gamepad.rs",
+   "line": 1236,
+   "character": 12,
+   "symbol": "set_deadzone_lowerbound",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_input/src/gamepad.rs",
+       2108,
+       "test_try_out_of_range_axis_settings"
+      ],
+      "body_end": 2195,
+      "range_end": 2195,
+      "call_sites": [
+       2155
+      ],
+      "def_path": "gamepad::tests::test_try_out_of_range_axis_settings",
+      "def_line": 2108,
+      "test_module": "tests",
+      "mod_line": 1820,
+      "cfg_line": 1819,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui_widgets/src/split_pane.rs",
+   "line": 380,
+   "character": 8,
+   "symbol": "split_app",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/split_pane.rs",
+       494,
+       "drag_resizes_adjacent_panes"
+      ],
+      "body_end": 511,
+      "range_end": 511,
+      "call_sites": [
+       495
+      ],
+      "def_path": "split_pane::tests::drag_resizes_adjacent_panes",
+      "def_line": 494,
+      "test_module": "tests",
+      "mod_line": 367,
+      "cfg_line": 366,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/split_pane.rs",
+       514,
+       "drag_clamps_to_min_size"
+      ],
+      "body_end": 526,
+      "range_end": 526,
+      "call_sites": [
+       515
+      ],
+      "def_path": "split_pane::tests::drag_clamps_to_min_size",
+      "def_line": 514,
+      "test_module": "tests",
+      "mod_line": 367,
+      "cfg_line": 366,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/split_pane.rs",
+       529,
+       "vertical_split_uses_y_axis"
+      ],
+      "body_end": 538,
+      "range_end": 538,
+      "call_sites": [
+       530
+      ],
+      "def_path": "split_pane::tests::vertical_split_uses_y_axis",
+      "def_line": 529,
+      "test_module": "tests",
+      "mod_line": 367,
+      "cfg_line": 366,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/split_pane.rs",
+       541,
+       "disabled_split_ignores_drag"
+      ],
+      "body_end": 559,
+      "range_end": 559,
+      "call_sites": [
+       542
+      ],
+      "def_path": "split_pane::tests::disabled_split_ignores_drag",
+      "def_line": 541,
+      "test_module": "tests",
+      "mod_line": 367,
+      "cfg_line": 366,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/split_pane.rs",
+       562,
+       "self_update_applies_sizes_and_layout"
+      ],
+      "body_end": 585,
+      "range_end": 585,
+      "call_sites": [
+       563
+      ],
+      "def_path": "split_pane::tests::self_update_applies_sizes_and_layout",
+      "def_line": 562,
+      "test_module": "tests",
+      "mod_line": 367,
+      "cfg_line": 366,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/split_pane.rs",
+       588,
+       "three_panes_only_change_adjacent_pair"
+      ],
+      "body_end": 597,
+      "range_end": 597,
+      "call_sites": [
+       589
+      ],
+      "def_path": "split_pane::tests::three_panes_only_change_adjacent_pair",
+      "def_line": 588,
+      "test_module": "tests",
+      "mod_line": 367,
+      "cfg_line": 366,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/split_pane.rs",
+       600,
+       "cancel_restores_start_sizes"
+      ],
+      "body_end": 621,
+      "range_end": 621,
+      "call_sites": [
+       601
+      ],
+      "def_path": "split_pane::tests::cancel_restores_start_sizes",
+      "def_line": 600,
+      "test_module": "tests",
+      "mod_line": 367,
+      "cfg_line": 366,
+      "ok": true
+     }
+    ],
+    "added_count": 7,
+    "added_sites": 7,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 1748,
+   "character": 12,
+   "symbol": "returning",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/mod.rs",
+       1742,
+       "assert_systems"
+      ],
+      "body_end": 1791,
+      "range_end": 1791,
+      "call_sites": [
+       1774,
+       1776,
+       1787,
+       1790
+      ],
+      "def_path": "system::tests::assert_systems",
+      "def_line": 1742,
+      "test_module": "tests",
+      "mod_line": 403,
+      "cfg_line": 401,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 4,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_render/src/mesh/allocator.rs",
+   "line": 629,
+   "character": 8,
+   "symbol": "free_meshes",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_render/src/mesh/allocator.rs",
+       1025,
+       "reextracting_a_mesh_with_a_new_vertex_layout_reclaims_the_old_slab"
+      ],
+      "body_end": 1067,
+      "range_end": 1067,
+      "call_sites": [
+       1046
+      ],
+      "def_path": "mesh::allocator::tests::reextracting_a_mesh_with_a_new_vertex_layout_reclaims_the_old_slab",
+      "def_line": 1025,
+      "test_module": "tests",
+      "mod_line": 751,
+      "cfg_line": 750,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_render/src/mesh/allocator.rs",
+       1091,
+       "assert_steady_state"
+      ],
+      "body_end": 1132,
+      "range_end": 1132,
+      "call_sites": [
+       1108
+      ],
+      "def_path": "mesh::allocator::tests::assert_steady_state",
+      "def_line": 1091,
+      "test_module": "tests",
+      "mod_line": 751,
+      "cfg_line": 750,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_render/src/mesh/allocator.rs",
+       856,
+       "free_meshes_releases_reextracted_meshes"
+      ],
+      "body_end": 883,
+      "range_end": 883,
+      "call_sites": [
+       876
+      ],
+      "def_path": "mesh::allocator::tests::free_meshes_releases_reextracted_meshes",
+      "def_line": 856,
+      "test_module": "tests",
+      "mod_line": 751,
+      "cfg_line": 750,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_render/src/mesh/allocator.rs",
+       891,
+       "free_meshes_releases_modified_meshes_that_were_not_reextracted"
+      ],
+      "body_end": 916,
+      "range_end": 916,
+      "call_sites": [
+       909
+      ],
+      "def_path": "mesh::allocator::tests::free_meshes_releases_modified_meshes_that_were_not_reextracted",
+      "def_line": 891,
+      "test_module": "tests",
+      "mod_line": 751,
+      "cfg_line": 750,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_render/src/mesh/allocator.rs",
+       921,
+       "free_meshes_releases_every_element_class"
+      ],
+      "body_end": 966,
+      "range_end": 966,
+      "call_sites": [
+       959
+      ],
+      "def_path": "mesh::allocator::tests::free_meshes_releases_every_element_class",
+      "def_line": 921,
+      "test_module": "tests",
+      "mod_line": 751,
+      "cfg_line": 750,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_render/src/mesh/allocator.rs",
+       971,
+       "reextracting_a_mesh_that_drops_its_extra_data_frees_those_allocations"
+      ],
+      "body_end": 1020,
+      "range_end": 1020,
+      "call_sites": [
+       993
+      ],
+      "def_path": "mesh::allocator::tests::reextracting_a_mesh_that_drops_its_extra_data_frees_those_allocations",
+      "def_line": 971,
+      "test_module": "tests",
+      "mod_line": 751,
+      "cfg_line": 750,
+      "ok": true
+     }
+    ],
+    "added_count": 6,
+    "added_sites": 6,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/system/system_registry.rs",
+   "line": 825,
+   "character": 12,
+   "symbol": "run_system_cached_with",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/system_registry.rs",
+       1127,
+       "cached_system"
+      ],
+      "body_end": 1155,
+      "range_end": 1155,
+      "call_sites": [
+       1153
+      ],
+      "def_path": "system::system_registry::tests::cached_system",
+      "def_line": 1127,
+      "test_module": "tests",
+      "mod_line": 909,
+      "cfg_line": 908,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/system_registry.rs",
+       1158,
+       "cached_fallible_system"
+      ],
+      "body_end": 1172,
+      "range_end": 1172,
+      "call_sites": [
+       1170
+      ],
+      "def_path": "system::system_registry::tests::cached_fallible_system",
+      "def_line": 1158,
+      "test_module": "tests",
+      "mod_line": 909,
+      "cfg_line": 908,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/system/query.rs",
+   "line": 919,
+   "character": 12,
+   "symbol": "iter_many",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/mod.rs",
+       722,
+       "system"
+      ],
+      "body_end": 725,
+      "range_end": 725,
+      "call_sites": [
+       723,
+       724
+      ],
+      "def_path": "query::tests::many_entities::system",
+      "def_line": 722,
+      "test_module": "tests",
+      "mod_line": 114,
+      "cfg_line": 112,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/mod.rs",
+       757,
+       "mut_to_immut_query_methods_have_immut_item"
+      ],
+      "body_end": 790,
+      "range_end": 790,
+      "call_sites": [
+       783
+      ],
+      "def_path": "query::tests::mut_to_immut_query_methods_have_immut_item",
+      "def_line": 757,
+      "test_module": "tests",
+      "mod_line": 114,
+      "cfg_line": 112,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 3,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui_render/src/clipping.rs",
+   "line": 16,
+   "character": 8,
+   "symbol": "clip_polygon",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ui_render/src/clipping.rs",
+       131,
+       "unclipped_quad_returns_all_vertices"
+      ],
+      "body_end": 133,
+      "range_end": 133,
+      "call_sites": [
+       132
+      ],
+      "def_path": "clipping::tests::unclipped_quad_returns_all_vertices",
+      "def_line": 131,
+      "test_module": "tests",
+      "mod_line": 112,
+      "cfg_line": 111,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_render/src/clipping.rs",
+       136,
+       "fully_clipped_returns_empty_vertices_list"
+      ],
+      "body_end": 138,
+      "range_end": 138,
+      "call_sites": [
+       137
+      ],
+      "def_path": "clipping::tests::fully_clipped_returns_empty_vertices_list",
+      "def_line": 136,
+      "test_module": "tests",
+      "mod_line": 112,
+      "cfg_line": 111,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_render/src/clipping.rs",
+       141,
+       "trim_quad_with_axis_aligned_clip"
+      ],
+      "body_end": 154,
+      "range_end": 154,
+      "call_sites": [
+       149
+      ],
+      "def_path": "clipping::tests::trim_quad_with_axis_aligned_clip",
+      "def_line": 141,
+      "test_module": "tests",
+      "mod_line": 112,
+      "cfg_line": 111,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_render/src/clipping.rs",
+       157,
+       "nested_clip_rects_compose"
+      ],
+      "body_end": 182,
+      "range_end": 182,
+      "call_sites": [
+       158
+      ],
+      "def_path": "clipping::tests::nested_clip_rects_compose",
+      "def_line": 157,
+      "test_module": "tests",
+      "mod_line": 112,
+      "cfg_line": 111,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_render/src/clipping.rs",
+       185,
+       "quad_outside_clip_rect_returns_empty_vertices_list"
+      ],
+      "body_end": 198,
+      "range_end": 198,
+      "call_sites": [
+       186
+      ],
+      "def_path": "clipping::tests::quad_outside_clip_rect_returns_empty_vertices_list",
+      "def_line": 185,
+      "test_module": "tests",
+      "mod_line": 112,
+      "cfg_line": 111,
+      "ok": true
+     }
+    ],
+    "added_count": 5,
+    "added_sites": 5,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_shape/src/bounding/bounded2d/mod.rs",
+   "line": 602,
+   "character": 8,
+   "symbol": "scale_around_center",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_shape/src/bounding/bounded2d/mod.rs",
+       718,
+       "scale_around_center"
+      ],
+      "body_end": 724,
+      "range_end": 724,
+      "call_sites": [
+       720
+      ],
+      "def_path": "bounding::bounded2d::bounding_circle_tests::scale_around_center",
+      "def_line": 718,
+      "test_module": "bounding_circle_tests",
+      "mod_line": 637,
+      "cfg_line": 636,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui_widgets/src/checkbox.rs",
+   "line": 317,
+   "character": 8,
+   "symbol": "checkbox_app",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/checkbox.rs",
+       383,
+       "click_toggles_and_focuses_checkbox"
+      ],
+      "body_end": 408,
+      "range_end": 408,
+      "call_sites": [
+       384
+      ],
+      "def_path": "checkbox::tests::click_toggles_and_focuses_checkbox",
+      "def_line": 383,
+      "test_module": "tests",
+      "mod_line": 293,
+      "cfg_line": 292,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/checkbox.rs",
+       413,
+       "click_on_child_toggles_and_focuses_checkbox_root"
+      ],
+      "body_end": 434,
+      "range_end": 434,
+      "call_sites": [
+       414
+      ],
+      "def_path": "checkbox::tests::click_on_child_toggles_and_focuses_checkbox_root",
+      "def_line": 413,
+      "test_module": "tests",
+      "mod_line": 293,
+      "cfg_line": 292,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/checkbox.rs",
+       438,
+       "space_key_toggles_focused_checkbox"
+      ],
+      "body_end": 467,
+      "range_end": 467,
+      "call_sites": [
+       439
+      ],
+      "def_path": "checkbox::tests::space_key_toggles_focused_checkbox",
+      "def_line": 438,
+      "test_module": "tests",
+      "mod_line": 293,
+      "cfg_line": 292,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/checkbox.rs",
+       471,
+       "disabled_checkbox_does_not_toggle"
+      ],
+      "body_end": 485,
+      "range_end": 485,
+      "call_sites": [
+       472
+      ],
+      "def_path": "checkbox::tests::disabled_checkbox_does_not_toggle",
+      "def_line": 471,
+      "test_module": "tests",
+      "mod_line": 293,
+      "cfg_line": 292,
+      "ok": true
+     }
+    ],
+    "added_count": 4,
+    "added_sites": 4,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_input_focus/src/directional_navigation.rs",
+   "line": 316,
+   "character": 12,
+   "symbol": "add_edge",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_input_focus/src/directional_navigation.rs",
+       602,
+       "simple_set_and_get_navmap"
+      ],
+      "body_end": 618,
+      "range_end": 618,
+      "call_sites": [
+       608
+      ],
+      "def_path": "directional_navigation::tests::simple_set_and_get_navmap",
+      "def_line": 602,
+      "test_module": "tests",
+      "mod_line": 571,
+      "cfg_line": 570,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_input_focus/src/directional_navigation.rs",
+       640,
+       "remove_nodes"
+      ],
+      "body_end": 662,
+      "range_end": 662,
+      "call_sites": [
+       646,
+       647
+      ],
+      "def_path": "directional_navigation::tests::remove_nodes",
+      "def_line": 640,
+      "test_module": "tests",
+      "mod_line": 571,
+      "cfg_line": 570,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_input_focus/src/directional_navigation.rs",
+       665,
+       "remove_multiple_nodes"
+      ],
+      "body_end": 687,
+      "range_end": 687,
+      "call_sites": [
+       672,
+       673,
+       674,
+       675
+      ],
+      "def_path": "directional_navigation::tests::remove_multiple_nodes",
+      "def_line": 665,
+      "test_module": "tests",
+      "mod_line": 571,
+      "cfg_line": 570,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_input_focus/src/directional_navigation.rs",
+       793,
+       "manual_navigation_skips_non_focusable_destination"
+      ],
+      "body_end": 823,
+      "range_end": 823,
+      "call_sites": [
+       798
+      ],
+      "def_path": "directional_navigation::tests::manual_navigation_skips_non_focusable_destination",
+      "def_line": 793,
+      "test_module": "tests",
+      "mod_line": 571,
+      "cfg_line": 570,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_input_focus/src/directional_navigation.rs",
+       889,
+       "test_auto_generate_respects_manual_edges"
+      ],
+      "body_end": 925,
+      "range_end": 925,
+      "call_sites": [
+       898
+      ],
+      "def_path": "directional_navigation::tests::test_auto_generate_respects_manual_edges",
+      "def_line": 889,
+      "test_module": "tests",
+      "mod_line": 571,
+      "cfg_line": 570,
+      "ok": true
+     }
+    ],
+    "added_count": 5,
+    "added_sites": 9,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/schedule/config.rs",
+   "line": 403,
+   "character": 8,
+   "symbol": "after",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_app/src/app.rs",
+       1905,
+       "test_update_clears_trackers_once"
+      ],
+      "body_end": 1931,
+      "range_end": 1931,
+      "call_sites": [
+       1929
+      ],
+      "def_path": "app::tests::test_update_clears_trackers_once",
+      "def_line": 1905,
+      "test_module": "tests",
+      "mod_line": 1609,
+      "cfg_line": 1608,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_asset/src/asset_changed.rs",
+       447,
+       "added"
+      ],
+      "body_end": 466,
+      "range_end": 466,
+      "call_sites": [
+       453
+      ],
+      "def_path": "asset_changed::tests::added",
+      "def_line": 447,
+      "test_module": "tests",
+      "mod_line": 316,
+      "cfg_line": 314,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_asset/src/asset_changed.rs",
+       469,
+       "changed"
+      ],
+      "body_end": 514,
+      "range_end": 514,
+      "call_sites": [
+       487
+      ],
+      "def_path": "asset_changed::tests::changed",
+      "def_line": 469,
+      "test_module": "tests",
+      "mod_line": 316,
+      "cfg_line": 314,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/mod.rs",
+       1137,
+       "before_and_after"
+      ],
+      "body_end": 1151,
+      "range_end": 1151,
+      "call_sites": [
+       1145
+      ],
+      "def_path": "schedule::tests::system_ambiguity::before_and_after",
+      "def_line": 1137,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/mod.rs",
+       1210,
+       "correct_ambiguities"
+      ],
+      "body_end": 1277,
+      "range_end": 1277,
+      "call_sites": [
+       1226
+      ],
+      "def_path": "schedule::tests::system_ambiguity::correct_ambiguities",
+      "def_line": 1210,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/mod.rs",
+       199,
+       "order_systems"
+      ],
+      "body_end": 234,
+      "range_end": 234,
+      "call_sites": [
+       209,
+       221,
+       226
+      ],
+      "def_path": "schedule::tests::system_ordering::order_systems",
+      "def_line": 199,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/mod.rs",
+       237,
+       "order_exclusive_systems"
+      ],
+      "body_end": 251,
+      "range_end": 251,
+      "call_sites": [
+       246
+      ],
+      "def_path": "schedule::tests::system_ordering::order_exclusive_systems",
+      "def_line": 237,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/mod.rs",
+       629,
+       "dependency_loop"
+      ],
+      "body_end": 640,
+      "range_end": 640,
+      "call_sites": [
+       631
+      ],
+      "def_path": "schedule::tests::schedule_build_errors::dependency_loop",
+      "def_line": 629,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/mod.rs",
+       657,
+       "dependency_cycle"
+      ],
+      "body_end": 686,
+      "range_end": 686,
+      "call_sites": [
+       661,
+       662,
+       678
+      ],
+      "def_path": "schedule::tests::schedule_build_errors::dependency_cycle",
+      "def_line": 657,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/mod.rs",
+       720,
+       "system_type_set_ambiguity"
+      ],
+      "body_end": 758,
+      "range_end": 758,
+      "call_sites": [
+       729
+      ],
+      "def_path": "schedule::tests::schedule_build_errors::system_type_set_ambiguity",
+      "def_line": 720,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/mod.rs",
+       798,
+       "cross_dependency"
+      ],
+      "body_end": 810,
+      "range_end": 810,
+      "call_sites": [
+       804
+      ],
+      "def_path": "schedule::tests::schedule_build_errors::cross_dependency",
+      "def_line": 798,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/mod.rs",
+       813,
+       "sets_have_order_but_intersect"
+      ],
+      "body_end": 835,
+      "range_end": 835,
+      "call_sites": [
+       825,
+       826
+      ],
+      "def_path": "schedule::tests::schedule_build_errors::sets_have_order_but_intersect",
+      "def_line": 813,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/schedule.rs",
+       2952,
+       "remove_a_set_and_still_ordered"
+      ],
+      "body_end": 2977,
+      "range_end": 2977,
+      "call_sites": [
+       2964
+      ],
+      "def_path": "schedule::schedule::tests::remove_a_set_and_still_ordered",
+      "def_line": 2952,
+      "test_module": "tests",
+      "mod_line": 1988,
+      "cfg_line": 1987,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/schedule.rs",
+       3036,
+       "run_schedule_with_shuffler"
+      ],
+      "body_end": 3069,
+      "range_end": 3069,
+      "call_sites": [
+       3055,
+       3056
+      ],
+      "def_path": "schedule::schedule::tests::schedule_builds_randomly_with_shuffler::run_schedule_with_shuffler",
+      "def_line": 3036,
+      "test_module": "tests",
+      "mod_line": 1988,
+      "cfg_line": 1987,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/schedule.rs",
+       3384,
+       "weak_chain_leaves_explicit_strict_edge_intact"
+      ],
+      "body_end": 3409,
+      "range_end": 3409,
+      "call_sites": [
+       3398
+      ],
+      "def_path": "schedule::schedule::tests::weak_chain_leaves_explicit_strict_edge_intact",
+      "def_line": 3384,
+      "test_module": "tests",
+      "mod_line": 1988,
+      "cfg_line": 1987,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/schedule.rs",
+       3412,
+       "weak_ordering_keeps_edge_shared_with_strict_ordering"
+      ],
+      "body_end": 3432,
+      "range_end": 3432,
+      "call_sites": [
+       3427
+      ],
+      "def_path": "schedule::schedule::tests::weak_ordering_keeps_edge_shared_with_strict_ordering",
+      "def_line": 3412,
+      "test_module": "tests",
+      "mod_line": 1988,
+      "cfg_line": 1987,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_input/src/gamepad.rs",
+       2202,
+       "new"
+      ],
+      "body_end": 2220,
+      "range_end": 2220,
+      "call_sites": [
+       2208
+      ],
+      "def_path": "gamepad::tests::TestContext::new",
+      "def_line": 2202,
+      "test_module": "tests",
+      "mod_line": 1820,
+      "cfg_line": 1819,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui/src/layout/mod.rs",
+       1343,
+       "no_camera_ui"
+      ],
+      "body_end": 1390,
+      "range_end": 1390,
+      "call_sites": [
+       1358
+      ],
+      "def_path": "layout::tests::no_camera_ui",
+      "def_line": 1343,
+      "test_module": "tests",
+      "mod_line": 525,
+      "cfg_line": 524,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui/src/layout/mod.rs",
+       548,
+       "setup_ui_test_app"
+      ],
+      "body_end": 616,
+      "range_end": 616,
+      "call_sites": [
+       584,
+       591
+      ],
+      "def_path": "layout::tests::setup_ui_test_app",
+      "def_line": 548,
+      "test_module": "tests",
+      "mod_line": 525,
+      "cfg_line": 524,
+      "ok": true
+     }
+    ],
+    "added_count": 19,
+    "added_sites": 26,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_math/src/direction.rs",
+   "line": 564,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_math/src/direction.rs",
+       1342,
+       "dir3_creation"
+      ],
+      "body_end": 1367,
+      "range_end": 1367,
+      "call_sites": [
+       1343,
+       1345,
+       1349,
+       1353,
+       1357
+      ],
+      "def_path": "direction::tests::dir3_creation",
+      "def_line": 1342,
+      "test_module": "tests",
+      "mod_line": 1245,
+      "cfg_line": 1243,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_shape/src/dim3.rs",
+       1586,
+       "direction_creation"
+      ],
+      "body_end": 1611,
+      "range_end": 1611,
+      "call_sites": [
+       1587,
+       1589,
+       1593,
+       1597,
+       1601
+      ],
+      "def_path": "dim3::tests::direction_creation",
+      "def_line": 1586,
+      "test_module": "tests",
+      "mod_line": 1578,
+      "cfg_line": 1577,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 10,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/world/mod.rs",
+   "line": 1794,
+   "character": 12,
+   "symbol": "clear_trackers",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/change_detection/mod.rs",
+       277,
+       "set_if_neq"
+      ],
+      "body_end": 300,
+      "range_end": 300,
+      "call_sites": [
+       284
+      ],
+      "def_path": "change_detection::tests::set_if_neq",
+      "def_line": 277,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/change_detection/mod.rs",
+       303,
+       "as_deref_mut"
+      ],
+      "body_end": 326,
+      "range_end": 326,
+      "call_sites": [
+       310
+      ],
+      "def_path": "change_detection::tests::as_deref_mut",
+      "def_line": 303,
+      "test_module": "tests",
+      "mod_line": 29,
+      "cfg_line": 28,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/lib.rs",
+       1019,
+       "changed_trackers"
+      ],
+      "body_end": 1121,
+      "range_end": 1121,
+      "call_sites": [
+       1026,
+       1080,
+       1102
+      ],
+      "def_path": "tests::changed_trackers",
+      "def_line": 1019,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/lib.rs",
+       1124,
+       "changed_trackers_sparse"
+      ],
+      "body_end": 1217,
+      "range_end": 1217,
+      "call_sites": [
+       1131,
+       1184,
+       1206
+      ],
+      "def_path": "tests::changed_trackers_sparse",
+      "def_line": 1124,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/lib.rs",
+       1229,
+       "changed_query"
+      ],
+      "body_end": 1244,
+      "range_end": 1244,
+      "call_sites": [
+       1240
+      ],
+      "def_path": "tests::changed_query",
+      "def_line": 1229,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/lib.rs",
+       868,
+       "remove_tracking"
+      ],
+      "body_end": 936,
+      "range_end": 936,
+      "call_sites": [
+       900
+      ],
+      "def_path": "tests::remove_tracking",
+      "def_line": 868,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/lib.rs",
+       939,
+       "added_tracking"
+      ],
+      "body_end": 986,
+      "range_end": 986,
+      "call_sites": [
+       964
+      ],
+      "def_path": "tests::added_tracking",
+      "def_line": 939,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/lib.rs",
+       989,
+       "added_queries"
+      ],
+      "body_end": 1016,
+      "range_end": 1016,
+      "call_sites": [
+       1005
+      ],
+      "def_path": "tests::added_queries",
+      "def_line": 989,
+      "test_module": "tests",
+      "mod_line": 155,
+      "cfg_line": 154,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/fetch.rs",
+       4519,
+       "test_entity_ref_query_with_ticks"
+      ],
+      "body_end": 4543,
+      "range_end": 4543,
+      "call_sites": [
+       4539
+      ],
+      "def_path": "query::fetch::tests::test_entity_ref_query_with_ticks",
+      "def_line": 4519,
+      "test_module": "tests",
+      "mod_line": 4273,
+      "cfg_line": 4272,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/mod.rs",
+       355,
+       "query_filtered_iter_combinations"
+      ],
+      "body_end": 427,
+      "range_end": 427,
+      "call_sites": [
+       410,
+       415,
+       421
+      ],
+      "def_path": "query::tests::query_filtered_iter_combinations",
+      "def_line": 355,
+      "test_module": "tests",
+      "mod_line": 114,
+      "cfg_line": 112,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/mod.rs",
+       794,
+       "par_iter_mut_change_detection"
+      ],
+      "body_end": 819,
+      "range_end": 819,
+      "call_sites": [
+       813,
+       815
+      ],
+      "def_path": "query::tests::par_iter_mut_change_detection",
+      "def_line": 794,
+      "test_module": "tests",
+      "mod_line": 114,
+      "cfg_line": 112,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/mod.rs",
+       926,
+       "summary_ticks_reflect_changes_to_multiple_instances_of_a_component"
+      ],
+      "body_end": 959,
+      "range_end": 959,
+      "call_sites": [
+       938,
+       946
+      ],
+      "def_path": "query::tests::summary_ticks_reflect_changes_to_multiple_instances_of_a_component",
+      "def_line": 926,
+      "test_module": "tests",
+      "mod_line": 114,
+      "cfg_line": 112,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/mod.rs",
+       964,
+       "summary_ticks_reflect_changes_to_a_single_instance_of_a_component"
+      ],
+      "body_end": 979,
+      "range_end": 979,
+      "call_sites": [
+       969
+      ],
+      "def_path": "query::tests::summary_ticks_reflect_changes_to_a_single_instance_of_a_component",
+      "def_line": 964,
+      "test_module": "tests",
+      "mod_line": 114,
+      "cfg_line": 112,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/state.rs",
+       2307,
+       "can_transmute_added"
+      ],
+      "body_end": 2324,
+      "range_end": 2324,
+      "call_sites": [
+       2316,
+       2321
+      ],
+      "def_path": "query::state::tests::can_transmute_added",
+      "def_line": 2307,
+      "test_module": "tests",
+      "mod_line": 2115,
+      "cfg_line": 2114,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/state.rs",
+       2327,
+       "can_transmute_changed"
+      ],
+      "body_end": 2344,
+      "range_end": 2344,
+      "call_sites": [
+       2337
+      ],
+      "def_path": "query::state::tests::can_transmute_changed",
+      "def_line": 2327,
+      "test_module": "tests",
+      "mod_line": 2115,
+      "cfg_line": 2114,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2708,
+       "insert_component_if_not_equal"
+      ],
+      "body_end": 2762,
+      "range_end": 2762,
+      "call_sites": [
+       2732,
+       2745
+      ],
+      "def_path": "system::commands::tests::insert_component_if_not_equal",
+      "def_line": 2708,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2929,
+       "insert_resource_if_not_equal"
+      ],
+      "body_end": 2966,
+      "range_end": 2966,
+      "call_sites": [
+       2945,
+       2956
+      ],
+      "def_path": "system::commands::tests::insert_resource_if_not_equal",
+      "def_line": 2929,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/mod.rs",
+       1085,
+       "removal_tracking"
+      ],
+      "body_end": 1156,
+      "range_end": 1156,
+      "call_sites": [
+       1128
+      ],
+      "def_path": "system::tests::removal_tracking",
+      "def_line": 1085,
+      "test_module": "tests",
+      "mod_line": 403,
+      "cfg_line": 401,
+      "ok": true
+     }
+    ],
+    "added_count": 18,
+    "added_sites": 29,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_input/src/gamepad.rs",
+   "line": 1364,
+   "character": 8,
+   "symbol": "to_f32",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_input/src/gamepad.rs",
+       1898,
+       "test_axis_settings_filter"
+      ],
+      "body_end": 1909,
+      "range_end": 1909,
+      "call_sites": [
+       1906
+      ],
+      "def_path": "gamepad::tests::test_axis_settings_filter",
+      "def_line": 1898,
+      "test_module": "tests",
+      "mod_line": 1820,
+      "cfg_line": 1819,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/world/command_queue.rs",
+   "line": 60,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2566,
+       "entity_commands_entry"
+      ],
+      "body_end": 2615,
+      "range_end": 2615,
+      "call_sites": [
+       2568
+      ],
+      "def_path": "system::commands::tests::entity_commands_entry",
+      "def_line": 2566,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2618,
+       "commands"
+      ],
+      "body_end": 2666,
+      "range_end": 2666,
+      "call_sites": [
+       2620
+      ],
+      "def_path": "system::commands::tests::commands",
+      "def_line": 2618,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2669,
+       "insert_components"
+      ],
+      "body_end": 2705,
+      "range_end": 2705,
+      "call_sites": [
+       2671,
+       2699
+      ],
+      "def_path": "system::commands::tests::insert_components",
+      "def_line": 2669,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2708,
+       "insert_component_if_not_equal"
+      ],
+      "body_end": 2762,
+      "range_end": 2762,
+      "call_sites": [
+       2715
+      ],
+      "def_path": "system::commands::tests::insert_component_if_not_equal",
+      "def_line": 2708,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2806,
+       "remove_components"
+      ],
+      "body_end": 2849,
+      "range_end": 2849,
+      "call_sites": [
+       2809
+      ],
+      "def_path": "system::commands::tests::remove_components",
+      "def_line": 2806,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2852,
+       "remove_components_by_id"
+      ],
+      "body_end": 2902,
+      "range_end": 2902,
+      "call_sites": [
+       2855
+      ],
+      "def_path": "system::commands::tests::remove_components_by_id",
+      "def_line": 2852,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2905,
+       "remove_resources"
+      ],
+      "body_end": 2926,
+      "range_end": 2926,
+      "call_sites": [
+       2907
+      ],
+      "def_path": "system::commands::tests::remove_resources",
+      "def_line": 2905,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       2929,
+       "insert_resource_if_not_equal"
+      ],
+      "body_end": 2966,
+      "range_end": 2966,
+      "call_sites": [
+       2934
+      ],
+      "def_path": "system::commands::tests::insert_resource_if_not_equal",
+      "def_line": 2929,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       3034,
+       "remove_component_with_required_components"
+      ],
+      "body_end": 3067,
+      "range_end": 3067,
+      "call_sites": [
+       3046
+      ],
+      "def_path": "system::commands::tests::remove_component_with_required_components",
+      "def_line": 3034,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       3070,
+       "unregister_system_cached_commands"
+      ],
+      "body_end": 3086,
+      "range_end": 3086,
+      "call_sites": [
+       3072
+      ],
+      "def_path": "system::commands::tests::unregister_system_cached_commands",
+      "def_line": 3070,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/commands/mod.rs",
+       3098,
+       "append"
+      ],
+      "body_end": 3114,
+      "range_end": 3114,
+      "call_sites": [
+       3100,
+       3105
+      ],
+      "def_path": "system::commands::tests::append",
+      "def_line": 3098,
+      "test_module": "tests",
+      "mod_line": 2505,
+      "cfg_line": 2504,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/command_queue.rs",
+       423,
+       "test_command_queue_inner_drop"
+      ],
+      "body_end": 440,
+      "range_end": 440,
+      "call_sites": [
+       424
+      ],
+      "def_path": "world::command_queue::test::test_command_queue_inner_drop",
+      "def_line": 423,
+      "test_module": "test",
+      "mod_line": 380,
+      "cfg_line": 379,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/command_queue.rs",
+       445,
+       "test_command_queue_inner_drop_early"
+      ],
+      "body_end": 461,
+      "range_end": 461,
+      "call_sites": [
+       446
+      ],
+      "def_path": "world::command_queue::test::test_command_queue_inner_drop_early",
+      "def_line": 445,
+      "test_module": "test",
+      "mod_line": 380,
+      "cfg_line": 379,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/command_queue.rs",
+       477,
+       "test_command_queue_inner"
+      ],
+      "body_end": 492,
+      "range_end": 492,
+      "call_sites": [
+       478
+      ],
+      "def_path": "world::command_queue::test::test_command_queue_inner",
+      "def_line": 477,
+      "test_module": "test",
+      "mod_line": 380,
+      "cfg_line": 379,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/command_queue.rs",
+       508,
+       "test_command_queue_inner_panic_safe_panic"
+      ],
+      "body_end": 527,
+      "range_end": 527,
+      "call_sites": [
+       509
+      ],
+      "def_path": "world::command_queue::test::test_command_queue_inner_panic_safe_panic",
+      "def_line": 508,
+      "test_module": "test",
+      "mod_line": 380,
+      "cfg_line": 379,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/command_queue.rs",
+       530,
+       "test_command_queue_inner_panic_safe_handled"
+      ],
+      "body_end": 560,
+      "range_end": 560,
+      "call_sites": [
+       531
+      ],
+      "def_path": "world::command_queue::test::test_command_queue_inner_panic_safe_handled",
+      "def_line": 530,
+      "test_module": "test",
+      "mod_line": 380,
+      "cfg_line": 379,
+      "ok": true
+     }
+    ],
+    "added_count": 16,
+    "added_sites": 18,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/world/entity_access/world_mut.rs",
+   "line": 1495,
+   "character": 12,
+   "symbol": "remove_by_id",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/entity_access/mod.rs",
+       457,
+       "entity_mut_remove_by_id"
+      ],
+      "body_end": 470,
+      "range_end": 470,
+      "call_sites": [
+       462,
+       469
+      ],
+      "def_path": "world::entity_access::tests::entity_mut_remove_by_id",
+      "def_line": 457,
+      "test_module": "tests",
+      "mod_line": 18,
+      "cfg_line": 17,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/world/entity_access/filtered.rs",
+   "line": 217,
+   "character": 12,
+   "symbol": "get_by_id",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/query/builder.rs",
+       406,
+       "builder_dynamic_components"
+      ],
+      "body_end": 429,
+      "range_end": 429,
+      "call_sites": [
+       421,
+       422
+      ],
+      "def_path": "query::builder::tests::builder_dynamic_components",
+      "def_line": 406,
+      "test_module": "tests",
+      "mod_line": 277,
+      "cfg_line": 276,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/entity_access/mod.rs",
+       777,
+       "filtered_entity_ref_normal"
+      ],
+      "body_end": 788,
+      "range_end": 788,
+      "call_sites": [
+       786
+      ],
+      "def_path": "world::entity_access::tests::filtered_entity_ref_normal",
+      "def_line": 777,
+      "test_module": "tests",
+      "mod_line": 18,
+      "cfg_line": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/entity_access/mod.rs",
+       791,
+       "filtered_entity_ref_missing"
+      ],
+      "body_end": 802,
+      "range_end": 802,
+      "call_sites": [
+       800
+      ],
+      "def_path": "world::entity_access::tests::filtered_entity_ref_missing",
+      "def_line": 791,
+      "test_module": "tests",
+      "mod_line": 18,
+      "cfg_line": 17,
+      "ok": true
+     }
+    ],
+    "added_count": 3,
+    "added_sites": 4,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_math/src/rotation2d.rs",
+   "line": 262,
+   "character": 12,
+   "symbol": "length",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_math/src/rotation2d.rs",
+       610,
+       "length"
+      ],
+      "body_end": 619,
+      "range_end": 619,
+      "call_sites": [
+       617,
+       618
+      ],
+      "def_path": "rotation2d::tests::length",
+      "def_line": 610,
+      "test_module": "tests",
+      "mod_line": 544,
+      "cfg_line": 543,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui_widgets/src/tabs.rs",
+   "line": 1006,
+   "character": 8,
+   "symbol": "start_drag",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1519,
+       "tab_drag_is_accepted_only_after_crossing_movement_threshold"
+      ],
+      "body_end": 1531,
+      "range_end": 1531,
+      "call_sites": [
+       1525
+      ],
+      "def_path": "tabs::tests::tab_drag_is_accepted_only_after_crossing_movement_threshold",
+      "def_line": 1519,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1534,
+       "disabled_mode_locked_tabs_and_disabled_lists_do_not_drag"
+      ],
+      "body_end": 1563,
+      "range_end": 1563,
+      "call_sites": [
+       1558
+      ],
+      "def_path": "tabs::tests::disabled_mode_locked_tabs_and_disabled_lists_do_not_drag",
+      "def_line": 1534,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1566,
+       "drop_proposes_post_removal_index_without_mutating_hierarchy"
+      ],
+      "body_end": 1606,
+      "range_end": 1606,
+      "call_sites": [
+       1575
+      ],
+      "def_path": "tabs::tests::drop_proposes_post_removal_index_without_mutating_hierarchy",
+      "def_line": 1566,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1609,
+       "insertion_index_accounts_for_ui_scale"
+      ],
+      "body_end": 1621,
+      "range_end": 1621,
+      "call_sites": [
+       1617
+      ],
+      "def_path": "tabs::tests::insertion_index_accounts_for_ui_scale",
+      "def_line": 1609,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1624,
+       "reorder_keeps_tracking_with_the_pointer_above_or_below_the_strip"
+      ],
+      "body_end": 1667,
+      "range_end": 1667,
+      "call_sites": [
+       1634
+      ],
+      "def_path": "tabs::tests::reorder_keeps_tracking_with_the_pointer_above_or_below_the_strip",
+      "def_line": 1624,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1670,
+       "reorder_clamps_past_the_ends_of_the_strip"
+      ],
+      "body_end": 1687,
+      "range_end": 1687,
+      "call_sites": [
+       1678
+      ],
+      "def_path": "tabs::tests::reorder_clamps_past_the_ends_of_the_strip",
+      "def_line": 1670,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1748,
+       "previews_are_tracked_per_pointer"
+      ],
+      "body_end": 1779,
+      "range_end": 1779,
+      "call_sites": [
+       1755,
+       1757
+      ],
+      "def_path": "tabs::tests::previews_are_tracked_per_pointer",
+      "def_line": 1748,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1782,
+       "the_same_tab_cannot_be_dragged_by_two_pointers"
+      ],
+      "body_end": 1795,
+      "range_end": 1795,
+      "call_sites": [
+       1788,
+       1789
+      ],
+      "def_path": "tabs::tests::the_same_tab_cannot_be_dragged_by_two_pointers",
+      "def_line": 1782,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1798,
+       "escape_cancels_accepted_drags_until_release"
+      ],
+      "body_end": 1822,
+      "range_end": 1822,
+      "call_sites": [
+       1808
+      ],
+      "def_path": "tabs::tests::escape_cancels_accepted_drags_until_release",
+      "def_line": 1798,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1825,
+       "despawning_the_dragged_tab_clears_the_preview"
+      ],
+      "body_end": 1843,
+      "range_end": 1843,
+      "call_sites": [
+       1831,
+       1840
+      ],
+      "def_path": "tabs::tests::despawning_the_dragged_tab_clears_the_preview",
+      "def_line": 1825,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1846,
+       "gesture_is_dropped_when_the_pointer_stops_dragging"
+      ],
+      "body_end": 1874,
+      "range_end": 1874,
+      "call_sites": [
+       1864
+      ],
+      "def_path": "tabs::tests::gesture_is_dropped_when_the_pointer_stops_dragging",
+      "def_line": 1846,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1877,
+       "click_released_on_a_dragged_tab_does_not_request_selection"
+      ],
+      "body_end": 1894,
+      "range_end": 1894,
+      "call_sites": [
+       1883
+      ],
+      "def_path": "tabs::tests::click_released_on_a_dragged_tab_does_not_request_selection",
+      "def_line": 1877,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1897,
+       "click_after_a_drag_below_the_threshold_requests_selection"
+      ],
+      "body_end": 1913,
+      "range_end": 1913,
+      "call_sites": [
+       1903
+      ],
+      "def_path": "tabs::tests::click_after_a_drag_below_the_threshold_requests_selection",
+      "def_line": 1897,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1916,
+       "external_drag_previews_on_the_hovered_list_and_proposes_a_cross_list_move"
+      ],
+      "body_end": 1982,
+      "range_end": 1982,
+      "call_sites": [
+       1927
+      ],
+      "def_path": "tabs::tests::external_drag_previews_on_the_hovered_list_and_proposes_a_cross_list_move",
+      "def_line": 1916,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       1985,
+       "nearest_compatible_list_under_the_pointer_wins"
+      ],
+      "body_end": 2003,
+      "range_end": 2003,
+      "call_sites": [
+       1997
+      ],
+      "def_path": "tabs::tests::nearest_compatible_list_under_the_pointer_wins",
+      "def_line": 1985,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       2006,
+       "tabs_move_only_between_enabled_external_lists"
+      ],
+      "body_end": 2050,
+      "range_end": 2050,
+      "call_sites": [
+       2020,
+       2036
+      ],
+      "def_path": "tabs::tests::tabs_move_only_between_enabled_external_lists",
+      "def_line": 2006,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       2053,
+       "external_drag_over_no_compatible_list_has_no_preview"
+      ],
+      "body_end": 2078,
+      "range_end": 2078,
+      "call_sites": [
+       2061
+      ],
+      "def_path": "tabs::tests::external_drag_over_no_compatible_list_has_no_preview",
+      "def_line": 2053,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       2081,
+       "lifecycle_reports_cancellation_once"
+      ],
+      "body_end": 2122,
+      "range_end": 2122,
+      "call_sites": [
+       2092,
+       2104,
+       2113
+      ],
+      "def_path": "tabs::tests::lifecycle_reports_cancellation_once",
+      "def_line": 2081,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       2125,
+       "despawning_the_destination_mid_drag_completes_without_a_drop"
+      ],
+      "body_end": 2153,
+      "range_end": 2153,
+      "call_sites": [
+       2134
+      ],
+      "def_path": "tabs::tests::despawning_the_destination_mid_drag_completes_without_a_drop",
+      "def_line": 2125,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tabs.rs",
+       2156,
+       "the_last_tab_can_leave_its_list_and_return_to_it_empty"
+      ],
+      "body_end": 2200,
+      "range_end": 2200,
+      "call_sites": [
+       2173,
+       2188
+      ],
+      "def_path": "tabs::tests::the_last_tab_can_leave_its_list_and_return_to_it_empty",
+      "def_line": 2156,
+      "test_module": "tests",
+      "mod_line": 867,
+      "cfg_line": 866,
+      "ok": true
+     }
+    ],
+    "added_count": 20,
+    "added_sites": 27,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_mesh/src/mesh.rs",
+   "line": 1249,
+   "character": 12,
+   "symbol": "quantize_colors",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_mesh/src/mesh.rs",
+       3884,
+       "quantize_mesh_colors"
+      ],
+      "body_end": 3941,
+      "range_end": 3941,
+      "call_sites": [
+       3900,
+       3916
+      ],
+      "def_path": "mesh::tests::quantize_mesh_colors",
+      "def_line": 3884,
+      "test_module": "tests",
+      "mod_line": 3244,
+      "cfg_line": 3243,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/schedule/node.rs",
+   "line": 483,
+   "character": 12,
+   "symbol": "get_mut",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/node.rs",
+       927,
+       "systems"
+      ],
+      "body_end": 949,
+      "range_end": 949,
+      "call_sites": [
+       942
+      ],
+      "def_path": "schedule::node::tests::systems",
+      "def_line": 927,
+      "test_module": "tests",
+      "mod_line": 913,
+      "cfg_line": 912,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/lifecycle.rs",
+   "line": 240,
+   "character": 12,
+   "symbol": "on_remove",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/entity_access/mod.rs",
+       1521,
+       "with_component_activates_hooks"
+      ],
+      "body_end": 1601,
+      "range_end": 1601,
+      "call_sites": [
+       1548
+      ],
+      "def_path": "world::entity_access::tests::with_component_activates_hooks",
+      "def_line": 1521,
+      "test_module": "tests",
+      "mod_line": 18,
+      "cfg_line": 17,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_transform/src/components/global_transform.rs",
+   "line": 377,
+   "character": 12,
+   "symbol": "reparent_to_same",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_transform/src/components/global_transform.rs",
+       376,
+       "reparented_to_transform_identity"
+      ],
+      "body_end": 397,
+      "range_end": 397,
+      "call_sites": [
+       390
+      ],
+      "def_path": "components::global_transform::test::reparented_to_transform_identity",
+      "def_line": 376,
+      "test_module": "test",
+      "mod_line": 366,
+      "cfg_line": 365,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/src/func/dynamic_function_mut.rs",
+   "line": 290,
+   "character": 12,
+   "symbol": "name",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/func/dynamic_function_mut.rs",
+       386,
+       "should_overwrite_function_name"
+      ],
+      "body_end": 393,
+      "range_end": 393,
+      "call_sites": [
+       389,
+       392
+      ],
+      "def_path": "func::dynamic_function_mut::tests::should_overwrite_function_name",
+      "def_line": 386,
+      "test_module": "tests",
+      "mod_line": 379,
+      "cfg_line": 378,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/func/dynamic_function_mut.rs",
+       433,
+       "should_allow_creating_manual_generic_dynamic_function_mut"
+      ],
+      "body_end": 466,
+      "range_end": 466,
+      "call_sites": [
+       455,
+       457
+      ],
+      "def_path": "func::dynamic_function_mut::tests::should_allow_creating_manual_generic_dynamic_function_mut",
+      "def_line": 433,
+      "test_module": "tests",
+      "mod_line": 379,
+      "cfg_line": 378,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/func/into_function_mut.rs",
+       78,
+       "should_default_closure_name_to_none"
+      ],
+      "body_end": 82,
+      "range_end": 82,
+      "call_sites": [
+       81
+      ],
+      "def_path": "func::into_function_mut::tests::should_default_closure_name_to_none",
+      "def_line": 78,
+      "test_module": "tests",
+      "mod_line": 43,
+      "cfg_line": 42,
+      "ok": true
+     }
+    ],
+    "added_count": 3,
+    "added_sites": 5,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/observer/centralized_storage.rs",
+   "line": 39,
+   "character": 19,
+   "symbol": "get_observers_mut",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/observer/mod.rs",
+       1581,
+       "unregister_global_observer"
+      ],
+      "body_end": 1592,
+      "range_end": 1592,
+      "call_sites": [
+       1589
+      ],
+      "def_path": "observer::tests::unregister_global_observer",
+      "def_line": 1581,
+      "test_module": "tests",
+      "mod_line": 480,
+      "cfg_line": 479,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/observer/mod.rs",
+       1595,
+       "unregister_entity_observer"
+      ],
+      "body_end": 1607,
+      "range_end": 1607,
+      "call_sites": [
+       1604
+      ],
+      "def_path": "observer::tests::unregister_entity_observer",
+      "def_line": 1595,
+      "test_module": "tests",
+      "mod_line": 480,
+      "cfg_line": 479,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/observer/mod.rs",
+       1610,
+       "unregister_component_observer"
+      ],
+      "body_end": 1622,
+      "range_end": 1622,
+      "call_sites": [
+       1619
+      ],
+      "def_path": "observer::tests::unregister_component_observer",
+      "def_line": 1610,
+      "test_module": "tests",
+      "mod_line": 480,
+      "cfg_line": 479,
+      "ok": true
+     }
+    ],
+    "added_count": 3,
+    "added_sites": 3,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/schedule/graph/dag.rs",
+   "line": 175,
+   "character": 12,
+   "symbol": "group_by_key",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/graph/dag.rs",
+       1004,
+       "disjoint_groups"
+      ],
+      "body_end": 1016,
+      "range_end": 1016,
+      "call_sites": [
+       1011
+      ],
+      "def_path": "schedule::graph::dag::tests::disjoint_groups",
+      "def_line": 1004,
+      "test_module": "tests",
+      "mod_line": 728,
+      "cfg_line": 727,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/graph/dag.rs",
+       911,
+       "group_by_key"
+      ],
+      "body_end": 930,
+      "range_end": 930,
+      "call_sites": [
+       919
+      ],
+      "def_path": "schedule::graph::dag::tests::group_by_key",
+      "def_line": 911,
+      "test_module": "tests",
+      "mod_line": 728,
+      "cfg_line": 727,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/graph/dag.rs",
+       933,
+       "flatten"
+      ],
+      "body_end": 956,
+      "range_end": 956,
+      "call_sites": [
+       942
+      ],
+      "def_path": "schedule::graph::dag::tests::flatten",
+      "def_line": 933,
+      "test_module": "tests",
+      "mod_line": 728,
+      "cfg_line": 727,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/graph/dag.rs",
+       959,
+       "flatten_undirected"
+      ],
+      "body_end": 985,
+      "range_end": 985,
+      "call_sites": [
+       966
+      ],
+      "def_path": "schedule::graph::dag::tests::flatten_undirected",
+      "def_line": 959,
+      "test_module": "tests",
+      "mod_line": 728,
+      "cfg_line": 727,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/graph/dag.rs",
+       988,
+       "overlapping_groups"
+      ],
+      "body_end": 1001,
+      "range_end": 1001,
+      "call_sites": [
+       996
+      ],
+      "def_path": "schedule::graph::dag::tests::overlapping_groups",
+      "def_line": 988,
+      "test_module": "tests",
+      "mod_line": 728,
+      "cfg_line": 727,
+      "ok": true
+     }
+    ],
+    "added_count": 5,
+    "added_sites": 5,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/schedule/schedule.rs",
+   "line": 3569,
+   "character": 12,
+   "symbol": "read",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/schedule.rs",
+       3568,
+       "chain_ignore_deferred_around_weak_group_fans_out_without_sync_point"
+      ],
+      "body_end": 3590,
+      "range_end": 3590,
+      "call_sites": [
+       3577
+      ],
+      "def_path": "schedule::schedule::tests::chain_ignore_deferred_around_weak_group_fans_out_without_sync_point",
+      "def_line": 3568,
+      "test_module": "tests",
+      "mod_line": 1988,
+      "cfg_line": 1987,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 247,
+   "character": 12,
+   "symbol": "resolve_clip_rect",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ui/src/ui_node.rs",
+       3751,
+       "overflow_clip_margin_boxes"
+      ],
+      "body_end": 3797,
+      "range_end": 3797,
+      "call_sites": [
+       3766,
+       3777,
+       3788
+      ],
+      "def_path": "ui_node::tests::overflow_clip_margin_boxes",
+      "def_line": 3751,
+      "test_module": "tests",
+      "mod_line": 3569,
+      "cfg_line": 3568,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui/src/ui_node.rs",
+       3800,
+       "overflow_clip_margin_is_logical"
+      ],
+      "body_end": 3820,
+      "range_end": 3820,
+      "call_sites": [
+       3810
+      ],
+      "def_path": "ui_node::tests::overflow_clip_margin_is_logical",
+      "def_line": 3800,
+      "test_module": "tests",
+      "mod_line": 3569,
+      "cfg_line": 3568,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 4,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_scene/macros/src/bsn/codegen.rs",
+   "line": 983,
+   "character": 8,
+   "symbol": "named_field",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_scene/macros/src/bsn/codegen.rs",
+       1018,
+       "duplicate_field"
+      ],
+      "body_end": 1039,
+      "range_end": 1039,
+      "call_sites": [
+       1027,
+       1028
+      ],
+      "def_path": "_bsn::codegen::tests::duplicate_field",
+      "def_line": 1018,
+      "test_module": "tests",
+      "mod_line": 966,
+      "cfg_line": 965,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_scene/macros/src/bsn/codegen.rs",
+       1042,
+       "recursive_duplicate_field"
+      ],
+      "body_end": 1070,
+      "range_end": 1070,
+      "call_sites": [
+       1050,
+       1056,
+       1057
+      ],
+      "def_path": "_bsn::codegen::tests::recursive_duplicate_field",
+      "def_line": 1042,
+      "test_module": "tests",
+      "mod_line": 966,
+      "cfg_line": 965,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_scene/macros/src/bsn/codegen.rs",
+       1105,
+       "enum_variant_field_values_use_implicit_into"
+      ],
+      "body_end": 1137,
+      "range_end": 1137,
+      "call_sites": [
+       1113
+      ],
+      "def_path": "_bsn::codegen::tests::enum_variant_field_values_use_implicit_into",
+      "def_line": 1105,
+      "test_module": "tests",
+      "mod_line": 966,
+      "cfg_line": 965,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_scene/macros/src/bsn/codegen.rs",
+       1140,
+       "enum_duplicate_field"
+      ],
+      "body_end": 1164,
+      "range_end": 1164,
+      "call_sites": [
+       1150,
+       1151
+      ],
+      "def_path": "_bsn::codegen::tests::enum_duplicate_field",
+      "def_line": 1140,
+      "test_module": "tests",
+      "mod_line": 966,
+      "cfg_line": 965,
+      "ok": true
+     }
+    ],
+    "added_count": 4,
+    "added_sites": 8,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_reflect/src/reflect.rs",
+   "line": 542,
+   "character": 12,
+   "symbol": "downcast",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/convert.rs",
+       166,
+       "convert_from_i32_to_string"
+      ],
+      "body_end": 184,
+      "range_end": 184,
+      "call_sites": [
+       181
+      ],
+      "def_path": "convert::tests::convert_from_i32_to_string",
+      "def_line": 166,
+      "test_module": "tests",
+      "mod_line": 153,
+      "cfg_line": 152,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/convert.rs",
+       192,
+       "convert_from_string_to_i32"
+      ],
+      "body_end": 221,
+      "range_end": 221,
+      "call_sites": [
+       210,
+       218
+      ],
+      "def_path": "convert::tests::convert_from_string_to_i32",
+      "def_line": 192,
+      "test_module": "tests",
+      "mod_line": 153,
+      "cfg_line": 152,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/convert.rs",
+       226,
+       "convert_from_f32_and_u32_to_i32"
+      ],
+      "body_end": 251,
+      "range_end": 251,
+      "call_sites": [
+       242,
+       248
+      ],
+      "def_path": "convert::tests::convert_from_f32_and_u32_to_i32",
+      "def_line": 226,
+      "test_module": "tests",
+      "mod_line": 153,
+      "cfg_line": 152,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/convert.rs",
+       256,
+       "no_such_conversion"
+      ],
+      "body_end": 276,
+      "range_end": 276,
+      "call_sites": [
+       273
+      ],
+      "def_path": "convert::tests::no_such_conversion",
+      "def_line": 256,
+      "test_module": "tests",
+      "mod_line": 153,
+      "cfg_line": 152,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/lib.rs",
+       2412,
+       "reflect_downcast"
+      ],
+      "body_end": 2442,
+      "range_end": 2442,
+      "call_sites": [
+       2441
+      ],
+      "def_path": "tests::reflect_downcast",
+      "def_line": 2412,
+      "test_attribute_line": 2411,
+      "ok": true
+     }
+    ],
+    "added_count": 5,
+    "added_sites": 7,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/world/entity_access/world_mut.rs",
+   "line": 663,
+   "character": 12,
+   "symbol": "resource",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/world/entity_access/mod.rs",
+       122,
+       "entity_mut_resource_scope"
+      ],
+      "body_end": 134,
+      "range_end": 134,
+      "call_sites": [
+       133
+      ],
+      "def_path": "world::entity_access::tests::entity_mut_resource_scope",
+      "def_line": 122,
+      "test_module": "tests",
+      "mod_line": 18,
+      "cfg_line": 17,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  }
+ ]
+}

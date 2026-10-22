@@ -1,0 +1,521 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_6af1075_vs_f79eebb_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "6af1075",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "6af1075-2",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 7,
+ "summary": {
+  "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file": 7
+ },
+ "rows_by_method": {
+  "incoming_calls": 7
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "crates/syntax/src/ast/token_ext.rs",
+   "line": 264,
+   "character": 12,
+   "symbol": "value",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/syntax/src/ast/token_ext.rs",
+       645,
+       "check_string_value"
+      ],
+      "body_end": 653,
+      "range_end": 653,
+      "call_sites": [
+       648
+      ],
+      "def_path": "ast::token_ext::tests::check_string_value",
+      "def_line": 645,
+      "test_module": "tests",
+      "mod_line": 591,
+      "cfg_line": 590,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 3225,
+   "character": 8,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/syntax/src/syntax_editor.rs",
+       690,
+       "test_insert_dependent"
+      ],
+      "body_end": 746,
+      "range_end": 746,
+      "call_sites": [
+       714
+      ],
+      "def_path": "syntax_editor::tests::test_insert_dependent",
+      "def_line": 690,
+      "test_module": "tests",
+      "mod_line": 572,
+      "cfg_line": 571,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/syntax/src/syntax_editor.rs",
+       749,
+       "test_dependent_change_prefers_nearest_changed_ancestor"
+      ],
+      "body_end": 802,
+      "range_end": 802,
+      "call_sites": [
+       772,
+       774
+      ],
+      "def_path": "syntax_editor::tests::test_dependent_change_prefers_nearest_changed_ancestor",
+      "def_line": 749,
+      "test_module": "tests",
+      "mod_line": 572,
+      "cfg_line": 571,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/syntax/src/syntax_editor.rs",
+       805,
+       "test_replace_root_with_dependent"
+      ],
+      "body_end": 844,
+      "range_end": 844,
+      "call_sites": [
+       821
+      ],
+      "def_path": "syntax_editor::tests::test_replace_root_with_dependent",
+      "def_line": 805,
+      "test_module": "tests",
+      "mod_line": 572,
+      "cfg_line": 571,
+      "ok": true
+     }
+    ],
+    "added_count": 3,
+    "added_sites": 4,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/syntax/src/ast/make.rs",
+   "line": 928,
+   "character": 8,
+   "symbol": "match_arm_list",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/syntax/src/ast/edit.rs",
+       370,
+       "test_increase_indent"
+      ],
+      "body_end": 380,
+      "range_end": 380,
+      "call_sites": [
+       373
+      ],
+      "def_path": "ast::edit::test_increase_indent",
+      "def_line": 370,
+      "test_attribute_line": 369,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/hir-ty/src/tests.rs",
+   "line": 554,
+   "character": 15,
+   "symbol": "visit_module",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/hir-ty/src/variance.rs",
+       885,
+       "check"
+      ],
+      "body_end": 977,
+      "range_end": 977,
+      "call_sites": [
+       899
+      ],
+      "def_path": "variance::tests::check",
+      "def_line": 885,
+      "test_module": "tests",
+      "mod_line": 401,
+      "cfg_line": 400,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/hir-expand/src/name.rs",
+   "line": 177,
+   "character": 12,
+   "symbol": "as_str",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/hir-def/src/expr_store/scope.rs",
+       429,
+       "do_check"
+      ],
+      "body_end": 479,
+      "range_end": 479,
+      "call_sites": [
+       464,
+       474
+      ],
+      "def_path": "expr_store::scope::tests::do_check",
+      "def_line": 429,
+      "test_module": "tests",
+      "mod_line": 403,
+      "cfg_line": 402,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/hir-ty/src/variance.rs",
+       885,
+       "check"
+      ],
+      "body_end": 977,
+      "range_end": 977,
+      "call_sites": [
+       964
+      ],
+      "def_path": "variance::tests::check",
+      "def_line": 885,
+      "test_module": "tests",
+      "mod_line": 401,
+      "cfg_line": 400,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 3,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/hir-def/src/import_map.rs",
+   "line": 421,
+   "character": 12,
+   "symbol": "fuzzy",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/hir-def/src/import_map.rs",
+       1099,
+       "unicode_fn_name"
+      ],
+      "body_end": 1114,
+      "range_end": 1114,
+      "call_sites": [
+       1109
+      ],
+      "def_path": "import_map::tests::unicode_fn_name",
+      "def_line": 1099,
+      "test_module": "tests",
+      "mod_line": 530,
+      "cfg_line": 529,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/hir-def/src/import_map.rs",
+       905,
+       "fuzzy_import_trait_and_assoc_items"
+      ],
+      "body_end": 932,
+      "range_end": 932,
+      "call_sites": [
+       924
+      ],
+      "def_path": "import_map::tests::fuzzy_import_trait_and_assoc_items",
+      "def_line": 905,
+      "test_module": "tests",
+      "mod_line": 530,
+      "cfg_line": 529,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/hir-def/src/import_map.rs",
+       935,
+       "assoc_items_filtering"
+      ],
+      "body_end": 969,
+      "range_end": 969,
+      "call_sites": [
+       953,
+       964
+      ],
+      "def_path": "import_map::tests::assoc_items_filtering",
+      "def_line": 935,
+      "test_module": "tests",
+      "mod_line": 530,
+      "cfg_line": 529,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/hir-def/src/import_map.rs",
+       972,
+       "search_mode"
+      ],
+      "body_end": 1023,
+      "range_end": 1023,
+      "call_sites": [
+       1000
+      ],
+      "def_path": "import_map::tests::search_mode",
+      "def_line": 972,
+      "test_module": "tests",
+      "mod_line": 530,
+      "cfg_line": 529,
+      "ok": true
+     }
+    ],
+    "added_count": 4,
+    "added_sites": 5,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/rust-analyzer/src/lsp/to_proto.rs",
+   "line": 2199,
+   "character": 8,
+   "symbol": "check_rendered_snippets_in_source",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/rust-analyzer/src/lsp/to_proto.rs",
+       2189,
+       "check_rendered_snippets"
+      ],
+      "body_end": 2196,
+      "range_end": 2196,
+      "call_sites": [
+       2190
+      ],
+      "def_path": "lsp::to_proto::tests::check_rendered_snippets",
+      "def_line": 2189,
+      "test_module": "tests",
+      "mod_line": 2108,
+      "cfg_line": 2107,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/rust-analyzer/src/lsp/to_proto.rs",
+       2715,
+       "snippet_rendering_tabstop_adjust_offset_deleted"
+      ],
+      "body_end": 2776,
+      "range_end": 2776,
+      "call_sites": [
+       2726
+      ],
+      "def_path": "lsp::to_proto::tests::snippet_rendering_tabstop_adjust_offset_deleted",
+      "def_line": 2715,
+      "test_module": "tests",
+      "mod_line": 2108,
+      "cfg_line": 2107,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/rust-analyzer/src/lsp/to_proto.rs",
+       2779,
+       "snippet_rendering_tabstop_adjust_offset_added"
+      ],
+      "body_end": 2840,
+      "range_end": 2840,
+      "call_sites": [
+       2790
+      ],
+      "def_path": "lsp::to_proto::tests::snippet_rendering_tabstop_adjust_offset_added",
+      "def_line": 2779,
+      "test_module": "tests",
+      "mod_line": 2108,
+      "cfg_line": 2107,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/rust-analyzer/src/lsp/to_proto.rs",
+       2843,
+       "snippet_rendering_placeholder_adjust_offset_deleted"
+      ],
+      "body_end": 2905,
+      "range_end": 2905,
+      "call_sites": [
+       2855
+      ],
+      "def_path": "lsp::to_proto::tests::snippet_rendering_placeholder_adjust_offset_deleted",
+      "def_line": 2843,
+      "test_module": "tests",
+      "mod_line": 2108,
+      "cfg_line": 2107,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/rust-analyzer/src/lsp/to_proto.rs",
+       2908,
+       "snippet_rendering_placeholder_adjust_offset_added"
+      ],
+      "body_end": 2970,
+      "range_end": 2970,
+      "call_sites": [
+       2920
+      ],
+      "def_path": "lsp::to_proto::tests::snippet_rendering_placeholder_adjust_offset_added",
+      "def_line": 2908,
+      "test_module": "tests",
+      "mod_line": 2108,
+      "cfg_line": 2107,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/rust-analyzer/src/lsp/to_proto.rs",
+       2973,
+       "snippet_rendering_tabstop_adjust_offset_between_text_edits"
+      ],
+      "body_end": 3050,
+      "range_end": 3050,
+      "call_sites": [
+       2985
+      ],
+      "def_path": "lsp::to_proto::tests::snippet_rendering_tabstop_adjust_offset_between_text_edits",
+      "def_line": 2973,
+      "test_module": "tests",
+      "mod_line": 2108,
+      "cfg_line": 2107,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/rust-analyzer/src/lsp/to_proto.rs",
+       3053,
+       "snippet_rendering_tabstop_adjust_offset_after_text_edits"
+      ],
+      "body_end": 3129,
+      "range_end": 3129,
+      "call_sites": [
+       3064
+      ],
+      "def_path": "lsp::to_proto::tests::snippet_rendering_tabstop_adjust_offset_after_text_edits",
+      "def_line": 3053,
+      "test_module": "tests",
+      "mod_line": 2108,
+      "cfg_line": 2107,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/rust-analyzer/src/lsp/to_proto.rs",
+       3132,
+       "snippet_rendering_handle_dos_line_endings"
+      ],
+      "body_end": 3166,
+      "range_end": 3166,
+      "call_sites": [
+       3140
+      ],
+      "def_path": "lsp::to_proto::tests::snippet_rendering_handle_dos_line_endings",
+      "def_line": 3132,
+      "test_module": "tests",
+      "mod_line": 2108,
+      "cfg_line": 2107,
+      "ok": true
+     }
+    ],
+    "added_count": 8,
+    "added_sites": 8,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  }
+ ]
+}

@@ -1,0 +1,29 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_6af1075_vs_f79eebb_ram9_serde.json",
+ "servers": [
+  {
+   "name": "6af1075",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "6af1075-2",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 0,
+ "summary": {},
+ "rows_by_method": {},
+ "rows": []
+}

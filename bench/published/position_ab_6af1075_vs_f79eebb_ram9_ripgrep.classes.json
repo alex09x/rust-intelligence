@@ -1,0 +1,4779 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "ripgrep",
+ "report": "position_ab_6af1075_vs_f79eebb_ram9_ripgrep.json",
+ "servers": [
+  {
+   "name": "6af1075",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "6af1075-2",
+   "commit": "6af1075175137fe58ccd1f8230453cb664b25079",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 17,
+ "summary": {
+  "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file": 17
+ },
+ "rows_by_method": {
+  "incoming_calls": 17
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "crates/printer/src/summary.rs",
+   "line": 295,
+   "character": 12,
+   "symbol": "exclude_zero",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       911,
+       "count_path_with_zero"
+      ],
+      "body_end": 928,
+      "range_end": 928,
+      "call_sites": [
+       915
+      ],
+      "def_path": "summary::tests::count_path_with_zero",
+      "def_line": 911,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       931,
+       "count_path_without_zero"
+      ],
+      "body_end": 948,
+      "range_end": 948,
+      "call_sites": [
+       935
+      ],
+      "def_path": "summary::tests::count_path_without_zero",
+      "def_line": 931,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/printer/src/hyperlink.rs",
+   "line": 329,
+   "character": 8,
+   "symbol": "append_slice",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/hyperlink.rs",
+       872,
+       "build_format"
+      ],
+      "body_end": 885,
+      "range_end": 885,
+      "call_sites": [
+       874,
+       875,
+       876
+      ],
+      "def_path": "hyperlink::tests::build_format",
+      "def_line": 872,
+      "test_module": "tests",
+      "mod_line": 866,
+      "cfg_line": 865,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 3,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/regex/src/matcher.rs",
+   "line": 385,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       892,
+       "binary_detection"
+      ],
+      "body_end": 917,
+      "range_end": 917,
+      "call_sites": [
+       904
+      ],
+      "def_path": "json::tests::binary_detection",
+      "def_line": 892,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       920,
+       "max_matches"
+      ],
+      "body_end": 931,
+      "range_end": 931,
+      "call_sites": [
+       921
+      ],
+      "def_path": "json::tests::max_matches",
+      "def_line": 920,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       934,
+       "max_matches_after_context"
+      ],
+      "body_end": 963,
+      "range_end": 963,
+      "call_sites": [
+       948
+      ],
+      "def_path": "json::tests::max_matches_after_context",
+      "def_line": 934,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       966,
+       "no_match"
+      ],
+      "body_end": 976,
+      "range_end": 976,
+      "call_sites": [
+       967
+      ],
+      "def_path": "json::tests::no_match",
+      "def_line": 966,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       979,
+       "always_begin_end_no_match"
+      ],
+      "body_end": 991,
+      "range_end": 991,
+      "call_sites": [
+       980
+      ],
+      "def_path": "json::tests::always_begin_end_no_match",
+      "def_line": 979,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1819,
+       "reports_match"
+      ],
+      "body_end": 1839,
+      "range_end": 1839,
+      "call_sites": [
+       1820,
+       1830
+      ],
+      "def_path": "standard::tests::reports_match",
+      "def_line": 1819,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1842,
+       "reports_binary"
+      ],
+      "body_end": 1865,
+      "range_end": 1865,
+      "call_sites": [
+       1845,
+       1855
+      ],
+      "def_path": "standard::tests::reports_binary",
+      "def_line": 1842,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1868,
+       "reports_stats"
+      ],
+      "body_end": 1892,
+      "range_end": 1892,
+      "call_sites": [
+       1871
+      ],
+      "def_path": "standard::tests::reports_stats",
+      "def_line": 1868,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1895,
+       "reports_stats_multiple"
+      ],
+      "body_end": 1929,
+      "range_end": 1929,
+      "call_sites": [
+       1898
+      ],
+      "def_path": "standard::tests::reports_stats_multiple",
+      "def_line": 1895,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1932,
+       "context_break"
+      ],
+      "body_end": 1959,
+      "range_end": 1959,
+      "call_sites": [
+       1933
+      ],
+      "def_path": "standard::tests::context_break",
+      "def_line": 1932,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1962,
+       "context_break_multiple_no_heading"
+      ],
+      "body_end": 2009,
+      "range_end": 2009,
+      "call_sites": [
+       1963
+      ],
+      "def_path": "standard::tests::context_break_multiple_no_heading",
+      "def_line": 1962,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2012,
+       "context_break_multiple_heading"
+      ],
+      "body_end": 2060,
+      "range_end": 2060,
+      "call_sites": [
+       2013
+      ],
+      "def_path": "standard::tests::context_break_multiple_heading",
+      "def_line": 2012,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2063,
+       "path"
+      ],
+      "body_end": 2083,
+      "range_end": 2083,
+      "call_sites": [
+       2064
+      ],
+      "def_path": "standard::tests::path",
+      "def_line": 2063,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2086,
+       "separator_field"
+      ],
+      "body_end": 2114,
+      "range_end": 2114,
+      "call_sites": [
+       2087
+      ],
+      "def_path": "standard::tests::separator_field",
+      "def_line": 2086,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2117,
+       "separator_path"
+      ],
+      "body_end": 2138,
+      "range_end": 2138,
+      "call_sites": [
+       2118
+      ],
+      "def_path": "standard::tests::separator_path",
+      "def_line": 2117,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2141,
+       "path_terminator"
+      ],
+      "body_end": 2162,
+      "range_end": 2162,
+      "call_sites": [
+       2142
+      ],
+      "def_path": "standard::tests::path_terminator",
+      "def_line": 2141,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2165,
+       "heading"
+      ],
+      "body_end": 2186,
+      "range_end": 2186,
+      "call_sites": [
+       2166
+      ],
+      "def_path": "standard::tests::heading",
+      "def_line": 2165,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2189,
+       "no_heading"
+      ],
+      "body_end": 2209,
+      "range_end": 2209,
+      "call_sites": [
+       2190
+      ],
+      "def_path": "standard::tests::no_heading",
+      "def_line": 2189,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2212,
+       "no_heading_multiple"
+      ],
+      "body_end": 2245,
+      "range_end": 2245,
+      "call_sites": [
+       2213,
+       2226
+      ],
+      "def_path": "standard::tests::no_heading_multiple",
+      "def_line": 2212,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2248,
+       "heading_multiple"
+      ],
+      "body_end": 2283,
+      "range_end": 2283,
+      "call_sites": [
+       2249,
+       2262
+      ],
+      "def_path": "standard::tests::heading_multiple",
+      "def_line": 2248,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2286,
+       "trim_ascii"
+      ],
+      "body_end": 2306,
+      "range_end": 2306,
+      "call_sites": [
+       2287
+      ],
+      "def_path": "standard::tests::trim_ascii",
+      "def_line": 2286,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2309,
+       "trim_ascii_multi_line"
+      ],
+      "body_end": 2331,
+      "range_end": 2331,
+      "call_sites": [
+       2310
+      ],
+      "def_path": "standard::tests::trim_ascii_multi_line",
+      "def_line": 2309,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2334,
+       "trim_ascii_with_line_term"
+      ],
+      "body_end": 2356,
+      "range_end": 2356,
+      "call_sites": [
+       2335
+      ],
+      "def_path": "standard::tests::trim_ascii_with_line_term",
+      "def_line": 2334,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2359,
+       "line_number"
+      ],
+      "body_end": 2378,
+      "range_end": 2378,
+      "call_sites": [
+       2360
+      ],
+      "def_path": "standard::tests::line_number",
+      "def_line": 2359,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2381,
+       "line_number_multi_line"
+      ],
+      "body_end": 2404,
+      "range_end": 2404,
+      "call_sites": [
+       2382
+      ],
+      "def_path": "standard::tests::line_number_multi_line",
+      "def_line": 2381,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2407,
+       "column_number"
+      ],
+      "body_end": 2427,
+      "range_end": 2427,
+      "call_sites": [
+       2408
+      ],
+      "def_path": "standard::tests::column_number",
+      "def_line": 2407,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2430,
+       "column_number_multi_line"
+      ],
+      "body_end": 2454,
+      "range_end": 2454,
+      "call_sites": [
+       2431
+      ],
+      "def_path": "standard::tests::column_number_multi_line",
+      "def_line": 2430,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2457,
+       "byte_offset"
+      ],
+      "body_end": 2478,
+      "range_end": 2478,
+      "call_sites": [
+       2458
+      ],
+      "def_path": "standard::tests::byte_offset",
+      "def_line": 2457,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2481,
+       "byte_offset_multi_line"
+      ],
+      "body_end": 2506,
+      "range_end": 2506,
+      "call_sites": [
+       2482
+      ],
+      "def_path": "standard::tests::byte_offset_multi_line",
+      "def_line": 2481,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2509,
+       "max_columns"
+      ],
+      "body_end": 2530,
+      "range_end": 2530,
+      "call_sites": [
+       2510
+      ],
+      "def_path": "standard::tests::max_columns",
+      "def_line": 2509,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2533,
+       "max_columns_preview"
+      ],
+      "body_end": 2555,
+      "range_end": 2555,
+      "call_sites": [
+       2534
+      ],
+      "def_path": "standard::tests::max_columns_preview",
+      "def_line": 2533,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2558,
+       "max_columns_with_count"
+      ],
+      "body_end": 2580,
+      "range_end": 2580,
+      "call_sites": [
+       2559
+      ],
+      "def_path": "standard::tests::max_columns_with_count",
+      "def_line": 2558,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2583,
+       "max_columns_with_count_preview_no_match"
+      ],
+      "body_end": 2606,
+      "range_end": 2606,
+      "call_sites": [
+       2584
+      ],
+      "def_path": "standard::tests::max_columns_with_count_preview_no_match",
+      "def_line": 2583,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2609,
+       "max_columns_with_count_preview_one_match"
+      ],
+      "body_end": 2632,
+      "range_end": 2632,
+      "call_sites": [
+       2610
+      ],
+      "def_path": "standard::tests::max_columns_with_count_preview_one_match",
+      "def_line": 2609,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2635,
+       "max_columns_with_count_preview_two_matches"
+      ],
+      "body_end": 2659,
+      "range_end": 2659,
+      "call_sites": [
+       2637
+      ],
+      "def_path": "standard::tests::max_columns_with_count_preview_two_matches",
+      "def_line": 2635,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2662,
+       "max_columns_multi_line"
+      ],
+      "body_end": 2684,
+      "range_end": 2684,
+      "call_sites": [
+       2663
+      ],
+      "def_path": "standard::tests::max_columns_multi_line",
+      "def_line": 2662,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2687,
+       "max_columns_multi_line_preview"
+      ],
+      "body_end": 2714,
+      "range_end": 2714,
+      "call_sites": [
+       2689
+      ],
+      "def_path": "standard::tests::max_columns_multi_line_preview",
+      "def_line": 2687,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2717,
+       "max_matches"
+      ],
+      "body_end": 2737,
+      "range_end": 2737,
+      "call_sites": [
+       2718
+      ],
+      "def_path": "standard::tests::max_matches",
+      "def_line": 2717,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2740,
+       "max_matches_context"
+      ],
+      "body_end": 2840,
+      "range_end": 2840,
+      "call_sites": [
+       2742,
+       2790
+      ],
+      "def_path": "standard::tests::max_matches_context",
+      "def_line": 2740,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2843,
+       "max_matches_multi_line1"
+      ],
+      "body_end": 2864,
+      "range_end": 2864,
+      "call_sites": [
+       2844
+      ],
+      "def_path": "standard::tests::max_matches_multi_line1",
+      "def_line": 2843,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2867,
+       "max_matches_multi_line2"
+      ],
+      "body_end": 2890,
+      "range_end": 2890,
+      "call_sites": [
+       2869
+      ],
+      "def_path": "standard::tests::max_matches_multi_line2",
+      "def_line": 2867,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2893,
+       "only_matching"
+      ],
+      "body_end": 2916,
+      "range_end": 2916,
+      "call_sites": [
+       2894
+      ],
+      "def_path": "standard::tests::only_matching",
+      "def_line": 2893,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2919,
+       "only_matching_multi_line1"
+      ],
+      "body_end": 2944,
+      "range_end": 2944,
+      "call_sites": [
+       2921
+      ],
+      "def_path": "standard::tests::only_matching_multi_line1",
+      "def_line": 2919,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2947,
+       "only_matching_multi_line2"
+      ],
+      "body_end": 2973,
+      "range_end": 2973,
+      "call_sites": [
+       2949
+      ],
+      "def_path": "standard::tests::only_matching_multi_line2",
+      "def_line": 2947,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2976,
+       "only_matching_max_columns"
+      ],
+      "body_end": 3000,
+      "range_end": 3000,
+      "call_sites": [
+       2977
+      ],
+      "def_path": "standard::tests::only_matching_max_columns",
+      "def_line": 2976,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3003,
+       "only_matching_max_columns_preview"
+      ],
+      "body_end": 3028,
+      "range_end": 3028,
+      "call_sites": [
+       3004
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_preview",
+      "def_line": 3003,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3031,
+       "only_matching_max_columns_multi_line1"
+      ],
+      "body_end": 3061,
+      "range_end": 3061,
+      "call_sites": [
+       3037
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_multi_line1",
+      "def_line": 3031,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3064,
+       "only_matching_max_columns_preview_multi_line1"
+      ],
+      "body_end": 3095,
+      "range_end": 3095,
+      "call_sites": [
+       3070
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_preview_multi_line1",
+      "def_line": 3064,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3098,
+       "only_matching_max_columns_multi_line2"
+      ],
+      "body_end": 3125,
+      "range_end": 3125,
+      "call_sites": [
+       3100
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_multi_line2",
+      "def_line": 3098,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3128,
+       "only_matching_max_columns_preview_multi_line2"
+      ],
+      "body_end": 3156,
+      "range_end": 3156,
+      "call_sites": [
+       3130
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_preview_multi_line2",
+      "def_line": 3128,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3159,
+       "per_match"
+      ],
+      "body_end": 3182,
+      "range_end": 3182,
+      "call_sites": [
+       3160
+      ],
+      "def_path": "standard::tests::per_match",
+      "def_line": 3159,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3185,
+       "per_match_multi_line1"
+      ],
+      "body_end": 3210,
+      "range_end": 3210,
+      "call_sites": [
+       3187
+      ],
+      "def_path": "standard::tests::per_match_multi_line1",
+      "def_line": 3185,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3213,
+       "per_match_multi_line2"
+      ],
+      "body_end": 3239,
+      "range_end": 3239,
+      "call_sites": [
+       3215
+      ],
+      "def_path": "standard::tests::per_match_multi_line2",
+      "def_line": 3213,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3242,
+       "per_match_multi_line3"
+      ],
+      "body_end": 3268,
+      "range_end": 3268,
+      "call_sites": [
+       3244
+      ],
+      "def_path": "standard::tests::per_match_multi_line3",
+      "def_line": 3242,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3271,
+       "per_match_multi_line1_only_first_line"
+      ],
+      "body_end": 3297,
+      "range_end": 3297,
+      "call_sites": [
+       3273
+      ],
+      "def_path": "standard::tests::per_match_multi_line1_only_first_line",
+      "def_line": 3271,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3300,
+       "per_match_multi_line2_only_first_line"
+      ],
+      "body_end": 3325,
+      "range_end": 3325,
+      "call_sites": [
+       3302
+      ],
+      "def_path": "standard::tests::per_match_multi_line2_only_first_line",
+      "def_line": 3300,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3328,
+       "per_match_multi_line3_only_first_line"
+      ],
+      "body_end": 3353,
+      "range_end": 3353,
+      "call_sites": [
+       3330
+      ],
+      "def_path": "standard::tests::per_match_multi_line3_only_first_line",
+      "def_line": 3328,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3356,
+       "replacement_passthru"
+      ],
+      "body_end": 3382,
+      "range_end": 3382,
+      "call_sites": [
+       3357
+      ],
+      "def_path": "standard::tests::replacement_passthru",
+      "def_line": 3356,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3385,
+       "replacement"
+      ],
+      "body_end": 3407,
+      "range_end": 3407,
+      "call_sites": [
+       3386
+      ],
+      "def_path": "standard::tests::replacement",
+      "def_line": 3385,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3414,
+       "replacement_multi_line"
+      ],
+      "body_end": 3433,
+      "range_end": 3433,
+      "call_sites": [
+       3415
+      ],
+      "def_path": "standard::tests::replacement_multi_line",
+      "def_line": 3414,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3462,
+       "replacement_multi_line_combine_lines"
+      ],
+      "body_end": 3481,
+      "range_end": 3481,
+      "call_sites": [
+       3463
+      ],
+      "def_path": "standard::tests::replacement_multi_line_combine_lines",
+      "def_line": 3462,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3484,
+       "replacement_max_columns"
+      ],
+      "body_end": 3507,
+      "range_end": 3507,
+      "call_sites": [
+       3485
+      ],
+      "def_path": "standard::tests::replacement_max_columns",
+      "def_line": 3484,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3510,
+       "replacement_max_columns_preview1"
+      ],
+      "body_end": 3534,
+      "range_end": 3534,
+      "call_sites": [
+       3511
+      ],
+      "def_path": "standard::tests::replacement_max_columns_preview1",
+      "def_line": 3510,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3537,
+       "replacement_max_columns_preview2"
+      ],
+      "body_end": 3561,
+      "range_end": 3561,
+      "call_sites": [
+       3539
+      ],
+      "def_path": "standard::tests::replacement_max_columns_preview2",
+      "def_line": 3537,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3564,
+       "replacement_only_matching"
+      ],
+      "body_end": 3588,
+      "range_end": 3588,
+      "call_sites": [
+       3565
+      ],
+      "def_path": "standard::tests::replacement_only_matching",
+      "def_line": 3564,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3591,
+       "replacement_per_match"
+      ],
+      "body_end": 3615,
+      "range_end": 3615,
+      "call_sites": [
+       3592
+      ],
+      "def_path": "standard::tests::replacement_per_match",
+      "def_line": 3591,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3618,
+       "invert"
+      ],
+      "body_end": 3640,
+      "range_end": 3640,
+      "call_sites": [
+       3619
+      ],
+      "def_path": "standard::tests::invert",
+      "def_line": 3618,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3643,
+       "invert_multi_line"
+      ],
+      "body_end": 3666,
+      "range_end": 3666,
+      "call_sites": [
+       3644
+      ],
+      "def_path": "standard::tests::invert_multi_line",
+      "def_line": 3643,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3669,
+       "invert_context"
+      ],
+      "body_end": 3695,
+      "range_end": 3695,
+      "call_sites": [
+       3670
+      ],
+      "def_path": "standard::tests::invert_context",
+      "def_line": 3669,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3698,
+       "invert_context_multi_line"
+      ],
+      "body_end": 3725,
+      "range_end": 3725,
+      "call_sites": [
+       3699
+      ],
+      "def_path": "standard::tests::invert_context_multi_line",
+      "def_line": 3698,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3728,
+       "invert_context_only_matching"
+      ],
+      "body_end": 3756,
+      "range_end": 3756,
+      "call_sites": [
+       3729
+      ],
+      "def_path": "standard::tests::invert_context_only_matching",
+      "def_line": 3728,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3759,
+       "invert_context_only_matching_multi_line"
+      ],
+      "body_end": 3788,
+      "range_end": 3788,
+      "call_sites": [
+       3760
+      ],
+      "def_path": "standard::tests::invert_context_only_matching_multi_line",
+      "def_line": 3759,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1011,
+       "count_max_matches"
+      ],
+      "body_end": 1024,
+      "range_end": 1024,
+      "call_sites": [
+       1012
+      ],
+      "def_path": "summary::tests::count_max_matches",
+      "def_line": 1011,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1027,
+       "count_matches"
+      ],
+      "body_end": 1043,
+      "range_end": 1043,
+      "call_sites": [
+       1028
+      ],
+      "def_path": "summary::tests::count_matches",
+      "def_line": 1027,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1046,
+       "path_with_match_found"
+      ],
+      "body_end": 1062,
+      "range_end": 1062,
+      "call_sites": [
+       1047
+      ],
+      "def_path": "summary::tests::path_with_match_found",
+      "def_line": 1046,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1065,
+       "path_with_match_not_found"
+      ],
+      "body_end": 1081,
+      "range_end": 1081,
+      "call_sites": [
+       1066
+      ],
+      "def_path": "summary::tests::path_with_match_not_found",
+      "def_line": 1065,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1084,
+       "path_without_match_found"
+      ],
+      "body_end": 1100,
+      "range_end": 1100,
+      "call_sites": [
+       1085
+      ],
+      "def_path": "summary::tests::path_without_match_found",
+      "def_line": 1084,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1103,
+       "path_without_match_not_found"
+      ],
+      "body_end": 1119,
+      "range_end": 1119,
+      "call_sites": [
+       1104
+      ],
+      "def_path": "summary::tests::path_without_match_not_found",
+      "def_line": 1103,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1122,
+       "quiet"
+      ],
+      "body_end": 1141,
+      "range_end": 1141,
+      "call_sites": [
+       1123
+      ],
+      "def_path": "summary::tests::quiet",
+      "def_line": 1122,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1144,
+       "quiet_with_stats"
+      ],
+      "body_end": 1165,
+      "range_end": 1165,
+      "call_sites": [
+       1145
+      ],
+      "def_path": "summary::tests::quiet_with_stats",
+      "def_line": 1144,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       829,
+       "path_with_match_error"
+      ],
+      "body_end": 840,
+      "range_end": 840,
+      "call_sites": [
+       830
+      ],
+      "def_path": "summary::tests::path_with_match_error",
+      "def_line": 829,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       843,
+       "path_without_match_error"
+      ],
+      "body_end": 854,
+      "range_end": 854,
+      "call_sites": [
+       844
+      ],
+      "def_path": "summary::tests::path_without_match_error",
+      "def_line": 843,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       857,
+       "count_no_path"
+      ],
+      "body_end": 869,
+      "range_end": 869,
+      "call_sites": [
+       858
+      ],
+      "def_path": "summary::tests::count_no_path",
+      "def_line": 857,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       872,
+       "count_no_path_even_with_path"
+      ],
+      "body_end": 889,
+      "range_end": 889,
+      "call_sites": [
+       873
+      ],
+      "def_path": "summary::tests::count_no_path_even_with_path",
+      "def_line": 872,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       892,
+       "count_path"
+      ],
+      "body_end": 908,
+      "range_end": 908,
+      "call_sites": [
+       893
+      ],
+      "def_path": "summary::tests::count_path",
+      "def_line": 892,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       911,
+       "count_path_with_zero"
+      ],
+      "body_end": 928,
+      "range_end": 928,
+      "call_sites": [
+       912
+      ],
+      "def_path": "summary::tests::count_path_with_zero",
+      "def_line": 911,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       931,
+       "count_path_without_zero"
+      ],
+      "body_end": 948,
+      "range_end": 948,
+      "call_sites": [
+       932
+      ],
+      "def_path": "summary::tests::count_path_without_zero",
+      "def_line": 931,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       951,
+       "count_path_field_separator"
+      ],
+      "body_end": 968,
+      "range_end": 968,
+      "call_sites": [
+       952
+      ],
+      "def_path": "summary::tests::count_path_field_separator",
+      "def_line": 951,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       971,
+       "count_path_terminator"
+      ],
+      "body_end": 988,
+      "range_end": 988,
+      "call_sites": [
+       972
+      ],
+      "def_path": "summary::tests::count_path_terminator",
+      "def_line": 971,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       991,
+       "count_path_separator"
+      ],
+      "body_end": 1008,
+      "range_end": 1008,
+      "call_sites": [
+       992
+      ],
+      "def_path": "summary::tests::count_path_separator",
+      "def_line": 991,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     }
+    ],
+    "added_count": 90,
+    "added_sites": 95,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/printer/src/standard.rs",
+   "line": 387,
+   "character": 12,
+   "symbol": "separator_search",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1962,
+       "context_break_multiple_no_heading"
+      ],
+      "body_end": 2009,
+      "range_end": 2009,
+      "call_sites": [
+       1965
+      ],
+      "def_path": "standard::tests::context_break_multiple_no_heading",
+      "def_line": 1962,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2012,
+       "context_break_multiple_heading"
+      ],
+      "body_end": 2060,
+      "range_end": 2060,
+      "call_sites": [
+       2016
+      ],
+      "def_path": "standard::tests::context_break_multiple_heading",
+      "def_line": 2012,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/searcher/src/lines.rs",
+   "line": 74,
+   "character": 12,
+   "symbol": "next",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/searcher/src/lines.rs",
+       330,
+       "line_iter_empty"
+      ],
+      "body_end": 333,
+      "range_end": 333,
+      "call_sites": [
+       332
+      ],
+      "def_path": "lines::tests::line_iter_empty",
+      "def_line": 330,
+      "test_module": "tests",
+      "mod_line": 200,
+      "cfg_line": 199,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/regex/src/matcher.rs",
+   "line": 322,
+   "character": 12,
+   "symbol": "crlf",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/pcre2/src/matcher.rs",
+       450,
+       "line_terminator_crlf"
+      ],
+      "body_end": 472,
+      "range_end": 472,
+      "call_sites": [
+       468
+      ],
+      "def_path": "matcher::tests::line_terminator_crlf",
+      "def_line": 450,
+      "test_module": "tests",
+      "mod_line": 430,
+      "cfg_line": 429,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       994,
+       "missing_crlf"
+      ],
+      "body_end": 1026,
+      "range_end": 1026,
+      "call_sites": [
+       1012
+      ],
+      "def_path": "json::tests::missing_crlf",
+      "def_line": 994,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3791,
+       "regression_search_empty_with_crlf"
+      ],
+      "body_end": 3805,
+      "range_end": 3805,
+      "call_sites": [
+       3793
+      ],
+      "def_path": "standard::tests::regression_search_empty_with_crlf",
+      "def_line": 3791,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     }
+    ],
+    "added_count": 3,
+    "added_sites": 3,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/searcher/src/lines.rs",
+   "line": 25,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/searcher/src/sink.rs",
+       471,
+       "lines"
+      ],
+      "body_end": 473,
+      "range_end": 473,
+      "call_sites": [
+       472
+      ],
+      "def_path": "sink::SinkContext::<'b>::lines",
+      "def_line": 471,
+      "test_attribute_line": 470,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/printer/src/standard.rs",
+   "line": 348,
+   "character": 12,
+   "symbol": "column",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2407,
+       "column_number"
+      ],
+      "body_end": 2427,
+      "range_end": 2427,
+      "call_sites": [
+       2410
+      ],
+      "def_path": "standard::tests::column_number",
+      "def_line": 2407,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2430,
+       "column_number_multi_line"
+      ],
+      "body_end": 2454,
+      "range_end": 2454,
+      "call_sites": [
+       2433
+      ],
+      "def_path": "standard::tests::column_number_multi_line",
+      "def_line": 2430,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2893,
+       "only_matching"
+      ],
+      "body_end": 2916,
+      "range_end": 2916,
+      "call_sites": [
+       2897
+      ],
+      "def_path": "standard::tests::only_matching",
+      "def_line": 2893,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2919,
+       "only_matching_multi_line1"
+      ],
+      "body_end": 2944,
+      "range_end": 2944,
+      "call_sites": [
+       2924
+      ],
+      "def_path": "standard::tests::only_matching_multi_line1",
+      "def_line": 2919,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2947,
+       "only_matching_multi_line2"
+      ],
+      "body_end": 2973,
+      "range_end": 2973,
+      "call_sites": [
+       2952
+      ],
+      "def_path": "standard::tests::only_matching_multi_line2",
+      "def_line": 2947,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2976,
+       "only_matching_max_columns"
+      ],
+      "body_end": 3000,
+      "range_end": 3000,
+      "call_sites": [
+       2981
+      ],
+      "def_path": "standard::tests::only_matching_max_columns",
+      "def_line": 2976,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3003,
+       "only_matching_max_columns_preview"
+      ],
+      "body_end": 3028,
+      "range_end": 3028,
+      "call_sites": [
+       3009
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_preview",
+      "def_line": 3003,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3031,
+       "only_matching_max_columns_multi_line1"
+      ],
+      "body_end": 3061,
+      "range_end": 3061,
+      "call_sites": [
+       3041
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_multi_line1",
+      "def_line": 3031,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3064,
+       "only_matching_max_columns_preview_multi_line1"
+      ],
+      "body_end": 3095,
+      "range_end": 3095,
+      "call_sites": [
+       3075
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_preview_multi_line1",
+      "def_line": 3064,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3098,
+       "only_matching_max_columns_multi_line2"
+      ],
+      "body_end": 3125,
+      "range_end": 3125,
+      "call_sites": [
+       3104
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_multi_line2",
+      "def_line": 3098,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3128,
+       "only_matching_max_columns_preview_multi_line2"
+      ],
+      "body_end": 3156,
+      "range_end": 3156,
+      "call_sites": [
+       3135
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_preview_multi_line2",
+      "def_line": 3128,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3159,
+       "per_match"
+      ],
+      "body_end": 3182,
+      "range_end": 3182,
+      "call_sites": [
+       3163
+      ],
+      "def_path": "standard::tests::per_match",
+      "def_line": 3159,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3185,
+       "per_match_multi_line1"
+      ],
+      "body_end": 3210,
+      "range_end": 3210,
+      "call_sites": [
+       3190
+      ],
+      "def_path": "standard::tests::per_match_multi_line1",
+      "def_line": 3185,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3213,
+       "per_match_multi_line2"
+      ],
+      "body_end": 3239,
+      "range_end": 3239,
+      "call_sites": [
+       3218
+      ],
+      "def_path": "standard::tests::per_match_multi_line2",
+      "def_line": 3213,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3242,
+       "per_match_multi_line3"
+      ],
+      "body_end": 3268,
+      "range_end": 3268,
+      "call_sites": [
+       3247
+      ],
+      "def_path": "standard::tests::per_match_multi_line3",
+      "def_line": 3242,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3271,
+       "per_match_multi_line1_only_first_line"
+      ],
+      "body_end": 3297,
+      "range_end": 3297,
+      "call_sites": [
+       3277
+      ],
+      "def_path": "standard::tests::per_match_multi_line1_only_first_line",
+      "def_line": 3271,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3300,
+       "per_match_multi_line2_only_first_line"
+      ],
+      "body_end": 3325,
+      "range_end": 3325,
+      "call_sites": [
+       3306
+      ],
+      "def_path": "standard::tests::per_match_multi_line2_only_first_line",
+      "def_line": 3300,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3328,
+       "per_match_multi_line3_only_first_line"
+      ],
+      "body_end": 3353,
+      "range_end": 3353,
+      "call_sites": [
+       3334
+      ],
+      "def_path": "standard::tests::per_match_multi_line3_only_first_line",
+      "def_line": 3328,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     }
+    ],
+    "added_count": 18,
+    "added_sites": 18,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/pcre2/src/matcher.rs",
+   "line": 155,
+   "character": 12,
+   "symbol": "crlf",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/pcre2/src/matcher.rs",
+       450,
+       "line_terminator_crlf"
+      ],
+      "body_end": 472,
+      "range_end": 472,
+      "call_sites": [
+       468
+      ],
+      "def_path": "matcher::tests::line_terminator_crlf",
+      "def_line": 450,
+      "test_module": "tests",
+      "mod_line": 430,
+      "cfg_line": 429,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       994,
+       "missing_crlf"
+      ],
+      "body_end": 1026,
+      "range_end": 1026,
+      "call_sites": [
+       1012
+      ],
+      "def_path": "json::tests::missing_crlf",
+      "def_line": 994,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3791,
+       "regression_search_empty_with_crlf"
+      ],
+      "body_end": 3805,
+      "range_end": 3805,
+      "call_sites": [
+       3793
+      ],
+      "def_path": "standard::tests::regression_search_empty_with_crlf",
+      "def_line": 3791,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     }
+    ],
+    "added_count": 3,
+    "added_sites": 3,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/searcher/src/searcher/mod.rs",
+   "line": 612,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/searcher/src/searcher/mod.rs",
+       1027,
+       "config_error_line_terminator"
+      ],
+      "body_end": 1035,
+      "range_end": 1035,
+      "call_sites": [
+       1032
+      ],
+      "def_path": "searcher::tests::config_error_line_terminator",
+      "def_line": 1027,
+      "test_module": "tests",
+      "mod_line": 1012,
+      "cfg_line": 1011,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/pcre2/src/matcher.rs",
+   "line": 305,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       892,
+       "binary_detection"
+      ],
+      "body_end": 917,
+      "range_end": 917,
+      "call_sites": [
+       904
+      ],
+      "def_path": "json::tests::binary_detection",
+      "def_line": 892,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       920,
+       "max_matches"
+      ],
+      "body_end": 931,
+      "range_end": 931,
+      "call_sites": [
+       921
+      ],
+      "def_path": "json::tests::max_matches",
+      "def_line": 920,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       934,
+       "max_matches_after_context"
+      ],
+      "body_end": 963,
+      "range_end": 963,
+      "call_sites": [
+       948
+      ],
+      "def_path": "json::tests::max_matches_after_context",
+      "def_line": 934,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       966,
+       "no_match"
+      ],
+      "body_end": 976,
+      "range_end": 976,
+      "call_sites": [
+       967
+      ],
+      "def_path": "json::tests::no_match",
+      "def_line": 966,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       979,
+       "always_begin_end_no_match"
+      ],
+      "body_end": 991,
+      "range_end": 991,
+      "call_sites": [
+       980
+      ],
+      "def_path": "json::tests::always_begin_end_no_match",
+      "def_line": 979,
+      "test_module": "tests",
+      "mod_line": 871,
+      "cfg_line": 870,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1819,
+       "reports_match"
+      ],
+      "body_end": 1839,
+      "range_end": 1839,
+      "call_sites": [
+       1820,
+       1830
+      ],
+      "def_path": "standard::tests::reports_match",
+      "def_line": 1819,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1842,
+       "reports_binary"
+      ],
+      "body_end": 1865,
+      "range_end": 1865,
+      "call_sites": [
+       1845,
+       1855
+      ],
+      "def_path": "standard::tests::reports_binary",
+      "def_line": 1842,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1868,
+       "reports_stats"
+      ],
+      "body_end": 1892,
+      "range_end": 1892,
+      "call_sites": [
+       1871
+      ],
+      "def_path": "standard::tests::reports_stats",
+      "def_line": 1868,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1895,
+       "reports_stats_multiple"
+      ],
+      "body_end": 1929,
+      "range_end": 1929,
+      "call_sites": [
+       1898
+      ],
+      "def_path": "standard::tests::reports_stats_multiple",
+      "def_line": 1895,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1932,
+       "context_break"
+      ],
+      "body_end": 1959,
+      "range_end": 1959,
+      "call_sites": [
+       1933
+      ],
+      "def_path": "standard::tests::context_break",
+      "def_line": 1932,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1962,
+       "context_break_multiple_no_heading"
+      ],
+      "body_end": 2009,
+      "range_end": 2009,
+      "call_sites": [
+       1963
+      ],
+      "def_path": "standard::tests::context_break_multiple_no_heading",
+      "def_line": 1962,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2012,
+       "context_break_multiple_heading"
+      ],
+      "body_end": 2060,
+      "range_end": 2060,
+      "call_sites": [
+       2013
+      ],
+      "def_path": "standard::tests::context_break_multiple_heading",
+      "def_line": 2012,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2063,
+       "path"
+      ],
+      "body_end": 2083,
+      "range_end": 2083,
+      "call_sites": [
+       2064
+      ],
+      "def_path": "standard::tests::path",
+      "def_line": 2063,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2086,
+       "separator_field"
+      ],
+      "body_end": 2114,
+      "range_end": 2114,
+      "call_sites": [
+       2087
+      ],
+      "def_path": "standard::tests::separator_field",
+      "def_line": 2086,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2117,
+       "separator_path"
+      ],
+      "body_end": 2138,
+      "range_end": 2138,
+      "call_sites": [
+       2118
+      ],
+      "def_path": "standard::tests::separator_path",
+      "def_line": 2117,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2141,
+       "path_terminator"
+      ],
+      "body_end": 2162,
+      "range_end": 2162,
+      "call_sites": [
+       2142
+      ],
+      "def_path": "standard::tests::path_terminator",
+      "def_line": 2141,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2165,
+       "heading"
+      ],
+      "body_end": 2186,
+      "range_end": 2186,
+      "call_sites": [
+       2166
+      ],
+      "def_path": "standard::tests::heading",
+      "def_line": 2165,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2189,
+       "no_heading"
+      ],
+      "body_end": 2209,
+      "range_end": 2209,
+      "call_sites": [
+       2190
+      ],
+      "def_path": "standard::tests::no_heading",
+      "def_line": 2189,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2212,
+       "no_heading_multiple"
+      ],
+      "body_end": 2245,
+      "range_end": 2245,
+      "call_sites": [
+       2213,
+       2226
+      ],
+      "def_path": "standard::tests::no_heading_multiple",
+      "def_line": 2212,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2248,
+       "heading_multiple"
+      ],
+      "body_end": 2283,
+      "range_end": 2283,
+      "call_sites": [
+       2249,
+       2262
+      ],
+      "def_path": "standard::tests::heading_multiple",
+      "def_line": 2248,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2286,
+       "trim_ascii"
+      ],
+      "body_end": 2306,
+      "range_end": 2306,
+      "call_sites": [
+       2287
+      ],
+      "def_path": "standard::tests::trim_ascii",
+      "def_line": 2286,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2309,
+       "trim_ascii_multi_line"
+      ],
+      "body_end": 2331,
+      "range_end": 2331,
+      "call_sites": [
+       2310
+      ],
+      "def_path": "standard::tests::trim_ascii_multi_line",
+      "def_line": 2309,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2334,
+       "trim_ascii_with_line_term"
+      ],
+      "body_end": 2356,
+      "range_end": 2356,
+      "call_sites": [
+       2335
+      ],
+      "def_path": "standard::tests::trim_ascii_with_line_term",
+      "def_line": 2334,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2359,
+       "line_number"
+      ],
+      "body_end": 2378,
+      "range_end": 2378,
+      "call_sites": [
+       2360
+      ],
+      "def_path": "standard::tests::line_number",
+      "def_line": 2359,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2381,
+       "line_number_multi_line"
+      ],
+      "body_end": 2404,
+      "range_end": 2404,
+      "call_sites": [
+       2382
+      ],
+      "def_path": "standard::tests::line_number_multi_line",
+      "def_line": 2381,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2407,
+       "column_number"
+      ],
+      "body_end": 2427,
+      "range_end": 2427,
+      "call_sites": [
+       2408
+      ],
+      "def_path": "standard::tests::column_number",
+      "def_line": 2407,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2430,
+       "column_number_multi_line"
+      ],
+      "body_end": 2454,
+      "range_end": 2454,
+      "call_sites": [
+       2431
+      ],
+      "def_path": "standard::tests::column_number_multi_line",
+      "def_line": 2430,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2457,
+       "byte_offset"
+      ],
+      "body_end": 2478,
+      "range_end": 2478,
+      "call_sites": [
+       2458
+      ],
+      "def_path": "standard::tests::byte_offset",
+      "def_line": 2457,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2481,
+       "byte_offset_multi_line"
+      ],
+      "body_end": 2506,
+      "range_end": 2506,
+      "call_sites": [
+       2482
+      ],
+      "def_path": "standard::tests::byte_offset_multi_line",
+      "def_line": 2481,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2509,
+       "max_columns"
+      ],
+      "body_end": 2530,
+      "range_end": 2530,
+      "call_sites": [
+       2510
+      ],
+      "def_path": "standard::tests::max_columns",
+      "def_line": 2509,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2533,
+       "max_columns_preview"
+      ],
+      "body_end": 2555,
+      "range_end": 2555,
+      "call_sites": [
+       2534
+      ],
+      "def_path": "standard::tests::max_columns_preview",
+      "def_line": 2533,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2558,
+       "max_columns_with_count"
+      ],
+      "body_end": 2580,
+      "range_end": 2580,
+      "call_sites": [
+       2559
+      ],
+      "def_path": "standard::tests::max_columns_with_count",
+      "def_line": 2558,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2583,
+       "max_columns_with_count_preview_no_match"
+      ],
+      "body_end": 2606,
+      "range_end": 2606,
+      "call_sites": [
+       2584
+      ],
+      "def_path": "standard::tests::max_columns_with_count_preview_no_match",
+      "def_line": 2583,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2609,
+       "max_columns_with_count_preview_one_match"
+      ],
+      "body_end": 2632,
+      "range_end": 2632,
+      "call_sites": [
+       2610
+      ],
+      "def_path": "standard::tests::max_columns_with_count_preview_one_match",
+      "def_line": 2609,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2635,
+       "max_columns_with_count_preview_two_matches"
+      ],
+      "body_end": 2659,
+      "range_end": 2659,
+      "call_sites": [
+       2637
+      ],
+      "def_path": "standard::tests::max_columns_with_count_preview_two_matches",
+      "def_line": 2635,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2662,
+       "max_columns_multi_line"
+      ],
+      "body_end": 2684,
+      "range_end": 2684,
+      "call_sites": [
+       2663
+      ],
+      "def_path": "standard::tests::max_columns_multi_line",
+      "def_line": 2662,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2687,
+       "max_columns_multi_line_preview"
+      ],
+      "body_end": 2714,
+      "range_end": 2714,
+      "call_sites": [
+       2689
+      ],
+      "def_path": "standard::tests::max_columns_multi_line_preview",
+      "def_line": 2687,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2717,
+       "max_matches"
+      ],
+      "body_end": 2737,
+      "range_end": 2737,
+      "call_sites": [
+       2718
+      ],
+      "def_path": "standard::tests::max_matches",
+      "def_line": 2717,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2740,
+       "max_matches_context"
+      ],
+      "body_end": 2840,
+      "range_end": 2840,
+      "call_sites": [
+       2742,
+       2790
+      ],
+      "def_path": "standard::tests::max_matches_context",
+      "def_line": 2740,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2843,
+       "max_matches_multi_line1"
+      ],
+      "body_end": 2864,
+      "range_end": 2864,
+      "call_sites": [
+       2844
+      ],
+      "def_path": "standard::tests::max_matches_multi_line1",
+      "def_line": 2843,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2867,
+       "max_matches_multi_line2"
+      ],
+      "body_end": 2890,
+      "range_end": 2890,
+      "call_sites": [
+       2869
+      ],
+      "def_path": "standard::tests::max_matches_multi_line2",
+      "def_line": 2867,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2893,
+       "only_matching"
+      ],
+      "body_end": 2916,
+      "range_end": 2916,
+      "call_sites": [
+       2894
+      ],
+      "def_path": "standard::tests::only_matching",
+      "def_line": 2893,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2919,
+       "only_matching_multi_line1"
+      ],
+      "body_end": 2944,
+      "range_end": 2944,
+      "call_sites": [
+       2921
+      ],
+      "def_path": "standard::tests::only_matching_multi_line1",
+      "def_line": 2919,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2947,
+       "only_matching_multi_line2"
+      ],
+      "body_end": 2973,
+      "range_end": 2973,
+      "call_sites": [
+       2949
+      ],
+      "def_path": "standard::tests::only_matching_multi_line2",
+      "def_line": 2947,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2976,
+       "only_matching_max_columns"
+      ],
+      "body_end": 3000,
+      "range_end": 3000,
+      "call_sites": [
+       2977
+      ],
+      "def_path": "standard::tests::only_matching_max_columns",
+      "def_line": 2976,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3003,
+       "only_matching_max_columns_preview"
+      ],
+      "body_end": 3028,
+      "range_end": 3028,
+      "call_sites": [
+       3004
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_preview",
+      "def_line": 3003,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3031,
+       "only_matching_max_columns_multi_line1"
+      ],
+      "body_end": 3061,
+      "range_end": 3061,
+      "call_sites": [
+       3037
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_multi_line1",
+      "def_line": 3031,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3064,
+       "only_matching_max_columns_preview_multi_line1"
+      ],
+      "body_end": 3095,
+      "range_end": 3095,
+      "call_sites": [
+       3070
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_preview_multi_line1",
+      "def_line": 3064,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3098,
+       "only_matching_max_columns_multi_line2"
+      ],
+      "body_end": 3125,
+      "range_end": 3125,
+      "call_sites": [
+       3100
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_multi_line2",
+      "def_line": 3098,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3128,
+       "only_matching_max_columns_preview_multi_line2"
+      ],
+      "body_end": 3156,
+      "range_end": 3156,
+      "call_sites": [
+       3130
+      ],
+      "def_path": "standard::tests::only_matching_max_columns_preview_multi_line2",
+      "def_line": 3128,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3159,
+       "per_match"
+      ],
+      "body_end": 3182,
+      "range_end": 3182,
+      "call_sites": [
+       3160
+      ],
+      "def_path": "standard::tests::per_match",
+      "def_line": 3159,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3185,
+       "per_match_multi_line1"
+      ],
+      "body_end": 3210,
+      "range_end": 3210,
+      "call_sites": [
+       3187
+      ],
+      "def_path": "standard::tests::per_match_multi_line1",
+      "def_line": 3185,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3213,
+       "per_match_multi_line2"
+      ],
+      "body_end": 3239,
+      "range_end": 3239,
+      "call_sites": [
+       3215
+      ],
+      "def_path": "standard::tests::per_match_multi_line2",
+      "def_line": 3213,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3242,
+       "per_match_multi_line3"
+      ],
+      "body_end": 3268,
+      "range_end": 3268,
+      "call_sites": [
+       3244
+      ],
+      "def_path": "standard::tests::per_match_multi_line3",
+      "def_line": 3242,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3271,
+       "per_match_multi_line1_only_first_line"
+      ],
+      "body_end": 3297,
+      "range_end": 3297,
+      "call_sites": [
+       3273
+      ],
+      "def_path": "standard::tests::per_match_multi_line1_only_first_line",
+      "def_line": 3271,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3300,
+       "per_match_multi_line2_only_first_line"
+      ],
+      "body_end": 3325,
+      "range_end": 3325,
+      "call_sites": [
+       3302
+      ],
+      "def_path": "standard::tests::per_match_multi_line2_only_first_line",
+      "def_line": 3300,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3328,
+       "per_match_multi_line3_only_first_line"
+      ],
+      "body_end": 3353,
+      "range_end": 3353,
+      "call_sites": [
+       3330
+      ],
+      "def_path": "standard::tests::per_match_multi_line3_only_first_line",
+      "def_line": 3328,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3356,
+       "replacement_passthru"
+      ],
+      "body_end": 3382,
+      "range_end": 3382,
+      "call_sites": [
+       3357
+      ],
+      "def_path": "standard::tests::replacement_passthru",
+      "def_line": 3356,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3385,
+       "replacement"
+      ],
+      "body_end": 3407,
+      "range_end": 3407,
+      "call_sites": [
+       3386
+      ],
+      "def_path": "standard::tests::replacement",
+      "def_line": 3385,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3414,
+       "replacement_multi_line"
+      ],
+      "body_end": 3433,
+      "range_end": 3433,
+      "call_sites": [
+       3415
+      ],
+      "def_path": "standard::tests::replacement_multi_line",
+      "def_line": 3414,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3462,
+       "replacement_multi_line_combine_lines"
+      ],
+      "body_end": 3481,
+      "range_end": 3481,
+      "call_sites": [
+       3463
+      ],
+      "def_path": "standard::tests::replacement_multi_line_combine_lines",
+      "def_line": 3462,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3484,
+       "replacement_max_columns"
+      ],
+      "body_end": 3507,
+      "range_end": 3507,
+      "call_sites": [
+       3485
+      ],
+      "def_path": "standard::tests::replacement_max_columns",
+      "def_line": 3484,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3510,
+       "replacement_max_columns_preview1"
+      ],
+      "body_end": 3534,
+      "range_end": 3534,
+      "call_sites": [
+       3511
+      ],
+      "def_path": "standard::tests::replacement_max_columns_preview1",
+      "def_line": 3510,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3537,
+       "replacement_max_columns_preview2"
+      ],
+      "body_end": 3561,
+      "range_end": 3561,
+      "call_sites": [
+       3539
+      ],
+      "def_path": "standard::tests::replacement_max_columns_preview2",
+      "def_line": 3537,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3564,
+       "replacement_only_matching"
+      ],
+      "body_end": 3588,
+      "range_end": 3588,
+      "call_sites": [
+       3565
+      ],
+      "def_path": "standard::tests::replacement_only_matching",
+      "def_line": 3564,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3591,
+       "replacement_per_match"
+      ],
+      "body_end": 3615,
+      "range_end": 3615,
+      "call_sites": [
+       3592
+      ],
+      "def_path": "standard::tests::replacement_per_match",
+      "def_line": 3591,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3618,
+       "invert"
+      ],
+      "body_end": 3640,
+      "range_end": 3640,
+      "call_sites": [
+       3619
+      ],
+      "def_path": "standard::tests::invert",
+      "def_line": 3618,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3643,
+       "invert_multi_line"
+      ],
+      "body_end": 3666,
+      "range_end": 3666,
+      "call_sites": [
+       3644
+      ],
+      "def_path": "standard::tests::invert_multi_line",
+      "def_line": 3643,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3669,
+       "invert_context"
+      ],
+      "body_end": 3695,
+      "range_end": 3695,
+      "call_sites": [
+       3670
+      ],
+      "def_path": "standard::tests::invert_context",
+      "def_line": 3669,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3698,
+       "invert_context_multi_line"
+      ],
+      "body_end": 3725,
+      "range_end": 3725,
+      "call_sites": [
+       3699
+      ],
+      "def_path": "standard::tests::invert_context_multi_line",
+      "def_line": 3698,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3728,
+       "invert_context_only_matching"
+      ],
+      "body_end": 3756,
+      "range_end": 3756,
+      "call_sites": [
+       3729
+      ],
+      "def_path": "standard::tests::invert_context_only_matching",
+      "def_line": 3728,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3759,
+       "invert_context_only_matching_multi_line"
+      ],
+      "body_end": 3788,
+      "range_end": 3788,
+      "call_sites": [
+       3760
+      ],
+      "def_path": "standard::tests::invert_context_only_matching_multi_line",
+      "def_line": 3759,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1011,
+       "count_max_matches"
+      ],
+      "body_end": 1024,
+      "range_end": 1024,
+      "call_sites": [
+       1012
+      ],
+      "def_path": "summary::tests::count_max_matches",
+      "def_line": 1011,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1027,
+       "count_matches"
+      ],
+      "body_end": 1043,
+      "range_end": 1043,
+      "call_sites": [
+       1028
+      ],
+      "def_path": "summary::tests::count_matches",
+      "def_line": 1027,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1046,
+       "path_with_match_found"
+      ],
+      "body_end": 1062,
+      "range_end": 1062,
+      "call_sites": [
+       1047
+      ],
+      "def_path": "summary::tests::path_with_match_found",
+      "def_line": 1046,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1065,
+       "path_with_match_not_found"
+      ],
+      "body_end": 1081,
+      "range_end": 1081,
+      "call_sites": [
+       1066
+      ],
+      "def_path": "summary::tests::path_with_match_not_found",
+      "def_line": 1065,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1084,
+       "path_without_match_found"
+      ],
+      "body_end": 1100,
+      "range_end": 1100,
+      "call_sites": [
+       1085
+      ],
+      "def_path": "summary::tests::path_without_match_found",
+      "def_line": 1084,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1103,
+       "path_without_match_not_found"
+      ],
+      "body_end": 1119,
+      "range_end": 1119,
+      "call_sites": [
+       1104
+      ],
+      "def_path": "summary::tests::path_without_match_not_found",
+      "def_line": 1103,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1122,
+       "quiet"
+      ],
+      "body_end": 1141,
+      "range_end": 1141,
+      "call_sites": [
+       1123
+      ],
+      "def_path": "summary::tests::quiet",
+      "def_line": 1122,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1144,
+       "quiet_with_stats"
+      ],
+      "body_end": 1165,
+      "range_end": 1165,
+      "call_sites": [
+       1145
+      ],
+      "def_path": "summary::tests::quiet_with_stats",
+      "def_line": 1144,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       829,
+       "path_with_match_error"
+      ],
+      "body_end": 840,
+      "range_end": 840,
+      "call_sites": [
+       830
+      ],
+      "def_path": "summary::tests::path_with_match_error",
+      "def_line": 829,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       843,
+       "path_without_match_error"
+      ],
+      "body_end": 854,
+      "range_end": 854,
+      "call_sites": [
+       844
+      ],
+      "def_path": "summary::tests::path_without_match_error",
+      "def_line": 843,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       857,
+       "count_no_path"
+      ],
+      "body_end": 869,
+      "range_end": 869,
+      "call_sites": [
+       858
+      ],
+      "def_path": "summary::tests::count_no_path",
+      "def_line": 857,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       872,
+       "count_no_path_even_with_path"
+      ],
+      "body_end": 889,
+      "range_end": 889,
+      "call_sites": [
+       873
+      ],
+      "def_path": "summary::tests::count_no_path_even_with_path",
+      "def_line": 872,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       892,
+       "count_path"
+      ],
+      "body_end": 908,
+      "range_end": 908,
+      "call_sites": [
+       893
+      ],
+      "def_path": "summary::tests::count_path",
+      "def_line": 892,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       911,
+       "count_path_with_zero"
+      ],
+      "body_end": 928,
+      "range_end": 928,
+      "call_sites": [
+       912
+      ],
+      "def_path": "summary::tests::count_path_with_zero",
+      "def_line": 911,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       931,
+       "count_path_without_zero"
+      ],
+      "body_end": 948,
+      "range_end": 948,
+      "call_sites": [
+       932
+      ],
+      "def_path": "summary::tests::count_path_without_zero",
+      "def_line": 931,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       951,
+       "count_path_field_separator"
+      ],
+      "body_end": 968,
+      "range_end": 968,
+      "call_sites": [
+       952
+      ],
+      "def_path": "summary::tests::count_path_field_separator",
+      "def_line": 951,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       971,
+       "count_path_terminator"
+      ],
+      "body_end": 988,
+      "range_end": 988,
+      "call_sites": [
+       972
+      ],
+      "def_path": "summary::tests::count_path_terminator",
+      "def_line": 971,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       991,
+       "count_path_separator"
+      ],
+      "body_end": 1008,
+      "range_end": 1008,
+      "call_sites": [
+       992
+      ],
+      "def_path": "summary::tests::count_path_separator",
+      "def_line": 991,
+      "test_module": "tests",
+      "mod_line": 808,
+      "cfg_line": 807,
+      "ok": true
+     }
+    ],
+    "added_count": 90,
+    "added_sites": 95,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/searcher/src/testutil.rs",
+   "line": 375,
+   "character": 19,
+   "symbol": "by_line",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/searcher/src/searcher/glue.rs",
+       499,
+       "multi_line_overlap1"
+      ],
+      "body_end": 512,
+      "range_end": 512,
+      "call_sites": [
+       508
+      ],
+      "def_path": "searcher::glue::tests::multi_line_overlap1",
+      "def_line": 499,
+      "test_module": "tests",
+      "mod_line": 347,
+      "cfg_line": 346,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/searcher/glue.rs",
+       515,
+       "multi_line_overlap2"
+      ],
+      "body_end": 528,
+      "range_end": 528,
+      "call_sites": [
+       524
+      ],
+      "def_path": "searcher::glue::tests::multi_line_overlap2",
+      "def_line": 515,
+      "test_module": "tests",
+      "mod_line": 347,
+      "cfg_line": 346,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/searcher/src/testutil.rs",
+   "line": 400,
+   "character": 19,
+   "symbol": "binary_detection",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/searcher/src/searcher/glue.rs",
+       693,
+       "binary1"
+      ],
+      "body_end": 702,
+      "range_end": 702,
+      "call_sites": [
+       698
+      ],
+      "def_path": "searcher::glue::tests::binary1",
+      "def_line": 693,
+      "test_module": "tests",
+      "mod_line": 347,
+      "cfg_line": 346,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/searcher/glue.rs",
+       705,
+       "binary2"
+      ],
+      "body_end": 714,
+      "range_end": 714,
+      "call_sites": [
+       710
+      ],
+      "def_path": "searcher::glue::tests::binary2",
+      "def_line": 705,
+      "test_module": "tests",
+      "mod_line": 347,
+      "cfg_line": 346,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/searcher/glue.rs",
+       717,
+       "binary3"
+      ],
+      "body_end": 749,
+      "range_end": 749,
+      "call_sites": [
+       743
+      ],
+      "def_path": "searcher::glue::tests::binary3",
+      "def_line": 717,
+      "test_module": "tests",
+      "mod_line": 347,
+      "cfg_line": 346,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/searcher/glue.rs",
+       752,
+       "binary4"
+      ],
+      "body_end": 781,
+      "range_end": 781,
+      "call_sites": [
+       775
+      ],
+      "def_path": "searcher::glue::tests::binary4",
+      "def_line": 752,
+      "test_module": "tests",
+      "mod_line": 347,
+      "cfg_line": 346,
+      "ok": true
+     }
+    ],
+    "added_count": 4,
+    "added_sites": 4,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 236,
+   "character": 12,
+   "symbol": "as_byte",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/searcher/src/sink.rs",
+       471,
+       "lines"
+      ],
+      "body_end": 473,
+      "range_end": 473,
+      "call_sites": [
+       472
+      ],
+      "def_path": "sink::SinkContext::<'b>::lines",
+      "def_line": 471,
+      "test_attribute_line": 470,
+      "ok": true
+     }
+    ],
+    "added_count": 1,
+    "added_sites": 1,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/searcher/src/line_buffer.rs",
+   "line": 121,
+   "character": 19,
+   "symbol": "build",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       588,
+       "buffer_basics1"
+      ],
+      "body_end": 610,
+      "range_end": 610,
+      "call_sites": [
+       590
+      ],
+      "def_path": "line_buffer::tests::buffer_basics1",
+      "def_line": 588,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       613,
+       "buffer_basics2"
+      ],
+      "body_end": 625,
+      "range_end": 625,
+      "call_sites": [
+       615
+      ],
+      "def_path": "line_buffer::tests::buffer_basics2",
+      "def_line": 613,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       628,
+       "buffer_basics3"
+      ],
+      "body_end": 640,
+      "range_end": 640,
+      "call_sites": [
+       630
+      ],
+      "def_path": "line_buffer::tests::buffer_basics3",
+      "def_line": 628,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       643,
+       "buffer_basics4"
+      ],
+      "body_end": 655,
+      "range_end": 655,
+      "call_sites": [
+       645
+      ],
+      "def_path": "line_buffer::tests::buffer_basics4",
+      "def_line": 643,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       658,
+       "buffer_empty"
+      ],
+      "body_end": 666,
+      "range_end": 666,
+      "call_sites": [
+       660
+      ],
+      "def_path": "line_buffer::tests::buffer_empty",
+      "def_line": 658,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       669,
+       "buffer_zero_capacity"
+      ],
+      "body_end": 679,
+      "range_end": 679,
+      "call_sites": [
+       671
+      ],
+      "def_path": "line_buffer::tests::buffer_zero_capacity",
+      "def_line": 669,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       682,
+       "buffer_small_capacity"
+      ],
+      "body_end": 695,
+      "range_end": 695,
+      "call_sites": [
+       684
+      ],
+      "def_path": "line_buffer::tests::buffer_small_capacity",
+      "def_line": 682,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       698,
+       "buffer_limited_capacity1"
+      ],
+      "body_end": 729,
+      "range_end": 729,
+      "call_sites": [
+       703
+      ],
+      "def_path": "line_buffer::tests::buffer_limited_capacity1",
+      "def_line": 698,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       732,
+       "buffer_limited_capacity2"
+      ],
+      "body_end": 754,
+      "range_end": 754,
+      "call_sites": [
+       737
+      ],
+      "def_path": "line_buffer::tests::buffer_limited_capacity2",
+      "def_line": 732,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       757,
+       "buffer_limited_capacity3"
+      ],
+      "body_end": 767,
+      "range_end": 767,
+      "call_sites": [
+       762
+      ],
+      "def_path": "line_buffer::tests::buffer_limited_capacity3",
+      "def_line": 757,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       770,
+       "buffer_binary_none"
+      ],
+      "body_end": 784,
+      "range_end": 784,
+      "call_sites": [
+       772
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_none",
+      "def_line": 770,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       787,
+       "buffer_binary_quit1"
+      ],
+      "body_end": 803,
+      "range_end": 803,
+      "call_sites": [
+       791
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_quit1",
+      "def_line": 787,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       806,
+       "buffer_binary_quit2"
+      ],
+      "body_end": 817,
+      "range_end": 817,
+      "call_sites": [
+       810
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_quit2",
+      "def_line": 806,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       820,
+       "buffer_binary_quit3"
+      ],
+      "body_end": 836,
+      "range_end": 836,
+      "call_sites": [
+       824
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_quit3",
+      "def_line": 820,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       839,
+       "buffer_binary_quit4"
+      ],
+      "body_end": 855,
+      "range_end": 855,
+      "call_sites": [
+       843
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_quit4",
+      "def_line": 839,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       858,
+       "buffer_binary_quit5"
+      ],
+      "body_end": 880,
+      "range_end": 880,
+      "call_sites": [
+       861
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_quit5",
+      "def_line": 858,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       883,
+       "buffer_binary_convert1"
+      ],
+      "body_end": 899,
+      "range_end": 899,
+      "call_sites": [
+       887
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_convert1",
+      "def_line": 883,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       902,
+       "buffer_binary_convert2"
+      ],
+      "body_end": 918,
+      "range_end": 918,
+      "call_sites": [
+       906
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_convert2",
+      "def_line": 902,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       921,
+       "buffer_binary_convert3"
+      ],
+      "body_end": 937,
+      "range_end": 937,
+      "call_sites": [
+       925
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_convert3",
+      "def_line": 921,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/line_buffer.rs",
+       940,
+       "buffer_binary_convert4"
+      ],
+      "body_end": 956,
+      "range_end": 956,
+      "call_sites": [
+       944
+      ],
+      "def_path": "line_buffer::tests::buffer_binary_convert4",
+      "def_line": 940,
+      "test_module": "tests",
+      "mod_line": 550,
+      "cfg_line": 549,
+      "ok": true
+     }
+    ],
+    "added_count": 20,
+    "added_sites": 20,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/printer/src/standard.rs",
+   "line": 334,
+   "character": 12,
+   "symbol": "max_matches",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2717,
+       "max_matches"
+      ],
+      "body_end": 2737,
+      "range_end": 2737,
+      "call_sites": [
+       2720
+      ],
+      "def_path": "standard::tests::max_matches",
+      "def_line": 2717,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2740,
+       "max_matches_context"
+      ],
+      "body_end": 2840,
+      "range_end": 2840,
+      "call_sites": [
+       2744,
+       2766,
+       2792,
+       2817
+      ],
+      "def_path": "standard::tests::max_matches_context",
+      "def_line": 2740,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2843,
+       "max_matches_multi_line1"
+      ],
+      "body_end": 2864,
+      "range_end": 2864,
+      "call_sites": [
+       2846
+      ],
+      "def_path": "standard::tests::max_matches_multi_line1",
+      "def_line": 2843,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2867,
+       "max_matches_multi_line2"
+      ],
+      "body_end": 2890,
+      "range_end": 2890,
+      "call_sites": [
+       2871
+      ],
+      "def_path": "standard::tests::max_matches_multi_line2",
+      "def_line": 2867,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3808,
+       "regression_after_context_with_match"
+      ],
+      "body_end": 3841,
+      "range_end": 3841,
+      "call_sites": [
+       3825
+      ],
+      "def_path": "standard::tests::regression_after_context_with_match",
+      "def_line": 3808,
+      "test_module": "tests",
+      "mod_line": 1783,
+      "cfg_line": 1782,
+      "ok": true
+     }
+    ],
+    "added_count": 5,
+    "added_sites": 8,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/searcher/src/testutil.rs",
+   "line": 342,
+   "character": 19,
+   "symbol": "expected_slice_no_line_number",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "e1_callers_are_test_only_functions_held_by_the_test_shard_of_their_file",
+   "evidence": {
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/searcher/src/searcher/glue.rs",
+       717,
+       "binary3"
+      ],
+      "body_end": 749,
+      "range_end": 749,
+      "call_sites": [
+       747
+      ],
+      "def_path": "searcher::glue::tests::binary3",
+      "def_line": 717,
+      "test_module": "tests",
+      "mod_line": 347,
+      "cfg_line": 346,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/src/searcher/glue.rs",
+       752,
+       "binary4"
+      ],
+      "body_end": 781,
+      "range_end": 781,
+      "call_sites": [
+       779
+      ],
+      "def_path": "searcher::glue::tests::binary4",
+      "def_line": 752,
+      "test_module": "tests",
+      "mod_line": 347,
+      "cfg_line": 346,
+      "ok": true
+     }
+    ],
+    "added_count": 2,
+    "added_sites": 2,
+    "duplicate_caller_items": 0,
+    "duplicate_from_ranges": 0
+   }
+  }
+ ]
+}
