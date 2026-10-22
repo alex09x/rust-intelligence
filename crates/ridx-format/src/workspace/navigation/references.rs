@@ -105,6 +105,24 @@ impl WorkspaceIndex {
         let global_path_buf = format!("{target_crate}::{local_path}");
         let global_path = global_path_buf.as_str();
 
+        // The target and the other builds of its crate and version (feature sets compile one
+        // source into several units): a consumer reaching any of them uses the item.
+        let target_builds: Vec<usize> = target_idx
+            .map(|t| {
+                let (name, version) = (
+                    self.readers[t].crate_name(),
+                    self.readers[t].crate_version(),
+                );
+                (0..self.readers.len())
+                    .filter(|&s| {
+                        s == t
+                            || (self.readers[s].crate_name() == name
+                                && self.readers[s].crate_version() == version)
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
         let mut match_memo = std::collections::HashMap::<(usize, &str), bool>::new();
 
         for (i, reader) in self.readers.iter().enumerate() {
@@ -179,8 +197,17 @@ impl WorkspaceIndex {
                                     || m.values().any(|uk| uk == target_unit)
                             })
                             .unwrap_or(false);
-                        if !in_deps && !in_extern_units {
-                            // Referring crate has dependency info but does NOT depend on target_unit or target_crate. Exclude!
+                        // A consumer may reach the target through a unit it depends on (an item
+                        // used through a re-export): the dependency graph is walked from it.
+                        if !in_deps
+                            && !in_extern_units
+                            && !target_builds
+                                .iter()
+                                .any(|&t| self.is_reader_in_dep_graph(&[i], t))
+                        {
+                            // Referring crate has dependency info but depends neither on
+                            // target_unit or target_crate nor, through another unit, on the
+                            // target. Exclude!
                             continue;
                         }
                     } else {

@@ -19,7 +19,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 
 #[allow(clippy::type_complexity)]
-fn create_test_workspace(
+pub(super) fn create_test_workspace(
     readers_info: Vec<(
         &Path,
         Option<PathBuf>,
