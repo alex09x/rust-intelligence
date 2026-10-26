@@ -22,6 +22,7 @@ pub mod rename_matrix_tests;
 pub mod rename_sibling_tests;
 pub mod rename_sysroot_tests;
 pub mod rename_tests;
+pub mod rename_type_span_tests;
 pub mod rename_unit_tests;
 
 use crate::lsp::protocol::PositionConverter;

@@ -248,7 +248,17 @@ pub fn handle_rename(
                     let occ_str = match occ_name {
                         Some(s) if !s.is_empty() => s,
                         _ => {
-                            if r.is_macro_expansion {
+                            if r.is_macro_expansion
+                                || span_covers_other_identifier(
+                                    ref_ov.is_none().then_some(r_str),
+                                    (
+                                        r.span.start_line(),
+                                        r.span.start_col(),
+                                        r.span.end_line(),
+                                        r.span.end_col(),
+                                    ),
+                                )
+                            {
                                 skipped_macro_refs += 1;
                                 continue;
                             }

@@ -364,3 +364,28 @@ pub fn apply_workspace_text_edits_to_content(
 
     Some(result)
 }
+
+/// Whether a one-line reference span that starts on no identifier covers other identifiers: the
+/// span of a type expression (`&'static str`, `(A, B)`) a derive wrote its call over, not the
+/// position of a name. Such a span is no occurrence of the renamed symbol. `span` is
+/// `(start line, start col, end line, end col)`, 1-based; `path` is the file, `None` when the
+/// text lives in an editor buffer.
+pub fn span_covers_other_identifier(path: Option<&str>, span: (u32, u32, u32, u32)) -> bool {
+    let (start_line, start_col, end_line, end_col) = span;
+    let Some(path) = path else { return false };
+    if start_line != end_line {
+        return false;
+    }
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return false;
+    };
+    let Some(line) = text.lines().nth(start_line.saturating_sub(1) as usize) else {
+        return false;
+    };
+    let from = start_col.saturating_sub(1) as usize;
+    let to = end_col.saturating_sub(1) as usize;
+    line.chars()
+        .skip(from)
+        .take(to.saturating_sub(from))
+        .any(|c| c.is_alphanumeric() || c == '_')
+}
