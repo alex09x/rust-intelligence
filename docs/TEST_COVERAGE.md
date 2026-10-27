@@ -5,7 +5,7 @@
 > **Note on Src Tests**: The `Src Tests` column is not yet populated by the classifier (rules currently target E2E test suites; unit test classification is deferred to a future wave).
 
 - **Total E2E Tests**: 2780
-- **Total Unit/Src Tests**: 509
+- **Total Unit/Src Tests**: 541
 - **Classified E2E Tests**: 2696
 - **Unclassified E2E Tests**: 84
 - **Rows >= 20 E2E**: 53 / 53
@@ -41,14 +41,14 @@
 | Domain 6: Hierarchies | `prepareTypeHierarchy` | 50 | 1 | 51 | ✅ Complete |
 | Domain 6: Hierarchies | `typeHierarchy/supertypes` | 50 | 3 | 53 | ✅ Complete |
 | Domain 6: Hierarchies | `typeHierarchy/subtypes` | 50 | 0 | 50 | ✅ Complete |
-| Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 50 | 0 | 50 | ✅ Complete |
+| Domain 7: Presentation | `textDocument/semanticTokens/full / delta / range` | 50 | 1 | 51 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/foldingRange` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/selectionRange` | 61 | 7 | 68 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentLink / resolve` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/documentColor / colorPresentation (stub)` | 50 | 0 | 50 | ✅ Complete |
 | Domain 7: Presentation | `textDocument/codeLens / resolve` | 51 | 36 | 87 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/prepareRename` | 50 | 10 | 60 | ✅ Complete |
-| Domain 8: Editing & Workspace Edits | `textDocument/rename` | 51 | 26 | 77 | ✅ Complete |
+| Domain 8: Editing & Workspace Edits | `textDocument/rename` | 51 | 28 | 79 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/linkedEditingRange` | 50 | 7 | 57 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/formatting / rangeFormatting` | 50 | 8 | 58 | ✅ Complete |
 | Domain 8: Editing & Workspace Edits | `textDocument/onTypeFormatting` | 50 | 5 | 55 | ✅ Complete |
