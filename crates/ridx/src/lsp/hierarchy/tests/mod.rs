@@ -16,6 +16,7 @@ pub mod item_position_tests;
 pub mod item_two_crate_tests;
 pub mod scan_tests;
 pub mod type_tests;
+pub mod value_use_tests;
 
 use crate::lsp::protocol::PositionConverter;
 use crate::overlay::OverlayManager;

@@ -103,9 +103,20 @@ pub(super) fn incoming_callers(
     line0: u64,
     char0: u64,
 ) -> Vec<(String, Vec<u64>)> {
+    incoming_callers_of(ws, "test", file, line0, char0)
+}
+
+/// The callers of the item `name` whose name sits at `(line0, char0)` of `file`.
+pub(super) fn incoming_callers_of(
+    ws: &WorkspaceIndex,
+    name: &str,
+    file: &PathBuf,
+    line0: u64,
+    char0: u64,
+) -> Vec<(String, Vec<u64>)> {
     let uri = path_to_uri(file.to_str().unwrap());
     let pos = json!({ "line": line0, "character": char0 });
-    let req = json!({ "params": { "item": { "name": "test", "kind": 12, "uri": uri,
+    let req = json!({ "params": { "item": { "name": name, "kind": 12, "uri": uri,
         "range": { "start": pos, "end": pos }, "selectionRange": { "start": pos, "end": pos } } } });
     let (overlay_mgr, mut conv) = (OverlayManager::new(), PositionConverter::new());
     let res = handle_call_hierarchy_incoming_calls(&req, Some(ws), &overlay_mgr, &mut conv);

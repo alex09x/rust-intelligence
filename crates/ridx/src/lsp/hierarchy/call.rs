@@ -26,6 +26,7 @@ use super::scan::{
     find_definition_path_in_workspace, find_enclosing_function, find_function_body_end_line,
     is_call_site_in_lines,
 };
+use super::value_use::is_function_value_use_in_lines;
 
 fn make_call_item(
     name: &str,
@@ -151,6 +152,7 @@ pub fn handle_call_hierarchy_incoming_calls(
             .unwrap_or_default(),
     };
 
+    let item_name = item["name"].as_str().unwrap_or("");
     let mut incoming_map: HashMap<String, (Value, Vec<Value>)> = HashMap::new();
     let mut file_cache: HashMap<String, String> = HashMap::new();
 
@@ -169,7 +171,19 @@ pub fn handle_call_hierarchy_incoming_calls(
 
         let file_lines: Vec<&str> = content.lines().collect();
 
-        if !is_call_site_in_lines(&file_lines, span.end_line(), span.end_col()) {
+        let is_call = is_call_site_in_lines(&file_lines, span.end_line(), span.end_col());
+        if !is_call
+            && !(matches!(r.kind, DefKind::Fn | DefKind::AssocFn)
+                && !r.is_macro_expansion
+                && is_function_value_use_in_lines(
+                    &file_lines,
+                    item_name,
+                    span.start_line(),
+                    span.start_col(),
+                    span.end_line(),
+                    span.end_col(),
+                ))
+        {
             continue;
         }
 

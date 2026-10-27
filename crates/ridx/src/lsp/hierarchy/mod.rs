@@ -18,6 +18,7 @@ pub mod impl_table;
 pub mod scan;
 pub mod type_index;
 pub mod types;
+pub mod value_use;
 
 #[cfg(test)]
 pub mod tests;
