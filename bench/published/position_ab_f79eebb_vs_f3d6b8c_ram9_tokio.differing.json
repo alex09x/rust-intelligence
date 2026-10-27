@@ -1,0 +1,3889 @@
+{
+ "repo": "tokio-rs/tokio",
+ "repo_dir_name": "tokio",
+ "repo_head": "b2636752450484955e7ad334bac678424d51bc4a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 308,
+ "positions_file": "matrix_tokio_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 301,
+ "timestamp_start": "2026-10-27T07:31:01.620789+00:00",
+ "timestamp_end": "2026-10-27T07:36:00.583187+00:00",
+ "servers": [
+  {
+   "name": "f79eebb",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: f79eebbac95aa03ab33093bfd8c3c2ce16c36094, dirty: false)",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 97.7,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 435.7,
+     "p99_us": 1927.3,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 389.2,
+     "p99_us": 716.9,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 404.0,
+     "p99_us": 1566.6,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2175.3,
+     "p99_us": 3444.4,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1783.0,
+     "p99_us": 21358.3,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1814.7,
+     "p99_us": 13984.1,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 125.5,
+     "p99_us": 1617.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16789.5,
+     "p99_us": 32357.7,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.7,
+     "p99_us": 18.8,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 809.2,
+     "p99_us": 1257.0,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1959.2,
+     "p99_us": 13346.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 18.4,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 69.9,
+     "p99_us": 21513.5,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.7,
+     "p99_us": 57.5,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 12.2,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 32.3,
+     "p99_us": 68.9,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.6,
+     "p99_us": 57.5,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.7,
+     "p99_us": 104.3,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 17.4,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 408.7,
+     "p99_us": 770.0,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 94,
+     "b": 206,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2111.4,
+     "p99_us": 5996.2,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 933.3,
+     "p99_us": 11764.6,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 363.4,
+     "p99_us": 683.2,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1583.3,
+     "p99_us": 3228.6,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.1,
+     "p99_us": 2102.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 95.7,
+     "p99_us": 284.7,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.4,
+     "p99_us": 94.3,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 17.1,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 14.6,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85653.4,
+     "p99_us": 97516.9,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86903.9,
+     "p99_us": 177839.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87036.4,
+     "p99_us": 100572.5,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 1778.8,
+     "p99_us": 2339.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 1820.8,
+     "p99_us": 2820.5,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.4,
+     "p99_us": 109.0,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 58.2,
+     "p99_us": 232.9,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 16.8,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 12.4,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 420.9,
+     "p99_us": 1068.7,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 415.8,
+     "p99_us": 1013.3,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 413.9,
+     "p99_us": 1002.9,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 52.7,
+     "p99_us": 349.9,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 397.6,
+     "p99_us": 662.3,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.0,
+     "p99_us": 16.2,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 43.8,
+     "p99_us": 401.0,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1869.9,
+     "p99_us": 1891.0,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.6,
+     "p99_us": 17.8,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 12.3,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 12.0,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.2,
+     "p99_us": 75.7,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       203,
+       97,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       94,
+       206,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "f3d6b8c",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: f3d6b8ce6da6fcc44d263b283427e6f50c759037, dirty: false)",
+   "commit": "f3d6b8ce6da6fcc44d263b283427e6f50c759037",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 98.4,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 442.0,
+     "p99_us": 793.2,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 383.9,
+     "p99_us": 717.9,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 405.2,
+     "p99_us": 1601.3,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2148.2,
+     "p99_us": 3383.6,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1904.0,
+     "p99_us": 21559.0,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 204,
+     "b": 96,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1874.9,
+     "p99_us": 14027.1,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 123.3,
+     "p99_us": 1467.7,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17661.8,
+     "p99_us": 27096.0,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 22.3,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 843.6,
+     "p99_us": 1372.2,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1974.8,
+     "p99_us": 12891.0,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 21.6,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 73.6,
+     "p99_us": 23517.6,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.2,
+     "p99_us": 57.6,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.6,
+     "p99_us": 61.7,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.6,
+     "p99_us": 56.2,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.3,
+     "p99_us": 106.4,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 17.2,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 410.9,
+     "p99_us": 766.7,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 100,
+     "b": 200,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1913.8,
+     "p99_us": 8805.1,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 934.2,
+     "p99_us": 12486.4,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 354.5,
+     "p99_us": 715.0,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1592.8,
+     "p99_us": 3158.0,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.2,
+     "p99_us": 2119.7,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 100.9,
+     "p99_us": 281.9,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.3,
+     "p99_us": 91.8,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 14.9,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.3,
+     "p99_us": 12.0,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 13.6,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85890.0,
+     "p99_us": 96698.1,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86870.5,
+     "p99_us": 180277.1,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87725.9,
+     "p99_us": 100717.4,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 1930.4,
+     "p99_us": 2241.3,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2097.4,
+     "p99_us": 3283.1,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.1,
+     "p99_us": 99.9,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 61.0,
+     "p99_us": 232.8,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 14.8,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 15.9,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 430.0,
+     "p99_us": 1063.1,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 405.8,
+     "p99_us": 997.9,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 419.2,
+     "p99_us": 955.8,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 48.2,
+     "p99_us": 405.1,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 407.4,
+     "p99_us": 681.7,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 19.9,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.9,
+     "p99_us": 407.5,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1994.2,
+     "p99_us": 2032.9,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 15.9,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 12.1,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 13.2,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.1,
+     "p99_us": 74.6,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       204,
+       96,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       100,
+       200,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "f79eebb-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: f79eebbac95aa03ab33093bfd8c3c2ce16c36094, dirty: false)",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 98.0,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 434.5,
+     "p99_us": 753.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 377.4,
+     "p99_us": 693.6,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 400.1,
+     "p99_us": 1552.8,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2144.8,
+     "p99_us": 3427.6,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1807.2,
+     "p99_us": 22060.7,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1856.8,
+     "p99_us": 14090.9,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 119.9,
+     "p99_us": 1415.3,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16854.2,
+     "p99_us": 25635.0,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 20.9,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 814.0,
+     "p99_us": 1272.9,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1953.3,
+     "p99_us": 12709.3,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 19.9,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 75.8,
+     "p99_us": 21189.5,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.9,
+     "p99_us": 57.8,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 13.9,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.5,
+     "p99_us": 64.2,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 22.2,
+     "p99_us": 57.9,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.4,
+     "p99_us": 107.5,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 18.1,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 406.8,
+     "p99_us": 766.6,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 94,
+     "b": 206,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2102.4,
+     "p99_us": 6124.7,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 921.8,
+     "p99_us": 11714.1,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 357.6,
+     "p99_us": 677.3,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1545.2,
+     "p99_us": 2850.4,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.8,
+     "p99_us": 2066.3,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 102.8,
+     "p99_us": 280.4,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 22.9,
+     "p99_us": 94.9,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.2,
+     "p99_us": 16.0,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 11.9,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 12.3,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85193.7,
+     "p99_us": 98093.7,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87221.0,
+     "p99_us": 183927.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87726.6,
+     "p99_us": 107646.9,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 1795.2,
+     "p99_us": 2353.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 1764.3,
+     "p99_us": 2876.2,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.5,
+     "p99_us": 109.3,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 60.7,
+     "p99_us": 234.9,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 19.0,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 13.3,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 435.9,
+     "p99_us": 1043.5,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 424.8,
+     "p99_us": 1037.8,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 433.4,
+     "p99_us": 1020.4,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 54.9,
+     "p99_us": 365.6,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 408.9,
+     "p99_us": 687.7,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.9,
+     "p99_us": 19.5,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 44.0,
+     "p99_us": 405.4,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1922.2,
+     "p99_us": 2123.8,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 18.4,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 13.0,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 18.2,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 19.9,
+     "p99_us": 73.5,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       203,
+       97,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       94,
+       206,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "f79eebb",
+   "b": "f3d6b8c",
+   "same": 15283,
+   "differing": 17,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "refs_108_next",
+       "file": "tokio-stream/tests/mpsc_bounded_stream.rs",
+       "line": 131,
+       "character": 23,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "38ac6e3881ccb153",
+        "0e4fcf921355ac3a"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "document_highlight_161_next",
+       "file": "tokio-stream/tests/mpsc_bounded_stream.rs",
+       "line": 85,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "b81432afa378fde9"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 285,
+     "differing": 15,
+     "transitions": {
+      "a>a": 7,
+      "b>a": 7,
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_44_one",
+       "file": "tokio/tests/macros_select.rs",
+       "line": 508,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "37b432d06f3c1caf",
+        "0eed35742a3577e5"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_60_read_until_pending",
+       "file": "tokio/tests/uds_stream.rs",
+       "line": 319,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "415d84cff7423a08",
+        "78e065e85fbd1298"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_89_try_into_std",
+       "file": "tokio/src/fs/file.rs",
+       "line": 525,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "dc7ef1747749e4db"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_139_multicast_ttl_v4",
+       "file": "tokio/src/net/udp.rs",
+       "line": 1938,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "c1cc821fa18ef272",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_173_new",
+       "file": "tokio-util/src/task/join_map.rs",
+       "line": 131,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e3d4d91aae924785",
+        "ff683722ee4ab759"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_175_new",
+       "file": "tokio-util/src/task/abort_on_drop.rs",
+       "line": 107,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "cfea337456e1d91b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_184_is_empty",
+       "file": "tokio-util/src/task/task_tracker.rs",
+       "line": 370,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "00fdaacedd81cc3e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_216_get_pin_mut",
+       "file": "tokio-util/src/io/inspect.rs",
+       "line": 49,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "22c9226ed26566e5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_220_send",
+       "file": "tokio/src/net/udp.rs",
+       "line": 570,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e3d697cd98bc400f",
+        "9137ec89a6f5eb86"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_237_try_join_next",
+       "file": "tokio-util/src/task/join_map.rs",
+       "line": 510,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "2207ad24d913b361"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "f79eebb",
+   "b": "f79eebb-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "f3d6b8c",
+   "b": "f79eebb-2",
+   "same": 15283,
+   "differing": 17,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "refs_108_next",
+       "file": "tokio-stream/tests/mpsc_bounded_stream.rs",
+       "line": 131,
+       "character": 23,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0e4fcf921355ac3a",
+        "38ac6e3881ccb153"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "document_highlight_161_next",
+       "file": "tokio-stream/tests/mpsc_bounded_stream.rs",
+       "line": 85,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "b81432afa378fde9",
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 285,
+     "differing": 15,
+     "transitions": {
+      "a>a": 7,
+      "a>b": 7,
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_44_one",
+       "file": "tokio/tests/macros_select.rs",
+       "line": 508,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0eed35742a3577e5",
+        "37b432d06f3c1caf"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_60_read_until_pending",
+       "file": "tokio/tests/uds_stream.rs",
+       "line": 319,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "78e065e85fbd1298",
+        "415d84cff7423a08"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_89_try_into_std",
+       "file": "tokio/src/fs/file.rs",
+       "line": 525,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "dc7ef1747749e4db",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_139_multicast_ttl_v4",
+       "file": "tokio/src/net/udp.rs",
+       "line": 1938,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "c1cc821fa18ef272"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_173_new",
+       "file": "tokio-util/src/task/join_map.rs",
+       "line": 131,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ff683722ee4ab759",
+        "e3d4d91aae924785"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_175_new",
+       "file": "tokio-util/src/task/abort_on_drop.rs",
+       "line": 107,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "cfea337456e1d91b",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_184_is_empty",
+       "file": "tokio-util/src/task/task_tracker.rs",
+       "line": 370,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "00fdaacedd81cc3e",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_216_get_pin_mut",
+       "file": "tokio-util/src/io/inspect.rs",
+       "line": 49,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "22c9226ed26566e5",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_220_send",
+       "file": "tokio/src/net/udp.rs",
+       "line": 570,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9137ec89a6f5eb86",
+        "e3d697cd98bc400f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_237_try_join_next",
+       "file": "tokio-util/src/task/join_map.rs",
+       "line": 510,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "2207ad24d913b361",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_tokio_booster.json",
+  "repo_commit": "b2636752450484955e7ad334bac678424d51bc4a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_108_next",
+   "file": "tokio-stream/tests/mpsc_bounded_stream.rs",
+   "line": 131,
+   "character": 23,
+   "symbol": "next",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "38ac6e3881ccb153",
+     "us": 906.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "0e4fcf921355ac3a",
+     "us": 2126.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "38ac6e3881ccb153",
+     "us": 914.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_161_next",
+   "file": "tokio-stream/tests/mpsc_bounded_stream.rs",
+   "line": 85,
+   "character": 12,
+   "symbol": "next",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 722.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "b81432afa378fde9",
+     "us": 1797.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 758.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_44_one",
+   "file": "tokio/tests/macros_select.rs",
+   "line": 508,
+   "character": 10,
+   "symbol": "one",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "37b432d06f3c1caf",
+     "us": 1825.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "0eed35742a3577e5",
+     "us": 3455.8,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "37b432d06f3c1caf",
+     "us": 1816.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_60_read_until_pending",
+   "file": "tokio/tests/uds_stream.rs",
+   "line": 319,
+   "character": 4,
+   "symbol": "read_until_pending",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "415d84cff7423a08",
+     "us": 3023.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "78e065e85fbd1298",
+     "us": 2687.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "415d84cff7423a08",
+     "us": 2998.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_89_try_into_std",
+   "file": "tokio/src/fs/file.rs",
+   "line": 525,
+   "character": 12,
+   "symbol": "try_into_std",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1616.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "dc7ef1747749e4db",
+     "us": 2189.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1605.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_139_multicast_ttl_v4",
+   "file": "tokio/src/net/udp.rs",
+   "line": 1938,
+   "character": 12,
+   "symbol": "multicast_ttl_v4",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "c1cc821fa18ef272",
+     "us": 2579.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2020.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "c1cc821fa18ef272",
+     "us": 2558.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_173_new",
+   "file": "tokio-util/src/task/join_map.rs",
+   "line": 131,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "e3d4d91aae924785",
+     "us": 1888.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "ff683722ee4ab759",
+     "us": 6858.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "e3d4d91aae924785",
+     "us": 1831.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_175_new",
+   "file": "tokio-util/src/task/abort_on_drop.rs",
+   "line": 107,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1657.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "cfea337456e1d91b",
+     "us": 2299.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1619.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_184_is_empty",
+   "file": "tokio-util/src/task/task_tracker.rs",
+   "line": 370,
+   "character": 12,
+   "symbol": "is_empty",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1691.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "00fdaacedd81cc3e",
+     "us": 3617.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1700.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_216_get_pin_mut",
+   "file": "tokio-util/src/io/inspect.rs",
+   "line": 49,
+   "character": 12,
+   "symbol": "get_pin_mut",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1786.4,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "22c9226ed26566e5",
+     "us": 1918.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1762.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_220_send",
+   "file": "tokio/src/net/udp.rs",
+   "line": 570,
+   "character": 18,
+   "symbol": "send",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "e3d697cd98bc400f",
+     "us": 5399.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "9137ec89a6f5eb86",
+     "us": 4246.2,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "e3d697cd98bc400f",
+     "us": 5349.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_237_try_join_next",
+   "file": "tokio-util/src/task/join_map.rs",
+   "line": 510,
+   "character": 12,
+   "symbol": "try_join_next",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1768.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "2207ad24d913b361",
+     "us": 3182.2,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1751.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_246_spawn",
+   "file": "tokio/src/task/join_set.rs",
+   "line": 142,
+   "character": 12,
+   "symbol": "spawn",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "2c77e864b4dcd7f9",
+     "us": 2540.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "12f1ab58a7fd2aef",
+     "us": 8759.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "2c77e864b4dcd7f9",
+     "us": 2549.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_251_block_in_place",
+   "file": "tokio/src/task/blocking.rs",
+   "line": 74,
+   "character": 12,
+   "symbol": "block_in_place",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1673.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "5cab4dc9fa1c9150",
+     "us": 13357.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1664.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_279_create",
+   "file": "tokio/src/fs/dir_builder.rs",
+   "line": 91,
+   "character": 18,
+   "symbol": "create",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1695.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "ce3b016e27251441",
+     "us": 3303.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1707.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_285_is_woken",
+   "file": "tokio-test/src/task.rs",
+   "line": 87,
+   "character": 12,
+   "symbol": "is_woken",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "715762ac2ff2f983",
+     "us": 1610.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "e120e736929ba011",
+     "us": 67059.4,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "715762ac2ff2f983",
+     "us": 1620.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_292_with_capacity",
+   "file": "tokio/src/io/util/buf_writer.rs",
+   "line": 49,
+   "character": 12,
+   "symbol": "with_capacity",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "5b8b2da05be81ea3",
+     "us": 2520.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "d27591cc9605122e",
+     "us": 6329.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "5b8b2da05be81ea3",
+     "us": 2542.3,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 17,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_f79eebb_vs_f3d6b8c_ram9_tokio.json",
+  "sha256": "26baca5838150d6de98052532dba2c1cb183eb8a9c21bb10040b600a2809ea24"
+ }
+}

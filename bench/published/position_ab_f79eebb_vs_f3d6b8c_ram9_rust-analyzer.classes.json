@@ -1,0 +1,810 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_f79eebb_vs_f3d6b8c_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f3d6b8c",
+   "commit": "f3d6b8ce6da6fcc44d263b283427e6f50c759037",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb-2",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 34,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 1,
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 33
+ },
+ "rows_by_method": {
+  "document_highlight": 21,
+  "incoming_calls": 1,
+  "references": 11,
+  "rename": 1
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "crates/ide-db/src/search.rs",
+   "line": 1439,
+   "character": 30,
+   "symbol": "kind",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     108
+    ],
+    "removed_count": 0,
+    "added_count": 220,
+    "added_not_resolving": [],
+    "added_files": 80,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir-def/src/builtin_type.rs",
+   "line": 94,
+   "character": 41,
+   "symbol": "new_symbol_root",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-expand/src/name.rs",
+     124
+    ],
+    "removed_count": 0,
+    "added_count": 15,
+    "added_not_resolving": [],
+    "added_files": 11,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide-assists/src/handlers/extract_expressions_from_format_string.rs",
+   "line": 105,
+   "character": 38,
+   "symbol": "Token",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/utility_types.rs",
+     6
+    ],
+    "removed_count": 0,
+    "added_count": 107,
+    "added_not_resolving": [],
+    "added_files": 36,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide-completion/src/render/function.rs",
+   "line": 35,
+   "character": 23,
+   "symbol": "info_span",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-core-0.1.36/src/subscriber.rs",
+     605
+    ],
+    "removed_count": 0,
+    "added_count": 330,
+    "added_not_resolving": [],
+    "added_files": 105,
+    "added_generated": 184
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/load-cargo/src/lib.rs",
+   "line": 554,
+   "character": 21,
+   "symbol": "set_crate_graph",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-expand/src/change.rs",
+     31
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir-def/src/nameres/path_resolution.rs",
+   "line": 144,
+   "character": 29,
+   "symbol": "Module",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-def/src/visibility.rs",
+     21
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide-assists/src/handlers/extract_module.rs",
+   "line": 129,
+   "character": 56,
+   "symbol": "end",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/text-size-1.1.1/src/range.rs",
+     125
+    ],
+    "removed_count": 0,
+    "added_count": 247,
+    "added_not_resolving": [],
+    "added_files": 104,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide/src/inlay_hints/lifetime.rs",
+   "line": 8,
+   "character": 16,
+   "symbol": "Itertools",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/itertools-0.15.0/src/lib.rs",
+     457
+    ],
+    "removed_count": 0,
+    "added_count": 5,
+    "added_not_resolving": [],
+    "added_files": 5,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/test-fixture/src/lib.rs",
+   "line": 229,
+   "character": 81,
+   "symbol": "is_lang",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/base-db/src/input.rs",
+     216
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/base-db/src/input.rs",
+   "line": 575,
+   "character": 12,
+   "symbol": "add_dep",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/base-db/src/input.rs",
+     575
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/edition/src/lib.rs",
+   "line": 34,
+   "character": 12,
+   "symbol": "at_least_2021",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/edition/src/lib.rs",
+     34
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide/src/signature_help.rs",
+   "line": 708,
+   "character": 53,
+   "symbol": "start",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/text-size-1.1.1/src/range.rs",
+     119
+    ],
+    "removed_count": 0,
+    "added_count": 11,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-diagnostics/src/lib.rs",
+   "line": 236,
+   "character": 44,
+   "symbol": "InFile",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-expand/src/files.rs",
+     26
+    ],
+    "removed_count": 0,
+    "added_count": 11,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-db/src/syntax_helpers/suggest_name.rs",
+   "line": 477,
+   "character": 32,
+   "symbol": "display",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-expand/src/name.rs",
+     182
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide/src/extend_selection.rs",
+   "line": 194,
+   "character": 60,
+   "symbol": "start",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/text-size-1.1.1/src/range.rs",
+     119
+    ],
+    "removed_count": 0,
+    "added_count": 11,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/syntax-bridge/src/prettify_macro_expansion.rs",
+   "line": 47,
+   "character": 24,
+   "symbol": "Enter",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/utility_types.rs",
+     67
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide/src/signature_help.rs",
+   "line": 723,
+   "character": 77,
+   "symbol": "start",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/text-size-1.1.1/src/range.rs",
+     119
+    ],
+    "removed_count": 0,
+    "added_count": 11,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-completion/src/context/analysis.rs",
+   "line": 1941,
+   "character": 30,
+   "symbol": "intersect",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/text-size-1.1.1/src/range.rs",
+     222
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide/src/move_item.rs",
+   "line": 53,
+   "character": 46,
+   "symbol": "parent",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     276
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-completion/src/completions/postfix.rs",
+   "line": 488,
+   "character": 82,
+   "symbol": "end",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/text-size-1.1.1/src/range.rs",
+     125
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir-def/src/attrs.rs",
+   "line": 793,
+   "character": 46,
+   "symbol": "Token",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/utility_types.rs",
+     6
+    ],
+    "removed_count": 0,
+    "added_count": 20,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-assists/src/handlers/flip_comma.rs",
+   "line": 67,
+   "character": 44,
+   "symbol": "kind",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     256
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-diagnostics/src/handlers/unary_operator_cannot_be_applied.rs",
+   "line": 26,
+   "character": 21,
+   "symbol": "display",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-ty/src/display.rs",
+     274
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide/src/syntax_highlighting/inject.rs",
+   "line": 157,
+   "character": 44,
+   "symbol": "at",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/text-size-1.1.1/src/range.rs",
+     68
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-assists/src/handlers/convert_into_to_from.rs",
+   "line": 116,
+   "character": 40,
+   "symbol": "parent",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     128
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-db/src/rename.rs",
+   "line": 662,
+   "character": 52,
+   "symbol": "text_range",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     112
+    ],
+    "removed_count": 0,
+    "added_count": 14,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/project-model/src/sysroot.rs",
+   "line": 272,
+   "character": 34,
+   "symbol": "error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-core-0.1.36/src/callsite.rs",
+     125
+    ],
+    "removed_count": 0,
+    "added_count": 12,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 8
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-ssr/src/matching.rs",
+   "line": 369,
+   "character": 80,
+   "symbol": "text",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     120
+    ],
+    "removed_count": 0,
+    "added_count": 15,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide/src/inlay_hints.rs",
+   "line": 113,
+   "character": 106,
+   "symbol": "text_range",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     112
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide/src/extend_selection.rs",
+   "line": 175,
+   "character": 45,
+   "symbol": "Next",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/utility_types.rs",
+     59
+    ],
+    "removed_count": 0,
+    "added_count": 5,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir-ty/src/diagnostics/expr.rs",
+   "line": 532,
+   "character": 59,
+   "symbol": "parent",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     128
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/rust-analyzer/src/cli/parse.rs",
+   "line": 60,
+   "character": 46,
+   "symbol": "start",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/text-size-1.1.1/src/range.rs",
+     119
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/hir-def/src/hir/generics.rs",
+   "line": 365,
+   "character": 12,
+   "symbol": "iter_lt",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/hir-def/src/hir/generics.rs",
+     365
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/hir/src/display.rs",
+       710,
+       "write_generic_params_or_args"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       717,
+       737
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/hir/src/lib.rs",
+       3060,
+       "lifetime_params"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3067
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/hir/src/semantics/child_by_source.rs",
+       271,
+       "child_by_source_to"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       279
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/rust-analyzer/src/cli/analysis_stats.rs",
+       406,
+       "run_data_layout"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       413
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 4,
+    "removed_count": 0,
+    "added_sites": 5,
+    "removed_sites": 0,
+    "added_site_lines": 5,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/hir-expand/src/change.rs",
+   "line": 35,
+   "character": 12,
+   "symbol": "set_proc_macros",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-expand/src/change.rs",
+     35
+    ],
+    "removed_count": 0,
+    "added_count": 6,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  }
+ ]
+}

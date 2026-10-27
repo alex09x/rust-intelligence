@@ -1,0 +1,2157 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_f79eebb_vs_f3d6b8c_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f3d6b8c",
+   "commit": "f3d6b8ce6da6fcc44d263b283427e6f50c759037",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb-2",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 87,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 2,
+  "g2_callers_lost_whose_call_sites_resolve_to_another_item": 6,
+  "g3_callers_gained_and_lost_each_by_its_own_proof": 3,
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 76
+ },
+ "rows_by_method": {
+  "document_highlight": 27,
+  "incoming_calls": 11,
+  "references": 40,
+  "rename": 9
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "examples/3d/solari.rs",
+   "line": 133,
+   "character": 40,
+   "symbol": "from_xyzw",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/sse2/quat.rs",
+     84
+    ],
+    "removed_count": 0,
+    "added_count": 10,
+    "added_not_resolving": [],
+    "added_files": 4,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 1549,
+   "character": 12,
+   "symbol": "OverflowAxis",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/ui_node.rs",
+     1657
+    ],
+    "removed_count": 0,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/input/keyboard_modifiers.rs",
+   "line": 14,
+   "character": 45,
+   "symbol": "ShiftLeft",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_input/src/keyboard.rs",
+     421
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ui/src/layout/convert.rs",
+   "line": 538,
+   "character": 29,
+   "symbol": "FlexDirection",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/ui_node.rs",
+     1516
+    ],
+    "removed_count": 0,
+    "added_count": 211,
+    "added_not_resolving": [],
+    "added_files": 58,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_shape/src/bounding/bounded3d/primitive_impls.rs",
+   "line": 227,
+   "character": 22,
+   "symbol": "min",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/sse2/vec3a.rs",
+     302
+    ],
+    "removed_count": 0,
+    "added_count": 7,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_input/src/gamepad.rs",
+   "line": 237,
+   "character": 16,
+   "symbol": "ButtonState",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_input/src/lib.rs",
+     181
+    ],
+    "removed_count": 0,
+    "added_count": 6,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 627,
+   "character": 24,
+   "symbol": "AlignContent",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/ui_node.rs",
+     1252
+    ],
+    "removed_count": 0,
+    "added_count": 9,
+    "added_not_resolving": [],
+    "added_files": 7,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_mesh/src/mesh.rs",
+   "line": 1683,
+   "character": 36,
+   "symbol": "TriangleStrip",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wgpu-types-30.0.1/src/render.rs",
+     303
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/animation/animation_graph.rs",
+   "line": 197,
+   "character": 21,
+   "symbol": "get",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_tasks/src/usages.rs",
+     70
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 4,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_gltf/src/loader/mod.rs",
+   "line": 168,
+   "character": 35,
+   "symbol": "MeshCompressionArgs",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_mesh/src/mesh.rs",
+     279
+    ],
+    "removed_count": 0,
+    "added_count": 12,
+    "added_not_resolving": [],
+    "added_files": 5,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_feathers/src/controls/tree_view.rs",
+   "line": 161,
+   "character": 52,
+   "symbol": "Row",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_feathers/crates/bevy_ui/src/ui_node.rs",
+     1518
+    ],
+    "removed_count": 0,
+    "added_count": 62,
+    "added_not_resolving": [],
+    "added_files": 23,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/shader_advanced/render_depth_to_texture.rs",
+   "line": 166,
+   "character": 36,
+   "symbol": "All",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wgpu-types-30.0.1/src/texture.rs",
+     122
+    ],
+    "removed_count": 0,
+    "added_count": 5,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_feathers/src/dark_theme.rs",
+   "line": 32,
+   "character": 54,
+   "symbol": "ACCENT",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_feathers/src/palette.rs",
+     27
+    ],
+    "removed_count": 0,
+    "added_count": 20,
+    "added_not_resolving": [],
+    "added_files": 4,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/state/computed_states.rs",
+   "line": 625,
+   "character": 38,
+   "symbol": "srgb",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_color/src/color.rs",
+     123
+    ],
+    "removed_count": 0,
+    "added_count": 347,
+    "added_not_resolving": [],
+    "added_files": 117,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ui_widgets/src/text_input.rs",
+   "line": 1058,
+   "character": 33,
+   "symbol": "world",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_app/src/app.rs",
+     1168
+    ],
+    "removed_count": 0,
+    "added_count": 11,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 872,
+   "character": 30,
+   "symbol": "axes",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/geometry.rs",
+     868
+    ],
+    "removed_count": 0,
+    "added_count": 30,
+    "added_not_resolving": [],
+    "added_files": 13,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_picking/src/events.rs",
+   "line": 1407,
+   "character": 38,
+   "symbol": "world",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_app/src/app.rs",
+     1168
+    ],
+    "removed_count": 0,
+    "added_count": 11,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/shader_advanced/custom_vertex_attribute.rs",
+   "line": 21,
+   "character": 10,
+   "symbol": "run",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_app/src/app.rs",
+     185
+    ],
+    "removed_count": 0,
+    "added_count": 392,
+    "added_not_resolving": [],
+    "added_files": 391,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_winit/src/converters.rs",
+   "line": 735,
+   "character": 24,
+   "symbol": "East",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_winit/crates/bevy_math/src/compass.rs",
+     145
+    ],
+    "removed_count": 0,
+    "added_count": 5,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_solari/src/scene/binder/assets.rs",
+   "line": 262,
+   "character": 40,
+   "symbol": "remove",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_platform/src/collections/hash_set.rs",
+     907
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_solari/src/realtime/node.rs",
+   "line": 224,
+   "character": 25,
+   "symbol": "as_entire_binding",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wgpu-30.0.1/src/api/buffer.rs",
+     236
+    ],
+    "removed_count": 0,
+    "added_count": 67,
+    "added_not_resolving": [],
+    "added_files": 6,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_shape/src/bounding/bounded2d/primitive_impls.rs",
+   "line": 678,
+   "character": 47,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/vec2.rs",
+     90
+    ],
+    "removed_count": 0,
+    "added_count": 1012,
+    "added_not_resolving": [],
+    "added_files": 110,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_winit/src/converters.rs",
+   "line": 684,
+   "character": 67,
+   "symbol": "ColResize",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cursor-icon-1.2.0/src/lib.rs",
+     237
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 820,
+   "character": 16,
+   "symbol": "Val",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/geometry.rs",
+     32
+    ],
+    "removed_count": 0,
+    "added_count": 63,
+    "added_not_resolving": [],
+    "added_files": 19,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/ui/text/text_debug.rs",
+   "line": 199,
+   "character": 40,
+   "symbol": "FontSize",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_text/src/text.rs",
+     814
+    ],
+    "removed_count": 0,
+    "added_count": 244,
+    "added_not_resolving": [],
+    "added_files": 77,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/3d/animated_material.rs",
+   "line": 40,
+   "character": 28,
+   "symbol": "from_translation",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_transform/src/components/transform.rs",
+     139
+    ],
+    "removed_count": 0,
+    "added_count": 116,
+    "added_not_resolving": [],
+    "added_files": 54,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 740,
+   "character": 15,
+   "symbol": "default",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_utils/src/default.rs",
+     29
+    ],
+    "removed_count": 0,
+    "added_count": 1624,
+    "added_not_resolving": [],
+    "added_files": 271,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ui_widgets/src/tabs.rs",
+   "line": 1217,
+   "character": 14,
+   "symbol": "world_mut",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_app/src/app.rs",
+     1176
+    ],
+    "removed_count": 0,
+    "added_count": 27,
+    "added_not_resolving": [],
+    "added_files": 11,
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/ui/widgets/standard_widgets_observers.rs",
+   "line": 131,
+   "character": 26,
+   "symbol": "AlignItems",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/ui_node.rs",
+     900
+    ],
+    "removed_count": 0,
+    "added_count": 272,
+    "added_not_resolving": [],
+    "added_files": 89,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_transform/src/components/transform.rs",
+   "line": 476,
+   "character": 58,
+   "symbol": "NEG_Z",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_math/src/direction.rs",
+     423
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/testbed/ui.rs",
+   "line": 4013,
+   "character": 52,
+   "symbol": "new",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/gradients.rs",
+     30
+    ],
+    "removed_count": 0,
+    "added_count": 33,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_color/src/srgba.rs",
+   "line": 507,
+   "character": 50,
+   "symbol": "BLACK",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_color/src/srgba.rs",
+     51
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/scene/world_serialization.rs",
+   "line": 129,
+   "character": 44,
+   "symbol": "looking_at",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_transform/src/components/transform.rs",
+     187
+    ],
+    "removed_count": 0,
+    "added_count": 205,
+    "added_not_resolving": [],
+    "added_files": 149,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_math/src/compass.rs",
+   "line": 545,
+   "character": 33,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/vec2.rs",
+     90
+    ],
+    "removed_count": 0,
+    "added_count": 1012,
+    "added_not_resolving": [],
+    "added_files": 110,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_core_pipeline/src/prepass/mod.rs",
+   "line": 79,
+   "character": 12,
+   "symbol": "MotionVectorPrepass",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_core_pipeline/src/prepass/mod.rs",
+     79
+    ],
+    "removed_count": 0,
+    "added_count": 11,
+    "added_not_resolving": [],
+    "added_files": 4,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 1545,
+   "character": 12,
+   "symbol": "Overflow",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/ui_node.rs",
+     1545
+    ],
+    "removed_count": 0,
+    "added_count": 42,
+    "added_not_resolving": [],
+    "added_files": 13,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_app/src/app.rs",
+   "line": 261,
+   "character": 12,
+   "symbol": "finish",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_app/src/app.rs",
+     261
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ui/src/widget/image.rs",
+   "line": 215,
+   "character": 10,
+   "symbol": "NodeImageMode",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/widget/image.rs",
+     215
+    ],
+    "removed_count": 0,
+    "added_count": 13,
+    "added_not_resolving": [],
+    "added_files": 7,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_curve/src/lib.rs",
+   "line": 465,
+   "character": 12,
+   "symbol": "map",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_curve/src/lib.rs",
+     465
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ui_widgets/src/slider.rs",
+   "line": 227,
+   "character": 12,
+   "symbol": "SliderStep",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui_widgets/src/slider.rs",
+     227
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_shape/src/dim2.rs",
+   "line": 2569,
+   "character": 66,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/vec2.rs",
+     90
+    ],
+    "removed_count": 0,
+    "added_count": 80,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_shape/src/dim3.rs",
+   "line": 1455,
+   "character": 23,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/vec3.rs",
+     96
+    ],
+    "removed_count": 0,
+    "added_count": 63,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/stress_tests/many_cubes.rs",
+   "line": 547,
+   "character": 37,
+   "symbol": "looking_at",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_transform/src/components/transform.rs",
+     187
+    ],
+    "removed_count": 0,
+    "added_count": 10,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_camera/src/primitives.rs",
+   "line": 617,
+   "character": 28,
+   "symbol": "ZERO",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/sse2/vec3a.rs",
+     50
+    ],
+    "removed_count": 0,
+    "added_count": 13,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/ecs/delayed_commands.rs",
+   "line": 11,
+   "character": 10,
+   "symbol": "add_systems",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_app/src/app.rs",
+     321
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/stress_tests/many_cameras_lights.rs",
+   "line": 51,
+   "character": 40,
+   "symbol": "from_rotation_x",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/sse2/quat.rs",
+     181
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/3d/visibility_range.rs",
+   "line": 245,
+   "character": 23,
+   "symbol": "pressed",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_input/src/button_input.rs",
+     157
+    ],
+    "removed_count": 0,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/3d/parallax_mapping.rs",
+   "line": 297,
+   "character": 49,
+   "symbol": "new",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/vec3.rs",
+     96
+    ],
+    "removed_count": 0,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_post_process/src/dof/mod.rs",
+   "line": 402,
+   "character": 72,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_material/src/descriptor.rs",
+     20
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/audio/spatial_audio_3d.rs",
+   "line": 33,
+   "character": 22,
+   "symbol": "new",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_audio/src/audio.rs",
+     270
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/math/render_primitives.rs",
+   "line": 518,
+   "character": 21,
+   "symbol": "Vec3",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/vec3.rs",
+     28
+    ],
+    "removed_count": 0,
+    "added_count": 32,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/asset/repeated_texture.rs",
+   "line": 81,
+   "character": 20,
+   "symbol": "from_xyz",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_transform/src/components/transform.rs",
+     119
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/ui/scroll_and_overflow/overflow_clip_margin.rs",
+   "line": 33,
+   "character": 37,
+   "symbol": "border_box",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/ui_node.rs",
+     1722
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_shape/src/bounding/raycast3d.rs",
+   "line": 268,
+   "character": 38,
+   "symbol": "ZERO",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/vec3.rs",
+     36
+    ],
+    "removed_count": 0,
+    "added_count": 22,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 731,
+   "character": 45,
+   "symbol": "TrackClick",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui_widgets/src/slider.rs",
+     66
+    ],
+    "removed_count": 0,
+    "added_count": 9,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/async_tasks/async_compute.rs",
+   "line": 159,
+   "character": 31,
+   "symbol": "new",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/vec3.rs",
+     96
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_core_pipeline/src/mip_generation/experimental/depth.rs",
+   "line": 586,
+   "character": 24,
+   "symbol": "TextureUsages",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wgpu-types-30.0.1/src/texture.rs",
+     171
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/3d/animated_material.rs",
+   "line": 30,
+   "character": 35,
+   "symbol": "new",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_shape/src/dim3.rs",
+     710
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_ui/src/widget/text_input_layout.rs",
+   "line": 285,
+   "character": 74,
+   "symbol": "TextWrapMode",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parlance-0.1.0/src/text.rs",
+     48
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/window/monitor_info.rs",
+   "line": 13,
+   "character": 29,
+   "symbol": "ExitCondition",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_window/src/lib.rs",
+     180
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/ecs/system_closure.rs",
+   "line": 30,
+   "character": 10,
+   "symbol": "add_systems",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_app/src/app.rs",
+     321
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_pbr/src/render/gpu_preprocess.rs",
+   "line": 3068,
+   "character": 60,
+   "symbol": "as_entire_binding",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wgpu-30.0.1/src/api/buffer.rs",
+     236
+    ],
+    "removed_count": 0,
+    "added_count": 49,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_pbr/src/light_probe/generate.rs",
+   "line": 839,
+   "character": 26,
+   "symbol": "dispatch_workgroups",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wgpu-30.0.1/src/api/compute_pass.rs",
+     89
+    ],
+    "removed_count": 0,
+    "added_count": 5,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_pbr/src/render/mesh.rs",
+   "line": 1057,
+   "character": 27,
+   "symbol": "UVec2",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/u32/uvec2.rs",
+     56
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/2d/bloom_2d.rs",
+   "line": 26,
+   "character": 44,
+   "symbol": "Custom",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_camera/src/clear_color.rs",
+     18
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "examples/testbed/ui.rs",
+   "line": 4142,
+   "character": 27,
+   "symbol": "default",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_utils/src/default.rs",
+     29
+    ],
+    "removed_count": 0,
+    "added_count": 268,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_shape/src/bounding/bounded3d/primitive_impls.rs",
+   "line": 465,
+   "character": 37,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glam-0.33.12/src/f32/sse2/vec3a.rs",
+     110
+    ],
+    "removed_count": 0,
+    "added_count": 37,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/3d/fog_volumes.rs",
+   "line": 16,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "examples/3d/fog_volumes.rs",
+     16
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:examples/reflection/auto_register_static/src/bin/main.rs",
+       5,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       9
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 1,
+    "added_sites": 0,
+    "removed_sites": 1,
+    "added_site_lines": 0,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_input_focus/src/directional_navigation.rs",
+   "line": 316,
+   "character": 12,
+   "symbol": "add_edge",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_input_focus/src/directional_navigation.rs",
+     316
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/ui/navigation/directional_navigation_overrides.rs",
+       168,
+       "setup_paged_ui"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       313,
+       320
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 2,
+    "removed_sites": 0,
+    "added_site_lines": 2,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tools/example-showcase/src/main.rs",
+   "line": 141,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "tools/example-showcase/src/main.rs",
+     141
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:examples/reflection/auto_register_static/src/bin/main.rs",
+       5,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       9
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 1,
+    "added_sites": 0,
+    "removed_sites": 1,
+    "added_site_lines": 0,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "benches/benches/bevy_reflect/map.rs",
+   "line": 48,
+   "character": 4,
+   "symbol": "map_apply",
+   "target_kind": "bench",
+   "noise_before_vs_before2": false,
+   "class": "g3_callers_gained_and_lost_each_by_its_own_proof",
+   "evidence": {
+    "item_definition": [
+     "benches/benches/bevy_reflect/map.rs",
+     48
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:benches/benches/bevy_reflect/map.rs",
+       152,
+       "dynamic_map_apply"
+      ],
+      "call_sites": 6,
+      "call_site_lines": [
+       179,
+       186,
+       190,
+       197,
+       204,
+       211
+      ],
+      "sites_resolving_to_the_item": 6,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/benches/bevy_reflect/map.rs",
+       78,
+       "concrete_map_apply"
+      ],
+      "call_sites": 6,
+      "call_site_lines": [
+       103,
+       110,
+       114,
+       121,
+       128,
+       135
+      ],
+      "sites_resolving_to_the_item": 6,
+      "ok": true
+     }
+    ],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/impls/alloc/collections/btree/map.rs",
+       162,
+       "apply"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       163
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/impls/indexmap.rs",
+       145,
+       "apply"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       146
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_reflect/src/map.rs",
+       373,
+       "apply"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       374
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 2,
+    "removed_count": 3,
+    "added_sites": 12,
+    "removed_sites": 3,
+    "added_site_lines": 12,
+    "removed_site_lines": 3
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/animation/eased_motion.rs",
+   "line": 92,
+   "character": 8,
+   "symbol": "create",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g3_callers_gained_and_lost_each_by_its_own_proof",
+   "evidence": {
+    "item_definition": [
+     "examples/animation/eased_motion.rs",
+     92
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/animation/eased_motion.rs",
+       19,
+       "setup"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       32
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:examples/animation/animated_ui.rs",
+       121,
+       "setup"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       133
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 1,
+    "added_sites": 1,
+    "removed_sites": 1,
+    "added_site_lines": 1,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_render/src/gpu_readback.rs",
+   "line": 96,
+   "character": 12,
+   "symbol": "texture",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_render/src/gpu_readback.rs",
+     96
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/shader/gpu_readback.rs",
+       85,
+       "setup"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       146
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/ui/navigation/directional_navigation_overrides.rs",
+   "line": 42,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "examples/ui/navigation/directional_navigation_overrides.rs",
+     42
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:examples/reflection/auto_register_static/src/bin/main.rs",
+       5,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       9
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 1,
+    "added_sites": 0,
+    "removed_sites": 1,
+    "added_site_lines": 0,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/ecs/extraction.rs",
+   "line": 47,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "examples/ecs/extraction.rs",
+     47
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:examples/reflection/auto_register_static/src/bin/main.rs",
+       5,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       9
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 1,
+    "added_sites": 0,
+    "removed_sites": 1,
+    "added_site_lines": 0,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/ui/widgets/standard_widgets_observers.rs",
+   "line": 86,
+   "character": 4,
+   "symbol": "demo_root",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g3_callers_gained_and_lost_each_by_its_own_proof",
+   "evidence": {
+    "item_definition": [
+     "examples/ui/widgets/standard_widgets_observers.rs",
+     86
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/ui/widgets/standard_widgets_observers.rs",
+       80,
+       "setup"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       83
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:examples/ui/widgets/feathers_counter.rs",
+       42,
+       "scene"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       46
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 1,
+    "added_sites": 1,
+    "removed_sites": 1,
+    "added_site_lines": 1,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/2d/mesh2d_repeated_texture.rs",
+   "line": 18,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "examples/2d/mesh2d_repeated_texture.rs",
+     18
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:examples/reflection/auto_register_static/src/bin/main.rs",
+       5,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       9
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 1,
+    "added_sites": 0,
+    "removed_sites": 1,
+    "added_site_lines": 0,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/2d/sprite_animation.rs",
+   "line": 9,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "examples/2d/sprite_animation.rs",
+     9
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:examples/reflection/auto_register_static/src/bin/main.rs",
+       5,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       9
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 1,
+    "added_sites": 0,
+    "removed_sites": 1,
+    "added_site_lines": 0,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_app/src/sub_app.rs",
+   "line": 138,
+   "character": 12,
+   "symbol": "world_mut",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_app/src/sub_app.rs",
+     138
+    ],
+    "removed_count": 0,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_picking/src/events.rs",
+   "line": 121,
+   "character": 12,
+   "symbol": "PointerTraversal",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_picking/src/events.rs",
+     121
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_sprite/src/sprite.rs",
+   "line": 180,
+   "character": 10,
+   "symbol": "SpriteAlphaMode",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_sprite/src/sprite.rs",
+     180
+    ],
+    "removed_count": 0,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_light/src/ambient_light.rs",
+   "line": 12,
+   "character": 12,
+   "symbol": "AmbientLight",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_light/src/ambient_light.rs",
+     12
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_ui_widgets/src/split_pane.rs",
+   "line": 38,
+   "character": 12,
+   "symbol": "SplitPane",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui_widgets/src/split_pane.rs",
+     38
+    ],
+    "removed_count": 0,
+    "added_count": 6,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_post_process/src/effect_stack/lens_distortion.rs",
+   "line": 24,
+   "character": 12,
+   "symbol": "LensDistortion",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_post_process/src/effect_stack/lens_distortion.rs",
+     24
+    ],
+    "removed_count": 0,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_input/src/button_input.rs",
+   "line": 162,
+   "character": 12,
+   "symbol": "any_pressed",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_input/src/button_input.rs",
+     162
+    ],
+    "removed_count": 0,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_app/src/main_schedule.rs",
+   "line": 240,
+   "character": 12,
+   "symbol": "insert_after",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_app/src/main_schedule.rs",
+     240
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_ui/src/geometry.rs",
+   "line": 693,
+   "character": 12,
+   "symbol": "UiRect",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/geometry.rs",
+     693
+    ],
+    "removed_count": 0,
+    "added_count": 432,
+    "added_not_resolving": [],
+    "added_files": 53,
+    "added_generated": 0
+   }
+  }
+ ]
+}

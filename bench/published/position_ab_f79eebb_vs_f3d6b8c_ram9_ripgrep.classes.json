@@ -1,0 +1,2277 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "ripgrep",
+ "report": "position_ab_f79eebb_vs_f3d6b8c_ram9_ripgrep.json",
+ "servers": [
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f3d6b8c",
+   "commit": "f3d6b8ce6da6fcc44d263b283427e6f50c759037",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb-2",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 42,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 4,
+  "g2_callers_lost_whose_call_sites_resolve_to_another_item": 2,
+  "g3_callers_gained_and_lost_each_by_its_own_proof": 1,
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 35
+ },
+ "rows_by_method": {
+  "document_highlight": 6,
+  "incoming_calls": 7,
+  "references": 15,
+  "rename": 14
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "crates/printer/src/standard.rs",
+   "line": 2066,
+   "character": 48,
+   "symbol": "build",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/standard.rs",
+     130
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/printer/src/standard.rs",
+   "line": 2414,
+   "character": 14,
+   "symbol": "search_reader",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     707
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/printer/src/standard.rs",
+   "line": 2725,
+   "character": 14,
+   "symbol": "search_reader",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     707
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/core/flags/hiargs.rs",
+   "line": 1266,
+   "character": 36,
+   "symbol": "HyperlinkConfig",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/hyperlink.rs",
+     21
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/printer/src/standard.rs",
+   "line": 2124,
+   "character": 14,
+   "symbol": "build",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     312
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/printer/src/standard.rs",
+   "line": 3733,
+   "character": 26,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     307
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/core/flags/hiargs.rs",
+   "line": 714,
+   "character": 14,
+   "symbol": "line_number",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     365
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/printer/src/standard.rs",
+   "line": 708,
+   "character": 12,
+   "symbol": "stats",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/standard.rs",
+     708
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/regex/src/matcher.rs",
+   "line": 322,
+   "character": 12,
+   "symbol": "crlf",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/regex/src/matcher.rs",
+     322
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/regex/src/matcher.rs",
+   "line": 24,
+   "character": 12,
+   "symbol": "RegexMatcherBuilder",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/regex/src/matcher.rs",
+     24
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/searcher/src/searcher/mod.rs",
+   "line": 127,
+   "character": 12,
+   "symbol": "Encoding",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     127
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/printer/src/json.rs",
+   "line": 56,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/json.rs",
+     56
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/printer/src/standard.rs",
+   "line": 493,
+   "character": 12,
+   "symbol": "Standard",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/standard.rs",
+     493
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/regex/src/matcher.rs",
+   "line": 179,
+   "character": 12,
+   "symbol": "unicode",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/regex/src/matcher.rs",
+     179
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/searcher/src/searcher/mod.rs",
+   "line": 307,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     307
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/core/search.rs",
+   "line": 43,
+   "character": 33,
+   "symbol": "CommandReaderBuilder",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/cli/src/process.rs",
+     84
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/core/flags/hiargs.rs",
+   "line": 650,
+   "character": 14,
+   "symbol": "max_matches",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/summary.rs",
+     283
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/core/flags/hiargs.rs",
+   "line": 706,
+   "character": 28,
+   "symbol": "LineTerminator",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/matcher/src/lib.rs",
+     195
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/core/flags/hiargs.rs",
+   "line": 1104,
+   "character": 44,
+   "symbol": "is_readable_stdin",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/cli/src/lib.rs",
+     170
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/core/flags/hiargs.rs",
+   "line": 737,
+   "character": 20,
+   "symbol": "build",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     312
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/core/search.rs",
+   "line": 44,
+   "character": 32,
+   "symbol": "DecompressionReaderBuilder",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/cli/src/decompress.rs",
+     198
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/globset/src/glob.rs",
+   "line": 559,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/globset/src/glob.rs",
+     559
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/ignore/src/gitignore.rs",
+       436,
+       "add_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       504
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ignore/src/types.rs",
+       322,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       339
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 2,
+    "removed_count": 0,
+    "added_sites": 2,
+    "removed_sites": 0,
+    "added_site_lines": 2,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 628,
+   "character": 12,
+   "symbol": "follow_links",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/ignore/src/walk.rs",
+     628
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/core/flags/hiargs.rs",
+       868,
+       "walk_builder"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       882
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 769,
+   "character": 12,
+   "symbol": "git_global",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/ignore/src/walk.rs",
+     769
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/core/flags/hiargs.rs",
+       868,
+       "walk_builder"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       892
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/regex/src/matcher.rs",
+   "line": 322,
+   "character": 12,
+   "symbol": "crlf",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g3_callers_gained_and_lost_each_by_its_own_proof",
+   "evidence": {
+    "item_definition": [
+     "crates/regex/src/matcher.rs",
+     322
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/core/flags/hiargs.rs",
+       459,
+       "matcher_rust"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       480,
+       485
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/regex/src/matcher.rs",
+       598,
+       "line_terminator_crlf"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       616
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:crates/pcre2/src/matcher.rs",
+       450,
+       "line_terminator_crlf"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       468
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 2,
+    "removed_count": 1,
+    "added_sites": 3,
+    "removed_sites": 1,
+    "added_site_lines": 3,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/pcre2/src/matcher.rs",
+   "line": 155,
+   "character": 12,
+   "symbol": "crlf",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "crates/pcre2/src/matcher.rs",
+     155
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       994,
+       "missing_crlf"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1012
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3791,
+       "regression_search_empty_with_crlf"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3793
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 2,
+    "added_sites": 0,
+    "removed_sites": 2,
+    "added_site_lines": 0,
+    "removed_site_lines": 2
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/pcre2/src/matcher.rs",
+   "line": 305,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "crates/pcre2/src/matcher.rs",
+     305
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       892,
+       "binary_detection"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       904
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       920,
+       "max_matches"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       921
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       934,
+       "max_matches_after_context"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       948
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       966,
+       "no_match"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       967
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/json.rs",
+       979,
+       "always_begin_end_no_match"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       980
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1819,
+       "reports_match"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1820,
+       1830
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1842,
+       "reports_binary"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1845,
+       1855
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1868,
+       "reports_stats"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1871
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1895,
+       "reports_stats_multiple"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1898
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1932,
+       "context_break"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1933
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       1962,
+       "context_break_multiple_no_heading"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1963
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2012,
+       "context_break_multiple_heading"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2013
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2063,
+       "path"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2064
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2086,
+       "separator_field"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2087
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2117,
+       "separator_path"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2118
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2141,
+       "path_terminator"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2142
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2165,
+       "heading"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2166
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2189,
+       "no_heading"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2190
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2212,
+       "no_heading_multiple"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       2213,
+       2226
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2248,
+       "heading_multiple"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       2249,
+       2262
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2286,
+       "trim_ascii"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2287
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2309,
+       "trim_ascii_multi_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2310
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2334,
+       "trim_ascii_with_line_term"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2335
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2359,
+       "line_number"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2360
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2381,
+       "line_number_multi_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2382
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2407,
+       "column_number"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2408
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2430,
+       "column_number_multi_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2431
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2457,
+       "byte_offset"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2458
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2481,
+       "byte_offset_multi_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2482
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2509,
+       "max_columns"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2510
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2533,
+       "max_columns_preview"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2534
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2558,
+       "max_columns_with_count"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2559
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2583,
+       "max_columns_with_count_preview_no_match"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2584
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2609,
+       "max_columns_with_count_preview_one_match"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2610
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2635,
+       "max_columns_with_count_preview_two_matches"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2637
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2662,
+       "max_columns_multi_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2663
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2687,
+       "max_columns_multi_line_preview"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2689
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2717,
+       "max_matches"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2718
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2740,
+       "max_matches_context"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       2742,
+       2790
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2843,
+       "max_matches_multi_line1"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2844
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2867,
+       "max_matches_multi_line2"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2869
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2893,
+       "only_matching"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2894
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2919,
+       "only_matching_multi_line1"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2921
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2947,
+       "only_matching_multi_line2"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2949
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       2976,
+       "only_matching_max_columns"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2977
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3003,
+       "only_matching_max_columns_preview"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3004
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3031,
+       "only_matching_max_columns_multi_line1"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3037
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3064,
+       "only_matching_max_columns_preview_multi_line1"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3070
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3098,
+       "only_matching_max_columns_multi_line2"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3100
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3128,
+       "only_matching_max_columns_preview_multi_line2"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3130
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3159,
+       "per_match"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3160
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3185,
+       "per_match_multi_line1"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3187
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3213,
+       "per_match_multi_line2"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3215
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3242,
+       "per_match_multi_line3"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3244
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3271,
+       "per_match_multi_line1_only_first_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3273
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3300,
+       "per_match_multi_line2_only_first_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3302
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3328,
+       "per_match_multi_line3_only_first_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3330
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3356,
+       "replacement_passthru"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3357
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3385,
+       "replacement"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3386
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3414,
+       "replacement_multi_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3415
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3462,
+       "replacement_multi_line_combine_lines"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3463
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3484,
+       "replacement_max_columns"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3485
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3510,
+       "replacement_max_columns_preview1"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3511
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3537,
+       "replacement_max_columns_preview2"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3539
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3564,
+       "replacement_only_matching"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3565
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3591,
+       "replacement_per_match"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3592
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3618,
+       "invert"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3619
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3643,
+       "invert_multi_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3644
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3669,
+       "invert_context"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3670
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3698,
+       "invert_context_multi_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3699
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3728,
+       "invert_context_only_matching"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3729
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/standard.rs",
+       3759,
+       "invert_context_only_matching_multi_line"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3760
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1011,
+       "count_max_matches"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1012
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1027,
+       "count_matches"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1028
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1046,
+       "path_with_match_found"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1047
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1065,
+       "path_with_match_not_found"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1066
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1084,
+       "path_without_match_found"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1085
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1103,
+       "path_without_match_not_found"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1104
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1122,
+       "quiet"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1123
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       1144,
+       "quiet_with_stats"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1145
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       829,
+       "path_with_match_error"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       830
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       843,
+       "path_without_match_error"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       844
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       857,
+       "count_no_path"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       858
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       872,
+       "count_no_path_even_with_path"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       873
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       892,
+       "count_path"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       893
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       911,
+       "count_path_with_zero"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       912
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       931,
+       "count_path_without_zero"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       932
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       951,
+       "count_path_field_separator"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       952
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       971,
+       "count_path_terminator"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       972
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/printer/src/summary.rs",
+       991,
+       "count_path_separator"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       992
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/searcher/examples/search-stdin.rs",
+       17,
+       "example"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       24
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 91,
+    "added_sites": 0,
+    "removed_sites": 96,
+    "added_site_lines": 0,
+    "removed_site_lines": 96
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 80,
+   "character": 12,
+   "symbol": "depth",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/ignore/src/walk.rs",
+     80
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/core/haystack.rs",
+       131,
+       "is_explicit"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       138
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/printer/src/stats.rs",
+   "line": 13,
+   "character": 12,
+   "symbol": "Stats",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/stats.rs",
+     13
+    ],
+    "removed_count": 0,
+    "added_count": 14,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/searcher/src/searcher/mod.rs",
+   "line": 312,
+   "character": 12,
+   "symbol": "build",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     312
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/searcher/src/searcher/mmap.rs",
+   "line": 13,
+   "character": 12,
+   "symbol": "MmapChoice",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mmap.rs",
+     13
+    ],
+    "removed_count": 0,
+    "added_count": 6,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/printer/src/stats.rs",
+   "line": 60,
+   "character": 12,
+   "symbol": "matched_lines",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/stats.rs",
+     60
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/printer/src/hyperlink.rs",
+   "line": 31,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/hyperlink.rs",
+     31
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/printer/src/hyperlink.rs",
+   "line": 190,
+   "character": 12,
+   "symbol": "HyperlinkEnvironment",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/hyperlink.rs",
+     190
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/printer/src/standard.rs",
+   "line": 493,
+   "character": 12,
+   "symbol": "Standard",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/standard.rs",
+     493
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/cli/src/decompress.rs",
+   "line": 260,
+   "character": 12,
+   "symbol": "get_matcher",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/cli/src/decompress.rs",
+     260
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/printer/src/standard.rs",
+   "line": 674,
+   "character": 12,
+   "symbol": "has_match",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/standard.rs",
+     674
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/searcher/src/searcher/mod.rs",
+   "line": 127,
+   "character": 12,
+   "symbol": "Encoding",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     127
+    ],
+    "removed_count": 0,
+    "added_count": 6,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/printer/src/standard.rs",
+   "line": 241,
+   "character": 12,
+   "symbol": "only_matching",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/standard.rs",
+     241
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/searcher/src/searcher/mod.rs",
+   "line": 95,
+   "character": 12,
+   "symbol": "convert",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/searcher/mod.rs",
+     95
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/cli/src/wtr.rs",
+   "line": 54,
+   "character": 8,
+   "symbol": "stdout_buffered_block",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/cli/src/wtr.rs",
+     54
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/printer/src/color.rs",
+   "line": 209,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/color.rs",
+     209
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  }
+ ]
+}

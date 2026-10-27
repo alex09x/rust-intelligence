@@ -1,0 +1,3970 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_f79eebb_vs_f3d6b8c_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f3d6b8c",
+   "commit": "f3d6b8ce6da6fcc44d263b283427e6f50c759037",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb-2",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 17,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 11,
+  "g2_callers_lost_whose_call_sites_resolve_to_another_item": 2,
+  "g3_callers_gained_and_lost_each_by_its_own_proof": 2,
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 2
+ },
+ "rows_by_method": {
+  "document_highlight": 1,
+  "incoming_calls": 15,
+  "references": 1
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "tokio-stream/tests/mpsc_bounded_stream.rs",
+   "line": 131,
+   "character": 23,
+   "symbol": "next",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/futures-util-0.3.34/src/stream/stream/mod.rs",
+     273
+    ],
+    "removed_count": 0,
+    "added_count": 26,
+    "added_not_resolving": [],
+    "added_files": 4,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio-stream/tests/mpsc_bounded_stream.rs",
+   "line": 85,
+   "character": 12,
+   "symbol": "next",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/futures-util-0.3.34/src/stream/stream/mod.rs",
+     273
+    ],
+    "removed_count": 0,
+    "added_count": 15,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/tests/macros_select.rs",
+   "line": 508,
+   "character": 10,
+   "symbol": "one",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "g3_callers_gained_and_lost_each_by_its_own_proof",
+   "evidence": {
+    "item_definition": [
+     "tokio/tests/macros_select.rs",
+     508
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/tests/macros_select.rs",
+       115,
+       "drop_in_fut"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       120
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/macros_select.rs",
+       500,
+       "never_branch_no_warnings"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       503
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/macros_select.rs",
+       74,
+       "sync_one_await"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       76
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/macros_select.rs",
+       83,
+       "sync_one_ident"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       84
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:tokio/tests/macros_pin.rs",
+       13,
+       "multi_pin"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       15
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 4,
+    "removed_count": 1,
+    "added_sites": 4,
+    "removed_sites": 1,
+    "added_site_lines": 4,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/tests/uds_stream.rs",
+   "line": 319,
+   "character": 4,
+   "symbol": "read_until_pending",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "g3_callers_gained_and_lost_each_by_its_own_proof",
+   "evidence": {
+    "item_definition": [
+     "tokio/tests/uds_stream.rs",
+     319
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/tests/uds_stream.rs",
+       278,
+       "poll_read_ready"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       284,
+       295
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     }
+    ],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:tokio/tests/tcp_stream.rs",
+       238,
+       "poll_read_ready"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       244,
+       255
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/tcp_stream.rs",
+       421,
+       "write_closed"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       433
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 2,
+    "added_sites": 2,
+    "removed_sites": 3,
+    "added_site_lines": 2,
+    "removed_site_lines": 3
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/fs/file.rs",
+   "line": 525,
+   "character": 12,
+   "symbol": "try_into_std",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio/src/fs/file.rs",
+     525
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/tests/fs_file.rs",
+       170,
+       "write_into_std_immediate"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       174
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/net/udp.rs",
+   "line": 1938,
+   "character": 12,
+   "symbol": "multicast_ttl_v4",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "tokio/src/net/udp.rs",
+     1938
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:tokio/src/net/udp.rs",
+       1938,
+       "multicast_ttl_v4"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1939
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 1,
+    "added_sites": 0,
+    "removed_sites": 1,
+    "added_site_lines": 0,
+    "removed_site_lines": 1
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio-util/src/task/join_map.rs",
+   "line": 131,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio-util/src/task/join_map.rs",
+     131
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       129,
+       "test_abort_on_drop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       130
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       154,
+       "alternating"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       155
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       173,
+       "test_keys"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       176
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       197,
+       "abort_by_key"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       198
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       235,
+       "abort_by_predicate"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       236
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       269,
+       "runtime_gone"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       270
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       285,
+       "join_map_coop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       291
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       327,
+       "abort_all"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       328
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       362,
+       "try_join_next_empty"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       363
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       368,
+       "try_join_next_no_ready_task"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       369
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       381,
+       "try_join_next_completed_task"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       382
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       399,
+       "try_join_next_aborted_task"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       400
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       421,
+       "try_join_next_advances_through_multiple"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       426
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       459,
+       "try_join_next_skips_replaced_task"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       460
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       487,
+       "duplicate_keys"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       488
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       502,
+       "duplicate_keys2"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       505
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       534,
+       "duplicate_keys_drop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       545
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       570,
+       "panic_outside_any_runtime"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       571
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       579,
+       "panic_in_multi_thread_runtime"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       580
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       589,
+       "spawn_then_join_next"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       592
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       601,
+       "spawn_then_shutdown"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       604
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       617,
+       "spawn_then_drop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       620
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       636,
+       "spawn_then_join_next"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       642
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       651,
+       "spawn_then_shutdown"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       657
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       672,
+       "spawn_then_drop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       678
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       700,
+       "spawn_then_join_next"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       704
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       722,
+       "spawn_then_join_next"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       725
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       739,
+       "spawn_then_shutdown"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       742
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       760,
+       "spawn_then_drop"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       765,
+       779
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       77,
+       "test_with_sleep"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       78
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 30,
+    "removed_count": 0,
+    "added_sites": 31,
+    "removed_sites": 0,
+    "added_site_lines": 31,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio-util/src/task/abort_on_drop.rs",
+   "line": 107,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio-util/src/task/abort_on_drop.rs",
+     107
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio-util/tests/abort_on_drop.rs",
+       42,
+       "handle_aborts_task_on_drop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       47
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/abort_on_drop.rs",
+       54,
+       "handle_aborts_task_directly"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       59
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/abort_on_drop.rs",
+       67,
+       "handle_does_not_abort_after_detach"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       72
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 3,
+    "removed_count": 0,
+    "added_sites": 3,
+    "removed_sites": 0,
+    "added_site_lines": 3,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio-util/src/task/task_tracker.rs",
+   "line": 370,
+   "character": 12,
+   "symbol": "is_empty",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio-util/src/task/task_tracker.rs",
+     370
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_tracker.rs",
+       11,
+       "open_close"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       14,
+       19,
+       27,
+       35
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_tracker.rs",
+       189,
+       "spawn_then_close"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       205
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_tracker.rs",
+       233,
+       "spawn_then_close"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       248
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_tracker.rs",
+       254,
+       "spawn_after_close"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       271
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_tracker.rs",
+       283,
+       "spawn_then_close"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       304
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_tracker.rs",
+       350,
+       "close_then_spawn"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       371
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_tracker.rs",
+       40,
+       "token_len"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       49
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 7,
+    "removed_count": 0,
+    "added_sites": 10,
+    "removed_sites": 0,
+    "added_site_lines": 10,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio-util/src/io/inspect.rs",
+   "line": 49,
+   "character": 12,
+   "symbol": "get_pin_mut",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio-util/src/io/inspect.rs",
+     49
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio-util/tests/io_inspect.rs",
+       48,
+       "inspect_reader_access_inner"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       56
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/net/udp.rs",
+   "line": 570,
+   "character": 18,
+   "symbol": "send",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g2_callers_lost_whose_call_sites_resolve_to_another_item",
+   "evidence": {
+    "item_definition": [
+     "tokio/src/net/udp.rs",
+     570
+    ],
+    "added_callers": [],
+    "removed_callers": [
+     {
+      "caller": [
+       "ws:tokio/src/net/udp.rs",
+       570,
+       "send"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       573
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/net/udp.rs",
+       600,
+       "poll_send"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       603
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/net/udp.rs",
+       654,
+       "try_send"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       657
+      ],
+      "sites_resolving_to_the_item": 0,
+      "ok": true
+     }
+    ],
+    "changed_callers": [],
+    "added_count": 0,
+    "removed_count": 3,
+    "added_sites": 0,
+    "removed_sites": 3,
+    "added_site_lines": 0,
+    "removed_site_lines": 3
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio-util/src/task/join_map.rs",
+   "line": 510,
+   "character": 12,
+   "symbol": "try_join_next",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio-util/src/task/join_map.rs",
+     510
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       362,
+       "try_join_next_empty"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       364
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       368,
+       "try_join_next_no_ready_task"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       376
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       381,
+       "try_join_next_completed_task"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       387
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       399,
+       "try_join_next_aborted_task"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       409
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       421,
+       "try_join_next_advances_through_multiple"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       441,
+       455
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_map.rs",
+       459,
+       "try_join_next_skips_replaced_task"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       478,
+       482
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 6,
+    "removed_count": 0,
+    "added_sites": 8,
+    "removed_sites": 0,
+    "added_site_lines": 8,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/task/join_set.rs",
+   "line": 142,
+   "character": 12,
+   "symbol": "spawn",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio/src/task/join_set.rs",
+     142
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:benches/spawn_blocking.rs",
+       17,
+       "spawn_blocking_concurrency"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       39
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/src/task/join_map.rs",
+       264,
+       "spawn"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       270
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       498,
+       "global_queue_interval_set_to_one"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       510
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_join_set.rs",
+       134,
+       "test_abort_on_drop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       143
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_join_set.rs",
+       159,
+       "alternating"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       163,
+       165,
+       171
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_join_set.rs",
+       177,
+       "abort_tasks"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       182
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_join_set.rs",
+       227,
+       "join_all"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       231
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_join_set.rs",
+       243,
+       "task_panics"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       249,
+       255
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_join_set.rs",
+       267,
+       "abort_all"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       271,
+       274
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_join_set.rs",
+       299,
+       "join_set_coop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       308
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_join_set.rs",
+       340,
+       "try_join_next"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       349
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_join_set.rs",
+       84,
+       "test_with_sleep"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       88,
+       97,
+       116
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 12,
+    "removed_count": 0,
+    "added_sites": 18,
+    "removed_sites": 0,
+    "added_site_lines": 18,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/task/blocking.rs",
+   "line": 74,
+   "character": 12,
+   "symbol": "block_in_place",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio/src/task/blocking.rs",
+     74
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:benches/fs.rs",
+       68,
+       "async_read_std_file"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       75,
+       81
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_handle_block_on.rs",
+       124,
+       "yield_in_block_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       127
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       327,
+       "blocking"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       343
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       400,
+       "coop_and_block_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       422
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       449,
+       "yield_after_block_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       458
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       521,
+       "hang_on_shutdown"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       524
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       600,
+       "test_block_in_place1"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       601
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       605,
+       "test_block_in_place2"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       606
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       612,
+       "test_block_in_place3"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       613
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       618,
+       "test_block_in_place4"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       619
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       624,
+       "test_nested_block_in_place_with_block_on_between"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       638,
+       640
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       651,
+       "yield_now_in_block_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       659
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       669,
+       "mutex_in_block_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       681
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       698,
+       "wake_deferred_tasks_before_block_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       717
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_blocking.rs",
+       102,
+       "can_enter_current_thread_rt_from_within_block_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       106
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_blocking.rs",
+       166,
+       "coop_disabled_in_block_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       181
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_blocking.rs",
+       197,
+       "coop_disabled_in_block_in_place_in_block_on"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       211
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_blocking.rs",
+       36,
+       "block_in_blocking"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       43
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_blocking.rs",
+       59,
+       "block_in_block"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       64,
+       65
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_blocking.rs",
+       80,
+       "no_block_in_current_thread_scheduler"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       81
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_blocking.rs",
+       85,
+       "yes_block_in_threaded_block_on"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       88
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_blocking.rs",
+       94,
+       "no_block_in_current_thread_block_on"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       97
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_id.rs",
+       264,
+       "task_id_block_in_place_block_on_spawn"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       270
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_local_set.rs",
+       170,
+       "drop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       171
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_local_set.rs",
+       186,
+       "local_threadpool_blocking_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       201
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_local_set.rs",
+       210,
+       "block_in_place_in_run_until_mt"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       214
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_local_set.rs",
+       221,
+       "block_in_place_in_spawn_local_mt"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       224
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_local_set.rs",
+       242,
+       "block_in_place_in_run_until_ct"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       246
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_local_set.rs",
+       253,
+       "block_in_place_in_spawn_local_ct"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       256
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/task_panic.rs",
+       22,
+       "block_in_place_panic_caller"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       26
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 30,
+    "removed_count": 0,
+    "added_sites": 33,
+    "removed_sites": 0,
+    "added_site_lines": 33,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/fs/dir_builder.rs",
+   "line": 91,
+   "character": 18,
+   "symbol": "create",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio/src/fs/dir_builder.rs",
+     91
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/tests/fs_dir.rs",
+       44,
+       "build_dir"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       49,
+       55
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/fs_dir.rs",
+       62,
+       "build_dir_mode_read_only"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       70
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 2,
+    "removed_count": 0,
+    "added_sites": 3,
+    "removed_sites": 0,
+    "added_site_lines": 3,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio-test/src/task.rs",
+   "line": 87,
+   "character": 12,
+   "symbol": "is_woken",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio-test/src/task.rs",
+     87
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_chain.rs",
+       53,
+       "pending_first"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       63,
+       68,
+       77
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       111,
+       "collect_btreeset_items"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       118,
+       122,
+       126
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       132,
+       "collect_btreemap_items"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       139,
+       143,
+       147
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       153,
+       "collect_hashset_items"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       160,
+       164,
+       168
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       174,
+       "collect_hashmap_items"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       181,
+       185,
+       189
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       195,
+       "collect_binaryheap_items"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       202,
+       206,
+       210
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       216,
+       "collect_string_items"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       224,
+       228,
+       232
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       238,
+       "collect_str_items"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       246,
+       250,
+       254
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       260,
+       "collect_results_ok"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       268,
+       272,
+       276
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       282,
+       "collect_results_err"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       290,
+       294
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       46,
+       "collect_vec_items"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       53,
+       57,
+       61
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       67,
+       "collect_vecdeque_items"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       76,
+       81
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_collect.rs",
+       89,
+       "collect_linkedlist_items"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       98,
+       103
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_iter.rs",
+       21,
+       "test_iter_coop_budget"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       37
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_iter.rs",
+       6,
+       "coop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       12
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_merge.rs",
+       25,
+       "merge_async_streams"
+      ],
+      "call_sites": 5,
+      "call_site_lines": [
+       37,
+       43,
+       48,
+       52,
+       57
+      ],
+      "sites_resolving_to_the_item": 5,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_stream_map.rs",
+       145,
+       "insert_remove"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       158
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_stream_map.rs",
+       175,
+       "replace"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       195
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_stream_map.rs",
+       47,
+       "single_entry"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       65,
+       74,
+       81
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-stream/tests/stream_stream_map.rs",
+       86,
+       "multiple_entries"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       101,
+       110,
+       120,
+       137
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/io_simplex.rs",
+       121,
+       "drop_receiver_1"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       126,
+       128
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/io_simplex.rs",
+       151,
+       "drop_sender_1"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       160,
+       162
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/io_simplex.rs",
+       192,
+       "shutdown_sender_2"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       202,
+       204
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       11,
+       "simple"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       25
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       113,
+       "close_sender_not_last"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       123,
+       128
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       133,
+       "close_sender_before_reserve"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       142
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       150,
+       "close_sender_after_pending_reserve"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       161
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       175,
+       "close_sender_after_successful_reserve"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       188
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       268,
+       "sink_send_then_flush"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       290
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       295,
+       "sink_send_then_close"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       309,
+       312,
+       323
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       34,
+       "simple_ref"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       50
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       70,
+       "abort_send"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       84,
+       90
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/mpsc.rs",
+       99,
+       "close_sender_last"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       108
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/task_join_queue.rs",
+       13,
+       "test_join_queue_no_spurious_wakeups"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       25,
+       30
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       173,
+       "reset_entry"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       190,
+       196
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       206,
+       "reset_to_past_wakes_pending_queue"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       213,
+       217
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       228,
+       "reset_much_later"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       245
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       250,
+       "reset_twice"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       272
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       281,
+       "repeatedly_reset_entry_inserted_as_expired"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       299
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       357,
+       "expires_before_last_insert"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       376
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       420,
+       "expire_first_key_when_reset_to_expire_earlier"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       436
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       443,
+       "expire_second_key_when_reset_to_expire_earlier"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       459
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       466,
+       "reset_first_expiring_item_to_expire_later"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       481
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       488,
+       "insert_before_first_after_poll"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       507
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       514,
+       "insert_after_ready_poll"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       529
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       547,
+       "reset_later_after_slot_starts"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       560,
+       569,
+       574,
+       577
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       609,
+       "reset_earlier_after_slot_starts"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       622,
+       631,
+       636,
+       639
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       646,
+       "insert_in_past_after_poll_fires_immediately"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       659,
+       662
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       71,
+       "single_short_delay"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       81,
+       85
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       941,
+       "wake_after_remove_last"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       949
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       954,
+       "wake_after_clear"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       959,
+       963
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/tests/time_delay_queue.rs",
+       96,
+       "multi_delay_at_start"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       110,
+       119,
+       122
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       13,
+       "open_read"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       31
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       196,
+       "open_write"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       214
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       232,
+       "read_with_buffer_larger_than_max"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       291
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       304,
+       "write_with_buffer_larger_than_max"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       358
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       372,
+       "write_twice_before_dispatch"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       397,
+       407
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       39,
+       "read_twice_before_dispatch"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       56
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       572,
+       "read_err"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       586
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       742,
+       "sync_all_ordered_after_write"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       762,
+       768
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       773,
+       "sync_all_err_ordered_after_write"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       795,
+       801
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       806,
+       "sync_data_ordered_after_write"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       826,
+       832
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       837,
+       "sync_data_err_ordered_after_write"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       859,
+       865
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       870,
+       "open_set_len_ok"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       881
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       886,
+       "open_set_len_err"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       899
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/fs/file/tests.rs",
+       99,
+       "read_with_bigger_buf"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       144
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/tests/atomic_waker.rs",
+       22,
+       "basic_usage"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       28
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/tests/atomic_waker.rs",
+       32,
+       "wake_without_register"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       39
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/tests/semaphore_batch.rs",
+       159,
+       "poll_acquire_one_zero_permits"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       169
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/tests/semaphore_batch.rs",
+       221,
+       "close_semaphore_notifies_permit1"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       229
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/tests/semaphore_batch.rs",
+       234,
+       "close_semaphore_notifies_permit2"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       248,
+       249
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/tests/semaphore_batch.rs",
+       57,
+       "poll_acquire_one_unavailable"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       72
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/src/sync/tests/semaphore_batch.rs",
+       81,
+       "poll_acquire_many_unavailable"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       101,
+       104,
+       108,
+       112
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_driver_drop.rs",
+       36,
+       "drop_wakes"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       56
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/macros_join.rs",
+       54,
+       "two_await"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       65,
+       69
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/macros_select.rs",
+       342,
+       "disable_with_if"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       358
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/macros_select.rs",
+       364,
+       "join_with_select"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       387,
+       391
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/macros_try_join.rs",
+       52,
+       "two_await"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       61,
+       65
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/macros_try_join.rs",
+       72,
+       "err_abort_early"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       82,
+       86
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/net_unix_pipe.rs",
+       41,
+       "fifo_simple_send"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       59
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/net_unix_pipe.rs",
+       443,
+       "anon_pipe_simple_send"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       459
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       698,
+       "wake_deferred_tasks_before_block_in_place"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       732
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_broadcast.rs",
+       113,
+       "send_two_recv_bounded"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       125,
+       126,
+       142,
+       143
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_broadcast.rs",
+       152,
+       "change_tasks"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       165
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_broadcast.rs",
+       169,
+       "send_slow_rx"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       184,
+       185,
+       202
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_broadcast.rs",
+       325,
+       "dropping_tx_notifies_rx"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       344,
+       345
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_broadcast.rs",
+       660,
+       "broadcast_sender_closed"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       668,
+       672
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_broadcast.rs",
+       677,
+       "broadcast_sender_closed_with_extra_subscribe"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       685,
+       689,
+       695,
+       706
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_broadcast.rs",
+       98,
+       "send_recv_bounded"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       107
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       1082,
+       "ready_close_cancel_bounded"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1095
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       1102,
+       "permit_available_not_acquired_close"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1114
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       174,
+       "start_send_past_cap"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       195,
+       196
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       453,
+       "send_recv_buffer_limited"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       470
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       495,
+       "recv_close_gets_none_reserved"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       505,
+       513
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       523,
+       "failed_reserve_many_wakes_closed_receiver"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       541,
+       546
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       551,
+       "cancelled_reserve_many_wakes_closed_receiver"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       565,
+       570
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       575,
+       "failed_reserve_wakes_closed_receiver"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       587,
+       598
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       603,
+       "cancelled_reserve_wakes_closed_receiver"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       612,
+       622
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       75,
+       "reserve_disarm"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       97,
+       100,
+       101,
+       105
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       854,
+       "drop_permit_releases_permit"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       867
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       872,
+       "drop_permit_iterator_releases_permits"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       886
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       896,
+       "dropping_last_permit_wakes_closed_receiver"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       905
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       910,
+       "dropping_last_owned_permit_wakes_closed_receiver"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       919
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       924,
+       "dropping_last_permit_iterator_wakes_closed_receiver"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       933
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       938,
+       "sending_last_permit_wakes_closed_receiver"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       947
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       952,
+       "sending_last_owned_permit_wakes_closed_receiver"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       961
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       966,
+       "releasing_last_owned_permit_wakes_closed_receiver"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       975
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mutex.rs",
+       42,
+       "readiness"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       55
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mutex_owned.rs",
+       42,
+       "readiness"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       54
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify.rs",
+       104,
+       "notified_drop_notified_notify"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       116
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify.rs",
+       121,
+       "notified_multi_notify_drop_one"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       131,
+       132,
+       136
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify.rs",
+       288,
+       "test_waker_update"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       302
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify.rs",
+       57,
+       "notified_one_notify"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       64
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify.rs",
+       69,
+       "notified_multi_notify"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       78,
+       79
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify.rs",
+       86,
+       "notify_notified_multi"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       99
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify_owned.rs",
+       105,
+       "notified_drop_notified_notify"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       117
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify_owned.rs",
+       122,
+       "notified_multi_notify_drop_one"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       132,
+       133,
+       137
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify_owned.rs",
+       289,
+       "test_waker_update"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       303
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify_owned.rs",
+       58,
+       "notified_one_notify"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       65
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify_owned.rs",
+       70,
+       "notified_multi_notify"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       79,
+       80
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_notify_owned.rs",
+       87,
+       "notify_notified_multi"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       100
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_oneshot.rs",
+       112,
+       "explicit_close_poll"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       133,
+       149
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_oneshot.rs",
+       157,
+       "explicit_close_try_recv"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       176
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_oneshot.rs",
+       247,
+       "receiver_changes_task"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       265,
+       266
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_oneshot.rs",
+       272,
+       "sender_changes_task"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       290,
+       291
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_oneshot.rs",
+       40,
+       "send_recv"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       48
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_oneshot.rs",
+       63,
+       "close_tx"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       71
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_oneshot.rs",
+       76,
+       "close_rx"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       92
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_rwlock.rs",
+       106,
+       "write_shared_drop"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       114
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_rwlock.rs",
+       139,
+       "write_read_shared_drop_pending"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       151
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_rwlock.rs",
+       62,
+       "exhaust_reading"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       77
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_watch.rs",
+       141,
+       "multi_rx"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       165,
+       166,
+       179,
+       180
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_watch.rs",
+       15,
+       "single_rx_recv"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       31,
+       43
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_watch.rs",
+       208,
+       "rx_observes_final_value"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       239
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_watch.rs",
+       253,
+       "poll_close"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       262
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_watch.rs",
+       358,
+       "receiver_is_notified_when_last_sender_is_dropped"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       366,
+       369
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/tcp_stream.rs",
+       317,
+       "try_read_buf"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       346
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/tcp_stream.rs",
+       45,
+       "try_read_write"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       74
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/time_pause.rs",
+       300,
+       "advance_once_with_timer"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       309
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/time_pause.rs",
+       314,
+       "advance_multi_with_timer"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       331
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/time_sleep.rs",
+       164,
+       "reset_sleep_to_past"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       174
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/time_timeout.rs",
+       131,
+       "deadline_future_elapses"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       141
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/time_timeout.rs",
+       40,
+       "future_and_deadline_in_future"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       58
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/uds_stream.rs",
+       346,
+       "try_read_buf"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       377
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/uds_stream.rs",
+       99,
+       "try_read_write"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       130
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 145,
+    "removed_count": 0,
+    "added_sites": 244,
+    "removed_sites": 0,
+    "added_site_lines": 244,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/io/util/buf_writer.rs",
+   "line": 49,
+   "character": 12,
+   "symbol": "with_capacity",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio/src/io/util/buf_writer.rs",
+     49
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       120,
+       "buf_writer_inner_flushes"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       121
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       130,
+       "buf_writer_flush_retries_interrupted"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       138
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       145,
+       "buf_writer_seek"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       146
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       158,
+       "maybe_pending_buf_writer"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       159
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       206,
+       "maybe_pending_buf_writer_inner_flushes"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       207
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       216,
+       "maybe_pending_buf_writer_seek"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       278
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       427,
+       "write_vectored_large_total_on_non_vectored"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       435
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       447,
+       "write_vectored_large_total_on_vectored"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       455
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       472,
+       "new"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       474
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       479,
+       "with_vectored_backend"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       481
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/io_buf_writer.rs",
+       78,
+       "buf_writer"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       79
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 11,
+    "removed_count": 0,
+    "added_sites": 11,
+    "removed_sites": 0,
+    "added_site_lines": 11,
+    "removed_site_lines": 0
+   }
+  }
+ ]
+}

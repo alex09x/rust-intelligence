@@ -1,0 +1,2326 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_f79eebb_vs_f3d6b8c_ram9_serde.json",
+ "servers": [
+  {
+   "name": "f79eebb",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f3d6b8c",
+   "commit": "f3d6b8ce6da6fcc44d263b283427e6f50c759037",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "f79eebb-2",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 28,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 1,
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 22,
+  "t2_error_before_edits_after_each_resolving_to_the_definition": 5
+ },
+ "rows_by_method": {
+  "document_highlight": 1,
+  "incoming_calls": 1,
+  "references": 21,
+  "rename": 5
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 422,
+   "character": 25,
+   "symbol": "String",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde/serde_core/src/private/content.rs",
+     27
+    ],
+    "removed_count": 0,
+    "added_count": 45,
+    "added_not_resolving": [],
+    "added_files": 10,
+    "added_generated": 45
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/ser.rs",
+   "line": 977,
+   "character": 17,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/ser/mod.rs",
+     192
+    ],
+    "removed_count": 0,
+    "added_count": 5,
+    "added_not_resolving": [],
+    "added_files": 4,
+    "added_generated": 5
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 3421,
+   "character": 33,
+   "symbol": "deserialize",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     810
+    ],
+    "removed_count": 0,
+    "added_count": 27,
+    "added_not_resolving": [],
+    "added_files": 8,
+    "added_generated": 25
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_de_error.rs",
+   "line": 345,
+   "character": 51,
+   "symbol": "into_deserializer",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     2322
+    ],
+    "removed_count": 0,
+    "added_count": 7,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_core/src/ser/impossible.rs",
+   "line": 130,
+   "character": 17,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/ser/mod.rs",
+     192
+    ],
+    "removed_count": 0,
+    "added_count": 5,
+    "added_not_resolving": [],
+    "added_files": 4,
+    "added_generated": 5
+   }
+  },
+  {
+   "method": "references",
+   "file": "test_suite/tests/test_value.rs",
+   "line": 73,
+   "character": 34,
+   "symbol": "deserialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     562
+    ],
+    "removed_count": 0,
+    "added_count": 111,
+    "added_not_resolving": [],
+    "added_files": 15,
+    "added_generated": 77
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_core/src/ser/impls.rs",
+   "line": 749,
+   "character": 32,
+   "symbol": "serialize_newtype_variant",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/ser/mod.rs",
+     950
+    ],
+    "removed_count": 0,
+    "added_count": 28,
+    "added_not_resolving": [],
+    "added_files": 8,
+    "added_generated": 14
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 722,
+   "character": 20,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     305
+    ],
+    "removed_count": 0,
+    "added_count": 281,
+    "added_not_resolving": [],
+    "added_files": 23,
+    "added_generated": 272
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/ser.rs",
+   "line": 932,
+   "character": 36,
+   "symbol": "serialize",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/ser/mod.rs",
+     265
+    ],
+    "removed_count": 0,
+    "added_count": 55,
+    "added_not_resolving": [],
+    "added_files": 7,
+    "added_generated": 17
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 2091,
+   "character": 26,
+   "symbol": "I16",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde/serde_core/src/private/content.rs",
+     19
+    ],
+    "removed_count": 0,
+    "added_count": 45,
+    "added_not_resolving": [],
+    "added_files": 10,
+    "added_generated": 45
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_core/src/de/impls.rs",
+   "line": 918,
+   "character": 8,
+   "symbol": "Deserialize",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     555
+    ],
+    "removed_count": 0,
+    "added_count": 390,
+    "added_not_resolving": [],
+    "added_files": 22,
+    "added_generated": 117
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 190,
+   "character": 16,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     305
+    ],
+    "removed_count": 0,
+    "added_count": 281,
+    "added_not_resolving": [],
+    "added_files": 23,
+    "added_generated": 272
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_core/src/de/value.rs",
+   "line": 1678,
+   "character": 29,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     305
+    ],
+    "removed_count": 0,
+    "added_count": 281,
+    "added_not_resolving": [],
+    "added_files": 23,
+    "added_generated": 272
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 1809,
+   "character": 20,
+   "symbol": "Visitor",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     1318
+    ],
+    "removed_count": 0,
+    "added_count": 278,
+    "added_not_resolving": [],
+    "added_files": 23,
+    "added_generated": 262
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_core/src/de/value.rs",
+   "line": 1370,
+   "character": 22,
+   "symbol": "deserialize",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     810
+    ],
+    "removed_count": 0,
+    "added_count": 27,
+    "added_not_resolving": [],
+    "added_files": 8,
+    "added_generated": 25
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1762,
+   "character": 12,
+   "symbol": "DeserializeSeed",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     804
+    ],
+    "removed_count": 0,
+    "added_count": 46,
+    "added_not_resolving": [],
+    "added_files": 11,
+    "added_generated": 43
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 748,
+   "character": 20,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     305
+    ],
+    "removed_count": 0,
+    "added_count": 281,
+    "added_not_resolving": [],
+    "added_files": 23,
+    "added_generated": 272
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 3117,
+   "character": 12,
+   "symbol": "Visitor",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     1318
+    ],
+    "removed_count": 0,
+    "added_count": 278,
+    "added_not_resolving": [],
+    "added_files": 23,
+    "added_generated": 262
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 683,
+   "character": 20,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     305
+    ],
+    "removed_count": 0,
+    "added_count": 281,
+    "added_not_resolving": [],
+    "added_files": 23,
+    "added_generated": 272
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_core/src/de/value.rs",
+   "line": 1617,
+   "character": 12,
+   "symbol": "new",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/value.rs",
+     1617
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 1752,
+   "character": 8,
+   "symbol": "end",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/ser/mod.rs",
+     1752
+    ],
+    "removed_count": 0,
+    "added_count": 19,
+    "added_not_resolving": [],
+    "added_files": 7,
+    "added_generated": 19
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1189,
+   "character": 8,
+   "symbol": "Deserializer",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     946
+    ],
+    "removed_count": 0,
+    "added_count": 85,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 78
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 155,
+   "character": 4,
+   "symbol": "test",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "test_suite/tests/test_de.rs",
+     155
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1016,
+       "test_hashset"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       1017,
+       1021,
+       1031,
+       1041
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1054,
+       "test_vec"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       1055,
+       1060,
+       1076
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1089,
+       "test_array"
+      ],
+      "call_sites": 5,
+      "call_site_lines": [
+       1090,
+       1091,
+       1092,
+       1108,
+       1124
+      ],
+      "sites_resolving_to_the_item": 5,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1137,
+       "test_tuple"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       1138,
+       1142,
+       1152,
+       1156
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1169,
+       "test_btreemap"
+      ],
+      "call_sites": 5,
+      "call_site_lines": [
+       1170,
+       1174,
+       1183,
+       1194,
+       1211
+      ],
+      "sites_resolving_to_the_item": 5,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1224,
+       "test_hashmap"
+      ],
+      "call_sites": 6,
+      "call_site_lines": [
+       1225,
+       1229,
+       1238,
+       1249,
+       1266,
+       1276
+      ],
+      "sites_resolving_to_the_item": 6,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1290,
+       "test_struct"
+      ],
+      "call_sites": 9,
+      "call_site_lines": [
+       1291,
+       1302,
+       1313,
+       1324,
+       1335,
+       1347,
+       1358,
+       1369,
+       1383
+      ],
+      "sites_resolving_to_the_item": 9,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1395,
+       "test_struct_borrowed_keys"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1396,
+       1407
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1424,
+       "test_struct_owned_keys"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1425,
+       1436
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1453,
+       "test_struct_with_skip"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       1454,
+       1469,
+       1484
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1505,
+       "test_struct_skip_all"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1506,
+       1516
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1533,
+       "test_struct_skip_default"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1534
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1547,
+       "test_struct_skip_all_deny_unknown"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1548
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1561,
+       "test_struct_default"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1562,
+       1579
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1595,
+       "test_enum_unit"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1596
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1606,
+       "test_enum_simple"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1607
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1620,
+       "test_enum_simple_with_skipped"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1621
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1631,
+       "test_enum_seq"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1632
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1649,
+       "test_enum_map"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1650
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1670,
+       "test_enum_unit_usize"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1671
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1678,
+       "test_enum_unit_bytes"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1679
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1690,
+       "test_enum_other_unit"
+      ],
+      "call_sites": 5,
+      "call_site_lines": [
+       1691,
+       1699,
+       1703,
+       1711,
+       1719
+      ],
+      "sites_resolving_to_the_item": 5,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1730,
+       "test_enum_other"
+      ],
+      "call_sites": 5,
+      "call_site_lines": [
+       1731,
+       1739,
+       1747,
+       1755,
+       1763
+      ],
+      "sites_resolving_to_the_item": 5,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1774,
+       "test_box"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1775
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1779,
+       "test_boxed_slice"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1780
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1793,
+       "test_duration"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1794,
+       1808
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1820,
+       "test_system_time"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1821,
+       1835
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1847,
+       "test_range"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1848,
+       1862
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1874,
+       "test_range_inclusive"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1875,
+       1889
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1901,
+       "test_range_from"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1902,
+       1914
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1921,
+       "test_range_to"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1922,
+       1934
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1941,
+       "test_bound"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       1942,
+       1950,
+       1958
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1969,
+       "test_path"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       1970,
+       1974
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       1981,
+       "test_path_buf"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       1982,
+       1986,
+       1990,
+       1994
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2001,
+       "test_boxed_path"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       2002,
+       2006,
+       2010,
+       2014
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2021,
+       "test_cstring"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2022
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2026,
+       "test_rc"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2027
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2031,
+       "test_rc_weak_some"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2032
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2039,
+       "test_rc_weak_none"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2040
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2044,
+       "test_arc"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2045
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2049,
+       "test_arc_weak_some"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2050
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2057,
+       "test_arc_weak_none"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2058
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2062,
+       "test_wrapping"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       2063,
+       2064
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2068,
+       "test_saturating"
+      ],
+      "call_sites": 22,
+      "call_site_lines": [
+       2069,
+       2070,
+       2071,
+       2072,
+       2075,
+       2076,
+       2077,
+       2078,
+       2079,
+       2080,
+       2081,
+       2082,
+       2083,
+       2084,
+       2086,
+       2087,
+       2091,
+       2092,
+       2093,
+       2094,
+       2095,
+       2097
+      ],
+      "sites_resolving_to_the_item": 22,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2105,
+       "test_rc_dst"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       2106,
+       2107
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2118,
+       "test_arc_dst"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       2119,
+       2120
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2131,
+       "test_ignored_any"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       2132,
+       2133,
+       2141
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       214,
+       "test_bool"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       215,
+       216
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2148,
+       "test_net_ipv4addr_readable"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2149
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2156,
+       "test_net_ipv6addr_readable"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2157
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2164,
+       "test_net_ipaddr_readable"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2165
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2172,
+       "test_net_socketaddr_readable"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       2173,
+       2180,
+       2187
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2197,
+       "test_net_ipv4addr_compact"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2198
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       220,
+       "test_i8"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       224,
+       225,
+       226,
+       227,
+       228,
+       229,
+       230,
+       231,
+       234,
+       235,
+       236,
+       237,
+       238,
+       239,
+       240,
+       241
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2209,
+       "test_net_ipv6addr_compact"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2210
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2221,
+       "test_net_ipaddr_compact"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2222
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       2237,
+       "test_net_socketaddr_compact"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       2238,
+       2253,
+       2268,
+       2279
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       245,
+       "test_i16"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       249,
+       250,
+       251,
+       252,
+       253,
+       254,
+       255,
+       256,
+       259,
+       260,
+       261,
+       262,
+       263,
+       264,
+       265,
+       266
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       270,
+       "test_i32"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       274,
+       275,
+       276,
+       277,
+       278,
+       279,
+       280,
+       281,
+       284,
+       285,
+       286,
+       287,
+       288,
+       289,
+       290,
+       291
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       295,
+       "test_i64"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       299,
+       300,
+       301,
+       302,
+       303,
+       304,
+       305,
+       306,
+       309,
+       310,
+       311,
+       312,
+       313,
+       314,
+       315,
+       316
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       320,
+       "test_i128"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       324,
+       325,
+       326,
+       327,
+       328,
+       329,
+       330,
+       331,
+       334,
+       335,
+       336,
+       337,
+       338,
+       339,
+       340,
+       341
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       345,
+       "test_isize"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       349,
+       350,
+       351,
+       352,
+       353,
+       354,
+       355,
+       356,
+       359,
+       360,
+       361,
+       362,
+       363,
+       364,
+       365,
+       366
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       370,
+       "test_u8"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       374,
+       375,
+       376,
+       377,
+       378,
+       379,
+       380,
+       381,
+       384,
+       385,
+       386,
+       387,
+       388,
+       389,
+       390,
+       391
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       395,
+       "test_u16"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       399,
+       400,
+       401,
+       402,
+       403,
+       404,
+       405,
+       406,
+       409,
+       410,
+       411,
+       412,
+       413,
+       414,
+       415,
+       416
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       420,
+       "test_u32"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       424,
+       425,
+       426,
+       427,
+       428,
+       429,
+       430,
+       431,
+       434,
+       435,
+       436,
+       437,
+       438,
+       439,
+       440,
+       441
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       445,
+       "test_u64"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       449,
+       450,
+       451,
+       452,
+       453,
+       454,
+       455,
+       456,
+       459,
+       460,
+       461,
+       462,
+       463,
+       464,
+       465,
+       466
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       470,
+       "test_u128"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       474,
+       475,
+       476,
+       477,
+       478,
+       479,
+       480,
+       481,
+       484,
+       485,
+       486,
+       487,
+       488,
+       489,
+       490,
+       491
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       495,
+       "test_usize"
+      ],
+      "call_sites": 16,
+      "call_site_lines": [
+       499,
+       500,
+       501,
+       502,
+       503,
+       504,
+       505,
+       506,
+       509,
+       510,
+       511,
+       512,
+       513,
+       514,
+       515,
+       516
+      ],
+      "sites_resolving_to_the_item": 16,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       520,
+       "test_nonzero_i8"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       521,
+       524,
+       525,
+       526,
+       527,
+       528,
+       529,
+       530,
+       531,
+       534,
+       535,
+       536,
+       537,
+       538,
+       539,
+       540,
+       541
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       545,
+       "test_nonzero_i16"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       546,
+       549,
+       550,
+       551,
+       552,
+       553,
+       554,
+       555,
+       556,
+       559,
+       560,
+       561,
+       562,
+       563,
+       564,
+       565,
+       566
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       570,
+       "test_nonzero_i32"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       571,
+       574,
+       575,
+       576,
+       577,
+       578,
+       579,
+       580,
+       581,
+       584,
+       585,
+       586,
+       587,
+       588,
+       589,
+       590,
+       591
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       595,
+       "test_nonzero_i64"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       596,
+       599,
+       600,
+       601,
+       602,
+       603,
+       604,
+       605,
+       606,
+       609,
+       610,
+       611,
+       612,
+       613,
+       614,
+       615,
+       616
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       620,
+       "test_nonzero_i128"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       621,
+       624,
+       625,
+       626,
+       627,
+       628,
+       629,
+       630,
+       631,
+       634,
+       635,
+       636,
+       637,
+       638,
+       639,
+       640,
+       641
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       645,
+       "test_nonzero_isize"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       646,
+       649,
+       650,
+       651,
+       652,
+       653,
+       654,
+       655,
+       656,
+       659,
+       660,
+       661,
+       662,
+       663,
+       664,
+       665,
+       666
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       670,
+       "test_nonzero_u8"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       671,
+       674,
+       675,
+       676,
+       677,
+       678,
+       679,
+       680,
+       681,
+       684,
+       685,
+       686,
+       687,
+       688,
+       689,
+       690,
+       691
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       695,
+       "test_nonzero_u16"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       696,
+       699,
+       700,
+       701,
+       702,
+       703,
+       704,
+       705,
+       706,
+       709,
+       710,
+       711,
+       712,
+       713,
+       714,
+       715,
+       716
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       720,
+       "test_nonzero_u32"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       721,
+       724,
+       725,
+       726,
+       727,
+       728,
+       729,
+       730,
+       731,
+       734,
+       735,
+       736,
+       737,
+       738,
+       739,
+       740,
+       741
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       745,
+       "test_nonzero_u64"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       746,
+       749,
+       750,
+       751,
+       752,
+       753,
+       754,
+       755,
+       756,
+       759,
+       760,
+       761,
+       762,
+       763,
+       764,
+       765,
+       766
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       770,
+       "test_nonzero_u128"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       771,
+       774,
+       775,
+       776,
+       777,
+       778,
+       779,
+       780,
+       781,
+       784,
+       785,
+       786,
+       787,
+       788,
+       789,
+       790,
+       791
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       795,
+       "test_nonzero_usize"
+      ],
+      "call_sites": 17,
+      "call_site_lines": [
+       796,
+       799,
+       800,
+       801,
+       802,
+       803,
+       804,
+       805,
+       806,
+       809,
+       810,
+       811,
+       812,
+       813,
+       814,
+       815,
+       816
+      ],
+      "sites_resolving_to_the_item": 17,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       820,
+       "test_f32"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       823,
+       824
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       828,
+       "test_f64"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       831,
+       832
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       856,
+       "test_char"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       857,
+       858,
+       859
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       863,
+       "test_string"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       864,
+       865,
+       866
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       870,
+       "test_option"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       871,
+       872,
+       873
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       877,
+       "test_result"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       878,
+       886
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       897,
+       "test_unit"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       898
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       902,
+       "test_unit_struct"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       903,
+       904
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       908,
+       "test_generic_unit_struct"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       909,
+       910
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       919,
+       "test_newtype_struct"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       920
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       932,
+       "test_tuple_struct"
+      ],
+      "call_sites": 4,
+      "call_site_lines": [
+       933,
+       943,
+       953,
+       966
+      ],
+      "sites_resolving_to_the_item": 4,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       982,
+       "test_btreeset"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       983,
+       987,
+       1003
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 92,
+    "removed_count": 0,
+    "added_sites": 570,
+    "removed_sites": 0,
+    "added_site_lines": 570,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 418,
+   "character": 20,
+   "symbol": "SDef",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t2_error_before_edits_after_each_resolving_to_the_definition",
+   "evidence": {
+    "cursor_definition": [
+     "test_suite/tests/test_gen.rs",
+     418
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0,
+    "error_before": {
+     "code": -32803,
+     "message": "Failed to locate identifier at reference position"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 837,
+   "character": 8,
+   "symbol": "ser_x",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t2_error_before_edits_after_each_resolving_to_the_definition",
+   "evidence": {
+    "cursor_definition": [
+     "test_suite/tests/test_gen.rs",
+     837
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0,
+    "error_before": {
+     "code": -32803,
+     "message": "Failed to locate identifier at reference position"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 39,
+   "character": 7,
+   "symbol": "DeserializeWith",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t2_error_before_edits_after_each_resolving_to_the_definition",
+   "evidence": {
+    "cursor_definition": [
+     "test_suite/tests/test_annotations.rs",
+     39
+    ],
+    "removed_count": 0,
+    "added_count": 12,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0,
+    "error_before": {
+     "code": -32803,
+     "message": "Failed to locate identifier at reference position"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/test_gen.rs",
+   "line": 379,
+   "character": 14,
+   "symbol": "Or",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t2_error_before_edits_after_each_resolving_to_the_definition",
+   "evidence": {
+    "cursor_definition": [
+     "test_suite/tests/test_gen.rs",
+     379
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0,
+    "error_before": {
+     "code": -32803,
+     "message": "Failed to locate identifier at reference position"
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "file": "test_suite/tests/regression/issue2844.rs",
+   "line": 20,
+   "character": 12,
+   "symbol": "serialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t2_error_before_edits_after_each_resolving_to_the_definition",
+   "evidence": {
+    "cursor_definition": [
+     "test_suite/tests/regression/issue2844.rs",
+     20
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0,
+    "error_before": {
+     "code": -32803,
+     "message": "Failed to locate identifier at reference position"
+    }
+   }
+  }
+ ]
+}

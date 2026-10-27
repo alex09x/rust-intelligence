@@ -1,0 +1,7129 @@
+{
+ "repo": "bevyengine/bevy",
+ "repo_dir_name": "bevy",
+ "repo_head": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 640,
+ "positions_file": "matrix_bevy_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 571,
+ "timestamp_start": "2026-10-27T07:41:55.096389+00:00",
+ "timestamp_end": "2026-10-27T07:50:34.132523+00:00",
+ "servers": [
+  {
+   "name": "f79eebb",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: f79eebbac95aa03ab33093bfd8c3c2ce16c36094, dirty: false)",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 157.0,
+   "summary": {
+    "definition": {
+     "a": 266,
+     "b": 34,
+     "c": 0,
+     "n": 300,
+     "p50_us": 556.2,
+     "p99_us": 1540.2,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 532.9,
+     "p99_us": 1564.9,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 188,
+     "b": 112,
+     "c": 0,
+     "n": 300,
+     "p50_us": 469.9,
+     "p99_us": 3304.0,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 136,
+     "b": 164,
+     "c": 0,
+     "n": 300,
+     "p50_us": 7138.0,
+     "p99_us": 17246.1,
+     "unsupported": false
+    },
+    "references": {
+     "a": 276,
+     "b": 24,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4878.4,
+     "p99_us": 87018.4,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 230,
+     "b": 70,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5117.6,
+     "p99_us": 83227.6,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 187.9,
+     "p99_us": 2639.4,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 178,
+     "b": 122,
+     "c": 0,
+     "n": 300,
+     "p50_us": 106338.4,
+     "p99_us": 167356.3,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 21.2,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 274,
+     "b": 26,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1020.4,
+     "p99_us": 2718.5,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 3042.8,
+     "p99_us": 191858.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 19.8,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 53,
+     "b": 247,
+     "c": 0,
+     "n": 300,
+     "p50_us": 100.2,
+     "p99_us": 125876.6,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.4,
+     "p99_us": 73.0,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 13.5,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 34.7,
+     "p99_us": 115.3,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.4,
+     "p99_us": 89.7,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.2,
+     "p99_us": 173.6,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 15.9,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 520.5,
+     "p99_us": 1468.1,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 117,
+     "b": 183,
+     "c": 0,
+     "n": 300,
+     "p50_us": 7072.2,
+     "p99_us": 17535.1,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1351.0,
+     "p99_us": 25273.9,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 483.1,
+     "p99_us": 1449.5,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 246,
+     "b": 54,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5398.1,
+     "p99_us": 7205.1,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 31,
+     "b": 269,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17.8,
+     "p99_us": 7245.1,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 155.1,
+     "p99_us": 897.3,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 59,
+     "b": 241,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.2,
+     "p99_us": 115.9,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 16.6,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 12.7,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 2,
+     "b": 298,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86066.0,
+     "p99_us": 103801.8,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 41,
+     "b": 259,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87943.8,
+     "p99_us": 184443.7,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89412.2,
+     "p99_us": 113007.5,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 283,
+     "b": 0,
+     "c": 17,
+     "n": 300,
+     "p50_us": 2735.4,
+     "p99_us": 6427.9,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 280,
+     "b": 0,
+     "c": 20,
+     "n": 300,
+     "p50_us": 3688.6,
+     "p99_us": 13550.0,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39.2,
+     "p99_us": 211.6,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89.8,
+     "p99_us": 466.1,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 17.5,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 14.6,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 531.3,
+     "p99_us": 2326.0,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 532.9,
+     "p99_us": 1789.1,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 516.8,
+     "p99_us": 1518.8,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85.8,
+     "p99_us": 848.6,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 388.9,
+     "p99_us": 1198.5,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 16.6,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 82.0,
+     "p99_us": 743.6,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 40746.3,
+     "p99_us": 48880.2,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 20.7,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 16.3,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 13.8,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.9,
+     "p99_us": 192.6,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 38,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       266,
+       34,
+       0
+      ],
+      "matrix": [
+       268,
+       32,
+       0
+      ]
+     },
+     {
+      "method": "type_definition",
+      "ours": [
+       188,
+       112,
+       0
+      ],
+      "matrix": [
+       187,
+       113,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       136,
+       164,
+       0
+      ],
+      "matrix": [
+       134,
+       166,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       276,
+       24,
+       0
+      ],
+      "matrix": [
+       279,
+       21,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       230,
+       70,
+       0
+      ],
+      "matrix": [
+       232,
+       68,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       274,
+       26,
+       0
+      ],
+      "matrix": [
+       273,
+       27,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       278,
+       22,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       117,
+       183,
+       0
+      ],
+      "matrix": [
+       101,
+       199,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       236,
+       64,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       283,
+       0,
+       17
+      ],
+      "matrix": [
+       282,
+       0,
+       18
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       280,
+       0,
+       20
+      ],
+      "matrix": [
+       279,
+       0,
+       21
+      ]
+     },
+     {
+      "method": "code_lens",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       262,
+       38,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "f3d6b8c",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: f3d6b8ce6da6fcc44d263b283427e6f50c759037, dirty: false)",
+   "commit": "f3d6b8ce6da6fcc44d263b283427e6f50c759037",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 165.9,
+   "summary": {
+    "definition": {
+     "a": 266,
+     "b": 34,
+     "c": 0,
+     "n": 300,
+     "p50_us": 496.4,
+     "p99_us": 1497.6,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 517.5,
+     "p99_us": 1429.2,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 188,
+     "b": 112,
+     "c": 0,
+     "n": 300,
+     "p50_us": 446.1,
+     "p99_us": 3154.8,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 136,
+     "b": 164,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6213.6,
+     "p99_us": 13305.9,
+     "unsupported": false
+    },
+    "references": {
+     "a": 276,
+     "b": 24,
+     "c": 0,
+     "n": 300,
+     "p50_us": 7714.5,
+     "p99_us": 75741.6,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 257,
+     "b": 43,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6921.8,
+     "p99_us": 80327.7,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 182.4,
+     "p99_us": 2617.1,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 178,
+     "b": 122,
+     "c": 0,
+     "n": 300,
+     "p50_us": 115070.2,
+     "p99_us": 277551.2,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 38.8,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 274,
+     "b": 26,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1170.0,
+     "p99_us": 2812.9,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 3090.8,
+     "p99_us": 183478.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 17.0,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 53,
+     "b": 247,
+     "c": 0,
+     "n": 300,
+     "p50_us": 129.9,
+     "p99_us": 134236.0,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 33.6,
+     "p99_us": 159.7,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.0,
+     "p99_us": 162.2,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 36.9,
+     "p99_us": 229.5,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 53.9,
+     "p99_us": 220.1,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.0,
+     "p99_us": 26.9,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 560.5,
+     "p99_us": 1592.0,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 111,
+     "b": 189,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6666.7,
+     "p99_us": 18943.4,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1359.9,
+     "p99_us": 25411.5,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 484.6,
+     "p99_us": 1311.7,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 246,
+     "b": 54,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5625.2,
+     "p99_us": 8193.5,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 31,
+     "b": 269,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16.8,
+     "p99_us": 7694.8,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 153.2,
+     "p99_us": 908.8,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 59,
+     "b": 241,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.2,
+     "p99_us": 120.0,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 15.3,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 16.2,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 2,
+     "b": 298,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86931.9,
+     "p99_us": 103304.4,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 41,
+     "b": 259,
+     "c": 0,
+     "n": 300,
+     "p50_us": 88901.0,
+     "p99_us": 185333.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90311.1,
+     "p99_us": 116256.1,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 283,
+     "b": 0,
+     "c": 17,
+     "n": 300,
+     "p50_us": 6258.2,
+     "p99_us": 17161.7,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 280,
+     "b": 0,
+     "c": 20,
+     "n": 300,
+     "p50_us": 7582.5,
+     "p99_us": 20907.6,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.2,
+     "p99_us": 196.8,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92.8,
+     "p99_us": 489.3,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 16.2,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 537.0,
+     "p99_us": 2385.1,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 535.5,
+     "p99_us": 1745.9,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 513.8,
+     "p99_us": 1618.4,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91.7,
+     "p99_us": 852.2,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 363.1,
+     "p99_us": 1340.7,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 17.1,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87.2,
+     "p99_us": 747.3,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41598.9,
+     "p99_us": 42388.0,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.6,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 12.7,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 12.2,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.2,
+     "p99_us": 178.2,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 38,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       266,
+       34,
+       0
+      ],
+      "matrix": [
+       268,
+       32,
+       0
+      ]
+     },
+     {
+      "method": "type_definition",
+      "ours": [
+       188,
+       112,
+       0
+      ],
+      "matrix": [
+       187,
+       113,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       136,
+       164,
+       0
+      ],
+      "matrix": [
+       134,
+       166,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       276,
+       24,
+       0
+      ],
+      "matrix": [
+       279,
+       21,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       257,
+       43,
+       0
+      ],
+      "matrix": [
+       232,
+       68,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       274,
+       26,
+       0
+      ],
+      "matrix": [
+       273,
+       27,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       278,
+       22,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       111,
+       189,
+       0
+      ],
+      "matrix": [
+       101,
+       199,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       236,
+       64,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       283,
+       0,
+       17
+      ],
+      "matrix": [
+       282,
+       0,
+       18
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       280,
+       0,
+       20
+      ],
+      "matrix": [
+       279,
+       0,
+       21
+      ]
+     },
+     {
+      "method": "code_lens",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       262,
+       38,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "f79eebb-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: f79eebbac95aa03ab33093bfd8c3c2ce16c36094, dirty: false)",
+   "commit": "f79eebbac95aa03ab33093bfd8c3c2ce16c36094",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 155.7,
+   "summary": {
+    "definition": {
+     "a": 266,
+     "b": 34,
+     "c": 0,
+     "n": 300,
+     "p50_us": 505.3,
+     "p99_us": 1516.7,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 289,
+     "b": 11,
+     "c": 0,
+     "n": 300,
+     "p50_us": 506.3,
+     "p99_us": 1392.6,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 188,
+     "b": 112,
+     "c": 0,
+     "n": 300,
+     "p50_us": 437.7,
+     "p99_us": 3179.1,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 136,
+     "b": 164,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6190.5,
+     "p99_us": 13421.3,
+     "unsupported": false
+    },
+    "references": {
+     "a": 276,
+     "b": 24,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4473.8,
+     "p99_us": 77581.4,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 230,
+     "b": 70,
+     "c": 0,
+     "n": 300,
+     "p50_us": 4647.2,
+     "p99_us": 78625.8,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 174.5,
+     "p99_us": 2583.1,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 178,
+     "b": 122,
+     "c": 0,
+     "n": 300,
+     "p50_us": 105456.9,
+     "p99_us": 164810.7,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 21.7,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 274,
+     "b": 26,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1025.4,
+     "p99_us": 2850.1,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 3043.2,
+     "p99_us": 182445.5,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 17.7,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 53,
+     "b": 247,
+     "c": 0,
+     "n": 300,
+     "p50_us": 100.4,
+     "p99_us": 123739.1,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.8,
+     "p99_us": 79.3,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 15.5,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 38.8,
+     "p99_us": 116.3,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.4,
+     "p99_us": 91.8,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 43.9,
+     "p99_us": 177.9,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 16.5,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 536.5,
+     "p99_us": 1543.0,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 117,
+     "b": 183,
+     "c": 0,
+     "n": 300,
+     "p50_us": 7046.0,
+     "p99_us": 16873.1,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1324.5,
+     "p99_us": 25056.2,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 285,
+     "b": 15,
+     "c": 0,
+     "n": 300,
+     "p50_us": 477.5,
+     "p99_us": 1221.7,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 246,
+     "b": 54,
+     "c": 0,
+     "n": 300,
+     "p50_us": 5459.8,
+     "p99_us": 7267.2,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 31,
+     "b": 269,
+     "c": 0,
+     "n": 300,
+     "p50_us": 18.9,
+     "p99_us": 7493.9,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 148.2,
+     "p99_us": 878.1,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 59,
+     "b": 241,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.9,
+     "p99_us": 119.8,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.3,
+     "p99_us": 28.0,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16.3,
+     "p99_us": 19.2,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 18.8,
+     "p99_us": 20.6,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 2,
+     "b": 298,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86197.9,
+     "p99_us": 101122.0,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 41,
+     "b": 259,
+     "c": 0,
+     "n": 300,
+     "p50_us": 88776.4,
+     "p99_us": 184580.9,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89916.6,
+     "p99_us": 116268.1,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 283,
+     "b": 0,
+     "c": 17,
+     "n": 300,
+     "p50_us": 2642.4,
+     "p99_us": 6398.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 280,
+     "b": 0,
+     "c": 20,
+     "n": 300,
+     "p50_us": 3744.4,
+     "p99_us": 13660.5,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.0,
+     "p99_us": 206.9,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89.2,
+     "p99_us": 468.9,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 16.0,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 12.7,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 522.0,
+     "p99_us": 2364.4,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 545.4,
+     "p99_us": 1804.9,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 513.1,
+     "p99_us": 1556.4,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 291,
+     "b": 9,
+     "c": 0,
+     "n": 300,
+     "p50_us": 84.8,
+     "p99_us": 846.5,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 263,
+     "b": 37,
+     "c": 0,
+     "n": 300,
+     "p50_us": 377.1,
+     "p99_us": 1322.6,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.2,
+     "p99_us": 19.3,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85.7,
+     "p99_us": 751.2,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41386.9,
+     "p99_us": 48999.6,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 14.9,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 12.5,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.8,
+     "p99_us": 171.8,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 38,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       266,
+       34,
+       0
+      ],
+      "matrix": [
+       268,
+       32,
+       0
+      ]
+     },
+     {
+      "method": "type_definition",
+      "ours": [
+       188,
+       112,
+       0
+      ],
+      "matrix": [
+       187,
+       113,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       136,
+       164,
+       0
+      ],
+      "matrix": [
+       134,
+       166,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       276,
+       24,
+       0
+      ],
+      "matrix": [
+       279,
+       21,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       230,
+       70,
+       0
+      ],
+      "matrix": [
+       232,
+       68,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       274,
+       26,
+       0
+      ],
+      "matrix": [
+       273,
+       27,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       278,
+       22,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       117,
+       183,
+       0
+      ],
+      "matrix": [
+       101,
+       199,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       236,
+       64,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       285,
+       15,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       283,
+       0,
+       17
+      ],
+      "matrix": [
+       282,
+       0,
+       18
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       280,
+       0,
+       20
+      ],
+      "matrix": [
+       279,
+       0,
+       21
+      ]
+     },
+     {
+      "method": "code_lens",
+      "ours": [
+       263,
+       37,
+       0
+      ],
+      "matrix": [
+       262,
+       38,
+       0
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "f79eebb",
+   "b": "f3d6b8c",
+   "same": 15213,
+   "differing": 87,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 260,
+     "differing": 40,
+     "transitions": {
+      "a>a": 40
+     },
+     "examples": [
+      {
+       "name": "refs_0_from_xyzw",
+       "file": "examples/3d/solari.rs",
+       "line": 133,
+       "character": 40,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bcc33784cb9e2cfb",
+        "0fc07ff3dc0973d6"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_1_OverflowAxis",
+       "file": "crates/bevy_ui/src/ui_node.rs",
+       "line": 1549,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b7f4d11ac78c3da4",
+        "a28c15104669e19b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_2_ShiftLeft",
+       "file": "examples/input/keyboard_modifiers.rs",
+       "line": 14,
+       "character": 45,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "10da4497ff7b1eed",
+        "9812dfe1344229f3"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_8_FlexDirection",
+       "file": "crates/bevy_ui/src/layout/convert.rs",
+       "line": 538,
+       "character": 29,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3c7a2282dd8c3c80",
+        "9d18e5c3db0f4584"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_16_min",
+       "file": "crates/bevy_shape/src/bounding/bounded3d/primitive_impls.rs",
+       "line": 227,
+       "character": 22,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "644cdd5b02bb41d3",
+        "a6f3830f449fe4c3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_27_ButtonState",
+       "file": "crates/bevy_input/src/gamepad.rs",
+       "line": 237,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9d47d3d93144ca5f",
+        "7449793cf85ec0c4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_29_AlignContent",
+       "file": "crates/bevy_ui/src/ui_node.rs",
+       "line": 627,
+       "character": 24,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0d6f8d3e794ab966",
+        "3baf62366e0c735f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_30_TriangleStrip",
+       "file": "crates/bevy_mesh/src/mesh.rs",
+       "line": 1683,
+       "character": 36,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "58bc9c507d14018a",
+        "42aa66ffdddf4e3c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_31_get",
+       "file": "examples/animation/animation_graph.rs",
+       "line": 197,
+       "character": 21,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "99bdd5aa1991d0d6",
+        "a93357457d2a7cea"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_33_MeshCompressionArgs",
+       "file": "crates/bevy_gltf/src/loader/mod.rs",
+       "line": 168,
+       "character": 35,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3c5ac203592f5ac1",
+        "a5ab8dc8afd8b73c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 273,
+     "differing": 27,
+     "transitions": {
+      "b>a": 27
+     },
+     "examples": [
+      {
+       "name": "document_highlight_14_new",
+       "file": "crates/bevy_shape/src/dim2.rs",
+       "line": 2569,
+       "character": 66,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "8203df678414dc80"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": true
+      },
+      {
+       "name": "document_highlight_15_new",
+       "file": "crates/bevy_shape/src/dim3.rs",
+       "line": 1455,
+       "character": 23,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "54ad5b1cd14bf87a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_18_looking_at",
+       "file": "examples/stress_tests/many_cubes.rs",
+       "line": 547,
+       "character": 37,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "896b985717d008a7"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_51_ZERO",
+       "file": "crates/bevy_camera/src/primitives.rs",
+       "line": 617,
+       "character": 28,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "4f4237bea6fd3fa9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": true
+      },
+      {
+       "name": "document_highlight_71_add_systems",
+       "file": "examples/ecs/delayed_commands.rs",
+       "line": 11,
+       "character": 10,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "f42f51a55dc5a24a"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_72_from_rotation_x",
+       "file": "examples/stress_tests/many_cameras_lights.rs",
+       "line": 51,
+       "character": 40,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "0fc01a6290a8daaa"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_99_pressed",
+       "file": "examples/3d/visibility_range.rs",
+       "line": 245,
+       "character": 23,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "87f644dd95eccddb"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_115_new",
+       "file": "examples/3d/parallax_mapping.rs",
+       "line": 297,
+       "character": 49,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "c1d4716159d1c437"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_119_new",
+       "file": "crates/bevy_post_process/src/dof/mod.rs",
+       "line": 402,
+       "character": 72,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "c3de968d16d92a51"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_123_new",
+       "file": "examples/audio/spatial_audio_3d.rs",
+       "line": 33,
+       "character": 22,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "863b437f667117a6"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 289,
+     "differing": 11,
+     "transitions": {
+      "a>b": 6,
+      "a>a": 5
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_26_main",
+       "file": "examples/3d/fog_volumes.rs",
+       "line": 16,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "6691938c7bb4dc12",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_139_add_edge",
+       "file": "crates/bevy_input_focus/src/directional_navigation.rs",
+       "line": 316,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6adfc3e3932f56ca",
+        "36775ce52b8e6811"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_154_main",
+       "file": "tools/example-showcase/src/main.rs",
+       "line": 141,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "6691938c7bb4dc12",
+        "empty"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_160_map_apply",
+       "file": "benches/benches/bevy_reflect/map.rs",
+       "line": 48,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "293b61bb0a15cb11",
+        "31a99f33b022e6c2"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_161_create",
+       "file": "examples/animation/eased_motion.rs",
+       "line": 92,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "935c9d4315664f41",
+        "a921b930f084d640"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_192_texture",
+       "file": "crates/bevy_render/src/gpu_readback.rs",
+       "line": 96,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9b4f6b8c669af6bb",
+        "7738bc406edd625e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_199_main",
+       "file": "examples/ui/navigation/directional_navigation_overrides.rs",
+       "line": 42,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "6691938c7bb4dc12",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_214_main",
+       "file": "examples/ecs/extraction.rs",
+       "line": 47,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "6691938c7bb4dc12",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_248_demo_root",
+       "file": "examples/ui/widgets/standard_widgets_observers.rs",
+       "line": 86,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "718a5d4b3fd717d4",
+        "2c68ac755e6c4ba7"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_274_main",
+       "file": "examples/2d/mesh2d_repeated_texture.rs",
+       "line": 18,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "6691938c7bb4dc12",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 291,
+     "differing": 9,
+     "transitions": {
+      "a>a": 9
+     },
+     "examples": [
+      {
+       "name": "rename_0_world_mut",
+       "file": "crates/bevy_app/src/sub_app.rs",
+       "line": 138,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bce9176acc49e9a7",
+        "f3f5d5f8b65b5315"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_5_PointerTraversal",
+       "file": "crates/bevy_picking/src/events.rs",
+       "line": 121,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bc9333001c979578",
+        "390eeb7877257198"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_98_SpriteAlphaMode",
+       "file": "crates/bevy_sprite/src/sprite.rs",
+       "line": 180,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "fe358a2e6c60af41",
+        "4348bc9f9843dd0d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_116_AmbientLight",
+       "file": "crates/bevy_light/src/ambient_light.rs",
+       "line": 12,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f3c883d6a761dfa5",
+        "b233fcb6544f1ab5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_129_SplitPane",
+       "file": "crates/bevy_ui_widgets/src/split_pane.rs",
+       "line": 38,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0b516e9cc80d0df8",
+        "d49194a46adb1ec0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_136_LensDistortion",
+       "file": "crates/bevy_post_process/src/effect_stack/lens_distortion.rs",
+       "line": 24,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cb215f56492c2ec9",
+        "5c3d5fb7abf483bc"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_173_any_pressed",
+       "file": "crates/bevy_input/src/button_input.rs",
+       "line": 162,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4f2491c3193ab2d1",
+        "47a84b63d954c62f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_201_insert_after",
+       "file": "crates/bevy_app/src/main_schedule.rs",
+       "line": 240,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "72b0bcc9b4790c62",
+        "6922b688fcfe4830"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_269_UiRect",
+       "file": "crates/bevy_ui/src/geometry.rs",
+       "line": 693,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a5235f19cbb4f823",
+        "27d8e79aa85ac12e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "f79eebb",
+   "b": "f79eebb-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "f3d6b8c",
+   "b": "f79eebb-2",
+   "same": 15213,
+   "differing": 87,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 260,
+     "differing": 40,
+     "transitions": {
+      "a>a": 40
+     },
+     "examples": [
+      {
+       "name": "refs_0_from_xyzw",
+       "file": "examples/3d/solari.rs",
+       "line": 133,
+       "character": 40,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0fc07ff3dc0973d6",
+        "bcc33784cb9e2cfb"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_1_OverflowAxis",
+       "file": "crates/bevy_ui/src/ui_node.rs",
+       "line": 1549,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a28c15104669e19b",
+        "b7f4d11ac78c3da4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_2_ShiftLeft",
+       "file": "examples/input/keyboard_modifiers.rs",
+       "line": 14,
+       "character": 45,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9812dfe1344229f3",
+        "10da4497ff7b1eed"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_8_FlexDirection",
+       "file": "crates/bevy_ui/src/layout/convert.rs",
+       "line": 538,
+       "character": 29,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9d18e5c3db0f4584",
+        "3c7a2282dd8c3c80"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": true
+      },
+      {
+       "name": "refs_16_min",
+       "file": "crates/bevy_shape/src/bounding/bounded3d/primitive_impls.rs",
+       "line": 227,
+       "character": 22,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a6f3830f449fe4c3",
+        "644cdd5b02bb41d3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_27_ButtonState",
+       "file": "crates/bevy_input/src/gamepad.rs",
+       "line": 237,
+       "character": 16,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7449793cf85ec0c4",
+        "9d47d3d93144ca5f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_29_AlignContent",
+       "file": "crates/bevy_ui/src/ui_node.rs",
+       "line": 627,
+       "character": 24,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3baf62366e0c735f",
+        "0d6f8d3e794ab966"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_30_TriangleStrip",
+       "file": "crates/bevy_mesh/src/mesh.rs",
+       "line": 1683,
+       "character": 36,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "42aa66ffdddf4e3c",
+        "58bc9c507d14018a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_31_get",
+       "file": "examples/animation/animation_graph.rs",
+       "line": 197,
+       "character": 21,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a93357457d2a7cea",
+        "99bdd5aa1991d0d6"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_33_MeshCompressionArgs",
+       "file": "crates/bevy_gltf/src/loader/mod.rs",
+       "line": 168,
+       "character": 35,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a5ab8dc8afd8b73c",
+        "3c5ac203592f5ac1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 273,
+     "differing": 27,
+     "transitions": {
+      "a>b": 27
+     },
+     "examples": [
+      {
+       "name": "document_highlight_14_new",
+       "file": "crates/bevy_shape/src/dim2.rs",
+       "line": 2569,
+       "character": 66,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "8203df678414dc80",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": true
+      },
+      {
+       "name": "document_highlight_15_new",
+       "file": "crates/bevy_shape/src/dim3.rs",
+       "line": 1455,
+       "character": 23,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "54ad5b1cd14bf87a",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_18_looking_at",
+       "file": "examples/stress_tests/many_cubes.rs",
+       "line": 547,
+       "character": 37,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "896b985717d008a7",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_51_ZERO",
+       "file": "crates/bevy_camera/src/primitives.rs",
+       "line": 617,
+       "character": 28,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "4f4237bea6fd3fa9",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": true
+      },
+      {
+       "name": "document_highlight_71_add_systems",
+       "file": "examples/ecs/delayed_commands.rs",
+       "line": 11,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "f42f51a55dc5a24a",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_72_from_rotation_x",
+       "file": "examples/stress_tests/many_cameras_lights.rs",
+       "line": 51,
+       "character": 40,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "0fc01a6290a8daaa",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_99_pressed",
+       "file": "examples/3d/visibility_range.rs",
+       "line": 245,
+       "character": 23,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "87f644dd95eccddb",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_115_new",
+       "file": "examples/3d/parallax_mapping.rs",
+       "line": 297,
+       "character": 49,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "c1d4716159d1c437",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_119_new",
+       "file": "crates/bevy_post_process/src/dof/mod.rs",
+       "line": 402,
+       "character": 72,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "c3de968d16d92a51",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_123_new",
+       "file": "examples/audio/spatial_audio_3d.rs",
+       "line": 33,
+       "character": 22,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "863b437f667117a6",
+        "empty"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 289,
+     "differing": 11,
+     "transitions": {
+      "b>a": 6,
+      "a>a": 5
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_26_main",
+       "file": "examples/3d/fog_volumes.rs",
+       "line": 16,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "6691938c7bb4dc12"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_139_add_edge",
+       "file": "crates/bevy_input_focus/src/directional_navigation.rs",
+       "line": 316,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "36775ce52b8e6811",
+        "6adfc3e3932f56ca"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_154_main",
+       "file": "tools/example-showcase/src/main.rs",
+       "line": 141,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "6691938c7bb4dc12"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_160_map_apply",
+       "file": "benches/benches/bevy_reflect/map.rs",
+       "line": 48,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "31a99f33b022e6c2",
+        "293b61bb0a15cb11"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_161_create",
+       "file": "examples/animation/eased_motion.rs",
+       "line": 92,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a921b930f084d640",
+        "935c9d4315664f41"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_192_texture",
+       "file": "crates/bevy_render/src/gpu_readback.rs",
+       "line": 96,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7738bc406edd625e",
+        "9b4f6b8c669af6bb"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_199_main",
+       "file": "examples/ui/navigation/directional_navigation_overrides.rs",
+       "line": 42,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "6691938c7bb4dc12"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_214_main",
+       "file": "examples/ecs/extraction.rs",
+       "line": 47,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "6691938c7bb4dc12"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_248_demo_root",
+       "file": "examples/ui/widgets/standard_widgets_observers.rs",
+       "line": 86,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2c68ac755e6c4ba7",
+        "718a5d4b3fd717d4"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_274_main",
+       "file": "examples/2d/mesh2d_repeated_texture.rs",
+       "line": 18,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "6691938c7bb4dc12"
+       ],
+       "target_kind": "example",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 291,
+     "differing": 9,
+     "transitions": {
+      "a>a": 9
+     },
+     "examples": [
+      {
+       "name": "rename_0_world_mut",
+       "file": "crates/bevy_app/src/sub_app.rs",
+       "line": 138,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f3f5d5f8b65b5315",
+        "bce9176acc49e9a7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_5_PointerTraversal",
+       "file": "crates/bevy_picking/src/events.rs",
+       "line": 121,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "390eeb7877257198",
+        "bc9333001c979578"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_98_SpriteAlphaMode",
+       "file": "crates/bevy_sprite/src/sprite.rs",
+       "line": 180,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4348bc9f9843dd0d",
+        "fe358a2e6c60af41"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_116_AmbientLight",
+       "file": "crates/bevy_light/src/ambient_light.rs",
+       "line": 12,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b233fcb6544f1ab5",
+        "f3c883d6a761dfa5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_129_SplitPane",
+       "file": "crates/bevy_ui_widgets/src/split_pane.rs",
+       "line": 38,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d49194a46adb1ec0",
+        "0b516e9cc80d0df8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_136_LensDistortion",
+       "file": "crates/bevy_post_process/src/effect_stack/lens_distortion.rs",
+       "line": 24,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5c3d5fb7abf483bc",
+        "cb215f56492c2ec9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_173_any_pressed",
+       "file": "crates/bevy_input/src/button_input.rs",
+       "line": 162,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "47a84b63d954c62f",
+        "4f2491c3193ab2d1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_201_insert_after",
+       "file": "crates/bevy_app/src/main_schedule.rs",
+       "line": 240,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6922b688fcfe4830",
+        "72b0bcc9b4790c62"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "rename_269_UiRect",
+       "file": "crates/bevy_ui/src/geometry.rs",
+       "line": 693,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "27d8e79aa85ac12e",
+        "a5235f19cbb4f823"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_bevy_booster.json",
+  "repo_commit": "68c80f3b19ddf9e4ae1ce7dd8b5a68273204c2e8",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_0_from_xyzw",
+   "file": "examples/3d/solari.rs",
+   "line": 133,
+   "character": 40,
+   "symbol": "from_xyzw",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "bcc33784cb9e2cfb",
+     "us": 2525.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "0fc07ff3dc0973d6",
+     "us": 6138.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "bcc33784cb9e2cfb",
+     "us": 2364.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_1_OverflowAxis",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 1549,
+   "character": 12,
+   "symbol": "OverflowAxis",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "b7f4d11ac78c3da4",
+     "us": 3156.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "a28c15104669e19b",
+     "us": 7588.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "b7f4d11ac78c3da4",
+     "us": 3000.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_2_ShiftLeft",
+   "file": "examples/input/keyboard_modifiers.rs",
+   "line": 14,
+   "character": 45,
+   "symbol": "ShiftLeft",
+   "target_kind": "example",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "10da4497ff7b1eed",
+     "us": 2603.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "9812dfe1344229f3",
+     "us": 6754.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "10da4497ff7b1eed",
+     "us": 2537.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_8_FlexDirection",
+   "file": "crates/bevy_ui/src/layout/convert.rs",
+   "line": 538,
+   "character": 29,
+   "symbol": "FlexDirection",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "3c7a2282dd8c3c80",
+     "us": 4387.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "9d18e5c3db0f4584",
+     "us": 10502.5,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "3c7a2282dd8c3c80",
+     "us": 3679.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_16_min",
+   "file": "crates/bevy_shape/src/bounding/bounded3d/primitive_impls.rs",
+   "line": 227,
+   "character": 22,
+   "symbol": "min",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "644cdd5b02bb41d3",
+     "us": 3106.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "a6f3830f449fe4c3",
+     "us": 6797.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "644cdd5b02bb41d3",
+     "us": 2773.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_27_ButtonState",
+   "file": "crates/bevy_input/src/gamepad.rs",
+   "line": 237,
+   "character": 16,
+   "symbol": "ButtonState",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "9d47d3d93144ca5f",
+     "us": 3852.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "7449793cf85ec0c4",
+     "us": 7676.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "9d47d3d93144ca5f",
+     "us": 3611.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_29_AlignContent",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 627,
+   "character": 24,
+   "symbol": "AlignContent",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "0d6f8d3e794ab966",
+     "us": 3141.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "3baf62366e0c735f",
+     "us": 8019.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "0d6f8d3e794ab966",
+     "us": 3039.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_30_TriangleStrip",
+   "file": "crates/bevy_mesh/src/mesh.rs",
+   "line": 1683,
+   "character": 36,
+   "symbol": "TriangleStrip",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "58bc9c507d14018a",
+     "us": 2166.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "42aa66ffdddf4e3c",
+     "us": 5744.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "58bc9c507d14018a",
+     "us": 2082.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_31_get",
+   "file": "examples/animation/animation_graph.rs",
+   "line": 197,
+   "character": 21,
+   "symbol": "get",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "99bdd5aa1991d0d6",
+     "us": 3092.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "a93357457d2a7cea",
+     "us": 6694.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "99bdd5aa1991d0d6",
+     "us": 3034.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_33_MeshCompressionArgs",
+   "file": "crates/bevy_gltf/src/loader/mod.rs",
+   "line": 168,
+   "character": 35,
+   "symbol": "MeshCompressionArgs",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "3c5ac203592f5ac1",
+     "us": 5097.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "a5ab8dc8afd8b73c",
+     "us": 8608.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "3c5ac203592f5ac1",
+     "us": 4578.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_38_Row",
+   "file": "crates/bevy_feathers/src/controls/tree_view.rs",
+   "line": 161,
+   "character": 52,
+   "symbol": "Row",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "5df8fe3e664f5620",
+     "us": 3303.6,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "b70592f436b2112b",
+     "us": 8626.8,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "5df8fe3e664f5620",
+     "us": 3018.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_45_All",
+   "file": "examples/shader_advanced/render_depth_to_texture.rs",
+   "line": 166,
+   "character": 36,
+   "symbol": "All",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "2eef236cd30cbb1d",
+     "us": 3090.4,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "449a81306bdf67f1",
+     "us": 7053.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "2eef236cd30cbb1d",
+     "us": 2994.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_47_ACCENT",
+   "file": "crates/bevy_feathers/src/dark_theme.rs",
+   "line": 32,
+   "character": 54,
+   "symbol": "ACCENT",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "126ad3ab5599e303",
+     "us": 2627.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "0b16cd39b8e21d00",
+     "us": 7846.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "126ad3ab5599e303",
+     "us": 2541.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_48_srgb",
+   "file": "examples/state/computed_states.rs",
+   "line": 625,
+   "character": 38,
+   "symbol": "srgb",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "6e4672bdb535af81",
+     "us": 3018.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "24ee5db4f7ab1c82",
+     "us": 10831.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "6e4672bdb535af81",
+     "us": 2846.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_49_world",
+   "file": "crates/bevy_ui_widgets/src/text_input.rs",
+   "line": 1058,
+   "character": 33,
+   "symbol": "world",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "c7716dc3196ed53f",
+     "us": 11260.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "0bdf18b6d9e95fe2",
+     "us": 13440.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "c7716dc3196ed53f",
+     "us": 10551.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_53_axes",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 872,
+   "character": 30,
+   "symbol": "axes",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "4e65be0e7b1a63fb",
+     "us": 4238.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "ff29a4d49beec316",
+     "us": 9172.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "4e65be0e7b1a63fb",
+     "us": 3940.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_69_world",
+   "file": "crates/bevy_picking/src/events.rs",
+   "line": 1407,
+   "character": 38,
+   "symbol": "world",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "c7716dc3196ed53f",
+     "us": 11929.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "0bdf18b6d9e95fe2",
+     "us": 14456.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "c7716dc3196ed53f",
+     "us": 10843.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_70_run",
+   "file": "examples/shader_advanced/custom_vertex_attribute.rs",
+   "line": 21,
+   "character": 10,
+   "symbol": "run",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "5e84a2095bc221b9",
+     "us": 3977.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "fb7fee046f0f2bf2",
+     "us": 13798.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "5e84a2095bc221b9",
+     "us": 3548.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_74_East",
+   "file": "crates/bevy_winit/src/converters.rs",
+   "line": 735,
+   "character": 24,
+   "symbol": "East",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "3ced69f166e2fac1",
+     "us": 6822.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "ae3bc2de2e20315a",
+     "us": 10328.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "3ced69f166e2fac1",
+     "us": 6711.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_81_remove",
+   "file": "crates/bevy_solari/src/scene/binder/assets.rs",
+   "line": 262,
+   "character": 40,
+   "symbol": "remove",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "8674a6042c83cd3f",
+     "us": 4775.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "7edb3198b9fbdae9",
+     "us": 7691.4,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "8674a6042c83cd3f",
+     "us": 4459.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_82_as_entire_binding",
+   "file": "crates/bevy_solari/src/realtime/node.rs",
+   "line": 224,
+   "character": 25,
+   "symbol": "as_entire_binding",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "22740bba9d28707d",
+     "us": 2958.6,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "0e752b2008c59fc4",
+     "us": 8442.5,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "22740bba9d28707d",
+     "us": 2650.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_89_new",
+   "file": "crates/bevy_shape/src/bounding/bounded2d/primitive_impls.rs",
+   "line": 678,
+   "character": 47,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "5267715432492ed9",
+     "us": 5351.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "2855e11356730827",
+     "us": 23178.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "5267715432492ed9",
+     "us": 5055.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_90_ColResize",
+   "file": "crates/bevy_winit/src/converters.rs",
+   "line": 684,
+   "character": 67,
+   "symbol": "ColResize",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "ab9f1e33f864a0d3",
+     "us": 2040.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "47dee668fc4b176b",
+     "us": 7643.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "ab9f1e33f864a0d3",
+     "us": 1764.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_91_Val",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 820,
+   "character": 16,
+   "symbol": "Val",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "6742bd04a2313f77",
+     "us": 9153.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "17bf9e75a7c0a9a7",
+     "us": 13751.8,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "6742bd04a2313f77",
+     "us": 8431.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_97_FontSize",
+   "file": "examples/ui/text/text_debug.rs",
+   "line": 199,
+   "character": 40,
+   "symbol": "FontSize",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "7a41822ec5d4a7e7",
+     "us": 5203.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "521f7283dfae5d9c",
+     "us": 19346.2,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "7a41822ec5d4a7e7",
+     "us": 4799.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_106_from_translation",
+   "file": "examples/3d/animated_material.rs",
+   "line": 40,
+   "character": 28,
+   "symbol": "from_translation",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "ba5f9e3723760fc5",
+     "us": 4202.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "8956859cab3d115d",
+     "us": 9527.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "ba5f9e3723760fc5",
+     "us": 4069.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_109_default",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 740,
+   "character": 15,
+   "symbol": "default",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "ad6b62ef3b148782",
+     "us": 10031.4,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "af931b41f7f6d124",
+     "us": 31060.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "ad6b62ef3b148782",
+     "us": 9372.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_113_world_mut",
+   "file": "crates/bevy_ui_widgets/src/tabs.rs",
+   "line": 1217,
+   "character": 14,
+   "symbol": "world_mut",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "4728588c97a76410",
+     "us": 16705.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "c9673a6618f7f4aa",
+     "us": 18838.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "4728588c97a76410",
+     "us": 15902.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_116_AlignItems",
+   "file": "examples/ui/widgets/standard_widgets_observers.rs",
+   "line": 131,
+   "character": 26,
+   "symbol": "AlignItems",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "a1f90dd1330579fd",
+     "us": 5170.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "da2960e9b175af99",
+     "us": 12277.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "a1f90dd1330579fd",
+     "us": 4393.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_125_NEG_Z",
+   "file": "crates/bevy_transform/src/components/transform.rs",
+   "line": 476,
+   "character": 58,
+   "symbol": "NEG_Z",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "19e851498a7baded",
+     "us": 2738.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "c6945eb2de993774",
+     "us": 5819.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "19e851498a7baded",
+     "us": 2538.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_131_new",
+   "file": "examples/testbed/ui.rs",
+   "line": 4013,
+   "character": 52,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "e36be8dd981ccdcc",
+     "us": 3280.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "3a7367af92dd1f0b",
+     "us": 8145.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "e36be8dd981ccdcc",
+     "us": 3140.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_134_BLACK",
+   "file": "crates/bevy_color/src/srgba.rs",
+   "line": 507,
+   "character": 50,
+   "symbol": "BLACK",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "63e355b31ab22a02",
+     "us": 2789.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "319e5ad4082832ed",
+     "us": 6639.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "63e355b31ab22a02",
+     "us": 2474.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_139_looking_at",
+   "file": "examples/scene/world_serialization.rs",
+   "line": 129,
+   "character": 44,
+   "symbol": "looking_at",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "bcdf6cd0710f0e87",
+     "us": 3469.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "60f3f5a6446c4ae3",
+     "us": 10255.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "bcdf6cd0710f0e87",
+     "us": 3072.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_143_new",
+   "file": "crates/bevy_math/src/compass.rs",
+   "line": 545,
+   "character": 33,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "5267715432492ed9",
+     "us": 4000.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "2855e11356730827",
+     "us": 18011.4,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "5267715432492ed9",
+     "us": 3666.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_182_MotionVectorPrepass",
+   "file": "crates/bevy_core_pipeline/src/prepass/mod.rs",
+   "line": 79,
+   "character": 12,
+   "symbol": "MotionVectorPrepass",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "79887f85c2e2bfce",
+     "us": 2704.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "5b7d948a6850425b",
+     "us": 7602.4,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "79887f85c2e2bfce",
+     "us": 2531.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_232_Overflow",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 1545,
+   "character": 12,
+   "symbol": "Overflow",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "2341b34abd63cb4f",
+     "us": 3252.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "cf95f5af3c3e4198",
+     "us": 8427.5,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "2341b34abd63cb4f",
+     "us": 3019.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_246_finish",
+   "file": "crates/bevy_app/src/app.rs",
+   "line": 261,
+   "character": 12,
+   "symbol": "finish",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "7935ac65db8cd220",
+     "us": 3175.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "3ddfdb839403bc1d",
+     "us": 6077.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "7935ac65db8cd220",
+     "us": 2913.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_263_NodeImageMode",
+   "file": "crates/bevy_ui/src/widget/image.rs",
+   "line": 215,
+   "character": 10,
+   "symbol": "NodeImageMode",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "956598d57a755b7f",
+     "us": 2948.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "598c068254a8f71b",
+     "us": 7491.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "956598d57a755b7f",
+     "us": 2594.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_265_map",
+   "file": "crates/bevy_curve/src/lib.rs",
+   "line": 465,
+   "character": 12,
+   "symbol": "map",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "1b08bda3c4bc1faf",
+     "us": 2353.6,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "6adb2de4942347ce",
+     "us": 10980.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "1b08bda3c4bc1faf",
+     "us": 2117.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_295_SliderStep",
+   "file": "crates/bevy_ui_widgets/src/slider.rs",
+   "line": 227,
+   "character": 12,
+   "symbol": "SliderStep",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "829a4547e2f433fd",
+     "us": 2463.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "89b0be6b958e30e1",
+     "us": 7236.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "829a4547e2f433fd",
+     "us": 2271.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_14_new",
+   "file": "crates/bevy_shape/src/dim2.rs",
+   "line": 2569,
+   "character": 66,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2481.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "8203df678414dc80",
+     "us": 10085.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2361.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_15_new",
+   "file": "crates/bevy_shape/src/dim3.rs",
+   "line": 1455,
+   "character": 23,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2104.4,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "54ad5b1cd14bf87a",
+     "us": 8108.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2016.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_18_looking_at",
+   "file": "examples/stress_tests/many_cubes.rs",
+   "line": 547,
+   "character": 37,
+   "symbol": "looking_at",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3745.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "896b985717d008a7",
+     "us": 6930.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2550.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_51_ZERO",
+   "file": "crates/bevy_camera/src/primitives.rs",
+   "line": 617,
+   "character": 28,
+   "symbol": "ZERO",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2269.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "4f4237bea6fd3fa9",
+     "us": 5829.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1901.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_71_add_systems",
+   "file": "examples/ecs/delayed_commands.rs",
+   "line": 11,
+   "character": 10,
+   "symbol": "add_systems",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4027.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "f42f51a55dc5a24a",
+     "us": 9628.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3682.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_72_from_rotation_x",
+   "file": "examples/stress_tests/many_cameras_lights.rs",
+   "line": 51,
+   "character": 40,
+   "symbol": "from_rotation_x",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2444.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "0fc01a6290a8daaa",
+     "us": 6271.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2216.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_99_pressed",
+   "file": "examples/3d/visibility_range.rs",
+   "line": 245,
+   "character": 23,
+   "symbol": "pressed",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2777.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "87f644dd95eccddb",
+     "us": 7450.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2479.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_115_new",
+   "file": "examples/3d/parallax_mapping.rs",
+   "line": 297,
+   "character": 49,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3949.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "c1d4716159d1c437",
+     "us": 7931.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2411.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_119_new",
+   "file": "crates/bevy_post_process/src/dof/mod.rs",
+   "line": 402,
+   "character": 72,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3216.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "c3de968d16d92a51",
+     "us": 11421.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2327.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_123_new",
+   "file": "examples/audio/spatial_audio_3d.rs",
+   "line": 33,
+   "character": 22,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2760.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "863b437f667117a6",
+     "us": 6980.8,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1967.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_125_Vec3",
+   "file": "examples/math/render_primitives.rs",
+   "line": 518,
+   "character": 21,
+   "symbol": "Vec3",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4917.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "b9801d4f4621e193",
+     "us": 15059.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3971.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_130_from_xyz",
+   "file": "examples/asset/repeated_texture.rs",
+   "line": 81,
+   "character": 20,
+   "symbol": "from_xyz",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3888.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "b6ef21257a4c17b5",
+     "us": 8045.8,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2695.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_164_border_box",
+   "file": "examples/ui/scroll_and_overflow/overflow_clip_margin.rs",
+   "line": 33,
+   "character": 37,
+   "symbol": "border_box",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3321.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "c885cf3405ad04d1",
+     "us": 7088.4,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2532.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_167_ZERO",
+   "file": "crates/bevy_shape/src/bounding/raycast3d.rs",
+   "line": 268,
+   "character": 38,
+   "symbol": "ZERO",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2547.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "2a86a74fa10f05df",
+     "us": 6661.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1941.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_169_TrackClick",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 731,
+   "character": 45,
+   "symbol": "TrackClick",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3072.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "100b83855d9aa07b",
+     "us": 7129.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2453.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_188_new",
+   "file": "examples/async_tasks/async_compute.rs",
+   "line": 159,
+   "character": 31,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2814.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "27eff7c7c53f767f",
+     "us": 7846.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2379.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_190_TextureUsages",
+   "file": "crates/bevy_core_pipeline/src/mip_generation/experimental/depth.rs",
+   "line": 586,
+   "character": 24,
+   "symbol": "TextureUsages",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2068.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "b8d0a51385370734",
+     "us": 6026.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1967.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_196_new",
+   "file": "examples/3d/animated_material.rs",
+   "line": 30,
+   "character": 35,
+   "symbol": "new",
+   "target_kind": "example",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2479.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "871fb97067c7d093",
+     "us": 6477.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2417.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_208_TextWrapMode",
+   "file": "crates/bevy_ui/src/widget/text_input_layout.rs",
+   "line": 285,
+   "character": 74,
+   "symbol": "TextWrapMode",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1895.4,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "af7d21a6f6c12ab2",
+     "us": 6931.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1787.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_219_ExitCondition",
+   "file": "examples/window/monitor_info.rs",
+   "line": 13,
+   "character": 29,
+   "symbol": "ExitCondition",
+   "target_kind": "example",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2493.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "81c56a925ebc6ecb",
+     "us": 6248.5,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2449.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_244_add_systems",
+   "file": "examples/ecs/system_closure.rs",
+   "line": 30,
+   "character": 10,
+   "symbol": "add_systems",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 5049.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "b544e5cd74b363c4",
+     "us": 9431.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3608.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_264_as_entire_binding",
+   "file": "crates/bevy_pbr/src/render/gpu_preprocess.rs",
+   "line": 3068,
+   "character": 60,
+   "symbol": "as_entire_binding",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2248.4,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "4dca4a404958b09c",
+     "us": 7170.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2182.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_268_dispatch_workgroups",
+   "file": "crates/bevy_pbr/src/light_probe/generate.rs",
+   "line": 839,
+   "character": 26,
+   "symbol": "dispatch_workgroups",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2069.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "dcaba936ec1b7bf2",
+     "us": 6641.8,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2192.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_274_UVec2",
+   "file": "crates/bevy_pbr/src/render/mesh.rs",
+   "line": 1057,
+   "character": 27,
+   "symbol": "UVec2",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2414.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "3c8abbba5bbe8131",
+     "us": 7430.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2420.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_277_Custom",
+   "file": "examples/2d/bloom_2d.rs",
+   "line": 26,
+   "character": 44,
+   "symbol": "Custom",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2307.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "ea3e929805ebebff",
+     "us": 10205.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2269.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_279_default",
+   "file": "examples/testbed/ui.rs",
+   "line": 4142,
+   "character": 27,
+   "symbol": "default",
+   "target_kind": "example",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4301.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "7433421f882c7474",
+     "us": 18382.2,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4293.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_282_new",
+   "file": "crates/bevy_shape/src/bounding/bounded3d/primitive_impls.rs",
+   "line": 465,
+   "character": 37,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "f79eebb": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1850.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "2a3958202f755a06",
+     "us": 6311.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1828.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_26_main",
+   "file": "examples/3d/fog_volumes.rs",
+   "line": 16,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5325.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7668.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5301.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_139_add_edge",
+   "file": "crates/bevy_input_focus/src/directional_navigation.rs",
+   "line": 316,
+   "character": 12,
+   "symbol": "add_edge",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "6adfc3e3932f56ca",
+     "us": 9987.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "36775ce52b8e6811",
+     "us": 11831.8,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "6adfc3e3932f56ca",
+     "us": 10127.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_154_main",
+   "file": "tools/example-showcase/src/main.rs",
+   "line": 141,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "bin",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5414.0,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 12481.5,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5509.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_160_map_apply",
+   "file": "benches/benches/bevy_reflect/map.rs",
+   "line": 48,
+   "character": 4,
+   "symbol": "map_apply",
+   "target_kind": "bench",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "293b61bb0a15cb11",
+     "us": 6413.4,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "31a99f33b022e6c2",
+     "us": 10459.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "293b61bb0a15cb11",
+     "us": 6586.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_161_create",
+   "file": "examples/animation/eased_motion.rs",
+   "line": 92,
+   "character": 8,
+   "symbol": "create",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "935c9d4315664f41",
+     "us": 6070.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "a921b930f084d640",
+     "us": 16980.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "935c9d4315664f41",
+     "us": 6321.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_192_texture",
+   "file": "crates/bevy_render/src/gpu_readback.rs",
+   "line": 96,
+   "character": 12,
+   "symbol": "texture",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "9b4f6b8c669af6bb",
+     "us": 5300.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "7738bc406edd625e",
+     "us": 6357.4,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "9b4f6b8c669af6bb",
+     "us": 5378.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_199_main",
+   "file": "examples/ui/navigation/directional_navigation_overrides.rs",
+   "line": 42,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5227.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7723.7,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5340.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_214_main",
+   "file": "examples/ecs/extraction.rs",
+   "line": 47,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5579.8,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7736.8,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5483.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_248_demo_root",
+   "file": "examples/ui/widgets/standard_widgets_observers.rs",
+   "line": 86,
+   "character": 4,
+   "symbol": "demo_root",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "718a5d4b3fd717d4",
+     "us": 5911.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "2c68ac755e6c4ba7",
+     "us": 8625.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "718a5d4b3fd717d4",
+     "us": 6064.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_274_main",
+   "file": "examples/2d/mesh2d_repeated_texture.rs",
+   "line": 18,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5254.2,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 7920.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5529.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_296_main",
+   "file": "examples/2d/sprite_animation.rs",
+   "line": 9,
+   "character": 4,
+   "symbol": "main",
+   "target_kind": "example",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5773.5,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8083.1,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "6691938c7bb4dc12",
+     "us": 5413.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_0_world_mut",
+   "file": "crates/bevy_app/src/sub_app.rs",
+   "line": 138,
+   "character": 12,
+   "symbol": "world_mut",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "bce9176acc49e9a7",
+     "us": 7506.3,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "f3f5d5f8b65b5315",
+     "us": 79991.9,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "bce9176acc49e9a7",
+     "us": 7283.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_5_PointerTraversal",
+   "file": "crates/bevy_picking/src/events.rs",
+   "line": 121,
+   "character": 12,
+   "symbol": "PointerTraversal",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "bc9333001c979578",
+     "us": 3653.1,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "390eeb7877257198",
+     "us": 12808.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "bc9333001c979578",
+     "us": 3403.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_98_SpriteAlphaMode",
+   "file": "crates/bevy_sprite/src/sprite.rs",
+   "line": 180,
+   "character": 10,
+   "symbol": "SpriteAlphaMode",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "fe358a2e6c60af41",
+     "us": 3259.4,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "4348bc9f9843dd0d",
+     "us": 8140.0,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "fe358a2e6c60af41",
+     "us": 3330.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_116_AmbientLight",
+   "file": "crates/bevy_light/src/ambient_light.rs",
+   "line": 12,
+   "character": 12,
+   "symbol": "AmbientLight",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "f3c883d6a761dfa5",
+     "us": 3041.7,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "b233fcb6544f1ab5",
+     "us": 12582.6,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "f3c883d6a761dfa5",
+     "us": 3061.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_129_SplitPane",
+   "file": "crates/bevy_ui_widgets/src/split_pane.rs",
+   "line": 38,
+   "character": 12,
+   "symbol": "SplitPane",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "0b516e9cc80d0df8",
+     "us": 3394.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "d49194a46adb1ec0",
+     "us": 8212.3,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "0b516e9cc80d0df8",
+     "us": 3320.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_136_LensDistortion",
+   "file": "crates/bevy_post_process/src/effect_stack/lens_distortion.rs",
+   "line": 24,
+   "character": 12,
+   "symbol": "LensDistortion",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "cb215f56492c2ec9",
+     "us": 3076.6,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "5c3d5fb7abf483bc",
+     "us": 14040.2,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "cb215f56492c2ec9",
+     "us": 3143.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_173_any_pressed",
+   "file": "crates/bevy_input/src/button_input.rs",
+   "line": 162,
+   "character": 12,
+   "symbol": "any_pressed",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "4f2491c3193ab2d1",
+     "us": 3008.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "47a84b63d954c62f",
+     "us": 17129.4,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "4f2491c3193ab2d1",
+     "us": 3012.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_201_insert_after",
+   "file": "crates/bevy_app/src/main_schedule.rs",
+   "line": 240,
+   "character": 12,
+   "symbol": "insert_after",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "72b0bcc9b4790c62",
+     "us": 3235.6,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "6922b688fcfe4830",
+     "us": 6568.2,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "72b0bcc9b4790c62",
+     "us": 3309.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_269_UiRect",
+   "file": "crates/bevy_ui/src/geometry.rs",
+   "line": 693,
+   "character": 12,
+   "symbol": "UiRect",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "f79eebb": {
+     "outcome": "a",
+     "digest": "a5235f19cbb4f823",
+     "us": 6795.9,
+     "error": null
+    },
+    "f3d6b8c": {
+     "outcome": "a",
+     "digest": "27d8e79aa85ac12e",
+     "us": 18275.4,
+     "error": null
+    },
+    "f79eebb-2": {
+     "outcome": "a",
+     "digest": "a5235f19cbb4f823",
+     "us": 6782.3,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 87,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_f79eebb_vs_f3d6b8c_ram9_bevy.json",
+  "sha256": "8a3978b77afe05430e74c130b7c5033552e729b6c78063a215b7d1542c1f1b5d"
+ }
+}
