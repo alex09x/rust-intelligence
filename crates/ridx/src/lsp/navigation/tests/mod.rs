@@ -10,6 +10,7 @@
 
 pub mod declaration_tests;
 pub mod definition_tests;
+pub mod implementation_head_tests;
 pub mod implementation_header_tests;
 pub mod implementation_tests;
 pub mod ref_tests;

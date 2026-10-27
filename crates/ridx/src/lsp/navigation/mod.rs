@@ -24,7 +24,7 @@ pub use type_definition::handle_type_definition;
 
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
-use impl_line::is_impl_header;
+use impl_line::{is_head_position, is_impl_header};
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 
@@ -259,6 +259,10 @@ pub fn handle_implementation(
                         .nth(r.span.start_line().saturating_sub(1) as usize)
                         .unwrap_or("");
                     is_impl_header(line_text)
+                        && is_head_position(
+                            line_text,
+                            r.span.start_col().saturating_sub(1) as usize,
+                        )
                 } else {
                     false
                 }
