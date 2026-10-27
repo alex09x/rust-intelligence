@@ -132,41 +132,57 @@ class Checker:
         return walk(evidence)
 
 
-def main(argv=None):
-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--repo", required=True)
-    ap.add_argument("--report", required=True, help="full position_ab report (all rows)")
-    ap.add_argument("--before", required=True)
-    ap.add_argument("--after", required=True)
-    ap.add_argument("--out", required=True)
-    args = ap.parse_args(argv)
-    rep = json.load(open(args.report, encoding="utf-8"))
-    names = [s["name"] for s in rep["servers"]]
-    checker = Checker(args.repo, args.before, args.after)
-    rows, summary, by_method = [], Counter(), Counter()
-    try:
-        for row, noise in differing_rows(rep, names):
-            entry = {k: row[k] for k in ("method", "file", "line", "character", "symbol", "target_kind")}
-            entry["noise_before_vs_before2"] = noise
-            if noise:
-                entry["class"], entry["evidence"] = None, {}
-                summary["noise"] += 1
-            else:
-                entry["class"], entry["evidence"] = checker.check_row(row)
-                summary[entry["class"]] += 1
-                by_method[row["method"]] += 1
-            rows.append(entry)
-    finally:
-        checker.close()
-    out = {
-        "schema": "position_ab_classes/1", "repo_dir_name": rep["repo_dir_name"], "report": os.path.basename(args.report),
+def build_out(rep, report_name, rows):
+    summary = Counter(e["class"] or "noise" for e in rows)
+    by_method = Counter(e["method"] for e in rows if e["class"])
+    return {
+        "schema": "position_ab_classes/1", "repo_dir_name": rep["repo_dir_name"], "report": report_name,
         "servers": [{k: s[k] for k in ("name", "commit", "dirty", "binary") if k in s} for s in rep["servers"]],
         "rows_differing": len(rows), "summary": dict(sorted(summary.items())), "rows_by_method": dict(sorted(by_method.items())),
         "rows": rows,
     }
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--repo")
+    ap.add_argument("--report", required=True, help="full position_ab report (all rows)")
+    ap.add_argument("--before")
+    ap.add_argument("--after")
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--shard", help="K/N: classify the K-th of N contiguous chunks of the differing rows only")
+    ap.add_argument("--merge", nargs="+", help="part files written with --shard, in shard order: join them into --out")
+    args = ap.parse_args(argv)
+    rep = json.load(open(args.report, encoding="utf-8"))
+    if args.merge:
+        rows = [row for part in args.merge for row in json.load(open(part, encoding="utf-8"))["rows"]]
+        out = build_out(rep, os.path.basename(args.report), rows)
+        Path(args.out).write_text(json.dumps(out, indent=1, sort_keys=False) + "\n", encoding="utf-8")
+        print(f"{rep['repo_dir_name']}: differing {len(rows)}, classes {out['summary']}; wrote {args.out}")
+        return 1 if out["summary"].get("unclassified") else 0
+    names = [s["name"] for s in rep["servers"]]
+    todo = list(differing_rows(rep, names))
+    if args.shard:
+        k, n = map(int, args.shard.split("/"))
+        size = -(-len(todo) // n)
+        todo = todo[k * size:(k + 1) * size]
+    checker = Checker(args.repo, args.before, args.after)
+    rows = []
+    try:
+        for row, noise in todo:
+            entry = {k: row[k] for k in ("method", "file", "line", "character", "symbol", "target_kind")}
+            entry["noise_before_vs_before2"] = noise
+            if noise:
+                entry["class"], entry["evidence"] = None, {}
+            else:
+                entry["class"], entry["evidence"] = checker.check_row(row)
+            rows.append(entry)
+    finally:
+        checker.close()
+    out = build_out(rep, os.path.basename(args.report), rows)
     Path(args.out).write_text(json.dumps(out, indent=1, sort_keys=False) + "\n", encoding="utf-8")
-    print(f"{rep['repo_dir_name']}: differing {len(rows)}, classes {dict(sorted(summary.items()))}; wrote {args.out}")
-    return 1 if summary["unclassified"] else 0
+    print(f"{rep['repo_dir_name']}: differing {len(rows)}, classes {out['summary']}; wrote {args.out}")
+    return 1 if out["summary"].get("unclassified") else 0
 
 
 if __name__ == "__main__":
