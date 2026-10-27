@@ -12,7 +12,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from position_ab_item_position_rules import (  # noqa: E402
-    CLASS_BOTH, CLASS_FIXED, CLASS_SITES, CLASS_GAINED, CLASS_LOCATIONS, CLASS_LOST, call_ranges, caller_changes, classify, classify_error_fixed, classify_locations,
+    CLASS_BOTH, CLASS_EQUAL_AGAIN, CLASS_FIXED, CLASS_SITES, CLASS_GAINED, CLASS_LOCATIONS, CLASS_LOST, call_ranges, caller_changes, classify, classify_equal_again, classify_error_fixed, classify_locations,
     is_generated_span, same_definition,
 )
 
@@ -132,3 +132,9 @@ def test_a_caller_of_both_answers_that_gained_call_sites_is_g4_only_if_each_new_
     assert cls == CLASS_SITES and ev["changed_callers_detail"][0]["call_sites_gained"] == 1
     assert classify(before, after, lambda p: lines, resolves_to(OTHER), ITEM)[0] is None
     assert classify(after, before, lambda p: lines, resolves_to(ITEM), ITEM)[0] is None
+
+
+def test_a_row_of_an_uncovered_method_that_is_equal_when_asked_again_is_n1():
+    assert classify_equal_again([{"newText": "x"}], [{"newText": "x"}])[0] == CLASS_EQUAL_AGAIN
+    assert classify_equal_again([{"newText": "x"}], [{"newText": "y"}])[0] is None
+    assert classify_equal_again(None, [])[0] is None

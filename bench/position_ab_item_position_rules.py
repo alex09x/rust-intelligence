@@ -9,6 +9,7 @@
 that differ by how the item is resolved (by its definition path before, by its position after).
 Lines are 1-based; LSP ranges are 0-based."""
 
+import json
 import re
 from collections import Counter
 
@@ -20,6 +21,7 @@ CLASS_LOCATIONS = "t1_locations_gained_from_units_reaching_the_item_through_anot
 MACRO_CALL = re.compile(r"\w!\s*[({\[]|\w!\s*$")
 CLASS_FIXED = "t2_error_before_edits_after_each_resolving_to_the_definition"
 CLASS_SITES = "g4_call_sites_gained_by_callers_of_both_answers"
+CLASS_EQUAL_AGAIN = "n1_equal_when_asked_again"
 CLASS_BOTH = "g3_callers_gained_and_lost_each_by_its_own_proof"
 
 
@@ -184,3 +186,11 @@ def classify_error_fixed(after, cursor_file, lines_of, locations_of, def_of_col,
     generated), as in `classify_locations` with nothing before."""
     cls, ev = classify_locations(None, after, cursor_file, lines_of, lambda res, lines: locations_of(res, lines) if res else [], def_of_col, cursor_def)
     return (CLASS_FIXED if cls == CLASS_LOCATIONS else None), ev
+
+
+def classify_equal_again(res_b, res_a):
+    """(class or None, evidence) for a row of a method the item-position rules do not cover: both
+    binaries were asked again and gave the same answer, so the difference of the A/B was a timeout
+    or a load effect of that run, not a difference of the binaries."""
+    same = json.dumps(res_b, sort_keys=True) == json.dumps(res_a, sort_keys=True)
+    return (CLASS_EQUAL_AGAIN if same else None), {"reason": "method not covered by the item-position rules", "equal_when_asked_again": same}
