@@ -1,0 +1,3841 @@
+{
+ "repo": "tokio-rs/tokio",
+ "repo_dir_name": "tokio",
+ "repo_head": "b2636752450484955e7ad334bac678424d51bc4a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 308,
+ "positions_file": "matrix_tokio_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 301,
+ "timestamp_start": "2026-10-27T12:20:08.533484+00:00",
+ "timestamp_end": "2026-10-27T12:25:25.075016+00:00",
+ "servers": [
+  {
+   "name": "a7ad84c",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: a7ad84c5f5772fe9beba6fda66dcbf5404c5d821, dirty: false)",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 104.5,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 484.9,
+     "p99_us": 2520.6,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 400.0,
+     "p99_us": 790.7,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 431.6,
+     "p99_us": 2223.3,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2228.6,
+     "p99_us": 3502.6,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1982.6,
+     "p99_us": 24222.2,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 204,
+     "b": 96,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2024.4,
+     "p99_us": 15070.8,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 125.8,
+     "p99_us": 1475.7,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17988.5,
+     "p99_us": 34758.5,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.2,
+     "p99_us": 20.3,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 842.2,
+     "p99_us": 1405.6,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2071.4,
+     "p99_us": 14839.3,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 23.2,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 71.6,
+     "p99_us": 23028.0,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.1,
+     "p99_us": 60.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 16.3,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 32.9,
+     "p99_us": 64.6,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 22.3,
+     "p99_us": 64.2,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.2,
+     "p99_us": 101.2,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 16.0,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 441.0,
+     "p99_us": 820.5,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 100,
+     "b": 200,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1970.1,
+     "p99_us": 9638.2,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 977.5,
+     "p99_us": 12412.1,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 347.7,
+     "p99_us": 703.9,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1572.8,
+     "p99_us": 2833.6,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.3,
+     "p99_us": 2120.3,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 101.6,
+     "p99_us": 281.6,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.5,
+     "p99_us": 93.6,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 16.6,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 15.3,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 13.7,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91067.5,
+     "p99_us": 104977.0,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91826.6,
+     "p99_us": 192276.3,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92761.1,
+     "p99_us": 104101.3,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 2010.0,
+     "p99_us": 2483.5,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2282.8,
+     "p99_us": 3940.2,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.4,
+     "p99_us": 103.5,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 68.0,
+     "p99_us": 252.3,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 17.9,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 13.5,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 434.6,
+     "p99_us": 1061.8,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 437.2,
+     "p99_us": 1090.9,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 439.5,
+     "p99_us": 1062.0,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 57.8,
+     "p99_us": 370.7,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 413.1,
+     "p99_us": 734.4,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.8,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.7,
+     "p99_us": 434.5,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1992.0,
+     "p99_us": 2189.3,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 19.5,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 12.3,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 22.0,
+     "p99_us": 80.6,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       204,
+       96,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       100,
+       200,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a797674",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: a7976748e8bfbf7974c1301b867aef1bdb8c9ebe, dirty: false)",
+   "commit": "a7976748e8bfbf7974c1301b867aef1bdb8c9ebe",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 103.6,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 471.0,
+     "p99_us": 840.3,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 412.9,
+     "p99_us": 766.1,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 423.9,
+     "p99_us": 1687.7,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2246.3,
+     "p99_us": 3933.9,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1971.4,
+     "p99_us": 24999.2,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 204,
+     "b": 96,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2031.3,
+     "p99_us": 14847.9,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 130.4,
+     "p99_us": 1433.0,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 18102.6,
+     "p99_us": 28399.5,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.8,
+     "p99_us": 19.6,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 855.3,
+     "p99_us": 1398.1,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2062.6,
+     "p99_us": 15673.0,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 22.0,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 74.9,
+     "p99_us": 23230.9,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.8,
+     "p99_us": 61.8,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 15.1,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35.3,
+     "p99_us": 69.1,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 22.9,
+     "p99_us": 65.5,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 32.8,
+     "p99_us": 106.7,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.7,
+     "p99_us": 17.2,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 426.6,
+     "p99_us": 844.2,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 100,
+     "b": 200,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1970.7,
+     "p99_us": 9561.0,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 975.0,
+     "p99_us": 12611.0,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 376.5,
+     "p99_us": 751.7,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1629.2,
+     "p99_us": 2932.9,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.1,
+     "p99_us": 2170.7,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 104.9,
+     "p99_us": 290.5,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.0,
+     "p99_us": 97.3,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 16.4,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 12.3,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 13.9,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90756.1,
+     "p99_us": 100818.3,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91699.9,
+     "p99_us": 189795.0,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92728.9,
+     "p99_us": 102757.3,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 1990.5,
+     "p99_us": 2481.9,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2220.9,
+     "p99_us": 3403.0,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.1,
+     "p99_us": 112.0,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 63.0,
+     "p99_us": 256.3,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.4,
+     "p99_us": 19.6,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 12.3,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 437.2,
+     "p99_us": 1127.3,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 416.0,
+     "p99_us": 1105.6,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 425.6,
+     "p99_us": 1012.8,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 60.7,
+     "p99_us": 433.8,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 406.5,
+     "p99_us": 697.3,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.1,
+     "p99_us": 18.0,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.8,
+     "p99_us": 443.5,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2021.0,
+     "p99_us": 2142.0,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 18.3,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 14.6,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 12.1,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.6,
+     "p99_us": 84.4,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       204,
+       96,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       100,
+       200,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a7ad84c-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: a7ad84c5f5772fe9beba6fda66dcbf5404c5d821, dirty: false)",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 103.5,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 468.6,
+     "p99_us": 831.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 407.8,
+     "p99_us": 864.3,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 432.6,
+     "p99_us": 1733.6,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2294.2,
+     "p99_us": 3601.5,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1978.9,
+     "p99_us": 23627.5,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 204,
+     "b": 96,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1995.9,
+     "p99_us": 14842.3,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 130.1,
+     "p99_us": 1472.1,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17903.2,
+     "p99_us": 29095.6,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.0,
+     "p99_us": 19.3,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 880.2,
+     "p99_us": 1440.0,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2088.7,
+     "p99_us": 15277.9,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 18.9,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 72.3,
+     "p99_us": 23648.9,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.1,
+     "p99_us": 59.9,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 14.0,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.9,
+     "p99_us": 65.2,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.5,
+     "p99_us": 62.1,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 32.3,
+     "p99_us": 104.7,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 16.6,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 422.8,
+     "p99_us": 821.3,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 100,
+     "b": 200,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2028.8,
+     "p99_us": 9751.9,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1004.8,
+     "p99_us": 12928.2,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 374.2,
+     "p99_us": 744.5,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1691.2,
+     "p99_us": 3506.3,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.9,
+     "p99_us": 2159.0,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 102.6,
+     "p99_us": 287.0,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.9,
+     "p99_us": 101.1,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 15.0,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 11.6,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 89301.6,
+     "p99_us": 100169.4,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91530.4,
+     "p99_us": 190802.6,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92811.2,
+     "p99_us": 102116.5,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 2103.0,
+     "p99_us": 2575.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2415.3,
+     "p99_us": 3930.7,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.5,
+     "p99_us": 104.7,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 68.2,
+     "p99_us": 246.3,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 15.4,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 440.0,
+     "p99_us": 1149.7,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 433.5,
+     "p99_us": 1076.0,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 436.6,
+     "p99_us": 1033.8,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 55.9,
+     "p99_us": 368.8,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 423.1,
+     "p99_us": 730.7,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.2,
+     "p99_us": 19.0,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.5,
+     "p99_us": 349.4,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1990.3,
+     "p99_us": 2082.1,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 15.6,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 13.1,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 14.9,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.1,
+     "p99_us": 105.7,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       204,
+       96,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       100,
+       200,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "a7ad84c",
+   "b": "a797674",
+   "same": 15282,
+   "differing": 18,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 282,
+     "differing": 18,
+     "transitions": {
+      "a>a": 16,
+      "b>a": 1,
+      "a>b": 1
+     },
+     "examples": [
+      {
+       "name": "impl_5_RwLockWriteGuard",
+       "file": "tokio/src/sync/rwlock/write_guard.rs",
+       "line": 17,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "339a67723f1f4fe0",
+        "dbe18e16011e7137"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_38_Empty",
+       "file": "tokio-stream/src/empty.rs",
+       "line": 11,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a5cd7805bcddeecc",
+        "60cb34fcf5d35723"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_51_Pop",
+       "file": "tokio/src/runtime/scheduler/inject/pop.rs",
+       "line": 7,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "13351794d3d5a5cc",
+        "c7fc9c861dd95f92"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_70_AtomicCell",
+       "file": "tokio/src/util/atomic_cell.rs",
+       "line": 6,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0bef1c003ced185f",
+        "b890a26599d26c86"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_80_Inner",
+       "file": "tokio/src/runtime/scheduler/multi_thread/queue.rs",
+       "line": 36,
+       "character": 19,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "ca938c5b341c7ced"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_83_OwnedRwLockReadGuard",
+       "file": "tokio/src/sync/rwlock/owned_read_guard.rs",
+       "line": 15,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "26d7cf179e281fd6",
+        "0b9d24349f2d69a0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_103_ReusableBoxFuture",
+       "file": "tokio/src/signal/reusable_box.rs",
+       "line": 13,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ee4bc4207bb372ed",
+        "6bff65480a85b112"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_134_LockGuard",
+       "file": "tokio/src/util/try_lock.rs",
+       "line": 13,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cadddead643a90d1",
+        "4ebe5af6e616ac19"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_160_IdleNotifiedSet",
+       "file": "tokio/src/util/idle_notified_set.rs",
+       "line": 20,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d49ca14070856757",
+        "e0619da2008e10f0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_176_OwnedMappedMutexGuard",
+       "file": "tokio/src/sync/mutex.rs",
+       "line": 209,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fb775a05f577e81",
+        "34a762fbfc2c24d9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "a7ad84c",
+   "b": "a7ad84c-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "a797674",
+   "b": "a7ad84c-2",
+   "same": 15282,
+   "differing": 18,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 282,
+     "differing": 18,
+     "transitions": {
+      "a>a": 16,
+      "a>b": 1,
+      "b>a": 1
+     },
+     "examples": [
+      {
+       "name": "impl_5_RwLockWriteGuard",
+       "file": "tokio/src/sync/rwlock/write_guard.rs",
+       "line": 17,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dbe18e16011e7137",
+        "339a67723f1f4fe0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_38_Empty",
+       "file": "tokio-stream/src/empty.rs",
+       "line": 11,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "60cb34fcf5d35723",
+        "a5cd7805bcddeecc"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_51_Pop",
+       "file": "tokio/src/runtime/scheduler/inject/pop.rs",
+       "line": 7,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c7fc9c861dd95f92",
+        "13351794d3d5a5cc"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_70_AtomicCell",
+       "file": "tokio/src/util/atomic_cell.rs",
+       "line": 6,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b890a26599d26c86",
+        "0bef1c003ced185f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_80_Inner",
+       "file": "tokio/src/runtime/scheduler/multi_thread/queue.rs",
+       "line": 36,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "ca938c5b341c7ced",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_83_OwnedRwLockReadGuard",
+       "file": "tokio/src/sync/rwlock/owned_read_guard.rs",
+       "line": 15,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0b9d24349f2d69a0",
+        "26d7cf179e281fd6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_103_ReusableBoxFuture",
+       "file": "tokio/src/signal/reusable_box.rs",
+       "line": 13,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6bff65480a85b112",
+        "ee4bc4207bb372ed"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_134_LockGuard",
+       "file": "tokio/src/util/try_lock.rs",
+       "line": 13,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4ebe5af6e616ac19",
+        "cadddead643a90d1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_160_IdleNotifiedSet",
+       "file": "tokio/src/util/idle_notified_set.rs",
+       "line": 20,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e0619da2008e10f0",
+        "d49ca14070856757"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_176_OwnedMappedMutexGuard",
+       "file": "tokio/src/sync/mutex.rs",
+       "line": 209,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "34a762fbfc2c24d9",
+        "8fb775a05f577e81"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_tokio_booster.json",
+  "repo_commit": "b2636752450484955e7ad334bac678424d51bc4a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_5_RwLockWriteGuard",
+   "file": "tokio/src/sync/rwlock/write_guard.rs",
+   "line": 17,
+   "character": 12,
+   "symbol": "RwLockWriteGuard",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "339a67723f1f4fe0",
+     "us": 2875.5,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "dbe18e16011e7137",
+     "us": 3775.1,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "339a67723f1f4fe0",
+     "us": 2813.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_38_Empty",
+   "file": "tokio-stream/src/empty.rs",
+   "line": 11,
+   "character": 12,
+   "symbol": "Empty",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "a5cd7805bcddeecc",
+     "us": 1792.1,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "60cb34fcf5d35723",
+     "us": 1855.9,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "a5cd7805bcddeecc",
+     "us": 1871.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_51_Pop",
+   "file": "tokio/src/runtime/scheduler/inject/pop.rs",
+   "line": 7,
+   "character": 19,
+   "symbol": "Pop",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "13351794d3d5a5cc",
+     "us": 2404.5,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "c7fc9c861dd95f92",
+     "us": 2428.5,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "13351794d3d5a5cc",
+     "us": 2670.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_70_AtomicCell",
+   "file": "tokio/src/util/atomic_cell.rs",
+   "line": 6,
+   "character": 19,
+   "symbol": "AtomicCell",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "0bef1c003ced185f",
+     "us": 2295.1,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "b890a26599d26c86",
+     "us": 2356.3,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "0bef1c003ced185f",
+     "us": 2516.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_80_Inner",
+   "file": "tokio/src/runtime/scheduler/multi_thread/queue.rs",
+   "line": 36,
+   "character": 19,
+   "symbol": "Inner",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2399.1,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "ca938c5b341c7ced",
+     "us": 2451.1,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2496.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_83_OwnedRwLockReadGuard",
+   "file": "tokio/src/sync/rwlock/owned_read_guard.rs",
+   "line": 15,
+   "character": 12,
+   "symbol": "OwnedRwLockReadGuard",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "26d7cf179e281fd6",
+     "us": 2839.2,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "0b9d24349f2d69a0",
+     "us": 2962.2,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "26d7cf179e281fd6",
+     "us": 2960.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_103_ReusableBoxFuture",
+   "file": "tokio/src/signal/reusable_box.rs",
+   "line": 13,
+   "character": 19,
+   "symbol": "ReusableBoxFuture",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "ee4bc4207bb372ed",
+     "us": 2062.4,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "6bff65480a85b112",
+     "us": 2148.4,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "ee4bc4207bb372ed",
+     "us": 2156.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_134_LockGuard",
+   "file": "tokio/src/util/try_lock.rs",
+   "line": 13,
+   "character": 19,
+   "symbol": "LockGuard",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "cadddead643a90d1",
+     "us": 2479.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "4ebe5af6e616ac19",
+     "us": 2220.4,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "cadddead643a90d1",
+     "us": 2198.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_160_IdleNotifiedSet",
+   "file": "tokio/src/util/idle_notified_set.rs",
+   "line": 20,
+   "character": 19,
+   "symbol": "IdleNotifiedSet",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "d49ca14070856757",
+     "us": 2480.9,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "e0619da2008e10f0",
+     "us": 2483.0,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "d49ca14070856757",
+     "us": 2546.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_176_OwnedMappedMutexGuard",
+   "file": "tokio/src/sync/mutex.rs",
+   "line": 209,
+   "character": 12,
+   "symbol": "OwnedMappedMutexGuard",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "8fb775a05f577e81",
+     "us": 2774.0,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "34a762fbfc2c24d9",
+     "us": 2781.9,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "8fb775a05f577e81",
+     "us": 2901.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_181_Schedule",
+   "file": "tokio/src/runtime/task/mod.rs",
+   "line": 306,
+   "character": 18,
+   "symbol": "Schedule",
+   "target_kind": "lib",
+   "cursor_kind": "decl:trait",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "de1dda48cd6868e6",
+     "us": 3125.4,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "d55d2cba021633f5",
+     "us": 2927.8,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "de1dda48cd6868e6",
+     "us": 2981.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_200_Tick",
+   "file": "tokio/src/runtime/io/driver.rs",
+   "line": 102,
+   "character": 17,
+   "symbol": "Tick",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "53b2def5c15dce63",
+     "us": 2253.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2240.2,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "53b2def5c15dce63",
+     "us": 2269.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_214_Notified",
+   "file": "tokio/src/runtime/task/mod.rs",
+   "line": 245,
+   "character": 19,
+   "symbol": "Notified",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "287c7f0b42b80cdb",
+     "us": 3340.7,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "cde6ca93840a8702",
+     "us": 3523.1,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "287c7f0b42b80cdb",
+     "us": 3393.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_224_OwnedRwLockWriteGuard",
+   "file": "tokio/src/sync/rwlock/owned_write_guard.rs",
+   "line": 17,
+   "character": 12,
+   "symbol": "OwnedRwLockWriteGuard",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "54b2d2e4b8afc955",
+     "us": 2802.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "0b4d859f9828be7c",
+     "us": 2901.7,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "54b2d2e4b8afc955",
+     "us": 2860.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_228_Shared",
+   "file": "tokio/src/runtime/scheduler/inject/shared.rs",
+   "line": 9,
+   "character": 19,
+   "symbol": "Shared",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "84169093a38ad472",
+     "us": 2441.2,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "d33c678be2e19f44",
+     "us": 2427.4,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "84169093a38ad472",
+     "us": 2447.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_252_ChildStdout",
+   "file": "tokio/src/process/mod.rs",
+   "line": 1491,
+   "character": 12,
+   "symbol": "ChildStdout",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "80a77cee6faa6809",
+     "us": 2305.8,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "b1b5d0dfc0f5cdde",
+     "us": 2331.9,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "80a77cee6faa6809",
+     "us": 2407.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_254_MutexGuard",
+   "file": "tokio/src/sync/mutex.rs",
+   "line": 151,
+   "character": 12,
+   "symbol": "MutexGuard",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "cf6e090a73af5e0b",
+     "us": 2356.8,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "4f0a8ebfafe86aa9",
+     "us": 2409.3,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "cf6e090a73af5e0b",
+     "us": 2420.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_264_MappedMutexGuard",
+   "file": "tokio/src/sync/mutex.rs",
+   "line": 190,
+   "character": 12,
+   "symbol": "MappedMutexGuard",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "78e176ace4bd8f71",
+     "us": 2573.1,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "985247674a80fe29",
+     "us": 2642.8,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "78e176ace4bd8f71",
+     "us": 2636.8,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 18,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_a7ad84c_vs_a797674_ram9_tokio.json",
+  "sha256": "99dc23f0ae1fa2513f9140e017503b834d400fd2ce9fde2b912ab34eae703a01"
+ }
+}

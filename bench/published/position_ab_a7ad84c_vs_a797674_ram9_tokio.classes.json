@@ -1,0 +1,360 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_a7ad84c_vs_a797674_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "a7ad84c",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a797674",
+   "commit": "a7976748e8bfbf7974c1301b867aef1bdb8c9ebe",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a7ad84c-2",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 18,
+ "summary": {
+  "i1_locations_lost_that_are_no_impl_header": 3,
+  "i2_locations_gained_that_are_impl_headers": 14,
+  "i3_locations_lost_and_gained_each_by_its_own_proof": 1
+ },
+ "rows_by_method": {
+  "implementation": 18
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "file": "tokio/src/sync/rwlock/write_guard.rs",
+   "line": 17,
+   "character": 12,
+   "symbol": "RwLockWriteGuard",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 8,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio-stream/src/empty.rs",
+   "line": 11,
+   "character": 12,
+   "symbol": "Empty",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 5,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/scheduler/inject/pop.rs",
+   "line": 7,
+   "character": 19,
+   "symbol": "Pop",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 4,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/util/atomic_cell.rs",
+   "line": 6,
+   "character": 19,
+   "symbol": "AtomicCell",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 4,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/scheduler/multi_thread/queue.rs",
+   "line": 36,
+   "character": 19,
+   "symbol": "Inner",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/sync/rwlock/owned_read_guard.rs",
+   "line": 15,
+   "character": 12,
+   "symbol": "OwnedRwLockReadGuard",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 7,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/signal/reusable_box.rs",
+   "line": 13,
+   "character": 19,
+   "symbol": "ReusableBoxFuture",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 7,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/util/try_lock.rs",
+   "line": 13,
+   "character": 19,
+   "symbol": "LockGuard",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 1,
+    "kept_count": 4,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/util/idle_notified_set.rs",
+   "line": 20,
+   "character": 19,
+   "symbol": "IdleNotifiedSet",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 4,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/sync/mutex.rs",
+   "line": 209,
+   "character": 12,
+   "symbol": "OwnedMappedMutexGuard",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 8,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/task/mod.rs",
+   "line": 306,
+   "character": 18,
+   "symbol": "Schedule",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 14,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/io/driver.rs",
+   "line": 102,
+   "character": 17,
+   "symbol": "Tick",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/task/mod.rs",
+   "line": 245,
+   "character": 19,
+   "symbol": "Notified",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i3_locations_lost_and_gained_each_by_its_own_proof",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 2,
+    "kept_count": 8,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/sync/rwlock/owned_write_guard.rs",
+   "line": 17,
+   "character": 12,
+   "symbol": "OwnedRwLockWriteGuard",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 8,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/scheduler/inject/shared.rs",
+   "line": 9,
+   "character": 19,
+   "symbol": "Shared",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 3,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/process/mod.rs",
+   "line": 1491,
+   "character": 12,
+   "symbol": "ChildStdout",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/sync/mutex.rs",
+   "line": 151,
+   "character": 12,
+   "symbol": "MutexGuard",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 1,
+    "kept_count": 7,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/sync/mutex.rs",
+   "line": 190,
+   "character": 12,
+   "symbol": "MappedMutexGuard",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 8,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  }
+ ]
+}

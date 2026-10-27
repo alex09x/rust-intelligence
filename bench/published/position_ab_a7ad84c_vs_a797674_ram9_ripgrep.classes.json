@@ -1,0 +1,88 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "ripgrep",
+ "report": "position_ab_a7ad84c_vs_a797674_ram9_ripgrep.json",
+ "servers": [
+  {
+   "name": "a7ad84c",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a797674",
+   "commit": "a7976748e8bfbf7974c1301b867aef1bdb8c9ebe",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a7ad84c-2",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 3,
+ "summary": {
+  "i1_locations_lost_that_are_no_impl_header": 3
+ },
+ "rows_by_method": {
+  "implementation": 3
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "file": "crates/core/flags/parse.rs",
+   "line": 27,
+   "character": 17,
+   "symbol": "ParseResult",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/searcher/src/searcher/mod.rs",
+   "line": 55,
+   "character": 12,
+   "symbol": "BinaryDetection",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/core/haystack.rs",
+   "line": 98,
+   "character": 19,
+   "symbol": "Haystack",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  }
+ ]
+}

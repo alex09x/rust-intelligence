@@ -1,0 +1,4294 @@
+{
+ "repo": "rust-lang/rust-analyzer",
+ "repo_dir_name": "rust-analyzer",
+ "repo_head": "021bfc15e24909389bd208d1622b7f4f3942b91a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 105,
+ "positions_file": "matrix_rust-analyzer_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 62,
+ "timestamp_start": "2026-10-27T12:25:27.330296+00:00",
+ "timestamp_end": "2026-10-27T12:31:06.041990+00:00",
+ "servers": [
+  {
+   "name": "a7ad84c",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: a7ad84c5f5772fe9beba6fda66dcbf5404c5d821, dirty: false)",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 113.0,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 346.2,
+     "p99_us": 4600.8,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 173,
+     "b": 127,
+     "c": 0,
+     "n": 300,
+     "p50_us": 526.5,
+     "p99_us": 1172.9,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 331.7,
+     "p99_us": 2416.3,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 69,
+     "b": 231,
+     "c": 0,
+     "n": 300,
+     "p50_us": 722.8,
+     "p99_us": 94343.2,
+     "unsupported": false
+    },
+    "references": {
+     "a": 210,
+     "b": 90,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1056.2,
+     "p99_us": 31566.1,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 252,
+     "b": 48,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1275.0,
+     "p99_us": 96364.3,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 190.0,
+     "p99_us": 2841.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 40882.9,
+     "p99_us": 63978.0,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 22.8,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 507.0,
+     "p99_us": 1328.4,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1471.5,
+     "p99_us": 26868.5,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 19.0,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 141.5,
+     "p99_us": 51822.1,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.6,
+     "p99_us": 1870.7,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 45.6,
+     "p99_us": 345.4,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.2,
+     "p99_us": 278.9,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 44.5,
+     "p99_us": 341.9,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 20.9,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 185,
+     "b": 115,
+     "c": 0,
+     "n": 300,
+     "p50_us": 383.9,
+     "p99_us": 960.6,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 76,
+     "b": 224,
+     "c": 0,
+     "n": 300,
+     "p50_us": 860.2,
+     "p99_us": 6354.6,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 603.0,
+     "p99_us": 15016.4,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 103,
+     "b": 197,
+     "c": 0,
+     "n": 300,
+     "p50_us": 597.1,
+     "p99_us": 825.1,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 43.9,
+     "p99_us": 2692.7,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.6,
+     "p99_us": 6102.4,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 254.2,
+     "p99_us": 2172.2,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.8,
+     "p99_us": 160.8,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 15.6,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 11.6,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 14.5,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 88300.9,
+     "p99_us": 121740.8,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 88069.0,
+     "p99_us": 183514.1,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90765.7,
+     "p99_us": 171747.9,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 173,
+     "b": 0,
+     "c": 127,
+     "n": 300,
+     "p50_us": 795.3,
+     "p99_us": 5979.4,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 166,
+     "b": 0,
+     "c": 134,
+     "n": 300,
+     "p50_us": 1042.1,
+     "p99_us": 6381.2,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35.6,
+     "p99_us": 299.4,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 119.0,
+     "p99_us": 705.2,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 18.1,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 15.3,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 336.0,
+     "p99_us": 2659.7,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 347.2,
+     "p99_us": 3612.1,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 321.8,
+     "p99_us": 3618.6,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 127.1,
+     "p99_us": 2345.4,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 212.2,
+     "p99_us": 1429.9,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.9,
+     "p99_us": 18.7,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 65.5,
+     "p99_us": 996.1,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2643.4,
+     "p99_us": 2710.2,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 17.2,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 13.9,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 12.8,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.9,
+     "p99_us": 156.3,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       282,
+       18,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       173,
+       127,
+       0
+      ],
+      "matrix": [
+       288,
+       12,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       69,
+       231,
+       0
+      ],
+      "matrix": [
+       68,
+       232,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       210,
+       90,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       252,
+       48,
+       0
+      ],
+      "matrix": [
+       244,
+       56,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       185,
+       115,
+       0
+      ],
+      "matrix": [
+       284,
+       16,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       76,
+       224,
+       0
+      ],
+      "matrix": [
+       71,
+       229,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       221,
+       79,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       103,
+       197,
+       0
+      ],
+      "matrix": [
+       100,
+       200,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       173,
+       0,
+       127
+      ],
+      "matrix": [
+       287,
+       0,
+       13
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       166,
+       0,
+       134
+      ],
+      "matrix": [
+       285,
+       0,
+       15
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a797674",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: a7976748e8bfbf7974c1301b867aef1bdb8c9ebe, dirty: false)",
+   "commit": "a7976748e8bfbf7974c1301b867aef1bdb8c9ebe",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 110.5,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 219.6,
+     "p99_us": 1474.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 173,
+     "b": 127,
+     "c": 0,
+     "n": 300,
+     "p50_us": 439.8,
+     "p99_us": 823.4,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 216.8,
+     "p99_us": 1136.1,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 57,
+     "b": 243,
+     "c": 0,
+     "n": 300,
+     "p50_us": 680.1,
+     "p99_us": 92319.4,
+     "unsupported": false
+    },
+    "references": {
+     "a": 210,
+     "b": 90,
+     "c": 0,
+     "n": 300,
+     "p50_us": 997.0,
+     "p99_us": 29160.0,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 252,
+     "b": 48,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1190.8,
+     "p99_us": 90787.8,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 181.9,
+     "p99_us": 2607.1,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 38379.3,
+     "p99_us": 52439.8,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 24.6,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 438.8,
+     "p99_us": 1204.2,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1406.6,
+     "p99_us": 24673.2,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 16.5,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 143.8,
+     "p99_us": 51099.0,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.4,
+     "p99_us": 1804.5,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.6,
+     "p99_us": 285.0,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.4,
+     "p99_us": 312.5,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 45.8,
+     "p99_us": 453.5,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 185,
+     "b": 115,
+     "c": 0,
+     "n": 300,
+     "p50_us": 370.0,
+     "p99_us": 818.9,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 76,
+     "b": 224,
+     "c": 0,
+     "n": 300,
+     "p50_us": 814.0,
+     "p99_us": 6028.7,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 558.1,
+     "p99_us": 12065.0,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 103,
+     "b": 197,
+     "c": 0,
+     "n": 300,
+     "p50_us": 580.1,
+     "p99_us": 815.2,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35.5,
+     "p99_us": 2410.1,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 5228.1,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 250.7,
+     "p99_us": 2107.4,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.2,
+     "p99_us": 153.2,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 16.0,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 13.6,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 12.8,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86441.1,
+     "p99_us": 123796.7,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87386.4,
+     "p99_us": 182303.1,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91901.1,
+     "p99_us": 174938.2,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 173,
+     "b": 0,
+     "c": 127,
+     "n": 300,
+     "p50_us": 767.5,
+     "p99_us": 5756.7,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 166,
+     "b": 0,
+     "c": 134,
+     "n": 300,
+     "p50_us": 1025.1,
+     "p99_us": 5838.9,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39.1,
+     "p99_us": 303.7,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 121.0,
+     "p99_us": 696.1,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.2,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 13.3,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 336.1,
+     "p99_us": 2702.9,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 313.2,
+     "p99_us": 3587.9,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 318.8,
+     "p99_us": 3517.3,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 123.1,
+     "p99_us": 2278.6,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 183.6,
+     "p99_us": 1400.8,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 19.4,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 64.4,
+     "p99_us": 984.4,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2664.9,
+     "p99_us": 2776.5,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 19.2,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 13.7,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 15.0,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.2,
+     "p99_us": 144.6,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       282,
+       18,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       173,
+       127,
+       0
+      ],
+      "matrix": [
+       288,
+       12,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       57,
+       243,
+       0
+      ],
+      "matrix": [
+       68,
+       232,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       210,
+       90,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       252,
+       48,
+       0
+      ],
+      "matrix": [
+       244,
+       56,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       185,
+       115,
+       0
+      ],
+      "matrix": [
+       284,
+       16,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       76,
+       224,
+       0
+      ],
+      "matrix": [
+       71,
+       229,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       221,
+       79,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       103,
+       197,
+       0
+      ],
+      "matrix": [
+       100,
+       200,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       173,
+       0,
+       127
+      ],
+      "matrix": [
+       287,
+       0,
+       13
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       166,
+       0,
+       134
+      ],
+      "matrix": [
+       285,
+       0,
+       15
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a7ad84c-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: a7ad84c5f5772fe9beba6fda66dcbf5404c5d821, dirty: false)",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 110.3,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 219.1,
+     "p99_us": 1489.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 173,
+     "b": 127,
+     "c": 0,
+     "n": 300,
+     "p50_us": 425.1,
+     "p99_us": 805.4,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 217.1,
+     "p99_us": 1125.0,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 69,
+     "b": 231,
+     "c": 0,
+     "n": 300,
+     "p50_us": 666.8,
+     "p99_us": 92825.9,
+     "unsupported": false
+    },
+    "references": {
+     "a": 210,
+     "b": 90,
+     "c": 0,
+     "n": 300,
+     "p50_us": 998.1,
+     "p99_us": 30379.4,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 252,
+     "b": 48,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1168.5,
+     "p99_us": 91006.3,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 186.8,
+     "p99_us": 2299.8,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 38071.0,
+     "p99_us": 51905.4,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 21.8,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 445.8,
+     "p99_us": 1217.1,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1373.7,
+     "p99_us": 24607.7,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 20.2,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 124.4,
+     "p99_us": 50271.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.9,
+     "p99_us": 1818.2,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 15.4,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 41.3,
+     "p99_us": 333.8,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.4,
+     "p99_us": 291.2,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 42.5,
+     "p99_us": 325.2,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 13.1,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 185,
+     "b": 115,
+     "c": 0,
+     "n": 300,
+     "p50_us": 360.3,
+     "p99_us": 938.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 76,
+     "b": 224,
+     "c": 0,
+     "n": 300,
+     "p50_us": 817.6,
+     "p99_us": 6044.4,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 558.9,
+     "p99_us": 11725.7,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 103,
+     "b": 197,
+     "c": 0,
+     "n": 300,
+     "p50_us": 568.0,
+     "p99_us": 786.8,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.2,
+     "p99_us": 2445.2,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.6,
+     "p99_us": 5110.1,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 240.6,
+     "p99_us": 2104.7,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.3,
+     "p99_us": 151.9,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.9,
+     "p99_us": 12.8,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.3,
+     "p99_us": 11.2,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 12.6,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86415.3,
+     "p99_us": 117966.5,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87425.9,
+     "p99_us": 182724.6,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91458.8,
+     "p99_us": 164232.1,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 173,
+     "b": 0,
+     "c": 127,
+     "n": 300,
+     "p50_us": 764.9,
+     "p99_us": 6082.9,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 166,
+     "b": 0,
+     "c": 134,
+     "n": 300,
+     "p50_us": 1030.0,
+     "p99_us": 6081.8,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35.2,
+     "p99_us": 271.3,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 118.1,
+     "p99_us": 710.6,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 15.1,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 340.5,
+     "p99_us": 2747.0,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 314.0,
+     "p99_us": 4152.5,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 319.8,
+     "p99_us": 3623.8,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 130.6,
+     "p99_us": 2315.8,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 194.9,
+     "p99_us": 1499.5,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.0,
+     "p99_us": 18.5,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 67.4,
+     "p99_us": 965.9,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2645.9,
+     "p99_us": 2977.4,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.7,
+     "p99_us": 15.8,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.6,
+     "p99_us": 13.5,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.1,
+     "p99_us": 147.2,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       282,
+       18,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       173,
+       127,
+       0
+      ],
+      "matrix": [
+       288,
+       12,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       69,
+       231,
+       0
+      ],
+      "matrix": [
+       68,
+       232,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       210,
+       90,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       252,
+       48,
+       0
+      ],
+      "matrix": [
+       244,
+       56,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       185,
+       115,
+       0
+      ],
+      "matrix": [
+       284,
+       16,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       76,
+       224,
+       0
+      ],
+      "matrix": [
+       71,
+       229,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       221,
+       79,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       103,
+       197,
+       0
+      ],
+      "matrix": [
+       100,
+       200,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       173,
+       0,
+       127
+      ],
+      "matrix": [
+       287,
+       0,
+       13
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       166,
+       0,
+       134
+      ],
+      "matrix": [
+       285,
+       0,
+       15
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "a7ad84c",
+   "b": "a797674",
+   "same": 15269,
+   "differing": 31,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 269,
+     "differing": 31,
+     "transitions": {
+      "a>a": 19,
+      "a>b": 12
+     },
+     "examples": [
+      {
+       "name": "impl_33_InferenceTable",
+       "file": "crates/hir-ty/src/infer/unify.rs",
+       "line": 147,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "633d1801577d3429",
+        "887fd85a8d1dcbf8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_42_Bar",
+       "file": "crates/ide/src/hover/tests.rs",
+       "line": 3019,
+       "character": 24,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "43da676dc405bf92",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_47_PathCandidateCallback",
+       "file": "crates/hir/src/lib.rs",
+       "line": 6477,
+       "character": 11,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d344a0b1779661d4",
+        "4722010062c45d3c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:trait",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_50_Foo",
+       "file": "crates/hir-def/src/macro_expansion_tests/mbe.rs",
+       "line": 649,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "43da676dc405bf92",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_53_Trait",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 1798,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e6e61a55177e609b",
+        "13ccbaa098483e0b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_64_ValueTyDefId",
+       "file": "crates/hir-ty/src/lower.rs",
+       "line": 1583,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "edd97dd383e8792d",
+        "de12326e1ea0371e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_76_Allocation",
+       "file": "crates/hir-ty/src/next_solver/allocation.rs",
+       "line": 13,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6f80728d0b816635",
+        "bdc212198afc3fa0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_86_GenericParam",
+       "file": "crates/hir/src/lib.rs",
+       "line": 3493,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5df112006c6d9bd5",
+        "40bf41090eda2277"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_91_Foo",
+       "file": "crates/syntax-bridge/src/prettify_macro_expansion.rs",
+       "line": 352,
+       "character": 24,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "43da676dc405bf92",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      },
+      {
+       "name": "impl_106_IntoBox",
+       "file": "crates/stdx/src/anymap.rs",
+       "line": 258,
+       "character": 11,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ddcf0d0869557cb4",
+        "668fd85921976445"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:trait",
+       "cfg_test": false
+      }
+     ]
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "a7ad84c",
+   "b": "a7ad84c-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "a797674",
+   "b": "a7ad84c-2",
+   "same": 15269,
+   "differing": 31,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 269,
+     "differing": 31,
+     "transitions": {
+      "a>a": 19,
+      "b>a": 12
+     },
+     "examples": [
+      {
+       "name": "impl_33_InferenceTable",
+       "file": "crates/hir-ty/src/infer/unify.rs",
+       "line": 147,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "887fd85a8d1dcbf8",
+        "633d1801577d3429"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_42_Bar",
+       "file": "crates/ide/src/hover/tests.rs",
+       "line": 3019,
+       "character": 24,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "43da676dc405bf92"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_47_PathCandidateCallback",
+       "file": "crates/hir/src/lib.rs",
+       "line": 6477,
+       "character": 11,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4722010062c45d3c",
+        "d344a0b1779661d4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:trait",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_50_Foo",
+       "file": "crates/hir-def/src/macro_expansion_tests/mbe.rs",
+       "line": 649,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "43da676dc405bf92"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_53_Trait",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 1798,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "13ccbaa098483e0b",
+        "e6e61a55177e609b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_64_ValueTyDefId",
+       "file": "crates/hir-ty/src/lower.rs",
+       "line": 1583,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "de12326e1ea0371e",
+        "edd97dd383e8792d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_76_Allocation",
+       "file": "crates/hir-ty/src/next_solver/allocation.rs",
+       "line": 13,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bdc212198afc3fa0",
+        "6f80728d0b816635"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_86_GenericParam",
+       "file": "crates/hir/src/lib.rs",
+       "line": 3493,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "40bf41090eda2277",
+        "5df112006c6d9bd5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_91_Foo",
+       "file": "crates/syntax-bridge/src/prettify_macro_expansion.rs",
+       "line": 352,
+       "character": 24,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "43da676dc405bf92"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": true
+      },
+      {
+       "name": "impl_106_IntoBox",
+       "file": "crates/stdx/src/anymap.rs",
+       "line": 258,
+       "character": 11,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "668fd85921976445",
+        "ddcf0d0869557cb4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:trait",
+       "cfg_test": false
+      }
+     ]
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_rust-analyzer_booster.json",
+  "repo_commit": "021bfc15e24909389bd208d1622b7f4f3942b91a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_33_InferenceTable",
+   "file": "crates/hir-ty/src/infer/unify.rs",
+   "line": 147,
+   "character": 19,
+   "symbol": "InferenceTable",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "633d1801577d3429",
+     "us": 2337.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "887fd85a8d1dcbf8",
+     "us": 1780.7,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "633d1801577d3429",
+     "us": 1792.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_42_Bar",
+   "file": "crates/ide/src/hover/tests.rs",
+   "line": 3019,
+   "character": 24,
+   "symbol": "Bar",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 85187.1,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 94366.5,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 95805.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_47_PathCandidateCallback",
+   "file": "crates/hir/src/lib.rs",
+   "line": 6477,
+   "character": 11,
+   "symbol": "PathCandidateCallback",
+   "target_kind": "lib",
+   "cursor_kind": "decl:trait",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "d344a0b1779661d4",
+     "us": 1800.4,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "4722010062c45d3c",
+     "us": 1567.9,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "d344a0b1779661d4",
+     "us": 1569.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_50_Foo",
+   "file": "crates/hir-def/src/macro_expansion_tests/mbe.rs",
+   "line": 649,
+   "character": 8,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 84146.1,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 93339.3,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 94796.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_53_Trait",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 1798,
+   "character": 12,
+   "symbol": "Trait",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "e6e61a55177e609b",
+     "us": 5837.4,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "13ccbaa098483e0b",
+     "us": 5220.8,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "e6e61a55177e609b",
+     "us": 5242.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_64_ValueTyDefId",
+   "file": "crates/hir-ty/src/lower.rs",
+   "line": 1583,
+   "character": 10,
+   "symbol": "ValueTyDefId",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "edd97dd383e8792d",
+     "us": 2864.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "de12326e1ea0371e",
+     "us": 2554.8,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "edd97dd383e8792d",
+     "us": 2544.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_76_Allocation",
+   "file": "crates/hir-ty/src/next_solver/allocation.rs",
+   "line": 13,
+   "character": 12,
+   "symbol": "Allocation",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "6f80728d0b816635",
+     "us": 2300.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "bdc212198afc3fa0",
+     "us": 1735.6,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "6f80728d0b816635",
+     "us": 1802.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_86_GenericParam",
+   "file": "crates/hir/src/lib.rs",
+   "line": 3493,
+   "character": 10,
+   "symbol": "GenericParam",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "5df112006c6d9bd5",
+     "us": 4729.6,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "40bf41090eda2277",
+     "us": 4299.2,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "5df112006c6d9bd5",
+     "us": 4079.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_91_Foo",
+   "file": "crates/syntax-bridge/src/prettify_macro_expansion.rs",
+   "line": 352,
+   "character": 24,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 85813.6,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 82878.6,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 91948.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_106_IntoBox",
+   "file": "crates/stdx/src/anymap.rs",
+   "line": 258,
+   "character": 11,
+   "symbol": "IntoBox",
+   "target_kind": "lib",
+   "cursor_kind": "decl:trait",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "ddcf0d0869557cb4",
+     "us": 1404.9,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "668fd85921976445",
+     "us": 1040.8,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "ddcf0d0869557cb4",
+     "us": 1038.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_107_Foo",
+   "file": "crates/ide-ssr/src/tests.rs",
+   "line": 836,
+   "character": 35,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 95219.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 82488.3,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 92481.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_110_HirFileId",
+   "file": "crates/hir-expand/src/lib.rs",
+   "line": 1576,
+   "character": 10,
+   "symbol": "HirFileId",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "2ecc7cdf7e6afa44",
+     "us": 5010.7,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3167.5,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "2ecc7cdf7e6afa44",
+     "us": 3349.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_118_AssocItem",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 2232,
+   "character": 10,
+   "symbol": "AssocItem",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "ab5d51e399607882",
+     "us": 7039.9,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "2a6fc903540cb677",
+     "us": 5715.9,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "ab5d51e399607882",
+     "us": 5978.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_119_CfgOptions",
+   "file": "crates/cfg/src/lib.rs",
+   "line": 33,
+   "character": 12,
+   "symbol": "CfgOptions",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "53d19c1c1d2394af",
+     "us": 3236.6,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "58b1394a8536adcd",
+     "us": 2178.4,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "53d19c1c1d2394af",
+     "us": 2270.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_137_PathLoweringContext",
+   "file": "crates/hir-ty/src/lower/path.rs",
+   "line": 58,
+   "character": 19,
+   "symbol": "PathLoweringContext",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "eda20ebd7649505d",
+     "us": 2418.2,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "f4e8c2a10fd40cf0",
+     "us": 1318.9,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "eda20ebd7649505d",
+     "us": 1323.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_139_ItemList",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 920,
+   "character": 12,
+   "symbol": "ItemList",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "0029ff45a1080e07",
+     "us": 3144.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "79ec08cee2c8e4d6",
+     "us": 2718.1,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "0029ff45a1080e07",
+     "us": 2681.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_143_Position",
+   "file": "crates/syntax/src/syntax_editor.rs",
+   "line": 282,
+   "character": 12,
+   "symbol": "Position",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "12908a9287b14b9d",
+     "us": 4654.8,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "d24a57154d4cf0c5",
+     "us": 4029.0,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "12908a9287b14b9d",
+     "us": 4101.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_162_SomeTrait",
+   "file": "crates/ide/src/move_item.rs",
+   "line": 881,
+   "character": 23,
+   "symbol": "SomeTrait",
+   "target_kind": "lib",
+   "cursor_kind": "decl:trait",
+   "cfg_test": true,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 94334.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 93696.2,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 92501.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_187_RaFixtureAnalysis",
+   "file": "crates/ide-db/src/ra_fixture.rs",
+   "line": 68,
+   "character": 12,
+   "symbol": "RaFixtureAnalysis",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "2c7a9fa777580327",
+     "us": 2006.9,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "98c4b048e7664316",
+     "us": 1508.7,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "2c7a9fa777580327",
+     "us": 1612.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_189_Binding",
+   "file": "crates/mbe/src/expander.rs",
+   "line": 119,
+   "character": 6,
+   "symbol": "Binding",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "81feeb246f706733",
+     "us": 1761.5,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1375.3,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "81feeb246f706733",
+     "us": 1451.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_190_FieldIndex",
+   "file": "crates/hir-ty/src/mir.rs",
+   "line": 150,
+   "character": 12,
+   "symbol": "FieldIndex",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "87ed57affe925d49",
+     "us": 1502.9,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "1a9714cdb5584fb4",
+     "us": 1353.5,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "87ed57affe925d49",
+     "us": 1292.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_191_ClausesCachedTypeInfo",
+   "file": "crates/hir-ty/src/next_solver/predicate.rs",
+   "line": 257,
+   "character": 12,
+   "symbol": "ClausesCachedTypeInfo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "d5ec69f7ef653249",
+     "us": 1207.7,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1100.7,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "d5ec69f7ef653249",
+     "us": 1122.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_192_RecordPat",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 1543,
+   "character": 12,
+   "symbol": "RecordPat",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "906c3189f6fc84e7",
+     "us": 3790.5,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "3a683389616b7e16",
+     "us": 3467.3,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "906c3189f6fc84e7",
+     "us": 3486.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_196_HirDatabase",
+   "file": "crates/hir-ty/src/db.rs",
+   "line": 45,
+   "character": 11,
+   "symbol": "HirDatabase",
+   "target_kind": "lib",
+   "cursor_kind": "decl:trait",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "66f0200984b52e76",
+     "us": 27431.1,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "fc558d8251ffe785",
+     "us": 26597.9,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "66f0200984b52e76",
+     "us": 26773.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_239_AstToken",
+   "file": "crates/syntax/src/ast.rs",
+   "line": 71,
+   "character": 11,
+   "symbol": "AstToken",
+   "target_kind": "lib",
+   "cursor_kind": "decl:trait",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "b21869a1b9c3dd5b",
+     "us": 2317.5,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "cab4add3951be416",
+     "us": 1866.8,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "b21869a1b9c3dd5b",
+     "us": 1927.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_248_PatternInterned",
+   "file": "crates/hir-ty/src/next_solver/interner.rs",
+   "line": 742,
+   "character": 8,
+   "symbol": "PatternInterned",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "456d13bbc71b8584",
+     "us": 1443.6,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1235.4,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "456d13bbc71b8584",
+     "us": 1233.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_260_Tr",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 452,
+   "character": 15,
+   "symbol": "Tr",
+   "target_kind": "lib",
+   "cursor_kind": "decl:trait",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "b1e06b7dd71210da",
+     "us": 1270.1,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "d509099d656dc663",
+     "us": 1043.1,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "b1e06b7dd71210da",
+     "us": 1060.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_271_ModuleItemMap",
+   "file": "crates/hir-def/src/resolver.rs",
+   "line": 54,
+   "character": 8,
+   "symbol": "ModuleItemMap",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "6ee14867e04e91f0",
+     "us": 1355.9,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "a",
+     "digest": "9965144b4cfdd6e8",
+     "us": 1137.6,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "6ee14867e04e91f0",
+     "us": 1144.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_275_Unit",
+   "file": "crates/hir-def/src/item_tree/tests.rs",
+   "line": 125,
+   "character": 30,
+   "symbol": "Unit",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 97106.6,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 92309.1,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 92816.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_286_Foo",
+   "file": "crates/hir-def/src/macro_expansion_tests/builtin_derive_macro.rs",
+   "line": 17,
+   "character": 8,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 96622.3,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 92247.5,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "43da676dc405bf92",
+     "us": 93716.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_290_RootDatabase",
+   "file": "crates/ide-db/src/lib.rs",
+   "line": 82,
+   "character": 12,
+   "symbol": "RootDatabase",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "a7ad84c": {
+     "outcome": "a",
+     "digest": "1b0c3327d1384c52",
+     "us": 9622.8,
+     "error": null
+    },
+    "a797674": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 8781.2,
+     "error": null
+    },
+    "a7ad84c-2": {
+     "outcome": "a",
+     "digest": "1b0c3327d1384c52",
+     "us": 8855.7,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 31,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_a7ad84c_vs_a797674_ram9_rust-analyzer.json",
+  "sha256": "6bde8ae6dc20b56995ace4e255d7d7a61a5d16ec16ae5b8cef45b43fe63526da"
+ }
+}

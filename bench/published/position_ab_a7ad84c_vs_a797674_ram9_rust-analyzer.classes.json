@@ -1,0 +1,592 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_a7ad84c_vs_a797674_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "a7ad84c",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a797674",
+   "commit": "a7976748e8bfbf7974c1301b867aef1bdb8c9ebe",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a7ad84c-2",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 31,
+ "summary": {
+  "i1_locations_lost_that_are_no_impl_header": 31
+ },
+ "rows_by_method": {
+  "implementation": 31
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/infer/unify.rs",
+   "line": 147,
+   "character": 19,
+   "symbol": "InferenceTable",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 4,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/ide/src/hover/tests.rs",
+   "line": 3019,
+   "character": 24,
+   "symbol": "Bar",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir/src/lib.rs",
+   "line": 6477,
+   "character": 11,
+   "symbol": "PathCandidateCallback",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-def/src/macro_expansion_tests/mbe.rs",
+   "line": 649,
+   "character": 8,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 1798,
+   "character": 12,
+   "symbol": "Trait",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 20,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/lower.rs",
+   "line": 1583,
+   "character": 10,
+   "symbol": "ValueTyDefId",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/next_solver/allocation.rs",
+   "line": 13,
+   "character": 12,
+   "symbol": "Allocation",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 5,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir/src/lib.rs",
+   "line": 3493,
+   "character": 10,
+   "symbol": "GenericParam",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 4,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax-bridge/src/prettify_macro_expansion.rs",
+   "line": 352,
+   "character": 24,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/stdx/src/anymap.rs",
+   "line": 258,
+   "character": 11,
+   "symbol": "IntoBox",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/ide-ssr/src/tests.rs",
+   "line": 836,
+   "character": 35,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-expand/src/lib.rs",
+   "line": 1576,
+   "character": 10,
+   "symbol": "HirFileId",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 2232,
+   "character": 10,
+   "symbol": "AssocItem",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 9,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/cfg/src/lib.rs",
+   "line": 33,
+   "character": 12,
+   "symbol": "CfgOptions",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 4,
+    "gained_count": 0,
+    "kept_count": 7,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/lower/path.rs",
+   "line": 58,
+   "character": 19,
+   "symbol": "PathLoweringContext",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 920,
+   "character": 12,
+   "symbol": "ItemList",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 12,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/syntax_editor.rs",
+   "line": 282,
+   "character": 12,
+   "symbol": "Position",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 7,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/ide/src/move_item.rs",
+   "line": 881,
+   "character": 23,
+   "symbol": "SomeTrait",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/ide-db/src/ra_fixture.rs",
+   "line": 68,
+   "character": 12,
+   "symbol": "RaFixtureAnalysis",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 6,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/mbe/src/expander.rs",
+   "line": 119,
+   "character": 6,
+   "symbol": "Binding",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/mir.rs",
+   "line": 150,
+   "character": 12,
+   "symbol": "FieldIndex",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/next_solver/predicate.rs",
+   "line": 257,
+   "character": 12,
+   "symbol": "ClausesCachedTypeInfo",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 1543,
+   "character": 12,
+   "symbol": "RecordPat",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 9,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/db.rs",
+   "line": 45,
+   "character": 11,
+   "symbol": "HirDatabase",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 17,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast.rs",
+   "line": 71,
+   "character": 11,
+   "symbol": "AstToken",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 12,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/next_solver/interner.rs",
+   "line": 742,
+   "character": 8,
+   "symbol": "PatternInterned",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/layout/tests.rs",
+   "line": 452,
+   "character": 15,
+   "symbol": "Tr",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-def/src/resolver.rs",
+   "line": 54,
+   "character": 8,
+   "symbol": "ModuleItemMap",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-def/src/item_tree/tests.rs",
+   "line": 125,
+   "character": 30,
+   "symbol": "Unit",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-def/src/macro_expansion_tests/builtin_derive_macro.rs",
+   "line": 17,
+   "character": 8,
+   "symbol": "Foo",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/ide-db/src/lib.rs",
+   "line": 82,
+   "character": 12,
+   "symbol": "RootDatabase",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  }
+ ]
+}

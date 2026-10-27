@@ -1,0 +1,106 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_a7ad84c_vs_a797674_ram9_serde.json",
+ "servers": [
+  {
+   "name": "a7ad84c",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a797674",
+   "commit": "a7976748e8bfbf7974c1301b867aef1bdb8c9ebe",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a7ad84c-2",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 4,
+ "summary": {
+  "i1_locations_lost_that_are_no_impl_header": 4
+ },
+ "rows_by_method": {
+  "implementation": 4
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "file": "serde_core/src/de/value.rs",
+   "line": 546,
+   "character": 12,
+   "symbol": "BorrowedStrDeserializer",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 5,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "serde_core/src/de/value.rs",
+   "line": 942,
+   "character": 12,
+   "symbol": "BorrowedBytesDeserializer",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 4,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 946,
+   "character": 11,
+   "symbol": "Deserializer",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 14,
+    "gained_count": 0,
+    "kept_count": 27,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "serde_core/src/de/value.rs",
+   "line": 872,
+   "character": 12,
+   "symbol": "BytesDeserializer",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 4,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  }
+ ]
+}

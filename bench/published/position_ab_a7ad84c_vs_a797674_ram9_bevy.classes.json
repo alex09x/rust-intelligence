@@ -1,0 +1,539 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_a7ad84c_vs_a797674_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "a7ad84c",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a797674",
+   "commit": "a7976748e8bfbf7974c1301b867aef1bdb8c9ebe",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "a7ad84c-2",
+   "commit": "a7ad84c5f5772fe9beba6fda66dcbf5404c5d821",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 28,
+ "summary": {
+  "i1_locations_lost_that_are_no_impl_header": 22,
+  "i2_locations_gained_that_are_impl_headers": 6
+ },
+ "rows_by_method": {
+  "implementation": 28
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/component/required.rs",
+   "line": 26,
+   "character": 12,
+   "symbol": "RequiredComponentConstructor",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 4,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/template.rs",
+   "line": 45,
+   "character": 12,
+   "symbol": "TemplateContext",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/error/handler.rs",
+   "line": 10,
+   "character": 10,
+   "symbol": "ErrorContext",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_gizmos/src/gizmos.rs",
+   "line": 143,
+   "character": 12,
+   "symbol": "Gizmos",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 4,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/entity/hash_set.rs",
+   "line": 244,
+   "character": 12,
+   "symbol": "Iter",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 1,
+    "kept_count": 9,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_mesh/src/mesh.rs",
+   "line": 346,
+   "character": 16,
+   "symbol": "MeshRaytracingFlags",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/system/builder.rs",
+   "line": 742,
+   "character": 12,
+   "symbol": "DynParamBuilder",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 1,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/spawn.rs",
+   "line": 45,
+   "character": 11,
+   "symbol": "SpawnableList",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 1,
+    "kept_count": 8,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/query/filter.rs",
+   "line": 1068,
+   "character": 12,
+   "symbol": "Changed",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "examples/ecs/immutable_components.rs",
+   "line": 59,
+   "character": 12,
+   "symbol": "Name",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 18,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/query/filter.rs",
+   "line": 273,
+   "character": 12,
+   "symbol": "Without",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i2_locations_gained_that_are_impl_headers",
+   "evidence": {
+    "lost_count": 0,
+    "gained_count": 2,
+    "kept_count": 3,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_asset/src/saver.rs",
+   "line": 104,
+   "character": 12,
+   "symbol": "SavedAsset",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_reflect/src/map.rs",
+   "line": 121,
+   "character": 12,
+   "symbol": "MapInfo",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_asset/src/io/mod.rs",
+   "line": 425,
+   "character": 11,
+   "symbol": "ErasedAssetWriter",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_reflect/src/type_data.rs",
+   "line": 132,
+   "character": 11,
+   "symbol": "CreateTypeData",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 110,
+    "gained_count": 0,
+    "kept_count": 19,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_feathers/src/controls/color_swatch.rs",
+   "line": 32,
+   "character": 12,
+   "symbol": "FeathersColorSwatchProps",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_asset/src/io/memory.rs",
+   "line": 313,
+   "character": 10,
+   "symbol": "Value",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 4,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_scene/src/scene.rs",
+   "line": 149,
+   "character": 12,
+   "symbol": "SceneDependency",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_reflect/src/path/mod.rs",
+   "line": 51,
+   "character": 11,
+   "symbol": "ReflectPath",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 4,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_curve/src/easing.rs",
+   "line": 857,
+   "character": 12,
+   "symbol": "SmootherStepInCurve",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ptr/src/lib.rs",
+   "line": 291,
+   "character": 12,
+   "symbol": "Ptr",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/entity/mod.rs",
+   "line": 1230,
+   "character": 10,
+   "symbol": "EntityNotSpawnedError",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_render/src/render_resource/atomic_pod.rs",
+   "line": 29,
+   "character": 11,
+   "symbol": "AtomicPod",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 16,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ui_widgets/src/slider.rs",
+   "line": 66,
+   "character": 10,
+   "symbol": "TrackClick",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/relationship/related_methods.rs",
+   "line": 611,
+   "character": 12,
+   "symbol": "RelatedSpawnerCommands",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_asset/src/handle.rs",
+   "line": 456,
+   "character": 10,
+   "symbol": "UntypedHandle",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 7,
+    "gained_count": 0,
+    "kept_count": 15,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_reflect/src/info/typed.rs",
+   "line": 87,
+   "character": 11,
+   "symbol": "Typed",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 140,
+    "gained_count": 0,
+    "kept_count": 16,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/bevy_ecs/src/relationship/related_methods.rs",
+   "line": 565,
+   "character": 12,
+   "symbol": "RelatedSpawner",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i1_locations_lost_that_are_no_impl_header",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  }
+ ]
+}
