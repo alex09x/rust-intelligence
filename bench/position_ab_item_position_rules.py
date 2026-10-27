@@ -18,6 +18,7 @@ CLASS_GAINED = "g1_callers_gained_whose_call_sites_resolve_to_the_item"
 CLASS_LOST = "g2_callers_lost_whose_call_sites_resolve_to_another_item"
 CLASS_LOCATIONS = "t1_locations_gained_from_units_reaching_the_item_through_another_unit"
 MACRO_CALL = re.compile(r"\w!\s*[({\[]|\w!\s*$")
+CLASS_FIXED = "t2_error_before_edits_after_each_resolving_to_the_definition"
 CLASS_BOTH = "g3_callers_gained_and_lost_each_by_its_own_proof"
 
 
@@ -162,3 +163,11 @@ def classify_locations(before, after, cursor_file, lines_of, locations_of, def_o
     ev["added_generated"] = len(generated)
     ev["added_not_resolving"] = [loc for loc in ev["added_not_resolving"] if loc not in generated]
     return (CLASS_LOCATIONS if not ev["added_not_resolving"] else None), ev
+
+
+def classify_error_fixed(after, cursor_file, lines_of, locations_of, def_of_col, cursor_def):
+    """(class or None, evidence) for a row whose answer before was an error and after is a
+    result: every location of the answer must resolve to the definition under the cursor (or be
+    generated), as in `classify_locations` with nothing before."""
+    cls, ev = classify_locations(None, after, cursor_file, lines_of, lambda res, lines: locations_of(res, lines) if res else [], def_of_col, cursor_def)
+    return (CLASS_FIXED if cls == CLASS_LOCATIONS else None), ev

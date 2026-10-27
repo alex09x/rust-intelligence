@@ -47,7 +47,7 @@ from matrix_categories import build_params  # noqa: E402
 from position_ab_classify import scenario_from_record  # noqa: E402
 from position_ab_content import differing_rows  # noqa: E402
 from position_ab_content_rules import RPC, scrub_path  # noqa: E402
-from position_ab_item_position_rules import classify, classify_locations  # noqa: E402
+from position_ab_item_position_rules import classify, classify_error_fixed, classify_locations  # noqa: E402
 from position_ab_name_span_rules import locations_of  # noqa: E402
 from position_ab_name_span_rules import utf16_to_char  # noqa: E402
 
@@ -112,7 +112,10 @@ class Checker:
             cls, ev = classify_locations(res_b, res_a, abs_path, self.lines, locations_of, self.def_at_col, cursor_def)
         else:
             cls, ev = None, {"reason": "method not covered by the item-position rules"}
-        if err_b or err_a:
+        if err_b and not err_a and key in ("references", "document_highlight", "rename"):
+            cls, ev = classify_error_fixed(res_a, abs_path, self.lines, locations_of, self.def_at_col, cursor_def)
+            ev["error_before"] = err_b
+        elif err_b or err_a:
             cls, ev["error_before"], ev["error_after"] = None, err_b, err_a
         return (cls or "unclassified"), self.scrub(ev)
 

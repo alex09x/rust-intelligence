@@ -12,7 +12,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from position_ab_item_position_rules import (  # noqa: E402
-    CLASS_BOTH, CLASS_GAINED, CLASS_LOCATIONS, CLASS_LOST, call_ranges, caller_changes, classify, classify_locations, is_generated_span, same_definition,
+    CLASS_BOTH, CLASS_FIXED, CLASS_GAINED, CLASS_LOCATIONS, CLASS_LOST, call_ranges, caller_changes, classify, classify_error_fixed, classify_locations,
+    is_generated_span, same_definition,
 )
 
 FILE = "/opt/ws/tests/test_de.rs"
@@ -112,3 +113,12 @@ def test_fields_of_a_derived_item_and_a_macro_with_a_block_are_generated():
     assert is_generated_span(lines, (3, 9, 3, 12))
     assert not is_generated_span(lines, (6, 4, 6, 5))
     assert is_generated_span(lines, (7, 1, 9, 2))
+
+
+def test_an_error_before_and_edits_after_that_resolve_to_the_cursor_definition_are_t2():
+    after = [("p", (3, 5, 3, 9)), ("p", (6, 5, 6, 9))]
+    cls, ev = classify_error_fixed(after, FILE, None, locations(None), lambda *a: ITEM, ITEM)
+    assert cls == CLASS_FIXED and ev["added_count"] == 2
+    cls, ev = classify_error_fixed(after, FILE, None, locations(None), lambda *a: OTHER, ITEM)
+    assert cls is None and len(ev["added_not_resolving"]) == 2
+    assert classify_error_fixed(None, FILE, None, locations(None), lambda *a: ITEM, ITEM)[0] is None
