@@ -13,6 +13,7 @@
 mod cross_definition;
 mod owner_types;
 mod qualified_path;
+mod reference_record;
 mod references;
 mod search;
 #[cfg(test)]

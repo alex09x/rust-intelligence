@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use super::reference_record::{points_at_definition, push_reference};
 use super::*;
 impl WorkspaceIndex {
     /// Finds all references to a symbol, optionally scoped to a target dependency unit.
@@ -104,6 +105,7 @@ impl WorkspaceIndex {
         };
         let global_path_buf = format!("{target_crate}::{local_path}");
         let global_path = global_path_buf.as_str();
+        let spellings = super::qualified_path::consumer_spellings(local_path, target_crate);
 
         // The target and the other builds of its crate and version (feature sets compile one
         // source into several units): a consumer reaching any of them uses the item.
@@ -240,7 +242,6 @@ impl WorkspaceIndex {
             } else {
                 query_path_vec.push(global_path);
             }
-            let spellings = super::qualified_path::consumer_spellings(local_path, target_crate);
             query_path_vec.extend(spellings.iter().map(String::as_str));
             for &q_path in &query_path_vec {
                 let refs = reader.find_references(q_path);
@@ -268,65 +269,15 @@ impl WorkspaceIndex {
                                     }
                                 }
                             }
-                        } else if let Some((
-                            ref target_def_file,
-                            ref target_def_full,
-                            target_def_line,
-                        )) = target_def_coords
-                        {
-                            if r.target_line() != 0 && r.target_line() != target_def_line {
+                        } else if let Some(coords) = &target_def_coords {
+                            if !points_at_definition(reader, r, coords) {
                                 continue;
-                            }
-                            if r.target_file_offset() != 0 {
-                                let ref_file = reader.get_str(r.target_file_offset());
-                                if !ref_file.is_empty() && !target_def_file.is_empty() {
-                                    let r_p = Path::new(ref_file);
-                                    let t_p = Path::new(target_def_file);
-                                    let t_full_p = Path::new(target_def_full);
-                                    if r_p != t_p
-                                        && r_p != t_full_p
-                                        && !ref_file.ends_with(target_def_file)
-                                        && !target_def_file.ends_with(ref_file)
-                                    {
-                                        continue;
-                                    }
-                                }
                             }
                         }
                     }
 
-                    let span = r.span();
-                    let file = reader.get_file(span.file_id());
-                    let resolved_path = {
-                        let p = Path::new(file);
-                        if p.is_absolute() {
-                            p.to_path_buf()
-                        } else if let Some(root) = source_root {
-                            crate::format::join_resolving_overlap(root, p)
-                        } else {
-                            p.to_path_buf()
-                        }
-                    };
-                    let ref_key = (
-                        resolved_path,
-                        span.start_line(),
-                        span.start_col(),
-                        span.end_line(),
-                        span.end_col(),
-                    );
-                    if !seen_refs.insert(ref_key) {
-                        continue;
-                    }
-                    all_refs.push(WorkspaceReference {
-                        crate_name: reader_crate,
-                        file,
-                        span,
-                        kind: DefKind::from(r.kind),
-                        is_write: r.is_write != 0,
-                        is_macro_expansion: r.is_macro_expansion(),
-                        source_root,
-                        unit_key: reader_unit,
-                    });
+                    let owner = (reader_crate, reader_unit, source_root);
+                    push_reference(reader, r, owner, &mut seen_refs, &mut all_refs);
                 }
             }
 
@@ -362,65 +313,15 @@ impl WorkspaceIndex {
                                     ) {
                                         continue;
                                     }
-                                } else if let Some((
-                                    ref target_def_file,
-                                    ref target_def_full,
-                                    target_def_line,
-                                )) = target_def_coords
-                                {
-                                    if r.target_line() != 0 && r.target_line() != target_def_line {
+                                } else if let Some(coords) = &target_def_coords {
+                                    if !points_at_definition(reader, r, coords) {
                                         continue;
-                                    }
-                                    if r.target_file_offset() != 0 {
-                                        let ref_file = reader.get_str(r.target_file_offset());
-                                        if !ref_file.is_empty() && !target_def_file.is_empty() {
-                                            let r_p = Path::new(ref_file);
-                                            let t_p = Path::new(target_def_file);
-                                            let t_full_p = Path::new(target_def_full);
-                                            if r_p != t_p
-                                                && r_p != t_full_p
-                                                && !ref_file.ends_with(target_def_file)
-                                                && !target_def_file.ends_with(ref_file)
-                                            {
-                                                continue;
-                                            }
-                                        }
                                     }
                                 }
                             }
 
-                            let span = r.span();
-                            let file = reader.get_file(span.file_id());
-                            let resolved_path = {
-                                let p = Path::new(file);
-                                if p.is_absolute() {
-                                    p.to_path_buf()
-                                } else if let Some(root) = source_root {
-                                    crate::format::join_resolving_overlap(root, p)
-                                } else {
-                                    p.to_path_buf()
-                                }
-                            };
-                            let ref_key = (
-                                resolved_path,
-                                span.start_line(),
-                                span.start_col(),
-                                span.end_line(),
-                                span.end_col(),
-                            );
-                            if !seen_refs.insert(ref_key) {
-                                continue;
-                            }
-                            all_refs.push(WorkspaceReference {
-                                crate_name: reader_crate,
-                                file,
-                                span,
-                                kind: DefKind::from(r.kind),
-                                is_write: r.is_write != 0,
-                                is_macro_expansion: r.is_macro_expansion(),
-                                source_root,
-                                unit_key: reader_unit,
-                            });
+                            let owner = (reader_crate, reader_unit, source_root);
+                            push_reference(reader, r, owner, &mut seen_refs, &mut all_refs);
                         }
                     }
                 }
