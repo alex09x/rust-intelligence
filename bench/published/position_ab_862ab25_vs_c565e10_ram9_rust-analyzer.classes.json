@@ -1,0 +1,1487 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_862ab25_vs_c565e10_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "862ab25",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "c565e10",
+   "commit": "c565e10ea6d3d0f251c3955fa3384f2b5297fbe9",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "862ab25-2",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 53,
+ "summary": {
+  "v1_definition_of_a_variant_use_was_another_item": 24,
+  "v2_hover_of_a_variant_use_named_another_item": 5,
+  "v3_locations_of_a_variant_were_those_of_another_item": 24
+ },
+ "rows_by_method": {
+  "definition": 24,
+  "document_highlight": 15,
+  "hover": 5,
+  "references": 9
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "file": "crates/hir-expand/src/fixup.rs",
+   "line": 183,
+   "character": 51,
+   "symbol": "Alone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Alone",
+    "before": [
+     [
+      "ws:crates/hir-expand/crates/tt/src/lib.rs",
+      [
+       518,
+       5,
+       518,
+       10
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/tt/src/lib.rs",
+      [
+       518,
+       5,
+       518,
+       10
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir-ty/src/infer.rs",
+   "line": 2509,
+   "character": 21,
+   "symbol": "TypeAliasId",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "TypeAliasId",
+    "before": [
+     [
+      "ws:crates/hir-def/src/resolver.rs",
+      [
+       21,
+       84,
+       21,
+       95
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/hir-def/src/resolver.rs",
+      [
+       104,
+       5,
+       104,
+       16
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir/src/has_source.rs",
+   "line": 78,
+   "character": 27,
+   "symbol": "File",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "File",
+    "before": [
+     [
+      "ws:crates/hir/crates/hir-def/src/nameres.rs",
+      [
+       297,
+       5,
+       297,
+       9
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/hir-def/src/nameres.rs",
+      [
+       297,
+       5,
+       297,
+       9
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide-db/src/imports/insert_use.rs",
+   "line": 317,
+   "character": 30,
+   "symbol": "Name",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Name",
+    "before": [
+     [
+      "ws:crates/syntax/src/ast/node_ext.rs",
+      [
+       680,
+       25,
+       680,
+       29
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/syntax/src/ast/node_ext.rs",
+      [
+       325,
+       5,
+       325,
+       9
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide/src/inlay_hints/generic_param.rs",
+   "line": 133,
+   "character": 26,
+   "symbol": "ConstArg",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "ConstArg",
+    "before": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       530,
+       12,
+       530,
+       20
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       2306,
+       5,
+       2306,
+       13
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide/src/hover/render.rs",
+   "line": 43,
+   "character": 17,
+   "symbol": "Left",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Left",
+    "before": [
+     [
+      "registry:either-1.16.0/src/lib.rs",
+      [
+       39,
+       25,
+       39,
+       29
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "registry:either-1.16.0/src/lib.rs",
+      [
+       51,
+       5,
+       51,
+       9
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide-completion/src/completions/attribute/derive.rs",
+   "line": 48,
+   "character": 31,
+   "symbol": "ModuleDef",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "ModuleDef",
+    "before": [
+     [
+      "ws:crates/hir/src/lib.rs",
+      [
+       383,
+       10,
+       383,
+       19
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/hir/src/lib.rs",
+      [
+       6025,
+       5,
+       6025,
+       14
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "lib/lsp-server/src/lib.rs",
+   "line": 355,
+   "character": 25,
+   "symbol": "Notification",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Notification",
+    "before": [
+     [
+      "ws:lib/lsp-server/src/msg.rs",
+      [
+       157,
+       12,
+       157,
+       24
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:lib/lsp-server/src/msg.rs",
+      [
+       16,
+       5,
+       16,
+       17
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide/src/rename.rs",
+   "line": 505,
+   "character": 59,
+   "symbol": "Function",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Function",
+    "before": [
+     [
+      "ws:crates/hir/src/lib.rs",
+      [
+       1481,
+       12,
+       1481,
+       20
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/hir/src/lib.rs",
+      [
+       1365,
+       5,
+       1365,
+       13
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide-assists/src/utils/gen_trait_fn_body.rs",
+   "line": 443,
+   "character": 19,
+   "symbol": "IdentPat",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "IdentPat",
+    "before": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       825,
+       12,
+       825,
+       20
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       2357,
+       5,
+       2357,
+       13
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir/src/lib.rs",
+   "line": 366,
+   "character": 62,
+   "symbol": "Lang",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Lang",
+    "before": [
+     [
+      "ws:crates/hir/crates/base-db/src/input.rs",
+      [
+       204,
+       5,
+       204,
+       9
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/base-db/src/input.rs",
+      [
+       204,
+       5,
+       204,
+       9
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir/src/lib.rs",
+   "line": 511,
+   "character": 24,
+   "symbol": "Adt",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Adt",
+    "before": [
+     [
+      "ws:crates/hir/src/lib.rs",
+      [
+       1165,
+       10,
+       1165,
+       13
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/hir/src/lib.rs",
+      [
+       386,
+       5,
+       386,
+       8
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide-db/src/defs.rs",
+   "line": 121,
+   "character": 25,
+   "symbol": "Function",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Function",
+    "before": [
+     [
+      "ws:crates/ide-db/src/defs.rs",
+      [
+       18,
+       68,
+       18,
+       76
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/ide-db/src/defs.rs",
+      [
+       40,
+       5,
+       40,
+       13
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir/src/semantics/child_by_source.rs",
+   "line": 282,
+   "character": 30,
+   "symbol": "TraitId",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "TraitId",
+    "before": [
+     [
+      "ws:crates/hir-def/src/lib.rs",
+      [
+       319,
+       14,
+       319,
+       21
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/hir-def/src/lib.rs",
+      [
+       930,
+       5,
+       930,
+       12
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir-def/src/attrs.rs",
+   "line": 752,
+   "character": 35,
+   "symbol": "KeyValueMeta",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "KeyValueMeta",
+    "before": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       931,
+       12,
+       931,
+       24
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       2345,
+       5,
+       2345,
+       17
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/rust-analyzer/src/main_loop.rs",
+   "line": 709,
+   "character": 67,
+   "symbol": "LatencySensitive",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "LatencySensitive",
+    "before": [
+     [
+      "ws:crates/rust-analyzer/crates/stdx/src/thread/intent.rs",
+      [
+       12,
+       5,
+       12,
+       21
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/stdx/src/thread/intent.rs",
+      [
+       12,
+       5,
+       12,
+       21
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir-ty/src/next_solver/util.rs",
+   "line": 252,
+   "character": 24,
+   "symbol": "Float",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Float",
+    "before": [
+     [
+      "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+      [
+       1346,
+       10,
+       1346,
+       15
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+      [
+       1390,
+       5,
+       1390,
+       10
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir/src/has_source.rs",
+   "line": 184,
+   "character": 28,
+   "symbol": "BuiltinDeriveImplMethod",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "BuiltinDeriveImplMethod",
+    "before": [
+     [
+      "ws:crates/hir/src/lib.rs",
+      [
+       57,
+       21,
+       57,
+       44
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/hir/src/lib.rs",
+      [
+       1477,
+       5,
+       1477,
+       28
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide-assists/src/handlers/extract_struct_from_enum_variant.rs",
+   "line": 179,
+   "character": 26,
+   "symbol": "Record",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Record",
+    "before": [
+     [
+      "ws:crates/ide-assists/crates/syntax/src/ast/node_ext.rs",
+      [
+       569,
+       5,
+       569,
+       11
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/syntax/src/ast/node_ext.rs",
+      [
+       569,
+       5,
+       569,
+       11
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 8886,
+   "character": 44,
+   "symbol": "RecordPat",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "RecordPat",
+    "before": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       1543,
+       12,
+       1543,
+       21
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       2365,
+       5,
+       2365,
+       14
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir-def/src/lang_item.rs",
+   "line": 92,
+   "character": 30,
+   "symbol": "StaticId",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "StaticId",
+    "before": [
+     [
+      "ws:crates/hir-def/src/lib.rs",
+      [
+       316,
+       14,
+       316,
+       22
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/hir-def/src/lib.rs",
+      [
+       834,
+       5,
+       834,
+       13
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide-ssr/src/parsing.rs",
+   "line": 400,
+   "character": 35,
+   "symbol": "WHITESPACE",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "WHITESPACE",
+    "before": [
+     [
+      "ws:crates/ide-ssr/crates/parser/src/syntax_kind/generated.rs",
+      [
+       170,
+       5,
+       170,
+       15
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/parser/src/syntax_kind/generated.rs",
+      [
+       170,
+       5,
+       170,
+       15
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/hir/src/lib.rs",
+   "line": 5936,
+   "character": 34,
+   "symbol": "Primitive",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Primitive",
+    "before": [
+     [
+      "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+      [
+       1381,
+       10,
+       1381,
+       19
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "registry:ra-ap-rustc_abi-0.166.0/src/lib.rs",
+      [
+       1647,
+       5,
+       1647,
+       14
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/ide-diagnostics/src/handlers/type_mismatch.rs",
+   "line": 485,
+   "character": 74,
+   "symbol": "Prefix",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Prefix",
+    "before": [
+     [
+      "ws:crates/ide-diagnostics/crates/syntax/src/ast/prec.rs",
+      [
+       41,
+       5,
+       41,
+       11
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/syntax/src/ast/prec.rs",
+      [
+       41,
+       5,
+       41,
+       11
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1510,
+   "character": 28,
+   "symbol": "BuiltinDeriveImplMethod",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir/src/lib.rs",
+     1477
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 42,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide-db/src/defs.rs",
+   "line": 146,
+   "character": 25,
+   "symbol": "Field",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/ide-db/src/defs.rs",
+     36
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 48,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir/src/lib.rs",
+   "line": 4428,
+   "character": 27,
+   "symbol": "ConstId",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-def/src/lib.rs",
+     923
+    ],
+    "definition_is_variant": true,
+    "removed_count": 78,
+    "added_count": 26,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir/src/lib.rs",
+   "line": 5796,
+   "character": 33,
+   "symbol": "InlineAsm",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-def/src/hir.rs",
+     395
+    ],
+    "definition_is_variant": true,
+    "removed_count": 9,
+    "added_count": 14,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir-def/src/lib.rs",
+   "line": 1039,
+   "character": 27,
+   "symbol": "TypeAliasId",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-def/src/lib.rs",
+     931
+    ],
+    "definition_is_variant": true,
+    "removed_count": 103,
+    "added_count": 28,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir-ty/src/builtin_derive.rs",
+   "line": 178,
+   "character": 35,
+   "symbol": "PartialEq",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-def/src/builtin_derive.rs",
+     86
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide-db/src/search.rs",
+   "line": 354,
+   "character": 38,
+   "symbol": "TypeAlias",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir/src/lib.rs",
+     2998
+    ],
+    "definition_is_variant": true,
+    "removed_count": 49,
+    "added_count": 15,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide-completion/src/completions.rs",
+   "line": 218,
+   "character": 23,
+   "symbol": "ModuleDef",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir/src/lib.rs",
+     6025
+    ],
+    "definition_is_variant": true,
+    "removed_count": 593,
+    "added_count": 104,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide/src/folding_ranges.rs",
+   "line": 289,
+   "character": 36,
+   "symbol": "AwaitExpr",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     2250
+    ],
+    "definition_is_variant": true,
+    "removed_count": 30,
+    "added_count": 27,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/syntax/src/ast/make.rs",
+   "line": 1228,
+   "character": 29,
+   "symbol": "TupleFieldList",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     2300
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-assists/src/handlers/generate_fn_type_alias.rs",
+   "line": 102,
+   "character": 38,
+   "symbol": "FnPtrType",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     2385
+    ],
+    "definition_is_variant": true,
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-completion/src/completions/record.rs",
+   "line": 104,
+   "character": 61,
+   "symbol": "Impl",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir/src/lib.rs",
+     6445
+    ],
+    "definition_is_variant": true,
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-db/src/defs.rs",
+   "line": 96,
+   "character": 25,
+   "symbol": "InlineAsmOperand",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/ide-db/src/defs.rs",
+     58
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 10,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir/src/source_analyzer.rs",
+   "line": 326,
+   "character": 24,
+   "symbol": "Body",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir/src/source_analyzer.rs",
+     87
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 10,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-db/src/lib.rs",
+   "line": 331,
+   "character": 43,
+   "symbol": "Union",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir/src/lib.rs",
+     1167
+    ],
+    "definition_is_variant": true,
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir-def/src/lib.rs",
+   "line": 1088,
+   "character": 28,
+   "symbol": "EnumVariantId",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-def/src/lib.rs",
+     1070
+    ],
+    "definition_is_variant": true,
+    "removed_count": 14,
+    "added_count": 5,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-db/src/search.rs",
+   "line": 314,
+   "character": 34,
+   "symbol": "Function",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir/src/lib.rs",
+     1365
+    ],
+    "definition_is_variant": true,
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-completion/src/completions/keyword.rs",
+   "line": 25,
+   "character": 17,
+   "symbol": "TypeAlias",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     2335
+    ],
+    "definition_is_variant": true,
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1825,
+   "character": 40,
+   "symbol": "MirEvalError",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-ty/src/consteval.rs",
+     41
+    ],
+    "definition_is_variant": true,
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir-expand/src/attrs.rs",
+   "line": 82,
+   "character": 32,
+   "symbol": "Literal",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     2267
+    ],
+    "definition_is_variant": true,
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir-ty/src/infer/cast.rs",
+   "line": 53,
+   "character": 61,
+   "symbol": "Int",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir-ty/src/infer/cast.rs",
+     39
+    ],
+    "definition_is_variant": true,
+    "removed_count": 29,
+    "added_count": 25,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1738,
+   "character": 28,
+   "symbol": "BuiltinDeriveImplMethod",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir/src/lib.rs",
+     1477
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 30,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/syntax/src/syntax_editor.rs",
+   "line": 774,
+   "character": 49,
+   "symbol": "BlockExpr",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     2253
+    ],
+    "definition_is_variant": true,
+    "removed_count": 2,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "lib/lsp-server/examples/minimal_lsp.rs",
+   "line": 326,
+   "character": 31,
+   "symbol": "Response",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "lib/lsp-server/src/msg.rs",
+     15
+    ],
+    "definition_is_variant": true,
+    "removed_count": 3,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/hir-def/src/attrs.rs",
+   "line": 133,
+   "character": 20,
+   "symbol": "CfgMeta",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "CfgMeta",
+    "before": "```rust\nstruct CfgMeta\nType: ()\n```",
+    "after": "```rust\nvariant CfgMeta\nType: ()\n```",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/hir-def/src/expr_store/lower.rs",
+   "line": 3106,
+   "character": 39,
+   "symbol": "Literal",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Literal",
+    "before": "```rust\nenum Literal\nType: fn(hir::Literal) -> hir::Expr {hir::Expr::Literal}\n``",
+    "after": "```rust\nvariant Literal\nType: fn(hir::Literal) -> hir::Expr {hir::Expr::Literal}",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 8943,
+   "character": 37,
+   "symbol": "ConstBlockPat",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "ConstBlockPat",
+    "before": "```rust\nstruct ConstBlockPat\nType: fn(ast::generated::nodes::ConstBlockPat) -> a",
+    "after": "```rust\nvariant ConstBlockPat\nType: fn(ast::generated::nodes::ConstBlockPat) -> ",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/ide-assists/src/handlers/convert_named_struct_to_tuple_struct.rs",
+   "line": 75,
+   "character": 25,
+   "symbol": "TupleFieldList",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "TupleFieldList",
+    "before": "```rust\nstruct TupleFieldList\nType: syntax::ast::RecordFieldList\n```",
+    "after": "```rust\nvariant TupleFieldList\nType: syntax::ast::RecordFieldList\n```",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/hir/src/attrs.rs",
+   "line": 147,
+   "character": 25,
+   "symbol": "Field",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Field",
+    "before": "```rust\nField\nType: either::Either<hir_def::AttrDefId, hir_def::FieldId>\n```",
+    "after": "```rust\nvariant Field\nType: either::Either<hir_def::AttrDefId, hir_def::FieldId>",
+    "definition_is_variant": true
+   }
+  }
+ ]
+}

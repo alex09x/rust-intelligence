@@ -1,0 +1,138 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "ripgrep",
+ "report": "position_ab_862ab25_vs_c565e10_ram9_ripgrep.json",
+ "servers": [
+  {
+   "name": "862ab25",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "c565e10",
+   "commit": "c565e10ea6d3d0f251c3955fa3384f2b5297fbe9",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "862ab25-2",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 4,
+ "summary": {
+  "v1_definition_of_a_variant_use_was_another_item": 2,
+  "v2_hover_of_a_variant_use_named_another_item": 2
+ },
+ "rows_by_method": {
+  "definition": 2,
+  "hover": 2
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "file": "crates/regex/src/strip.rs",
+   "line": 82,
+   "character": 18,
+   "symbol": "Class",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Class",
+    "before": [
+     [
+      "registry:regex-syntax-0.8.4/src/hir/mod.rs",
+      [
+       830,
+       10,
+       830,
+       15
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "registry:regex-syntax-0.8.4/src/hir/mod.rs",
+      [
+       728,
+       5,
+       728,
+       10
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/globset/src/lib.rs",
+   "line": 294,
+   "character": 30,
+   "symbol": "Regex",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Regex",
+    "before": [
+     [
+      "ws:crates/globset/src/lib.rs",
+      [
+       112,
+       15,
+       112,
+       20
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/globset/src/lib.rs",
+      [
+       178,
+       5,
+       178,
+       10
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/regex/src/non_matching.rs",
+   "line": 25,
+   "character": 20,
+   "symbol": "Look",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Look",
+    "before": "```rust\nenum Look\nType: ()\n```",
+    "after": "```rust\nvariant Look\nType: ()\n```",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/printer/src/hyperlink.rs",
+   "line": 485,
+   "character": 19,
+   "symbol": "Path",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Path",
+    "before": "```rust\nstd::path::Path\nType: ()\n```",
+    "after": "```rust\nvariant Path\nType: ()\n```",
+    "definition_is_variant": true
+   }
+  }
+ ]
+}

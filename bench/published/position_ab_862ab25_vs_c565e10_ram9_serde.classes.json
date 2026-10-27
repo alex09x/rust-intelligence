@@ -1,0 +1,988 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_862ab25_vs_c565e10_ram9_serde.json",
+ "servers": [
+  {
+   "name": "862ab25",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "c565e10",
+   "commit": "c565e10ea6d3d0f251c3955fa3384f2b5297fbe9",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "862ab25-2",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 35,
+ "summary": {
+  "v1_definition_of_a_variant_use_was_another_item": 12,
+  "v2_hover_of_a_variant_use_named_another_item": 4,
+  "v3_locations_of_a_variant_were_those_of_another_item": 13,
+  "v4_signature_help_of_a_variant_was_a_signature_of_another_item": 2,
+  "v5_definition_inside_a_macro_swapped_between_items_of_one_name": 4
+ },
+ "rows_by_method": {
+  "definition": 16,
+  "document_highlight": 7,
+  "hover": 4,
+  "references": 6,
+  "signature_help": 2
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 1450,
+   "character": 30,
+   "symbol": "String",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "String",
+    "before": [
+     [
+      "ws:serde/serde_core/src/private/content.rs",
+      [
+       27,
+       5,
+       27,
+       11
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/private/content.rs",
+      [
+       27,
+       5,
+       27,
+       11
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 1151,
+   "character": 26,
+   "symbol": "Seq",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Seq",
+    "before": [
+     [
+      "ws:serde/serde_core/src/private/content.rs",
+      [
+       37,
+       5,
+       37,
+       8
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/private/content.rs",
+      [
+       37,
+       5,
+       37,
+       8
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_derive/src/de.rs",
+   "line": 3053,
+   "character": 69,
+   "symbol": "de",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v5_definition_inside_a_macro_swapped_between_items_of_one_name",
+   "evidence": {
+    "token": "de",
+    "before": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       27,
+       12,
+       27,
+       16
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       7,
+       5,
+       7,
+       9
+      ]
+     ]
+    ],
+    "answer_name": "Expr"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 273,
+   "character": 44,
+   "symbol": "Signed",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Signed",
+    "before": [
+     [
+      "ws:serde/serde_core/src/de/mod.rs",
+      [
+       349,
+       5,
+       349,
+       11
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/de/mod.rs",
+      [
+       349,
+       5,
+       349,
+       11
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 276,
+   "character": 44,
+   "symbol": "Float",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Float",
+    "before": [
+     [
+      "ws:serde/serde_core/src/de/mod.rs",
+      [
+       353,
+       5,
+       353,
+       10
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/de/mod.rs",
+      [
+       353,
+       5,
+       353,
+       10
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 2101,
+   "character": 26,
+   "symbol": "Unit",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Unit",
+    "before": [
+     [
+      "ws:serde/serde_core/src/private/content.rs",
+      [
+       35,
+       5,
+       35,
+       9
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/private/content.rs",
+      [
+       35,
+       5,
+       35,
+       9
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_derive/src/de.rs",
+   "line": 3053,
+   "character": 42,
+   "symbol": "Err",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v5_definition_inside_a_macro_swapped_between_items_of_one_name",
+   "evidence": {
+    "token": "Err",
+    "before": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       27,
+       12,
+       27,
+       16
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       7,
+       5,
+       7,
+       9
+      ]
+     ]
+    ],
+    "answer_name": "Expr"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 1360,
+   "character": 26,
+   "symbol": "Newtype",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Newtype",
+    "before": [
+     [
+      "ws:serde/serde_core/src/private/content.rs",
+      [
+       36,
+       5,
+       36,
+       12
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/private/content.rs",
+      [
+       36,
+       5,
+       36,
+       12
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 2017,
+   "character": 26,
+   "symbol": "I32",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "I32",
+    "before": [
+     [
+      "ws:serde/serde_core/src/private/content.rs",
+      [
+       20,
+       5,
+       20,
+       8
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/private/content.rs",
+      [
+       20,
+       5,
+       20,
+       8
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 2096,
+   "character": 26,
+   "symbol": "Char",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Char",
+    "before": [
+     [
+      "ws:serde/serde_core/src/private/content.rs",
+      [
+       26,
+       5,
+       26,
+       9
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/private/content.rs",
+      [
+       26,
+       5,
+       26,
+       9
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_derive/src/bound.rs",
+   "line": 290,
+   "character": 40,
+   "symbol": "Path",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Path",
+    "before": [
+     [
+      "registry:syn-2.0.119/src/ty.rs",
+      [
+       8,
+       19,
+       8,
+       23
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "registry:syn-2.0.119/src/ty.rs",
+      [
+       53,
+       9,
+       53,
+       13
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_derive/src/fragment.rs",
+   "line": 31,
+   "character": 23,
+   "symbol": "Expr",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Expr",
+    "before": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       27,
+       12,
+       27,
+       16
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       7,
+       5,
+       7,
+       9
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_derive/src/de.rs",
+   "line": 1925,
+   "character": 67,
+   "symbol": "Ok",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v5_definition_inside_a_macro_swapped_between_items_of_one_name",
+   "evidence": {
+    "token": "Ok",
+    "before": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       27,
+       12,
+       27,
+       16
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       7,
+       5,
+       7,
+       9
+      ]
+     ]
+    ],
+    "answer_name": "Expr"
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 2922,
+   "character": 37,
+   "symbol": "UnitVariant",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "UnitVariant",
+    "before": [
+     [
+      "ws:serde/serde_core/src/de/mod.rs",
+      [
+       383,
+       5,
+       383,
+       16
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/de/mod.rs",
+      [
+       383,
+       5,
+       383,
+       16
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde/src/private/de.rs",
+   "line": 2232,
+   "character": 26,
+   "symbol": "Bytes",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Bytes",
+    "before": [
+     [
+      "ws:serde/serde_core/src/private/content.rs",
+      [
+       30,
+       5,
+       30,
+       10
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_core/src/private/content.rs",
+      [
+       30,
+       5,
+       30,
+       10
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "serde_derive/src/ser.rs",
+   "line": 587,
+   "character": 36,
+   "symbol": "serialize_tagged_newtype",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v5_definition_inside_a_macro_swapped_between_items_of_one_name",
+   "evidence": {
+    "token": "serialize_tagged_newtype",
+    "before": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       27,
+       12,
+       27,
+       16
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:serde_derive/src/fragment.rs",
+      [
+       7,
+       5,
+       7,
+       9
+      ]
+     ]
+    ],
+    "answer_name": "Expr"
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_derive/src/bound.rs",
+   "line": 222,
+   "character": 34,
+   "symbol": "Type",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/syn-2.0.119/src/ty.rs",
+     271
+    ],
+    "definition_is_variant": true,
+    "removed_count": 163,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 422,
+   "character": 25,
+   "symbol": "String",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/private/content.rs",
+     27
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_derive/src/bound.rs",
+   "line": 202,
+   "character": 51,
+   "symbol": "Lifetime",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/syn-2.0.119/src/path.rs",
+     178
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 9,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 2091,
+   "character": 26,
+   "symbol": "I16",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/private/content.rs",
+     19
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde/src/private/de.rs",
+   "line": 2381,
+   "character": 49,
+   "symbol": "Map",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/mod.rs",
+     377
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_derive/src/ser.rs",
+   "line": 587,
+   "character": 31,
+   "symbol": "ser",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "serde_derive/src/fragment.rs",
+     7
+    ],
+    "definition_is_variant": true,
+    "removed_count": 13,
+    "added_count": 25,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 1798,
+   "character": 20,
+   "symbol": "Macro",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/syn-2.0.119/src/ty.rs",
+     43
+    ],
+    "definition_is_variant": true,
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2750,
+   "character": 37,
+   "symbol": "Struct",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "test_suite/tests/test_annotations.rs",
+     2661
+    ],
+    "definition_is_variant": true,
+    "removed_count": 3,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde/src/private/de.rs",
+   "line": 629,
+   "character": 36,
+   "symbol": "Content",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "serde/src/private/de.rs",
+     519
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 27,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive/src/de.rs",
+   "line": 1921,
+   "character": 45,
+   "symbol": "deserialize_any",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "serde_derive/src/fragment.rs",
+     7
+    ],
+    "definition_is_variant": true,
+    "removed_count": 11,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 510,
+   "character": 43,
+   "symbol": "Ident",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.107/src/lib.rs",
+     582
+    ],
+    "definition_is_variant": true,
+    "removed_count": 15,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde/src/private/de.rs",
+   "line": 788,
+   "character": 36,
+   "symbol": "Content",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "serde/src/private/de.rs",
+     519
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 27,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 2313,
+   "character": 21,
+   "symbol": "Flatten",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "test_suite/tests/test_annotations.rs",
+     2287
+    ],
+    "definition_is_variant": true,
+    "removed_count": 8,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "hover",
+   "file": "serde_derive/src/internals/receiver.rs",
+   "line": 281,
+   "character": 19,
+   "symbol": "Index",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Index",
+    "before": "```rust\nstruct Index\nType: ()\n```",
+    "after": "```rust\nvariant Index\nType: ()\n```",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "serde_derive/src/bound.rs",
+   "line": 231,
+   "character": 40,
+   "symbol": "PreciseCapture",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "PreciseCapture",
+    "before": "```rust\nstruct PreciseCapture\nType: ()\n```",
+    "after": "```rust\nvariant PreciseCapture\nType: ()\n```",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "test_suite/tests/test_enum_internally_tagged.rs",
+   "line": 881,
+   "character": 20,
+   "symbol": "Unit",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Unit",
+    "before": "```rust\nstruct Unit\nType: Enum\n```",
+    "after": "```rust\nvariant Unit\nType: Enum\n```",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "serde/src/private/de.rs",
+   "line": 931,
+   "character": 44,
+   "symbol": "Content",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Content",
+    "before": "```rust\nserde_core::private::content::Content\nType: private::de::content::TagOrC",
+    "after": "```rust\nvariant Content\nType: private::de::content::TagOrContentField\n```",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "signature_help",
+   "file": "serde_derive/src/bound.rs",
+   "line": 378,
+   "character": 35,
+   "symbol": "clone",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v4_signature_help_of_a_variant_was_a_signature_of_another_item",
+   "evidence": {
+    "callee": "Path",
+    "before_label": "path::Path",
+    "after_empty": true,
+    "callee_is_variant": true
+   }
+  },
+  {
+   "method": "signature_help",
+   "file": "serde_derive/src/bound.rs",
+   "line": 20,
+   "character": 29,
+   "symbol": "clone",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "v4_signature_help_of_a_variant_was_a_signature_of_another_item",
+   "evidence": {
+    "callee": "Type",
+    "before_label": "ty::Type",
+    "after_empty": true,
+    "callee_is_variant": true
+   }
+  }
+ ]
+}

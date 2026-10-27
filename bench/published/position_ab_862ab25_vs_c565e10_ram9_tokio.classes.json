@@ -1,0 +1,78 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_862ab25_vs_c565e10_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "862ab25",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "c565e10",
+   "commit": "c565e10ea6d3d0f251c3955fa3384f2b5297fbe9",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "862ab25-2",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 2,
+ "summary": {
+  "v3_locations_of_a_variant_were_those_of_another_item": 2
+ },
+ "rows_by_method": {
+  "document_highlight": 2
+ },
+ "rows": [
+  {
+   "method": "document_highlight",
+   "file": "tokio/src/runtime/scheduler/mod.rs",
+   "line": 206,
+   "character": 25,
+   "symbol": "CurrentThread",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "tokio/src/runtime/scheduler/mod.rs",
+     31
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 18,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 1
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio/src/runtime/scheduler/multi_thread/mod.rs",
+   "line": 96,
+   "character": 32,
+   "symbol": "MultiThread",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "tokio/src/runtime/scheduler/mod.rs",
+     34
+    ],
+    "definition_is_variant": true,
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  }
+ ]
+}

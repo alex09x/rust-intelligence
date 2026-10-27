@@ -1,0 +1,486 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_862ab25_vs_c565e10_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "862ab25",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "c565e10",
+   "commit": "c565e10ea6d3d0f251c3955fa3384f2b5297fbe9",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "862ab25-2",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 17,
+ "summary": {
+  "v1_definition_of_a_variant_use_was_another_item": 7,
+  "v2_hover_of_a_variant_use_named_another_item": 3,
+  "v3_locations_of_a_variant_were_those_of_another_item": 7
+ },
+ "rows_by_method": {
+  "definition": 7,
+  "document_highlight": 4,
+  "hover": 3,
+  "references": 3
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "file": "crates/bevy_feathers/src/lib.rs",
+   "line": 97,
+   "character": 68,
+   "symbol": "Propagate",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Propagate",
+    "before": [
+     [
+      "ws:crates/bevy_feathers/crates/bevy_ui/src/lib.rs",
+      [
+       109,
+       5,
+       109,
+       14
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/bevy_ui/src/lib.rs",
+      [
+       109,
+       5,
+       109,
+       14
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/bevy_input_focus/src/lib.rs",
+   "line": 579,
+   "character": 25,
+   "symbol": "Character",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Character",
+    "before": [
+     [
+      "ws:crates/bevy_input_focus/crates/bevy_input/src/keyboard.rs",
+      [
+       823,
+       5,
+       823,
+       14
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/bevy_input/src/keyboard.rs",
+      [
+       823,
+       5,
+       823,
+       14
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/bevy_sprite_render/src/mesh2d/material.rs",
+   "line": 1198,
+   "character": 59,
+   "symbol": "None",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "None",
+    "before": [
+     [
+      "ws:crates/bevy_sprite_render/crates/bevy_render/src/render_phase/mod.rs",
+      [
+       2088,
+       5,
+       2088,
+       9
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/bevy_render/src/render_phase/mod.rs",
+      [
+       2088,
+       5,
+       2088,
+       9
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/bevy_picking/src/hover.rs",
+   "line": 384,
+   "character": 38,
+   "symbol": "Hovered",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Hovered",
+    "before": [
+     [
+      "ws:crates/bevy_picking/src/hover.rs",
+      [
+       417,
+       12,
+       417,
+       19
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/bevy_picking/src/hover.rs",
+      [
+       308,
+       5,
+       308,
+       12
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/bevy_input_focus/src/directional_navigation.rs",
+   "line": 661,
+   "character": 55,
+   "symbol": "South",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "South",
+    "before": [
+     [
+      "ws:crates/bevy_input_focus/crates/bevy_math/src/compass.rs",
+      [
+       149,
+       5,
+       149,
+       10
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/bevy_math/src/compass.rs",
+      [
+       149,
+       5,
+       149,
+       10
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/bevy_pbr/src/render/mesh.rs",
+   "line": 4799,
+   "character": 38,
+   "symbol": "None",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "None",
+    "before": [
+     [
+      "ws:crates/bevy_pbr/crates/bevy_render/src/render_phase/mod.rs",
+      [
+       2088,
+       5,
+       2088,
+       9
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/bevy_render/src/render_phase/mod.rs",
+      [
+       2088,
+       5,
+       2088,
+       9
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "definition",
+   "file": "crates/bevy_winit/src/converters.rs",
+   "line": 77,
+   "character": 30,
+   "symbol": "Calibrated",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v1_definition_of_a_variant_use_was_another_item",
+   "evidence": {
+    "token": "Calibrated",
+    "before": [
+     [
+      "ws:crates/bevy_winit/crates/bevy_input/src/touch.rs",
+      [
+       85,
+       5,
+       85,
+       15
+      ]
+     ]
+    ],
+    "after": [
+     [
+      "ws:crates/bevy_input/src/touch.rs",
+      [
+       85,
+       5,
+       85,
+       15
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_world_serialization/src/world_asset_spawner.rs",
+   "line": 590,
+   "character": 29,
+   "symbol": "Added",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_asset/src/event.rs",
+     52
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_feathers/src/controls/tree_view.rs",
+   "line": 161,
+   "character": 52,
+   "symbol": "Row",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ui/src/ui_node.rs",
+     1518
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_winit/src/converters.rs",
+   "line": 735,
+   "character": 24,
+   "symbol": "East",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_math/src/compass.rs",
+     145
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_color/src/color.rs",
+   "line": 1164,
+   "character": 20,
+   "symbol": "Okhsva",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_color/src/color.rs",
+     81
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 33,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_ecs/src/query/access_iter.rs",
+   "line": 77,
+   "character": 28,
+   "symbol": "Access",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/query/access_iter.rs",
+     118
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 23,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_render/src/camera.rs",
+   "line": 305,
+   "character": 54,
+   "symbol": "TextureView",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_render/src/camera.rs",
+     338
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_ecs/src/error/bevy_error.rs",
+   "line": 155,
+   "character": 29,
+   "symbol": "Debug",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v3_locations_of_a_variant_were_those_of_another_item",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/error/bevy_error.rs",
+     303
+    ],
+    "definition_is_variant": true,
+    "removed_count": 1,
+    "added_count": 9,
+    "added_not_resolving": [],
+    "removed_resolving": [],
+    "added_generated": 2
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/bevy_color/src/color.rs",
+   "line": 836,
+   "character": 20,
+   "symbol": "Oklcha",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Oklcha",
+    "before": "```rust\noklcha::Oklcha\nType: oklaba::Oklaba\n```",
+    "after": "```rust\nvariant Oklcha\nType: oklaba::Oklaba\n```",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/bevy_reflect/src/impls/indexmap.rs",
+   "line": 394,
+   "character": 21,
+   "symbol": "Set",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Set",
+    "before": "```rust\nset::Set\nType: fn(&(dyn set::Set + 'static)) -> kind::ReflectRef<'_> {ki",
+    "after": "```rust\nvariant Set\nType: fn(&(dyn set::Set + 'static)) -> kind::ReflectRef<'_> ",
+    "definition_is_variant": true
+   }
+  },
+  {
+   "method": "hover",
+   "file": "crates/bevy_ecs/src/error/bevy_error.rs",
+   "line": 836,
+   "character": 45,
+   "symbol": "Debug",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "v2_hover_of_a_variant_use_named_another_item",
+   "evidence": {
+    "token": "Debug",
+    "before": "```rust\ncore::fmt::Debug\nType: error::bevy_error::Severity\n```",
+    "after": "```rust\nvariant Debug\nType: error::bevy_error::Severity\n```",
+    "definition_is_variant": true
+   }
+  }
+ ]
+}

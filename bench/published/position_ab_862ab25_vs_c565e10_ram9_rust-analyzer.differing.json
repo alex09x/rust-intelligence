@@ -1,0 +1,5832 @@
+{
+ "repo": "rust-lang/rust-analyzer",
+ "repo_dir_name": "rust-analyzer",
+ "repo_head": "021bfc15e24909389bd208d1622b7f4f3942b91a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 105,
+ "positions_file": "matrix_rust-analyzer_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 62,
+ "timestamp_start": "2026-10-27T15:55:09.174837+00:00",
+ "timestamp_end": "2026-10-27T16:00:44.719123+00:00",
+ "servers": [
+  {
+   "name": "862ab25",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 862ab25ae599e6593a9b2503ed137cf90c6ac84f, dirty: false)",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 110.4,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 222.3,
+     "p99_us": 1553.4,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 173,
+     "b": 127,
+     "c": 0,
+     "n": 300,
+     "p50_us": 427.8,
+     "p99_us": 797.3,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 229.8,
+     "p99_us": 1183.8,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 57,
+     "b": 243,
+     "c": 0,
+     "n": 300,
+     "p50_us": 654.9,
+     "p99_us": 91048.9,
+     "unsupported": false
+    },
+    "references": {
+     "a": 210,
+     "b": 90,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1016.9,
+     "p99_us": 29706.6,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 262,
+     "b": 38,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1218.2,
+     "p99_us": 91514.0,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 195.2,
+     "p99_us": 2744.7,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37205.6,
+     "p99_us": 49682.2,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 22.5,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 448.4,
+     "p99_us": 1201.0,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1421.9,
+     "p99_us": 24347.0,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 22.8,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 131.8,
+     "p99_us": 45786.0,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.9,
+     "p99_us": 1794.2,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 20.0,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39.6,
+     "p99_us": 279.1,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.2,
+     "p99_us": 266.4,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 47.5,
+     "p99_us": 347.8,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 13.9,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 185,
+     "b": 115,
+     "c": 0,
+     "n": 300,
+     "p50_us": 357.6,
+     "p99_us": 867.6,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 79,
+     "b": 221,
+     "c": 0,
+     "n": 300,
+     "p50_us": 801.8,
+     "p99_us": 6017.9,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 555.8,
+     "p99_us": 11327.0,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 103,
+     "b": 197,
+     "c": 0,
+     "n": 300,
+     "p50_us": 565.6,
+     "p99_us": 814.1,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 34.5,
+     "p99_us": 3174.2,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 5164.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 251.2,
+     "p99_us": 2101.4,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.2,
+     "p99_us": 155.9,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.3,
+     "p99_us": 11.5,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 13.0,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86592.7,
+     "p99_us": 115471.5,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87958.5,
+     "p99_us": 184738.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91581.7,
+     "p99_us": 177952.0,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 173,
+     "b": 0,
+     "c": 127,
+     "n": 300,
+     "p50_us": 799.0,
+     "p99_us": 6129.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 166,
+     "b": 0,
+     "c": 134,
+     "n": 300,
+     "p50_us": 1097.3,
+     "p99_us": 6450.7,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 40.2,
+     "p99_us": 349.9,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 122.5,
+     "p99_us": 715.8,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 17.9,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 12.1,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 333.9,
+     "p99_us": 2683.6,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 312.4,
+     "p99_us": 3652.5,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 317.9,
+     "p99_us": 3566.9,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 123.4,
+     "p99_us": 2360.4,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 184.8,
+     "p99_us": 1415.0,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.6,
+     "p99_us": 21.9,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 59.4,
+     "p99_us": 968.2,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2578.5,
+     "p99_us": 2755.8,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 16.0,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 14.1,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 12.2,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.8,
+     "p99_us": 145.1,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       282,
+       18,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       173,
+       127,
+       0
+      ],
+      "matrix": [
+       288,
+       12,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       57,
+       243,
+       0
+      ],
+      "matrix": [
+       68,
+       232,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       210,
+       90,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       262,
+       38,
+       0
+      ],
+      "matrix": [
+       244,
+       56,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       185,
+       115,
+       0
+      ],
+      "matrix": [
+       284,
+       16,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       79,
+       221,
+       0
+      ],
+      "matrix": [
+       71,
+       229,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       221,
+       79,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       103,
+       197,
+       0
+      ],
+      "matrix": [
+       100,
+       200,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       173,
+       0,
+       127
+      ],
+      "matrix": [
+       287,
+       0,
+       13
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       166,
+       0,
+       134
+      ],
+      "matrix": [
+       285,
+       0,
+       15
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "c565e10",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: c565e10ea6d3d0f251c3955fa3384f2b5297fbe9, dirty: false)",
+   "commit": "c565e10ea6d3d0f251c3955fa3384f2b5297fbe9",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 110.1,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 228.2,
+     "p99_us": 1421.2,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 173,
+     "b": 127,
+     "c": 0,
+     "n": 300,
+     "p50_us": 438.9,
+     "p99_us": 828.5,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 224.1,
+     "p99_us": 1211.1,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 57,
+     "b": 243,
+     "c": 0,
+     "n": 300,
+     "p50_us": 667.0,
+     "p99_us": 89910.5,
+     "unsupported": false
+    },
+    "references": {
+     "a": 210,
+     "b": 90,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1005.0,
+     "p99_us": 29500.1,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1222.0,
+     "p99_us": 90183.4,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 184.1,
+     "p99_us": 2269.8,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 36867.4,
+     "p99_us": 49580.9,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 17.4,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 436.4,
+     "p99_us": 1244.4,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1411.3,
+     "p99_us": 23917.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 18.8,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 126.5,
+     "p99_us": 46235.8,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.4,
+     "p99_us": 1785.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 15.9,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 44.9,
+     "p99_us": 304.6,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.6,
+     "p99_us": 287.5,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 48.8,
+     "p99_us": 329.0,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 14.5,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 185,
+     "b": 115,
+     "c": 0,
+     "n": 300,
+     "p50_us": 364.4,
+     "p99_us": 801.8,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 79,
+     "b": 221,
+     "c": 0,
+     "n": 300,
+     "p50_us": 808.4,
+     "p99_us": 6038.7,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 547.0,
+     "p99_us": 11543.8,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 103,
+     "b": 197,
+     "c": 0,
+     "n": 300,
+     "p50_us": 562.4,
+     "p99_us": 800.5,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 36.5,
+     "p99_us": 3228.2,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 5455.9,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 256.0,
+     "p99_us": 2118.9,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.1,
+     "p99_us": 154.7,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.0,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 13.9,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 14.7,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85849.1,
+     "p99_us": 112523.4,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87542.9,
+     "p99_us": 181602.9,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91171.9,
+     "p99_us": 172762.2,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 173,
+     "b": 0,
+     "c": 127,
+     "n": 300,
+     "p50_us": 805.7,
+     "p99_us": 6040.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 166,
+     "b": 0,
+     "c": 134,
+     "n": 300,
+     "p50_us": 1073.0,
+     "p99_us": 6211.7,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39.3,
+     "p99_us": 342.5,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 119.9,
+     "p99_us": 698.8,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 17.8,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 13.7,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 337.2,
+     "p99_us": 2673.4,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 313.9,
+     "p99_us": 3630.1,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 315.7,
+     "p99_us": 3676.5,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 126.7,
+     "p99_us": 2383.8,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 180.9,
+     "p99_us": 1379.1,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.6,
+     "p99_us": 18.4,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 65.8,
+     "p99_us": 1037.8,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2767.9,
+     "p99_us": 2881.3,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.9,
+     "p99_us": 13.2,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 13.9,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 12.2,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.5,
+     "p99_us": 151.9,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       282,
+       18,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       173,
+       127,
+       0
+      ],
+      "matrix": [
+       288,
+       12,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       57,
+       243,
+       0
+      ],
+      "matrix": [
+       68,
+       232,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       210,
+       90,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       244,
+       56,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       185,
+       115,
+       0
+      ],
+      "matrix": [
+       284,
+       16,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       79,
+       221,
+       0
+      ],
+      "matrix": [
+       71,
+       229,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       221,
+       79,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       103,
+       197,
+       0
+      ],
+      "matrix": [
+       100,
+       200,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       173,
+       0,
+       127
+      ],
+      "matrix": [
+       287,
+       0,
+       13
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       166,
+       0,
+       134
+      ],
+      "matrix": [
+       285,
+       0,
+       15
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "862ab25-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 862ab25ae599e6593a9b2503ed137cf90c6ac84f, dirty: false)",
+   "commit": "862ab25ae599e6593a9b2503ed137cf90c6ac84f",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 110.3,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 229.9,
+     "p99_us": 1527.4,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 173,
+     "b": 127,
+     "c": 0,
+     "n": 300,
+     "p50_us": 462.6,
+     "p99_us": 811.9,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 225.0,
+     "p99_us": 1198.8,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 57,
+     "b": 243,
+     "c": 0,
+     "n": 300,
+     "p50_us": 655.5,
+     "p99_us": 80707.1,
+     "unsupported": false
+    },
+    "references": {
+     "a": 210,
+     "b": 90,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1018.4,
+     "p99_us": 30546.9,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 262,
+     "b": 38,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1238.3,
+     "p99_us": 91216.9,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 179.6,
+     "p99_us": 2394.9,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37717.2,
+     "p99_us": 50654.5,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 28.2,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 435.4,
+     "p99_us": 1203.3,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1437.7,
+     "p99_us": 24586.2,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 20.1,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 135.9,
+     "p99_us": 46523.2,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.7,
+     "p99_us": 1818.6,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 16.3,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 40.6,
+     "p99_us": 314.0,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.2,
+     "p99_us": 268.3,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 49.1,
+     "p99_us": 353.0,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 15.1,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 185,
+     "b": 115,
+     "c": 0,
+     "n": 300,
+     "p50_us": 364.1,
+     "p99_us": 847.6,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 79,
+     "b": 221,
+     "c": 0,
+     "n": 300,
+     "p50_us": 814.6,
+     "p99_us": 6095.2,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 551.4,
+     "p99_us": 11540.3,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 103,
+     "b": 197,
+     "c": 0,
+     "n": 300,
+     "p50_us": 556.5,
+     "p99_us": 805.9,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35.3,
+     "p99_us": 3201.4,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 5172.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 253.6,
+     "p99_us": 2114.6,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.1,
+     "p99_us": 163.5,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 17.1,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 13.8,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 13.0,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86166.0,
+     "p99_us": 118695.8,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 87705.8,
+     "p99_us": 182048.2,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91313.6,
+     "p99_us": 169812.4,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 173,
+     "b": 0,
+     "c": 127,
+     "n": 300,
+     "p50_us": 790.9,
+     "p99_us": 6163.9,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 166,
+     "b": 0,
+     "c": 134,
+     "n": 300,
+     "p50_us": 1082.8,
+     "p99_us": 6325.3,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 40.9,
+     "p99_us": 340.7,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 119.9,
+     "p99_us": 693.2,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.2,
+     "p99_us": 15.5,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 15.2,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 333.5,
+     "p99_us": 2736.1,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 318.7,
+     "p99_us": 3633.5,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 309.2,
+     "p99_us": 3623.2,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 114.7,
+     "p99_us": 2311.3,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 181.0,
+     "p99_us": 1403.4,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.0,
+     "p99_us": 18.5,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 61.5,
+     "p99_us": 969.6,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2583.4,
+     "p99_us": 2624.3,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 19.1,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 15.1,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 14.7,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.4,
+     "p99_us": 147.9,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       282,
+       18,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       173,
+       127,
+       0
+      ],
+      "matrix": [
+       288,
+       12,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       57,
+       243,
+       0
+      ],
+      "matrix": [
+       68,
+       232,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       210,
+       90,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       262,
+       38,
+       0
+      ],
+      "matrix": [
+       244,
+       56,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       185,
+       115,
+       0
+      ],
+      "matrix": [
+       284,
+       16,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       79,
+       221,
+       0
+      ],
+      "matrix": [
+       71,
+       229,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       221,
+       79,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       103,
+       197,
+       0
+      ],
+      "matrix": [
+       100,
+       200,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       173,
+       0,
+       127
+      ],
+      "matrix": [
+       287,
+       0,
+       13
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       166,
+       0,
+       134
+      ],
+      "matrix": [
+       285,
+       0,
+       15
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "862ab25",
+   "b": "c565e10",
+   "same": 15247,
+   "differing": 53,
+   "methods": {
+    "definition": {
+     "same": 276,
+     "differing": 24,
+     "transitions": {
+      "a>a": 24
+     },
+     "examples": [
+      {
+       "name": "definition_0_Alone",
+       "file": "crates/hir-expand/src/fixup.rs",
+       "line": 183,
+       "character": 51,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6c8ca974d4d5586f",
+        "406e4eefb6006f53"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_13_TypeAliasId",
+       "file": "crates/hir-ty/src/infer.rs",
+       "line": 2509,
+       "character": 21,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "880c2b73067931cc",
+        "6dca7d88e12a69df"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_34_File",
+       "file": "crates/hir/src/has_source.rs",
+       "line": 78,
+       "character": 27,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "508363a54370931e",
+        "b8e84b9da4a788a0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_49_Name",
+       "file": "crates/ide-db/src/imports/insert_use.rs",
+       "line": 317,
+       "character": 30,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c16138a76d6eb51b",
+        "2326e536382c968e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_50_ConstArg",
+       "file": "crates/ide/src/inlay_hints/generic_param.rs",
+       "line": 133,
+       "character": 26,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "14388021f9908da3",
+        "1bf75915b3f7c1fe"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_58_Left",
+       "file": "crates/ide/src/hover/render.rs",
+       "line": 43,
+       "character": 17,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e239ecebf72436a1",
+        "8c343ab06612ce32"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_63_ModuleDef",
+       "file": "crates/ide-completion/src/completions/attribute/derive.rs",
+       "line": 48,
+       "character": 31,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b9c138eefe3d1477",
+        "4da253140787ca86"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_65_Notification",
+       "file": "lib/lsp-server/src/lib.rs",
+       "line": 355,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "27fdae629c60afc2",
+        "678c5d61b1f495db"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_98_Function",
+       "file": "crates/ide/src/rename.rs",
+       "line": 505,
+       "character": 59,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "60594ebf55586c22",
+        "dd3f1595a46709c2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_106_IdentPat",
+       "file": "crates/ide-assists/src/utils/gen_trait_fn_body.rs",
+       "line": 443,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "52c8f6aff8567798",
+        "2f30045fcf8090e8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 291,
+     "differing": 9,
+     "transitions": {
+      "a>a": 9
+     },
+     "examples": [
+      {
+       "name": "refs_4_BuiltinDeriveImplMethod",
+       "file": "crates/hir/src/lib.rs",
+       "line": 1510,
+       "character": 28,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e6716da1ee3b368a",
+        "0b7b5e1986fe81c1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_15_Field",
+       "file": "crates/ide-db/src/defs.rs",
+       "line": 146,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8f17fca851a11a9d",
+        "799e15d48fc1e4c9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_20_ConstId",
+       "file": "crates/hir/src/lib.rs",
+       "line": 4428,
+       "character": 27,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c4811fbf3e74be3f",
+        "c46249b4e43100f4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_24_InlineAsm",
+       "file": "crates/hir/src/lib.rs",
+       "line": 5796,
+       "character": 33,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3dfe9f098b9dfc9f",
+        "1f6e85a6aa96f2e8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_37_TypeAliasId",
+       "file": "crates/hir-def/src/lib.rs",
+       "line": 1039,
+       "character": 27,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e2de0d830690f931",
+        "a846433275a1af96"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_69_PartialEq",
+       "file": "crates/hir-ty/src/builtin_derive.rs",
+       "line": 178,
+       "character": 35,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d4d3fa1ce055ea0e",
+        "46b3b70735449708"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_70_TypeAlias",
+       "file": "crates/ide-db/src/search.rs",
+       "line": 354,
+       "character": 38,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6ae9513583231eed",
+        "9b755d2a3fe492d3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_86_ModuleDef",
+       "file": "crates/ide-completion/src/completions.rs",
+       "line": 218,
+       "character": 23,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2f5ab2e04fe3f688",
+        "0a60a00cdbcbc568"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_116_AwaitExpr",
+       "file": "crates/ide/src/folding_ranges.rs",
+       "line": 289,
+       "character": 36,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bef7124d6a76ad14",
+        "49c7f66edabf2911"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 285,
+     "differing": 15,
+     "transitions": {
+      "a>a": 8,
+      "b>a": 7
+     },
+     "examples": [
+      {
+       "name": "document_highlight_0_TupleFieldList",
+       "file": "crates/syntax/src/ast/make.rs",
+       "line": 1228,
+       "character": 29,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "168a10d39fb93b32",
+        "428707b2dfeecf60"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_9_FnPtrType",
+       "file": "crates/ide-assists/src/handlers/generate_fn_type_alias.rs",
+       "line": 102,
+       "character": 38,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "671a9c08783104a5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_24_Impl",
+       "file": "crates/ide-completion/src/completions/record.rs",
+       "line": 104,
+       "character": 61,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "690e984a4099806d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_30_InlineAsmOperand",
+       "file": "crates/ide-db/src/defs.rs",
+       "line": 96,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "19b7f09bcb84fa4a",
+        "d07e1d9fa7c0dd19"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_47_Body",
+       "file": "crates/hir/src/source_analyzer.rs",
+       "line": 326,
+       "character": 24,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b2aa9204b4b9eefc",
+        "ddb0fa0c6216e70d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_63_Union",
+       "file": "crates/ide-db/src/lib.rs",
+       "line": 331,
+       "character": 43,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "077ab9cb11498235"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_86_EnumVariantId",
+       "file": "crates/hir-def/src/lib.rs",
+       "line": 1088,
+       "character": 28,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5374cbe1fc05735b",
+        "10c127f60d28d341"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_88_Function",
+       "file": "crates/ide-db/src/search.rs",
+       "line": 314,
+       "character": 34,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "a0937c5890686c63"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_102_TypeAlias",
+       "file": "crates/ide-completion/src/completions/keyword.rs",
+       "line": 25,
+       "character": 17,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "d0b4b748a7395b91"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_123_MirEvalError",
+       "file": "crates/hir/src/lib.rs",
+       "line": 1825,
+       "character": 40,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "c046dd51e9c0dc91"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 295,
+     "differing": 5,
+     "transitions": {
+      "a>a": 5
+     },
+     "examples": [
+      {
+       "name": "hover_12_CfgMeta",
+       "file": "crates/hir-def/src/attrs.rs",
+       "line": 133,
+       "character": 20,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2749d7468f2030e5",
+        "20a9520cc935666e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_18_Literal",
+       "file": "crates/hir-def/src/expr_store/lower.rs",
+       "line": 3106,
+       "character": 39,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f477a4ab36868832",
+        "6995230bbce669e5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_62_ConstBlockPat",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 8943,
+       "character": 37,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c8a115e2c467e88c",
+        "e627ee599645683f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_183_TupleFieldList",
+       "file": "crates/ide-assists/src/handlers/convert_named_struct_to_tuple_struct.rs",
+       "line": 75,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "fb0623abbbc7cc6c",
+        "bf19d29e5ea5fb0e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_203_Field",
+       "file": "crates/hir/src/attrs.rs",
+       "line": 147,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "51462d574cffacfa",
+        "61481c9dec98260a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "862ab25",
+   "b": "862ab25-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "c565e10",
+   "b": "862ab25-2",
+   "same": 15247,
+   "differing": 53,
+   "methods": {
+    "definition": {
+     "same": 276,
+     "differing": 24,
+     "transitions": {
+      "a>a": 24
+     },
+     "examples": [
+      {
+       "name": "definition_0_Alone",
+       "file": "crates/hir-expand/src/fixup.rs",
+       "line": 183,
+       "character": 51,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "406e4eefb6006f53",
+        "6c8ca974d4d5586f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_13_TypeAliasId",
+       "file": "crates/hir-ty/src/infer.rs",
+       "line": 2509,
+       "character": 21,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6dca7d88e12a69df",
+        "880c2b73067931cc"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_34_File",
+       "file": "crates/hir/src/has_source.rs",
+       "line": 78,
+       "character": 27,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b8e84b9da4a788a0",
+        "508363a54370931e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_49_Name",
+       "file": "crates/ide-db/src/imports/insert_use.rs",
+       "line": 317,
+       "character": 30,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2326e536382c968e",
+        "c16138a76d6eb51b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_50_ConstArg",
+       "file": "crates/ide/src/inlay_hints/generic_param.rs",
+       "line": 133,
+       "character": 26,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1bf75915b3f7c1fe",
+        "14388021f9908da3"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_58_Left",
+       "file": "crates/ide/src/hover/render.rs",
+       "line": 43,
+       "character": 17,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8c343ab06612ce32",
+        "e239ecebf72436a1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_63_ModuleDef",
+       "file": "crates/ide-completion/src/completions/attribute/derive.rs",
+       "line": 48,
+       "character": 31,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4da253140787ca86",
+        "b9c138eefe3d1477"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_65_Notification",
+       "file": "lib/lsp-server/src/lib.rs",
+       "line": 355,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "678c5d61b1f495db",
+        "27fdae629c60afc2"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_98_Function",
+       "file": "crates/ide/src/rename.rs",
+       "line": 505,
+       "character": 59,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dd3f1595a46709c2",
+        "60594ebf55586c22"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "definition_106_IdentPat",
+       "file": "crates/ide-assists/src/utils/gen_trait_fn_body.rs",
+       "line": 443,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2f30045fcf8090e8",
+        "52c8f6aff8567798"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 291,
+     "differing": 9,
+     "transitions": {
+      "a>a": 9
+     },
+     "examples": [
+      {
+       "name": "refs_4_BuiltinDeriveImplMethod",
+       "file": "crates/hir/src/lib.rs",
+       "line": 1510,
+       "character": 28,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0b7b5e1986fe81c1",
+        "e6716da1ee3b368a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_15_Field",
+       "file": "crates/ide-db/src/defs.rs",
+       "line": 146,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "799e15d48fc1e4c9",
+        "8f17fca851a11a9d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_20_ConstId",
+       "file": "crates/hir/src/lib.rs",
+       "line": 4428,
+       "character": 27,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c46249b4e43100f4",
+        "c4811fbf3e74be3f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_24_InlineAsm",
+       "file": "crates/hir/src/lib.rs",
+       "line": 5796,
+       "character": 33,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "1f6e85a6aa96f2e8",
+        "3dfe9f098b9dfc9f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_37_TypeAliasId",
+       "file": "crates/hir-def/src/lib.rs",
+       "line": 1039,
+       "character": 27,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a846433275a1af96",
+        "e2de0d830690f931"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_69_PartialEq",
+       "file": "crates/hir-ty/src/builtin_derive.rs",
+       "line": 178,
+       "character": 35,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "46b3b70735449708",
+        "d4d3fa1ce055ea0e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_70_TypeAlias",
+       "file": "crates/ide-db/src/search.rs",
+       "line": 354,
+       "character": 38,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9b755d2a3fe492d3",
+        "6ae9513583231eed"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_86_ModuleDef",
+       "file": "crates/ide-completion/src/completions.rs",
+       "line": 218,
+       "character": 23,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0a60a00cdbcbc568",
+        "2f5ab2e04fe3f688"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_116_AwaitExpr",
+       "file": "crates/ide/src/folding_ranges.rs",
+       "line": 289,
+       "character": 36,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "49c7f66edabf2911",
+        "bef7124d6a76ad14"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 285,
+     "differing": 15,
+     "transitions": {
+      "a>a": 8,
+      "a>b": 7
+     },
+     "examples": [
+      {
+       "name": "document_highlight_0_TupleFieldList",
+       "file": "crates/syntax/src/ast/make.rs",
+       "line": 1228,
+       "character": 29,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "428707b2dfeecf60",
+        "168a10d39fb93b32"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_9_FnPtrType",
+       "file": "crates/ide-assists/src/handlers/generate_fn_type_alias.rs",
+       "line": 102,
+       "character": 38,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "671a9c08783104a5",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_24_Impl",
+       "file": "crates/ide-completion/src/completions/record.rs",
+       "line": 104,
+       "character": 61,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "690e984a4099806d",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_30_InlineAsmOperand",
+       "file": "crates/ide-db/src/defs.rs",
+       "line": 96,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d07e1d9fa7c0dd19",
+        "19b7f09bcb84fa4a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_47_Body",
+       "file": "crates/hir/src/source_analyzer.rs",
+       "line": 326,
+       "character": 24,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ddb0fa0c6216e70d",
+        "b2aa9204b4b9eefc"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_63_Union",
+       "file": "crates/ide-db/src/lib.rs",
+       "line": 331,
+       "character": 43,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "077ab9cb11498235",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_86_EnumVariantId",
+       "file": "crates/hir-def/src/lib.rs",
+       "line": 1088,
+       "character": 28,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "10c127f60d28d341",
+        "5374cbe1fc05735b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_88_Function",
+       "file": "crates/ide-db/src/search.rs",
+       "line": 314,
+       "character": 34,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "a0937c5890686c63",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_102_TypeAlias",
+       "file": "crates/ide-completion/src/completions/keyword.rs",
+       "line": 25,
+       "character": 17,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "d0b4b748a7395b91",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_123_MirEvalError",
+       "file": "crates/hir/src/lib.rs",
+       "line": 1825,
+       "character": 40,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "c046dd51e9c0dc91",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 295,
+     "differing": 5,
+     "transitions": {
+      "a>a": 5
+     },
+     "examples": [
+      {
+       "name": "hover_12_CfgMeta",
+       "file": "crates/hir-def/src/attrs.rs",
+       "line": 133,
+       "character": 20,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "20a9520cc935666e",
+        "2749d7468f2030e5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_18_Literal",
+       "file": "crates/hir-def/src/expr_store/lower.rs",
+       "line": 3106,
+       "character": 39,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6995230bbce669e5",
+        "f477a4ab36868832"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_62_ConstBlockPat",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 8943,
+       "character": 37,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "e627ee599645683f",
+        "c8a115e2c467e88c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_183_TupleFieldList",
+       "file": "crates/ide-assists/src/handlers/convert_named_struct_to_tuple_struct.rs",
+       "line": 75,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bf19d29e5ea5fb0e",
+        "fb0623abbbc7cc6c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "hover_203_Field",
+       "file": "crates/hir/src/attrs.rs",
+       "line": 147,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "61481c9dec98260a",
+        "51462d574cffacfa"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      }
+     ]
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_rust-analyzer_booster.json",
+  "repo_commit": "021bfc15e24909389bd208d1622b7f4f3942b91a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_0_Alone",
+   "file": "crates/hir-expand/src/fixup.rs",
+   "line": 183,
+   "character": 51,
+   "symbol": "Alone",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "6c8ca974d4d5586f",
+     "us": 252.8,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "406e4eefb6006f53",
+     "us": 316.6,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "6c8ca974d4d5586f",
+     "us": 286.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_13_TypeAliasId",
+   "file": "crates/hir-ty/src/infer.rs",
+   "line": 2509,
+   "character": 21,
+   "symbol": "TypeAliasId",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "880c2b73067931cc",
+     "us": 371.6,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "6dca7d88e12a69df",
+     "us": 372.5,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "880c2b73067931cc",
+     "us": 374.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_34_File",
+   "file": "crates/hir/src/has_source.rs",
+   "line": 78,
+   "character": 27,
+   "symbol": "File",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "508363a54370931e",
+     "us": 188.0,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "b8e84b9da4a788a0",
+     "us": 226.9,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "508363a54370931e",
+     "us": 184.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_49_Name",
+   "file": "crates/ide-db/src/imports/insert_use.rs",
+   "line": 317,
+   "character": 30,
+   "symbol": "Name",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "c16138a76d6eb51b",
+     "us": 186.0,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "2326e536382c968e",
+     "us": 186.6,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "c16138a76d6eb51b",
+     "us": 185.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_50_ConstArg",
+   "file": "crates/ide/src/inlay_hints/generic_param.rs",
+   "line": 133,
+   "character": 26,
+   "symbol": "ConstArg",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "14388021f9908da3",
+     "us": 223.3,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "1bf75915b3f7c1fe",
+     "us": 219.3,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "14388021f9908da3",
+     "us": 214.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_58_Left",
+   "file": "crates/ide/src/hover/render.rs",
+   "line": 43,
+   "character": 17,
+   "symbol": "Left",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "e239ecebf72436a1",
+     "us": 304.7,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "8c343ab06612ce32",
+     "us": 297.1,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "e239ecebf72436a1",
+     "us": 302.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_63_ModuleDef",
+   "file": "crates/ide-completion/src/completions/attribute/derive.rs",
+   "line": 48,
+   "character": 31,
+   "symbol": "ModuleDef",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "b9c138eefe3d1477",
+     "us": 191.9,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "4da253140787ca86",
+     "us": 198.3,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "b9c138eefe3d1477",
+     "us": 192.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_65_Notification",
+   "file": "lib/lsp-server/src/lib.rs",
+   "line": 355,
+   "character": 25,
+   "symbol": "Notification",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "27fdae629c60afc2",
+     "us": 178.2,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "678c5d61b1f495db",
+     "us": 182.3,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "27fdae629c60afc2",
+     "us": 186.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_98_Function",
+   "file": "crates/ide/src/rename.rs",
+   "line": 505,
+   "character": 59,
+   "symbol": "Function",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "60594ebf55586c22",
+     "us": 362.7,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "dd3f1595a46709c2",
+     "us": 329.9,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "60594ebf55586c22",
+     "us": 365.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_106_IdentPat",
+   "file": "crates/ide-assists/src/utils/gen_trait_fn_body.rs",
+   "line": 443,
+   "character": 19,
+   "symbol": "IdentPat",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "52c8f6aff8567798",
+     "us": 243.9,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "2f30045fcf8090e8",
+     "us": 574.9,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "52c8f6aff8567798",
+     "us": 252.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_154_Lang",
+   "file": "crates/hir/src/lib.rs",
+   "line": 366,
+   "character": 62,
+   "symbol": "Lang",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "d8bc549f45c05e2d",
+     "us": 153.0,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "8920143b4bad32d9",
+     "us": 207.3,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "d8bc549f45c05e2d",
+     "us": 157.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_160_Adt",
+   "file": "crates/hir/src/lib.rs",
+   "line": 511,
+   "character": 24,
+   "symbol": "Adt",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "0097ad8405974fb7",
+     "us": 167.5,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "d97bf95f28962316",
+     "us": 171.6,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "0097ad8405974fb7",
+     "us": 171.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_161_Function",
+   "file": "crates/ide-db/src/defs.rs",
+   "line": 121,
+   "character": 25,
+   "symbol": "Function",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "bace80fee2319214",
+     "us": 189.1,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "8e6ddf99942fa15f",
+     "us": 193.3,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "bace80fee2319214",
+     "us": 193.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_196_TraitId",
+   "file": "crates/hir/src/semantics/child_by_source.rs",
+   "line": 282,
+   "character": 30,
+   "symbol": "TraitId",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "c33bd37fb86252ee",
+     "us": 270.8,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "b7023ff4b81d8d80",
+     "us": 260.0,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "c33bd37fb86252ee",
+     "us": 283.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_202_KeyValueMeta",
+   "file": "crates/hir-def/src/attrs.rs",
+   "line": 752,
+   "character": 35,
+   "symbol": "KeyValueMeta",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "a8ed524ce5b0cc6f",
+     "us": 280.8,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "73e5e83cc24c2a16",
+     "us": 251.8,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "a8ed524ce5b0cc6f",
+     "us": 261.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_205_LatencySensitive",
+   "file": "crates/rust-analyzer/src/main_loop.rs",
+   "line": 709,
+   "character": 67,
+   "symbol": "LatencySensitive",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "2fca2a3df92982c2",
+     "us": 220.9,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "d58a4359568c6a29",
+     "us": 233.7,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "2fca2a3df92982c2",
+     "us": 222.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_222_Float",
+   "file": "crates/hir-ty/src/next_solver/util.rs",
+   "line": 252,
+   "character": 24,
+   "symbol": "Float",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "3f5a6facbb8eb831",
+     "us": 318.2,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "b531fd414db4be34",
+     "us": 303.8,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "3f5a6facbb8eb831",
+     "us": 314.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_233_BuiltinDeriveImplMethod",
+   "file": "crates/hir/src/has_source.rs",
+   "line": 184,
+   "character": 28,
+   "symbol": "BuiltinDeriveImplMethod",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "810004c9dd8639fb",
+     "us": 425.5,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "0aebc2b39a145458",
+     "us": 439.5,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "810004c9dd8639fb",
+     "us": 442.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_239_Record",
+   "file": "crates/ide-assists/src/handlers/extract_struct_from_enum_variant.rs",
+   "line": 179,
+   "character": 26,
+   "symbol": "Record",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "533b3d5379d0a164",
+     "us": 210.1,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "a586de1d5aebd189",
+     "us": 273.6,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "533b3d5379d0a164",
+     "us": 226.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_252_RecordPat",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 8886,
+   "character": 44,
+   "symbol": "RecordPat",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "8b2bd43d2d1e6612",
+     "us": 163.0,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "86a970fc0b37bf23",
+     "us": 180.0,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "8b2bd43d2d1e6612",
+     "us": 180.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_262_StaticId",
+   "file": "crates/hir-def/src/lang_item.rs",
+   "line": 92,
+   "character": 30,
+   "symbol": "StaticId",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "3d04a6902e583245",
+     "us": 222.2,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "348b845095e966a2",
+     "us": 229.0,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "3d04a6902e583245",
+     "us": 238.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_270_WHITESPACE",
+   "file": "crates/ide-ssr/src/parsing.rs",
+   "line": 400,
+   "character": 35,
+   "symbol": "WHITESPACE",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "382901276882d042",
+     "us": 186.2,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "f3616170298966b1",
+     "us": 248.9,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "382901276882d042",
+     "us": 198.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_274_Primitive",
+   "file": "crates/hir/src/lib.rs",
+   "line": 5936,
+   "character": 34,
+   "symbol": "Primitive",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "5c48f50b8dd7fdf6",
+     "us": 136.9,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "64d54af0d1284ffe",
+     "us": 141.6,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "5c48f50b8dd7fdf6",
+     "us": 147.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "definition",
+   "rpc_method": "textDocument/definition",
+   "name": "definition_287_Prefix",
+   "file": "crates/ide-diagnostics/src/handlers/type_mismatch.rs",
+   "line": 485,
+   "character": 74,
+   "symbol": "Prefix",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "fcaabe86155bc7b1",
+     "us": 209.1,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "b1003ea38e240014",
+     "us": 250.7,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "fcaabe86155bc7b1",
+     "us": 226.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_4_BuiltinDeriveImplMethod",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1510,
+   "character": 28,
+   "symbol": "BuiltinDeriveImplMethod",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "e6716da1ee3b368a",
+     "us": 975.3,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "0b7b5e1986fe81c1",
+     "us": 1830.0,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "e6716da1ee3b368a",
+     "us": 962.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_15_Field",
+   "file": "crates/ide-db/src/defs.rs",
+   "line": 146,
+   "character": 25,
+   "symbol": "Field",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "8f17fca851a11a9d",
+     "us": 916.3,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "799e15d48fc1e4c9",
+     "us": 1971.1,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "8f17fca851a11a9d",
+     "us": 920.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_20_ConstId",
+   "file": "crates/hir/src/lib.rs",
+   "line": 4428,
+   "character": 27,
+   "symbol": "ConstId",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "c4811fbf3e74be3f",
+     "us": 2449.6,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "c46249b4e43100f4",
+     "us": 1601.9,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "c4811fbf3e74be3f",
+     "us": 2443.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_24_InlineAsm",
+   "file": "crates/hir/src/lib.rs",
+   "line": 5796,
+   "character": 33,
+   "symbol": "InlineAsm",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "3dfe9f098b9dfc9f",
+     "us": 1231.3,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "1f6e85a6aa96f2e8",
+     "us": 1550.8,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "3dfe9f098b9dfc9f",
+     "us": 1228.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_37_TypeAliasId",
+   "file": "crates/hir-def/src/lib.rs",
+   "line": 1039,
+   "character": 27,
+   "symbol": "TypeAliasId",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "e2de0d830690f931",
+     "us": 2768.6,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "a846433275a1af96",
+     "us": 2362.7,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "e2de0d830690f931",
+     "us": 2743.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_69_PartialEq",
+   "file": "crates/hir-ty/src/builtin_derive.rs",
+   "line": 178,
+   "character": 35,
+   "symbol": "PartialEq",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "d4d3fa1ce055ea0e",
+     "us": 1041.6,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "46b3b70735449708",
+     "us": 984.2,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "d4d3fa1ce055ea0e",
+     "us": 1011.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_70_TypeAlias",
+   "file": "crates/ide-db/src/search.rs",
+   "line": 354,
+   "character": 38,
+   "symbol": "TypeAlias",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "6ae9513583231eed",
+     "us": 1863.3,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "9b755d2a3fe492d3",
+     "us": 1300.2,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "6ae9513583231eed",
+     "us": 1839.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_86_ModuleDef",
+   "file": "crates/ide-completion/src/completions.rs",
+   "line": 218,
+   "character": 23,
+   "symbol": "ModuleDef",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "2f5ab2e04fe3f688",
+     "us": 8785.5,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "0a60a00cdbcbc568",
+     "us": 2061.2,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "2f5ab2e04fe3f688",
+     "us": 8255.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_116_AwaitExpr",
+   "file": "crates/ide/src/folding_ranges.rs",
+   "line": 289,
+   "character": 36,
+   "symbol": "AwaitExpr",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "bef7124d6a76ad14",
+     "us": 2141.2,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "49c7f66edabf2911",
+     "us": 2525.5,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "bef7124d6a76ad14",
+     "us": 2169.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_0_TupleFieldList",
+   "file": "crates/syntax/src/ast/make.rs",
+   "line": 1228,
+   "character": 29,
+   "symbol": "TupleFieldList",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "168a10d39fb93b32",
+     "us": 883.3,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "428707b2dfeecf60",
+     "us": 1109.2,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "168a10d39fb93b32",
+     "us": 889.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_9_FnPtrType",
+   "file": "crates/ide-assists/src/handlers/generate_fn_type_alias.rs",
+   "line": 102,
+   "character": 38,
+   "symbol": "FnPtrType",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 787.0,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "671a9c08783104a5",
+     "us": 749.8,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 801.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_24_Impl",
+   "file": "crates/ide-completion/src/completions/record.rs",
+   "line": 104,
+   "character": 61,
+   "symbol": "Impl",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1096.9,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "690e984a4099806d",
+     "us": 771.7,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1111.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_30_InlineAsmOperand",
+   "file": "crates/ide-db/src/defs.rs",
+   "line": 96,
+   "character": 25,
+   "symbol": "InlineAsmOperand",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "19b7f09bcb84fa4a",
+     "us": 691.4,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "d07e1d9fa7c0dd19",
+     "us": 857.4,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "19b7f09bcb84fa4a",
+     "us": 724.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_47_Body",
+   "file": "crates/hir/src/source_analyzer.rs",
+   "line": 326,
+   "character": 24,
+   "symbol": "Body",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "b2aa9204b4b9eefc",
+     "us": 799.9,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "ddb0fa0c6216e70d",
+     "us": 947.5,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "b2aa9204b4b9eefc",
+     "us": 813.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_63_Union",
+   "file": "crates/ide-db/src/lib.rs",
+   "line": 331,
+   "character": 43,
+   "symbol": "Union",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 855.6,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "077ab9cb11498235",
+     "us": 905.4,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 872.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_86_EnumVariantId",
+   "file": "crates/hir-def/src/lib.rs",
+   "line": 1088,
+   "character": 28,
+   "symbol": "EnumVariantId",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "5374cbe1fc05735b",
+     "us": 1178.9,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "10c127f60d28d341",
+     "us": 986.6,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "5374cbe1fc05735b",
+     "us": 1182.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_88_Function",
+   "file": "crates/ide-db/src/search.rs",
+   "line": 314,
+   "character": 34,
+   "symbol": "Function",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1407.4,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "a0937c5890686c63",
+     "us": 851.5,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1410.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_102_TypeAlias",
+   "file": "crates/ide-completion/src/completions/keyword.rs",
+   "line": 25,
+   "character": 17,
+   "symbol": "TypeAlias",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1062.0,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "d0b4b748a7395b91",
+     "us": 780.5,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1068.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_123_MirEvalError",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1825,
+   "character": 40,
+   "symbol": "MirEvalError",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 892.6,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "c046dd51e9c0dc91",
+     "us": 931.6,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 883.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_187_Literal",
+   "file": "crates/hir-expand/src/attrs.rs",
+   "line": 82,
+   "character": 32,
+   "symbol": "Literal",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 844.5,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "5bdc6fa2ed85a009",
+     "us": 832.4,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 851.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_210_Int",
+   "file": "crates/hir-ty/src/infer/cast.rs",
+   "line": 53,
+   "character": 61,
+   "symbol": "Int",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "f6c1cfc4b060ea69",
+     "us": 815.4,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "e6b65d808a1e582f",
+     "us": 837.2,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "f6c1cfc4b060ea69",
+     "us": 831.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_223_BuiltinDeriveImplMethod",
+   "file": "crates/hir/src/lib.rs",
+   "line": 1738,
+   "character": 28,
+   "symbol": "BuiltinDeriveImplMethod",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "46be5483d772c519",
+     "us": 1659.3,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "ec122d93d4560820",
+     "us": 1876.0,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "46be5483d772c519",
+     "us": 1126.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_224_BlockExpr",
+   "file": "crates/syntax/src/syntax_editor.rs",
+   "line": 774,
+   "character": 49,
+   "symbol": "BlockExpr",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": true,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "d1c85d7189595de8",
+     "us": 1838.4,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "b7748dd0b110bc58",
+     "us": 1548.2,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "d1c85d7189595de8",
+     "us": 1805.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_289_Response",
+   "file": "lib/lsp-server/examples/minimal_lsp.rs",
+   "line": 326,
+   "character": 31,
+   "symbol": "Response",
+   "target_kind": "example",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "74c801ac3421f7b1",
+     "us": 777.0,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "f3df070395dbdd08",
+     "us": 728.4,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "74c801ac3421f7b1",
+     "us": 771.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_12_CfgMeta",
+   "file": "crates/hir-def/src/attrs.rs",
+   "line": 133,
+   "character": 20,
+   "symbol": "CfgMeta",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "2749d7468f2030e5",
+     "us": 264.2,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "20a9520cc935666e",
+     "us": 252.6,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "2749d7468f2030e5",
+     "us": 260.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_18_Literal",
+   "file": "crates/hir-def/src/expr_store/lower.rs",
+   "line": 3106,
+   "character": 39,
+   "symbol": "Literal",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "f477a4ab36868832",
+     "us": 422.8,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "6995230bbce669e5",
+     "us": 427.9,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "f477a4ab36868832",
+     "us": 412.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_62_ConstBlockPat",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 8943,
+   "character": 37,
+   "symbol": "ConstBlockPat",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "c8a115e2c467e88c",
+     "us": 255.9,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "e627ee599645683f",
+     "us": 257.0,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "c8a115e2c467e88c",
+     "us": 256.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_183_TupleFieldList",
+   "file": "crates/ide-assists/src/handlers/convert_named_struct_to_tuple_struct.rs",
+   "line": 75,
+   "character": 25,
+   "symbol": "TupleFieldList",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "fb0623abbbc7cc6c",
+     "us": 359.1,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "bf19d29e5ea5fb0e",
+     "us": 353.8,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "fb0623abbbc7cc6c",
+     "us": 350.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "hover",
+   "rpc_method": "textDocument/hover",
+   "name": "hover_203_Field",
+   "file": "crates/hir/src/attrs.rs",
+   "line": 147,
+   "character": 25,
+   "symbol": "Field",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "862ab25": {
+     "outcome": "a",
+     "digest": "51462d574cffacfa",
+     "us": 227.2,
+     "error": null
+    },
+    "c565e10": {
+     "outcome": "a",
+     "digest": "61481c9dec98260a",
+     "us": 222.4,
+     "error": null
+    },
+    "862ab25-2": {
+     "outcome": "a",
+     "digest": "51462d574cffacfa",
+     "us": 227.3,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 53,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_862ab25_vs_c565e10_ram9_rust-analyzer.json",
+  "sha256": "c4aaeae6e47dec3fb6a4a694475fcd7bd44fa970cfee243075828cf624fda3ef"
+ }
+}
