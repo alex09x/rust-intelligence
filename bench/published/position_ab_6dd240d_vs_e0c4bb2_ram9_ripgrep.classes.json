@@ -1,0 +1,128 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "ripgrep",
+ "report": "position_ab_6dd240d_vs_e0c4bb2_ram9_ripgrep.json",
+ "servers": [
+  {
+   "name": "6dd240d",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "e0c4bb2",
+   "commit": "e0c4bb2b0c33a5447b83397a37cc814ed057dae5",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "6dd240d-2",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 2,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 2
+ },
+ "rows_by_method": {
+  "incoming_calls": 2
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "crates/regex/src/error.rs",
+   "line": 16,
+   "character": 19,
+   "symbol": "regex",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/regex/src/error.rs",
+     16
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/regex/src/config.rs",
+       242,
+       "to_regex"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       259
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/regex/src/literal.rs",
+       107,
+       "one_regex"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       121
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 2,
+    "removed_count": 0,
+    "added_sites": 2,
+    "removed_sites": 0,
+    "added_site_lines": 2,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/printer/src/color.rs",
+   "line": 40,
+   "character": 8,
+   "symbol": "from_parse_error",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/printer/src/color.rs",
+     40
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/printer/src/color.rs",
+       297,
+       "from_str"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       319,
+       327
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 2,
+    "removed_sites": 0,
+    "added_site_lines": 2,
+    "removed_site_lines": 0
+   }
+  }
+ ]
+}

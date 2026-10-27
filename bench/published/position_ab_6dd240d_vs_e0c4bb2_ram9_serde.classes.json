@@ -1,0 +1,569 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_6dd240d_vs_e0c4bb2_ram9_serde.json",
+ "servers": [
+  {
+   "name": "6dd240d",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "e0c4bb2",
+   "commit": "e0c4bb2b0c33a5447b83397a37cc814ed057dae5",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "6dd240d-2",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 7,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 6,
+  "g4_call_sites_gained_by_callers_of_both_answers": 1
+ },
+ "rows_by_method": {
+  "incoming_calls": 7
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "serde_derive/src/de.rs",
+   "line": 218,
+   "character": 4,
+   "symbol": "requires_default",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "serde_derive/src/de.rs",
+     218
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:serde_derive/src/de.rs",
+       161,
+       "build_generics"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       192
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "test_suite/tests/test_de.rs",
+   "line": 155,
+   "character": 4,
+   "symbol": "test",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "g4_call_sites_gained_by_callers_of_both_answers",
+   "evidence": {
+    "item_definition": [
+     "test_suite/tests/test_de.rs",
+     155
+    ],
+    "added_callers": [],
+    "removed_callers": [],
+    "changed_callers": [
+     [
+      "ws:test_suite/tests/test_de.rs",
+      220,
+      "test_i8"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      245,
+      "test_i16"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      270,
+      "test_i32"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      295,
+      "test_i64"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      320,
+      "test_i128"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      345,
+      "test_isize"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      370,
+      "test_u8"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      395,
+      "test_u16"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      420,
+      "test_u32"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      445,
+      "test_u64"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      470,
+      "test_u128"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      495,
+      "test_usize"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      820,
+      "test_f32"
+     ],
+     [
+      "ws:test_suite/tests/test_de.rs",
+      828,
+      "test_f64"
+     ]
+    ],
+    "changed_callers_detail": [
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       220,
+       "test_i8"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       221
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       245,
+       "test_i16"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       246
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       270,
+       "test_i32"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       271
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       295,
+       "test_i64"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       296
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       320,
+       "test_i128"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       321
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       345,
+       "test_isize"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       346
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       370,
+       "test_u8"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       371
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       395,
+       "test_u16"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       396
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       420,
+       "test_u32"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       421
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       445,
+       "test_u64"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       446
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       470,
+       "test_u128"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       471
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       495,
+       "test_usize"
+      ],
+      "call_sites_before": 16,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       496
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       820,
+       "test_f32"
+      ],
+      "call_sites_before": 2,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       821
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:test_suite/tests/test_de.rs",
+       828,
+       "test_f64"
+      ],
+      "call_sites_before": 2,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       829
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "added_count": 0,
+    "removed_count": 0,
+    "added_sites": 0,
+    "removed_sites": 0,
+    "added_site_lines": 0,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1001,
+   "character": 8,
+   "symbol": "deserialize_u8",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "serde_core/src/de/mod.rs",
+     1001
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:serde_core/src/de/impls.rs",
+       413,
+       "deserialize"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       414
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 427,
+   "character": 8,
+   "symbol": "serialize_bool",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "serde_core/src/ser/mod.rs",
+     427
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:serde_core/src/ser/impls.rs",
+       21,
+       "serialize"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       21
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_derive/src/de.rs",
+   "line": 205,
+   "character": 4,
+   "symbol": "needs_deserialize_bound",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "serde_derive/src/de.rs",
+     205
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:serde_derive/src/de.rs",
+       161,
+       "build_generics"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       185
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1485,
+   "character": 8,
+   "symbol": "visit_f32",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "serde_core/src/de/mod.rs",
+     1485
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:serde_core/src/de/value.rs",
+       340,
+       "clone"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       340
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "serde_core/src/de/mod.rs",
+   "line": 1032,
+   "character": 8,
+   "symbol": "deserialize_f32",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "serde_core/src/de/mod.rs",
+     1032
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:serde_core/src/de/impls.rs",
+       450,
+       "deserialize"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       451
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  }
+ ]
+}

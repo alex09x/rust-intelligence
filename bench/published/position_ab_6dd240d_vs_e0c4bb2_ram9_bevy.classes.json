@@ -1,0 +1,2132 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_6dd240d_vs_e0c4bb2_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "6dd240d",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "e0c4bb2",
+   "commit": "e0c4bb2b0c33a5447b83397a37cc814ed057dae5",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "6dd240d-2",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 50,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 48,
+  "g4_call_sites_gained_by_callers_of_both_answers": 2
+ },
+ "rows_by_method": {
+  "incoming_calls": 50
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "examples/ui/scroll_and_overflow/overflow_transform.rs",
+   "line": 141,
+   "character": 4,
+   "symbol": "scale_inner",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/ui/scroll_and_overflow/overflow_transform.rs",
+     141
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/ui/scroll_and_overflow/overflow_transform.rs",
+       8,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       12
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_material/src/bind_group_layout_entries.rs",
+   "line": 209,
+   "character": 8,
+   "symbol": "into_bind_group_layout_entry_builder",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_material/src/bind_group_layout_entries.rs",
+     209
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_material/src/bind_group_layout_entries.rs",
+       282,
+       "into_array"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       283
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_input/src/gamepad.rs",
+   "line": 1589,
+   "character": 8,
+   "symbol": "gamepad_event_processing_system",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_input/src/gamepad.rs",
+     1589
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_input/src/gamepad.rs",
+       2202,
+       "new"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2208
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_input/src/lib.rs",
+       111,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       157
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 2,
+    "removed_count": 0,
+    "added_sites": 2,
+    "removed_sites": 0,
+    "added_site_lines": 2,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_anti_alias/src/taa/mod.rs",
+   "line": 354,
+   "character": 4,
+   "symbol": "prepare_taa_jitter",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_anti_alias/src/taa/mod.rs",
+     354
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_anti_alias/src/taa/mod.rs",
+       51,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       65
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_pbr/src/ssr/mod.rs",
+   "line": 388,
+   "character": 8,
+   "symbol": "prepare_ssr_pipelines",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_pbr/src/ssr/mod.rs",
+     388
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_pbr/src/ssr/mod.rs",
+       194,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       210
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/system/system_registry.rs",
+   "line": 1075,
+   "character": 12,
+   "symbol": "nested",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/system/system_registry.rs",
+     1075
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/system_registry.rs",
+       1069,
+       "nested_systems"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1090
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/testbed/full_ui.rs",
+   "line": 439,
+   "character": 8,
+   "symbol": "update_scroll_position",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/testbed/full_ui.rs",
+     439
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/testbed/full_ui.rs",
+       19,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       23
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/large_scenes/caldera_hotel/src/main.rs",
+   "line": 513,
+   "character": 4,
+   "symbol": "add_no_frustum_culling",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/large_scenes/caldera_hotel/src/main.rs",
+     513
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/large_scenes/caldera_hotel/src/main.rs",
+       98,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       126
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 1748,
+   "character": 12,
+   "symbol": "returning",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g4_call_sites_gained_by_callers_of_both_answers",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/system/mod.rs",
+     1748
+    ],
+    "added_callers": [],
+    "removed_callers": [],
+    "changed_callers": [
+     [
+      "ws:crates/bevy_ecs/src/system/mod.rs",
+      1742,
+      "assert_systems"
+     ]
+    ],
+    "changed_callers_detail": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/mod.rs",
+       1742,
+       "assert_systems"
+      ],
+      "call_sites_before": 4,
+      "call_sites_gained": 2,
+      "call_site_lines_gained": [
+       1775,
+       1790
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     }
+    ],
+    "added_count": 0,
+    "removed_count": 0,
+    "added_sites": 0,
+    "removed_sites": 0,
+    "added_site_lines": 0,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_pbr/src/wireframe.rs",
+   "line": 1360,
+   "character": 8,
+   "symbol": "extract_wireframe_entities_needing_specialization",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_pbr/src/wireframe.rs",
+     1360
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_pbr/src/wireframe.rs",
+       123,
+       "finish"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       167
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/showcase/game_menu.rs",
+   "line": 523,
+   "character": 8,
+   "symbol": "settings_menu_setup",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/showcase/game_menu.rs",
+     523
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/showcase/game_menu.rs",
+       245,
+       "menu_plugin"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       255
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/ui/scroll_and_overflow/drag_to_scroll.rs",
+   "line": 22,
+   "character": 4,
+   "symbol": "setup",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/ui/scroll_and_overflow/drag_to_scroll.rs",
+     22
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/ui/scroll_and_overflow/drag_to_scroll.rs",
+       12,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       15
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/ecs/fallible_params.rs",
+   "line": 63,
+   "character": 4,
+   "symbol": "setup",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/ecs/fallible_params.rs",
+     63
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/ecs/fallible_params.rs",
+       26,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       39
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 108,
+   "character": 4,
+   "symbol": "update_widget_values",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/ui/widgets/standard_widgets.rs",
+     108
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/ui/widgets/standard_widgets.rs",
+       27,
+       "main"
+      ],
+      "call_sites": 5,
+      "call_site_lines": [
+       38,
+       41,
+       42,
+       43,
+       44
+      ],
+      "sites_resolving_to_the_item": 5,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 5,
+    "removed_sites": 0,
+    "added_site_lines": 5,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_pbr/src/atmosphere/resources.rs",
+   "line": 366,
+   "character": 15,
+   "symbol": "queue_render_sky_pipelines",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_pbr/src/atmosphere/resources.rs",
+     366
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_pbr/src/atmosphere/mod.rs",
+       127,
+       "finish"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       176
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 423,
+   "character": 12,
+   "symbol": "pipe_out",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/schedule/executor/mod.rs",
+     423
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/executor/mod.rs",
+       421,
+       "piped_systems_first_system_skipped"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       435
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/schedule/schedule.rs",
+   "line": 3620,
+   "character": 12,
+   "symbol": "exclusive",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/schedule/schedule.rs",
+     3620
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/schedule.rs",
+       3616,
+       "ignore_deferred_still_syncs_before_exclusive_system_in_weak_chain"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3628
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/testbed/ui.rs",
+   "line": 4050,
+   "character": 12,
+   "symbol": "update",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/testbed/ui.rs",
+     4050
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/testbed/ui.rs",
+       19,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       74
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/2d/2d_shapes.rs",
+   "line": 215,
+   "character": 4,
+   "symbol": "rotate",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/2d/2d_shapes.rs",
+     215
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/2d/2d_shapes.rs",
+       47,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       59
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_render/src/render_asset.rs",
+   "line": 279,
+   "character": 4,
+   "symbol": "collect_render_assets_to_reextract",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_render/src/render_asset.rs",
+     279
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_render/src/render_asset.rs",
+       135,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       143
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui_widgets/src/checkbox.rs",
+   "line": 91,
+   "character": 4,
+   "symbol": "checkbox_on_pointer_down",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ui_widgets/src/checkbox.rs",
+     91
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/checkbox.rs",
+       269,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       272
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/world/mod.rs",
+   "line": 1794,
+   "character": 12,
+   "symbol": "clear_trackers",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/world/mod.rs",
+     1794
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/mod.rs",
+       576,
+       "changed_resource_system"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       609
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "benches/benches/bevy_ecs/bundles/spawn_many_zst.rs",
+   "line": 10,
+   "character": 8,
+   "symbol": "spawn_many_zst",
+   "target_kind": "bench",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "benches/benches/bevy_ecs/bundles/spawn_many_zst.rs",
+     10
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:benches/benches/bevy_ecs/bundles/mod.rs",
+       9,
+       "benches"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       11
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tests/3d/test_skinned_mesh_bounds.rs",
+   "line": 264,
+   "character": 4,
+   "symbol": "update_custom_mesh_animation",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tests/3d/test_skinned_mesh_bounds.rs",
+     264
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tests/3d/test_skinned_mesh_bounds.rs",
+       15,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       46
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "benches/benches/bevy_render/torus.rs",
+   "line": 7,
+   "character": 4,
+   "symbol": "torus",
+   "target_kind": "bench",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "benches/benches/bevy_render/torus.rs",
+     7
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:benches/benches/bevy_render/torus.rs",
+       13,
+       "benches"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       13
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/schedule/executor/mod.rs",
+   "line": 863,
+   "character": 12,
+   "symbol": "skippable_system",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/schedule/executor/mod.rs",
+     863
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/executor/mod.rs",
+       860,
+       "validation_skips_system_in_schedule"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       870
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_pbr/src/ssr/mod.rs",
+   "line": 321,
+   "character": 8,
+   "symbol": "init_screen_space_reflections_pipeline",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_pbr/src/ssr/mod.rs",
+     321
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_pbr/src/ssr/mod.rs",
+       194,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       208
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_settings/src/lib.rs",
+   "line": 724,
+   "character": 4,
+   "symbol": "handle_delayed_save",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_settings/src/lib.rs",
+     724
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_settings/src/lib.rs",
+       1201,
+       "test_handle_delayed_save_ticks_with_real_time_while_paused"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1225
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_settings/src/lib.rs",
+       146,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       172
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 2,
+    "removed_count": 0,
+    "added_sites": 2,
+    "removed_sites": 0,
+    "added_site_lines": 2,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/movement/physics_in_fixed_timestep.rs",
+   "line": 244,
+   "character": 4,
+   "symbol": "rotate_camera",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/movement/physics_in_fixed_timestep.rs",
+     244
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/movement/physics_in_fixed_timestep.rs",
+       100,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       120
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/testbed/ui.rs",
+   "line": 2085,
+   "character": 12,
+   "symbol": "setup",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/testbed/ui.rs",
+     2085
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/testbed/ui.rs",
+       19,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       55
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/async_tasks/async_compute.rs",
+   "line": 144,
+   "character": 4,
+   "symbol": "setup_env",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/async_tasks/async_compute.rs",
+     144
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/async_tasks/async_compute.rs",
+       23,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       26
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/3d/tonemapping.rs",
+   "line": 198,
+   "character": 4,
+   "symbol": "drag_drop_image",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/3d/tonemapping.rs",
+     198
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/3d/tonemapping.rs",
+       22,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       51
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/system/system_registry.rs",
+   "line": 1105,
+   "character": 12,
+   "symbol": "nested",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/system/system_registry.rs",
+     1105
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/system_registry.rs",
+       1099,
+       "nested_systems_with_inputs"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1118
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui_widgets/src/tree.rs",
+   "line": 153,
+   "character": 8,
+   "symbol": "tree_view_expand_self_update",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ui_widgets/src/tree.rs",
+     153
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_inspector/src/entity_tree.rs",
+       125,
+       "entity_tree_panel"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       146
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui_widgets/src/tree.rs",
+       906,
+       "expand_self_update_observer_applies_expansion_request"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       911
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:examples/ui/widgets/feathers_gallery.rs",
+       1051,
+       "demo_column_3"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1132
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:examples/ui/widgets/headless_tree.rs",
+       41,
+       "showcase"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       72
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 4,
+    "removed_count": 0,
+    "added_sites": 4,
+    "removed_sites": 0,
+    "added_site_lines": 4,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/system/mod.rs",
+   "line": 969,
+   "character": 12,
+   "symbol": "sys",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/system/mod.rs",
+     969
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/mod.rs",
+       968,
+       "conflicting_system_resources"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       970
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_camera/src/primitives.rs",
+   "line": 16,
+   "character": 8,
+   "symbol": "get_aabb",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_camera/src/primitives.rs",
+     16
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_camera/src/visibility/mod.rs",
+       557,
+       "calculate_bounds"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       588
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_sprite/src/lib.rs",
+       107,
+       "calculate_bounds_2d"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       160
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 2,
+    "removed_count": 0,
+    "added_sites": 2,
+    "removed_sites": 0,
+    "added_site_lines": 2,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_anti_alias/src/smaa/mod.rs",
+   "line": 654,
+   "character": 4,
+   "symbol": "prepare_smaa_uniforms",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_anti_alias/src/smaa/mod.rs",
+     654
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_anti_alias/src/smaa/mod.rs",
+       290,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       372
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/system/system_param.rs",
+   "line": 3430,
+   "character": 12,
+   "symbol": "system",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/system/system_param.rs",
+     3430
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/system/system_param.rs",
+       3429,
+       "mutable_world_with_query_and_system_state_works"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       3431
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/movement/physics_in_fixed_timestep.rs",
+   "line": 390,
+   "character": 4,
+   "symbol": "interpolate_rendered_transform",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/movement/physics_in_fixed_timestep.rs",
+     390
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/movement/physics_in_fixed_timestep.rs",
+       100,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       133
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/showcase/desk_toy.rs",
+   "line": 246,
+   "character": 4,
+   "symbol": "start_drag",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/showcase/desk_toy.rs",
+     246
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/showcase/desk_toy.rs",
+       19,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       41
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "benches/benches/bevy_reflect/list.rs",
+   "line": 96,
+   "character": 4,
+   "symbol": "concrete_list_to_dynamic_list",
+   "target_kind": "bench",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "benches/benches/bevy_reflect/list.rs",
+     96
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:benches/benches/bevy_reflect/list.rs",
+       11,
+       "benches"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       13
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_feathers/src/controls/button.rs",
+   "line": 153,
+   "character": 4,
+   "symbol": "update_button_styles",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_feathers/src/controls/button.rs",
+     153
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_feathers/src/controls/button.rs",
+       284,
+       "build"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       287
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/entity/clone_entities.rs",
+   "line": 2098,
+   "character": 12,
+   "symbol": "test_handler",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/entity/clone_entities.rs",
+     2098
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/entity/clone_entities.rs",
+       2096,
+       "clone_entity_with_dynamic_components"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2119
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_dev_tools/src/render_debug.rs",
+   "line": 587,
+   "character": 4,
+   "symbol": "prepare_debug_overlay_pipelines",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_dev_tools/src/render_debug.rs",
+     587
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_dev_tools/src/render_debug.rs",
+       97,
+       "finish"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       108
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/mobile/src/lib.rs",
+   "line": 65,
+   "character": 4,
+   "symbol": "touch_camera",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/mobile/src/lib.rs",
+     65
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/mobile/src/lib.rs",
+       20,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       55
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/schedule/schedule.rs",
+   "line": 3569,
+   "character": 12,
+   "symbol": "read",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g4_call_sites_gained_by_callers_of_both_answers",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/schedule/schedule.rs",
+     3569
+    ],
+    "added_callers": [],
+    "removed_callers": [],
+    "changed_callers": [
+     [
+      "ws:crates/bevy_ecs/src/schedule/schedule.rs",
+      3568,
+      "chain_ignore_deferred_around_weak_group_fans_out_without_sync_point"
+     ]
+    ],
+    "changed_callers_detail": [
+     {
+      "caller": [
+       "ws:crates/bevy_ecs/src/schedule/schedule.rs",
+       3568,
+       "chain_ignore_deferred_around_weak_group_fans_out_without_sync_point"
+      ],
+      "call_sites_before": 2,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       3579
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "added_count": 0,
+    "removed_count": 0,
+    "added_sites": 0,
+    "removed_sites": 0,
+    "added_site_lines": 0,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/testbed/ui.rs",
+   "line": 4077,
+   "character": 12,
+   "symbol": "setup",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/testbed/ui.rs",
+     4077
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/testbed/ui.rs",
+       19,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       65
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/3d/shadow_biases.rs",
+   "line": 205,
+   "character": 4,
+   "symbol": "cycle_filter_methods",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/3d/shadow_biases.rs",
+     205
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/3d/shadow_biases.rs",
+       9,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       17
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_feathers/src/controls/color_input.rs",
+   "line": 753,
+   "character": 4,
+   "symbol": "rg_color_plane_value_change",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_feathers/src/controls/color_input.rs",
+     753
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_feathers/src/controls/color_input.rs",
+       342,
+       "color_input_popup"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       496
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "examples/showcase/loading_screen.rs",
+   "line": 264,
+   "character": 4,
+   "symbol": "display_loading_screen",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "examples/showcase/loading_screen.rs",
+     264
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/showcase/loading_screen.rs",
+       18,
+       "main"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       28
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  }
+ ]
+}

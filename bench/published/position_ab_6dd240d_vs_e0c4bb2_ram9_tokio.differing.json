@@ -1,0 +1,3885 @@
+{
+ "repo": "tokio-rs/tokio",
+ "repo_dir_name": "tokio",
+ "repo_head": "b2636752450484955e7ad334bac678424d51bc4a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 308,
+ "positions_file": "matrix_tokio_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 301,
+ "timestamp_start": "2026-10-27T21:32:48.530034+00:00",
+ "timestamp_end": "2026-10-27T21:38:58.375099+00:00",
+ "servers": [
+  {
+   "name": "6dd240d",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8, dirty: false)",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 107.1,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 491.2,
+     "p99_us": 1911.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 413.2,
+     "p99_us": 855.2,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 424.4,
+     "p99_us": 2041.9,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 206,
+     "b": 94,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2509.1,
+     "p99_us": 9217.7,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2060.3,
+     "p99_us": 26379.7,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 208,
+     "b": 92,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2259.1,
+     "p99_us": 16134.0,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 130.6,
+     "p99_us": 1414.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17081.8,
+     "p99_us": 30278.8,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.2,
+     "p99_us": 20.4,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 859.5,
+     "p99_us": 1477.8,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2120.3,
+     "p99_us": 15446.4,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 18.1,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 78.5,
+     "p99_us": 21792.4,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.2,
+     "p99_us": 65.4,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 13.0,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.9,
+     "p99_us": 63.3,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.9,
+     "p99_us": 61.7,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.4,
+     "p99_us": 105.0,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 15.5,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 436.6,
+     "p99_us": 1082.1,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2142.9,
+     "p99_us": 12191.8,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1009.3,
+     "p99_us": 12652.3,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 379.9,
+     "p99_us": 750.0,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1989.1,
+     "p99_us": 7006.4,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.4,
+     "p99_us": 2644.3,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 108.7,
+     "p99_us": 310.7,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.4,
+     "p99_us": 125.7,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 15.1,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 15.8,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 13.8,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 94316.1,
+     "p99_us": 107384.3,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 94176.5,
+     "p99_us": 195529.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 94231.1,
+     "p99_us": 104846.0,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 2124.6,
+     "p99_us": 3076.8,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2406.1,
+     "p99_us": 4704.6,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.1,
+     "p99_us": 111.6,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 71.5,
+     "p99_us": 286.8,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.0,
+     "p99_us": 18.1,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.9,
+     "p99_us": 18.0,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 488.3,
+     "p99_us": 1424.0,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 493.6,
+     "p99_us": 1169.6,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 443.4,
+     "p99_us": 1114.0,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 58.9,
+     "p99_us": 435.0,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 410.4,
+     "p99_us": 718.5,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.1,
+     "p99_us": 18.9,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 50.2,
+     "p99_us": 432.8,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2069.1,
+     "p99_us": 2412.9,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 17.9,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 16.2,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 14.3,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.4,
+     "p99_us": 79.3,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       206,
+       94,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       208,
+       92,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "e0c4bb2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: e0c4bb2b0c33a5447b83397a37cc814ed057dae5, dirty: false)",
+   "commit": "e0c4bb2b0c33a5447b83397a37cc814ed057dae5",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 3
+   },
+   "duration_s": 118.2,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 454.2,
+     "p99_us": 954.7,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 412.9,
+     "p99_us": 795.3,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 418.5,
+     "p99_us": 1720.7,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 206,
+     "b": 94,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2510.2,
+     "p99_us": 6075.9,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2151.8,
+     "p99_us": 27594.3,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 208,
+     "b": 92,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2196.8,
+     "p99_us": 16206.5,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 130.0,
+     "p99_us": 1490.2,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17732.1,
+     "p99_us": 28366.3,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.2,
+     "p99_us": 26.2,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 856.6,
+     "p99_us": 1493.8,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2130.8,
+     "p99_us": 15578.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 20.1,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 77.0,
+     "p99_us": 22639.3,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.8,
+     "p99_us": 63.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 25.3,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.9,
+     "p99_us": 62.7,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.1,
+     "p99_us": 60.8,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.0,
+     "p99_us": 105.6,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 15.3,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 433.7,
+     "p99_us": 850.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 106,
+     "b": 194,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2247.9,
+     "p99_us": 12503.6,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1009.0,
+     "p99_us": 12725.9,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 373.4,
+     "p99_us": 792.9,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1891.0,
+     "p99_us": 4052.4,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.5,
+     "p99_us": 2351.8,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 110.0,
+     "p99_us": 300.4,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.9,
+     "p99_us": 125.8,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 12.1,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 15.5,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92923.8,
+     "p99_us": 105733.1,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 94669.9,
+     "p99_us": 199653.8,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 297,
+     "c": 3,
+     "n": 300,
+     "p50_us": 96524.8,
+     "p99_us": 1136388.5,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 2152.4,
+     "p99_us": 9903.4,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2436.1,
+     "p99_us": 4912.4,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 33.5,
+     "p99_us": 144.9,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 74.1,
+     "p99_us": 263.0,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.6,
+     "p99_us": 20.5,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 17.9,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 510.9,
+     "p99_us": 1108.8,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 502.6,
+     "p99_us": 1155.7,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 446.9,
+     "p99_us": 1053.4,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 72.9,
+     "p99_us": 455.1,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 406.9,
+     "p99_us": 720.8,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.5,
+     "p99_us": 21.2,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 55.3,
+     "p99_us": 419.4,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2014.2,
+     "p99_us": 2608.7,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 18.3,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 13.6,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 24.8,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 22.6,
+     "p99_us": 127.8,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       206,
+       94,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       208,
+       92,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       106,
+       194,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "on_type_formatting",
+      "ours": [
+       0,
+       297,
+       3
+      ],
+      "matrix": [
+       0,
+       300,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "6dd240d-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8, dirty: false)",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 4
+   },
+   "duration_s": 139.5,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 480.5,
+     "p99_us": 956.0,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 423.8,
+     "p99_us": 827.3,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 439.9,
+     "p99_us": 2749.5,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 206,
+     "b": 94,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2508.7,
+     "p99_us": 5730.3,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2138.7,
+     "p99_us": 27363.4,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 208,
+     "b": 92,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2155.1,
+     "p99_us": 15832.7,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 133.4,
+     "p99_us": 1437.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17786.4,
+     "p99_us": 93105.4,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.8,
+     "p99_us": 48.6,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1394.7,
+     "p99_us": 6585.6,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 6377.9,
+     "p99_us": 64433.3,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.6,
+     "p99_us": 119.3,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1244.4,
+     "p99_us": 60689.2,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1108.0,
+     "p99_us": 8625.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.9,
+     "p99_us": 665.8,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 99.6,
+     "p99_us": 5377.0,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 60.0,
+     "p99_us": 4408.7,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 72.9,
+     "p99_us": 4191.9,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.9,
+     "p99_us": 196.7,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1191.3,
+     "p99_us": 12167.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2990.1,
+     "p99_us": 26704.2,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1358.1,
+     "p99_us": 14722.7,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 404.8,
+     "p99_us": 831.3,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2062.8,
+     "p99_us": 4336.7,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17.7,
+     "p99_us": 2689.2,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 118.0,
+     "p99_us": 319.8,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.2,
+     "p99_us": 125.7,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.9,
+     "p99_us": 22.8,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 22.8,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.2,
+     "p99_us": 14.3,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 94337.5,
+     "p99_us": 106646.6,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 247,
+     "c": 4,
+     "n": 300,
+     "p50_us": 99933.2,
+     "p99_us": 2000298.0,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 100671.9,
+     "p99_us": 111988.3,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 2343.0,
+     "p99_us": 10542.4,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2568.9,
+     "p99_us": 5540.1,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 35.8,
+     "p99_us": 151.8,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 78.5,
+     "p99_us": 277.6,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 18.1,
+     "p99_us": 22.6,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.8,
+     "p99_us": 21.0,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 511.6,
+     "p99_us": 1177.3,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 483.3,
+     "p99_us": 1221.6,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 468.1,
+     "p99_us": 1112.9,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 69.3,
+     "p99_us": 444.2,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 435.9,
+     "p99_us": 780.4,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.5,
+     "p99_us": 20.9,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 55.4,
+     "p99_us": 556.5,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2238.6,
+     "p99_us": 2883.9,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 18.2,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 16.6,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 17.3,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 25.2,
+     "p99_us": 945.1,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       206,
+       94,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       208,
+       92,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "range_formatting",
+      "ours": [
+       49,
+       247,
+       4
+      ],
+      "matrix": [
+       49,
+       251,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "6dd240d",
+   "b": "e0c4bb2",
+   "same": 15290,
+   "differing": 10,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 293,
+     "differing": 7,
+     "transitions": {
+      "b>a": 4,
+      "a>a": 3
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_139_multicast_ttl_v4",
+       "file": "tokio/src/net/udp.rs",
+       "line": 1938,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "0bac91ce001f6372"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_211_contains_impl_trait",
+       "file": "tokio-macros/src/entry.rs",
+       "line": 311,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "55355b6d88937f92",
+        "497f0327f371d55f"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_239_block_on_current_thread",
+       "file": "benches/net_accept.rs",
+       "line": 131,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "83fadde46f5f55e7"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_249_rt_curr_spawn_many_remote_busy",
+       "file": "benches/rt_current_thread.rs",
+       "line": 50,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "15db62ebd6b288d9"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_253_stdio",
+       "file": "tokio/src/process/unix/mod.rs",
+       "line": 365,
+       "character": 15,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a2be47b92a1742f4",
+        "365e1ef77fe77bf0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_262_rt_multi_spawn_many_remote_busy2",
+       "file": "benches/rt_multi_threaded.rs",
+       "line": 105,
+       "character": 4,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "15f8783382194823"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_283_is_error",
+       "file": "tokio/tests/sync_errors.rs",
+       "line": 7,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "db3dfd188c3f59ab",
+        "779fed1827ab8727"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 297,
+     "differing": 3,
+     "transitions": {
+      "b>c": 3
+     },
+     "examples": [
+      {
+       "name": "on_type_formatting_9_reset",
+       "file": "tokio/tests/time_sleep.rs",
+       "line": 142,
+       "character": 20,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "on_type_formatting_10_as_ptr",
+       "file": "tokio/src/runtime/time_alt/entry.rs",
+       "line": 137,
+       "character": 27,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "on_type_formatting_11_in_sequence",
+       "file": "tokio/src/fs/file/tests.rs",
+       "line": 615,
+       "character": 10,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      }
+     ]
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "6dd240d",
+   "b": "6dd240d-2",
+   "same": 15296,
+   "differing": 4,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 296,
+     "differing": 4,
+     "transitions": {
+      "b>c": 4
+     },
+     "examples": [
+      {
+       "name": "range_formatting_66_stream_map_while.rs",
+       "file": "tokio-stream/tests/stream_map_while.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "range_formatting_67_rt_panic.rs",
+       "file": "tokio/tests/rt_panic.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "range_formatting_209_lookup_host.rs",
+       "file": "tokio/src/net/lookup_host.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "macro",
+       "cfg_test": false
+      },
+      {
+       "name": "range_formatting_214_join.rs",
+       "file": "tokio/src/macros/join.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "e0c4bb2",
+   "b": "6dd240d-2",
+   "same": 15286,
+   "differing": 14,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 293,
+     "differing": 7,
+     "transitions": {
+      "a>b": 4,
+      "a>a": 3
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_139_multicast_ttl_v4",
+       "file": "tokio/src/net/udp.rs",
+       "line": 1938,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "0bac91ce001f6372",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_211_contains_impl_trait",
+       "file": "tokio-macros/src/entry.rs",
+       "line": 311,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "497f0327f371d55f",
+        "55355b6d88937f92"
+       ],
+       "target_kind": "proc-macro",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_239_block_on_current_thread",
+       "file": "benches/net_accept.rs",
+       "line": 131,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "83fadde46f5f55e7",
+        "empty"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_249_rt_curr_spawn_many_remote_busy",
+       "file": "benches/rt_current_thread.rs",
+       "line": 50,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "15db62ebd6b288d9",
+        "empty"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_253_stdio",
+       "file": "tokio/src/process/unix/mod.rs",
+       "line": 365,
+       "character": 15,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "365e1ef77fe77bf0",
+        "a2be47b92a1742f4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_262_rt_multi_spawn_many_remote_busy2",
+       "file": "benches/rt_multi_threaded.rs",
+       "line": 105,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "15f8783382194823",
+        "empty"
+       ],
+       "target_kind": "bench",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_283_is_error",
+       "file": "tokio/tests/sync_errors.rs",
+       "line": 7,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "779fed1827ab8727",
+        "db3dfd188c3f59ab"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 296,
+     "differing": 4,
+     "transitions": {
+      "b>c": 4
+     },
+     "examples": [
+      {
+       "name": "range_formatting_66_stream_map_while.rs",
+       "file": "tokio-stream/tests/stream_map_while.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "range_formatting_67_rt_panic.rs",
+       "file": "tokio/tests/rt_panic.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "test",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      },
+      {
+       "name": "range_formatting_209_lookup_host.rs",
+       "file": "tokio/src/net/lookup_host.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "macro",
+       "cfg_test": false
+      },
+      {
+       "name": "range_formatting_214_join.rs",
+       "file": "tokio/src/macros/join.rs",
+       "line": 1,
+       "character": 1,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "ident",
+       "cfg_test": false
+      }
+     ]
+    },
+    "on_type_formatting": {
+     "same": 297,
+     "differing": 3,
+     "transitions": {
+      "c>b": 3
+     },
+     "examples": [
+      {
+       "name": "on_type_formatting_9_reset",
+       "file": "tokio/tests/time_sleep.rs",
+       "line": 142,
+       "character": 20,
+       "outcomes": [
+        "c",
+        "b"
+       ],
+       "digests": [
+        null,
+        "empty"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "on_type_formatting_10_as_ptr",
+       "file": "tokio/src/runtime/time_alt/entry.rs",
+       "line": 137,
+       "character": 27,
+       "outcomes": [
+        "c",
+        "b"
+       ],
+       "digests": [
+        null,
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "on_type_formatting_11_in_sequence",
+       "file": "tokio/src/fs/file/tests.rs",
+       "line": 615,
+       "character": 10,
+       "outcomes": [
+        "c",
+        "b"
+       ],
+       "digests": [
+        null,
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      }
+     ]
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_tokio_booster.json",
+  "repo_commit": "b2636752450484955e7ad334bac678424d51bc4a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_139_multicast_ttl_v4",
+   "file": "tokio/src/net/udp.rs",
+   "line": 1938,
+   "character": 12,
+   "symbol": "multicast_ttl_v4",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2086.2,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "a",
+     "digest": "0bac91ce001f6372",
+     "us": 2768.2,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2860.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_211_contains_impl_trait",
+   "file": "tokio-macros/src/entry.rs",
+   "line": 311,
+   "character": 4,
+   "symbol": "contains_impl_trait",
+   "target_kind": "proc-macro",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "a",
+     "digest": "55355b6d88937f92",
+     "us": 3297.9,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "a",
+     "digest": "497f0327f371d55f",
+     "us": 3386.9,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "a",
+     "digest": "55355b6d88937f92",
+     "us": 11630.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_239_block_on_current_thread",
+   "file": "benches/net_accept.rs",
+   "line": 131,
+   "character": 4,
+   "symbol": "block_on_current_thread",
+   "target_kind": "bench",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1677.7,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "a",
+     "digest": "83fadde46f5f55e7",
+     "us": 1817.9,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1986.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_249_rt_curr_spawn_many_remote_busy",
+   "file": "benches/rt_current_thread.rs",
+   "line": 50,
+   "character": 4,
+   "symbol": "rt_curr_spawn_many_remote_busy",
+   "target_kind": "bench",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1657.2,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "a",
+     "digest": "15db62ebd6b288d9",
+     "us": 1803.8,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1925.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_253_stdio",
+   "file": "tokio/src/process/unix/mod.rs",
+   "line": 365,
+   "character": 15,
+   "symbol": "stdio",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "a",
+     "digest": "a2be47b92a1742f4",
+     "us": 3795.7,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "a",
+     "digest": "365e1ef77fe77bf0",
+     "us": 4218.2,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "a",
+     "digest": "a2be47b92a1742f4",
+     "us": 5836.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_262_rt_multi_spawn_many_remote_busy2",
+   "file": "benches/rt_multi_threaded.rs",
+   "line": 105,
+   "character": 4,
+   "symbol": "rt_multi_spawn_many_remote_busy2",
+   "target_kind": "bench",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1820.5,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "a",
+     "digest": "15f8783382194823",
+     "us": 1807.5,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2001.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_283_is_error",
+   "file": "tokio/tests/sync_errors.rs",
+   "line": 7,
+   "character": 4,
+   "symbol": "is_error",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "a",
+     "digest": "db3dfd188c3f59ab",
+     "us": 2803.4,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "a",
+     "digest": "779fed1827ab8727",
+     "us": 3897.8,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "a",
+     "digest": "db3dfd188c3f59ab",
+     "us": 3510.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "range_formatting",
+   "rpc_method": "textDocument/rangeFormatting",
+   "name": "range_formatting_66_stream_map_while.rs",
+   "file": "tokio-stream/tests/stream_map_while.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 190253.9,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 186989.5,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2008216.9,
+     "error": "TIMEOUT"
+    }
+   }
+  },
+  {
+   "method": "range_formatting",
+   "rpc_method": "textDocument/rangeFormatting",
+   "name": "range_formatting_67_rt_panic.rs",
+   "file": "tokio/tests/rt_panic.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "test",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 179776.7,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 186435.7,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000282.2,
+     "error": "TIMEOUT"
+    }
+   }
+  },
+  {
+   "method": "range_formatting",
+   "rpc_method": "textDocument/rangeFormatting",
+   "name": "range_formatting_209_lookup_host.rs",
+   "file": "tokio/src/net/lookup_host.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "macro",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 188358.7,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 185284.3,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2007309.6,
+     "error": "TIMEOUT"
+    }
+   }
+  },
+  {
+   "method": "range_formatting",
+   "rpc_method": "textDocument/rangeFormatting",
+   "name": "range_formatting_214_join.rs",
+   "file": "tokio/src/macros/join.rs",
+   "line": 1,
+   "character": 1,
+   "symbol": null,
+   "target_kind": "lib",
+   "cursor_kind": "ident",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 188394.2,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 180154.4,
+     "error": null
+    },
+    "6dd240d-2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2001866.9,
+     "error": "TIMEOUT"
+    }
+   }
+  },
+  {
+   "method": "on_type_formatting",
+   "rpc_method": "textDocument/onTypeFormatting",
+   "name": "on_type_formatting_9_reset",
+   "file": "tokio/tests/time_sleep.rs",
+   "line": 142,
+   "character": 20,
+   "symbol": "reset",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 89132.0,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2002569.5,
+     "error": "TIMEOUT"
+    },
+    "6dd240d-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 95793.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "on_type_formatting",
+   "rpc_method": "textDocument/onTypeFormatting",
+   "name": "on_type_formatting_10_as_ptr",
+   "file": "tokio/src/runtime/time_alt/entry.rs",
+   "line": 137,
+   "character": 27,
+   "symbol": "as_ptr",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 85543.6,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2010022.4,
+     "error": "TIMEOUT"
+    },
+    "6dd240d-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 109309.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "on_type_formatting",
+   "rpc_method": "textDocument/onTypeFormatting",
+   "name": "on_type_formatting_11_in_sequence",
+   "file": "tokio/src/fs/file/tests.rs",
+   "line": 615,
+   "character": 10,
+   "symbol": "in_sequence",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "6dd240d": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 94520.8,
+     "error": null
+    },
+    "e0c4bb2": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2006358.5,
+     "error": "TIMEOUT"
+    },
+    "6dd240d-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 101856.1,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 14,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_6dd240d_vs_e0c4bb2_ram9_tokio.json",
+  "sha256": "04af6cf2fc9729ef3ac47be3ee516d3a84b4143de01eab60f69538f57aedc707"
+ }
+}

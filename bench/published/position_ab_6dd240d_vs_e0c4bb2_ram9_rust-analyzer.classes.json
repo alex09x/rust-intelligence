@@ -1,0 +1,489 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_6dd240d_vs_e0c4bb2_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "6dd240d",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "e0c4bb2",
+   "commit": "e0c4bb2b0c33a5447b83397a37cc814ed057dae5",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "6dd240d-2",
+   "commit": "6dd240d69cf16bab6e44a6b70a0a5e1ed63c0ca8",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 5,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 5
+ },
+ "rows_by_method": {
+  "incoming_calls": 5
+ },
+ "rows": [
+  {
+   "method": "incoming_calls",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 2507,
+   "character": 8,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     2507
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/ide-completion/src/context/analysis.rs",
+       966,
+       "classify_name_ref"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1743
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/hir-expand/src/builtin/derive_macro.rs",
+   "line": 1128,
+   "character": 4,
+   "symbol": "coerce_pointee_expand",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/hir-expand/src/builtin/derive_macro.rs",
+     1128
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/hir-expand/src/builtin/derive_macro.rs",
+       67,
+       "fmt"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       77
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/ide-assists/src/handlers/unnecessary_async.rs",
+   "line": 31,
+   "character": 15,
+   "symbol": "unnecessary_async",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/ide-assists/src/handlers/unnecessary_async.rs",
+     31
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       138,
+       "applies_on_empty_function"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       139
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       143,
+       "applies_and_removes_whitespace"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       144
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       148,
+       "applies_on_function_with_a_non_await_expr"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       149
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       153,
+       "does_not_apply_on_function_with_an_await_expr"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       154
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       158,
+       "applies_and_removes_await_on_reference"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       160
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       175,
+       "applies_and_removes_await_from_within_module"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       177
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       192,
+       "applies_and_removes_await_on_inner_await"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       194
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       210,
+       "applies_and_removes_await_on_outer_await"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       212
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       228,
+       "applies_on_method_call"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       230
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       243,
+       "does_not_apply_on_function_with_a_nested_await_expr"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       245
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       251,
+       "does_not_apply_when_not_on_async_token"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       252
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unnecessary_async.rs",
+       256,
+       "does_not_apply_on_async_trait_method"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       258
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/lib.rs",
+       242,
+       "all"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       382
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 13,
+    "removed_count": 0,
+    "added_sites": 13,
+    "removed_sites": 0,
+    "added_site_lines": 13,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/hir-expand/src/builtin/fn_macro.rs",
+   "line": 204,
+   "character": 4,
+   "symbol": "assert_expand",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/hir-expand/src/builtin/fn_macro.rs",
+     204
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/hir-expand/src/builtin/fn_macro.rs",
+       103,
+       "fmt"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       109
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "changed_callers_detail": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 4363,
+   "character": 8,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     4363
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/hir-ty/src/diagnostics/expr.rs",
+       502,
+       "check_for_unnecessary_else"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       543
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/pull_assignment_up.rs",
+       36,
+       "pull_assignment_up"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       54
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-completion/src/context/analysis.rs",
+       2090,
+       "is_after_if_expr"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       2099
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-diagnostics/src/handlers/remove_unnecessary_else.rs",
+       43,
+       "fixes"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       49
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide/src/highlight_related.rs",
+       308,
+       "highlight_branch_exit_points"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       359
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/syntax/src/ast/expr_ext.rs",
+       104,
+       "if_block_condition"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       117
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/syntax/src/ast/expr_ext.rs",
+       142,
+       "if_condition_with_if_inside"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       152
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [
+     [
+      "ws:crates/ide/src/goto_definition.rs",
+      546,
+      "find_branch_root"
+     ]
+    ],
+    "changed_callers_detail": [
+     {
+      "caller": [
+       "ws:crates/ide/src/goto_definition.rs",
+       546,
+       "find_branch_root"
+      ],
+      "call_sites_before": 1,
+      "call_sites_gained": 1,
+      "call_site_lines_gained": [
+       564
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "added_count": 7,
+    "removed_count": 0,
+    "added_sites": 7,
+    "removed_sites": 0,
+    "added_site_lines": 7,
+    "removed_site_lines": 0
+   }
+  }
+ ]
+}
