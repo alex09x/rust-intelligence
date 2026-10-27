@@ -1,0 +1,517 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_69e09e8_vs_2ccf1c5_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "69e09e8",
+   "commit": "69e09e8267574bca2b532a80d1efcef55b763f8d",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "2ccf1c5",
+   "commit": "2ccf1c58cab4c6995ac86ef6e4a804276b2144fb",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "69e09e8-2",
+   "commit": "69e09e8267574bca2b532a80d1efcef55b763f8d",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 12,
+ "summary": {
+  "i4_locations_lost_where_the_header_only_uses_the_item": 12
+ },
+ "rows_by_method": {
+  "implementation": 12
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "file": "crates/hir-expand/src/lib.rs",
+   "line": 119,
+   "character": 12,
+   "symbol": "ExpandError",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/hir-expand/src/lib.rs",
+      [
+       233,
+       16,
+       233,
+       27
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 362,
+   "character": 12,
+   "symbol": "CallExpr",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 10,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       8236,
+       11,
+       8236,
+       19
+      ]
+     ],
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       9214,
+       11,
+       9214,
+       19
+      ]
+     ],
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       9370,
+       11,
+       9370,
+       19
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 1798,
+   "character": 12,
+   "symbol": "Trait",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 6,
+    "gained_count": 0,
+    "kept_count": 14,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       10074,
+       11,
+       10074,
+       16
+      ]
+     ],
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       8692,
+       11,
+       8692,
+       16
+      ]
+     ],
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       9570,
+       11,
+       9570,
+       16
+      ]
+     ],
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       9710,
+       11,
+       9710,
+       16
+      ]
+     ],
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       9908,
+       11,
+       9908,
+       16
+      ]
+     ],
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       9967,
+       11,
+       9967,
+       16
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 720,
+   "character": 12,
+   "symbol": "FnPtrType",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 8,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       9009,
+       11,
+       9009,
+       20
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/stdx/src/anymap.rs",
+   "line": 258,
+   "character": 11,
+   "symbol": "IntoBox",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/stdx/src/anymap.rs",
+      [
+       157,
+       37,
+       157,
+       44
+      ]
+     ],
+     [
+      "ws:crates/stdx/src/anymap.rs",
+      [
+       169,
+       37,
+       169,
+       44
+      ]
+     ],
+     [
+      "ws:crates/stdx/src/anymap.rs",
+      [
+       179,
+       37,
+       179,
+       44
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 2232,
+   "character": 10,
+   "symbol": "AssocItem",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 7,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/syntax/src/ast/node_ext.rs",
+      [
+       1213,
+       16,
+       1213,
+       25
+      ]
+     ],
+     [
+      "ws:crates/syntax/src/ast/node_ext.rs",
+      [
+       142,
+       16,
+       142,
+       25
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 920,
+   "character": 12,
+   "symbol": "ItemList",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 10,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       9442,
+       11,
+       9442,
+       19
+      ]
+     ],
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       9786,
+       11,
+       9786,
+       19
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/proc-macro-api/src/legacy_protocol/msg/flat.rs",
+   "line": 448,
+   "character": 11,
+   "symbol": "SpanTransformer",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/proc-macro-api/src/legacy_protocol/msg/flat.rs",
+      [
+       490,
+       13,
+       490,
+       28
+      ]
+     ],
+     [
+      "ws:crates/proc-macro-api/src/legacy_protocol/msg/flat.rs",
+      [
+       590,
+       13,
+       590,
+       28
+      ]
+     ],
+     [
+      "ws:crates/proc-macro-api/src/legacy_protocol/msg/flat.rs",
+      [
+       749,
+       9,
+       749,
+       24
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/paths/src/lib.rs",
+   "line": 321,
+   "character": 12,
+   "symbol": "RelPathBuf",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 6,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/paths/src/lib.rs",
+      [
+       323,
+       11,
+       323,
+       21
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 1543,
+   "character": 12,
+   "symbol": "RecordPat",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 8,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       8884,
+       11,
+       8884,
+       20
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/hir-ty/src/db.rs",
+   "line": 45,
+   "character": 11,
+   "symbol": "HirDatabase",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/hir/src/semantics.rs",
+      [
+       206,
+       24,
+       206,
+       35
+      ]
+     ],
+     [
+      "ws:crates/hir/src/semantics.rs",
+      [
+       214,
+       10,
+       214,
+       21
+      ]
+     ],
+     [
+      "ws:crates/hir/src/semantics.rs",
+      [
+       224,
+       10,
+       224,
+       21
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 211,
+   "character": 12,
+   "symbol": "AsmRegOperand",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 8,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/syntax/src/ast/generated/nodes.rs",
+      [
+       8070,
+       11,
+       8070,
+       24
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  }
+ ]
+}

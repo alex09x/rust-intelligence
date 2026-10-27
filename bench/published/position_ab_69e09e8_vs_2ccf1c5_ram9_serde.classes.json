@@ -1,0 +1,244 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_69e09e8_vs_2ccf1c5_ram9_serde.json",
+ "servers": [
+  {
+   "name": "69e09e8",
+   "commit": "69e09e8267574bca2b532a80d1efcef55b763f8d",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "2ccf1c5",
+   "commit": "2ccf1c58cab4c6995ac86ef6e4a804276b2144fb",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "69e09e8-2",
+   "commit": "69e09e8267574bca2b532a80d1efcef55b763f8d",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 6,
+ "summary": {
+  "i4_locations_lost_where_the_header_only_uses_the_item": 6
+ },
+ "rows_by_method": {
+  "implementation": 6
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 197,
+   "character": 8,
+   "symbol": "StructGenericWithGetterDef",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:test_suite/tests/test_remote.rs",
+      [
+       259,
+       14,
+       259,
+       40
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_self.rs",
+   "line": 7,
+   "character": 15,
+   "symbol": "Trait",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 4,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:test_suite/tests/test_self.rs",
+      [
+       20,
+       13,
+       20,
+       18
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "serde_derive/src/internals/symbol.rs",
+   "line": 5,
+   "character": 12,
+   "symbol": "Symbol",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 4,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:serde_derive/src/internals/symbol.rs",
+      [
+       43,
+       16,
+       43,
+       22
+      ]
+     ],
+     [
+      "ws:serde_derive/src/internals/symbol.rs",
+      [
+       49,
+       16,
+       49,
+       22
+      ]
+     ],
+     [
+      "ws:serde_derive/src/internals/symbol.rs",
+      [
+       55,
+       16,
+       55,
+       22
+      ]
+     ],
+     [
+      "ws:serde_derive/src/internals/symbol.rs",
+      [
+       61,
+       16,
+       61,
+       22
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_remote.rs",
+   "line": 155,
+   "character": 8,
+   "symbol": "NewtypePrivDef",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:test_suite/tests/test_remote.rs",
+      [
+       241,
+       11,
+       241,
+       25
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "serde_core/src/ser/mod.rs",
+   "line": 234,
+   "character": 11,
+   "symbol": "Serialize",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 40,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:test_suite/tests/test_serde_path.rs",
+      [
+       45,
+       16,
+       45,
+       25
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "test_suite/tests/test_annotations.rs",
+   "line": 1528,
+   "character": 6,
+   "symbol": "EnumToU32",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1512,
+       11,
+       1512,
+       20
+      ]
+     ],
+     [
+      "ws:test_suite/tests/test_annotations.rs",
+      [
+       1520,
+       11,
+       1520,
+       20
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  }
+ ]
+}

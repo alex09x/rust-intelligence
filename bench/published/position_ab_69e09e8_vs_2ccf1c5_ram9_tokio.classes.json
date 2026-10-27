@@ -1,0 +1,714 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_69e09e8_vs_2ccf1c5_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "69e09e8",
+   "commit": "69e09e8267574bca2b532a80d1efcef55b763f8d",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "2ccf1c5",
+   "commit": "2ccf1c58cab4c6995ac86ef6e4a804276b2144fb",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "69e09e8-2",
+   "commit": "69e09e8267574bca2b532a80d1efcef55b763f8d",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 16,
+ "summary": {
+  "i4_locations_lost_where_the_header_only_uses_the_item": 16
+ },
+ "rows_by_method": {
+  "implementation": 16
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "file": "tokio/src/io/async_fd.rs",
+   "line": 1401,
+   "character": 12,
+   "symbol": "AsyncFdTryNewError",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 4,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/io/async_fd.rs",
+      [
+       1435,
+       14,
+       1435,
+       32
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/time/error.rs",
+   "line": 47,
+   "character": 12,
+   "symbol": "Elapsed",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/time/error.rs",
+      [
+       119,
+       11,
+       119,
+       18
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/net/unix/socketaddr.rs",
+   "line": 10,
+   "character": 12,
+   "symbol": "SocketAddr",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/net/unix/socketaddr.rs",
+      [
+       62,
+       11,
+       62,
+       21
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/sync/mpsc/chan.rs",
+   "line": 40,
+   "character": 18,
+   "symbol": "Semaphore",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 6,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/sync/mpsc/chan.rs",
+      [
+       211,
+       12,
+       211,
+       21
+      ]
+     ],
+     [
+      "ws:tokio/src/sync/mpsc/chan.rs",
+      [
+       257,
+       12,
+       257,
+       21
+      ]
+     ],
+     [
+      "ws:tokio/src/sync/mpsc/chan.rs",
+      [
+       34,
+       12,
+       34,
+       21
+      ]
+     ],
+     [
+      "ws:tokio/src/sync/mpsc/chan.rs",
+      [
+       503,
+       12,
+       503,
+       21
+      ]
+     ],
+     [
+      "ws:tokio/src/sync/mpsc/chan.rs",
+      [
+       517,
+       28,
+       517,
+       37
+      ]
+     ],
+     [
+      "ws:tokio/src/sync/mpsc/chan.rs",
+      [
+       526,
+       28,
+       526,
+       37
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/io/async_seek.rs",
+   "line": 18,
+   "character": 11,
+   "symbol": "AsyncSeek",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 6,
+    "gained_count": 0,
+    "kept_count": 9,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/io/async_seek.rs",
+      [
+       67,
+       18,
+       67,
+       27
+      ]
+     ],
+     [
+      "ws:tokio/src/io/async_seek.rs",
+      [
+       71,
+       18,
+       71,
+       27
+      ]
+     ],
+     [
+      "ws:tokio/src/io/util/async_seek_ext.rs",
+      [
+       96,
+       9,
+       96,
+       18
+      ]
+     ],
+     [
+      "ws:tokio/src/io/util/buf_reader.rs",
+      [
+       182,
+       21,
+       182,
+       30
+      ]
+     ],
+     [
+      "ws:tokio/src/io/util/buf_stream.rs",
+      [
+       184,
+       35,
+       184,
+       44
+      ]
+     ],
+     [
+      "ws:tokio/src/io/util/buf_writer.rs",
+      [
+       227,
+       22,
+       227,
+       31
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio-stream/tests/async_send_sync.rs",
+   "line": 16,
+   "character": 8,
+   "symbol": "Invalid",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 6,
+    "gained_count": 0,
+    "kept_count": 0,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio-stream/tests/async_send_sync.rs",
+      [
+       23,
+       40,
+       23,
+       47
+      ]
+     ],
+     [
+      "ws:tokio-stream/tests/async_send_sync.rs",
+      [
+       30,
+       40,
+       30,
+       47
+      ]
+     ],
+     [
+      "ws:tokio-stream/tests/async_send_sync.rs",
+      [
+       37,
+       42,
+       37,
+       49
+      ]
+     ],
+     [
+      "ws:tokio/tests/async_send_sync.rs",
+      [
+       63,
+       40,
+       63,
+       47
+      ]
+     ],
+     [
+      "ws:tokio/tests/async_send_sync.rs",
+      [
+       70,
+       40,
+       70,
+       47
+      ]
+     ],
+     [
+      "ws:tokio/tests/async_send_sync.rs",
+      [
+       77,
+       42,
+       77,
+       49
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/net/addr.rs",
+   "line": 19,
+   "character": 11,
+   "symbol": "ToSocketAddrs",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 12,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/net/addr.rs",
+      [
+       34,
+       9,
+       34,
+       22
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/scheduler/current_thread/mod.rs",
+   "line": 38,
+   "character": 19,
+   "symbol": "Handle",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 4,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/runtime/scheduler/current_thread/mod.rs",
+      [
+       705,
+       23,
+       705,
+       29
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/task/mod.rs",
+   "line": 306,
+   "character": 18,
+   "symbol": "Schedule",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 9,
+    "gained_count": 0,
+    "kept_count": 5,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/runtime/task/core.rs",
+      [
+       231,
+       20,
+       231,
+       28
+      ]
+     ],
+     [
+      "ws:tokio/src/runtime/task/core.rs",
+      [
+       353,
+       20,
+       353,
+       28
+      ]
+     ],
+     [
+      "ws:tokio/src/runtime/task/harness.rs",
+      [
+       529,
+       32,
+       529,
+       40
+      ]
+     ],
+     [
+      "ws:tokio/src/runtime/task/mod.rs",
+      [
+       260,
+       16,
+       260,
+       24
+      ]
+     ],
+     [
+      "ws:tokio/src/runtime/task/mod.rs",
+      [
+       261,
+       16,
+       261,
+       24
+      ]
+     ],
+     [
+      "ws:tokio/src/runtime/task/mod.rs",
+      [
+       509,
+       9,
+       509,
+       17
+      ]
+     ],
+     [
+      "ws:tokio/src/runtime/task/mod.rs",
+      [
+       518,
+       9,
+       518,
+       17
+      ]
+     ],
+     [
+      "ws:tokio/src/runtime/task/mod.rs",
+      [
+       527,
+       9,
+       527,
+       17
+      ]
+     ],
+     [
+      "ws:tokio/src/runtime/task/raw.rs",
+      [
+       84,
+       20,
+       84,
+       28
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/scheduler/multi_thread/idle.rs",
+   "line": 31,
+   "character": 8,
+   "symbol": "State",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/runtime/scheduler/multi_thread/idle.rs",
+      [
+       225,
+       11,
+       225,
+       16
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/sync/semaphore.rs",
+   "line": 427,
+   "character": 12,
+   "symbol": "Semaphore",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio-util/src/sync/poll_semaphore.rs",
+      [
+       167,
+       12,
+       167,
+       21
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/io/scheduled_io.rs",
+   "line": 101,
+   "character": 19,
+   "symbol": "ScheduledIo",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 6,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/runtime/io/registration_set.rs",
+      [
+       127,
+       39,
+       127,
+       50
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/runtime/task/mod.rs",
+   "line": 245,
+   "character": 19,
+   "symbol": "Notified",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 7,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/runtime/scheduler/multi_thread/overflow.rs",
+      [
+       15,
+       52,
+       15,
+       60
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio-stream/src/stream_ext/timeout.rs",
+   "line": 28,
+   "character": 12,
+   "symbol": "Elapsed",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio-stream/src/stream_ext/timeout.rs",
+      [
+       101,
+       11,
+       101,
+       18
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio/src/process/unix/orphan.rs",
+   "line": 28,
+   "character": 18,
+   "symbol": "OrphanQueue",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio/src/process/unix/orphan.rs",
+      [
+       33,
+       12,
+       33,
+       23
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tokio-util/src/codec/framed_impl.rs",
+   "line": 28,
+   "character": 19,
+   "symbol": "ReadFrame",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:tokio-util/src/codec/framed_impl.rs",
+      [
+       102,
+       16,
+       102,
+       25
+      ]
+     ],
+     [
+      "ws:tokio-util/src/codec/framed_impl.rs",
+      [
+       97,
+       13,
+       97,
+       22
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  }
+ ]
+}

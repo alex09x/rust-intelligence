@@ -1,0 +1,607 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "ripgrep",
+ "report": "position_ab_69e09e8_vs_2ccf1c5_ram9_ripgrep.json",
+ "servers": [
+  {
+   "name": "69e09e8",
+   "commit": "69e09e8267574bca2b532a80d1efcef55b763f8d",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "2ccf1c5",
+   "commit": "2ccf1c58cab4c6995ac86ef6e4a804276b2144fb",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "69e09e8-2",
+   "commit": "69e09e8267574bca2b532a80d1efcef55b763f8d",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 12,
+ "summary": {
+  "i4_locations_lost_where_the_header_only_uses_the_item": 12
+ },
+ "rows_by_method": {
+  "implementation": 12
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "file": "crates/printer/src/stats.rs",
+   "line": 13,
+   "character": 12,
+   "symbol": "Stats",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 6,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/printer/src/stats.rs",
+      [
+       115,
+       18,
+       115,
+       23
+      ]
+     ],
+     [
+      "ws:crates/printer/src/stats.rs",
+      [
+       138,
+       24,
+       138,
+       29
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tests/json.rs",
+   "line": 76,
+   "character": 8,
+   "symbol": "Match",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       158,
+       22,
+       158,
+       27
+      ]
+     ],
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       167,
+       25,
+       167,
+       30
+      ]
+     ],
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       174,
+       22,
+       174,
+       27
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 537,
+   "character": 11,
+   "symbol": "Matcher",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 14,
+    "gained_count": 0,
+    "kept_count": 6,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       1124,
+       13,
+       1124,
+       20
+      ]
+     ],
+     [
+      "ws:crates/printer/src/json.rs",
+      [
+       572,
+       17,
+       572,
+       24
+      ]
+     ],
+     [
+      "ws:crates/printer/src/json.rs",
+      [
+       684,
+       17,
+       684,
+       24
+      ]
+     ],
+     [
+      "ws:crates/printer/src/standard.rs",
+      [
+       1649,
+       13,
+       1649,
+       20
+      ]
+     ],
+     [
+      "ws:crates/printer/src/standard.rs",
+      [
+       668,
+       17,
+       668,
+       24
+      ]
+     ],
+     [
+      "ws:crates/printer/src/standard.rs",
+      [
+       807,
+       17,
+       807,
+       24
+      ]
+     ],
+     [
+      "ws:crates/printer/src/standard.rs",
+      [
+       950,
+       13,
+       950,
+       20
+      ]
+     ],
+     [
+      "ws:crates/printer/src/summary.rs",
+      [
+       500,
+       17,
+       500,
+       24
+      ]
+     ],
+     [
+      "ws:crates/printer/src/summary.rs",
+      [
+       646,
+       17,
+       646,
+       24
+      ]
+     ],
+     [
+      "ws:crates/printer/src/util.rs",
+      [
+       27,
+       9,
+       27,
+       16
+      ]
+     ],
+     [
+      "ws:crates/printer/src/util.rs",
+      [
+       37,
+       9,
+       37,
+       16
+      ]
+     ],
+     [
+      "ws:crates/searcher/src/searcher/core.rs",
+      [
+       38,
+       13,
+       38,
+       20
+      ]
+     ],
+     [
+      "ws:crates/searcher/src/searcher/glue.rs",
+      [
+       140,
+       13,
+       140,
+       20
+      ]
+     ],
+     [
+      "ws:crates/searcher/src/searcher/glue.rs",
+      [
+       93,
+       13,
+       93,
+       20
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 488,
+   "character": 12,
+   "symbol": "NoError",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       502,
+       11,
+       502,
+       18
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/cli/src/process.rs",
+   "line": 11,
+   "character": 12,
+   "symbol": "CommandError",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 4,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/cli/src/process.rs",
+      [
+       71,
+       11,
+       71,
+       23
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/ignore/src/lib.rs",
+   "line": 411,
+   "character": 10,
+   "symbol": "Match",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       158,
+       22,
+       158,
+       27
+      ]
+     ],
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       167,
+       25,
+       167,
+       30
+      ]
+     ],
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       174,
+       22,
+       174,
+       27
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/searcher/src/sink.rs",
+   "line": 102,
+   "character": 11,
+   "symbol": "Sink",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 5,
+    "gained_count": 0,
+    "kept_count": 9,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/searcher/src/searcher/core.rs",
+      [
+       38,
+       25,
+       38,
+       29
+      ]
+     ],
+     [
+      "ws:crates/searcher/src/searcher/glue.rs",
+      [
+       140,
+       25,
+       140,
+       29
+      ]
+     ],
+     [
+      "ws:crates/searcher/src/searcher/glue.rs",
+      [
+       93,
+       25,
+       93,
+       29
+      ]
+     ],
+     [
+      "ws:crates/searcher/src/sink.rs",
+      [
+       225,
+       13,
+       225,
+       17
+      ]
+     ],
+     [
+      "ws:crates/searcher/src/sink.rs",
+      [
+       278,
+       9,
+       278,
+       13
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 69,
+   "character": 12,
+   "symbol": "Match",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 3,
+    "gained_count": 0,
+    "kept_count": 1,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       158,
+       22,
+       158,
+       27
+      ]
+     ],
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       167,
+       25,
+       167,
+       30
+      ]
+     ],
+     [
+      "ws:crates/matcher/src/lib.rs",
+      [
+       174,
+       22,
+       174,
+       27
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/cli/src/human.rs",
+   "line": 6,
+   "character": 12,
+   "symbol": "ParseSizeError",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/cli/src/human.rs",
+      [
+       65,
+       11,
+       65,
+       25
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/cli/src/pattern.rs",
+   "line": 12,
+   "character": 12,
+   "symbol": "InvalidPatternError",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 3,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/cli/src/pattern.rs",
+      [
+       39,
+       11,
+       39,
+       30
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 1131,
+   "character": 11,
+   "symbol": "ParallelVisitorBuilder",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 1,
+    "gained_count": 0,
+    "kept_count": 2,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/ignore/src/walk.rs",
+      [
+       1136,
+       17,
+       1136,
+       39
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  },
+  {
+   "method": "implementation",
+   "file": "tests/json.rs",
+   "line": 120,
+   "character": 8,
+   "symbol": "Stats",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "i4_locations_lost_where_the_header_only_uses_the_item",
+   "evidence": {
+    "lost_count": 2,
+    "gained_count": 0,
+    "kept_count": 6,
+    "lost_headers": [],
+    "lost_used_by_header": [
+     [
+      "ws:crates/printer/src/stats.rs",
+      [
+       115,
+       18,
+       115,
+       23
+      ]
+     ],
+     [
+      "ws:crates/printer/src/stats.rs",
+      [
+       138,
+       24,
+       138,
+       29
+      ]
+     ]
+    ],
+    "gained_non_headers": [],
+    "kept_non_headers": []
+   }
+  }
+ ]
+}
