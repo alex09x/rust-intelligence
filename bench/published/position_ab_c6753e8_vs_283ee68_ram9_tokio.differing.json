@@ -1,0 +1,2914 @@
+{
+ "repo": "tokio-rs/tokio",
+ "repo_dir_name": "tokio",
+ "repo_head": "b2636752450484955e7ad334bac678424d51bc4a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 308,
+ "positions_file": "matrix_tokio_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 301,
+ "timestamp_start": "2026-10-27T14:21:52.070030+00:00",
+ "timestamp_end": "2026-10-27T14:27:02.784922+00:00",
+ "servers": [
+  {
+   "name": "c6753e8",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: c6753e8d6612f281a60c10651e7548394ab4a369, dirty: false)",
+   "commit": "c6753e8d6612f281a60c10651e7548394ab4a369",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 99.1,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 440.3,
+     "p99_us": 752.2,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 390.7,
+     "p99_us": 715.8,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 404.3,
+     "p99_us": 1561.2,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2319.4,
+     "p99_us": 5305.9,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1997.7,
+     "p99_us": 22675.0,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1993.2,
+     "p99_us": 14445.9,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 125.2,
+     "p99_us": 1426.9,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16146.2,
+     "p99_us": 26128.8,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 21.1,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 829.7,
+     "p99_us": 1343.5,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1913.1,
+     "p99_us": 13012.0,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 20.8,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 63.9,
+     "p99_us": 20271.9,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 26.6,
+     "p99_us": 56.7,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.7,
+     "p99_us": 14.7,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 33.5,
+     "p99_us": 68.8,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.5,
+     "p99_us": 61.9,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.8,
+     "p99_us": 102.0,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 397.1,
+     "p99_us": 757.2,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1997.5,
+     "p99_us": 10793.8,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 902.5,
+     "p99_us": 11550.7,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 354.0,
+     "p99_us": 670.1,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1744.8,
+     "p99_us": 3749.3,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16.5,
+     "p99_us": 2377.9,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 98.4,
+     "p99_us": 277.9,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.8,
+     "p99_us": 92.3,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 19.0,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.2,
+     "p99_us": 13.4,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 11.8,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 85362.1,
+     "p99_us": 96905.3,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 86769.2,
+     "p99_us": 180941.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91933.3,
+     "p99_us": 100942.2,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 2130.5,
+     "p99_us": 3142.6,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2475.4,
+     "p99_us": 3803.1,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.8,
+     "p99_us": 105.0,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 66.2,
+     "p99_us": 250.2,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 16.6,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 12.7,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 419.0,
+     "p99_us": 1043.9,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 421.1,
+     "p99_us": 1038.8,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 431.8,
+     "p99_us": 1054.8,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 50.7,
+     "p99_us": 415.4,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 402.9,
+     "p99_us": 733.8,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.7,
+     "p99_us": 18.7,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 47.9,
+     "p99_us": 420.5,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1949.8,
+     "p99_us": 2371.1,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 15.1,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 11.8,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 12.6,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 22.2,
+     "p99_us": 86.0,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "283ee68",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 283ee68a075bb60d7d46cabaa924694f9cff9288, dirty: false)",
+   "commit": "283ee68a075bb60d7d46cabaa924694f9cff9288",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 103.8,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 461.4,
+     "p99_us": 841.3,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 402.5,
+     "p99_us": 739.5,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 411.4,
+     "p99_us": 1639.7,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2434.6,
+     "p99_us": 5597.0,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2150.0,
+     "p99_us": 25673.1,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2284.1,
+     "p99_us": 15465.5,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 122.2,
+     "p99_us": 1459.3,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 17367.1,
+     "p99_us": 28553.8,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 35.6,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 831.0,
+     "p99_us": 1384.4,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2024.8,
+     "p99_us": 14950.0,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 16.5,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 76.9,
+     "p99_us": 21685.8,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.3,
+     "p99_us": 60.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 32.7,
+     "p99_us": 63.0,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.3,
+     "p99_us": 63.1,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.4,
+     "p99_us": 110.9,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 15.4,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 416.5,
+     "p99_us": 815.8,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2051.2,
+     "p99_us": 11709.2,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 962.5,
+     "p99_us": 12571.9,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 370.1,
+     "p99_us": 742.4,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1813.6,
+     "p99_us": 3918.5,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.4,
+     "p99_us": 2377.5,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 101.6,
+     "p99_us": 287.0,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.5,
+     "p99_us": 141.2,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 17.6,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.4,
+     "p99_us": 13.3,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.5,
+     "p99_us": 15.4,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90719.8,
+     "p99_us": 100001.3,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91909.4,
+     "p99_us": 187909.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92050.2,
+     "p99_us": 102209.8,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 2141.9,
+     "p99_us": 3031.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2416.4,
+     "p99_us": 3812.2,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.6,
+     "p99_us": 114.6,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 64.1,
+     "p99_us": 248.5,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 17.2,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 446.1,
+     "p99_us": 1143.3,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 426.7,
+     "p99_us": 1040.1,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 445.2,
+     "p99_us": 1077.5,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 59.5,
+     "p99_us": 384.0,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 426.1,
+     "p99_us": 766.3,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 15.5,
+     "p99_us": 19.6,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 48.3,
+     "p99_us": 422.3,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1946.4,
+     "p99_us": 2000.0,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 19.1,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 15.8,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.8,
+     "p99_us": 82.8,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "c6753e8-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: c6753e8d6612f281a60c10651e7548394ab4a369, dirty: false)",
+   "commit": "c6753e8d6612f281a60c10651e7548394ab4a369",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 103.0,
+   "summary": {
+    "definition": {
+     "a": 212,
+     "b": 88,
+     "c": 0,
+     "n": 300,
+     "p50_us": 466.4,
+     "p99_us": 883.9,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 235,
+     "b": 65,
+     "c": 0,
+     "n": 300,
+     "p50_us": 425.1,
+     "p99_us": 792.3,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 120,
+     "b": 180,
+     "c": 0,
+     "n": 300,
+     "p50_us": 429.3,
+     "p99_us": 1775.1,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2551.9,
+     "p99_us": 5701.2,
+     "unsupported": false
+    },
+    "references": {
+     "a": 233,
+     "b": 67,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2117.9,
+     "p99_us": 27079.8,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 207,
+     "b": 93,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2279.8,
+     "p99_us": 15617.0,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 126.6,
+     "p99_us": 1468.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 143,
+     "b": 157,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16667.7,
+     "p99_us": 27846.2,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 20.6,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 237,
+     "b": 63,
+     "c": 0,
+     "n": 300,
+     "p50_us": 849.5,
+     "p99_us": 1420.1,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2097.1,
+     "p99_us": 15690.9,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 16.8,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 68,
+     "b": 232,
+     "c": 0,
+     "n": 300,
+     "p50_us": 72.8,
+     "p99_us": 20987.0,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.4,
+     "p99_us": 60.4,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.4,
+     "p99_us": 13.7,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.0,
+     "p99_us": 75.0,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.4,
+     "p99_us": 64.9,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 32.0,
+     "p99_us": 109.6,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.4,
+     "p99_us": 17.5,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 242,
+     "b": 58,
+     "c": 0,
+     "n": 300,
+     "p50_us": 414.2,
+     "p99_us": 813.9,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 102,
+     "b": 198,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2142.6,
+     "p99_us": 11956.1,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 214,
+     "b": 86,
+     "c": 0,
+     "n": 300,
+     "p50_us": 959.0,
+     "p99_us": 12392.0,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 249,
+     "b": 51,
+     "c": 0,
+     "n": 300,
+     "p50_us": 357.6,
+     "p99_us": 711.1,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 226,
+     "b": 74,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1896.5,
+     "p99_us": 3465.1,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 21,
+     "b": 279,
+     "c": 0,
+     "n": 300,
+     "p50_us": 16.6,
+     "p99_us": 2419.9,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 102.4,
+     "p99_us": 288.9,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 56,
+     "b": 244,
+     "c": 0,
+     "n": 300,
+     "p50_us": 21.5,
+     "p99_us": 101.8,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.6,
+     "p99_us": 16.3,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 14.6,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 13.7,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90842.1,
+     "p99_us": 100603.2,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 49,
+     "b": 251,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91617.9,
+     "p99_us": 190429.2,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90436.1,
+     "p99_us": 103191.1,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 243,
+     "b": 0,
+     "c": 57,
+     "n": 300,
+     "p50_us": 2082.8,
+     "p99_us": 2964.3,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 239,
+     "b": 0,
+     "c": 61,
+     "n": 300,
+     "p50_us": 2387.9,
+     "p99_us": 3594.9,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.4,
+     "p99_us": 106.3,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 66.5,
+     "p99_us": 253.6,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 18.4,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.4,
+     "p99_us": 16.8,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 423.9,
+     "p99_us": 1165.3,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 409.1,
+     "p99_us": 1046.3,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 411.1,
+     "p99_us": 997.3,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 294,
+     "b": 6,
+     "c": 0,
+     "n": 300,
+     "p50_us": 63.2,
+     "p99_us": 374.6,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 250,
+     "b": 50,
+     "c": 0,
+     "n": 300,
+     "p50_us": 395.5,
+     "p99_us": 821.8,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.3,
+     "p99_us": 18.1,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.2,
+     "p99_us": 443.2,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1986.7,
+     "p99_us": 2183.1,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 21.2,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.0,
+     "p99_us": 11.9,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 13.3,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 20.5,
+     "p99_us": 77.0,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 40,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       212,
+       88,
+       0
+      ],
+      "matrix": [
+       252,
+       48,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       235,
+       65,
+       0
+      ],
+      "matrix": [
+       249,
+       51,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       233,
+       67,
+       0
+      ],
+      "matrix": [
+       258,
+       42,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       207,
+       93,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       237,
+       63,
+       0
+      ],
+      "matrix": [
+       266,
+       34,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       242,
+       58,
+       0
+      ],
+      "matrix": [
+       224,
+       76,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       102,
+       198,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       214,
+       86,
+       0
+      ],
+      "matrix": [
+       211,
+       89,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       249,
+       51,
+       0
+      ],
+      "matrix": [
+       217,
+       83,
+       0
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       239,
+       0,
+       61
+      ],
+      "matrix": [
+       236,
+       0,
+       64
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "c6753e8",
+   "b": "283ee68",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "c6753e8",
+   "b": "c6753e8-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "283ee68",
+   "b": "c6753e8-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_tokio_booster.json",
+  "repo_commit": "b2636752450484955e7ad334bac678424d51bc4a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [],
+ "rows_total": 15300,
+ "rows_kept": 0,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_c6753e8_vs_283ee68_ram9_tokio.json",
+  "sha256": "c7fbc9585b59fe6f79debeda28fe8f9a7f2116528d52f7bfcea9e8f664864cd1"
+ }
+}
