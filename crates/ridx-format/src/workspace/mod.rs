@@ -40,6 +40,8 @@ mod file_module_tests;
 #[cfg(test)]
 mod path_index_tests;
 #[cfg(test)]
+mod qualified_consumer_tests;
+#[cfg(test)]
 mod root_module_tests;
 #[cfg(test)]
 mod routing_tests;
@@ -53,8 +55,6 @@ mod target_kind_routing_tests;
 mod target_kind_tests;
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod qualified_consumer_tests;
 #[cfg(test)]
 mod transitive_consumer_tests;
 #[cfg(test)]
