@@ -97,7 +97,7 @@ fn colliding_workspace() -> (PathBuf, WorkspaceIndex) {
     (dir, ws)
 }
 
-fn incoming_callers(
+pub(super) fn incoming_callers(
     ws: &WorkspaceIndex,
     file: &PathBuf,
     line0: u64,
