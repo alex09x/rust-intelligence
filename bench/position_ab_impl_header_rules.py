@@ -14,18 +14,38 @@ handler takes for an impl header: a reference line starting with the word `impl`
   i2  locations gained, none lost: every location gained is on an impl header line the old rule
       refused (`unsafe impl<T: ?Sized> Send for X`: a line with `<T:` or `where `);
   i3  both, each half by its own proof.
+  i4  locations lost, none gained: each lost location is either no impl header line or an impl
+      header line on which the item only stands in a generic argument, a bound or a `where`
+      clause (not where the trait or the self type stands), at least one of the second kind.
 In every class each location kept is on an impl header line."""
 
 import re
 
 CLASS_LOST = "i1_locations_lost_that_are_no_impl_header"
 CLASS_GAINED = "i2_locations_gained_that_are_impl_headers"
+CLASS_USED = "i4_locations_lost_where_the_header_only_uses_the_item"
 CLASS_BOTH = "i3_locations_lost_and_gained_each_by_its_own_proof"
 IMPL_HEADER = re.compile(r"^\s*(#\[[^\]]*\]\s*)*(default\s+)?(unsafe\s+)?impl(?![A-Za-z0-9_])")
 
 
 def is_impl_header(line):
     return bool(IMPL_HEADER.match(line or ""))
+
+
+def is_head_position(line, col):
+    """Whether the name at the 0-based character `col` of an impl header line stands where the
+    trait or the self type stands: at generic depth zero and before any `where`."""
+    before = (line or "")[:col]
+    if " where " in before or before.lstrip().startswith("where "):
+        return False
+    depth, prev = 0, " "
+    for c in before:
+        if c == "<":
+            depth += 1
+        elif c == ">" and prev != "-":
+            depth -= 1
+        prev = c
+    return depth == 0
 
 
 def classify_impl_header(before, after, lines_of, locations_of):
@@ -38,9 +58,15 @@ def classify_impl_header(before, after, lines_of, locations_of):
     gained = [loc for loc in a if loc not in b]
     pair = lambda loc: [loc[0], list(loc[1])]
     ev = {"lost_count": len(lost), "gained_count": len(gained), "kept_count": len(a)}
-    ev["lost_headers"] = [pair(loc) for loc in lost if is_impl_header(text(loc))]
+    at_head = lambda loc: is_head_position(text(loc), loc[1][1] - 1)
+    ev["lost_headers"] = [pair(loc) for loc in lost if is_impl_header(text(loc)) and at_head(loc)]
+    ev["lost_used_by_header"] = [pair(loc) for loc in lost if is_impl_header(text(loc)) and not at_head(loc)]
     ev["gained_non_headers"] = [pair(loc) for loc in gained if not is_impl_header(text(loc))]
     ev["kept_non_headers"] = [pair(loc) for loc in a if not is_impl_header(text(loc))]
     if not (lost or gained) or ev["lost_headers"] or ev["gained_non_headers"] or ev["kept_non_headers"]:
         return None, ev
-    return (CLASS_BOTH if lost and gained else CLASS_LOST if lost else CLASS_GAINED), ev
+    if lost and gained:
+        return CLASS_BOTH, ev
+    if ev["lost_used_by_header"]:
+        return CLASS_USED, ev
+    return (CLASS_LOST if lost else CLASS_GAINED), ev

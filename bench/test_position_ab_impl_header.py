@@ -10,7 +10,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from position_ab_impl_header_rules import CLASS_BOTH, CLASS_GAINED, CLASS_LOST, classify_impl_header, is_impl_header  # noqa: E402
+from position_ab_impl_header_rules import CLASS_BOTH, CLASS_GAINED, CLASS_LOST, CLASS_USED, classify_impl_header, is_head_position, is_impl_header  # noqa: E402
 
 FILE = "/opt/ws/src/lib.rs"
 LINES = ["impl Tr for S {}", "fn take(x: impl Tr) {}", "impl_tr!(S);", "unsafe impl Tr for U {}"]
@@ -48,3 +48,14 @@ def test_gained_impl_headers_are_i2_and_gained_with_lost_non_headers_are_i3():
     assert classify_impl_header([1], [1, 4], lines_of, locs)[0] == CLASS_GAINED
     cls, ev = classify_impl_header([1, 2], [1, 4], lines_of, locs)
     assert cls == CLASS_BOTH and ev["lost_count"] == 1 and ev["gained_count"] == 1
+
+
+def test_a_header_that_only_uses_the_item_is_lost_as_i4_but_a_lost_head_is_refused():
+    lines = ["impl Tr for S {}", "impl Wrapper<Tr> for S {}", "fn take(x: impl Tr) {}", "impl<T: Tr> Other for T {}"]
+    ls = lambda res, lf: [(FILE, (line, col, line, col + 2)) for line, col in res or []]
+    lf = lambda path: lines
+    cls, ev = classify_impl_header([(1, 6), (2, 14), (3, 17), (4, 9)], [(1, 6)], lf, ls)
+    assert cls == CLASS_USED and len(ev["lost_used_by_header"]) == 2 and ev["lost_count"] == 3
+    assert classify_impl_header([(1, 6), (2, 14)], [(2, 14)], lf, ls)[0] is None
+    assert classify_impl_header([(1, 6), (2, 14)], [(1, 6)], lf, ls)[0] == CLASS_USED
+    assert is_head_position("impl S where S: Tr {}", 0) and not is_head_position("impl S where S: Tr {}", 17)
