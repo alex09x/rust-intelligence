@@ -10,6 +10,7 @@
 
 //! LSP navigation handlers: definition, declaration, type definition, and implementation.
 
+mod impl_line;
 pub mod references;
 pub mod type_definition;
 mod type_definition_lookup;
@@ -23,6 +24,7 @@ pub use type_definition::handle_type_definition;
 
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
+use impl_line::is_impl_header;
 use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 
@@ -256,11 +258,7 @@ pub fn handle_implementation(
                         .lines()
                         .nth(r.span.start_line().saturating_sub(1) as usize)
                         .unwrap_or("");
-                    let trimmed = line_text.trim();
-                    trimmed.starts_with("impl")
-                        || (trimmed.contains("impl ")
-                            && !trimmed.contains("where ")
-                            && !trimmed.contains("<T:"))
+                    is_impl_header(line_text)
                 } else {
                     false
                 }
