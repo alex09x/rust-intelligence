@@ -12,7 +12,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from position_ab_item_position_rules import (  # noqa: E402
-    CLASS_BOTH, CLASS_FIXED, CLASS_GAINED, CLASS_LOCATIONS, CLASS_LOST, call_ranges, caller_changes, classify, classify_error_fixed, classify_locations,
+    CLASS_BOTH, CLASS_FIXED, CLASS_SITES, CLASS_GAINED, CLASS_LOCATIONS, CLASS_LOST, call_ranges, caller_changes, classify, classify_error_fixed, classify_locations,
     is_generated_span, same_definition,
 )
 
@@ -122,3 +122,13 @@ def test_an_error_before_and_edits_after_that_resolve_to_the_cursor_definition_a
     cls, ev = classify_error_fixed(after, FILE, None, locations(None), lambda *a: OTHER, ITEM)
     assert cls is None and len(ev["added_not_resolving"]) == 2
     assert classify_error_fixed(None, FILE, None, locations(None), lambda *a: ITEM, ITEM)[0] is None
+
+
+def test_a_caller_of_both_answers_that_gained_call_sites_is_g4_only_if_each_new_site_resolves():
+    before = [item(2, "test_u8", [3], 4)]
+    after = [item(2, "test_u8", [3, 5], 7)]  # one caller, a second call site on line 5
+    lines = ["fn test() {}", "fn test_u8() {", "    test();", "    other();", "    test();", "    done();", "}"]
+    cls, ev = classify(before, after, lambda p: lines, resolves_to(ITEM), ITEM)
+    assert cls == CLASS_SITES and ev["changed_callers_detail"][0]["call_sites_gained"] == 1
+    assert classify(before, after, lambda p: lines, resolves_to(OTHER), ITEM)[0] is None
+    assert classify(after, before, lambda p: lines, resolves_to(ITEM), ITEM)[0] is None

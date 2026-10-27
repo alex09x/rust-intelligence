@@ -19,6 +19,7 @@ CLASS_LOST = "g2_callers_lost_whose_call_sites_resolve_to_another_item"
 CLASS_LOCATIONS = "t1_locations_gained_from_units_reaching_the_item_through_another_unit"
 MACRO_CALL = re.compile(r"\w!\s*[({\[]|\w!\s*$")
 CLASS_FIXED = "t2_error_before_edits_after_each_resolving_to_the_definition"
+CLASS_SITES = "g4_call_sites_gained_by_callers_of_both_answers"
 CLASS_BOTH = "g3_callers_gained_and_lost_each_by_its_own_proof"
 
 
@@ -72,20 +73,32 @@ def inside_body(key, sites, lines):
 def classify(before, after, lines_of, def_of, item_def):
     """(class or None, evidence). `def_of(path, line, utf16_character)` is the reader's definition at
     a call site, `(file, line)` or None; `item_def` is the definition of the item the request names.
-    Callers of both answers must be unchanged (same call sites, same item range end). Then:
+    A caller of both answers may only have gained call sites (its call sites before are a subset of
+    those after, each new one resolving to the item and inside its body); any other change refuses
+    the row. Then:
       gained callers: every call site resolves to the item (`def_of` == `item_def`) and lies in the
           caller's body by the body-end model;
       lost callers: no call site resolves to the item: each belongs to another item that carries the
           same path.
-    g1 when only callers were gained, g2 when only lost, g3 when both; a lost call site that
-    resolves to the item is a real loss and the row stays unclassified."""
+    g1 when only callers were gained, g2 when only lost, g3 when both, g4 when only callers of both
+    answers gained call sites; a lost call site that resolves to the item is a real loss and the
+    row stays unclassified."""
     added, removed, changed, cb, ca = caller_changes(before, after)
     ranges_b, ranges_a = call_ranges(before), call_ranges(after)
     ev = {"item_definition": list(item_def) if item_def else None, "added_callers": [], "removed_callers": [], "changed_callers": [list(k) for k in changed]}
-    if changed or not (added or removed) or not item_def:
-        ev["reason"] = "a caller of both answers changed" if changed else "no caller added or removed" if item_def else "the item has no definition"
+    if not item_def or not (added or removed or changed):
+        ev["reason"] = "no caller added, removed or changed" if item_def else "the item has no definition"
         return None, ev
     ok = True
+    ev["changed_callers_detail"] = []
+    for key in changed:
+        sb, sa = set(ranges_b.get(key, [])), set(ranges_a.get(key, []))
+        new = sorted(sa - sb)
+        resolved = [tuple(def_of(key[0], l, c) or ()) == tuple(item_def) for l, c in new]
+        good = sb <= sa and bool(new) and all(resolved) and inside_body(key, sorted({l for l, _ in new}), lines_of(key[0]) or [])
+        ev["changed_callers_detail"].append({"caller": list(key), "call_sites_before": len(sb), "call_sites_gained": len(new), "call_site_lines_gained": sorted({l for l, _ in new}),
+                                             "sites_resolving_to_the_item": sum(resolved), "ok": good})
+        ok = ok and good
     for key in added:
         sites = ranges_a.get(key, [])
         resolved = [tuple(def_of(key[0], l, c) or ()) == tuple(item_def) for l, c in sites]
@@ -107,7 +120,7 @@ def classify(before, after, lines_of, def_of, item_def):
     ev["removed_site_lines"] = sum(len(c["call_site_lines"]) for c in ev["removed_callers"])
     if not ok:
         return None, ev
-    return (CLASS_BOTH if added and removed else CLASS_GAINED if added else CLASS_LOST), ev
+    return (CLASS_BOTH if added and removed else CLASS_GAINED if added else CLASS_LOST if removed else CLASS_SITES), ev
 
 
 def same_definition(a, b):
