@@ -1,0 +1,4630 @@
+{
+ "repo": "rust-lang/rust-analyzer",
+ "repo_dir_name": "rust-analyzer",
+ "repo_head": "021bfc15e24909389bd208d1622b7f4f3942b91a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 105,
+ "positions_file": "matrix_rust-analyzer_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "definition",
+  "declaration",
+  "type_definition",
+  "implementation",
+  "references",
+  "document_highlight",
+  "document_symbol",
+  "workspace_symbol",
+  "workspace_symbol_resolve",
+  "hover",
+  "completion",
+  "completion_resolve",
+  "signature_help",
+  "inlay_hint",
+  "inlay_hint_resolve",
+  "inline_value",
+  "inline_completion",
+  "moniker",
+  "moniker_resolve",
+  "prepare_call_hierarchy",
+  "incoming_calls",
+  "outgoing_calls",
+  "prepare_type_hierarchy",
+  "supertypes",
+  "subtypes",
+  "selection_range",
+  "document_link",
+  "document_link_resolve",
+  "document_color",
+  "color_presentation",
+  "formatting",
+  "range_formatting",
+  "on_type_formatting",
+  "prepare_rename",
+  "rename",
+  "linked_editing_range",
+  "code_action",
+  "code_action_resolve",
+  "execute_command",
+  "semantic_tokens_full",
+  "semantic_tokens_delta",
+  "semantic_tokens_range",
+  "folding_range",
+  "code_lens",
+  "code_lens_resolve",
+  "document_diagnostic",
+  "workspace_diagnostic",
+  "will_create_files",
+  "will_rename_files",
+  "will_delete_files",
+  "text_document_content"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 62,
+ "timestamp_start": "2026-10-27T13:17:43.409188+00:00",
+ "timestamp_end": "2026-10-27T13:23:34.841504+00:00",
+ "servers": [
+  {
+   "name": "9caff24",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 9caff2400902e19bc9cb8158512e0c7bf3f04b82, dirty: false)",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 117.3,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 240.2,
+     "p99_us": 1594.8,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 173,
+     "b": 127,
+     "c": 0,
+     "n": 300,
+     "p50_us": 489.4,
+     "p99_us": 938.9,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 240.9,
+     "p99_us": 1935.2,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 57,
+     "b": 243,
+     "c": 0,
+     "n": 300,
+     "p50_us": 722.2,
+     "p99_us": 93349.2,
+     "unsupported": false
+    },
+    "references": {
+     "a": 210,
+     "b": 90,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1073.5,
+     "p99_us": 32574.9,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 252,
+     "b": 48,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1290.1,
+     "p99_us": 98302.4,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 184.2,
+     "p99_us": 2941.5,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39551.8,
+     "p99_us": 62660.8,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 23.2,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 454.7,
+     "p99_us": 1271.9,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1479.5,
+     "p99_us": 28356.3,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.7,
+     "p99_us": 20.9,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 134.1,
+     "p99_us": 52045.8,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.8,
+     "p99_us": 1979.1,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 44.1,
+     "p99_us": 294.2,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.4,
+     "p99_us": 277.2,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 47.8,
+     "p99_us": 320.9,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 16.4,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 185,
+     "b": 115,
+     "c": 0,
+     "n": 300,
+     "p50_us": 403.5,
+     "p99_us": 984.5,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 76,
+     "b": 224,
+     "c": 0,
+     "n": 300,
+     "p50_us": 868.6,
+     "p99_us": 6383.5,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 587.8,
+     "p99_us": 15049.8,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 103,
+     "b": 197,
+     "c": 0,
+     "n": 300,
+     "p50_us": 599.3,
+     "p99_us": 867.6,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 55.5,
+     "p99_us": 2824.4,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.6,
+     "p99_us": 5918.3,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 252.7,
+     "p99_us": 2185.4,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.4,
+     "p99_us": 160.2,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 13.3,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.8,
+     "p99_us": 13.0,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91850.9,
+     "p99_us": 125487.7,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 93092.5,
+     "p99_us": 190915.4,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 96528.8,
+     "p99_us": 169709.8,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 173,
+     "b": 0,
+     "c": 127,
+     "n": 300,
+     "p50_us": 808.7,
+     "p99_us": 6459.0,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 166,
+     "b": 0,
+     "c": 134,
+     "n": 300,
+     "p50_us": 1202.5,
+     "p99_us": 6487.1,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 40.0,
+     "p99_us": 323.7,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 130.1,
+     "p99_us": 740.9,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.1,
+     "p99_us": 17.0,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 15.2,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 356.4,
+     "p99_us": 2865.6,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 315.9,
+     "p99_us": 3677.7,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 348.3,
+     "p99_us": 3615.3,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 128.4,
+     "p99_us": 2613.3,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 211.0,
+     "p99_us": 1509.8,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.0,
+     "p99_us": 20.9,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 71.1,
+     "p99_us": 1022.1,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2730.3,
+     "p99_us": 3204.8,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 12.3,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.6,
+     "p99_us": 14.5,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.9,
+     "p99_us": 171.9,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       282,
+       18,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       173,
+       127,
+       0
+      ],
+      "matrix": [
+       288,
+       12,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       57,
+       243,
+       0
+      ],
+      "matrix": [
+       68,
+       232,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       210,
+       90,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       252,
+       48,
+       0
+      ],
+      "matrix": [
+       244,
+       56,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       185,
+       115,
+       0
+      ],
+      "matrix": [
+       284,
+       16,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       76,
+       224,
+       0
+      ],
+      "matrix": [
+       71,
+       229,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       221,
+       79,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       103,
+       197,
+       0
+      ],
+      "matrix": [
+       100,
+       200,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       173,
+       0,
+       127
+      ],
+      "matrix": [
+       287,
+       0,
+       13
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       166,
+       0,
+       134
+      ],
+      "matrix": [
+       285,
+       0,
+       15
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "5dfc46c",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 5dfc46c5bb46c9621aafdfcc8a384ddaa07029f6, dirty: false)",
+   "commit": "5dfc46c5bb46c9621aafdfcc8a384ddaa07029f6",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 115.5,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 231.6,
+     "p99_us": 1552.7,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 173,
+     "b": 127,
+     "c": 0,
+     "n": 300,
+     "p50_us": 489.6,
+     "p99_us": 852.0,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 234.2,
+     "p99_us": 1345.9,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 57,
+     "b": 243,
+     "c": 0,
+     "n": 300,
+     "p50_us": 719.1,
+     "p99_us": 92891.5,
+     "unsupported": false
+    },
+    "references": {
+     "a": 210,
+     "b": 90,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1113.2,
+     "p99_us": 35038.4,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 262,
+     "b": 38,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1318.1,
+     "p99_us": 97670.8,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 189.2,
+     "p99_us": 2682.3,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 36224.4,
+     "p99_us": 49731.0,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 26.0,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 454.2,
+     "p99_us": 1264.9,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1461.6,
+     "p99_us": 28054.6,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.3,
+     "p99_us": 26.7,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 134.3,
+     "p99_us": 44191.2,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 31.4,
+     "p99_us": 1842.5,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.8,
+     "p99_us": 20.6,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 46.9,
+     "p99_us": 318.6,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.7,
+     "p99_us": 326.4,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 49.5,
+     "p99_us": 317.8,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.5,
+     "p99_us": 16.1,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 185,
+     "b": 115,
+     "c": 0,
+     "n": 300,
+     "p50_us": 390.6,
+     "p99_us": 924.2,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 79,
+     "b": 221,
+     "c": 0,
+     "n": 300,
+     "p50_us": 874.8,
+     "p99_us": 6540.1,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 577.1,
+     "p99_us": 11677.1,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 103,
+     "b": 197,
+     "c": 0,
+     "n": 300,
+     "p50_us": 579.4,
+     "p99_us": 847.3,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 45.2,
+     "p99_us": 3676.7,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.2,
+     "p99_us": 5662.4,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 254.4,
+     "p99_us": 2134.9,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 27.9,
+     "p99_us": 163.4,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 13.2,
+     "p99_us": 19.8,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 11.8,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.1,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 92498.3,
+     "p99_us": 133009.0,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91774.9,
+     "p99_us": 189549.0,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 96313.4,
+     "p99_us": 179231.2,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 173,
+     "b": 0,
+     "c": 127,
+     "n": 300,
+     "p50_us": 832.2,
+     "p99_us": 6432.5,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 166,
+     "b": 0,
+     "c": 134,
+     "n": 300,
+     "p50_us": 1178.6,
+     "p99_us": 6715.1,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 38.4,
+     "p99_us": 313.2,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 122.2,
+     "p99_us": 714.0,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.3,
+     "p99_us": 21.0,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 349.0,
+     "p99_us": 2793.8,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 323.2,
+     "p99_us": 3757.0,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 325.2,
+     "p99_us": 3669.4,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 122.6,
+     "p99_us": 2525.2,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 192.2,
+     "p99_us": 1524.2,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.9,
+     "p99_us": 16.7,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 68.5,
+     "p99_us": 1067.7,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2637.2,
+     "p99_us": 2806.1,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.2,
+     "p99_us": 16.0,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.9,
+     "p99_us": 13.2,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.5,
+     "p99_us": 11.5,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 24.8,
+     "p99_us": 156.1,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       282,
+       18,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       173,
+       127,
+       0
+      ],
+      "matrix": [
+       288,
+       12,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       57,
+       243,
+       0
+      ],
+      "matrix": [
+       68,
+       232,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       210,
+       90,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       262,
+       38,
+       0
+      ],
+      "matrix": [
+       244,
+       56,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       185,
+       115,
+       0
+      ],
+      "matrix": [
+       284,
+       16,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       79,
+       221,
+       0
+      ],
+      "matrix": [
+       71,
+       229,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       221,
+       79,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       103,
+       197,
+       0
+      ],
+      "matrix": [
+       100,
+       200,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       173,
+       0,
+       127
+      ],
+      "matrix": [
+       287,
+       0,
+       13
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       166,
+       0,
+       134
+      ],
+      "matrix": [
+       285,
+       0,
+       15
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "9caff24-2",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 9caff2400902e19bc9cb8158512e0c7bf3f04b82, dirty: false)",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 113.8,
+   "summary": {
+    "definition": {
+     "a": 269,
+     "b": 31,
+     "c": 0,
+     "n": 300,
+     "p50_us": 228.3,
+     "p99_us": 1517.1,
+     "unsupported": false
+    },
+    "declaration": {
+     "a": 173,
+     "b": 127,
+     "c": 0,
+     "n": 300,
+     "p50_us": 466.7,
+     "p99_us": 824.5,
+     "unsupported": false
+    },
+    "type_definition": {
+     "a": 203,
+     "b": 97,
+     "c": 0,
+     "n": 300,
+     "p50_us": 225.6,
+     "p99_us": 1217.6,
+     "unsupported": false
+    },
+    "implementation": {
+     "a": 57,
+     "b": 243,
+     "c": 0,
+     "n": 300,
+     "p50_us": 712.8,
+     "p99_us": 93400.1,
+     "unsupported": false
+    },
+    "references": {
+     "a": 210,
+     "b": 90,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1068.9,
+     "p99_us": 31668.4,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 252,
+     "b": 48,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1278.8,
+     "p99_us": 95934.1,
+     "unsupported": false
+    },
+    "document_symbol": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 190.3,
+     "p99_us": 2517.7,
+     "unsupported": false
+    },
+    "workspace_symbol": {
+     "a": 174,
+     "b": 126,
+     "c": 0,
+     "n": 300,
+     "p50_us": 39279.3,
+     "p99_us": 53743.7,
+     "unsupported": false
+    },
+    "workspace_symbol_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 21.8,
+     "unsupported": false
+    },
+    "hover": {
+     "a": 288,
+     "b": 12,
+     "c": 0,
+     "n": 300,
+     "p50_us": 464.9,
+     "p99_us": 1291.4,
+     "unsupported": false
+    },
+    "completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1543.6,
+     "p99_us": 27387.7,
+     "unsupported": false
+    },
+    "completion_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.9,
+     "p99_us": 18.5,
+     "unsupported": false
+    },
+    "signature_help": {
+     "a": 114,
+     "b": 186,
+     "c": 0,
+     "n": 300,
+     "p50_us": 126.9,
+     "p99_us": 52356.2,
+     "unsupported": false
+    },
+    "inlay_hint": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 30.2,
+     "p99_us": 1942.5,
+     "unsupported": false
+    },
+    "inlay_hint_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 15.3,
+     "unsupported": false
+    },
+    "inline_value": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 44.9,
+     "p99_us": 300.2,
+     "unsupported": false
+    },
+    "inline_completion": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 29.1,
+     "p99_us": 309.6,
+     "unsupported": false
+    },
+    "moniker": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 47.9,
+     "p99_us": 329.5,
+     "unsupported": false
+    },
+    "moniker_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.2,
+     "p99_us": 15.9,
+     "unsupported": false
+    },
+    "prepare_call_hierarchy": {
+     "a": 185,
+     "b": 115,
+     "c": 0,
+     "n": 300,
+     "p50_us": 408.6,
+     "p99_us": 976.9,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 76,
+     "b": 224,
+     "c": 0,
+     "n": 300,
+     "p50_us": 865.5,
+     "p99_us": 6355.5,
+     "unsupported": false
+    },
+    "outgoing_calls": {
+     "a": 184,
+     "b": 116,
+     "c": 0,
+     "n": 300,
+     "p50_us": 572.8,
+     "p99_us": 12194.7,
+     "unsupported": false
+    },
+    "prepare_type_hierarchy": {
+     "a": 103,
+     "b": 197,
+     "c": 0,
+     "n": 300,
+     "p50_us": 595.2,
+     "p99_us": 868.3,
+     "unsupported": false
+    },
+    "supertypes": {
+     "a": 198,
+     "b": 102,
+     "c": 0,
+     "n": 300,
+     "p50_us": 44.2,
+     "p99_us": 3002.5,
+     "unsupported": false
+    },
+    "subtypes": {
+     "a": 24,
+     "b": 276,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.1,
+     "p99_us": 5680.2,
+     "unsupported": false
+    },
+    "selection_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 252.9,
+     "p99_us": 2250.4,
+     "unsupported": false
+    },
+    "document_link": {
+     "a": 58,
+     "b": 242,
+     "c": 0,
+     "n": 300,
+     "p50_us": 28.4,
+     "p99_us": 160.8,
+     "unsupported": false
+    },
+    "document_link_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.0,
+     "p99_us": 17.1,
+     "unsupported": false
+    },
+    "document_color": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 14.9,
+     "unsupported": false
+    },
+    "color_presentation": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.0,
+     "p99_us": 14.4,
+     "unsupported": false
+    },
+    "formatting": {
+     "a": 33,
+     "b": 267,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90938.1,
+     "p99_us": 117422.3,
+     "unsupported": false
+    },
+    "range_formatting": {
+     "a": 37,
+     "b": 263,
+     "c": 0,
+     "n": 300,
+     "p50_us": 90952.6,
+     "p99_us": 189218.7,
+     "unsupported": false
+    },
+    "on_type_formatting": {
+     "a": 3,
+     "b": 297,
+     "c": 0,
+     "n": 300,
+     "p50_us": 91161.2,
+     "p99_us": 175086.5,
+     "unsupported": false
+    },
+    "prepare_rename": {
+     "a": 173,
+     "b": 0,
+     "c": 127,
+     "n": 300,
+     "p50_us": 771.5,
+     "p99_us": 5828.2,
+     "unsupported": false
+    },
+    "rename": {
+     "a": 166,
+     "b": 0,
+     "c": 134,
+     "n": 300,
+     "p50_us": 1031.0,
+     "p99_us": 5958.2,
+     "unsupported": false
+    },
+    "linked_editing_range": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 37.8,
+     "p99_us": 311.3,
+     "unsupported": false
+    },
+    "code_action": {
+     "a": 299,
+     "b": 1,
+     "c": 0,
+     "n": 300,
+     "p50_us": 119.0,
+     "p99_us": 698.4,
+     "unsupported": false
+    },
+    "code_action_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 12.5,
+     "p99_us": 14.1,
+     "unsupported": false
+    },
+    "execute_command": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 10.8,
+     "p99_us": 12.6,
+     "unsupported": false
+    },
+    "semantic_tokens_full": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 332.5,
+     "p99_us": 2606.6,
+     "unsupported": false
+    },
+    "semantic_tokens_delta": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 315.0,
+     "p99_us": 3569.8,
+     "unsupported": false
+    },
+    "semantic_tokens_range": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 316.8,
+     "p99_us": 3581.1,
+     "unsupported": false
+    },
+    "folding_range": {
+     "a": 271,
+     "b": 29,
+     "c": 0,
+     "n": 300,
+     "p50_us": 123.0,
+     "p99_us": 2337.5,
+     "unsupported": false
+    },
+    "code_lens": {
+     "a": 223,
+     "b": 77,
+     "c": 0,
+     "n": 300,
+     "p50_us": 189.4,
+     "p99_us": 1440.5,
+     "unsupported": false
+    },
+    "code_lens_resolve": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 14.8,
+     "p99_us": 18.3,
+     "unsupported": false
+    },
+    "document_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 71.8,
+     "p99_us": 1117.9,
+     "unsupported": false
+    },
+    "workspace_diagnostic": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2685.3,
+     "p99_us": 2980.1,
+     "unsupported": false
+    },
+    "will_create_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.1,
+     "p99_us": 18.5,
+     "unsupported": false
+    },
+    "will_rename_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.9,
+     "p99_us": 15.7,
+     "unsupported": false
+    },
+    "will_delete_files": {
+     "a": 0,
+     "b": 300,
+     "c": 0,
+     "n": 300,
+     "p50_us": 11.6,
+     "p99_us": 15.0,
+     "unsupported": false
+    },
+    "text_document_content": {
+     "a": 300,
+     "b": 0,
+     "c": 0,
+     "n": 300,
+     "p50_us": 23.3,
+     "p99_us": 144.1,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 51,
+    "matching": 39,
+    "mismatches": [
+     {
+      "method": "definition",
+      "ours": [
+       269,
+       31,
+       0
+      ],
+      "matrix": [
+       282,
+       18,
+       0
+      ]
+     },
+     {
+      "method": "declaration",
+      "ours": [
+       173,
+       127,
+       0
+      ],
+      "matrix": [
+       288,
+       12,
+       0
+      ]
+     },
+     {
+      "method": "implementation",
+      "ours": [
+       57,
+       243,
+       0
+      ],
+      "matrix": [
+       68,
+       232,
+       0
+      ]
+     },
+     {
+      "method": "references",
+      "ours": [
+       210,
+       90,
+       0
+      ],
+      "matrix": [
+       283,
+       17,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       252,
+       48,
+       0
+      ],
+      "matrix": [
+       244,
+       56,
+       0
+      ]
+     },
+     {
+      "method": "hover",
+      "ours": [
+       288,
+       12,
+       0
+      ],
+      "matrix": [
+       291,
+       9,
+       0
+      ]
+     },
+     {
+      "method": "prepare_call_hierarchy",
+      "ours": [
+       185,
+       115,
+       0
+      ],
+      "matrix": [
+       284,
+       16,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       76,
+       224,
+       0
+      ],
+      "matrix": [
+       71,
+       229,
+       0
+      ]
+     },
+     {
+      "method": "outgoing_calls",
+      "ours": [
+       184,
+       116,
+       0
+      ],
+      "matrix": [
+       221,
+       79,
+       0
+      ]
+     },
+     {
+      "method": "prepare_type_hierarchy",
+      "ours": [
+       103,
+       197,
+       0
+      ],
+      "matrix": [
+       100,
+       200,
+       0
+      ]
+     },
+     {
+      "method": "prepare_rename",
+      "ours": [
+       173,
+       0,
+       127
+      ],
+      "matrix": [
+       287,
+       0,
+       13
+      ]
+     },
+     {
+      "method": "rename",
+      "ours": [
+       166,
+       0,
+       134
+      ],
+      "matrix": [
+       285,
+       0,
+       15
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "9caff24",
+   "b": "5dfc46c",
+   "same": 15275,
+   "differing": 25,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 291,
+     "differing": 9,
+     "transitions": {
+      "a>a": 9
+     },
+     "examples": [
+      {
+       "name": "refs_9_cast",
+       "file": "crates/ide-completion/src/context/analysis.rs",
+       "line": 258,
+       "character": 57,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9969d7f395f3d1e4",
+        "8c1012b3d2d14b17"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_30_cast",
+       "file": "crates/ide-completion/src/completions/item_list/trait_impl.rs",
+       "line": 305,
+       "character": 38,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c643ed0f9031671c",
+        "5423d07d981353f6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_35_from",
+       "file": "crates/hir-ty/src/mir.rs",
+       "line": 55,
+       "character": 31,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "28bd0750e5a259d8",
+        "58c39181f82b44e6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_47_clone",
+       "file": "crates/syntax/src/ast/syntax_factory/constructors.rs",
+       "line": 1333,
+       "character": 75,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8f2cfd014b74ebea",
+        "3c5de7f63766665f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_109_syntax",
+       "file": "crates/ide-assists/src/handlers/convert_from_to_tryfrom.rs",
+       "line": 89,
+       "character": 81,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "67f16fe5bac0c1f0",
+        "f5f05d2c1d55bd0e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_120_clone",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 4793,
+       "character": 58,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9441506b880da536",
+        "d58f446d68378806"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_141_can_cast",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 5708,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7a79167c1b67876b",
+        "838021d4f3535a98"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_260_syntax",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 5487,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "226bbb86f2270bf8",
+        "6d17bd7e14e4ede9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_278_cast",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 5227,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c53b5a82c1a36084",
+        "46c31ee99b40a491"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 290,
+     "differing": 10,
+     "transitions": {
+      "b>a": 10
+     },
+     "examples": [
+      {
+       "name": "document_highlight_34_cast",
+       "file": "crates/ide-db/src/syntax_helpers/node_ext.rs",
+       "line": 487,
+       "character": 48,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "e023b96a051df5b4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_69_file_text",
+       "file": "crates/ide-assists/src/tests.rs",
+       "line": 338,
+       "character": 33,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "5d436fd7b2d28b9b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_77_syntax",
+       "file": "crates/ide-assists/src/handlers/generate_impl.rs",
+       "line": 62,
+       "character": 51,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "41a5cd0426ab79e5"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_81_syntax",
+       "file": "crates/hir-ty/src/diagnostics/decl_check.rs",
+       "line": 271,
+       "character": 42,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "08500cf6efdd1d49"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_101_next",
+       "file": "crates/mbe/src/parser.rs",
+       "line": 277,
+       "character": 17,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "7b56a41e97274c1c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_113_syntax",
+       "file": "crates/hir/src/semantics.rs",
+       "line": 1716,
+       "character": 41,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "549dbdb7b82fdb49"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_196_syntax",
+       "file": "crates/ide-completion/src/completions/postfix.rs",
+       "line": 155,
+       "character": 55,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "065c4c35c5e23759"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_198_clone",
+       "file": "crates/ide-db/src/imports/insert_use.rs",
+       "line": 87,
+       "character": 67,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "da4b850e8eccd65f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_204_clone",
+       "file": "crates/rust-analyzer/src/lsp/capabilities.rs",
+       "line": 224,
+       "character": 74,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "ba04a5450cb0f979"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_292_krate",
+       "file": "crates/ide-assists/src/handlers/generate_blanket_trait_impl.rs",
+       "line": 176,
+       "character": 41,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "5ce765cea9770d01"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 295,
+     "differing": 5,
+     "transitions": {
+      "a>a": 2,
+      "b>a": 3
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_120_clone",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 3225,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "55d1c8fed8e86f73",
+        "a6941025210e7fc8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_164_clone",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 7161,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "85f933be780072e8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_234_source",
+       "file": "crates/hir/src/has_source.rs",
+       "line": 107,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "ed65bffd0a8a6cef"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_239_cast",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 4363,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "81835597cba8885d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_286_syntax",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 7119,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "24f60ce28fc3e365",
+        "5bbe7d2596bf034e"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "rename_288_syntax",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 8965,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "13f74eb4d3daeb75",
+        "c68ad4e6813c04f9"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "9caff24",
+   "b": "9caff24-2",
+   "same": 15300,
+   "differing": 0,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_highlight": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  },
+  {
+   "a": "5dfc46c",
+   "b": "9caff24-2",
+   "same": 15275,
+   "differing": 25,
+   "methods": {
+    "definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "declaration": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "type_definition": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "implementation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "references": {
+     "same": 291,
+     "differing": 9,
+     "transitions": {
+      "a>a": 9
+     },
+     "examples": [
+      {
+       "name": "refs_9_cast",
+       "file": "crates/ide-completion/src/context/analysis.rs",
+       "line": 258,
+       "character": 57,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8c1012b3d2d14b17",
+        "9969d7f395f3d1e4"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_30_cast",
+       "file": "crates/ide-completion/src/completions/item_list/trait_impl.rs",
+       "line": 305,
+       "character": 38,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5423d07d981353f6",
+        "c643ed0f9031671c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_35_from",
+       "file": "crates/hir-ty/src/mir.rs",
+       "line": 55,
+       "character": 31,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "58c39181f82b44e6",
+        "28bd0750e5a259d8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_47_clone",
+       "file": "crates/syntax/src/ast/syntax_factory/constructors.rs",
+       "line": 1333,
+       "character": 75,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "3c5de7f63766665f",
+        "8f2cfd014b74ebea"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_109_syntax",
+       "file": "crates/ide-assists/src/handlers/convert_from_to_tryfrom.rs",
+       "line": 89,
+       "character": 81,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f5f05d2c1d55bd0e",
+        "67f16fe5bac0c1f0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_120_clone",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 4793,
+       "character": 58,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d58f446d68378806",
+        "9441506b880da536"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_141_can_cast",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 5708,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "838021d4f3535a98",
+        "7a79167c1b67876b"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_260_syntax",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 5487,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6d17bd7e14e4ede9",
+        "226bbb86f2270bf8"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "refs_278_cast",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 5227,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "46c31ee99b40a491",
+        "c53b5a82c1a36084"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 290,
+     "differing": 10,
+     "transitions": {
+      "a>b": 10
+     },
+     "examples": [
+      {
+       "name": "document_highlight_34_cast",
+       "file": "crates/ide-db/src/syntax_helpers/node_ext.rs",
+       "line": 487,
+       "character": 48,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "e023b96a051df5b4",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_69_file_text",
+       "file": "crates/ide-assists/src/tests.rs",
+       "line": 338,
+       "character": 33,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "5d436fd7b2d28b9b",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_77_syntax",
+       "file": "crates/ide-assists/src/handlers/generate_impl.rs",
+       "line": 62,
+       "character": 51,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "41a5cd0426ab79e5",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_81_syntax",
+       "file": "crates/hir-ty/src/diagnostics/decl_check.rs",
+       "line": 271,
+       "character": 42,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "08500cf6efdd1d49",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_101_next",
+       "file": "crates/mbe/src/parser.rs",
+       "line": 277,
+       "character": 17,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "7b56a41e97274c1c",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_113_syntax",
+       "file": "crates/hir/src/semantics.rs",
+       "line": 1716,
+       "character": 41,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "549dbdb7b82fdb49",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_196_syntax",
+       "file": "crates/ide-completion/src/completions/postfix.rs",
+       "line": 155,
+       "character": 55,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "065c4c35c5e23759",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_198_clone",
+       "file": "crates/ide-db/src/imports/insert_use.rs",
+       "line": 87,
+       "character": 67,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "da4b850e8eccd65f",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_204_clone",
+       "file": "crates/rust-analyzer/src/lsp/capabilities.rs",
+       "line": 224,
+       "character": 74,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "ba04a5450cb0f979",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_292_krate",
+       "file": "crates/ide-assists/src/handlers/generate_blanket_trait_impl.rs",
+       "line": 176,
+       "character": 41,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "5ce765cea9770d01",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_symbol_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "hover": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "completion_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "signature_help": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inlay_hint_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_value": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "inline_completion": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "moniker_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_call_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "incoming_calls": {
+     "same": 295,
+     "differing": 5,
+     "transitions": {
+      "a>a": 2,
+      "a>b": 3
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_120_clone",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 3225,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "a6941025210e7fc8",
+        "55d1c8fed8e86f73"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_164_clone",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 7161,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "85f933be780072e8",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_234_source",
+       "file": "crates/hir/src/has_source.rs",
+       "line": 107,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "ed65bffd0a8a6cef",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_239_cast",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 4363,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "81835597cba8885d",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_286_syntax",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 7119,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5bbe7d2596bf034e",
+        "24f60ce28fc3e365"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "outgoing_calls": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_type_hierarchy": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "supertypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "subtypes": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "selection_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_link_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_color": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "color_presentation": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "range_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "on_type_formatting": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "prepare_rename": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "rename": {
+     "same": 299,
+     "differing": 1,
+     "transitions": {
+      "a>a": 1
+     },
+     "examples": [
+      {
+       "name": "rename_288_syntax",
+       "file": "crates/syntax/src/ast/generated/nodes.rs",
+       "line": 8965,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c68ad4e6813c04f9",
+        "13f74eb4d3daeb75"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "linked_editing_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_action_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "execute_command": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_full": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_delta": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "semantic_tokens_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "folding_range": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "code_lens_resolve": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "document_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "workspace_diagnostic": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_create_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_rename_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "will_delete_files": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    },
+    "text_document_content": {
+     "same": 300,
+     "differing": 0,
+     "transitions": {},
+     "examples": []
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_rust-analyzer_booster.json",
+  "repo_commit": "021bfc15e24909389bd208d1622b7f4f3942b91a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {}
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing: only rows on which some pair of servers differs in outcome or digest; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_9_cast",
+   "file": "crates/ide-completion/src/context/analysis.rs",
+   "line": 258,
+   "character": 57,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "9969d7f395f3d1e4",
+     "us": 825.8,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "8c1012b3d2d14b17",
+     "us": 2005.9,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "9969d7f395f3d1e4",
+     "us": 775.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_30_cast",
+   "file": "crates/ide-completion/src/completions/item_list/trait_impl.rs",
+   "line": 305,
+   "character": 38,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "c643ed0f9031671c",
+     "us": 2018.3,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "5423d07d981353f6",
+     "us": 3848.0,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "c643ed0f9031671c",
+     "us": 1852.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_35_from",
+   "file": "crates/hir-ty/src/mir.rs",
+   "line": 55,
+   "character": 31,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "28bd0750e5a259d8",
+     "us": 1392.5,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "58c39181f82b44e6",
+     "us": 1601.2,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "28bd0750e5a259d8",
+     "us": 1278.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_47_clone",
+   "file": "crates/syntax/src/ast/syntax_factory/constructors.rs",
+   "line": 1333,
+   "character": 75,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "8f2cfd014b74ebea",
+     "us": 2023.8,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "3c5de7f63766665f",
+     "us": 2568.2,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "8f2cfd014b74ebea",
+     "us": 1707.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_109_syntax",
+   "file": "crates/ide-assists/src/handlers/convert_from_to_tryfrom.rs",
+   "line": 89,
+   "character": 81,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "67f16fe5bac0c1f0",
+     "us": 2347.0,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "f5f05d2c1d55bd0e",
+     "us": 9351.5,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "67f16fe5bac0c1f0",
+     "us": 2275.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_120_clone",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 4793,
+   "character": 58,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "9441506b880da536",
+     "us": 1197.0,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "d58f446d68378806",
+     "us": 19338.6,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "9441506b880da536",
+     "us": 1207.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_141_can_cast",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 5708,
+   "character": 18,
+   "symbol": "can_cast",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "7a79167c1b67876b",
+     "us": 757.4,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "838021d4f3535a98",
+     "us": 1149.5,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "7a79167c1b67876b",
+     "us": 796.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_260_syntax",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 5487,
+   "character": 8,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "226bbb86f2270bf8",
+     "us": 1997.0,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "6d17bd7e14e4ede9",
+     "us": 5361.9,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "226bbb86f2270bf8",
+     "us": 2014.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "references",
+   "rpc_method": "textDocument/references",
+   "name": "refs_278_cast",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 5227,
+   "character": 8,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "c53b5a82c1a36084",
+     "us": 1074.6,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "46c31ee99b40a491",
+     "us": 2101.8,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "c53b5a82c1a36084",
+     "us": 1059.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_34_cast",
+   "file": "crates/ide-db/src/syntax_helpers/node_ext.rs",
+   "line": 487,
+   "character": 48,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 929.5,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "e023b96a051df5b4",
+     "us": 1495.5,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 881.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_69_file_text",
+   "file": "crates/ide-assists/src/tests.rs",
+   "line": 338,
+   "character": 33,
+   "symbol": "file_text",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1860.5,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "5d436fd7b2d28b9b",
+     "us": 1720.6,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1842.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_77_syntax",
+   "file": "crates/ide-assists/src/handlers/generate_impl.rs",
+   "line": 62,
+   "character": 51,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 949.2,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "41a5cd0426ab79e5",
+     "us": 1425.2,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 953.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_81_syntax",
+   "file": "crates/hir-ty/src/diagnostics/decl_check.rs",
+   "line": 271,
+   "character": 42,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 867.5,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "08500cf6efdd1d49",
+     "us": 1415.5,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 842.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_101_next",
+   "file": "crates/mbe/src/parser.rs",
+   "line": 277,
+   "character": 17,
+   "symbol": "next",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 892.7,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "7b56a41e97274c1c",
+     "us": 1387.4,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 925.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_113_syntax",
+   "file": "crates/hir/src/semantics.rs",
+   "line": 1716,
+   "character": 41,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1030.3,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "549dbdb7b82fdb49",
+     "us": 1653.2,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1032.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_196_syntax",
+   "file": "crates/ide-completion/src/completions/postfix.rs",
+   "line": 155,
+   "character": 55,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1231.7,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "065c4c35c5e23759",
+     "us": 3123.7,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1217.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_198_clone",
+   "file": "crates/ide-db/src/imports/insert_use.rs",
+   "line": 87,
+   "character": 67,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 718.8,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "da4b850e8eccd65f",
+     "us": 7854.8,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 675.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_204_clone",
+   "file": "crates/rust-analyzer/src/lsp/capabilities.rs",
+   "line": 224,
+   "character": 74,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 736.9,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "ba04a5450cb0f979",
+     "us": 929.8,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 711.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_292_krate",
+   "file": "crates/ide-assists/src/handlers/generate_blanket_trait_impl.rs",
+   "line": 176,
+   "character": 41,
+   "symbol": "krate",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 915.2,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "5ce765cea9770d01",
+     "us": 939.4,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 881.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_120_clone",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 3225,
+   "character": 8,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "55d1c8fed8e86f73",
+     "us": 2705.4,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "a6941025210e7fc8",
+     "us": 4391.0,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "55d1c8fed8e86f73",
+     "us": 2576.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_164_clone",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 7161,
+   "character": 8,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1401.5,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "85f933be780072e8",
+     "us": 1643.7,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1106.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_234_source",
+   "file": "crates/hir/src/has_source.rs",
+   "line": 107,
+   "character": 8,
+   "symbol": "source",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 726.7,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "ed65bffd0a8a6cef",
+     "us": 1166.1,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 718.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_239_cast",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 4363,
+   "character": 8,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1105.3,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "81835597cba8885d",
+     "us": 2946.0,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1144.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_286_syntax",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 7119,
+   "character": 8,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "24f60ce28fc3e365",
+     "us": 2248.6,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "5bbe7d2596bf034e",
+     "us": 4209.0,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "24f60ce28fc3e365",
+     "us": 2294.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "rename",
+   "rpc_method": "textDocument/rename",
+   "name": "rename_288_syntax",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 8965,
+   "character": 8,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "9caff24": {
+     "outcome": "a",
+     "digest": "13f74eb4d3daeb75",
+     "us": 4232.0,
+     "error": null
+    },
+    "5dfc46c": {
+     "outcome": "a",
+     "digest": "c68ad4e6813c04f9",
+     "us": 6770.0,
+     "error": null
+    },
+    "9caff24-2": {
+     "outcome": "a",
+     "digest": "13f74eb4d3daeb75",
+     "us": 3432.8,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 15300,
+ "rows_kept": 25,
+ "rows_filter": "differing",
+ "full_file": {
+  "name": "position_ab_9caff24_vs_5dfc46c_ram9_rust-analyzer.json",
+  "sha256": "2ec309a7e699a668c82b5499e5ec3871a59319ed65512532dfbc03817fe2dfbe"
+ }
+}

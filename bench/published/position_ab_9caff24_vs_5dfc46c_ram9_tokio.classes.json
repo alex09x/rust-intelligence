@@ -1,0 +1,632 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "tokio",
+ "report": "position_ab_9caff24_vs_5dfc46c_ram9_tokio.json",
+ "servers": [
+  {
+   "name": "9caff24",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "5dfc46c",
+   "commit": "5dfc46c5bb46c9621aafdfcc8a384ddaa07029f6",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9caff24-2",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 11,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 2,
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 9
+ },
+ "rows_by_method": {
+  "document_highlight": 3,
+  "incoming_calls": 2,
+  "references": 5,
+  "rename": 1
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "tokio-stream/tests/stream_peekable.rs",
+   "line": 32,
+   "character": 18,
+   "symbol": "size_hint",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "tokio-stream/src/stream_ext/peekable.rs",
+     78
+    ],
+    "removed_count": 0,
+    "added_count": 17,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio/tests/sync_notify.rs",
+   "line": 297,
+   "character": 47,
+   "symbol": "poll",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "tokio/src/sync/notify.rs",
+     1033
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio-stream/tests/mpsc_bounded_stream.rs",
+   "line": 68,
+   "character": 20,
+   "symbol": "is_terminated",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "tokio-stream/src/wrappers/mpsc_bounded.rs",
+     93
+    ],
+    "removed_count": 0,
+    "added_count": 7,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio-util/src/codec/lines_codec.rs",
+   "line": 190,
+   "character": 8,
+   "symbol": "encode",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "tokio-util/src/codec/lines_codec.rs",
+     190
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "tokio-util/src/future/with_cancellation_token.rs",
+   "line": 72,
+   "character": 8,
+   "symbol": "poll",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "tokio-util/src/future/with_cancellation_token.rs",
+     72
+    ],
+    "removed_count": 0,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio-util/tests/sync_cancellation_token.rs",
+   "line": 215,
+   "character": 30,
+   "symbol": "poll",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "tokio-util/src/sync/cancellation_token.rs",
+     349
+    ],
+    "removed_count": 0,
+    "added_count": 36,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio-stream/tests/stream_fused.rs",
+   "line": 143,
+   "character": 21,
+   "symbol": "is_terminated",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "tokio-stream/src/stream_ext/take.rs",
+     109
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "tokio-util/tests/codecs.rs",
+   "line": 151,
+   "character": 9,
+   "symbol": "put_slice",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bytes-1.12.1/src/bytes_mut.rs",
+     1323
+    ],
+    "removed_count": 0,
+    "added_count": 50,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/sync/mpsc/bounded.rs",
+   "line": 1630,
+   "character": 8,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio/src/sync/mpsc/bounded.rs",
+     1630
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:benches/signal.rs",
+       44,
+       "many_signals"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       55
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/sync_mpsc.rs",
+       103,
+       "contention_bounded_full"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       112
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/sync_mpsc.rs",
+       128,
+       "contention_bounded_full_recv_many"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       137
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/sync_mpsc.rs",
+       51,
+       "contention_bounded"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       60
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/sync_mpsc.rs",
+       76,
+       "contention_bounded_recv_many"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       85
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/sync_mpsc_oneshot.rs",
+       25,
+       "request_reply"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       38
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/src/sync/mpsc.rs",
+       112,
+       "new"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       114
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio-util/src/sync/mpsc.rs",
+       292,
+       "clone"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       294
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/rt_threaded.rs",
+       102,
+       "many_multishot_futures"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       130
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       1082,
+       "ready_close_cancel_bounded"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1084
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       1102,
+       "permit_available_not_acquired_close"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1104
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       1287,
+       "test_rx_is_closed_when_dropping_all_senders"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1290
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       174,
+       "start_send_past_cap"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       180
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       420,
+       "no_t_bounds_buffer"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       430
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       495,
+       "recv_close_gets_none_reserved"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       497
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       75,
+       "reserve_disarm"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       77,
+       78,
+       79
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       854,
+       "drop_permit_releases_permit"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       858
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc.rs",
+       872,
+       "drop_permit_iterator_releases_permits"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       877
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc_weak.rs",
+       136,
+       "new"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       138
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc_weak.rs",
+       14,
+       "weak_sender"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       18
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc_weak.rs",
+       232,
+       "downgrade_drop_upgrade"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       236
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc_weak.rs",
+       254,
+       "downgrade_upgrade_get_permit_no_senders"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       256
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc_weak.rs",
+       516,
+       "test_rx_is_closed_when_dropping_all_senders_except_weak_senders"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       519
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc_weak.rs",
+       534,
+       "sender_strong_count_when_cloned"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       537
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc_weak.rs",
+       555,
+       "sender_strong_count_when_dropped"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       558
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:tokio/tests/sync_mpsc_weak.rs",
+       579,
+       "sender_strong_and_weak_conut"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       582
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 26,
+    "removed_count": 0,
+    "added_sites": 28,
+    "removed_sites": 0,
+    "added_site_lines": 28,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "tokio/src/io/util/mem.rs",
+   "line": 164,
+   "character": 8,
+   "symbol": "poll_flush",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "tokio/src/io/util/mem.rs",
+     164
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:tokio/tests/io_copy.rs",
+       63,
+       "poll_flush"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       71
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "tokio-stream/src/wrappers/mpsc_bounded.rs",
+   "line": 82,
+   "character": 8,
+   "symbol": "size_hint",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "tokio-stream/src/wrappers/mpsc_bounded.rs",
+     82
+    ],
+    "removed_count": 0,
+    "added_count": 40,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  }
+ ]
+}

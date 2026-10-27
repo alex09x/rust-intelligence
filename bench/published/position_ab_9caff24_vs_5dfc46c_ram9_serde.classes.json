@@ -1,0 +1,140 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "serde",
+ "report": "position_ab_9caff24_vs_5dfc46c_ram9_serde.json",
+ "servers": [
+  {
+   "name": "9caff24",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "5dfc46c",
+   "commit": "5dfc46c5bb46c9621aafdfcc8a384ddaa07029f6",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9caff24-2",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 5,
+ "summary": {
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 5
+ },
+ "rows_by_method": {
+  "document_highlight": 3,
+  "references": 2
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "serde_derive/src/bound.rs",
+   "line": 115,
+   "character": 80,
+   "symbol": "next",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/syn-2.0.119/src/punctuated.rs",
+     576
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "serde_derive/src/bound.rs",
+   "line": 378,
+   "character": 35,
+   "symbol": "clone",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.107/src/lib.rs",
+     967
+    ],
+    "removed_count": 0,
+    "added_count": 22,
+    "added_not_resolving": [],
+    "added_files": 8,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 1817,
+   "character": 61,
+   "symbol": "next",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.107/src/lib.rs",
+     1500
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "serde_derive/src/internals/attr.rs",
+   "line": 1137,
+   "character": 69,
+   "symbol": "span",
+   "target_kind": "proc-macro",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/syn-2.0.119/src/spanned.rs",
+     105
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "test_suite/tests/test_ignored_any.rs",
+   "line": 105,
+   "character": 17,
+   "symbol": "deserialize",
+   "target_kind": "test",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "serde_core/src/de/ignored_any.rs",
+     232
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  }
+ ]
+}

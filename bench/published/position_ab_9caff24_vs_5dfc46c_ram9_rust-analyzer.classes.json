@@ -1,0 +1,927 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "rust-analyzer",
+ "report": "position_ab_9caff24_vs_5dfc46c_ram9_rust-analyzer.json",
+ "servers": [
+  {
+   "name": "9caff24",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "5dfc46c",
+   "commit": "5dfc46c5bb46c9621aafdfcc8a384ddaa07029f6",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9caff24-2",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 25,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 5,
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 20
+ },
+ "rows_by_method": {
+  "document_highlight": 10,
+  "incoming_calls": 5,
+  "references": 9,
+  "rename": 1
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "crates/ide-completion/src/context/analysis.rs",
+   "line": 258,
+   "character": 57,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast.rs",
+     119
+    ],
+    "removed_count": 0,
+    "added_count": 25,
+    "added_not_resolving": [],
+    "added_files": 18,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide-completion/src/completions/item_list/trait_impl.rs",
+   "line": 305,
+   "character": 38,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     8160
+    ],
+    "removed_count": 0,
+    "added_count": 10,
+    "added_not_resolving": [],
+    "added_files": 5,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/hir-ty/src/mir.rs",
+   "line": 55,
+   "character": 31,
+   "symbol": "from",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/la-arena-0.3.1/src/lib.rs",
+     42
+    ],
+    "removed_count": 0,
+    "added_count": 7,
+    "added_not_resolving": [],
+    "added_files": 4,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/syntax/src/ast/syntax_factory/constructors.rs",
+   "line": 1333,
+   "character": 75,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     3225
+    ],
+    "removed_count": 0,
+    "added_count": 8,
+    "added_not_resolving": [],
+    "added_files": 6,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/ide-assists/src/handlers/convert_from_to_tryfrom.rs",
+   "line": 89,
+   "character": 81,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     8451
+    ],
+    "removed_count": 0,
+    "added_count": 352,
+    "added_not_resolving": [],
+    "added_files": 87,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 4793,
+   "character": 58,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     15
+    ],
+    "removed_count": 0,
+    "added_count": 1453,
+    "added_not_resolving": [],
+    "added_files": 179,
+    "added_generated": 110
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 5708,
+   "character": 18,
+   "symbol": "can_cast",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     5705
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 3,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 5487,
+   "character": 8,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     5487
+    ],
+    "removed_count": 0,
+    "added_count": 122,
+    "added_not_resolving": [],
+    "added_files": 46,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 5227,
+   "character": 8,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     5227
+    ],
+    "removed_count": 0,
+    "added_count": 18,
+    "added_not_resolving": [],
+    "added_files": 11,
+    "added_generated": 4
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-db/src/syntax_helpers/node_ext.rs",
+   "line": 487,
+   "character": 48,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     8406
+    ],
+    "removed_count": 0,
+    "added_count": 6,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-assists/src/tests.rs",
+   "line": 338,
+   "character": 33,
+   "symbol": "file_text",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/ide-db/src/lib.rs",
+     125
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-assists/src/handlers/generate_impl.rs",
+   "line": 62,
+   "character": 51,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     8026
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir-ty/src/diagnostics/decl_check.rs",
+   "line": 271,
+   "character": 42,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     4335
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/mbe/src/parser.rs",
+   "line": 277,
+   "character": 17,
+   "symbol": "next",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/tt/src/iter.rs",
+     250
+    ],
+    "removed_count": 0,
+    "added_count": 12,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/hir/src/semantics.rs",
+   "line": 1716,
+   "character": 41,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     5839
+    ],
+    "removed_count": 0,
+    "added_count": 5,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-completion/src/completions/postfix.rs",
+   "line": 155,
+   "character": 55,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     8451
+    ],
+    "removed_count": 0,
+    "added_count": 11,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-db/src/imports/insert_use.rs",
+   "line": 87,
+   "character": 67,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rowan-0.17.0/src/api.rs",
+     15
+    ],
+    "removed_count": 0,
+    "added_count": 19,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/rust-analyzer/src/lsp/capabilities.rs",
+   "line": 224,
+   "character": 74,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.150/src/value/mod.rs",
+     115
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/ide-assists/src/handlers/generate_blanket_trait_impl.rs",
+   "line": 176,
+   "character": 41,
+   "symbol": "krate",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/hir/src/lib.rs",
+     6239
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 3225,
+   "character": 8,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     3225
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/add_return_type.rs",
+       104,
+       "peel_blocks"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       117
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/convert_to_guarded_return.rs",
+       389,
+       "clean_stmt_block"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       396
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/convert_to_guarded_return.rs",
+       72,
+       "if_expr_to_guarded_return"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       140
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/generate_function.rs",
+       371,
+       "render"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       386
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unwrap_branch.rs",
+       213,
+       "wrap_block_raw"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       215
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/unwrap_branch.rs",
+       32,
+       "unwrap_branch"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       38
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/utils.rs",
+       1205,
+       "is_never_block"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1209
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide/src/highlight_related.rs",
+       586,
+       "highlight_yield_points"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       645
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 8,
+    "removed_count": 0,
+    "added_sites": 8,
+    "removed_sites": 0,
+    "added_site_lines": 8,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 7161,
+   "character": 8,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     7161
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/extract_struct_from_enum_variant.rs",
+       276,
+       "create_struct_def"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       317
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/hir/src/has_source.rs",
+   "line": 107,
+   "character": 8,
+   "symbol": "source",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/hir/src/has_source.rs",
+     107
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/ide-diagnostics/src/handlers/private_field.rs",
+       33,
+       "field_is_private_fixes"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       43
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide/src/navigation_target.rs",
+       551,
+       "try_to_nav"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       556
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 2,
+    "removed_count": 0,
+    "added_sites": 2,
+    "removed_sites": 0,
+    "added_site_lines": 2,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 4363,
+   "character": 8,
+   "symbol": "cast",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     4363
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/invert_if.rs",
+       29,
+       "invert_if"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       33
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/merge_nested_if.rs",
+       26,
+       "merge_nested_if"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       28
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/move_guard.rs",
+       123,
+       "move_arm_cond_to_match_guard"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       133
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide/src/goto_definition.rs",
+       546,
+       "find_branch_root"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       561
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide/src/goto_definition.rs",
+       579,
+       "nav_for_branch_exit_points"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       617
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide/src/join_lines.rs",
+       270,
+       "as_if_expr"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       275
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 6,
+    "removed_count": 0,
+    "added_sites": 6,
+    "removed_sites": 0,
+    "added_site_lines": 6,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 7119,
+   "character": 8,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     7119
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/hir/src/lib.rs",
+       838,
+       "syntax"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       841
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/add_lifetime_to_type.rs",
+       97,
+       "find_ref_types_from_field_list"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       103
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/change_visibility.rs",
+       31,
+       "add_vis"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       76
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/convert_named_struct_to_tuple_struct.rs",
+       94,
+       "edit_struct_def"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       109
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/extract_module.rs",
+       276,
+       "get_usages_and_record_fields"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       311
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/generate_delegate_methods.rs",
+       51,
+       "generate_delegate_methods"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       75
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/generate_delegate_trait.rs",
+       123,
+       "new"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       139
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide-assists/src/handlers/generate_deref.rs",
+       87,
+       "generate_tuple_deref"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       91,
+       108
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/ide/src/navigation_target.rs",
+       551,
+       "try_to_nav"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       569
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 9,
+    "removed_count": 0,
+    "added_sites": 11,
+    "removed_sites": 0,
+    "added_site_lines": 10,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/syntax/src/ast/generated/nodes.rs",
+   "line": 8965,
+   "character": 8,
+   "symbol": "syntax",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/syntax/src/ast/generated/nodes.rs",
+     8965
+    ],
+    "removed_count": 0,
+    "added_count": 120,
+    "added_not_resolving": [],
+    "added_files": 30,
+    "added_generated": 0
+   }
+  }
+ ]
+}

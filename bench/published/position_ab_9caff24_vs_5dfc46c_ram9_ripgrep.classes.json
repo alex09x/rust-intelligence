@@ -1,0 +1,76 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "ripgrep",
+ "report": "position_ab_9caff24_vs_5dfc46c_ram9_ripgrep.json",
+ "servers": [
+  {
+   "name": "9caff24",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "5dfc46c",
+   "commit": "5dfc46c5bb46c9621aafdfcc8a384ddaa07029f6",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9caff24-2",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 2,
+ "summary": {
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 2
+ },
+ "rows_by_method": {
+  "document_highlight": 2
+ },
+ "rows": [
+  {
+   "method": "document_highlight",
+   "file": "crates/printer/src/summary.rs",
+   "line": 710,
+   "character": 35,
+   "symbol": "error_message",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/searcher/src/sink.rs",
+     43
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/core/search.rs",
+   "line": 435,
+   "character": 47,
+   "symbol": "clone",
+   "target_kind": "bin",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/printer/src/stats.rs",
+     12
+    ],
+    "removed_count": 0,
+    "added_count": 6,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  }
+ ]
+}

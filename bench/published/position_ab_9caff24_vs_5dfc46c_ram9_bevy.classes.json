@@ -1,0 +1,762 @@
+{
+ "schema": "position_ab_classes/1",
+ "repo_dir_name": "bevy",
+ "report": "position_ab_9caff24_vs_5dfc46c_ram9_bevy.json",
+ "servers": [
+  {
+   "name": "9caff24",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "5dfc46c",
+   "commit": "5dfc46c5bb46c9621aafdfcc8a384ddaa07029f6",
+   "dirty": false,
+   "binary": "ridx"
+  },
+  {
+   "name": "9caff24-2",
+   "commit": "9caff2400902e19bc9cb8158512e0c7bf3f04b82",
+   "dirty": false,
+   "binary": "ridx"
+  }
+ ],
+ "rows_differing": 23,
+ "summary": {
+  "g1_callers_gained_whose_call_sites_resolve_to_the_item": 3,
+  "t1_locations_gained_from_units_reaching_the_item_through_another_unit": 20
+ },
+ "rows_by_method": {
+  "document_highlight": 9,
+  "incoming_calls": 3,
+  "references": 7,
+  "rename": 4
+ },
+ "rows": [
+  {
+   "method": "references",
+   "file": "crates/bevy_ecs/src/schedule/schedule.rs",
+   "line": 2802,
+   "character": 38,
+   "symbol": "default",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/schedule/schedule.rs",
+     429
+    ],
+    "removed_count": 0,
+    "added_count": 38,
+    "added_not_resolving": [],
+    "added_files": 20,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_time/src/fixed.rs",
+   "line": 266,
+   "character": 39,
+   "symbol": "default",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_time/src/time.rs",
+     400
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "examples/ui/widgets/standard_widgets.rs",
+   "line": 685,
+   "character": 25,
+   "symbol": "with_alpha",
+   "target_kind": "example",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_color/src/color.rs",
+     626
+    ],
+    "removed_count": 0,
+    "added_count": 44,
+    "added_not_resolving": [],
+    "added_files": 22,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_ecs/src/schedule/condition.rs",
+   "line": 2073,
+   "character": 38,
+   "symbol": "default",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/schedule/schedule.rs",
+     429
+    ],
+    "removed_count": 0,
+    "added_count": 38,
+    "added_not_resolving": [],
+    "added_files": 20,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_color/src/linear_rgba.rs",
+   "line": 208,
+   "character": 8,
+   "symbol": "lighter",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_color/src/linear_rgba.rs",
+     208
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_shape/src/dim2.rs",
+   "line": 2053,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_shape/src/dim2.rs",
+     2053
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 2,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "references",
+   "file": "crates/bevy_color/src/hsla.rs",
+   "line": 134,
+   "character": 8,
+   "symbol": "with_alpha",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_color/src/hsla.rs",
+     134
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_feathers/src/dark_theme.rs",
+   "line": 98,
+   "character": 37,
+   "symbol": "from",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_platform/src/collections/hash_map.rs",
+     176
+    ],
+    "removed_count": 0,
+    "added_count": 6,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_feathers/src/controls/tree_view.rs",
+   "line": 550,
+   "character": 18,
+   "symbol": "after",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/schedule/config.rs",
+     632
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_render/src/storage.rs",
+   "line": 119,
+   "character": 32,
+   "symbol": "from",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_platform/src/collections/aligned_vec.rs",
+     988
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_winit/src/state.rs",
+   "line": 641,
+   "character": 22,
+   "symbol": "last",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/message/iterators.rs",
+     26
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_core_pipeline/src/schedule.rs",
+   "line": 297,
+   "character": 61,
+   "symbol": "entity",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/entity/entity_set.rs",
+     72
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_core_pipeline/src/fullscreen_material.rs",
+   "line": 57,
+   "character": 42,
+   "symbol": "default",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_render/src/uniform.rs",
+     36
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_reflect/src/display.rs",
+   "line": 744,
+   "character": 32,
+   "symbol": "from",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "../../../.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/disqualified-1.1.0/src/short_name.rs",
+     44
+    ],
+    "removed_count": 0,
+    "added_count": 1,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_gltf/src/loader/mod.rs",
+   "line": 317,
+   "character": 53,
+   "symbol": "default",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_platform/src/collections/hash_set.rs",
+     75
+    ],
+    "removed_count": 0,
+    "added_count": 4,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "document_highlight",
+   "file": "crates/bevy_pbr/src/render/light.rs",
+   "line": 1986,
+   "character": 56,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_render/src/render_resource/texture.rs",
+     78
+    ],
+    "removed_count": 0,
+    "added_count": 3,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ui/src/ui_node.rs",
+   "line": 2590,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ui/src/ui_node.rs",
+     2590
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:examples/ui/navigation/directional_navigation.rs",
+       217,
+       "buttons_scene"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       271
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 1,
+    "removed_count": 0,
+    "added_sites": 1,
+    "removed_sites": 0,
+    "added_site_lines": 1,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/message/message_cursor.rs",
+   "line": 60,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/message/message_cursor.rs",
+     60
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:crates/bevy_app/src/app.rs",
+       1406,
+       "should_exit"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1407
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_asset/src/lib.rs",
+       1771,
+       "load_folder"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       1824
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_winit/src/state.rs",
+       520,
+       "redraw_requested"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       521,
+       522
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 3,
+    "removed_count": 0,
+    "added_sites": 4,
+    "removed_sites": 0,
+    "added_site_lines": 4,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "file": "crates/bevy_ecs/src/world/command_queue.rs",
+   "line": 60,
+   "character": 8,
+   "symbol": "default",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "g1_callers_gained_whose_call_sites_resolve_to_the_item",
+   "evidence": {
+    "item_definition": [
+     "crates/bevy_ecs/src/world/command_queue.rs",
+     60
+    ],
+    "added_callers": [
+     {
+      "caller": [
+       "ws:benches/benches/bevy_ecs/world/commands.rs",
+       100,
+       "despawn_commands"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       111
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/benches/bevy_ecs/world/commands.rs",
+       156,
+       "insert_commands"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       167,
+       188
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/benches/bevy_ecs/world/commands.rs",
+       21,
+       "empty_commands"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       28
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/benches/bevy_ecs/world/commands.rs",
+       229,
+       "fake_commands"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       237
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/benches/bevy_ecs/world/commands.rs",
+       276,
+       "sized_commands_impl"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       284
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/benches/bevy_ecs/world/commands.rs",
+       38,
+       "spawn_commands"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       49
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:benches/benches/bevy_ecs/world/commands.rs",
+       72,
+       "nonempty_spawn_commands"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       83
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_transform/src/systems.rs",
+       827,
+       "correct_parent_removed"
+      ],
+      "call_sites": 3,
+      "call_site_lines": [
+       845,
+       862,
+       875
+      ],
+      "sites_resolving_to_the_item": 3,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_transform/src/systems.rs",
+       928,
+       "did_propagate_command_buffer"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       943
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_transform/src/systems.rs",
+       967,
+       "correct_children"
+      ],
+      "call_sites": 2,
+      "call_site_lines": [
+       985,
+       1008
+      ],
+      "sites_resolving_to_the_item": 2,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui/src/stack.rs",
+       227,
+       "test_ui_stack_system"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       231
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:crates/bevy_ui/src/stack.rs",
+       332,
+       "test_with_equal_global_zindex_zindex_decides_order"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       336
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     },
+     {
+      "caller": [
+       "ws:examples/async_tasks/async_compute.rs",
+       66,
+       "spawn_tasks"
+      ],
+      "call_sites": 1,
+      "call_site_lines": [
+       83
+      ],
+      "sites_resolving_to_the_item": 1,
+      "ok": true
+     }
+    ],
+    "removed_callers": [],
+    "changed_callers": [],
+    "added_count": 13,
+    "removed_count": 0,
+    "added_sites": 17,
+    "removed_sites": 0,
+    "added_site_lines": 17,
+    "removed_site_lines": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_ecs/src/system/system_param.rs",
+   "line": 436,
+   "character": 8,
+   "symbol": "init_state",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/system/system_param.rs",
+     436
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_mesh/src/primitives/dim2.rs",
+   "line": 312,
+   "character": 8,
+   "symbol": "build",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_mesh/src/primitives/dim2.rs",
+     312
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_ecs/src/system/system_registry.rs",
+   "line": 172,
+   "character": 8,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/system/system_registry.rs",
+     172
+    ],
+    "removed_count": 0,
+    "added_count": 2,
+    "added_not_resolving": [],
+    "added_files": 1,
+    "added_generated": 0
+   }
+  },
+  {
+   "method": "rename",
+   "file": "crates/bevy_ecs/src/schedule/config.rs",
+   "line": 626,
+   "character": 8,
+   "symbol": "before",
+   "target_kind": "lib",
+   "noise_before_vs_before2": false,
+   "class": "t1_locations_gained_from_units_reaching_the_item_through_another_unit",
+   "evidence": {
+    "cursor_definition": [
+     "crates/bevy_ecs/src/schedule/config.rs",
+     626
+    ],
+    "removed_count": 0,
+    "added_count": 200,
+    "added_not_resolving": [],
+    "added_files": 52,
+    "added_generated": 0
+   }
+  }
+ ]
+}
