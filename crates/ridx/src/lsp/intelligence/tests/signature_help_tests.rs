@@ -31,7 +31,9 @@ fn test_signature_missing_or_empty_uri() {
         }
     });
     assert_eq!(
-        handle_signature_help(&req_missing, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code,
+        handle_signature_help(&req_missing, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 
@@ -42,7 +44,9 @@ fn test_signature_missing_or_empty_uri() {
         }
     });
     assert_eq!(
-        handle_signature_help(&req_empty, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code,
+        handle_signature_help(&req_empty, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 }
@@ -59,7 +63,9 @@ fn test_signature_missing_position() {
         }
     });
     assert_eq!(
-        handle_signature_help(&req_no_pos, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code,
+        handle_signature_help(&req_no_pos, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 }
@@ -222,7 +228,8 @@ fn test_signature_generics_turbofish_angle_brackets() {
             "position": { "line": 1, "character": 56 }
         }
     });
-    let res_second = handle_signature_help(&req_second, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let res_second =
+        handle_signature_help(&req_second, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!res_second.is_null());
     assert_eq!(res_second["activeParameter"], 1);
 }
@@ -243,7 +250,8 @@ fn test_signature_nested_arrays_and_tuples() {
             "position": { "line": 1, "character": 26 }
         }
     });
-    let res_arr = handle_signature_help(&req_after_arr, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let res_arr =
+        handle_signature_help(&req_after_arr, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!res_arr.is_null());
     assert_eq!(res_arr["activeParameter"], 1);
 }

@@ -228,13 +228,39 @@ pub fn is_non_deref_type(ty: &str) -> bool {
     let b = base_type_path(ty);
     matches!(
         b,
-        "usize" | "u8" | "u16" | "u32" | "u64" | "u128" | "isize" | "i8" | "i16" | "i32"
-            | "i64" | "i128" | "f32" | "f64" | "bool" | "char" | "str" | "slice"
-            | "core::option::Option" | "std::option::Option" | "Option"
-            | "core::result::Result" | "std::result::Result" | "Result"
-            | "core::cmp::Ordering" | "std::cmp::Ordering" | "Ordering"
-            | "core::ops::Bound" | "std::ops::Bound" | "Bound"
-    ) || is_slice_type(ty) || is_array_type(ty) || is_pointer_type(ty)
+        "usize"
+            | "u8"
+            | "u16"
+            | "u32"
+            | "u64"
+            | "u128"
+            | "isize"
+            | "i8"
+            | "i16"
+            | "i32"
+            | "i64"
+            | "i128"
+            | "f32"
+            | "f64"
+            | "bool"
+            | "char"
+            | "str"
+            | "slice"
+            | "core::option::Option"
+            | "std::option::Option"
+            | "Option"
+            | "core::result::Result"
+            | "std::result::Result"
+            | "Result"
+            | "core::cmp::Ordering"
+            | "std::cmp::Ordering"
+            | "Ordering"
+            | "core::ops::Bound"
+            | "std::ops::Bound"
+            | "Bound"
+    ) || is_slice_type(ty)
+        || is_array_type(ty)
+        || is_pointer_type(ty)
 }
 
 /// Checks if a trait belongs to the standard library prelude or common formatting/deref traits.
@@ -244,10 +270,18 @@ pub fn is_in_prelude(trait_path: &str) -> bool {
         || is_prelude_trait(trait_path)
         || matches!(
             base,
-            "core::fmt::Debug" | "std::fmt::Debug" | "core::fmt::Display" | "std::fmt::Display"
-                | "core::ops::deref::Deref" | "core::ops::deref::DerefMut"
-                | "std::ops::Deref" | "std::ops::DerefMut"
-                | "Debug" | "Display" | "Deref" | "DerefMut"
+            "core::fmt::Debug"
+                | "std::fmt::Debug"
+                | "core::fmt::Display"
+                | "std::fmt::Display"
+                | "core::ops::deref::Deref"
+                | "core::ops::deref::DerefMut"
+                | "std::ops::Deref"
+                | "std::ops::DerefMut"
+                | "Debug"
+                | "Display"
+                | "Deref"
+                | "DerefMut"
         )
 }
 

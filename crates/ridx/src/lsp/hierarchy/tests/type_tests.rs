@@ -388,4 +388,3 @@ fn test_ref(x: Foo) {}
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
-

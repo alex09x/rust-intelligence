@@ -136,11 +136,15 @@ pub fn handle_rename(
 
                     let mapped_line = if let Some(dov) = decl_ov {
                         if dov.is_dirty() {
-                            match dov.map_compiled_to_live(loc_refs.target_line, loc_refs.target_col) {
+                            match dov
+                                .map_compiled_to_live(loc_refs.target_line, loc_refs.target_col)
+                            {
                                 Some(pos) => pos.0,
-                                None => return Err(LspError::request_failed(
-                                    "Cannot map symbol position in modified file",
-                                )),
+                                None => {
+                                    return Err(LspError::request_failed(
+                                        "Cannot map symbol position in modified file",
+                                    ))
+                                }
                             }
                         } else {
                             loc_refs.target_line
@@ -166,9 +170,11 @@ pub fn handle_rename(
                         loc_refs.target_kind,
                     ) {
                         Some(pos) => pos,
-                        None => return Err(LspError::request_failed(
-                            "Cannot find declaration identifier at mapped position",
-                        )),
+                        None => {
+                            return Err(LspError::request_failed(
+                                "Cannot find declaration identifier at mapped position",
+                            ))
+                        }
                     };
                     decl_final_line = Some(final_line);
 
@@ -211,15 +217,21 @@ pub fn handle_rename(
                                     "Cannot rename symbol in caller file with modified imports; save document first",
                                 ));
                             }
-                            let pos = match rov.map_compiled_to_live(r.span.start_line(), r.span.start_col()) {
+                            let pos = match rov
+                                .map_compiled_to_live(r.span.start_line(), r.span.start_col())
+                            {
                                 Some(p) => p,
-                                None => return Err(LspError::request_failed(
-                                    "Cannot map symbol position in modified file",
-                                )),
+                                None => {
+                                    return Err(LspError::request_failed(
+                                        "Cannot map symbol position in modified file",
+                                    ))
+                                }
                             };
                             if let Some(local_def) = rov.find_definition_at(pos.0, pos.1) {
                                 if r_str != decl_str
-                                    || decl_final_line.map(|fl| local_def.start_line != fl).unwrap_or(true)
+                                    || decl_final_line
+                                        .map(|fl| local_def.start_line != fl)
+                                        .unwrap_or(true)
                                 {
                                     return Err(LspError::request_failed(
                                         "Symbol shadowed by local definition",
@@ -370,4 +382,3 @@ pub(crate) fn validate_and_dedup_edits(
     }
     Ok(())
 }
-

@@ -94,7 +94,11 @@ fn test_rename_sibling_units_deduplicated_workspace_edit() {
         "target_kind": "lib",
         "is_dependency": false
     });
-    fs::write(deps_dir.join("my_pkg_lib.json"), serde_json::to_string(&lib_meta).unwrap()).unwrap();
+    fs::write(
+        deps_dir.join("my_pkg_lib.json"),
+        serde_json::to_string(&lib_meta).unwrap(),
+    )
+    .unwrap();
 
     // 2. Lib test shard writer (same package, duplicates lib definitions/references + adds test reference)
     let mut test_writer = IndexWriter::new("my_pkg", "0.1.0");
@@ -160,7 +164,11 @@ fn test_rename_sibling_units_deduplicated_workspace_edit() {
         "target_kind": "test",
         "is_dependency": false
     });
-    fs::write(deps_dir.join("my_pkg_test.json"), serde_json::to_string(&test_meta).unwrap()).unwrap();
+    fs::write(
+        deps_dir.join("my_pkg_test.json"),
+        serde_json::to_string(&test_meta).unwrap(),
+    )
+    .unwrap();
 
     // 3. Variant manifest
     let manifest = json!({
@@ -171,7 +179,11 @@ fn test_rename_sibling_units_deduplicated_workspace_edit() {
         "variant_dir": "variants/dev",
         "workspace_root": ws_root.to_str().unwrap()
     });
-    fs::write(ws_root.join("target/ridx/ridx_manifest.json"), serde_json::to_string(&manifest).unwrap()).unwrap();
+    fs::write(
+        ws_root.join("target/ridx/ridx_manifest.json"),
+        serde_json::to_string(&manifest).unwrap(),
+    )
+    .unwrap();
 
     let ws = WorkspaceIndex::open(&ws_root).expect("open workspace");
 
@@ -193,7 +205,10 @@ fn test_rename_sibling_units_deduplicated_workspace_edit() {
 
     // Must touch both src/lib.rs and tests/test_run.rs
     assert!(changes.contains_key(&uri_lib), "must edit src/lib.rs");
-    assert!(changes.contains_key(&uri_test), "must edit tests/test_run.rs");
+    assert!(
+        changes.contains_key(&uri_test),
+        "must edit tests/test_run.rs"
+    );
 
     let edits_lib = changes[&uri_lib].as_array().expect("edits array for lib");
     let edits_test = changes[&uri_test].as_array().expect("edits array for test");
@@ -303,9 +318,15 @@ fn test_rename_overlapping_different_edits_returns_internal_error() {
     });
 
     let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv);
-    assert!(res.is_err(), "Overlapping rename edits must return an error");
+    assert!(
+        res.is_err(),
+        "Overlapping rename edits must return an error"
+    );
     let err = res.unwrap_err();
-    assert_eq!(err.code, -32603, "Must return JSON-RPC internal error code -32603");
+    assert_eq!(
+        err.code, -32603,
+        "Must return JSON-RPC internal error code -32603"
+    );
     assert!(
         err.message.contains("Overlapping rename edits in file:"),
         "Error message must specify overlapping rename edits"
@@ -315,4 +336,3 @@ fn test_rename_overlapping_different_edits_returns_internal_error() {
         "Error message must include the file path"
     );
 }
-

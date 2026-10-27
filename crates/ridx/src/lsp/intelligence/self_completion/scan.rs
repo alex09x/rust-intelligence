@@ -94,7 +94,11 @@ pub fn parse_header(header: &str) -> EnclosingScope {
 }
 
 /// Scans source text forward to determine the enclosing `impl` or `trait` for the cursor position.
-pub fn find_enclosing_scope(text: &str, line_1based: u32, line_slice: &str) -> Option<EnclosingScope> {
+pub fn find_enclosing_scope(
+    text: &str,
+    line_1based: u32,
+    line_slice: &str,
+) -> Option<EnclosingScope> {
     let mut current_line = 1;
     let mut line_start = 0;
     for (idx, &b) in text.as_bytes().iter().enumerate() {

@@ -241,8 +241,11 @@ fn setup_test_index(temp_dir: &Path) -> (WorkspaceIndex, PathBuf) {
 fn test_incoming_calls_trait_impl_no_cross_pollution() {
     static TRAIT_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let id = TRAIT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_call_trait_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!(
+        "ridx_test_call_trait_{}_{}",
+        std::process::id(),
+        id
+    ));
 
     let (ws, src_file) = setup_test_index(&temp_dir);
     let overlay_mgr = OverlayManager::new();
@@ -293,8 +296,11 @@ fn test_incoming_calls_trait_impl_no_cross_pollution() {
 fn test_incoming_calls_trait_generic_calls_not_returned() {
     static TRAIT_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let id = TRAIT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temp_dir =
-        std::env::temp_dir().join(format!("ridx_test_call_trait_lim_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!(
+        "ridx_test_call_trait_lim_{}_{}",
+        std::process::id(),
+        id
+    ));
 
     let (ws, src_file) = setup_test_index(&temp_dir);
     let overlay_mgr = OverlayManager::new();

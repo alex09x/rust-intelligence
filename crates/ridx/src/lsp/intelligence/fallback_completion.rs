@@ -196,62 +196,59 @@ pub fn try_fallback_completion(
         super::syntax_pos::SyntaxPosition::Any
     };
 
-    let mut collector = |reader: &ridx_format::IndexReader<memmap2::Mmap>,
-                         def: &ridx_format::DefEntry|
-     -> bool {
-        scanned_count += 1;
-        if scanned_count >= max_scan_budget {
-            is_capped = true;
-            return false;
-        }
-
-        let kind = DefKind::from(def.kind);
-        if ctx.is_dot
-            && (!matches!(
-                kind,
-                DefKind::AssocFn | DefKind::Fn | DefKind::Field
-            ) || (def.sig_offset() != 0
-                && !signature_takes_receiver(reader.get_str(def.sig_offset()))))
-        {
-            return true;
-        }
-
-        if ctx.is_colon && !super::syntax_pos::is_def_allowed_in_position(kind, syntax_pos) {
-            return true;
-        }
-
-        let name = reader.get_str(def.name_offset());
-        let path = reader.get_str(def.path_offset());
-        let crate_name = reader.crate_name();
-
-        if target_prefix != "::"
-            && !full_path_matches(crate_name, path, &target_prefix, &target_suffix)
-        {
-            return true;
-        }
-
-        if !ctx.prefix.is_empty() && !name.starts_with(ctx.prefix) {
-            return true;
-        }
-
-        if seen_names.insert(name.to_string()) {
-            let detail = if def.sig_offset() != 0 {
-                format!("{} (in {})", reader.get_str(def.sig_offset()), crate_name)
-            } else {
-                format!("{crate_name}::{path}")
-            };
-            items.push(json!({
-                "label": name,
-                "kind": lsp_completion_kind(kind),
-                "detail": detail
-            }));
-            if items.len() >= 100 {
+    let mut collector =
+        |reader: &ridx_format::IndexReader<memmap2::Mmap>, def: &ridx_format::DefEntry| -> bool {
+            scanned_count += 1;
+            if scanned_count >= max_scan_budget {
                 is_capped = true;
                 return false;
             }
-        }
-        true
-    };
+
+            let kind = DefKind::from(def.kind);
+            if ctx.is_dot
+                && (!matches!(kind, DefKind::AssocFn | DefKind::Fn | DefKind::Field)
+                    || (def.sig_offset() != 0
+                        && !signature_takes_receiver(reader.get_str(def.sig_offset()))))
+            {
+                return true;
+            }
+
+            if ctx.is_colon && !super::syntax_pos::is_def_allowed_in_position(kind, syntax_pos) {
+                return true;
+            }
+
+            let name = reader.get_str(def.name_offset());
+            let path = reader.get_str(def.path_offset());
+            let crate_name = reader.crate_name();
+
+            if target_prefix != "::"
+                && !full_path_matches(crate_name, path, &target_prefix, &target_suffix)
+            {
+                return true;
+            }
+
+            if !ctx.prefix.is_empty() && !name.starts_with(ctx.prefix) {
+                return true;
+            }
+
+            if seen_names.insert(name.to_string()) {
+                let detail = if def.sig_offset() != 0 {
+                    format!("{} (in {})", reader.get_str(def.sig_offset()), crate_name)
+                } else {
+                    format!("{crate_name}::{path}")
+                };
+                items.push(json!({
+                    "label": name,
+                    "kind": lsp_completion_kind(kind),
+                    "detail": detail
+                }));
+                if items.len() >= 100 {
+                    is_capped = true;
+                    return false;
+                }
+            }
+            true
+        };
 
     let completed = if let Some(ref cname) = target_crate {
         ws.for_each_symbol_in_crate(cname, needle_lower.as_bytes(), &mut collector)

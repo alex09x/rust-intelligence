@@ -243,7 +243,8 @@ fn test_indexer_helpers_and_error_paths() {
     {
         let _path = EnvGuard::set("PATH", "");
         let _tc = EnvGuard::set("RUSTUP_TOOLCHAIN", "test-toolchain");
-        let v_toolchain = compute_variant_id("dev", None, None, None, false, false, &direct_manifest);
+        let v_toolchain =
+            compute_variant_id("dev", None, None, None, false, false, &direct_manifest);
         assert!(!v_toolchain.is_empty());
     }
 

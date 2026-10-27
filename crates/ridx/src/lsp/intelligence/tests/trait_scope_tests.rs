@@ -312,7 +312,8 @@ fn test_signature_takes_receiver_lifetimes() {
 fn test_collect_file_referenced_traits_single_use() {
     use crate::lsp::intelligence::scope_cache::collect_file_referenced_traits;
 
-    let temp_dir = std::env::temp_dir().join(format!("ridx_single_use_test_{}", std::process::id()));
+    let temp_dir =
+        std::env::temp_dir().join(format!("ridx_single_use_test_{}", std::process::id()));
     let _ = fs::create_dir_all(&temp_dir);
     let ridx_file = temp_dir.join("test.ridx");
 
@@ -377,7 +378,10 @@ fn test_collect_file_referenced_traits_single_use() {
     let ws = WorkspaceIndex::open(&ridx_file).unwrap();
     let traits = collect_file_referenced_traits(&ws, "src/main.rs");
 
-    assert!(traits.contains("MyCustomTrait"), "Expected MyCustomTrait from single use reference");
+    assert!(
+        traits.contains("MyCustomTrait"),
+        "Expected MyCustomTrait from single use reference"
+    );
     assert!(
         traits.contains("test_single_use_crate::traits::MyCustomTrait"),
         "Expected full trait path from single use reference"
@@ -389,4 +393,3 @@ fn test_collect_file_referenced_traits_single_use() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
-

@@ -116,10 +116,7 @@ fn test_trait_filter_parsing() {
         "<alloc::boxed::Box<dyn Any>>",
         "alloc::boxed::Box"
     ));
-    assert!(type_matches_owner(
-        "<alloc::boxed::Box<dyn Any>>",
-        "Box"
-    ));
+    assert!(type_matches_owner("<alloc::boxed::Box<dyn Any>>", "Box"));
     assert!(!type_matches_owner(
         "addr2line::Context::<R>",
         "core::option::Option"
@@ -159,7 +156,9 @@ fn test_signature_receiver_detection() {
     assert!(signature_takes_receiver("fn(Self, Self) -> Self"));
 
     // Non-receiver methods
-    assert!(!signature_takes_receiver("fn(ComponentId, &mut Registrator)"));
+    assert!(!signature_takes_receiver(
+        "fn(ComponentId, &mut Registrator)"
+    ));
     assert!(!signature_takes_receiver("fn(self_param: i32)"));
     assert!(!signature_takes_receiver("fn() -> i32"));
 }
@@ -325,7 +324,10 @@ fn test_collect_file_referenced_traits_with_globs() {
     let ws = WorkspaceIndex::open(&ridx_file).unwrap();
     let traits = collect_file_referenced_traits(&ws, "src/main.rs");
 
-    assert!(traits.contains("MyPreludeTrait"), "Expected MyPreludeTrait from glob expansion");
+    assert!(
+        traits.contains("MyPreludeTrait"),
+        "Expected MyPreludeTrait from glob expansion"
+    );
     assert!(
         traits.contains("test_glob_crate::prelude::MyPreludeTrait"),
         "Expected full trait path from glob expansion"
@@ -347,7 +349,10 @@ fn test_primitive_type_matches_owner() {
     assert!(type_matches_owner("[T]", "slice"));
     assert!(type_matches_owner("&[entity::Entity]", "slice"));
     assert!(type_matches_owner("&'_ [Entity]", "slice"));
-    assert!(type_matches_owner("<[core::mem::maybe_uninit::MaybeUninit<T>]>", "slice"));
+    assert!(type_matches_owner(
+        "<[core::mem::maybe_uninit::MaybeUninit<T>]>",
+        "slice"
+    ));
     assert!(type_matches_owner("slice", "slice"));
     assert!(type_matches_owner("[T; 4]", "array"));
     assert!(type_matches_owner("&[u8; 32]", "array"));
@@ -381,4 +386,3 @@ fn test_short_name_collision_behavior() {
     assert!(type_matches_owner("foo::Error", "bar::Error"));
     assert!(type_matches_owner("foo::Error", "foo::Error"));
 }
-

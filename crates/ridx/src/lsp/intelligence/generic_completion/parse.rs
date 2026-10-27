@@ -210,15 +210,15 @@ pub fn parse_generic_params_from_header(header: &str) -> Vec<GenericParam> {
                     continue;
                 }
                 let no_default = trimmed.split('=').next().unwrap_or(trimmed).trim();
-                let (name, inline_bounds) = if let Some(colon) = find_colon_at_depth_zero(no_default)
-                {
-                    (
-                        no_default[..colon].trim(),
-                        parse_bounds(&no_default[colon + 1..]),
-                    )
-                } else {
-                    (no_default, Vec::new())
-                };
+                let (name, inline_bounds) =
+                    if let Some(colon) = find_colon_at_depth_zero(no_default) {
+                        (
+                            no_default[..colon].trim(),
+                            parse_bounds(&no_default[colon + 1..]),
+                        )
+                    } else {
+                        (no_default, Vec::new())
+                    };
 
                 if !name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
                     params.push(GenericParam::with_bounds(name, inline_bounds));

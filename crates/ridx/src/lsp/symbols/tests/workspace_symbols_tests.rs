@@ -245,8 +245,10 @@ fn test_workspace_symbols_generic_fn_excludes_typaram() {
     });
     let res_x = handle_workspace_symbol(&req_x, std::iter::once(&ws), &mut h.conv);
     let items_x = res_x.as_array().expect("expected array");
-    assert!(items_x.is_empty(), "TyParam X must not be returned by workspace/symbol");
+    assert!(
+        items_x.is_empty(),
+        "TyParam X must not be returned by workspace/symbol"
+    );
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
-

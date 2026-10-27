@@ -338,9 +338,15 @@ fn test_lsp_server_stream_error_dispatch_rename_and_unknown_command() {
     let responses = parse_lsp_responses(&output);
     let rename_err = responses.iter().find(|r| r["id"] == 10).expect("resp 10");
     assert_eq!(rename_err["error"]["code"], -32803);
-    assert!(rename_err["error"]["message"].as_str().unwrap().contains("rename"));
+    assert!(rename_err["error"]["message"]
+        .as_str()
+        .unwrap()
+        .contains("rename"));
 
     let cmd_err = responses.iter().find(|r| r["id"] == 20).expect("resp 20");
     assert_eq!(cmd_err["error"]["code"], -32602);
-    assert!(cmd_err["error"]["message"].as_str().unwrap().contains("Unknown command"));
+    assert!(cmd_err["error"]["message"]
+        .as_str()
+        .unwrap()
+        .contains("Unknown command"));
 }

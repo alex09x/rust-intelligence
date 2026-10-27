@@ -293,4 +293,3 @@ fn test_rename_exact_duplicate_ranges_deduplicated() {
     assert!(validate_and_dedup_edits(&mut changes_map).is_ok());
     assert_eq!(changes_map[&uri].len(), 1);
 }
-

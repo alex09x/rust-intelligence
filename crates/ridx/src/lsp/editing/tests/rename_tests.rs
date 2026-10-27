@@ -147,8 +147,8 @@ fn test_rename_and_prepare_rename() {
             "newName": "total"
         }
     });
-    let rename_res = handle_rename(&rename_req, Some(&ws), &overlay_mgr, &mut conv)
-        .expect("rename succeeds");
+    let rename_res =
+        handle_rename(&rename_req, Some(&ws), &overlay_mgr, &mut conv).expect("rename succeeds");
     assert!(rename_res["changes"].get(&uri).is_some());
 
     // 3. Rename compiled symbol across workspace
@@ -163,8 +163,8 @@ fn test_rename_and_prepare_rename() {
         .expect("rename succeeds");
     assert!(res_compiled["changes"].get(&uri).is_some());
 
-    let res_compiled_disk = handle_rename(&rename_compiled, Some(&ws), &empty_mgr, &mut conv)
-        .expect("rename succeeds");
+    let res_compiled_disk =
+        handle_rename(&rename_compiled, Some(&ws), &empty_mgr, &mut conv).expect("rename succeeds");
     assert!(res_compiled_disk["changes"].get(&uri).is_some());
 
     // 4. Invalid rename ident -> RequestFailed error

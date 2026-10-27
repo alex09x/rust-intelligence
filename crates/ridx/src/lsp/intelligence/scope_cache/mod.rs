@@ -131,7 +131,10 @@ pub fn get_or_collect_file_referenced_traits(
         h ^= ws.readers().len() as u64;
         h = h.wrapping_mul(0x100000001b3);
         if let Some(mt) = ws.shard_mtime_for_file(file) {
-            let nanos = mt.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_nanos();
+            let nanos = mt
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos();
             h ^= nanos as u64;
             h = h.wrapping_mul(0x100000001b3);
             h ^= (nanos >> 64) as u64;
@@ -155,7 +158,10 @@ pub fn get_or_collect_file_referenced_traits(
         if let Some((cached_key, cached_fp, traits)) = guard.get(file) {
             if *cached_key == key && *cached_fp == ws_fingerprint {
                 if let Some(t) = t_traits0 {
-                    eprintln!("[RIDX_PROFILE_TRAITS] hit=true us={}", t.elapsed().as_micros());
+                    eprintln!(
+                        "[RIDX_PROFILE_TRAITS] hit=true us={}",
+                        t.elapsed().as_micros()
+                    );
                 }
                 return Arc::clone(traits);
             }
@@ -168,11 +174,17 @@ pub fn get_or_collect_file_referenced_traits(
         if guard.len() >= 64 {
             guard.clear();
         }
-        guard.insert(file.to_string(), (key, ws_fingerprint, Arc::clone(&collected)));
+        guard.insert(
+            file.to_string(),
+            (key, ws_fingerprint, Arc::clone(&collected)),
+        );
     }
 
     if let Some(t) = t_traits0 {
-        eprintln!("[RIDX_PROFILE_TRAITS] hit=false us={}", t.elapsed().as_micros());
+        eprintln!(
+            "[RIDX_PROFILE_TRAITS] hit=false us={}",
+            t.elapsed().as_micros()
+        );
     }
 
     collected

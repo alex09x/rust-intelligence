@@ -32,7 +32,10 @@ fn test_linked_editing_local_let_binding() {
     });
 
     let res = handle_linked_editing_range(&req, &overlay_mgr, &mut conv);
-    assert!(!res.is_null(), "Linked editing must find local binding ranges");
+    assert!(
+        !res.is_null(),
+        "Linked editing must find local binding ranges"
+    );
     let ranges = res["ranges"].as_array().expect("ranges array");
     assert!(ranges.len() >= 2, "Must link declaration and reference");
 }
@@ -82,7 +85,10 @@ fn test_linked_editing_shadowed_variable_scope_isolation() {
         // Inner shadow must only link within its block
         for r in ranges {
             let l = r["start"]["line"].as_u64().unwrap();
-            assert!(l == 3 || l == 4, "Shadowed range must not leak to outer scope");
+            assert!(
+                l == 3 || l == 4,
+                "Shadowed range must not leak to outer scope"
+            );
         }
     }
 }

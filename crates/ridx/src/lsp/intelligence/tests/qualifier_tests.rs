@@ -203,11 +203,15 @@ fn test_completion_dep_crate_qualifier_with_synthetic_span() {
 
 #[test]
 fn test_multi_target_use_import_and_foreign_use_guard() {
-    let temp_dir = std::env::temp_dir().join(format!("ridx_multi_target_qual_{}", std::process::id()));
+    let temp_dir =
+        std::env::temp_dir().join(format!("ridx_multi_target_qual_{}", std::process::id()));
     let app_dir = temp_dir.join("app_crate");
     let _ = fs::create_dir_all(app_dir.join("src"));
     let src_file = app_dir.join("src/system.rs");
-    let _ = fs::write(&src_file, "use crate::schedule::Schedule;\nfn test() { Schedule::default(); }\n");
+    let _ = fs::write(
+        &src_file,
+        "use crate::schedule::Schedule;\nfn test() { Schedule::default(); }\n",
+    );
     let src_path = src_file.to_str().unwrap().to_string();
 
     // 1. Foreign dependency crate `async_dep` with bare `Use` at root
@@ -259,7 +263,11 @@ fn test_multi_target_use_import_and_foreign_use_guard() {
             kind: DefKind::Struct,
             visibility: 0,
             is_macro_expansion: false,
-            file: app_dir.join("src/schedule.rs").to_str().unwrap().to_string(),
+            file: app_dir
+                .join("src/schedule.rs")
+                .to_str()
+                .unwrap()
+                .to_string(),
             name: "Schedule".to_string(),
             start_line: 1,
             start_col: 1,
@@ -322,7 +330,10 @@ fn test_multi_target_use_import_and_foreign_use_guard() {
     // find the `use` declaration in target 1, and resolve to `app_crate::schedule::Schedule`
     // instead of mistakenly picking `async_dep`'s foreign bare `Use`.
     let res = ws.resolve_qualifier(&src_path, "Schedule");
-    assert!(res.is_some(), "Should resolve Schedule via multi-target unit scan");
+    assert!(
+        res.is_some(),
+        "Should resolve Schedule via multi-target unit scan"
+    );
     let resolved = res.unwrap();
     assert_eq!(resolved.name, "Schedule");
     assert_eq!(resolved.path, "app_crate::schedule::Schedule");

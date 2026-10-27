@@ -122,7 +122,10 @@ fn test_code_action_refactor_extract_empty_range_ignored() {
     });
     let res = handle_code_action(&req, None, &overlay_mgr).unwrap();
     let actions = res.as_array().unwrap();
-    assert!(actions.is_empty(), "Empty range must not propose extract variable");
+    assert!(
+        actions.is_empty(),
+        "Empty range must not propose extract variable"
+    );
 }
 
 #[test]
@@ -228,7 +231,10 @@ fn test_code_action_auto_import_multiple_insertions_order() {
 
     let applied = apply_text_edits(code, &edits);
     let expected = "use alpha::A;\nuse beta::B;\nfn main() {}\n";
-    assert_eq!(applied, expected, "Multiple insertions at (0, 0) must preserve sequence order");
+    assert_eq!(
+        applied, expected,
+        "Multiple insertions at (0, 0) must preserve sequence order"
+    );
 }
 
 #[test]

@@ -10,9 +10,9 @@
 
 //! Code actions, quickfixes, and deferred action resolution.
 
+pub use super::atomic_write::{is_readonly_dependency, validate_workspace_edit};
 use crate::lsp::error::{LspError, LspResult};
 use crate::lsp::protocol::uri_to_path;
-pub use super::atomic_write::{is_readonly_dependency, validate_workspace_edit};
 use crate::overlay::OverlayManager;
 use ridx_format::WorkspaceIndex;
 use serde_json::{json, Value};
@@ -49,10 +49,7 @@ pub fn handle_code_action(
     let (doc_text, doc_version) = if let Some(overlay) = overlay_mgr.get(&file) {
         (overlay.text.clone(), Some(overlay.version))
     } else {
-        (
-            std::fs::read_to_string(&file).unwrap_or_default(),
-            None,
-        )
+        (std::fs::read_to_string(&file).unwrap_or_default(), None)
     };
 
     let context = &params["context"];
@@ -107,7 +104,9 @@ pub fn handle_code_action(
                         validate_workspace_edit(&action["edit"], workspace)?;
                         actions.push(action);
                     }
-                } else if code == "unused_mut" || message.contains("variable does not need to be mutable") {
+                } else if code == "unused_mut"
+                    || message.contains("variable does not need to be mutable")
+                {
                     let action = make_quickfix_action(
                         uri,
                         "Remove unnecessary `mut`",
@@ -126,12 +125,8 @@ pub fn handle_code_action(
                             let mut seen_paths = std::collections::HashSet::new();
                             for s in ws.search_symbols(ident) {
                                 if s.name == ident && seen_paths.insert(s.path.to_string()) {
-                                    let action = make_auto_import_action(
-                                        uri,
-                                        s.path,
-                                        doc_version,
-                                        diag,
-                                    );
+                                    let action =
+                                        make_auto_import_action(uri, s.path, doc_version, diag);
                                     validate_workspace_edit(&action["edit"], workspace)?;
                                     actions.push(action);
                                 }
@@ -163,7 +158,9 @@ pub fn handle_code_action_resolve(
         .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
 
     if !params.is_object() {
-        return Err(LspError::invalid_params("Params must be a CodeAction object"));
+        return Err(LspError::invalid_params(
+            "Params must be a CodeAction object",
+        ));
     }
 
     let _title = params
@@ -222,10 +219,7 @@ pub fn handle_code_action_resolve(
     let (doc_text, live_ver) = if let Some(ov) = overlay_mgr.get(&file) {
         (ov.text.clone(), Some(ov.version))
     } else {
-        (
-            std::fs::read_to_string(&file).unwrap_or_default(),
-            None,
-        )
+        (std::fs::read_to_string(&file).unwrap_or_default(), None)
     };
 
     let kind = data.get("kind").and_then(|k| k.as_str()).unwrap_or("");
@@ -253,10 +247,7 @@ pub fn handle_code_action_resolve(
         let range = data
             .get("range")
             .ok_or_else(|| LspError::invalid_params("data missing range"))?;
-        let new_text = data
-            .get("newText")
-            .and_then(|t| t.as_str())
-            .unwrap_or("");
+        let new_text = data.get("newText").and_then(|t| t.as_str()).unwrap_or("");
         let edit = json!({
             "range": range,
             "newText": new_text

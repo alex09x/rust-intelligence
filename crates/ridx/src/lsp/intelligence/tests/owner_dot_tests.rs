@@ -266,8 +266,16 @@ fn test_dot_fallback_completion_empty_prefix_finds_methods() {
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
     let labels: Vec<&str> = items.iter().filter_map(|it| it["label"].as_str()).collect();
-    assert!(labels.contains(&"is_disjoint"), "Fallback dot completion must find is_disjoint, got: {:?}", labels);
-    assert!(labels.contains(&"insert"), "Fallback dot completion must find insert, got: {:?}", labels);
+    assert!(
+        labels.contains(&"is_disjoint"),
+        "Fallback dot completion must find is_disjoint, got: {:?}",
+        labels
+    );
+    assert!(
+        labels.contains(&"insert"),
+        "Fallback dot completion must find insert, got: {:?}",
+        labels
+    );
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

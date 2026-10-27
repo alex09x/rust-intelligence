@@ -10,8 +10,8 @@
 
 //! LSP server lifecycle state machine, capability advertisement, and shutdown handling.
 
-pub use crate::lsp::editing::apply_registry::PendingApplyState;
 use crate::lsp::editing::apply_registry::ApplyEditRegistry;
+pub use crate::lsp::editing::apply_registry::PendingApplyState;
 use crate::lsp::presentation::flycheck::FlycheckState;
 use serde_json::{json, Value};
 use std::path::PathBuf;

@@ -106,5 +106,7 @@ pub fn handle_prepare_rename(
         }
     }
 
-    Err(LspError::request_failed("Cannot prepare rename: no identifier found at this position"))
+    Err(LspError::request_failed(
+        "Cannot prepare rename: no identifier found at this position",
+    ))
 }

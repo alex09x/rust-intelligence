@@ -18,10 +18,7 @@ use crate::overlay::OverlayManager;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-pub fn handle_execute_command(
-    msg: &Value,
-    overlay_mgr: &mut OverlayManager,
-) -> LspResult<Value> {
+pub fn handle_execute_command(msg: &Value, overlay_mgr: &mut OverlayManager) -> LspResult<Value> {
     let cmd = msg["params"]["command"].as_str().unwrap_or("");
     match cmd {
         "ridx.resolveWorkspace" => {
@@ -33,15 +30,28 @@ pub fn handle_execute_command(
         }
         "ridx.showReferences" => {
             let args = msg["params"]["arguments"].as_array();
-            let uri = args.and_then(|a| a.first()).and_then(|v| v.as_str())
-                .or_else(|| msg["params"]["uri"].as_str()).unwrap_or("");
-            let pos = args.and_then(|a| a.get(1)).unwrap_or(&msg["params"]["position"]);
-            let locs = args.and_then(|a| a.get(2)).and_then(|v| v.as_array())
-                .or_else(|| msg["params"]["locations"].as_array()).cloned().unwrap_or_default();
-            Ok(json!({ "success": true, "uri": uri, "position": pos, "count": locs.len(), "locations": locs }))
+            let uri = args
+                .and_then(|a| a.first())
+                .and_then(|v| v.as_str())
+                .or_else(|| msg["params"]["uri"].as_str())
+                .unwrap_or("");
+            let pos = args
+                .and_then(|a| a.get(1))
+                .unwrap_or(&msg["params"]["position"]);
+            let locs = args
+                .and_then(|a| a.get(2))
+                .and_then(|v| v.as_array())
+                .or_else(|| msg["params"]["locations"].as_array())
+                .cloned()
+                .unwrap_or_default();
+            Ok(
+                json!({ "success": true, "uri": uri, "position": pos, "count": locs.len(), "locations": locs }),
+            )
         }
         "ridx.applyEdits" => Ok(execute_apply_edits(msg, overlay_mgr)),
-        _ => Err(LspError::invalid_params(format!("Unknown command: '{cmd}'"))),
+        _ => Err(LspError::invalid_params(format!(
+            "Unknown command: '{cmd}'"
+        ))),
     }
 }
 

@@ -101,7 +101,10 @@ fn test_parse_trait_supertraits() {
     let src = "pub trait ContiguousQueryData: ArchetypeQueryData + 'static + IterQueryData {\n";
     assert_eq!(
         parse_trait_supertraits_from_source(src, 1),
-        vec!["ArchetypeQueryData".to_string(), "IterQueryData".to_string()]
+        vec![
+            "ArchetypeQueryData".to_string(),
+            "IterQueryData".to_string()
+        ]
     );
 }
 
@@ -145,4 +148,3 @@ fn test_get_or_resolve_deref_chain_caching() {
     assert!(Arc::ptr_eq(&res1, &res2));
     assert!(res1.is_empty());
 }
-

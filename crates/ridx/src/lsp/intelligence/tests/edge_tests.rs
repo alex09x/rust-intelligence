@@ -100,7 +100,8 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 27 }
         }
     });
-    let sig_no_paren = handle_signature_help(&req_no_paren, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_no_paren =
+        handle_signature_help(&req_no_paren, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_no_paren.is_null());
 
     let req_unclosed = json!({
@@ -109,7 +110,8 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 40 }
         }
     });
-    let sig_unclosed = handle_signature_help(&req_unclosed, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_unclosed =
+        handle_signature_help(&req_unclosed, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_unclosed.is_null());
 
     let req_empty_sig = json!({
@@ -118,7 +120,8 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 57 }
         }
     });
-    let sig_empty = handle_signature_help(&req_empty_sig, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_empty =
+        handle_signature_help(&req_empty_sig, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(sig_empty.is_null());
 
     let req_missing_ov = json!({
@@ -127,7 +130,8 @@ fn test_signature_help_disk_file_and_delimiters() {
             "position": { "line": 0, "character": 73 }
         }
     });
-    let sig_missing_ov = handle_signature_help(&req_missing_ov, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_missing_ov =
+        handle_signature_help(&req_missing_ov, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(sig_missing_ov.is_null());
 
     let _ = fs::remove_dir_all(&temp_dir);

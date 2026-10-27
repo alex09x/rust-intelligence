@@ -20,7 +20,13 @@ use std::process::Command;
 pub fn extract_target_kinds(manifest_path: &Path) -> HashMap<PathBuf, String> {
     let mut map = HashMap::new();
     let Ok(output) = Command::new("cargo")
-        .args(["metadata", "--format-version", "1", "--no-deps", "--manifest-path"])
+        .args([
+            "metadata",
+            "--format-version",
+            "1",
+            "--no-deps",
+            "--manifest-path",
+        ])
         .arg(manifest_path)
         .output()
     else {
@@ -79,8 +85,7 @@ pub fn collect_shards_from_deps_dir(
             let Ok(content) = fs::read(&path) else {
                 continue;
             };
-            let Ok(mut info) =
-                serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content)
+            let Ok(mut info) = serde_json::from_slice::<ridx_format::DependencyShardInfo>(&content)
             else {
                 continue;
             };
@@ -96,9 +101,7 @@ pub fn collect_shards_from_deps_dir(
                                 sidecar_gen == bin_gen
                             } else if !info.file_hashes.is_empty() {
                                 let computed_digest =
-                                    ridx_format::compute_source_snapshot_digest(
-                                        &info.file_hashes,
-                                    );
+                                    ridx_format::compute_source_snapshot_digest(&info.file_hashes);
                                 format!("{:016x}", computed_digest) == bin_gen
                             } else {
                                 false

@@ -148,7 +148,10 @@ pub fn commit_closed_writes_atomic(closed_writes: &[(String, String)]) -> bool {
 }
 
 /// Checks whether a path is an external read-only dependency (e.g. in cargo cache or toolchains).
-pub fn is_readonly_dependency(path: &Path, workspace: Option<&ridx_format::WorkspaceIndex>) -> bool {
+pub fn is_readonly_dependency(
+    path: &Path,
+    workspace: Option<&ridx_format::WorkspaceIndex>,
+) -> bool {
     if let Some(ws) = workspace {
         ws.is_external_path(path)
     } else {
@@ -198,4 +201,3 @@ pub fn validate_workspace_edit(
 
     Ok(())
 }
-

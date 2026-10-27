@@ -144,7 +144,8 @@ fn test_indexer_cargo_config_and_driver() {
     // Test CARGO_BUILD_TARGET environment variable (lines 206-208)
     {
         let _target = EnvGuard::set("CARGO_BUILD_TARGET", "aarch64-unknown-linux-gnu");
-        let v_env_target = compute_variant_id("dev", None, None, None, false, false, &manifest_file);
+        let v_env_target =
+            compute_variant_id("dev", None, None, None, false, false, &manifest_file);
         assert!(!v_env_target.is_empty());
     }
 

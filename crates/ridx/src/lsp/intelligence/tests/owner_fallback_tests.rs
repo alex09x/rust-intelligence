@@ -206,16 +206,23 @@ fn test_completion_self_colon_colon() {
     let items = res["items"].as_array().unwrap();
     assert!(!items.is_empty(), "Items should not be empty for Self::");
     let inc_item = items.iter().find(|it| it["label"] == "increment");
-    assert!(inc_item.is_some(), "increment method should be found via Self::");
+    assert!(
+        inc_item.is_some(),
+        "increment method should be found via Self::"
+    );
     let detail = inc_item.unwrap()["detail"].as_str().unwrap();
-    assert!(detail.contains("test_self::MyCounter"), "detail should link to owner path: {detail}");
+    assert!(
+        detail.contains("test_self::MyCounter"),
+        "detail should link to owner path: {detail}"
+    );
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
 #[test]
 fn test_completion_self_colon_colon_type_position_filters_methods() {
-    let temp_dir = std::env::temp_dir().join(format!("ridx_self_colon_type_{}", std::process::id()));
+    let temp_dir =
+        std::env::temp_dir().join(format!("ridx_self_colon_type_{}", std::process::id()));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     let src_file = temp_dir.join("src/lib.rs");
     let code = "pub struct UniqueEntityIter;\nimpl Iterator for UniqueEntityIter {\n    type Item = u32;\n    fn next(&mut self) -> Option<Self::Item> { None }\n    fn reduce<F>(self, f: F) -> Option<Self::> { None }\n}\n";
@@ -322,9 +329,12 @@ fn test_completion_self_colon_colon_type_position_filters_methods() {
     let items = res["items"].as_array().unwrap();
 
     let labels: Vec<&str> = items.iter().filter_map(|it| it["label"].as_str()).collect();
-    assert_eq!(labels, vec!["Item"], "In Option<Self::|>, only Item should be offered, but got: {:?}", labels);
+    assert_eq!(
+        labels,
+        vec!["Item"],
+        "In Option<Self::|>, only Item should be offered, but got: {:?}",
+        labels
+    );
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
-
-

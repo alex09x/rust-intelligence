@@ -107,7 +107,8 @@ pub fn handle_completion(
                 overlay_text: overlay_opt.map(|o| o.text.as_str()),
                 is_dirty,
             };
-            if let Some(owner_items) = super::owner_completion::try_owner_completion(ws, &owner_ctx) {
+            if let Some(owner_items) = super::owner_completion::try_owner_completion(ws, &owner_ctx)
+            {
                 return Ok(json!({
                     "isIncomplete": false,
                     "items": owner_items
@@ -272,7 +273,9 @@ pub fn handle_completion_resolve(msg: &Value) -> LspResult<Value> {
         .get("params")
         .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
     if !params.is_object() {
-        return Err(LspError::invalid_params("Params must be a CompletionItem object"));
+        return Err(LspError::invalid_params(
+            "Params must be a CompletionItem object",
+        ));
     }
 
     let label = params
@@ -280,7 +283,9 @@ pub fn handle_completion_resolve(msg: &Value) -> LspResult<Value> {
         .and_then(|l| l.as_str())
         .ok_or_else(|| LspError::invalid_params("CompletionItem must contain a label"))?;
     if label.is_empty() {
-        return Err(LspError::invalid_params("CompletionItem label cannot be empty"));
+        return Err(LspError::invalid_params(
+            "CompletionItem label cannot be empty",
+        ));
     }
 
     let mut resolved = params.clone();
@@ -301,7 +306,10 @@ pub fn handle_completion_resolve(msg: &Value) -> LspResult<Value> {
 }
 
 fn is_symbol_in_current_module(cur_file: &str, sym_file: &str) -> bool {
-    let (p_cur, p_sym) = (std::path::Path::new(cur_file), std::path::Path::new(sym_file));
+    let (p_cur, p_sym) = (
+        std::path::Path::new(cur_file),
+        std::path::Path::new(sym_file),
+    );
     p_cur == p_sym
         || (p_cur.parent() == p_sym.parent()
             && p_cur.parent().is_some()
@@ -310,4 +318,3 @@ fn is_symbol_in_current_module(cur_file: &str, sym_file: &str) -> bool {
                 .and_then(|s| s.to_str())
                 .is_some_and(|s| s == "mod" || s == "lib"))
 }
-

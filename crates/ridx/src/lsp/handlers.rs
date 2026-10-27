@@ -155,8 +155,8 @@ pub fn caller() {
                 "newName": "new_local"
             }
         });
-        let rename_res = handle_rename(&rename_msg, None, &overlay_mgr, &mut conv)
-            .expect("rename succeeds");
+        let rename_res =
+            handle_rename(&rename_msg, None, &overlay_mgr, &mut conv).expect("rename succeeds");
         let changes = rename_res["changes"].as_object().unwrap();
         assert!(changes.contains_key(lib_uri));
         assert_eq!(changes[lib_uri].as_array().unwrap().len(), 2); // Declaration AND usage!

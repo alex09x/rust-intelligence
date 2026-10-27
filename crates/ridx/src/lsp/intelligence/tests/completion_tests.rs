@@ -31,7 +31,9 @@ fn test_completion_missing_or_empty_uri() {
         }
     });
     assert_eq!(
-        handle_completion(&req_missing, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code,
+        handle_completion(&req_missing, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 
@@ -42,7 +44,9 @@ fn test_completion_missing_or_empty_uri() {
         }
     });
     assert_eq!(
-        handle_completion(&req_empty, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code,
+        handle_completion(&req_empty, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 }
@@ -59,7 +63,9 @@ fn test_completion_missing_position() {
         }
     });
     assert_eq!(
-        handle_completion(&req_no_pos, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code,
+        handle_completion(&req_no_pos, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 
@@ -70,7 +76,9 @@ fn test_completion_missing_position() {
         }
     });
     assert_eq!(
-        handle_completion(&req_no_char, Some(&ws), &overlay_mgr, &mut conv).unwrap_err().code,
+        handle_completion(&req_no_char, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 }
@@ -130,7 +138,9 @@ fn test_completion_prefix_filtering() {
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!res.is_null());
     let items = res["items"].as_array().unwrap();
-    assert!(items.iter().any(|i| i["label"].as_str().unwrap() == "calculate"));
+    assert!(items
+        .iter()
+        .any(|i| i["label"].as_str().unwrap() == "calculate"));
     assert!(!items.iter().any(|i| i["label"].as_str().unwrap() == "User"));
 }
 
@@ -188,7 +198,9 @@ fn test_completion_overlay_symbols_priority() {
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!res.is_null());
     let items = res["items"].as_array().unwrap();
-    assert!(items.iter().any(|i| i["label"].as_str().unwrap() == "custom_helper"));
+    assert!(items
+        .iter()
+        .any(|i| i["label"].as_str().unwrap() == "custom_helper"));
 }
 
 #[test]
@@ -245,7 +257,9 @@ fn test_completion_compiler_internals_filtered() {
     });
     let res = handle_completion(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     let items = res["items"].as_array().unwrap();
-    assert!(!items.iter().any(|i| i["label"].as_str().unwrap().contains("{closure")));
+    assert!(!items
+        .iter()
+        .any(|i| i["label"].as_str().unwrap().contains("{closure")));
 }
 
 #[test]

@@ -33,7 +33,8 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 30 }
         }
     });
-    let sig_generic = handle_signature_help(&req_generic, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_generic =
+        handle_signature_help(&req_generic, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_generic.is_null());
 
     // 2. Complex call with nested brackets and overlay signature extraction
@@ -50,7 +51,8 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 1, "character": 38 }
         }
     });
-    let sig_complex = handle_signature_help(&req_complex, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_complex =
+        handle_signature_help(&req_complex, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_complex.is_null());
 
     // 3. Signature help on disk file (not in overlay)
@@ -73,7 +75,11 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 2 }
         }
     });
-    assert!(handle_signature_help(&req_outside, Some(&ws), &overlay_mgr, &mut conv).unwrap().is_null());
+    assert!(
+        handle_signature_help(&req_outside, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap()
+            .is_null()
+    );
 
     // 5. Signature help with unknown callee returns null
     let unknown_call = "fn test() { no_such_func(1, 2); }\n";
@@ -89,7 +95,11 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 26 }
         }
     });
-    assert!(handle_signature_help(&req_unknown, Some(&ws), &overlay_mgr, &mut conv).unwrap().is_null());
+    assert!(
+        handle_signature_help(&req_unknown, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap()
+            .is_null()
+    );
 
     // 6. Signature help with whitespace, turbofish, brackets, and angle brackets
     let ws_call =
@@ -121,7 +131,8 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 63 }
         }
     });
-    let sig_complex = handle_signature_help(&req_complex, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let sig_complex =
+        handle_signature_help(&req_complex, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!sig_complex.is_null());
 
     // 8. Signature help at expression without callee name (e.g. `(1 + 2)`)
@@ -133,7 +144,11 @@ fn test_signature_help_extended_and_disk_fallback() {
             "position": { "line": 0, "character": 16 }
         }
     });
-    assert!(handle_signature_help(&req_paren, Some(&ws), &overlay_mgr, &mut conv).unwrap().is_null());
+    assert!(
+        handle_signature_help(&req_paren, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap()
+            .is_null()
+    );
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -240,7 +255,11 @@ fn test_hover_dirty_fallback() {
             "position": { "line": 0, "character": 0 }
         }
     });
-    assert!(handle_signature_help(&req_nonexist_sig, Some(&ws), &overlay_mgr, &mut conv).unwrap().is_null());
+    assert!(
+        handle_signature_help(&req_nonexist_sig, Some(&ws), &overlay_mgr, &mut conv)
+            .unwrap()
+            .is_null()
+    );
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

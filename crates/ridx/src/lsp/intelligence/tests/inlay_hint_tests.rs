@@ -35,7 +35,9 @@ fn test_inlay_hint_missing_or_empty_uri() {
         }
     });
     assert_eq!(
-        handle_inlay_hint(&req_missing, Some(&ws), &overlay_mgr).unwrap_err().code,
+        handle_inlay_hint(&req_missing, Some(&ws), &overlay_mgr)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 
@@ -49,7 +51,9 @@ fn test_inlay_hint_missing_or_empty_uri() {
         }
     });
     assert_eq!(
-        handle_inlay_hint(&req_empty, Some(&ws), &overlay_mgr).unwrap_err().code,
+        handle_inlay_hint(&req_empty, Some(&ws), &overlay_mgr)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 }
@@ -66,7 +70,9 @@ fn test_inlay_hint_missing_range_or_boundaries() {
         }
     });
     assert_eq!(
-        handle_inlay_hint(&req_no_range, Some(&ws), &overlay_mgr).unwrap_err().code,
+        handle_inlay_hint(&req_no_range, Some(&ws), &overlay_mgr)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 
@@ -79,7 +85,9 @@ fn test_inlay_hint_missing_range_or_boundaries() {
         }
     });
     assert_eq!(
-        handle_inlay_hint(&req_no_start, Some(&ws), &overlay_mgr).unwrap_err().code,
+        handle_inlay_hint(&req_no_start, Some(&ws), &overlay_mgr)
+            .unwrap_err()
+            .code,
         INVALID_PARAMS
     );
 }

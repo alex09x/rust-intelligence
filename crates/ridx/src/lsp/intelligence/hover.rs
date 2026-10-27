@@ -121,4 +121,3 @@ fn format_signature(name: &str, sig: &str) -> String {
         sig.to_string()
     }
 }
-

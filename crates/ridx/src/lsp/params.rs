@@ -38,7 +38,8 @@ pub fn text_document_position(msg: &Value) -> LspResult<(&str, u32, u32)> {
         .ok_or_else(|| LspError::invalid_params("Missing position.line"))? as u32;
     let col = pos["character"]
         .as_u64()
-        .ok_or_else(|| LspError::invalid_params("Missing position.character"))? as u32;
+        .ok_or_else(|| LspError::invalid_params("Missing position.character"))?
+        as u32;
 
     Ok((uri, line, col))
 }
@@ -98,11 +99,13 @@ pub fn text_document_range(msg: &Value) -> LspResult<(&str, u32, u32, u32, u32)>
     }
     let start_line = range["start"]["line"]
         .as_u64()
-        .ok_or_else(|| LspError::invalid_params("Missing range.start.line"))? as u32;
+        .ok_or_else(|| LspError::invalid_params("Missing range.start.line"))?
+        as u32;
     let start_col = range["start"]["character"].as_u64().unwrap_or(0) as u32;
     let end_line = range["end"]["line"]
         .as_u64()
-        .ok_or_else(|| LspError::invalid_params("Missing range.end.line"))? as u32;
+        .ok_or_else(|| LspError::invalid_params("Missing range.end.line"))?
+        as u32;
     let end_col = range["end"]["character"].as_u64().unwrap_or(0) as u32;
 
     Ok((uri, start_line, start_col, end_line, end_col))

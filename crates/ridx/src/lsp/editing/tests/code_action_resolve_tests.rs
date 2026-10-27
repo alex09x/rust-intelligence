@@ -288,10 +288,17 @@ fn test_code_action_resolve_closed_file_disk_modified_returns_content_modified()
 
     // 1. Resolve succeeds while disk content hash matches
     let res = handle_code_action_resolve(&req, None, &overlay_mgr);
-    assert!(res.is_ok(), "Resolve should succeed when disk content matches hash");
+    assert!(
+        res.is_ok(),
+        "Resolve should succeed when disk content matches hash"
+    );
 
     // 2. Modify disk content
-    std::fs::write(&file_path, "use b::B;\nuse a::A;\n// modified\nfn main() {}\n").unwrap();
+    std::fs::write(
+        &file_path,
+        "use b::B;\nuse a::A;\n// modified\nfn main() {}\n",
+    )
+    .unwrap();
 
     // 3. Resolve must fail with ContentModified (-32801)
     let err = handle_code_action_resolve(&req, None, &overlay_mgr).unwrap_err();
@@ -330,4 +337,3 @@ fn test_code_action_resolve_organize_imports_preserves_leading_comments() {
     let expected_code = "// Important comment\nuse a::A;\nuse b::B;\nfn main() {}\n";
     assert_eq!(updated.get(uri).unwrap(), expected_code);
 }
-

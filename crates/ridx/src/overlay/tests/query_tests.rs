@@ -154,7 +154,11 @@ fn test_find_global_symbol_definition_scope_and_items() {
 fn test_find_definition_at_end_col_boundary() {
     let code = "fn test_sym() {}\n";
     let overlay = DocumentOverlay::new("file:///test.rs", "/test.rs", 1, code.to_string());
-    let sym = overlay.symbols.iter().find(|s| s.name == "test_sym").expect("symbol test_sym");
+    let sym = overlay
+        .symbols
+        .iter()
+        .find(|s| s.name == "test_sym")
+        .expect("symbol test_sym");
     let line = sym.start_line;
     let end_col = sym.end_col;
 
@@ -191,4 +195,3 @@ fn test_find_definition_at_multiline_span() {
     let mid = overlay.find_definition_at(2, 5);
     assert_eq!(mid.map(|d| d.name), Some("BigStruct".to_string()));
 }
-

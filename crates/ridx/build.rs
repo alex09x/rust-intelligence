@@ -69,5 +69,8 @@ fn main() {
         .parent()
         .and_then(|p| p.parent())
         .unwrap_or(&manifest_dir);
-    println!("cargo:rerun-if-changed={}", ws_root.join("crates").display());
+    println!(
+        "cargo:rerun-if-changed={}",
+        ws_root.join("crates").display()
+    );
 }

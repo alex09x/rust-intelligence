@@ -199,11 +199,15 @@ pub fn handle_inlay_hint_resolve(msg: &Value) -> LspResult<Value> {
         .get("params")
         .ok_or_else(|| LspError::invalid_params("Missing params object"))?;
     if !params.is_object() {
-        return Err(LspError::invalid_params("Params must be an InlayHint object"));
+        return Err(LspError::invalid_params(
+            "Params must be an InlayHint object",
+        ));
     }
 
     if params.get("position").is_none() || params.get("label").is_none() {
-        return Err(LspError::invalid_params("InlayHint must contain position and label"));
+        return Err(LspError::invalid_params(
+            "InlayHint must contain position and label",
+        ));
     }
 
     let mut hint = params.clone();
@@ -262,4 +266,3 @@ fn find_let_binding(line_str: &str) -> Option<(usize, &str, usize)> {
     let ident_end = ident_start + var_name.len();
     Some((ident_start, var_name, ident_end))
 }
-

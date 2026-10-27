@@ -88,7 +88,8 @@ fn test_completion_scoping() {
             "position": { "line": 5, "character": 7 }
         }
     });
-    let res_second = handle_completion(&comp_in_second, Some(&ws), &overlay_mgr, &mut conv).unwrap();
+    let res_second =
+        handle_completion(&comp_in_second, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!res_second["items"]
         .as_array()
         .unwrap()

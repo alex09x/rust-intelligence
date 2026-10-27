@@ -178,7 +178,10 @@ mod tests {
         assert_eq!(strip_turbofish("Foo::<T>::new"), "Foo::new");
         assert_eq!(strip_turbofish("Foo::<A, B<C>>::"), "Foo::");
         assert_eq!(strip_turbofish("path::Foo::<T>::"), "path::Foo::");
-        assert_eq!(strip_turbofish("Vec::<u8>::with_capacity"), "Vec::with_capacity");
+        assert_eq!(
+            strip_turbofish("Vec::<u8>::with_capacity"),
+            "Vec::with_capacity"
+        );
         assert_eq!(strip_turbofish("a < b::"), "a < b::");
         assert_eq!(strip_turbofish("<T as Tr>::"), "<T as Tr>::");
         assert_eq!(strip_turbofish("Foo::<'a, T>::"), "Foo::");
@@ -186,19 +189,37 @@ mod tests {
         assert_eq!(strip_turbofish("Foo::<\"hello\", T>::"), "Foo::");
         assert_eq!(strip_turbofish("Foo::<'c', T>::"), "Foo::");
         assert_eq!(strip_turbofish("Foo::<fn() -> u8>::new"), "Foo::new");
-        assert_eq!(strip_turbofish("Foo::<fn(i32) -> Result<u8, ()>>::"), "Foo::");
+        assert_eq!(
+            strip_turbofish("Foo::<fn(i32) -> Result<u8, ()>>::"),
+            "Foo::"
+        );
         assert_eq!(strip_turbofish(r"Foo::<'\u{10FFFF}', T>::"), "Foo::");
         assert_eq!(strip_turbofish("Foo::<'🦀', T>::"), "Foo::");
-        assert_eq!(strip_turbofish("QueryState::<&A, Without<C>>::"), "QueryState::");
-        assert_eq!(strip_turbofish("EventTriggerState::<E>::"), "EventTriggerState::");
+        assert_eq!(
+            strip_turbofish("QueryState::<&A, Without<C>>::"),
+            "QueryState::"
+        );
+        assert_eq!(
+            strip_turbofish("EventTriggerState::<E>::"),
+            "EventTriggerState::"
+        );
     }
 
     #[test]
     fn test_extract_colon_qualifier() {
         assert_eq!(extract_colon_qualifier("use core::cell::"), "core::cell");
-        assert_eq!(extract_colon_qualifier("    use alloc::{string::"), "alloc::string");
-        assert_eq!(extract_colon_qualifier("    use alloc::{vec::Vec, string::"), "alloc::string");
-        assert_eq!(extract_colon_qualifier("unsafe { UniqueEntityEquivalentSlice::"), "UniqueEntityEquivalentSlice");
+        assert_eq!(
+            extract_colon_qualifier("    use alloc::{string::"),
+            "alloc::string"
+        );
+        assert_eq!(
+            extract_colon_qualifier("    use alloc::{vec::Vec, string::"),
+            "alloc::string"
+        );
+        assert_eq!(
+            extract_colon_qualifier("unsafe { UniqueEntityEquivalentSlice::"),
+            "UniqueEntityEquivalentSlice"
+        );
         assert_eq!(extract_colon_qualifier("match x { Some(v) => Foo::"), "Foo");
 
         // Turbofish test cases
@@ -206,13 +227,25 @@ mod tests {
         assert_eq!(extract_colon_qualifier("Foo::<A, B<C>>::"), "Foo");
         assert_eq!(extract_colon_qualifier("path::Foo::<T>::"), "path::Foo");
         assert_eq!(extract_colon_qualifier("Vec::<u8>::with_capacity"), "Vec");
-        assert_eq!(extract_colon_qualifier("QueryState::<&A, Without<C>>::"), "QueryState");
-        assert_eq!(extract_colon_qualifier("EventTriggerState::<E>::"), "EventTriggerState");
+        assert_eq!(
+            extract_colon_qualifier("QueryState::<&A, Without<C>>::"),
+            "QueryState"
+        );
+        assert_eq!(
+            extract_colon_qualifier("EventTriggerState::<E>::"),
+            "EventTriggerState"
+        );
 
         // UFCS test cases
         assert_eq!(extract_colon_qualifier("<T as Tr>::"), "Tr");
-        assert_eq!(extract_colon_qualifier("<T as my::Trait<U>>::"), "my::Trait");
-        assert_eq!(extract_colon_qualifier("<Option<<T as Other>::Item> as Trait>::"), "Trait");
+        assert_eq!(
+            extract_colon_qualifier("<T as my::Trait<U>>::"),
+            "my::Trait"
+        );
+        assert_eq!(
+            extract_colon_qualifier("<Option<<T as Other>::Item> as Trait>::"),
+            "Trait"
+        );
         assert_eq!(extract_colon_qualifier("<&set::Slice<K>>::"), "set::Slice");
         assert_eq!(extract_colon_qualifier("<&'a mut Slice<K>>::"), "Slice");
         assert_eq!(extract_colon_qualifier("<*const u8>::"), "u8");

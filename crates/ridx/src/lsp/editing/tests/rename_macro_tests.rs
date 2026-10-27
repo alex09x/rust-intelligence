@@ -20,8 +20,11 @@ static MACRO_RENAME_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 fn next_temp_dir() -> std::path::PathBuf {
     let id = MACRO_RENAME_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let temp_dir = std::env::temp_dir()
-        .join(format!("ridx_test_rename_macro_{}_{}", std::process::id(), id));
+    let temp_dir = std::env::temp_dir().join(format!(
+        "ridx_test_rename_macro_{}_{}",
+        std::process::id(),
+        id
+    ));
     let _ = fs::create_dir_all(temp_dir.join("src"));
     temp_dir
 }
@@ -116,14 +119,21 @@ fn test_rename_macro_reference_without_name_is_skipped() {
         }
     });
 
-    let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv).expect("rename should succeed");
+    let res =
+        handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv).expect("rename should succeed");
     let changes = res["changes"].as_object().expect("changes object");
 
     // Must contain edits for lib.rs and caller.rs
     assert!(changes.contains_key(&src_uri), "lib.rs should be edited");
-    assert!(changes.contains_key(&caller_uri), "caller.rs should be edited");
+    assert!(
+        changes.contains_key(&caller_uri),
+        "caller.rs should be edited"
+    );
     // Must NOT contain any edit for macros.rs
-    assert!(!changes.contains_key(&macro_uri), "macros.rs should be skipped");
+    assert!(
+        !changes.contains_key(&macro_uri),
+        "macros.rs should be skipped"
+    );
 
     // Exact check on edits
     let src_edits = changes[&src_uri].as_array().unwrap();
@@ -210,7 +220,9 @@ fn test_rename_non_macro_reference_without_name_fails_32803() {
 
     let err = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap_err();
     assert_eq!(err.code, -32803);
-    assert!(err.message.contains("Failed to locate identifier at reference position"));
+    assert!(err
+        .message
+        .contains("Failed to locate identifier at reference position"));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -281,7 +293,8 @@ fn test_rename_macro_reference_with_name_is_renamed() {
         }
     });
 
-    let res = handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv).expect("rename should succeed");
+    let res =
+        handle_rename(&req, Some(&ws), &overlay_mgr, &mut conv).expect("rename should succeed");
     let changes = res["changes"].as_object().expect("changes object");
 
     assert!(changes.contains_key(&src_uri));

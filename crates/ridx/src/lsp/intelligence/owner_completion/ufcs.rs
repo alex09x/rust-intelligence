@@ -60,7 +60,9 @@ pub fn peel_type_modifiers(mut s: &str) -> &str {
         if let Some(rest) = s.strip_prefix('&') {
             s = rest.trim_start();
             if s.starts_with('\'') {
-                if let Some(end_lt) = s.find(|c: char| !c.is_alphanumeric() && c != '_' && c != '\'') {
+                if let Some(end_lt) =
+                    s.find(|c: char| !c.is_alphanumeric() && c != '_' && c != '\'')
+                {
                     s = s[end_lt..].trim_start();
                 } else {
                     s = "";
@@ -224,13 +226,13 @@ mod tests {
             extract_ufcs_qualifier("<*const u8>"),
             Some("u8".to_string())
         );
-        assert_eq!(
-            extract_ufcs_qualifier("<*mut u8>"),
-            Some("u8".to_string())
-        );
+        assert_eq!(extract_ufcs_qualifier("<*mut u8>"), Some("u8".to_string()));
         assert_eq!(extract_ufcs_qualifier("<T>"), Some("T".to_string()));
         assert_eq!(extract_ufcs_qualifier("<Grüße>"), Some("Grüße".to_string()));
-        assert_eq!(extract_ufcs_qualifier("<T as Grüße>"), Some("Grüße".to_string()));
+        assert_eq!(
+            extract_ufcs_qualifier("<T as Grüße>"),
+            Some("Grüße".to_string())
+        );
     }
 
     #[test]

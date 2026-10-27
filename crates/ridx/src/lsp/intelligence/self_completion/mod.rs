@@ -74,22 +74,13 @@ pub(crate) fn collect_trait_and_supertraits(
     if indexed_supertraits.is_empty() {
         if let Some(def) = def_opt {
             if def.kind == DefKind::Trait {
-                let abs_file = ws.resolve_path_for_crate(
-                    ws.crate_name_for_file(file).unwrap_or(""),
-                    def.file,
-                );
+                let abs_file =
+                    ws.resolve_path_for_crate(ws.crate_name_for_file(file).unwrap_or(""), def.file);
                 let file_str = abs_file.to_str().unwrap_or(def.file);
                 let supertraits =
                     super::scope_cache::get_or_resolve_trait_supertraits(file_str, def.start_line);
                 for st_clean in supertraits {
-                    collect_trait_and_supertraits(
-                        ws,
-                        file_str,
-                        &st_clean,
-                        owners,
-                        seen,
-                        depth + 1,
-                    );
+                    collect_trait_and_supertraits(ws, file_str, &st_clean, owners, seen, depth + 1);
                 }
             }
         }
@@ -189,7 +180,10 @@ mod tests {
             parse_header(h1),
             EnclosingScope::Trait {
                 trait_name: "ContiguousQueryData".to_string(),
-                supertraits: vec!["ArchetypeQueryData".to_string(), "IterQueryData".to_string()],
+                supertraits: vec![
+                    "ArchetypeQueryData".to_string(),
+                    "IterQueryData".to_string()
+                ],
             }
         );
 
