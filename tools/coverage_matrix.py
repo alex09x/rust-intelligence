@@ -59,6 +59,7 @@ DOMAINS = [
         [
             ("textDocument/codeAction", [
                 "code_action_", "codeaction_", "extract_variable_", "organize_imports_",
+                "auto_import_", "same_crate_auto_import_", "has_modified_imports_",
                 "domain4_pre_initialize_requests_rejected_with_32002",
                 "stream_code_action_did_change_resolve_conflict",
             ]),
@@ -178,6 +179,7 @@ DOMAINS = [
         [
             ("workspace/didChangeWorkspaceFolders", [
                 "did_change_workspace_folders_", "workspace_folders_", "multiroot_dynamic_workspace_folders",
+                "multiroot_api_",
             ]),
             ("workspace/didChangeWatchedFiles", ["did_change_watched_files_", "watched_files_"]),
             ("workspace/didCreateFiles / willCreateFiles", ["will_create_files_", "did_create_files_"]),
@@ -228,13 +230,12 @@ def classify_tests(test_names, sorted_rules):
     unclassified = []
     for tname in test_names:
         norm = strip_tier_prefixes(tname)
+        bare = tname[len("test_"):] if tname.startswith("test_") else tname
         matched = False
         for method, prefix in sorted_rules:
-            if norm.startswith(prefix) or prefix == norm or (prefix.endswith("_") and prefix[:-1] == norm):
-                classified[method].append(tname)
-                matched = True
-                break
-            if tname.startswith(prefix) or prefix == tname or (prefix.endswith("_") and prefix[:-1] == tname):
+            # the name without the tier prefixes, without `test_` only (rules such as
+            # `domain4_pre_initialize_...` keep the domain), and as written
+            if any(c.startswith(prefix) or prefix == c or (prefix.endswith("_") and prefix[:-1] == c) for c in (norm, bare, tname)):
                 classified[method].append(tname)
                 matched = True
                 break

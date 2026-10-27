@@ -6,8 +6,8 @@
 
 - **Total E2E Tests**: 2780
 - **Total Unit/Src Tests**: 541
-- **Classified E2E Tests**: 2696
-- **Unclassified E2E Tests**: 84
+- **Classified E2E Tests**: 2714
+- **Unclassified E2E Tests**: 66
 - **Rows >= 20 E2E**: 53 / 53
 - **Rows >= 50 E2E**: 53 / 53
 
@@ -26,9 +26,9 @@
 | Domain 3: Synchronization & Coordinates | `textDocument/didSave` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `textDocument/didClose` | 50 | 0 | 50 | ✅ Complete |
 | Domain 3: Synchronization & Coordinates | `willSave / willSaveWaitUntil` | 50 | 0 | 50 | ✅ Complete |
-| Domain 4: Actions & Refactoring | `textDocument/codeAction` | 50 | 12 | 62 | ✅ Complete |
+| Domain 4: Actions & Refactoring | `textDocument/codeAction` | 60 | 13 | 73 | ✅ Complete |
 | Domain 4: Actions & Refactoring | `codeAction/resolve` | 50 | 14 | 64 | ✅ Complete |
-| Domain 5: Intelligence & Completion | `textDocument/completion` | 50 | 25 | 75 | ✅ Complete |
+| Domain 5: Intelligence & Completion | `textDocument/completion` | 53 | 25 | 78 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `completionItem/resolve` | 50 | 9 | 59 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/hover` | 50 | 16 | 66 | ✅ Complete |
 | Domain 5: Intelligence & Completion | `textDocument/signatureHelp` | 50 | 3 | 53 | ✅ Complete |
@@ -61,7 +61,7 @@
 | Domain 9: Navigation & Symbols | `textDocument/documentSymbol` | 54 | 1 | 55 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `workspace/symbol` | 51 | 0 | 51 | ✅ Complete |
 | Domain 9: Navigation & Symbols | `workspaceSymbol/resolve` | 51 | 8 | 59 | ✅ Complete |
-| Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 51 | 0 | 51 | ✅ Complete |
+| Domain 10: Multi-root & File Events | `workspace/didChangeWorkspaceFolders` | 56 | 0 | 56 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didChangeWatchedFiles` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didCreateFiles / willCreateFiles` | 51 | 0 | 51 | ✅ Complete |
 | Domain 10: Multi-root & File Events | `workspace/didRenameFiles / willRenameFiles` | 51 | 0 | 51 | ✅ Complete |
@@ -769,7 +769,14 @@
 
 ### Domain 4: Actions & Refactoring
 
-#### `textDocument/codeAction` (50 e2e tests)
+#### `textDocument/codeAction` (60 e2e tests)
+- `test_auto_import_appends_after_existing_use_statements`
+- `test_auto_import_detects_already_imported_symbols`
+- `test_auto_import_detects_braced_spaces_and_glob_imports`
+- `test_auto_import_inserts_after_multiline_use_not_inside`
+- `test_auto_import_skips_inner_attributes_and_comments`
+- `test_auto_import_skips_prelude_and_bare_names`
+- `test_auto_import_standard_collection`
 - `test_code_action_auto_import_cannot_find_message_fallback`
 - `test_code_action_auto_import_deduplicates_identical_paths`
 - `test_code_action_auto_import_e0412_from_workspace_symbol`
@@ -813,13 +820,16 @@
 - `test_code_action_response_id_echoed_correctly`
 - `test_code_action_unknown_diagnostic_code_ignored`
 - `test_code_action_zero_width_range_at_eof`
+- `test_domain4_pre_initialize_requests_rejected_with_32002`
 - `test_domain4_stream_code_action_did_change_resolve_conflict`
 - `test_extract_variable_inside_closure_rejected`
 - `test_extract_variable_multiline_short_circuit_and_loop_rejected`
 - `test_extract_variable_unicode_and_dependency_order`
+- `test_has_modified_imports_add_remove_change`
 - `test_organize_imports_multiline_items`
 - `test_refactor_extract_variable_execution`
 - `test_refactor_organize_imports_execution`
+- `test_same_crate_auto_import_produces_crate_prefix`
 
 #### `codeAction/resolve` (50 e2e tests)
 - `test_code_action_resolve_array_params_rejected_code_32602`
@@ -875,7 +885,7 @@
 
 ### Domain 5: Intelligence & Completion
 
-#### `textDocument/completion` (50 e2e tests)
+#### `textDocument/completion` (53 e2e tests)
 - `test_completion_at_exact_file_boundary_end`
 - `test_completion_at_exact_file_boundary_start`
 - `test_completion_cancelled_request_returns_cancelled_error`
@@ -916,6 +926,9 @@
 - `test_completion_utf16_surrogate_pair_column_indexing`
 - `test_completion_while_let_binding_scoped`
 - `test_completion_whitespace_only_line`
+- `test_domain5_concurrent_intelligence_requests_stress`
+- `test_domain5_e2e_full_intelligence_stream`
+- `test_domain5_pre_initialize_requests_rejected_with_32002`
 - `test_l2_completion_generic_trait_bound`
 - `test_l2_completion_latency_benchmark`
 - `test_l2_completion_local_mod_shadows_sysroot`
@@ -2626,7 +2639,7 @@
 
 ### Domain 10: Multi-root & File Events
 
-#### `workspace/didChangeWorkspaceFolders` (51 e2e tests)
+#### `workspace/didChangeWorkspaceFolders` (56 e2e tests)
 - `test_did_change_workspace_folders_add_and_remove_same_root_in_one_event`
 - `test_did_change_workspace_folders_add_folder_path_discovers_shards`
 - `test_did_change_workspace_folders_add_multiple_roots_batch`
@@ -2678,6 +2691,11 @@
 - `test_did_change_workspace_folders_simultaneous_add_and_remove`
 - `test_did_change_workspace_folders_uri_trailing_slash_handled`
 - `test_l2_multiroot_dynamic_workspace_folders`
+- `test_multiroot_api_clear_removes_all_roots`
+- `test_multiroot_api_doc_ws_empty_uri_falls_back`
+- `test_multiroot_api_doc_ws_matches_root_file`
+- `test_multiroot_api_find_workspace_on_empty_is_none`
+- `test_multiroot_api_reopen_from_slice`
 
 #### `workspace/didChangeWatchedFiles` (51 e2e tests)
 - `test_did_change_watched_files_active_overlay_preserved_across_reload`
@@ -2893,32 +2911,20 @@
 
 ### Unclassified E2E Tests
 
-Total unclassified tests: 84 (multi-purpose, property, or helper harness tests)
+Total unclassified tests: 66 (multi-purpose, property, or helper harness tests)
 
 - `test_atomic_closed_write_preserves_large_file_on_error`
 - `test_atomic_write_preserves_file_permissions`
 - `test_atomic_write_preserves_symlink_referent`
-- `test_auto_import_appends_after_existing_use_statements`
-- `test_auto_import_detects_already_imported_symbols`
-- `test_auto_import_detects_braced_spaces_and_glob_imports`
-- `test_auto_import_inserts_after_multiline_use_not_inside`
-- `test_auto_import_skips_inner_attributes_and_comments`
-- `test_auto_import_skips_prelude_and_bare_names`
-- `test_auto_import_standard_collection`
 - `test_byte_offset_to_position_roundtrip`
 - `test_char_col_to_utf16_unit_boundaries`
 - `test_cli_fixture_generation_and_query`
 - `test_comparison_preserves_full_path_and_rejects_errors`
 - `test_container_matching_exact_components`
 - `test_disk_failure_rollback_and_reported_failure`
-- `test_domain4_pre_initialize_requests_rejected_with_32002`
-- `test_domain5_concurrent_intelligence_requests_stress`
-- `test_domain5_e2e_full_intelligence_stream`
-- `test_domain5_pre_initialize_requests_rejected_with_32002`
 - `test_find_ridx_driver_custom_env_var`
 - `test_find_ridx_driver_fallback_candidate_search`
 - `test_find_ridx_driver_non_existent_returns_none`
-- `test_has_modified_imports_add_remove_change`
 - `test_hermetic_scoping_module_visibility_and_use_std_fmt`
 - `test_hermetic_scoping_shadowing_and_reverse_sysroot`
 - `test_l2_cas_portability_and_closure_sanitization`
@@ -2943,11 +2949,6 @@ Total unclassified tests: 84 (multi-purpose, property, or helper harness tests)
 - `test_map_line_suffix_common_shifted_after_delete`
 - `test_map_line_suffix_common_shifted_after_insert`
 - `test_map_live_to_compiled_position_tuple`
-- `test_multiroot_api_clear_removes_all_roots`
-- `test_multiroot_api_doc_ws_empty_uri_falls_back`
-- `test_multiroot_api_doc_ws_matches_root_file`
-- `test_multiroot_api_find_workspace_on_empty_is_none`
-- `test_multiroot_api_reopen_from_slice`
 - `test_overlay_manager_open_count_and_file_paths`
 - `test_overlay_rename_document_path`
 - `test_position_to_byte_offset_ascii_lines`
@@ -2967,7 +2968,6 @@ Total unclassified tests: 84 (multi-purpose, property, or helper harness tests)
 - `test_review_v4651_harness_routes_response_ids_and_preserves_errors`
 - `test_review_v4651_stale_version_rejected`
 - `test_run_server_session_handles_invalid_binary_gracefully`
-- `test_same_crate_auto_import_produces_crate_prefix`
 - `test_scip_loader_and_queries`
 - `test_server_request_with_same_id_is_not_treated_as_response`
 - `test_set_metrics_precision_recall_f1`
