@@ -11,6 +11,7 @@
 //! Symbol rename operations, identifier validation, and linked editing ranges.
 
 use super::ident::*;
+use super::ref_span::span_covers_other_identifier;
 use crate::lsp::error::{LspError, LspResult};
 use crate::lsp::protocol::{path_to_uri, uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;

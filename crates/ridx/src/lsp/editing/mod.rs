@@ -20,6 +20,7 @@ pub mod ident;
 pub mod linked;
 pub mod organize;
 pub mod prepare_rename;
+pub mod ref_span;
 pub mod rename;
 
 #[cfg(test)]
@@ -33,4 +34,5 @@ pub use format::*;
 pub use ident::*;
 pub use linked::*;
 pub use organize::*;
+pub use ref_span::*;
 pub use rename::*;
