@@ -1,0 +1,2167 @@
+{
+ "repo": "BurntSushi/ripgrep",
+ "repo_dir_name": "ripgrep",
+ "repo_head": "4649aa9700619f94cf9c66876e9549d83420e16c",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 27,
+ "positions_file": "matrix_ripgrep_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "implementation",
+  "incoming_calls",
+  "document_highlight"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 18,
+ "timestamp_start": "2026-10-27T22:07:52.313085+00:00",
+ "timestamp_end": "2026-10-27T22:08:10.858638+00:00",
+ "servers": [
+  {
+   "name": "5ff4d98",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 5ff4d98fa25db8fa484419495bb07c7b64c985b3, dirty: false)",
+   "commit": "5ff4d98fa25db8fa484419495bb07c7b64c985b3",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 0.6,
+   "summary": {
+    "implementation": {
+     "a": 257,
+     "b": 43,
+     "c": 0,
+     "n": 300,
+     "p50_us": 320.6,
+     "p99_us": 5809.1,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 148,
+     "b": 152,
+     "c": 0,
+     "n": 300,
+     "p50_us": 196.9,
+     "p99_us": 5967.6,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 283,
+     "b": 17,
+     "c": 0,
+     "n": 300,
+     "p50_us": 260.0,
+     "p99_us": 7673.9,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 3,
+    "matching": 1,
+    "mismatches": [
+     {
+      "method": "incoming_calls",
+      "ours": [
+       148,
+       152,
+       0
+      ],
+      "matrix": [
+       137,
+       163,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       283,
+       17,
+       0
+      ],
+      "matrix": [
+       281,
+       19,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "ra",
+   "kind": "rust-analyzer",
+   "binary": "rust-analyzer",
+   "version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+   "commit": null,
+   "dirty": null,
+   "ready": {
+    "initial_wait_ms": 2655.1,
+    "initial_quiescent": true,
+    "quiescent_wait_ms": 0.0,
+    "canary_wait_ms": 1328.46,
+    "canary_attempts": 2,
+    "cancelled_on_timeout": 1
+   },
+   "duration_s": 15.1,
+   "summary": {
+    "implementation": {
+     "a": 297,
+     "b": 3,
+     "c": 0,
+     "n": 300,
+     "p50_us": 129.3,
+     "p99_us": 1908.2,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 147,
+     "b": 152,
+     "c": 1,
+     "n": 300,
+     "p50_us": 2004.5,
+     "p99_us": 789778.7,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 292,
+     "b": 8,
+     "c": 0,
+     "n": 300,
+     "p50_us": 860.2,
+     "p99_us": 29319.6,
+     "unsupported": false
+    }
+   },
+   "retry": {
+    "implementation": {
+     "retried": 3,
+     "b": 3
+    },
+    "incoming_calls": {
+     "retried": 153,
+     "b": 152,
+     "a": 1
+    },
+    "document_highlight": {
+     "retried": 8,
+     "b": 8
+    }
+   },
+   "matrix_check": {
+    "compared": 3,
+    "matching": 3,
+    "mismatches": []
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "5ff4d98",
+   "b": "ra",
+   "same": 161,
+   "differing": 739,
+   "methods": {
+    "implementation": {
+     "same": 3,
+     "differing": 297,
+     "transitions": {
+      "a>a": 257,
+      "b>a": 40
+     },
+     "examples": [
+      {
+       "name": "impl_0_Regexp",
+       "file": "crates/core/flags/defs.rs",
+       "line": 5745,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "09f3f2e6fd5f0048",
+        "137f1b272f981192"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_1_FieldMatchSeparator",
+       "file": "crates/core/flags/lowargs.rs",
+       "line": 614,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "48fcfdb0e165e0b0",
+        "58d405bce71701d2"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_2_PatternSource",
+       "file": "crates/core/flags/lowargs.rs",
+       "line": 680,
+       "character": 17,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "64288d2fef1e18e7"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_3_WalkState",
+       "file": "crates/ignore/src/walk.rs",
+       "line": 1103,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ce9d84d5ddd116e0",
+        "c578e57ef2839e10"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_4_NoIgnoreParent",
+       "file": "crates/core/flags/defs.rs",
+       "line": 4537,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d53864dad633cbff",
+        "719bd289ef5c7829"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_5_BeforeContext",
+       "file": "crates/core/flags/defs.rs",
+       "line": 341,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8bb5a29dd33749e2",
+        "c6b286ff46ab5a83"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_6_DecimalFormatter",
+       "file": "crates/printer/src/util.rs",
+       "line": 409,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b4deb2090866fa61",
+        "4cf50df1d6139be7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_7_ConfiguredHIR",
+       "file": "crates/regex/src/config.rs",
+       "line": 158,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "abf6ed41e8ca4c6f",
+        "9a4c2e027f1fde9a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_8_AstAnalysis",
+       "file": "crates/regex/src/ast.rs",
+       "line": 6,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "03b39d1919c5e831",
+        "1fbb305172612816"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_9_SpecialMode",
+       "file": "crates/core/flags/lowargs.rs",
+       "line": 122,
+       "character": 17,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "9e3b6838a63947d1"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "decl:enum",
+       "cfg_test": false
+      }
+     ]
+    },
+    "incoming_calls": {
+     "same": 152,
+     "differing": 148,
+     "transitions": {
+      "a>a": 147,
+      "a>c": 1
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_0_nice_err",
+       "file": "tests/util.rs",
+       "line": 422,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c9278de73c25abaa",
+        "587b367af9634a78"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_1_exclude_zero",
+       "file": "crates/printer/src/summary.rs",
+       "line": 295,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dfabc6ceeada814c",
+        "39be626eb49f53a1"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_2_start",
+       "file": "crates/printer/src/standard.rs",
+       "line": 1668,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "932a2e412e81ef4e",
+        "5c5ff5cdbde6fd92"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_5_new",
+       "file": "crates/globset/src/glob.rs",
+       "line": 559,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "29352182438f4816",
+        "8c83a3b62afb0a09"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_6_is_cross",
+       "file": "tests/util.rs",
+       "line": 492,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "c5886fb6fe0e79b6",
+        "be1d0498469ea843"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_8_config",
+       "file": "crates/printer/src/standard.rs",
+       "line": 1574,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "b74a63a64f899b2d",
+        "3a9f31b2fb4fdeaa"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_11_analysis",
+       "file": "crates/regex/src/ast.rs",
+       "line": 150,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0ad8ace26d1552f6",
+        "97f455ec9429e29d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "incoming_calls_12_gi_from_str",
+       "file": "crates/ignore/src/gitignore.rs",
+       "line": 644,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5e341f47d3208c28",
+        "e3d19aa7922ff888"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": true
+      },
+      {
+       "name": "incoming_calls_13_any_literal",
+       "file": "crates/regex/src/ast.rs",
+       "line": 47,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "41b75dacf4bb76cd",
+        "9f90e2a4f8031865"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_14_line_anchor_start",
+       "file": "crates/regex/src/config.rs",
+       "line": 334,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "8fe3eb06daf543c9",
+        "924c88f61063f027"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 6,
+     "differing": 294,
+     "transitions": {
+      "a>a": 281,
+      "b>a": 11,
+      "a>b": 2
+     },
+     "examples": [
+      {
+       "name": "document_highlight_0_line_number",
+       "file": "crates/searcher/src/searcher/glue.rs",
+       "line": 1070,
+       "character": 14,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "9e2c62651537adc7",
+        "9fb9b8ee38e0b76c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": true
+      },
+      {
+       "name": "document_highlight_1_push_str",
+       "file": "crates/searcher/src/searcher/glue.rs",
+       "line": 721,
+       "character": 22,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "d3ced29fdd3c7153",
+        "3ef9d862df95c9d0"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": true
+      },
+      {
+       "name": "document_highlight_2_new",
+       "file": "crates/searcher/src/line_buffer.rs",
+       "line": 631,
+       "character": 41,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "46c5896f6294366b",
+        "ad02ae321b820be6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": true
+      },
+      {
+       "name": "document_highlight_3_quit",
+       "file": "crates/searcher/src/searcher/glue.rs",
+       "line": 698,
+       "character": 48,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f4c305b8c3ebe08a",
+        "62759b08c7f241ce"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": true
+      },
+      {
+       "name": "document_highlight_4_args",
+       "file": "tests/feature.rs",
+       "line": 659,
+       "character": 9,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "62a020513a8e76c0",
+        "776509ec5d02b3d8"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_5_start",
+       "file": "crates/regex/src/literal.rs",
+       "line": 347,
+       "character": 24,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "51e7271943074b18",
+        "c2a8589e03ee0455"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_6_to_vec",
+       "file": "crates/cli/src/escape.rs",
+       "line": 86,
+       "character": 15,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "752b18df8e21f96e",
+        "002022797af0bb52"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": true
+      },
+      {
+       "name": "document_highlight_7_File",
+       "file": "crates/core/flags/defs.rs",
+       "line": 2009,
+       "character": 36,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0e28b04bb13dfaee",
+        "7d179ea3f32860f1"
+       ],
+       "target_kind": "bin",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_8_Dir",
+       "file": "tests/regression.rs",
+       "line": 750,
+       "character": 46,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0dcb45b62ae04109",
+        "f5f5b5c848fabe90"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "type_usage",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_9_is_whitelist",
+       "file": "crates/ignore/src/overrides.rs",
+       "line": 219,
+       "character": 44,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f9d56063af7f1e87",
+        "a2931c378c50353a"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": true
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_ripgrep_booster.json",
+  "repo_commit": "4649aa9700619f94cf9c66876e9549d83420e16c",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {
+   "ra": true
+  }
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing-outcome: only rows on which some pair of servers differs in outcome (a/b/c of the first answer); rows that differ in digest alone are counted in comparison but not kept; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_2_PatternSource",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 680,
+   "character": 17,
+   "symbol": "PatternSource",
+   "target_kind": "bin",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2072.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "64288d2fef1e18e7",
+     "us": 151.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_9_SpecialMode",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 122,
+   "character": 17,
+   "symbol": "SpecialMode",
+   "target_kind": "bin",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1394.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9e3b6838a63947d1",
+     "us": 186.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_13_GlobInner",
+   "file": "crates/ignore/src/overrides.rs",
+   "line": 31,
+   "character": 6,
+   "symbol": "GlobInner",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 381.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9c609ac16cb94d19",
+     "us": 139.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_18_Duration",
+   "file": "tests/json.rs",
+   "line": 131,
+   "character": 8,
+   "symbol": "Duration",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 463.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d81a9ae7d5d82ffe",
+     "us": 1082.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_19_IgnoreMatchInner",
+   "file": "crates/ignore/src/dir.rs",
+   "line": 44,
+   "character": 6,
+   "symbol": "IgnoreMatchInner",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 300.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4edfba916bea4337",
+     "us": 174.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_21_GlobInner",
+   "file": "crates/ignore/src/types.rs",
+   "line": 114,
+   "character": 6,
+   "symbol": "GlobInner",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 284.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "29ac35f0fc3b6940",
+     "us": 111.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_24_HyperlinkConfigInner",
+   "file": "crates/printer/src/hyperlink.rs",
+   "line": 24,
+   "character": 8,
+   "symbol": "HyperlinkConfigInner",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 241.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9f478d22bd857206",
+     "us": 162.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_25_SearchMode",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 194,
+   "character": 17,
+   "symbol": "SearchMode",
+   "target_kind": "bin",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1801.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "6711ca01f5fa8f40",
+     "us": 198.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_28_CommandErrorKind",
+   "file": "crates/cli/src/process.rs",
+   "line": 16,
+   "character": 6,
+   "symbol": "CommandErrorKind",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 261.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "53f483da0ab6acf5",
+     "us": 348.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_33_LineMatchKind",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 510,
+   "character": 10,
+   "symbol": "LineMatchKind",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 628.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "703d03d3f049eddb",
+     "us": 151.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_34_Options",
+   "file": "crates/globset/src/glob.rs",
+   "line": 1022,
+   "character": 12,
+   "symbol": "Options",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": true,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 4825.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "00228544a0d29a36",
+     "us": 228.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_42_PatternMatcher",
+   "file": "crates/core/search.rs",
+   "line": 196,
+   "character": 17,
+   "symbol": "PatternMatcher",
+   "target_kind": "bin",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 312.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1a4f07c8cc765743",
+     "us": 111.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_49_State",
+   "file": "crates/printer/src/hyperlink.rs",
+   "line": 102,
+   "character": 14,
+   "symbol": "State",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 715.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "60523c7bddc5d3f0",
+     "us": 323.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_63_Candidate",
+   "file": "crates/globset/src/lib.rs",
+   "line": 524,
+   "character": 12,
+   "symbol": "Candidate",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 320.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "97326c396201bff3",
+     "us": 98.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_70_StandardStreamKind",
+   "file": "crates/cli/src/wtr.rs",
+   "line": 62,
+   "character": 6,
+   "symbol": "StandardStreamKind",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 246.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a3e16bccd65d47b2",
+     "us": 93.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_71_GlobSetBuilder",
+   "file": "crates/globset/src/lib.rs",
+   "line": 491,
+   "character": 12,
+   "symbol": "GlobSetBuilder",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 218.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f200a5476d54cec3",
+     "us": 107.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_81_MyError",
+   "file": "crates/matcher/tests/test_matcher.rs",
+   "line": 130,
+   "character": 12,
+   "symbol": "MyError",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 189.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "cc35bbfefd4d54f0",
+     "us": 676.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_85_ErrorKind",
+   "file": "crates/regex/src/error.rs",
+   "line": 42,
+   "character": 10,
+   "symbol": "ErrorKind",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 195.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "4f219edef5230c71",
+     "us": 192.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_94_Token",
+   "file": "crates/globset/src/glob.rs",
+   "line": 239,
+   "character": 6,
+   "symbol": "Token",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1379.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b812d8737f19755d",
+     "us": 121.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_113_Sorter",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 497,
+   "character": 6,
+   "symbol": "Sorter",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 281.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5ee0ba37ff6322b6",
+     "us": 66.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_121_WalkEvent",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 1055,
+   "character": 6,
+   "symbol": "WalkEvent",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 372.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c4c8315d11cba9c3",
+     "us": 62.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_140_GlobSet",
+   "file": "crates/globset/src/lib.rs",
+   "line": 301,
+   "character": 12,
+   "symbol": "GlobSet",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 210.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9f78fb9de59669ad",
+     "us": 119.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_141_TypeChange",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 749,
+   "character": 17,
+   "symbol": "TypeChange",
+   "target_kind": "bin",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1812.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "93276294eb25de04",
+     "us": 73.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_144_IgnoreOptions",
+   "file": "crates/ignore/src/dir.rs",
+   "line": 72,
+   "character": 8,
+   "symbol": "IgnoreOptions",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 195.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "873f4ea70b00fd75",
+     "us": 127.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_145_SortModeKind",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 698,
+   "character": 17,
+   "symbol": "SortModeKind",
+   "target_kind": "bin",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1908.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c1fa8ec59be76139",
+     "us": 76.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_165_ErrorKind",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 25,
+   "character": 10,
+   "symbol": "ErrorKind",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 182.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3623426905c601b4",
+     "us": 63.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_178_SubMatch",
+   "file": "tests/json.rs",
+   "line": 94,
+   "character": 8,
+   "symbol": "SubMatch",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 204.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8a40ceb79b598ad9",
+     "us": 860.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_199_MmapChoiceImpl",
+   "file": "crates/searcher/src/searcher/mmap.rs",
+   "line": 16,
+   "character": 6,
+   "symbol": "MmapChoiceImpl",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 244.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f9a63c1460043137",
+     "us": 112.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_206_LineTerminatorImp",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 198,
+   "character": 6,
+   "symbol": "LineTerminatorImp",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 269.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "fefb11f6fe602ada",
+     "us": 172.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_212_DirEntry",
+   "file": "crates/ignore/examples/walk.rs",
+   "line": 52,
+   "character": 6,
+   "symbol": "DirEntry",
+   "target_kind": "example",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 131.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "cae88955dde43ece",
+     "us": 142.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_219_Summary",
+   "file": "tests/json.rs",
+   "line": 70,
+   "character": 8,
+   "symbol": "Summary",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 179.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7fa1d78787fff5cd",
+     "us": 489.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_232_MyError",
+   "file": "crates/matcher/tests/test_matcher.rs",
+   "line": 52,
+   "character": 12,
+   "symbol": "MyError",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 170.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "159f70b9380f47ad",
+     "us": 561.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_237_CaptureRef",
+   "file": "crates/matcher/src/interpolate.rs",
+   "line": 64,
+   "character": 8,
+   "symbol": "CaptureRef",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 259.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "00f32e9710f7305c",
+     "us": 547.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_239_End",
+   "file": "tests/json.rs",
+   "line": 63,
+   "character": 8,
+   "symbol": "End",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 163.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "2b9adfe63d3f4d94",
+     "us": 557.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_242_Begin",
+   "file": "tests/json.rs",
+   "line": 58,
+   "character": 8,
+   "symbol": "Begin",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 189.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8309e50afde9948e",
+     "us": 438.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_260_Context",
+   "file": "tests/json.rs",
+   "line": 85,
+   "character": 8,
+   "symbol": "Context",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 173.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "53a53b65e8061c1b",
+     "us": 761.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_268_FlagLookup",
+   "file": "crates/core/flags/parse.rs",
+   "line": 317,
+   "character": 6,
+   "symbol": "FlagLookup",
+   "target_kind": "bin",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 355.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3cfb2f479f8d2019",
+     "us": 128.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_274_FlagInfoKind",
+   "file": "crates/core/flags/parse.rs",
+   "line": 343,
+   "character": 6,
+   "symbol": "FlagInfoKind",
+   "target_kind": "bin",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 233.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "839391478a88afa9",
+     "us": 76.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_282_DirEntry",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 30,
+   "character": 12,
+   "symbol": "DirEntry",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 110.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "02b4c5f143232517",
+     "us": 93.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_297_SinkContextKind",
+   "file": "crates/searcher/src/sink.rs",
+   "line": 430,
+   "character": 10,
+   "symbol": "SinkContextKind",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 442.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "6da48d2035d745ec",
+     "us": 71.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_19_from",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 1062,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "8fe239da2a0feb6e",
+     "us": 229.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000147.4,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "a",
+      "digest": "70848f30a054dd6b",
+      "us": 719346.9,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_77_str",
+   "file": "crates/globset/src/glob.rs",
+   "line": 761,
+   "character": 37,
+   "symbol": "str",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 181.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d22ecbd47ba380cc",
+     "us": 762.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_84_env",
+   "file": "crates/core/flags/parse.rs",
+   "line": 72,
+   "character": 41,
+   "symbol": "env",
+   "target_kind": "bin",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 157.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0d90858c1fa62ecf",
+     "us": 413.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_105_collections",
+   "file": "crates/core/flags/parse.rs",
+   "line": 367,
+   "character": 15,
+   "symbol": "collections",
+   "target_kind": "bin",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 180.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3a6d3a5aadb94392",
+     "us": 1994.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_153_Error",
+   "file": "crates/searcher/src/searcher/core.rs",
+   "line": 250,
+   "character": 26,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 161.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "0b54b3827a918f87",
+     "us": 359.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_178_Captures",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 790,
+   "character": 26,
+   "symbol": "Captures",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 156.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "335fc0095d727c36",
+     "us": 900.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_204_Error",
+   "file": "crates/searcher/src/searcher/mod.rs",
+   "line": 650,
+   "character": 24,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 171.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ce7fc4c2d013df93",
+     "us": 6827.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_207_Sherlock",
+   "file": "tests/misc.rs",
+   "line": 317,
+   "character": 10,
+   "symbol": "Sherlock",
+   "target_kind": "test",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "340185baa83ecb03",
+     "us": 996.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 75.0,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 77.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_217_current_dir",
+   "file": "build.rs",
+   "line": 21,
+   "character": 38,
+   "symbol": "current_dir",
+   "target_kind": "custom-build",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 146.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "d7e178e9369bb652",
+     "us": 1284.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_227_regex",
+   "file": "crates/searcher/src/testutil.rs",
+   "line": 207,
+   "character": 22,
+   "symbol": "regex",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 144.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5a48f17d33e55b69",
+     "us": 202.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_248_messages",
+   "file": "crates/core/flags/parse.rs",
+   "line": 117,
+   "character": 12,
+   "symbol": "messages",
+   "target_kind": "bin",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 165.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a0858a58b10ecde7",
+     "us": 288.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_251_str",
+   "file": "crates/ignore/src/gitignore.rs",
+   "line": 618,
+   "character": 10,
+   "symbol": "str",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 173.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1d7c12b730b8c45a",
+     "us": 600.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_252_generate_version_long",
+   "file": "crates/core/main.rs",
+   "line": 391,
+   "character": 44,
+   "symbol": "generate_version_long",
+   "target_kind": "bin",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "f7a590ab458a5b9d",
+     "us": 127.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 84.4,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 86.1,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_280_Captures",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 751,
+   "character": 25,
+   "symbol": "Captures",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 156.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "335fc0095d727c36",
+     "us": 786.6,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 900,
+ "rows_kept": 54,
+ "rows_filter": "differing-outcome",
+ "full_file": {
+  "name": "position_ab_5ff4d98_vs_ra_ram9_ripgrep.json",
+  "sha256": "b5410fb053f88a98bae6a2df9391bc3fe53557fd05d42dfcd123ead426dcbe8c"
+ }
+}

@@ -1,0 +1,3054 @@
+{
+ "repo": "tokio-rs/tokio",
+ "repo_dir_name": "tokio",
+ "repo_head": "b2636752450484955e7ad334bac678424d51bc4a",
+ "node": "ram9",
+ "python": "3.10.12",
+ "index_shards": 308,
+ "positions_file": "matrix_tokio_booster.positions.json",
+ "positions_seed": 42,
+ "methods": [
+  "implementation",
+  "incoming_calls",
+  "document_highlight"
+ ],
+ "limit": null,
+ "timeout_s": 2.0,
+ "target_entries": 301,
+ "timestamp_start": "2026-10-27T22:08:17.032830+00:00",
+ "timestamp_end": "2026-10-27T22:08:58.674880+00:00",
+ "servers": [
+  {
+   "name": "5ff4d98",
+   "kind": "ridx",
+   "binary": "ridx",
+   "version": "ridx 0.1.0 (commit: 5ff4d98fa25db8fa484419495bb07c7b64c985b3, dirty: false)",
+   "commit": "5ff4d98fa25db8fa484419495bb07c7b64c985b3",
+   "dirty": false,
+   "ready": {
+    "initial_wait_ms": 0.0,
+    "initial_quiescent": true,
+    "cancelled_on_timeout": 0
+   },
+   "duration_s": 2.3,
+   "summary": {
+    "implementation": {
+     "a": 206,
+     "b": 94,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2335.4,
+     "p99_us": 10324.8,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 106,
+     "b": 194,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1941.7,
+     "p99_us": 11301.5,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 208,
+     "b": 92,
+     "c": 0,
+     "n": 300,
+     "p50_us": 1935.8,
+     "p99_us": 14040.9,
+     "unsupported": false
+    }
+   },
+   "matrix_check": {
+    "compared": 3,
+    "matching": 0,
+    "mismatches": [
+     {
+      "method": "implementation",
+      "ours": [
+       206,
+       94,
+       0
+      ],
+      "matrix": [
+       167,
+       133,
+       0
+      ]
+     },
+     {
+      "method": "incoming_calls",
+      "ours": [
+       106,
+       194,
+       0
+      ],
+      "matrix": [
+       92,
+       208,
+       0
+      ]
+     },
+     {
+      "method": "document_highlight",
+      "ours": [
+       208,
+       92,
+       0
+      ],
+      "matrix": [
+       238,
+       62,
+       0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "ra",
+   "kind": "rust-analyzer",
+   "binary": "rust-analyzer",
+   "version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+   "commit": null,
+   "dirty": null,
+   "ready": {
+    "initial_wait_ms": 4857.7,
+    "initial_quiescent": true,
+    "quiescent_wait_ms": 0.0,
+    "canary_wait_ms": 1037.92,
+    "canary_attempts": 2,
+    "cancelled_on_timeout": 5
+   },
+   "duration_s": 32.9,
+   "summary": {
+    "implementation": {
+     "a": 217,
+     "b": 83,
+     "c": 0,
+     "n": 300,
+     "p50_us": 272.1,
+     "p99_us": 4944.4,
+     "unsupported": false
+    },
+    "incoming_calls": {
+     "a": 99,
+     "b": 197,
+     "c": 4,
+     "n": 300,
+     "p50_us": 1171.8,
+     "p99_us": 2000148.3,
+     "unsupported": false
+    },
+    "document_highlight": {
+     "a": 221,
+     "b": 79,
+     "c": 0,
+     "n": 300,
+     "p50_us": 2866.9,
+     "p99_us": 31279.5,
+     "unsupported": false
+    }
+   },
+   "retry": {
+    "implementation": {
+     "retried": 83,
+     "b": 83
+    },
+    "incoming_calls": {
+     "retried": 201,
+     "b": 199,
+     "a": 1,
+     "c": 1
+    },
+    "document_highlight": {
+     "retried": 79,
+     "b": 79
+    }
+   },
+   "matrix_check": {
+    "compared": 3,
+    "matching": 2,
+    "mismatches": [
+     {
+      "method": "incoming_calls",
+      "ours": [
+       99,
+       197,
+       4
+      ],
+      "matrix": [
+       99,
+       198,
+       3
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "comparison": [
+  {
+   "a": "5ff4d98",
+   "b": "ra",
+   "same": 330,
+   "differing": 570,
+   "methods": {
+    "implementation": {
+     "same": 79,
+     "differing": 221,
+     "transitions": {
+      "a>a": 202,
+      "a>b": 4,
+      "b>a": 15
+     },
+     "examples": [
+      {
+       "name": "impl_0_TempFifo",
+       "file": "tokio/tests/net_unix_pipe.rs",
+       "line": 16,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "344769354cbf3a19",
+        "a3b0837872b2d162"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_1_IntervalStream",
+       "file": "tokio-stream/src/wrappers/interval.rs",
+       "line": 33,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "6685bcd43149286a",
+        "cc5c8de640a46f9f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_2_AbortHandle",
+       "file": "tokio/src/runtime/task/abort.rs",
+       "line": 23,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "faa9f04735e88126",
+        "b5f35b5e59f92a3c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_3_OnDrop",
+       "file": "tokio/tests/rt_handle.rs",
+       "line": 126,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "da9d6d372d9a653f",
+        "2fa9715a325d9816"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_4_WriteHalf",
+       "file": "tokio/src/net/unix/split.rs",
+       "line": 49,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "ab168ac3679cedeb",
+        "7e86849dbc497945"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_5_RwLockWriteGuard",
+       "file": "tokio/src/sync/rwlock/write_guard.rs",
+       "line": 17,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "dbe18e16011e7137",
+        "43a21f3878f3010f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_7_BiasedRotator",
+       "file": "tokio/src/macros/join.rs",
+       "line": 271,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f8abb637d40860e4",
+        "28d09463b23089d6"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_8_OpenOptions",
+       "file": "tokio/src/net/unix/pipe.rs",
+       "line": 122,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "035a9a0d6f5f3384",
+        "04ce5b2f6e8a3f1d"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_9_Tx",
+       "file": "tokio/src/sync/mpsc/chan.rs",
+       "line": 19,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "5a954c0b714dbe07",
+        "f0d1448d0ecd8936"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      },
+      {
+       "name": "impl_10_RuntimeMetrics",
+       "file": "tokio/src/runtime/metrics/runtime.rs",
+       "line": 20,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7f3d8fa6dbbc305a",
+        "d37c2d388d9ef2ee"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:struct",
+       "cfg_test": false
+      }
+     ]
+    },
+    "incoming_calls": {
+     "same": 191,
+     "differing": 109,
+     "transitions": {
+      "a>a": 99,
+      "b>c": 3,
+      "a>b": 6,
+      "a>c": 1
+     },
+     "examples": [
+      {
+       "name": "incoming_calls_2_create",
+       "file": "tokio/src/runtime/scheduler/multi_thread/worker.rs",
+       "line": 272,
+       "character": 15,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0b927d261cf37c5e",
+        "ef264fad61fadd07"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_3_write",
+       "file": "tokio-util/src/io/sync_bridge.rs",
+       "line": 316,
+       "character": 8,
+       "outcomes": [
+        "b",
+        "c"
+       ],
+       "digests": [
+        "empty",
+        null
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_6_new_receiver",
+       "file": "tokio/src/sync/broadcast.rs",
+       "line": 953,
+       "character": 4,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "7d275c1556b30de0",
+        "65ae18938faa5a05"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_31_spawn_task",
+       "file": "tokio/src/runtime/blocking/pool.rs",
+       "line": 603,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "73017c2e935ecd81",
+        "ac4864f78bb1b27f"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_33_push_shard_index",
+       "file": "tokio/src/runtime/blocking/sharded.rs",
+       "line": 96,
+       "character": 8,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "79b4c7a4948d54af",
+        "7561472d6c037bbe"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_41_lock",
+       "file": "tokio/src/loom/std/parking_lot.rs",
+       "line": 61,
+       "character": 19,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "9a1d54d6d4a23950",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_43_new_with_max_length",
+       "file": "tokio-util/src/codec/any_delimiter_codec.rs",
+       "line": 103,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "06383fb82d9e2367",
+        "afc4d1e1ac653b56"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_44_one",
+       "file": "tokio/tests/macros_select.rs",
+       "line": 508,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "0eed35742a3577e5",
+        "018d98f18e6eee9f"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_45_blocking_acquire_many",
+       "file": "tokio/src/sync/semaphore.rs",
+       "line": 838,
+       "character": 12,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "f3a434eef48f6b40",
+        "85b4789081eb3dba"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      },
+      {
+       "name": "incoming_calls_48_process",
+       "file": "tokio/src/runtime/time/mod.rs",
+       "line": 290,
+       "character": 18,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "2fdd224760a6a0b1",
+        "574329ecddf5325c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "decl:fn",
+       "cfg_test": false
+      }
+     ]
+    },
+    "document_highlight": {
+     "same": 60,
+     "differing": 240,
+     "transitions": {
+      "a>a": 189,
+      "a>b": 19,
+      "b>a": 32
+     },
+     "examples": [
+      {
+       "name": "document_highlight_0_shutdown",
+       "file": "tokio-util/tests/task_join_map.rs",
+       "line": 610,
+       "character": 17,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "82284d377e6cc01c",
+        "43f870f74142c001"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_2_is_ready",
+       "file": "tokio/src/sync/tests/notify.rs",
+       "line": 102,
+       "character": 25,
+       "outcomes": [
+        "a",
+        "b"
+       ],
+       "digests": [
+        "924080547b792b77",
+        "empty"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_4_is_empty",
+       "file": "tokio-util/tests/length_delimited.rs",
+       "line": 701,
+       "character": 36,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "11d2dad3ee3a838b",
+        "3dcaf1c828674454"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_5_take",
+       "file": "tokio/src/fs/file.rs",
+       "line": 1161,
+       "character": 46,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "4fe6295010ee54ac",
+        "7a62e53d573a811c"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_6_sync",
+       "file": "tokio-util/tests/sync_cancellation_token.rs",
+       "line": 4,
+       "character": 12,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "18bd5b53477652c4"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "use",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_7_is_woken",
+       "file": "tokio-util/tests/time_delay_queue.rs",
+       "line": 959,
+       "character": 20,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "bca99c2d558ae829",
+        "473b18df3f69acd2"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_8_into_raw_fd",
+       "file": "tokio/src/net/tcp/socket.rs",
+       "line": 912,
+       "character": 37,
+       "outcomes": [
+        "b",
+        "a"
+       ],
+       "digests": [
+        "empty",
+        "fcb0a4db23e76aa7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_9_spawn",
+       "file": "tokio/tests/sync_semaphore_owned.rs",
+       "line": 57,
+       "character": 30,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "04bf4eedd5346eb3",
+        "0be40b42acca59fc"
+       ],
+       "target_kind": "test",
+       "cursor_kind": "let",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_11_Stderr",
+       "file": "tokio/src/io/stderr.rs",
+       "line": 39,
+       "character": 61,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "cd666a9e8a8cf709",
+        "14dbdd6cf128f3f7"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "path",
+       "cfg_test": false
+      },
+      {
+       "name": "document_highlight_12_expect_inner_read",
+       "file": "tokio/src/fs/file/tests.rs",
+       "line": 274,
+       "character": 10,
+       "outcomes": [
+        "a",
+        "a"
+       ],
+       "digests": [
+        "63a8fe01deaecc43",
+        "f8387088c8d0e6da"
+       ],
+       "target_kind": "lib",
+       "cursor_kind": "method_call",
+       "cfg_test": false
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "matrix": {
+  "file": "matrix_tokio_booster.json",
+  "repo_commit": "b2636752450484955e7ad334bac678424d51bc4a",
+  "repo_head_matches": true,
+  "ra_version": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "ra_version_matches": {
+   "ra": true
+  }
+ },
+ "metric_definitions": {
+  "outcome": "matrix rule of bench/matrix_execute.py: c on error, b on null / [] / \"\" / {} / hover without contents, else a",
+  "digest": "first 16 hex digits of sha256 over the canonical JSON of the answer; completion items sorted first; \"empty\" for outcome b, null for outcome c",
+  "us": "latency of the single request, microseconds (first request on the position, no warm repeat)",
+  "target_kind": "cargo target kind from target_kinds.json of the active index variant, by entry path heuristic",
+  "cursor_kind": "token under the cursor by the sampler's own regexes: decl:<fn|struct|enum|trait|type>, impl, method_call, path, type_usage, macro, use, let, ident",
+  "cfg_test": "line inside a #[cfg(test)] mod block, or the attribute stands directly above it",
+  "comparison": "per pair of servers and method: rows with equal outcome and digest, differing rows, outcome transitions first>second, and the first differing rows",
+  "matrix_check": "a/b/c per method against the published matrix side of the same server kind, for methods run on as many positions as the matrix",
+  "retry": "second answer of the same rust-analyzer process on the rows it first answered b or c (not -32601), asked after the whole pass; outcome, digest, us and error as for the first answer",
+  "matrix": "the matrix file the positions come from: its repo_commit against this checkout's HEAD and its ra_version against each rust-analyzer binary run here",
+  "rows_filter": "differing-outcome: only rows on which some pair of servers differs in outcome (a/b/c of the first answer); rows that differ in digest alone are counted in comparison but not kept; rows_total counts the rows of the full file named in full_file"
+ },
+ "rows": [
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_27_ByteCodec",
+   "file": "tokio-util/tests/udp.rs",
+   "line": 81,
+   "character": 12,
+   "symbol": "ByteCodec",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "881f0d21d0b19a2f",
+     "us": 1946.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 359.5,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 48.5,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_28_Tester",
+   "file": "tokio/tests/time_pause.rs",
+   "line": 121,
+   "character": 8,
+   "symbol": "Tester",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "dc3df3ada4859e02",
+     "us": 2035.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 418.3,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 66.8,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_67_Message",
+   "file": "examples/tinyhttp.rs",
+   "line": 73,
+   "character": 20,
+   "symbol": "Message",
+   "target_kind": "example",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2115.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "77cc2e6b5a46a52a",
+     "us": 786.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_69_List",
+   "file": "tokio/src/util/idle_notified_set.rs",
+   "line": 62,
+   "character": 6,
+   "symbol": "List",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2469.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e8d42c21673b16ae",
+     "us": 190.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_78_State",
+   "file": "tokio-util/src/sync/mpsc.rs",
+   "line": 33,
+   "character": 6,
+   "symbol": "State",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2451.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "04721ab10fb2524a",
+     "us": 136.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_98_MutexGuard",
+   "file": "tokio/src/loom/std/parking_lot.rs",
+   "line": 31,
+   "character": 19,
+   "symbol": "MutexGuard",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "0bf5e7da875ebe59",
+     "us": 3062.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 346.7,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 64.6,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_99_DropWaker",
+   "file": "tokio/tests/time_sleep.rs",
+   "line": 395,
+   "character": 12,
+   "symbol": "DropWaker",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "a553435d131ce3eb",
+     "us": 2535.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 543.5,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 62.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_128_Action",
+   "file": "tokio-test/src/io.rs",
+   "line": 59,
+   "character": 6,
+   "symbol": "Action",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1859.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "db72f9252ef57229",
+     "us": 115.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_140_Kind",
+   "file": "tokio/src/runtime/builder.rs",
+   "line": 261,
+   "character": 17,
+   "symbol": "Kind",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2441.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a781f5467a1f771b",
+     "us": 1282.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_142_YN",
+   "file": "tokio/tests/async_send_sync.rs",
+   "line": 23,
+   "character": 8,
+   "symbol": "YN",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2840.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3882be40789f5b89",
+     "us": 679.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_168_State",
+   "file": "tokio/src/io/blocking.rs",
+   "line": 32,
+   "character": 6,
+   "symbol": "State",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1947.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "92b4a6305a233499",
+     "us": 150.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_174_AssertDrop",
+   "file": "tokio/src/runtime/tests/task.rs",
+   "line": 29,
+   "character": 8,
+   "symbol": "AssertDrop",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 628.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c994ef03848e03e5",
+     "us": 170.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_187_YY",
+   "file": "tokio/tests/async_send_sync.rs",
+   "line": 18,
+   "character": 8,
+   "symbol": "YY",
+   "target_kind": "test",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2817.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "bee6e6cfeedd5c6c",
+     "us": 172.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_217_Data",
+   "file": "tokio-util/src/time/delay_queue.rs",
+   "line": 416,
+   "character": 8,
+   "symbol": "Data",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2116.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b8935f2921426cf1",
+     "us": 192.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_221_PipeEnd",
+   "file": "tokio/src/net/unix/pipe.rs",
+   "line": 289,
+   "character": 6,
+   "symbol": "PipeEnd",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2290.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f3c947e5f9230d9a",
+     "us": 179.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_238_Test",
+   "file": "tokio-test/tests/macros.rs",
+   "line": 25,
+   "character": 6,
+   "symbol": "Test",
+   "target_kind": "test",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1658.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c54e68788a760e19",
+     "us": 224.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_275_Inner",
+   "file": "tokio/src/time/clock.rs",
+   "line": 80,
+   "character": 12,
+   "symbol": "Inner",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2056.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7c9bc524ba11a601",
+     "us": 172.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_276_Notification",
+   "file": "tokio/src/sync/notify.rs",
+   "line": 318,
+   "character": 6,
+   "symbol": "Notification",
+   "target_kind": "lib",
+   "cursor_kind": "decl:enum",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2439.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "1ddb473ae0845168",
+     "us": 270.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "implementation",
+   "rpc_method": "textDocument/implementation",
+   "name": "impl_296_BarrierState",
+   "file": "tokio/src/sync/barrier.rs",
+   "line": 51,
+   "character": 8,
+   "symbol": "BarrierState",
+   "target_kind": "lib",
+   "cursor_kind": "decl:struct",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2217.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7cba271230280fe0",
+     "us": 141.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_3_write",
+   "file": "tokio-util/src/io/sync_bridge.rs",
+   "line": 316,
+   "character": 8,
+   "symbol": "write",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2074.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000162.0,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 150435.3,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_41_lock",
+   "file": "tokio/src/loom/std/parking_lot.rs",
+   "line": 61,
+   "character": 19,
+   "symbol": "lock",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "9a1d54d6d4a23950",
+     "us": 52839.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 203.2,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 146.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_49_from",
+   "file": "tokio/src/net/unix/socketaddr.rs",
+   "line": 63,
+   "character": 8,
+   "symbol": "from",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1910.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000158.8,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 964451.6,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_56_split",
+   "file": "tokio/src/net/unix/stream.rs",
+   "line": 1017,
+   "character": 12,
+   "symbol": "split",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "b947e0551dda4162",
+     "us": 2623.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 84400.3,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 11353.1,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_60_read_until_pending",
+   "file": "tokio/tests/uds_stream.rs",
+   "line": 319,
+   "character": 4,
+   "symbol": "read_until_pending",
+   "target_kind": "test",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "78e065e85fbd1298",
+     "us": 2729.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 193.1,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 145.0,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_139_multicast_ttl_v4",
+   "file": "tokio/src/net/udp.rs",
+   "line": 1938,
+   "character": 12,
+   "symbol": "multicast_ttl_v4",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "0bac91ce001f6372",
+     "us": 2358.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 3112.0,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 2709.4,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_140_clone",
+   "file": "tokio/src/sync/mpsc/bounded.rs",
+   "line": 1630,
+   "character": 8,
+   "symbol": "clone",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "6a470e6706f94d93",
+     "us": 11283.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000164.7,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "a",
+      "digest": "4d304088979d66a4",
+      "us": 201356.1,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_164_deref",
+   "file": "tokio/src/loom/std/parking_lot.rs",
+   "line": 122,
+   "character": 8,
+   "symbol": "deref",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "3d316c804d7b546c",
+     "us": 2710.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 76.1,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 89.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_186_fold",
+   "file": "tokio-stream/src/stream_ext.rs",
+   "line": 840,
+   "character": 8,
+   "symbol": "fold",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "5b5a8b033ee94f83",
+     "us": 2548.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 10554.1,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 4957.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "incoming_calls",
+   "rpc_method": "callHierarchy/incomingCalls",
+   "name": "incoming_calls_197_sub",
+   "file": "tokio/src/io/ready.rs",
+   "line": 302,
+   "character": 8,
+   "symbol": "sub",
+   "target_kind": "lib",
+   "cursor_kind": "decl:fn",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 2063.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "c",
+     "digest": null,
+     "us": 2000148.2,
+     "error": "TIMEOUT",
+     "retry": {
+      "outcome": "c",
+      "digest": null,
+      "us": 2000161.3,
+      "error": "TIMEOUT"
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_2_is_ready",
+   "file": "tokio/src/sync/tests/notify.rs",
+   "line": 102,
+   "character": 25,
+   "symbol": "is_ready",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "924080547b792b77",
+     "us": 2295.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 119.8,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 103.1,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_6_sync",
+   "file": "tokio-util/tests/sync_cancellation_token.rs",
+   "line": 4,
+   "character": 12,
+   "symbol": "sync",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 476.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "18bd5b53477652c4",
+     "us": 2717.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_8_into_raw_fd",
+   "file": "tokio/src/net/tcp/socket.rs",
+   "line": 912,
+   "character": 37,
+   "symbol": "into_raw_fd",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1978.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "fcb0a4db23e76aa7",
+     "us": 5412.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_16_test",
+   "file": "tokio-stream/tests/chunks_timeout.rs",
+   "line": 65,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 439.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9e580b241f1b86fc",
+     "us": 2653.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_20_time",
+   "file": "tokio-util/src/future.rs",
+   "line": 54,
+   "character": 46,
+   "symbol": "time",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 444.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "f2fb1bbde03406c1",
+     "us": 3201.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_26_mpsc",
+   "file": "tokio/tests/macros_select.rs",
+   "line": 676,
+   "character": 35,
+   "symbol": "mpsc",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 682.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "99f9841383bd5fa6",
+     "us": 3311.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_28_test",
+   "file": "tokio/tests/fs_open_options_windows.rs",
+   "line": 8,
+   "character": 10,
+   "symbol": "test",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 667.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "11358879792ecf47",
+     "us": 2818.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_31_task",
+   "file": "tokio-stream/src/iter.rs",
+   "line": 56,
+   "character": 29,
+   "symbol": "task",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 443.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b4d07762a408c16a",
+     "us": 3694.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_32_sync",
+   "file": "tokio/src/sync/rwlock/read_guard.rs",
+   "line": 1,
+   "character": 12,
+   "symbol": "sync",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 662.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "aa88037b65df9b76",
+     "us": 2640.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_35_io",
+   "file": "tokio/tests/io_read_to_string.rs",
+   "line": 14,
+   "character": 12,
+   "symbol": "io",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 630.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "01997d006ac3d880",
+     "us": 2800.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_47_ErrorKind",
+   "file": "tokio/tests/udp.rs",
+   "line": 610,
+   "character": 47,
+   "symbol": "ErrorKind",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "103de7dac0fbafe7",
+     "us": 3062.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 132.3,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 87.0,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_53_store",
+   "file": "tokio/src/runtime/tests/task.rs",
+   "line": 47,
+   "character": 25,
+   "symbol": "store",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 622.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "c3474e894fead6ed",
+     "us": 3681.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_54_marker",
+   "file": "tokio/src/util/linked_list.rs",
+   "line": 18,
+   "character": 11,
+   "symbol": "marker",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 642.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "73f9c1cf0eb3704c",
+     "us": 3502.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_68_Bytes",
+   "file": "tokio/src/util/as_ref.rs",
+   "line": 32,
+   "character": 64,
+   "symbol": "Bytes",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 1632.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "8c72a54eadbd60c1",
+     "us": 2834.7,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_83_pin",
+   "file": "tokio/src/io/util/read_int.rs",
+   "line": 9,
+   "character": 10,
+   "symbol": "pin",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 619.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "fc2c9a6f4fd6d17c",
+     "us": 3721.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_86_bind_addr",
+   "file": "tokio/tests/uds_stream.rs",
+   "line": 56,
+   "character": 34,
+   "symbol": "bind_addr",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "b8911bf96075f8fa",
+     "us": 1904.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 109.1,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 72.9,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_106_spawn",
+   "file": "tokio/src/fs/file/tests.rs",
+   "line": 699,
+   "character": 27,
+   "symbol": "spawn",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "e602ddf1e995f610",
+     "us": 3484.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 158.6,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 104.7,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_122_io",
+   "file": "tokio/src/io/stdio_common.rs",
+   "line": 113,
+   "character": 16,
+   "symbol": "io",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 602.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "028484acf8faa9db",
+     "us": 2821.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_127_TcpListener",
+   "file": "tokio/src/net/tcp/listener.rs",
+   "line": 289,
+   "character": 54,
+   "symbol": "TcpListener",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 647.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "3877ad4596aa04c6",
+     "us": 7843.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_132_as_mut",
+   "file": "tokio/tests/time_sleep.rs",
+   "line": 155,
+   "character": 11,
+   "symbol": "as_mut",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "90e668d073d64eb8",
+     "us": 3630.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 107.4,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 62.5,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_140_spawn_blocking",
+   "file": "tokio/tests/rt_multi_thread_emscripten.rs",
+   "line": 43,
+   "character": 30,
+   "symbol": "spawn_blocking",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 705.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7f705600d7e64ede",
+     "us": 2766.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_151_future",
+   "file": "tokio-util/tests/udp.rs",
+   "line": 13,
+   "character": 14,
+   "symbol": "future",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 464.0,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "aa045ff57f7139a4",
+     "us": 2619.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_152_unix",
+   "file": "tokio/src/fs/open_options.rs",
+   "line": 20,
+   "character": 14,
+   "symbol": "unix",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 672.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "80047ddbd9609660",
+     "us": 3562.2,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_157_kind",
+   "file": "tokio/tests/uds_stream.rs",
+   "line": 325,
+   "character": 32,
+   "symbol": "kind",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "d64e445eafecf843",
+     "us": 2704.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 109.2,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 52.9,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_163_readable",
+   "file": "tokio/tests/uds_stream.rs",
+   "line": 200,
+   "character": 20,
+   "symbol": "readable",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "7ef86a6313f5b291",
+     "us": 1919.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 107.3,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 86.8,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_165_util",
+   "file": "tokio/src/io/util/read_until.rs",
+   "line": 2,
+   "character": 12,
+   "symbol": "util",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 654.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "ee25f5cd6cbdb717",
+     "us": 197.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_166_is_woken",
+   "file": "tokio/src/fs/file/tests.rs",
+   "line": 144,
+   "character": 15,
+   "symbol": "is_woken",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "438fae1dd6657aff",
+     "us": 2681.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 108.9,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 82.9,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_169_is_woken",
+   "file": "tokio/src/fs/file/tests.rs",
+   "line": 826,
+   "character": 15,
+   "symbol": "is_woken",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "438fae1dd6657aff",
+     "us": 2616.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 115.1,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 82.9,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_171_marker",
+   "file": "tokio-util/src/time/delay_queue.rs",
+   "line": 19,
+   "character": 10,
+   "symbol": "marker",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 522.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "b5279206edd9646e",
+     "us": 3482.1,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_174_pin",
+   "file": "tokio-stream/src/stream_ext/any.rs",
+   "line": 5,
+   "character": 11,
+   "symbol": "pin",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 432.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a70a76a2ebda347d",
+     "us": 4232.0,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_175_spawn_blocking",
+   "file": "tokio/tests/task_blocking.rs",
+   "line": 248,
+   "character": 15,
+   "symbol": "spawn_blocking",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "b4422f9fe5e5403e",
+     "us": 1975.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 104.7,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 74.9,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_176_read_guard",
+   "file": "tokio/src/sync/rwlock/write_guard.rs",
+   "line": 2,
+   "character": 26,
+   "symbol": "read_guard",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 698.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "a7377c53093ca588",
+     "us": 157.4,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_187_Traditional",
+   "file": "tokio/src/runtime/scheduler/multi_thread/worker.rs",
+   "line": 627,
+   "character": 30,
+   "symbol": "Traditional",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 889.4,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "05dc858d81280973",
+     "us": 228.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_204_OwnedHandle",
+   "file": "tokio/src/fs/mocks.rs",
+   "line": 41,
+   "character": 37,
+   "symbol": "OwnedHandle",
+   "target_kind": "lib",
+   "cursor_kind": "impl",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "9a52576f71d7b917",
+     "us": 2123.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 247.4,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 143.6,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_207_sync",
+   "file": "tokio/src/sync/notify.rs",
+   "line": 747,
+   "character": 35,
+   "symbol": "sync",
+   "target_kind": "lib",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 763.2,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "aaf0020aac143a47",
+     "us": 414.5,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_209_task",
+   "file": "tokio/src/sync/tests/notify.rs",
+   "line": 53,
+   "character": 18,
+   "symbol": "task",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 692.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "5714754191dba27f",
+     "us": 2790.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_211_Builder",
+   "file": "tokio/tests/rt_threaded.rs",
+   "line": 897,
+   "character": 27,
+   "symbol": "Builder",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 680.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "7c465db94c655ada",
+     "us": 3309.6,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_213_poll_recv_from",
+   "file": "tokio/tests/udp.rs",
+   "line": 211,
+   "character": 27,
+   "symbol": "poll_recv_from",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "888bb76764a2cff6",
+     "us": 1938.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 93.6,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 60.8,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_224_from_millis",
+   "file": "tokio/tests/time_sleep.rs",
+   "line": 251,
+   "character": 57,
+   "symbol": "from_millis",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "1926cc585086b713",
+     "us": 2527.1,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 94.5,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 74.5,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_227_Send",
+   "file": "tokio/tests/async_send_sync.rs",
+   "line": 490,
+   "character": 53,
+   "symbol": "Send",
+   "target_kind": "test",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "1c28a5a3874ecfaf",
+     "us": 4135.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 373.9,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 191.9,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_229_from_secs",
+   "file": "tokio/tests/time_sleep.rs",
+   "line": 215,
+   "character": 38,
+   "symbol": "from_secs",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "019eb133f175818d",
+     "us": 2331.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 92.4,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 95.8,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_235_CombiLocalSet",
+   "file": "tokio/src/runtime/tests/task_combinations.rs",
+   "line": 159,
+   "character": 9,
+   "symbol": "CombiLocalSet",
+   "target_kind": "lib",
+   "cursor_kind": "type_usage",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "bbe4553ab1d6cc1c",
+     "us": 2013.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 78.8,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 61.4,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_240_tick",
+   "file": "tokio/src/runtime/tests/task.rs",
+   "line": 205,
+   "character": 26,
+   "symbol": "tick",
+   "target_kind": "lib",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 610.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e34042a5dba235fa",
+     "us": 149.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_241_io",
+   "file": "tokio/tests/process_issue_2174.rs",
+   "line": 14,
+   "character": 12,
+   "symbol": "io",
+   "target_kind": "test",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 626.9,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "01997d006ac3d880",
+     "us": 2638.8,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_245_Result",
+   "file": "tokio/tests/uds_stream.rs",
+   "line": 497,
+   "character": 40,
+   "symbol": "Result",
+   "target_kind": "test",
+   "cursor_kind": "path",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "b25d3bd26215167f",
+     "us": 6710.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 159.1,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 65.3,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_249_IoSlice",
+   "file": "tokio/tests/uds_stream.rs",
+   "line": 175,
+   "character": 50,
+   "symbol": "IoSlice",
+   "target_kind": "test",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "6ecc2a3a2767a5d2",
+     "us": 2493.6,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 94.6,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 91.4,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_261_len",
+   "file": "tokio/tests/signal_realtime.rs",
+   "line": 36,
+   "character": 17,
+   "symbol": "len",
+   "target_kind": "test",
+   "cursor_kind": "method_call",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "a",
+     "digest": "2479c88b2e1fae92",
+     "us": 2360.5,
+     "error": null
+    },
+    "ra": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 93.0,
+     "error": null,
+     "retry": {
+      "outcome": "b",
+      "digest": "empty",
+      "us": 66.2,
+      "error": null
+     }
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_285_os",
+   "file": "tokio/src/net/unix/ucred.rs",
+   "line": 378,
+   "character": 14,
+   "symbol": "os",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 626.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "e3c77697b8adfa5f",
+     "us": 3415.3,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_286_metrics",
+   "file": "tokio/src/runtime/metrics/batch.rs",
+   "line": 4,
+   "character": 25,
+   "symbol": "metrics",
+   "target_kind": "lib",
+   "cursor_kind": "use",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 644.7,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "9de7081aba26ad5f",
+     "us": 291.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_288_new",
+   "file": "tokio/src/runtime/tests/task.rs",
+   "line": 34,
+   "character": 27,
+   "symbol": "new",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 620.8,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "21ae5cce5c93824b",
+     "us": 3647.9,
+     "error": null
+    }
+   }
+  },
+  {
+   "method": "document_highlight",
+   "rpc_method": "textDocument/documentHighlight",
+   "name": "document_highlight_298_raw",
+   "file": "tokio/src/signal/unix.rs",
+   "line": 543,
+   "character": 29,
+   "symbol": "raw",
+   "target_kind": "lib",
+   "cursor_kind": "let",
+   "cfg_test": false,
+   "results": {
+    "5ff4d98": {
+     "outcome": "b",
+     "digest": "empty",
+     "us": 772.3,
+     "error": null
+    },
+    "ra": {
+     "outcome": "a",
+     "digest": "419eb57e368dacf5",
+     "us": 3689.8,
+     "error": null
+    }
+   }
+  }
+ ],
+ "rows_total": 900,
+ "rows_kept": 80,
+ "rows_filter": "differing-outcome",
+ "full_file": {
+  "name": "position_ab_5ff4d98_vs_ra_ram9_tokio.json",
+  "sha256": "d9c84bb6b5ec2b8bc022cdd8b65939a3aa03ddd615ada55fc00d50e2f31441f7"
+ }
+}

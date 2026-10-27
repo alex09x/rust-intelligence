@@ -1,0 +1,3695 @@
+{
+ "repo": "BurntSushi/ripgrep",
+ "repo_head": "4649aa9700619f94cf9c66876e9549d83420e16c",
+ "report": {
+  "name": "position_ab_5ff4d98_vs_ra_ram9_ripgrep.json",
+  "sha256": "b5410fb053f88a98bae6a2df9391bc3fe53557fd05d42dfcd123ead426dcbe8c",
+  "rows_total": 900
+ },
+ "servers": {
+  "ridx": "ridx 0.1.0 (commit: 5ff4d98fa25db8fa484419495bb07c7b64c985b3, dirty: false)",
+  "rust_analyzer": "rust-analyzer 1.98.1 (48a229c 2026-09-01)",
+  "inspect": "ridx 0.1.0 (commit: 5e41a87f3b5414e9400d806e4ae10beef5da4cb7, dirty: false)"
+ },
+ "ra_ready": {
+  "quiescent_wait_ms": 0.0,
+  "canary_wait_ms": 1005.56,
+  "canary_attempts": 2
+ },
+ "file_table_entries": 171,
+ "limit": null,
+ "sets": {
+  "other": {
+   "implementation": 260,
+   "incoming_calls": 300,
+   "document_highlight": 287
+  },
+  "reverse": {
+   "document_highlight": 2
+  },
+  "target": {
+   "implementation": 40,
+   "document_highlight": 11
+  }
+ },
+ "rule_order": {
+  "implementation": [
+   "i2_cursor_unresolved",
+   "i7_definition_of_another_item",
+   "i3_impls_in_unstored_files",
+   "i1_impls_outside_workspace",
+   "i5_generated_impls",
+   "i6_macro_invocation_impls",
+   "i4a_unsafe_impl_lines",
+   "i4d_multiline_impl_header",
+   "i4b_impl_line_without_reference",
+   "i4c_impl_line_with_reference"
+  ],
+  "incoming_calls": [
+   "c3_item_not_resolved",
+   "c4_workspace_callers_missed",
+   "c5_call_site_not_recognized",
+   "c7_item_without_references",
+   "c2_callers_in_macro_expansions",
+   "c6_caller_not_a_function",
+   "c1_callers_outside_workspace"
+  ],
+  "document_highlight": [
+   "h2a_exit_or_loop_keyword",
+   "h2b_keyword_literal_or_lifetime",
+   "h3_macro_site",
+   "h1_local_binding",
+   "h4a_resolved_no_references",
+   "h4b_external_item_references_elsewhere",
+   "h4d_workspace_item_references_elsewhere",
+   "h4c_resolved_references_in_file",
+   "h5a_associated_type_path",
+   "h5b_module_path_segment",
+   "h5c_item_outside_workspace",
+   "h5d_enum_variant",
+   "h5g_definition_in_macro_input",
+   "h5e_workspace_item_unresolved",
+   "h5f_no_definition_either"
+  ],
+  "reverse": [
+   "r1_ra_answers_on_reask",
+   "r4_cursor_in_attribute_or_string",
+   "r3a_cursor_in_cfg_macro_block",
+   "r3b_cursor_under_cfg_attribute",
+   "r3c_cursor_in_macro",
+   "r3_ra_no_definition_at_cursor",
+   "r6_ridx_impl_keyword_in_signature",
+   "r5_ridx_impls_for_other_types",
+   "r2_ra_empty_confirmed"
+  ]
+ },
+ "classes": {
+  "target": {
+   "implementation": {
+    "i5_generated_impls": 35,
+    "i4c_impl_line_with_reference": 5
+   },
+   "document_highlight": {
+    "h5b_module_path_segment": 6,
+    "h5a_associated_type_path": 4,
+    "h5c_item_outside_workspace": 1
+   }
+  },
+  "reverse": {
+   "document_highlight": {
+    "r3c_cursor_in_macro": 1,
+    "r2_ra_empty_confirmed": 1
+   }
+  }
+ },
+ "unclassified": 0,
+ "ra_reask_failed": 0,
+ "rows": [
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_2_PatternSource",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 680,
+   "character": 17,
+   "symbol": "PatternSource",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "3 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/core/flags/lowargs.rs",
+       "store": "ws",
+       "line": 680,
+       "line_text": "pub(crate) enum PatternSource {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 679,
+      "line_text": "#[derive(Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 679,
+      "line_text": "#[derive(Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 679,
+      "line_text": "#[derive(Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_9_SpecialMode",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 122,
+   "character": 17,
+   "symbol": "SpecialMode",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/core/flags/lowargs.rs",
+       "store": "ws",
+       "line": 122,
+       "line_text": "pub(crate) enum SpecialMode {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 121,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 121,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 121,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 121,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 121,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_13_GlobInner",
+   "file": "crates/ignore/src/overrides.rs",
+   "line": 31,
+   "character": 6,
+   "symbol": "GlobInner",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "2 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/ignore/src/overrides.rs",
+       "store": "ws",
+       "line": 31,
+       "line_text": "enum GlobInner<'a> {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/ignore/src/overrides.rs",
+      "store": "ws",
+      "line": 29,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/ignore/src/overrides.rs",
+      "store": "ws",
+      "line": 29,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_18_Duration",
+   "file": "tests/json.rs",
+   "line": 131,
+   "character": 8,
+   "symbol": "Duration",
+   "target_kind": "test",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:tests/json.rs",
+       "store": "ws",
+       "line": 131,
+       "line_text": "struct Duration {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 130,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 130,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 130,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 130,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 131,
+      "line_text": "struct Duration {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": true,
+      "on_decl_line": true,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_19_IgnoreMatchInner",
+   "file": "crates/ignore/src/dir.rs",
+   "line": 44,
+   "character": 6,
+   "symbol": "IgnoreMatchInner",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "2 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/ignore/src/dir.rs",
+       "store": "ws",
+       "line": 44,
+       "line_text": "enum IgnoreMatchInner<'a> {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/ignore/src/dir.rs",
+      "store": "ws",
+      "line": 42,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/ignore/src/dir.rs",
+      "store": "ws",
+      "line": 42,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_21_GlobInner",
+   "file": "crates/ignore/src/types.rs",
+   "line": 114,
+   "character": 6,
+   "symbol": "GlobInner",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "2 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/ignore/src/types.rs",
+       "store": "ws",
+       "line": 114,
+       "line_text": "enum GlobInner<'a> {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/ignore/src/types.rs",
+      "store": "ws",
+      "line": 113,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/ignore/src/types.rs",
+      "store": "ws",
+      "line": 113,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_24_HyperlinkConfigInner",
+   "file": "crates/printer/src/hyperlink.rs",
+   "line": 24,
+   "character": 8,
+   "symbol": "HyperlinkConfigInner",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/printer/src/hyperlink.rs",
+       "store": "ws",
+       "line": 24,
+       "line_text": "struct HyperlinkConfigInner {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/printer/src/hyperlink.rs",
+      "store": "ws",
+      "line": 23,
+      "line_text": "#[derive(Clone, Debug, Default, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/printer/src/hyperlink.rs",
+      "store": "ws",
+      "line": 23,
+      "line_text": "#[derive(Clone, Debug, Default, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/printer/src/hyperlink.rs",
+      "store": "ws",
+      "line": 23,
+      "line_text": "#[derive(Clone, Debug, Default, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/printer/src/hyperlink.rs",
+      "store": "ws",
+      "line": 23,
+      "line_text": "#[derive(Clone, Debug, Default, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/printer/src/hyperlink.rs",
+      "store": "ws",
+      "line": 23,
+      "line_text": "#[derive(Clone, Debug, Default, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_25_SearchMode",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 194,
+   "character": 17,
+   "symbol": "SearchMode",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/core/flags/lowargs.rs",
+       "store": "ws",
+       "line": 194,
+       "line_text": "pub(crate) enum SearchMode {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 193,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 193,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 193,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 193,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 193,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_28_CommandErrorKind",
+   "file": "crates/cli/src/process.rs",
+   "line": 16,
+   "character": 6,
+   "symbol": "CommandErrorKind",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "1 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/cli/src/process.rs",
+       "store": "ws",
+       "line": 16,
+       "line_text": "enum CommandErrorKind {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/cli/src/process.rs",
+      "store": "ws",
+      "line": 15,
+      "line_text": "#[derive(Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": false
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_33_LineMatchKind",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 510,
+   "character": 10,
+   "symbol": "LineMatchKind",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "3 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/matcher/src/lib.rs",
+       "store": "ws",
+       "line": 510,
+       "line_text": "pub enum LineMatchKind {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/matcher/src/lib.rs",
+      "store": "ws",
+      "line": 509,
+      "line_text": "#[derive(Clone, Copy, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/lib.rs",
+      "store": "ws",
+      "line": 509,
+      "line_text": "#[derive(Clone, Copy, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/lib.rs",
+      "store": "ws",
+      "line": 509,
+      "line_text": "#[derive(Clone, Copy, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_34_Options",
+   "file": "crates/globset/src/glob.rs",
+   "line": 1022,
+   "character": 12,
+   "symbol": "Options",
+   "target_kind": "lib",
+   "cfg_test": true,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "4 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/globset/src/glob.rs",
+       "store": "ws",
+       "line": 1022,
+       "line_text": "struct Options {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/globset/src/glob.rs",
+      "store": "ws",
+      "line": 1021,
+      "line_text": "#[derive(Clone, Copy, Debug, Default)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/glob.rs",
+      "store": "ws",
+      "line": 1021,
+      "line_text": "#[derive(Clone, Copy, Debug, Default)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/glob.rs",
+      "store": "ws",
+      "line": 1021,
+      "line_text": "#[derive(Clone, Copy, Debug, Default)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/glob.rs",
+      "store": "ws",
+      "line": 1021,
+      "line_text": "#[derive(Clone, Copy, Debug, Default)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_42_PatternMatcher",
+   "file": "crates/core/search.rs",
+   "line": 196,
+   "character": 17,
+   "symbol": "PatternMatcher",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "2 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/core/search.rs",
+       "store": "ws",
+       "line": 196,
+       "line_text": "pub(crate) enum PatternMatcher {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/core/search.rs",
+      "store": "ws",
+      "line": 195,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/search.rs",
+      "store": "ws",
+      "line": 195,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_49_State",
+   "file": "crates/printer/src/hyperlink.rs",
+   "line": 102,
+   "character": 14,
+   "symbol": "State",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "1 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/printer/src/hyperlink.rs",
+       "store": "ws",
+       "line": 102,
+       "line_text": "enum State {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/printer/src/hyperlink.rs",
+      "store": "ws",
+      "line": 101,
+      "line_text": "#[derive(Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_63_Candidate",
+   "file": "crates/globset/src/lib.rs",
+   "line": 524,
+   "character": 12,
+   "symbol": "Candidate",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i4c_impl_line_with_reference",
+   "note": "2 of 2 impl lines carry a RIDX reference",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/globset/src/lib.rs",
+       "store": "ws",
+       "line": 524,
+       "line_text": "pub struct Candidate<'a> {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 523,
+      "line_text": "#[derive(Clone)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 530,
+      "line_text": "impl<'a> std::fmt::Debug for Candidate<'a> {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 540,
+      "line_text": "impl<'a> Candidate<'a> {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_70_StandardStreamKind",
+   "file": "crates/cli/src/wtr.rs",
+   "line": 62,
+   "character": 6,
+   "symbol": "StandardStreamKind",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "1 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/cli/src/wtr.rs",
+       "store": "ws",
+       "line": 62,
+       "line_text": "enum StandardStreamKind {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/cli/src/wtr.rs",
+      "store": "ws",
+      "line": 61,
+      "line_text": "#[derive(Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": false
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_71_GlobSetBuilder",
+   "file": "crates/globset/src/lib.rs",
+   "line": 491,
+   "character": 12,
+   "symbol": "GlobSetBuilder",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i4c_impl_line_with_reference",
+   "note": "1 of 1 impl lines carry a RIDX reference",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/globset/src/lib.rs",
+       "store": "ws",
+       "line": 491,
+       "line_text": "pub struct GlobSetBuilder {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 490,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 490,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 495,
+      "line_text": "impl GlobSetBuilder {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_81_MyError",
+   "file": "crates/matcher/tests/test_matcher.rs",
+   "line": 130,
+   "character": 12,
+   "symbol": "MyError",
+   "target_kind": "test",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "4 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/matcher/tests/test_matcher.rs",
+       "store": "ws",
+       "line": 130,
+       "line_text": "struct MyError;"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/matcher/tests/test_matcher.rs",
+      "store": "ws",
+      "line": 129,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/tests/test_matcher.rs",
+      "store": "ws",
+      "line": 129,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/tests/test_matcher.rs",
+      "store": "ws",
+      "line": 129,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/tests/test_matcher.rs",
+      "store": "ws",
+      "line": 129,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_85_ErrorKind",
+   "file": "crates/regex/src/error.rs",
+   "line": 42,
+   "character": 10,
+   "symbol": "ErrorKind",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "2 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/regex/src/error.rs",
+       "store": "ws",
+       "line": 42,
+       "line_text": "pub enum ErrorKind {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/regex/src/error.rs",
+      "store": "ws",
+      "line": 40,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/regex/src/error.rs",
+      "store": "ws",
+      "line": 40,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_94_Token",
+   "file": "crates/globset/src/glob.rs",
+   "line": 239,
+   "character": 6,
+   "symbol": "Token",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "4 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/globset/src/glob.rs",
+       "store": "ws",
+       "line": 239,
+       "line_text": "enum Token {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/globset/src/glob.rs",
+      "store": "ws",
+      "line": 238,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/glob.rs",
+      "store": "ws",
+      "line": 238,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/glob.rs",
+      "store": "ws",
+      "line": 238,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/glob.rs",
+      "store": "ws",
+      "line": 238,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_113_Sorter",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 497,
+   "character": 6,
+   "symbol": "Sorter",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "1 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/ignore/src/walk.rs",
+       "store": "ws",
+       "line": 497,
+       "line_text": "enum Sorter {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/ignore/src/walk.rs",
+      "store": "ws",
+      "line": 496,
+      "line_text": "#[derive(Clone)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_121_WalkEvent",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 1055,
+   "character": 6,
+   "symbol": "WalkEvent",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "1 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/ignore/src/walk.rs",
+       "store": "ws",
+       "line": 1055,
+       "line_text": "enum WalkEvent {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/ignore/src/walk.rs",
+      "store": "ws",
+      "line": 1054,
+      "line_text": "#[derive(Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": false
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_140_GlobSet",
+   "file": "crates/globset/src/lib.rs",
+   "line": 301,
+   "character": 12,
+   "symbol": "GlobSet",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i4c_impl_line_with_reference",
+   "note": "2 of 2 impl lines carry a RIDX reference",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/globset/src/lib.rs",
+       "store": "ws",
+       "line": 301,
+       "line_text": "pub struct GlobSet {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 300,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 300,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 306,
+      "line_text": "impl GlobSet {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/globset/src/lib.rs",
+      "store": "ws",
+      "line": 481,
+      "line_text": "impl Default for GlobSet {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_141_TypeChange",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 749,
+   "character": 17,
+   "symbol": "TypeChange",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "3 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/core/flags/lowargs.rs",
+       "store": "ws",
+       "line": 749,
+       "line_text": "pub(crate) enum TypeChange {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 748,
+      "line_text": "#[derive(Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 748,
+      "line_text": "#[derive(Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 748,
+      "line_text": "#[derive(Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_144_IgnoreOptions",
+   "file": "crates/ignore/src/dir.rs",
+   "line": 72,
+   "character": 8,
+   "symbol": "IgnoreOptions",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "3 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/ignore/src/dir.rs",
+       "store": "ws",
+       "line": 72,
+       "line_text": "struct IgnoreOptions {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/ignore/src/dir.rs",
+      "store": "ws",
+      "line": 71,
+      "line_text": "#[derive(Clone, Copy, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/ignore/src/dir.rs",
+      "store": "ws",
+      "line": 71,
+      "line_text": "#[derive(Clone, Copy, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/ignore/src/dir.rs",
+      "store": "ws",
+      "line": 71,
+      "line_text": "#[derive(Clone, Copy, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_145_SortModeKind",
+   "file": "crates/core/flags/lowargs.rs",
+   "line": 698,
+   "character": 17,
+   "symbol": "SortModeKind",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "3 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/core/flags/lowargs.rs",
+       "store": "ws",
+       "line": 698,
+       "line_text": "pub(crate) enum SortModeKind {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 697,
+      "line_text": "#[derive(Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 697,
+      "line_text": "#[derive(Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/core/flags/lowargs.rs",
+      "store": "ws",
+      "line": 697,
+      "line_text": "#[derive(Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_165_ErrorKind",
+   "file": "crates/pcre2/src/error.rs",
+   "line": 25,
+   "character": 10,
+   "symbol": "ErrorKind",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "2 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/pcre2/src/error.rs",
+       "store": "ws",
+       "line": 25,
+       "line_text": "pub enum ErrorKind {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/pcre2/src/error.rs",
+      "store": "ws",
+      "line": 23,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/pcre2/src/error.rs",
+      "store": "ws",
+      "line": 23,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_178_SubMatch",
+   "file": "tests/json.rs",
+   "line": 94,
+   "character": 8,
+   "symbol": "SubMatch",
+   "target_kind": "test",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:tests/json.rs",
+       "store": "ws",
+       "line": 94,
+       "line_text": "struct SubMatch {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 93,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 93,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 93,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 93,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 94,
+      "line_text": "struct SubMatch {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": true,
+      "on_decl_line": true,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_199_MmapChoiceImpl",
+   "file": "crates/searcher/src/searcher/mmap.rs",
+   "line": 16,
+   "character": 6,
+   "symbol": "MmapChoiceImpl",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "2 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/searcher/src/searcher/mmap.rs",
+       "store": "ws",
+       "line": 16,
+       "line_text": "enum MmapChoiceImpl {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/searcher/src/searcher/mmap.rs",
+      "store": "ws",
+      "line": 15,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/searcher/src/searcher/mmap.rs",
+      "store": "ws",
+      "line": 15,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_206_LineTerminatorImp",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 198,
+   "character": 6,
+   "symbol": "LineTerminatorImp",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "6 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/matcher/src/lib.rs",
+       "store": "ws",
+       "line": 198,
+       "line_text": "enum LineTerminatorImp {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/matcher/src/lib.rs",
+      "store": "ws",
+      "line": 197,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/lib.rs",
+      "store": "ws",
+      "line": 197,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/lib.rs",
+      "store": "ws",
+      "line": 197,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/lib.rs",
+      "store": "ws",
+      "line": 197,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/lib.rs",
+      "store": "ws",
+      "line": 197,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/lib.rs",
+      "store": "ws",
+      "line": 197,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_212_DirEntry",
+   "file": "crates/ignore/examples/walk.rs",
+   "line": 52,
+   "character": 6,
+   "symbol": "DirEntry",
+   "target_kind": "example",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i4c_impl_line_with_reference",
+   "note": "1 of 1 impl lines carry a RIDX reference",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/ignore/examples/walk.rs",
+       "store": "ws",
+       "line": 52,
+       "line_text": "enum DirEntry {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/ignore/examples/walk.rs",
+      "store": "ws",
+      "line": 57,
+      "line_text": "impl DirEntry {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_219_Summary",
+   "file": "tests/json.rs",
+   "line": 70,
+   "character": 8,
+   "symbol": "Summary",
+   "target_kind": "test",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:tests/json.rs",
+       "store": "ws",
+       "line": 70,
+       "line_text": "struct Summary {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 69,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 69,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 69,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 69,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 70,
+      "line_text": "struct Summary {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": true,
+      "on_decl_line": true,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_232_MyError",
+   "file": "crates/matcher/tests/test_matcher.rs",
+   "line": 52,
+   "character": 12,
+   "symbol": "MyError",
+   "target_kind": "test",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "4 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/matcher/tests/test_matcher.rs",
+       "store": "ws",
+       "line": 52,
+       "line_text": "struct MyError;"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/matcher/tests/test_matcher.rs",
+      "store": "ws",
+      "line": 51,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/tests/test_matcher.rs",
+      "store": "ws",
+      "line": 51,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/tests/test_matcher.rs",
+      "store": "ws",
+      "line": 51,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/tests/test_matcher.rs",
+      "store": "ws",
+      "line": 51,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_237_CaptureRef",
+   "file": "crates/matcher/src/interpolate.rs",
+   "line": 64,
+   "character": 8,
+   "symbol": "CaptureRef",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/matcher/src/interpolate.rs",
+       "store": "ws",
+       "line": 64,
+       "line_text": "struct CaptureRef<'a> {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/matcher/src/interpolate.rs",
+      "store": "ws",
+      "line": 63,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/interpolate.rs",
+      "store": "ws",
+      "line": 63,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/interpolate.rs",
+      "store": "ws",
+      "line": 63,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/interpolate.rs",
+      "store": "ws",
+      "line": 63,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/matcher/src/interpolate.rs",
+      "store": "ws",
+      "line": 63,
+      "line_text": "#[derive(Clone, Copy, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_239_End",
+   "file": "tests/json.rs",
+   "line": 63,
+   "character": 8,
+   "symbol": "End",
+   "target_kind": "test",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:tests/json.rs",
+       "store": "ws",
+       "line": 63,
+       "line_text": "struct End {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 62,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 62,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 62,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 62,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 63,
+      "line_text": "struct End {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": true,
+      "on_decl_line": true,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_242_Begin",
+   "file": "tests/json.rs",
+   "line": 58,
+   "character": 8,
+   "symbol": "Begin",
+   "target_kind": "test",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:tests/json.rs",
+       "store": "ws",
+       "line": 58,
+       "line_text": "struct Begin {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 57,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 57,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 57,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 57,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 58,
+      "line_text": "struct Begin {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": true,
+      "on_decl_line": true,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_260_Context",
+   "file": "tests/json.rs",
+   "line": 85,
+   "character": 8,
+   "symbol": "Context",
+   "target_kind": "test",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "5 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:tests/json.rs",
+       "store": "ws",
+       "line": 85,
+       "line_text": "struct Context {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 84,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 84,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 84,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 84,
+      "line_text": "#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:tests/json.rs",
+      "store": "ws",
+      "line": 85,
+      "line_text": "struct Context {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": true,
+      "on_decl_line": true,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_268_FlagLookup",
+   "file": "crates/core/flags/parse.rs",
+   "line": 317,
+   "character": 6,
+   "symbol": "FlagLookup",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "1 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/core/flags/parse.rs",
+       "store": "ws",
+       "line": 317,
+       "line_text": "enum FlagLookup<'a> {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/core/flags/parse.rs",
+      "store": "ws",
+      "line": 316,
+      "line_text": "#[derive(Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": false
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_274_FlagInfoKind",
+   "file": "crates/core/flags/parse.rs",
+   "line": 343,
+   "character": 6,
+   "symbol": "FlagInfoKind",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "1 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/core/flags/parse.rs",
+       "store": "ws",
+       "line": 343,
+       "line_text": "enum FlagInfoKind {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/core/flags/parse.rs",
+      "store": "ws",
+      "line": 342,
+      "line_text": "#[derive(Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_282_DirEntry",
+   "file": "crates/ignore/src/walk.rs",
+   "line": 30,
+   "character": 12,
+   "symbol": "DirEntry",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i4c_impl_line_with_reference",
+   "note": "1 of 1 impl lines carry a RIDX reference",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/ignore/src/walk.rs",
+       "store": "ws",
+       "line": 30,
+       "line_text": "pub struct DirEntry {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/ignore/src/walk.rs",
+      "store": "ws",
+      "line": 29,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/ignore/src/walk.rs",
+      "store": "ws",
+      "line": 29,
+      "line_text": "#[derive(Clone, Debug)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/ignore/src/walk.rs",
+      "store": "ws",
+      "line": 35,
+      "line_text": "impl DirEntry {",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "implementation",
+   "name": "impl_297_SinkContextKind",
+   "file": "crates/searcher/src/sink.rs",
+   "line": 430,
+   "character": 10,
+   "symbol": "SinkContextKind",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "i5_generated_impls",
+   "note": "4 workspace locations on attribute or declaration lines",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "a",
+     "targets": [
+      {
+       "path": "ws:crates/searcher/src/sink.rs",
+       "store": "ws",
+       "line": 430,
+       "line_text": "pub enum SinkContextKind {"
+      }
+     ]
+    },
+    "ra_locations": [
+     {
+      "path": "ws:crates/searcher/src/sink.rs",
+      "store": "ws",
+      "line": 429,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/searcher/src/sink.rs",
+      "store": "ws",
+      "line": 429,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/searcher/src/sink.rs",
+      "store": "ws",
+      "line": 429,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     },
+     {
+      "path": "ws:crates/searcher/src/sink.rs",
+      "store": "ws",
+      "line": 429,
+      "line_text": "#[derive(Clone, Debug, Eq, PartialEq)]",
+      "in_macro": false,
+      "in_attribute": false,
+      "in_impl_header": false,
+      "derive_above": false,
+      "on_decl_line": false,
+      "ridx_ref_at_line": true
+     }
+    ],
+    "definition_names_symbol": true
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_77_str",
+   "file": "crates/globset/src/glob.rs",
+   "line": 761,
+   "character": 37,
+   "symbol": "str",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5b_module_path_segment",
+   "note": "rust-analyzer definition: file start or mod item",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "str",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": "chars: std::iter::Peekable<std::str::Chars<'a>>,"
+    },
+    "ra_highlights": 2,
+    "ra_definition": {
+     "path": "sysroot:library/alloc/src/str.rs",
+     "store": "sysroot",
+     "line": 1,
+     "line_text": "//! Utilities for the `str` primitive type.",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 1,
+     "token": "/",
+     "same_file": false,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_84_env",
+   "file": "crates/core/flags/parse.rs",
+   "line": 72,
+   "character": 41,
+   "symbol": "env",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5b_module_path_segment",
+   "note": "rust-analyzer definition: file start or mod item",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "env",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": "if let Err(err) = parser.parse(std::env::args_os().skip(1), &mut low) {"
+    },
+    "ra_highlights": 2,
+    "ra_definition": {
+     "path": "sysroot:library/std/src/env.rs",
+     "store": "sysroot",
+     "line": 1,
+     "line_text": "//! Inspection and manipulation of the process's environment.",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 1,
+     "token": "/",
+     "same_file": false,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_105_collections",
+   "file": "crates/core/flags/parse.rs",
+   "line": 367,
+   "character": 15,
+   "symbol": "collections",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5b_module_path_segment",
+   "note": "rust-analyzer definition: file start or mod item",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "collections",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": "map: std::collections::HashMap<Vec<u8>, usize>,"
+    },
+    "ra_highlights": 3,
+    "ra_definition": {
+     "path": "sysroot:library/std/src/collections/mod.rs",
+     "store": "sysroot",
+     "line": 1,
+     "line_text": "//! Collection types.",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 1,
+     "token": "/",
+     "same_file": false,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_153_Error",
+   "file": "crates/searcher/src/searcher/core.rs",
+   "line": 250,
+   "character": 26,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5a_associated_type_path",
+   "note": "rust-analyzer definition: type Error: SinkError;",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "Error",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": ") -> Result<bool, S::Error> {"
+    },
+    "ra_highlights": 21,
+    "ra_definition": {
+     "path": "ws:crates/searcher/src/sink.rs",
+     "store": "ws",
+     "line": 109,
+     "line_text": "type Error: SinkError;",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 10,
+     "token": "Error",
+     "same_file": false,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_178_Captures",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 790,
+   "character": 26,
+   "symbol": "Captures",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5a_associated_type_path",
+   "note": "rust-analyzer definition: type Captures: Captures;",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "Captures",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": "caps: &mut Self::Captures,"
+    },
+    "ra_highlights": 33,
+    "ra_definition": {
+     "path": "ws:crates/matcher/src/lib.rs",
+     "store": "ws",
+     "line": 542,
+     "line_text": "type Captures: Captures;",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 10,
+     "token": "Captures",
+     "same_file": true,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_204_Error",
+   "file": "crates/searcher/src/searcher/mod.rs",
+   "line": 650,
+   "character": 24,
+   "symbol": "Error",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5a_associated_type_path",
+   "note": "rust-analyzer definition: type Error: SinkError;",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "Error",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": ") -> Result<(), S::Error>"
+    },
+    "ra_highlights": 17,
+    "ra_definition": {
+     "path": "ws:crates/searcher/src/sink.rs",
+     "store": "ws",
+     "line": 109,
+     "line_text": "type Error: SinkError;",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 10,
+     "token": "Error",
+     "same_file": false,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_217_current_dir",
+   "file": "build.rs",
+   "line": 21,
+   "character": 38,
+   "symbol": "current_dir",
+   "target_kind": "custom-build",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5c_item_outside_workspace",
+   "note": "rust-analyzer definition in sysroot",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "current_dir",
+     "token_class": "ident",
+     "cursor_kind": "let",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": "let Ok(mut manifest) = std::env::current_dir() else { return };"
+    },
+    "ra_highlights": 1,
+    "ra_definition": {
+     "path": "sysroot:library/std/src/env.rs",
+     "store": "sysroot",
+     "line": 53,
+     "line_text": "pub fn current_dir() -> io::Result<PathBuf> {",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 8,
+     "token": "current_dir",
+     "same_file": false,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_227_regex",
+   "file": "crates/searcher/src/testutil.rs",
+   "line": 207,
+   "character": 22,
+   "symbol": "regex",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5b_module_path_segment",
+   "note": "rust-analyzer definition: file start or mod item",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "regex",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": "filter: Option<::regex::Regex>,"
+    },
+    "ra_highlights": 3,
+    "ra_definition": {
+     "path": "registry:regex-1.10.6/src/lib.rs",
+     "store": "registry",
+     "line": 1,
+     "line_text": "/*!",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 1,
+     "token": "/",
+     "same_file": false,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_248_messages",
+   "file": "crates/core/flags/parse.rs",
+   "line": 117,
+   "character": 12,
+   "symbol": "messages",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5b_module_path_segment",
+   "note": "rust-analyzer definition: file start or mod item",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "messages",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": "crate::messages::set_messages(!low.no_messages);"
+    },
+    "ra_highlights": 2,
+    "ra_definition": {
+     "path": "ws:crates/core/messages.rs",
+     "store": "ws",
+     "line": 1,
+     "line_text": "/*!",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 1,
+     "token": "/",
+     "same_file": false,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_251_str",
+   "file": "crates/ignore/src/gitignore.rs",
+   "line": 618,
+   "character": 10,
+   "symbol": "str",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5b_module_path_segment",
+   "note": "rust-analyzer definition: file start or mod item",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "str",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": "std::str::from_utf8(candidate).ok().map(|s| PathBuf::from(expand_tilde(s)))"
+    },
+    "ra_highlights": 1,
+    "ra_definition": {
+     "path": "sysroot:library/alloc/src/str.rs",
+     "store": "sysroot",
+     "line": 1,
+     "line_text": "//! Utilities for the `str` primitive type.",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 1,
+     "token": "/",
+     "same_file": false,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "target",
+   "method": "document_highlight",
+   "name": "document_highlight_280_Captures",
+   "file": "crates/matcher/src/lib.rs",
+   "line": 751,
+   "character": 25,
+   "symbol": "Captures",
+   "target_kind": "lib",
+   "cfg_test": false,
+   "first": {
+    "ridx": "b",
+    "ra": "a",
+    "ra_retry": null
+   },
+   "class": "h5a_associated_type_path",
+   "note": "rust-analyzer definition: type Captures: Captures;",
+   "evidence": {
+    "ra_reask": "a",
+    "ridx_definition": {
+     "outcome": "b",
+     "targets": []
+    },
+    "cursor": {
+     "token": "Captures",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "qualified": true,
+     "in_macro": false,
+     "line_text": "F: FnMut(&Self::Captures) -> bool,"
+    },
+    "ra_highlights": 33,
+    "ra_definition": {
+     "path": "ws:crates/matcher/src/lib.rs",
+     "store": "ws",
+     "line": 542,
+     "line_text": "type Captures: Captures;",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 10,
+     "token": "Captures",
+     "same_file": true,
+     "count": 1
+    },
+    "ridx_references": {
+     "outcome": "b",
+     "total": 0,
+     "same_file": 0
+    }
+   }
+  },
+  {
+   "set": "reverse",
+   "method": "document_highlight",
+   "name": "document_highlight_207_Sherlock",
+   "file": "tests/misc.rs",
+   "line": 317,
+   "character": 10,
+   "symbol": "Sherlock",
+   "target_kind": "test",
+   "cfg_test": false,
+   "first": {
+    "ridx": "a",
+    "ra": "b",
+    "ra_retry": "b"
+   },
+   "class": "r3c_cursor_in_macro",
+   "note": "document_highlight: cursor inside a macro invocation or macro_rules body, no rust-analyzer definition",
+   "evidence": {
+    "ridx_reask": "a",
+    "ra_reask": "b",
+    "ra_error": null,
+    "cursor": {
+     "token": "Sherlock",
+     "token_class": "ident",
+     "cursor_kind": "type_usage",
+     "line_text": "file.wat:Sherlock",
+     "in_macro": true,
+     "cfg_context": null
+    },
+    "ridx_answer": {
+     "highlights": 93
+    },
+    "ra_definition": null,
+    "symbol": "Sherlock"
+   }
+  },
+  {
+   "set": "reverse",
+   "method": "document_highlight",
+   "name": "document_highlight_252_generate_version_long",
+   "file": "crates/core/main.rs",
+   "line": 391,
+   "character": 44,
+   "symbol": "generate_version_long",
+   "target_kind": "bin",
+   "cfg_test": false,
+   "first": {
+    "ridx": "a",
+    "ra": "b",
+    "ra_retry": "b"
+   },
+   "class": "r2_ra_empty_confirmed",
+   "note": "document_highlight: rust-analyzer resolves the cursor, empty three times; RIDX answers again",
+   "evidence": {
+    "ridx_reask": "a",
+    "ra_reask": "b",
+    "ra_error": null,
+    "cursor": {
+     "token": "generate_version_long",
+     "token_class": "ident",
+     "cursor_kind": "path",
+     "line_text": "SpecialMode::VersionLong => flags::generate_version_long(),",
+     "in_macro": false,
+     "cfg_context": null
+    },
+    "ridx_answer": {
+     "highlights": 1
+    },
+    "ra_definition": {
+     "path": "ws:crates/core/flags/doc/version.rs",
+     "store": "ws",
+     "line": 31,
+     "line_text": "pub(crate) fn generate_long() -> String {",
+     "in_macro": false,
+     "in_attribute": false,
+     "in_impl_header": false,
+     "derive_above": false,
+     "col": 15,
+     "token": "generate_long",
+     "same_file": false,
+     "count": 1
+    },
+    "symbol": "generate_version_long"
+   }
+  }
+ ],
+ "definitions": {
+  "sets": "target: RIDX b and rust-analyzer a (or c, then a on retry); ra_noise: rust-analyzer b then a on retry, whatever RIDX answered; reverse: RIDX a and rust-analyzer b, also on retry; ra_timeout_then_empty: rust-analyzer c then b on retry; ra_timeout: rust-analyzer c with no answer on retry; other: the rest",
+  "store": "ws: a workspace shard stores the file (FILE lines of file_table); ws_unstored: workspace file no shard stores; registry/git/sysroot/external: realm of a file outside the workspace",
+  "refs": "references RIDX holds at the cursor (inspection binary, refs --json): line, is_macro_expansion, and whether the text after the span is a call site by the handler's rule",
+  "class": "first rule of rule_order that holds for the row's evidence; unclassified when none does; x_ra_reask_failed when rust-analyzer did not answer the re-ask, so the row has no content to classify"
+ }
+}
