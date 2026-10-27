@@ -10,6 +10,16 @@
 
 use super::*;
 
+/// Whether a definition that starts on `line` can be the one `res` points at. A name alone does
+/// not identify the target of a use of an enum variant, which the index holds no definition for:
+/// the struct or import of the same name stands in the same file. Such a target with a known
+/// line only matches a definition on that line; any other target keeps the match by name.
+fn is_on_line_of(res: &ResolvedDefinition<'_>, line: u32) -> bool {
+    !matches!(res.kind, DefKind::Variant | DefKind::VariantCtor)
+        || res.start_line == 0
+        || res.start_line == line
+}
+
 impl WorkspaceIndex {
     /// Resolves a cross-crate definition target with compilation-unit and path/signature awareness.
     pub(super) fn find_cross_definition<'a>(
@@ -70,7 +80,9 @@ impl WorkspaceIndex {
                     });
                     if let Some(fid) = file_id_opt {
                         r.definitions().iter().find(|d| {
-                            d.span().file_id() == fid && r.get_str(d.name_offset()) == res.name
+                            d.span().file_id() == fid
+                                && r.get_str(d.name_offset()) == res.name
+                                && is_on_line_of(res, d.span().start_line())
                         })
                     } else {
                         None
@@ -201,7 +213,7 @@ impl WorkspaceIndex {
                         let d_span = def.span();
                         if d_span.file_id() == fid {
                             let d_name = r.get_str(def.name_offset());
-                            if d_name == res.name {
+                            if d_name == res.name && is_on_line_of(res, d_span.start_line()) {
                                 candidates.push(ResolvedDefinition {
                                     name: d_name,
                                     path: r.get_str(def.path_offset()),

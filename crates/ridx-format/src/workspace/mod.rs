@@ -59,6 +59,8 @@ mod tests;
 mod transitive_consumer_tests;
 #[cfg(test)]
 mod unit_match_tests;
+#[cfg(test)]
+mod variant_definition_tests;
 
 pub(crate) use discover::collect_ridx_files;
 pub use manifest::*;

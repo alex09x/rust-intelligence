@@ -239,19 +239,31 @@ impl WorkspaceIndex {
                 if res.unit_key.is_none() {
                     res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
                 }
+                // A target in another unit that no definition of the index stands for (an enum
+                // variant) keeps the path, file and line of the reference; its file is relative
+                // to the root of that unit, not of the referrer.
+                let owner = res
+                    .unit_key
+                    .filter(|uk| Some(*uk) != self.unit_keys.get(i).and_then(|u| u.as_deref()))
+                    .and_then(|uk| self.unit_keys.iter().position(|u| u.as_deref() == Some(uk)))
+                    .unwrap_or(i);
                 if res.source_root.is_none() {
-                    res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false)
+                    res.source_root = if self
+                        .reader_is_dependency
+                        .get(owner)
+                        .copied()
+                        .unwrap_or(false)
                     {
-                        self.source_roots.get(i).and_then(|r| r.as_deref())
+                        self.source_roots.get(owner).and_then(|r| r.as_deref())
                     } else {
                         self.source_roots
-                            .get(i)
+                            .get(owner)
                             .and_then(|r| r.as_deref())
                             .or(self.workspace_root.as_deref())
                     };
                 }
                 if res.reader_idx.is_none() {
-                    res.reader_idx = Some(i);
+                    res.reader_idx = Some(owner);
                 }
                 return Some(res);
             }
