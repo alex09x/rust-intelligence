@@ -54,6 +54,8 @@ mod target_kind_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod qualified_consumer_tests;
+#[cfg(test)]
 mod transitive_consumer_tests;
 #[cfg(test)]
 mod unit_match_tests;

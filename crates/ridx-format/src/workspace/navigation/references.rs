@@ -240,6 +240,8 @@ impl WorkspaceIndex {
             } else {
                 query_path_vec.push(global_path);
             }
+            let spellings = super::qualified_path::consumer_spellings(local_path, target_crate);
+            query_path_vec.extend(spellings.iter().map(String::as_str));
             for &q_path in &query_path_vec {
                 let refs = reader.find_references(q_path);
                 for r in refs {
@@ -344,7 +346,10 @@ impl WorkspaceIndex {
                             }
                         }
                         let aliased_path = format!("{alias}::{local_path}");
-                        for r in reader.find_references(&aliased_path) {
+                        let mut aliased =
+                            super::qualified_path::consumer_spellings(local_path, alias);
+                        aliased.push(aliased_path);
+                        for r in aliased.iter().flat_map(|p| reader.find_references(p)) {
                             let r_target_unit = reader.target_unit(r);
                             if let Some(target_unit) = target_unit_key {
                                 if !r_target_unit.is_empty() {
