@@ -16,12 +16,73 @@ partial row returns `unclassified`.
 import re
 from position_ab_gap_cursor import block_open_at, derive_above
 from position_ab_gap_reverse import cfg_context
+from position_ab_gap_rules import store_kind
 from position_ab_parity_norm import normalize_answer
 
 NAV_KEYS = frozenset({"definition", "declaration", "type_definition", "implementation"})
 REF_KEYS = frozenset({"references", "document_highlight"})
 COMP_RECALL_THRESHOLD = 0.80
 COMP_OUTSIDE_MAX = 0.20
+REG_VER_RE = re.compile(r"-[0-9]+\.[0-9]+\.[0-9]+[^/]*")
+
+
+def in_raw_string_literal(lines, idx):
+    """True when 0-based line `idx` starts inside a multi-line raw string literal `r"..."` or `r#"..."#`."""
+    if not lines or idx <= 0 or idx >= len(lines):
+        return False
+    text = "\n".join(lines[:idx])
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        if ch == "/" and i + 1 < n and text[i + 1] == "/":
+            nl = text.find("\n", i + 2)
+            i = n if nl < 0 else nl + 1
+        elif ch == "/" and i + 1 < n and text[i + 1] == "*":
+            end = text.find("*/", i + 2)
+            i = n if end < 0 else end + 2
+        elif ch in ("r", "b") and (i == 0 or not (text[i - 1].isalnum() or text[i - 1] in "_'\"")):
+            j = i + (2 if text[i:i + 2] == "br" else 1) if ch == "b" else i + 1
+            if ch == "b" and j == i + 1:
+                i += 1
+                continue
+            hashes = 0
+            while j < n and text[j] == "#":
+                hashes += 1
+                j += 1
+            if j < n and text[j] == '"':
+                closer = '"' + ("#" * hashes)
+                end = text.find(closer, j + 1)
+                if end < 0:
+                    return True
+                i = end + len(closer)
+            else:
+                i += 1
+        elif ch == '"':
+            i += 1
+            while i < n and text[i] != '"':
+                i += 2 if text[i] == "\\" else 1
+            i += 1
+        elif ch == "'" and i + 2 < n and (text[i + 1] == "\\" or text[i + 2] == "'"):
+            i += 4 if text[i + 1] == "\\" and i + 3 < n and text[i + 3] == "'" else 3
+        else:
+            i += 1
+    return False
+
+
+def cursor_cfg_gated(lines, idx):
+    """Returns the enclosing or directly preceding `#[cfg(...)]` / `cfg_*!` gate for 0-based line `idx`."""
+    if not lines or idx < 0 or idx >= len(lines):
+        return None
+    ctx = cfg_context(lines, idx)
+    if ctx:
+        return ctx
+    k = idx - 1
+    while k >= 0 and (not lines[k].strip() or lines[k].strip().startswith(("#[", "///", "//"))):
+        s = lines[k].strip()
+        if s.startswith(("#[cfg(", "#![cfg(")):
+            return "cfg_attr:" + s[:60]
+        k -= 1
+    return None
 
 
 def in_derive_item(lines, idx, lookback=40):
@@ -85,11 +146,18 @@ def compare_navigation(row, r_norm, a_norm, read_lines_fn=None):
     sym = row.get("symbol") or ""
     r_files = {p for p, _ in rt}
     a_files = {p for p, _ in at}
+    line_text = cursor_line_text(row, read_lines_fn)
+    col = int(row.get("character") or 0)
+    after_tok = suffix_after_cursor_symbol(line_text, col, sym).lstrip()
+    if {(REG_VER_RE.sub("", p), ln) for p, ln in rt} == {(REG_VER_RE.sub("", p), ln) for p, ln in at}:
+        return "mismatch", "p_nav_registry_crate_version_skew", {"ridx": sorted(rt), "ra": sorted(at)}
+    if after_tok.startswith("!"):
+        return "mismatch", "p_nav_macro_call_target", {"ridx": sorted(rt), "ra": sorted(at)}
     if any(p.endswith(f"/{sym}.rs") and ln == 1 for p, ln in at):
         return "mismatch", "p_nav_module_decl_vs_file", {"ridx": sorted(rt), "ra": sorted(at)}
     if (f"ws:{row.get('file')}", row.get("line")) in rt:
         return "mismatch", "p_nav_self_use_or_reexport", {"ridx": sorted(rt), "ra": sorted(at)}
-    if row.get("cursor_kind") == "method_call" or any(p.startswith("sysroot:") for p in r_files | a_files):
+    if row.get("cursor_kind") == "method_call" or after_tok.startswith("(") or any(p.startswith("sysroot:") for p in r_files | a_files):
         return "mismatch", "p_nav_trait_vs_impl_target", {"ridx": sorted(rt), "ra": sorted(at)}
     lines = read_lines_fn(row["file"]) if read_lines_fn and row.get("file") else []
     if lines and row.get("line") and in_derive_item(lines, int(row["line"]) - 1):
@@ -141,6 +209,13 @@ def compare_references(row, r_norm, a_norm, read_lines_fn=None):
         return "mismatch", "p_refs_external_decl_only", {
             "ridx_external": len(rs), "ra_ws": len(aw), "ridx_sample": sorted(rs)[:3],
         }
+    sym = row.get("symbol") or ""
+    line_text = cursor_line_text(row, read_lines_fn)
+    after_tok = suffix_after_cursor_symbol(line_text, int(row.get("character") or 0), sym)
+    if rw and aw and after_tok.startswith("::"):
+        return "mismatch", "p_refs_path_segment_cursor_line", {
+            "ridx_ws": len(rw), "ra_ws": len(aw), "symbol": sym,
+        }
     return "mismatch", "unclassified", {"ridx_ws": len(rw), "ra_ws": len(aw)}
 
 
@@ -153,6 +228,8 @@ def compare_hover(row, r_norm, a_norm):
         return "exact_match", None, {"sig": r_norm["sig_line"]}
     if r_norm["sig_line"].startswith("variant "):
         return "mismatch", "p_hover_variant_header", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
+    if r_norm["sig_line"].startswith("macro ") and a_norm["decl"] and a_norm["decl"][0] == "macro_rules!":
+        return "mismatch", "p_hover_macro_keyword_format", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
     if r_norm["decl"] and r_norm["decl"][0] == "fn" and a_norm["decl"] and a_norm["decl"][0] == "trait":
         return "mismatch", "p_hover_trait_method_container_header", {
             "ridx_decl": r_norm["decl"], "ra_decl": a_norm["decl"], "ridx": r_norm["sig_line"], "ra": a_norm["sig_line"],
@@ -161,7 +238,7 @@ def compare_hover(row, r_norm, a_norm):
         return "mismatch", "p_hover_assoc_type_decl_format", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
     if r_norm["decl"] and a_norm["decl"] and r_norm["decl"] != a_norm["decl"]:
         return "mismatch", "p_hover_different_decl_head", {"ridx_decl": r_norm["decl"], "ra_decl": a_norm["decl"]}
-    if r_norm["type_line"] or r_norm["sig_line"].startswith(("use ", "impl ", "fn ")):
+    if r_norm["type_line"] or r_norm["sig_line"].startswith(("use ", "impl ", "fn ", "field ")):
         return "mismatch", "p_hover_enclosing_expr_or_use", {
             "ridx": r_norm["sig_line"] or r_norm["type_line"], "ra": a_norm["sig_line"],
         }
@@ -215,14 +292,35 @@ def prefix_before_cursor_symbol(line_text, col, sym):
     return line_text[:c]
 
 
-def classify_b_to_a(row, repo, a_res, read_lines_fn=None):
+def suffix_after_cursor_symbol(line_text, col, sym):
+    """Returns the line suffix immediately after the identifier token covering 0-based `col`."""
+    if not line_text:
+        return ""
+    if sym:
+        for m in re.finditer(rf"\b{re.escape(sym)}\b", line_text):
+            if m.start() <= col <= m.end():
+                return line_text[m.end():]
+    c = min(max(0, col), len(line_text))
+    while c < len(line_text) and (line_text[c].isalnum() or line_text[c] == "_"):
+        c += 1
+    return line_text[c:]
+
+
+def classify_b_to_a(row, repo, a_res, read_lines_fn=None, ws_table=None):
     """Classifies a row where RIDX answered `b` (empty) and rust-analyzer answered `a`."""
-    if row.get("target_kind") in ("custom-build", "none") or is_build_script("ws:" + (row.get("file") or "")):
-        return "p_target_custom_build", {"target_kind": row.get("target_kind"), "file": row.get("file")}
+    rel_file = row.get("file") or ""
+    if row.get("target_kind") in ("custom-build", "none") or is_build_script("ws:" + rel_file):
+        return "p_target_custom_build", {"target_kind": row.get("target_kind"), "file": rel_file}
+    if ws_table and rel_file and store_kind(f"{repo.rstrip('/')}/{rel_file}", repo, ws_table) == "ws_unstored":
+        return "p_b_to_a_unstored_workspace_file", {"file": rel_file, "target_kind": row.get("target_kind")}
     method = row["method"]
     sym = row.get("symbol") or ""
+    lines = read_lines_fn(rel_file) if read_lines_fn and rel_file else []
+    idx = int(row.get("line") or 1) - 1
+    if in_raw_string_literal(lines, idx):
+        return "p_b_to_a_raw_string_fixture", {"file": rel_file, "line": row.get("line"), "symbol": sym}
     a_norm = normalize_answer(method, a_res, repo)
-    line_text = cursor_line_text(row, read_lines_fn)
+    line_text = lines[idx] if 0 <= idx < len(lines) else ""
     stripped = line_text.lstrip()
     if stripped.startswith(("use ", "pub use ", "pub(crate) use ", "pub(super) use ")) or row.get("cursor_kind") == "use":
         return "p_b_to_a_use_path_segment", {"symbol": sym, "cursor_line": line_text.strip()[:120]}
@@ -240,10 +338,13 @@ def classify_b_to_a(row, repo, a_res, read_lines_fn=None):
         return "p_b_to_a_type_relative_assoc_path", {"symbol": sym, "cursor_line": line_text.strip()[:120]}
     if before_tok.endswith("::") or "::" in line_text:
         return "p_b_to_a_qualified_path_cursor", {"symbol": sym, "cursor_line": line_text.strip()[:120]}
+    cfg = cursor_cfg_gated(lines, idx)
+    if cfg and not cfg.endswith("#[cfg(test)]"):
+        return "p_b_to_a_cfg_gated_item", {"cfg": cfg, "symbol": sym, "cursor_line": line_text.strip()[:120]}
     return "unclassified", {"method": method, "symbol": sym, "cursor_line": line_text.strip()[:120]}
 
 
-def evaluate_row(row, r_ans, a_ans, repo, read_lines_fn=None):
+def evaluate_row(row, r_ans, a_ans, repo, read_lines_fn=None, ws_table=None):
     """Evaluates one row's RIDX (`r_ans`) and rust-analyzer (`a_ans`) answers.
     Returns `(parity, cls, evidence)`."""
     ro, ao = r_ans["outcome"], a_ans["outcome"]
@@ -252,7 +353,7 @@ def evaluate_row(row, r_ans, a_ans, repo, read_lines_fn=None):
     if ro == "a" and ao in ("b", "c"):
         return "ridx_only", "c_ridx_answers_ra_empty_or_err", {"ridx_outcome": ro, "ra_outcome": ao, "ra_error": a_ans.get("error")}
     if ro in ("b", "c") and ao == "a":
-        cls, ev = classify_b_to_a(row, repo, a_ans.get("res"), read_lines_fn)
+        cls, ev = classify_b_to_a(row, repo, a_ans.get("res"), read_lines_fn, ws_table)
         return "mismatch", cls, ev
     if ro == "c" and ao == "c":
         return "both_empty", "c_both_error", {"ridx_error": r_ans.get("error"), "ra_error": a_ans.get("error")}

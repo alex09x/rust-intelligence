@@ -41,6 +41,7 @@ from position_ab import binary_label, build_rows, parse_servers  # noqa: E402
 from position_ab_classify import (  # noqa: E402
     REQUEST_KEYS, classify_outcome, load_target_entries, scenario_from_record,
 )
+from position_ab_content import load_file_table  # noqa: E402
 from position_ab_parity_rules import evaluate_row  # noqa: E402
 
 RPC_OF = {key: rpc for _, key, rpc, _, _ in LSP_SPECS}
@@ -74,7 +75,7 @@ def ask_server(name, cmd, is_ra, rows, repo_dir, timeout, canary):
     return ready, round(time.perf_counter() - t0, 1)
 
 
-def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn):
+def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_table=None):
     """Evaluates normalized content parity for all rows and builds per-method and overall summaries."""
     per_method = {}
     classes_overall = Counter()
@@ -83,7 +84,7 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn):
         raw = row.pop("_raw", {})
         row.pop("scenario", None)
         r_ans, a_ans = raw[ridx_name], raw[ra_name]
-        parity, cls, ev = evaluate_row(row, r_ans, a_ans, str(repo_dir), read_lines_fn)
+        parity, cls, ev = evaluate_row(row, r_ans, a_ans, str(repo_dir), read_lines_fn, ws_table)
         row["results"] = {
             ridx_name: {"outcome": r_ans["outcome"], "us": r_ans["us"], "error": r_ans["error"]},
             ra_name: {"outcome": a_ans["outcome"], "us": a_ans["us"], "error": a_ans["error"]},
@@ -166,6 +167,7 @@ def main(argv=None):
     ap.add_argument("--methods", default=",".join(DEFAULT_METHODS))
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--timeout", type=float, default=2.0)
+    ap.add_argument("--file-table", action="append", default=[], type=Path)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--out-differing", type=Path)
     args = ap.parse_args(argv)
@@ -182,6 +184,7 @@ def main(argv=None):
     if unknown:
         ap.error(f"unknown matrix request methods: {unknown}")
 
+    ws_table = load_file_table(args.file_table) if args.file_table else None
     entries = load_target_entries(repo_dir)
     cache = {}
 
@@ -206,7 +209,7 @@ def main(argv=None):
             **parse_version(version_of(binary)), "ready": ready, "duration_s": seconds,
         })
 
-    summary = evaluate_all_rows(rows, ridx_srv[0], ra_srv[0], repo_dir, read_lines)
+    summary = evaluate_all_rows(rows, ridx_srv[0], ra_srv[0], repo_dir, read_lines, ws_table)
     for key, m in summary["methods"].items():
         print(
             f"  {key:20s} exact={m['exact_match']:3d} core={m['core_match']:3d} "

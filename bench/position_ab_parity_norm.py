@@ -13,7 +13,7 @@ from position_ab_content_rules import decode_tokens, scrub_path, token_data, uri
 
 CODE_BLOCK_RE = re.compile(r"```(?:rust)?\n(.*?)```", re.DOTALL)
 DECL_HEAD_RE = re.compile(
-    r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:unsafe\s+|async\s+|const\s+)*"
+    r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:unsafe\s+|async\s+|const\s+|auto\s+)*"
     r"(fn|struct|enum|trait|type|mod|const|static|union|macro_rules!)\s+([A-Za-z_][A-Za-z0-9_]*)"
 )
 PAREN_SUFFIX_RE = re.compile(r"\s*\(.*\)$")

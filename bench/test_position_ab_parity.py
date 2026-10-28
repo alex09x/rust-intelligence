@@ -151,6 +151,42 @@ class TestPositionAbParityRules(unittest.TestCase):
         row_unknown = {"method": "definition", "file": "src/de.rs", "line": 2, "character": 8, "symbol": "mystery", "cursor_kind": "ident", "target_kind": "lib"}
         self.assertEqual(evaluate_row(row_unknown, r_b, a_a, REPO, lambda _: ["", "let x = mystery;"])[:2], ("mismatch", "unclassified"))
 
+    def test_raw_string_unstored_file_cfg_gate_and_macro_predicates(self):
+        r_b = {"outcome": "b", "res": None}
+        a_a = {"outcome": "a", "res": [{"targetUri": "file:///workspace/serde/src/lib.rs", "targetSelectionRange": {"start": {"line": 1, "character": 0}}}]}
+        row_raw = {"method": "references", "file": "src/tests.rs", "line": 3, "character": 7, "symbol": "Foo", "cursor_kind": "decl:struct", "target_kind": "lib"}
+        raw_lines = ["fn t() {", '    check(r#"', "struct Foo;", '"#);', "}"]
+        self.assertEqual(evaluate_row(row_raw, r_b, a_a, REPO, lambda _: raw_lines)[:2], ("mismatch", "p_b_to_a_raw_string_fixture"))
+
+        # Ordinary string ending in 'r"' must NOT trigger raw-string detection on later lines.
+        non_raw_lines = ['let s = "color";', "let x = Foo;", 'let end = "r";']
+        self.assertEqual(evaluate_row(row_raw, r_b, a_a, REPO, lambda _: non_raw_lines)[:2], ("mismatch", "unclassified"))
+
+        # Unstored workspace file when ws_table is provided
+        ws_table = [("shard0", "src/lib.rs")]
+        row_unstored = {"method": "definition", "file": "examples/demo.rs", "line": 2, "character": 4, "symbol": "Res", "cursor_kind": "type_usage", "target_kind": "example"}
+        self.assertEqual(evaluate_row(row_unstored, r_b, a_a, REPO, lambda _: ["", "let x: Res;"], ws_table)[:2], ("mismatch", "p_b_to_a_unstored_workspace_file"))
+
+        # #[cfg(...)] gated item (non-test)
+        row_cfg = {"method": "references", "file": "src/lib.rs", "line": 3, "character": 10, "symbol": "Opt", "cursor_kind": "type_usage", "target_kind": "lib"}
+        cfg_lines = ["struct S {", "    #[cfg(tokio_unstable)]", "    field: Opt,", "}"]
+        self.assertEqual(evaluate_row(row_cfg, r_b, a_a, REPO, lambda _: cfg_lines, ws_table)[:2], ("mismatch", "p_b_to_a_cfg_gated_item"))
+
+        # Registry version skew and macro call target in navigation (using /opt/ws/ instead of /home/)
+        row_ver = {"method": "definition", "file": "src/lib.rs", "line": 2, "character": 4, "symbol": "Lit", "cursor_kind": "path", "target_kind": "lib"}
+        r_v1 = {"outcome": "a", "res": {"uri": "file:///opt/ws/.cargo/registry/src/idx/syn-3.0.8/src/lit.rs", "range": {"start": {"line": 31, "character": 0}}}}
+        a_v2 = {"outcome": "a", "res": [{"targetUri": "file:///opt/ws/.cargo/registry/src/idx/syn-3.0.6/src/lit.rs", "targetSelectionRange": {"start": {"line": 31, "character": 0}}}]}
+        self.assertEqual(evaluate_row(row_ver, r_v1, a_v2, REPO)[:2], ("mismatch", "p_nav_registry_crate_version_skew"))
+
+        # Macro call target requires cursor column on the macro token itself, not elsewhere on the line.
+        r_m1 = {"outcome": "a", "res": {"uri": "file:///workspace/serde/src/a.rs", "range": {"start": {"line": 1, "character": 0}}}}
+        a_m2 = {"outcome": "a", "res": [{"targetUri": "file:///workspace/serde/src/b.rs", "targetSelectionRange": {"start": {"line": 9, "character": 0}}}]}
+        row_mac_on = {"method": "definition", "file": "src/lib.rs", "line": 2, "character": 16, "symbol": "join", "cursor_kind": "let", "target_kind": "lib"}
+        row_mac_off = {**row_mac_on, "character": 4}
+        mac_line = ["", "let join = foo::join!(x);"]
+        self.assertEqual(evaluate_row(row_mac_on, r_m1, a_m2, REPO, lambda _: mac_line)[:2], ("mismatch", "p_nav_macro_call_target"))
+        self.assertEqual(evaluate_row(row_mac_off, r_m1, a_m2, REPO, lambda _: mac_line)[:2], ("mismatch", "unclassified"))
+
     def test_references_all_ra_only_lines_checked_without_slice_and_mixed_ratio(self):
         row = {"method": "references", "file": "src/lib.rs", "line": 1, "character": 4, "symbol": "visit_u8", "cursor_kind": "fn_def", "target_kind": "lib"}
         loc = lambda ln: {"uri": "file:///workspace/serde/src/lib.rs", "range": {"start": {"line": ln - 1, "character": 0}, "end": {"line": ln - 1, "character": 8}}}
