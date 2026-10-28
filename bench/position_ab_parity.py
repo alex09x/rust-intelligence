@@ -1,0 +1,257 @@
+# rust-intelligence — Ultra-fast, zero-memory code intelligence for Rust
+# Copyright (c) 2026 Alexander Panasenko
+#
+# Contact: alex@prod.codes
+# Author: https://prod.codes/about/
+# Project: https://github.com/alex09x/rust-intelligence
+# SPDX-License-Identifier: MIT OR Apache-2.0
+"""Normalized content-parity benchmark and gap classifier between RIDX and rust-analyzer.
+
+    position_ab_parity.py --repo DIR --positions bench/published/matrix_<corpus>_booster.positions.json \\
+        --ridx NAME=BIN --ra NAME=BIN [--methods definition,references,hover,completion] \\
+        [--limit N] [--timeout 2.0] --out FILE [--out-differing FILE]
+
+For each method and position, asks both servers, normalizes their responses into a canonical
+method-specific representation (`position_ab_parity_norm.py`), and classifies each row into
+`exact_match`, `core_match`, `partial`, `ridx_only`, `both_empty`, or `mismatch` with a deterministic
+gap class (`position_ab_parity_rules.py`). Exits with code 1 if any row is `unclassified`.
+"""
+
+import argparse
+import hashlib
+import json
+import socket
+import subprocess
+import sys
+import time
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from code_lens_latency import version_of  # noqa: E402
+from code_lens_open_vs_closed import parse_version  # noqa: E402
+from lsp_barrier import barrier  # noqa: E402
+from lsp_process import SimpleLspProcess  # noqa: E402
+from matrix_canary import ensure_ra_ready  # noqa: E402
+from matrix_categories import LSP_SPECS, build_params  # noqa: E402
+from matrix_provenance import check_ridx_index, normalize_repo_identifier  # noqa: E402
+from position_ab import binary_label, build_rows, parse_servers  # noqa: E402
+from position_ab_classify import (  # noqa: E402
+    REQUEST_KEYS, classify_outcome, load_target_entries, scenario_from_record,
+)
+from position_ab_parity_rules import evaluate_row  # noqa: E402
+
+RPC_OF = {key: rpc for _, key, rpc, _, _ in LSP_SPECS}
+DEFAULT_METHODS = ("definition", "references", "hover", "completion")
+
+
+def ask_server(name, cmd, is_ra, rows, repo_dir, timeout, canary):
+    """Queries one server process across all `rows` and stores raw responses in `row['_raw'][name]`."""
+    srv = SimpleLspProcess(cmd, str(repo_dir), is_ra=is_ra)
+    t0 = time.perf_counter()
+    ready = {"initial_wait_ms": round(srv.initial_wait_ms, 1), "initial_quiescent": srv.initial_quiescent}
+    try:
+        if is_ra:
+            ready.update(ensure_ra_ready(srv, canary, Path(repo_dir), timeout=600.0, interval=1.0))
+        current = None
+        for row in rows:
+            key = row["method"]
+            if key != current:
+                current = key
+                srv.drain(timeout=600.0)
+                barrier(srv, timeout=600.0)
+            params = build_params(key, row["scenario"], str(repo_dir), is_ra=is_ra)
+            res, us, err = srv.request(RPC_OF[key], params, timeout=timeout)
+            outcome, code = classify_outcome(key, res, err)
+            row.setdefault("_raw", {})[name] = {
+                "outcome": outcome, "res": res, "error": code, "us": round(us, 1),
+            }
+    finally:
+        srv.close()
+    ready["cancelled_on_timeout"] = srv.cancelled_on_timeout
+    return ready, round(time.perf_counter() - t0, 1)
+
+
+def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn):
+    """Evaluates normalized content parity for all rows and builds per-method and overall summaries."""
+    per_method = {}
+    classes_overall = Counter()
+    parity_overall = Counter()
+    for row in rows:
+        raw = row.pop("_raw", {})
+        row.pop("scenario", None)
+        r_ans, a_ans = raw[ridx_name], raw[ra_name]
+        parity, cls, ev = evaluate_row(row, r_ans, a_ans, str(repo_dir), read_lines_fn)
+        row["results"] = {
+            ridx_name: {"outcome": r_ans["outcome"], "us": r_ans["us"], "error": r_ans["error"]},
+            ra_name: {"outcome": a_ans["outcome"], "us": a_ans["us"], "error": a_ans["error"]},
+        }
+        row["parity"] = parity
+        row["class"] = cls
+        row["evidence"] = ev
+        parity_overall[parity] += 1
+        if cls:
+            classes_overall[cls] += 1
+        m = per_method.setdefault(row["method"], {
+            "n": 0, "ra_non_empty": 0, "matched_on_ra_non_empty": 0,
+            "exact_match": 0, "core_match": 0, "partial": 0, "ridx_only": 0,
+            "both_empty": 0, "mismatch": 0, "classes": Counter(),
+            "ra_recalls": [], "ridx_outsides": [],
+            "target_in_ra": 0, "target_in_ridx": 0, "target_in_top20": 0, "target_eval": 0,
+        })
+        m["n"] += 1
+        if a_ans["outcome"] == "a":
+            m["ra_non_empty"] += 1
+            if parity in ("exact_match", "core_match"):
+                m["matched_on_ra_non_empty"] += 1
+            if row["method"] == "completion" and "ra_label_recall" in ev:
+                m["ra_recalls"].append(ev["ra_label_recall"])
+                m["ridx_outsides"].append(ev["ridx_outside_ra_ratio"])
+                if ev.get("target_in_ra") is not None:
+                    m["target_eval"] += 1
+                    m["target_in_ra"] += int(bool(ev.get("target_in_ra")))
+                    m["target_in_ridx"] += int(bool(ev.get("target_in_ridx")))
+                    m["target_in_top20"] += int(bool(ev.get("target_in_top20")))
+        m[parity] += 1
+        if cls:
+            m["classes"][cls] += 1
+
+    methods_summary = {}
+    for key, m in per_method.items():
+        denom = m["ra_non_empty"] or 1
+        entry = {
+            "n": m["n"],
+            "ra_non_empty": m["ra_non_empty"],
+            "matched_on_ra_non_empty": m["matched_on_ra_non_empty"],
+            "exact_match": m["exact_match"],
+            "core_match": m["core_match"],
+            "partial": m["partial"],
+            "ridx_only": m["ridx_only"],
+            "both_empty": m["both_empty"],
+            "mismatch": m["mismatch"],
+            "parity_pct_of_total": round(
+                100.0 * (m["exact_match"] + m["core_match"] + m["both_empty"]) / max(1, m["n"]), 1
+            ),
+            "matched_on_ra_non_empty_pct": round(100.0 * m["matched_on_ra_non_empty"] / denom, 1),
+            "classes": dict(sorted(m["classes"].items())),
+        }
+        if key == "completion" and m["ra_recalls"]:
+            teval = m["target_eval"] or 1
+            entry.update({
+                "mean_ra_label_recall_pct": round(100.0 * sum(m["ra_recalls"]) / len(m["ra_recalls"]), 1),
+                "mean_ridx_outside_ra_pct": round(100.0 * sum(m["ridx_outsides"]) / len(m["ridx_outsides"]), 1),
+                "target_in_ra_count": m["target_in_ra"],
+                "target_in_ridx_count": m["target_in_ridx"],
+                "target_in_ridx_pct": round(100.0 * m["target_in_ridx"] / teval, 1),
+                "target_in_top20_count": m["target_in_top20"],
+                "target_in_top20_pct": round(100.0 * m["target_in_top20"] / teval, 1),
+            })
+        methods_summary[key] = entry
+    return {
+        "parity_totals": dict(sorted(parity_overall.items())),
+        "classes_totals": dict(sorted(classes_overall.items())),
+        "unclassified": classes_overall.get("unclassified", 0),
+        "methods": methods_summary,
+    }
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--repo", required=True, type=Path)
+    ap.add_argument("--positions", required=True, type=Path)
+    ap.add_argument("--ridx", action="append", required=True, metavar="NAME=BIN")
+    ap.add_argument("--ra", action="append", required=True, metavar="NAME=BIN")
+    ap.add_argument("--methods", default=",".join(DEFAULT_METHODS))
+    ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--timeout", type=float, default=2.0)
+    ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--out-differing", type=Path)
+    args = ap.parse_args(argv)
+
+    servers = parse_servers(args.ridx, args.ra)
+    ridx_srv = next(s for s in servers if not s[2])
+    ra_srv = next(s for s in servers if s[2])
+    repo_dir = args.repo.resolve()
+    shards = check_ridx_index(repo_dir)
+    payload = json.loads(args.positions.read_text(encoding="utf-8"))
+    positions = payload["positions"]
+    methods = [m.strip() for m in args.methods.split(",") if m.strip()]
+    unknown = [m for m in methods if m not in REQUEST_KEYS]
+    if unknown:
+        ap.error(f"unknown matrix request methods: {unknown}")
+
+    entries = load_target_entries(repo_dir)
+    cache = {}
+
+    def read_lines(rel):
+        if rel not in cache:
+            try:
+                cache[rel] = (repo_dir / rel).read_text(encoding="utf-8", errors="replace").split("\n")
+            except OSError:
+                cache[rel] = []
+        return cache[rel]
+
+    rows = build_rows(positions, methods, args.limit, repo_dir, entries, read_lines)
+    canary = [scenario_from_record("definition", rec, repo_dir) for rec in (positions.get("definition") or [])[:3]]
+    repo_head = subprocess.run(["git", "-C", str(repo_dir), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    started = datetime.now(timezone.utc).isoformat()
+    runs = []
+    for name, cmd, is_ra, binary in (ridx_srv, ra_srv):
+        print(f"{repo_dir.name}: {'rust-analyzer' if is_ra else 'ridx'} {name} ({binary}), {len(rows)} requests ...", flush=True)
+        ready, seconds = ask_server(name, cmd, is_ra, rows, repo_dir, args.timeout, canary)
+        runs.append({
+            "name": name, "kind": "rust-analyzer" if is_ra else "ridx", "binary": binary_label(binary),
+            **parse_version(version_of(binary)), "ready": ready, "duration_s": seconds,
+        })
+
+    summary = evaluate_all_rows(rows, ridx_srv[0], ra_srv[0], repo_dir, read_lines)
+    for key, m in summary["methods"].items():
+        print(
+            f"  {key:20s} exact={m['exact_match']:3d} core={m['core_match']:3d} "
+            f"partial={m['partial']:3d} ridx_only={m['ridx_only']:2d} "
+            f"empty={m['both_empty']:3d} mismatch={m['mismatch']:3d} "
+            f"parity_on_ra={m['matched_on_ra_non_empty_pct']:5.1f}% classes={m['classes']}",
+            flush=True,
+        )
+
+    report = {
+        "schema": "position_ab_parity/1",
+        "repo": normalize_repo_identifier(repo_dir),
+        "repo_dir_name": repo_dir.name,
+        "repo_head": repo_head,
+        "node": socket.gethostname(),
+        "python": sys.version.split()[0],
+        "index_shards": shards,
+        "positions_file": args.positions.name,
+        "positions_seed": payload.get("seed"),
+        "methods": methods,
+        "limit": args.limit,
+        "timeout_s": args.timeout,
+        "timestamp_start": started,
+        "timestamp_end": datetime.now(timezone.utc).isoformat(),
+        "servers": runs,
+        "summary": summary,
+        "rows": rows,
+    }
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    full_text = json.dumps(report, indent=1) + "\n"
+    args.out.write_text(full_text, encoding="utf-8")
+    print(f"wrote {args.out} (unclassified={summary['unclassified']})")
+    if args.out_differing:
+        full_sha = hashlib.sha256(full_text.encode("utf-8")).hexdigest()
+        diff_rows = [r for r in rows if r["parity"] not in ("exact_match", "core_match", "both_empty")]
+        diff_rep = {k: v for k, v in report.items() if k != "rows"}
+        diff_rep.update({
+            "rows": diff_rows, "rows_total": len(rows), "rows_kept": len(diff_rows),
+            "full_file": {"name": args.out.name, "sha256": full_sha},
+        })
+        args.out_differing.parent.mkdir(parents=True, exist_ok=True)
+        args.out_differing.write_text(json.dumps(diff_rep, indent=1) + "\n", encoding="utf-8")
+        print(f"wrote {args.out_differing} ({len(diff_rows)} differing rows)")
+    return 1 if summary["unclassified"] else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
