@@ -24,8 +24,7 @@ impl WorkspaceIndex {
     ) -> Option<std::borrow::Cow<'a, str>> {
         let reader = self.readers.get(reader_idx)?;
         let p = Path::new(file);
-        let anchor = self.reader_root(reader_idx);
-        let root_opt = anchor.as_deref();
+        let root_opt = self.reader_root(reader_idx);
         let stored = |s: &str| reader.find_file_id(s).is_some();
         let owned = |s: &str| Some(std::borrow::Cow::Owned(s.to_string()));
 

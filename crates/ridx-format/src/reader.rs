@@ -22,6 +22,7 @@ mod definition_at;
 mod file_lookup;
 mod name_reference;
 mod queries;
+pub(crate) use self::definition_at::is_synthetic_def_name;
 pub(crate) use self::name_reference::span_strictly_inside;
 mod search;
 

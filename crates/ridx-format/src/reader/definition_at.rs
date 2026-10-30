@@ -16,6 +16,16 @@ use super::name_reference::span_strictly_inside;
 use super::{IndexReader, ResolvedDefinition};
 use crate::format::*;
 
+/// True when a definition's name is a synthetic compiler placeholder rather than a user-written
+/// source identifier (`""` crate root, `"{use#N}"`, `"{impl#N}"`, `"{closure#N}"`, or a numeric
+/// tuple-struct field `"0"`, `"1"`, ... whose span covers the field's type).
+pub(crate) fn is_synthetic_def_name(kind: DefKind, name: &str) -> bool {
+    kind == DefKind::Impl
+        || name.is_empty()
+        || name.starts_with('{')
+        || (kind == DefKind::Field && name.bytes().all(|b| b.is_ascii_digit()))
+}
+
 impl<B: AsRef<[u8]>> IndexReader<B> {
     /// Go to definition at a given cursor position `(file, line, col)`.
     ///
@@ -48,7 +58,7 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             // read only for a definition that contains the cursor.
             if def_span.contains(file_id, line, col)
                 && inner.is_none_or(|r| span_strictly_inside(&def_span, &r.span()))
-                && !self.get_str(def.name_offset()).is_empty()
+                && !is_synthetic_def_name(DefKind::from(def.kind), self.get_str(def.name_offset()))
             {
                 let size = def_span.approximate_size();
                 if best_def.is_none_or(|(_, best_size)| size < best_size) {

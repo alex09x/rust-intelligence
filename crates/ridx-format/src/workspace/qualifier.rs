@@ -36,7 +36,11 @@ impl WorkspaceIndex {
                 .signature
                 .and_then(|sig| self.find_definition_by_path(sig))
                 .or_else(|| {
-                    self.find_definition_at(resolved.file, resolved.start_line, resolved.start_col)
+                    self.find_indexed_definition_at(
+                        resolved.file,
+                        resolved.start_line,
+                        resolved.start_col,
+                    )
                 });
             if let Some(target) = target_opt {
                 if target.kind == DefKind::Use
@@ -73,13 +77,7 @@ impl WorkspaceIndex {
         None
     }
 
-    /// Resolves a qualifier path in the lexical and module scope of `file`:
-    /// 1. File scope: local `mod`, local items, and local `use` declarations in `file`.
-    /// 2. Crate scope: module path of the file and crate root.
-    /// 3. Prelude: standard library prelude 2021/2024 types and traits.
-    /// 4. Dependencies: external crate prelude / dependencies.
-    /// 5. Sysroot: standard library (`core`, `alloc`, `std`) if explicitly requested or unshadowed.
-    /// 6. Fallback: single unique workspace candidate.
+    /// Resolves a qualifier path in the lexical and module scope of `file`.
     pub fn resolve_qualifier<'a>(
         &'a self,
         file: &str,
@@ -119,6 +117,7 @@ impl WorkspaceIndex {
             return self.find_definition_by_path(&target);
         }
 
+        let explicit_self = qual.starts_with("self::");
         let qual_trimmed = if let Some(rest) = qual.strip_prefix("self::") {
             rest
         } else {
@@ -134,13 +133,20 @@ impl WorkspaceIndex {
         };
 
         let reader_indices = self.reader_indices_for_file(file);
-        let crate_idx = reader_indices.first().copied();
+        let crate_idx = self.reader_index_for_file(file).or_else(|| {
+            reader_indices.first().copied().or_else(|| {
+                self.candidate_reader_indices_for_file(file)
+                    .into_iter()
+                    .next()
+            })
+        });
         let mod_path_opt = self.module_path_for_file(file);
 
-        let is_sysroot = matches!(first_seg, "core" | "alloc" | "std");
-        let is_dep_crate = !is_sysroot && self.has_crate(first_seg);
+        let is_sysroot = !explicit_self && matches!(first_seg, "core" | "alloc" | "std");
+        let is_dep_crate = !explicit_self && !is_sysroot && self.has_crate(first_seg);
 
         // 1. File scope: check definitions and imports declared directly in `file` across matching readers
+        let mut seen_globs = std::collections::HashSet::new();
         for &idx in &reader_indices {
             let reader = &self.readers[idx];
             let Some(target_file) = self.target_file_for_reader(idx, file) else {
@@ -162,10 +168,13 @@ impl WorkspaceIndex {
                     }
                 }
 
-                // General file scan for local items / imports with matching name
-                for def in reader.definitions() {
-                    let span = def.span();
-                    if span.file_id == fid && reader.get_str(def.name_offset()) == first_seg {
+                let defs = reader.definitions();
+                let file_defs = self.unit_match.defs_in_file_up_to(idx, fid, u32::MAX);
+                for def in file_defs
+                    .iter()
+                    .filter_map(|&(_, _, di)| defs.get(di as usize))
+                {
+                    if reader.get_str(def.name_offset()) == first_seg {
                         if (is_sysroot || is_dep_crate) && DefKind::from(def.kind) == DefKind::Use {
                             continue;
                         }
@@ -176,12 +185,13 @@ impl WorkspaceIndex {
                 }
 
                 // Glob imports declared in `file`: `use X::*` (and `use super::*`)
-                // Probing `<X>::<first_seg>` via O(log N) path lookup
                 if !is_sysroot && !is_dep_crate {
                     let cname = reader.crate_name();
-                    for def in reader.definitions() {
-                        let span = def.span();
-                        if span.file_id == fid && DefKind::from(def.kind) == DefKind::Use {
+                    for def in file_defs
+                        .iter()
+                        .filter_map(|&(_, _, di)| defs.get(di as usize))
+                    {
+                        if DefKind::from(def.kind) == DefKind::Use {
                             let name = reader.get_str(def.name_offset());
                             let path = reader.get_str(def.path_offset());
                             let is_glob = name == "*"
@@ -194,8 +204,8 @@ impl WorkspaceIndex {
                                     sig.strip_suffix("::*").unwrap_or(sig).to_string()
                                 } else {
                                     let resolved = self.make_resolved_definition(idx, def);
-                                    if let Some(target) = self.find_definition_at(
-                                        resolved.file,
+                                    if let Some(target) = reader.find_definition_at(
+                                        target_file.as_ref(),
                                         resolved.start_line,
                                         resolved.start_col,
                                     ) {
@@ -236,7 +246,8 @@ impl WorkspaceIndex {
                                     raw_target
                                 };
 
-                                if !glob_target.is_empty() {
+                                if !glob_target.is_empty() && seen_globs.insert(glob_target.clone())
+                                {
                                     let probe = format!("{glob_target}::{first_seg}");
                                     if let Some(mut found) = self.find_definition_by_path(&probe) {
                                         if found.kind == DefKind::Use {
@@ -244,7 +255,7 @@ impl WorkspaceIndex {
                                                 .signature
                                                 .and_then(|sig| self.find_definition_by_path(sig))
                                                 .or_else(|| {
-                                                    self.find_definition_at(
+                                                    self.find_indexed_definition_at(
                                                         found.file,
                                                         found.start_line,
                                                         found.start_col,

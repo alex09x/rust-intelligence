@@ -11,7 +11,7 @@
 //! File-to-crate reader mapping and canonical module path resolution.
 
 use super::WorkspaceIndex;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 mod candidates;
 
@@ -19,30 +19,33 @@ impl WorkspaceIndex {
     /// Returns the index in `self.readers` for the crate that contains or owns the specified file path.
     pub fn reader_index_for_file(&self, file_path: &str) -> Option<usize> {
         let indices = self.reader_indices_for_file(file_path);
-        // 1. Prefer an explicit library target kind (Lib)
+        let has_file = |i: usize| {
+            self.target_file_for_reader(i, file_path)
+                .is_some_and(|tf| self.readers[i].find_file_id(tf.as_ref()).is_some())
+        };
+        let is_lib = |i: usize| {
+            self.target_kinds
+                .get(i)
+                .copied()
+                .flatten()
+                .is_some_and(|k| k.is_lib())
+                || self
+                    .unit_keys
+                    .get(i)
+                    .and_then(|u| u.as_deref())
+                    .is_some_and(|uk| uk.contains("(lib)"))
+        };
+        if let Some(i) = indices.iter().copied().find(|&i| is_lib(i) && has_file(i)) {
+            return Some(i);
+        }
+        if let Some(i) = indices.iter().copied().find(|&i| !is_lib(i) && has_file(i)) {
+            return Some(i);
+        }
         indices
             .iter()
             .copied()
-            .find(|&i| {
-                self.target_kinds
-                    .get(i)
-                    .copied()
-                    .flatten()
-                    .map(|k| k.is_lib())
-                    .unwrap_or(false)
-            })
-            // 2. Fallback to unit_key containing "(lib)"
-            .or_else(|| {
-                indices.iter().copied().find(|&i| {
-                    self.unit_keys
-                        .get(i)
-                        .and_then(|u| u.as_deref())
-                        .map(|uk| uk.contains("(lib)"))
-                        .unwrap_or(false)
-                })
-            })
-            // 3. Fallback to first matching reader index
-            .or_else(|| indices.into_iter().next())
+            .find(|&i| is_lib(i))
+            .or_else(|| indices.first().copied())
     }
 
     /// Returns the target kind for the reader at index `idx` if known.
@@ -54,16 +57,12 @@ impl WorkspaceIndex {
     /// else, for a shard opened without any workspace root (a lone `.ridx` file), the directory
     /// the shard lies in. Readers of a rooted workspace that record no source root (the sysroot
     /// shards) have none.
-    pub(crate) fn reader_root(&self, idx: usize) -> Option<PathBuf> {
+    pub(crate) fn reader_root(&self, idx: usize) -> Option<&Path> {
         if let Some(Some(root)) = self.source_roots.get(idx) {
-            return Some(root.clone());
+            return Some(root.as_path());
         }
         if self.workspace_root.is_none() {
-            return self
-                .paths
-                .get(idx)
-                .and_then(|p| p.parent())
-                .map(Path::to_path_buf);
+            return self.paths.get(idx).and_then(|p| p.parent());
         }
         None
     }
@@ -83,7 +82,6 @@ impl WorkspaceIndex {
         let mut matching_roots: Vec<(usize, usize, usize)> = Vec::new(); // (reader_idx, comps, len)
         for (i, _) in self.readers.iter().enumerate() {
             if let Some(root) = self.reader_root(i) {
-                let root = root.as_path();
                 if !root.as_os_str().is_empty() {
                     let matches = p.starts_with(root)
                         || abs_p
@@ -107,11 +105,39 @@ impl WorkspaceIndex {
             .max_by_key(|(_, comps, len)| (*comps, *len))
             .copied()
         {
-            return matching_roots
+            let top: Vec<usize> = matching_roots
                 .into_iter()
                 .filter(|(_, comps, len)| *comps == max_comps && *len == max_len)
                 .map(|(i, _, _)| i)
                 .collect();
+            if top.len() > 1 {
+                let ws_rel = self
+                    .workspace_root
+                    .as_deref()
+                    .and_then(|ws| p.strip_prefix(ws).ok())
+                    .and_then(|r| r.to_str());
+                let has_exact = |i: usize| {
+                    let r = &self.readers[i];
+                    r.find_file_id(file_path).is_some()
+                        || ws_rel.is_some_and(|rel| r.find_file_id(rel).is_some())
+                };
+                if top.iter().copied().any(has_exact) {
+                    return top
+                        .into_iter()
+                        .filter(|&i| {
+                            has_exact(i)
+                                || self.readers[i].files_count() == 0
+                                || self
+                                    .target_kinds
+                                    .get(i)
+                                    .copied()
+                                    .flatten()
+                                    .is_some_and(|k| k.is_lib())
+                        })
+                        .collect();
+                }
+            }
+            return top;
         }
 
         let abs_str = abs_p.as_deref().and_then(|ap| ap.to_str());
@@ -220,16 +246,17 @@ impl WorkspaceIndex {
             .target_file_for_reader(idx, file_path)
             .and_then(|target| reader.find_file_id(target.as_ref()))
         {
-            for def in reader.definitions() {
-                let span = def.span();
-                if span.file_id == fid {
-                    let path = reader.get_str(def.path_offset());
-                    let name = reader.get_str(def.name_offset());
-                    let suffix = format!("::{name}");
-                    if let Some(parent) = path.strip_suffix(&suffix) {
-                        if parent == cname || parent.starts_with(&format!("{cname}::")) {
-                            return Some(parent.to_string());
-                        }
+            let defs = reader.definitions();
+            for &(_, _, def_idx) in self.unit_match.defs_in_file_up_to(idx, fid, u32::MAX) {
+                let Some(def) = defs.get(def_idx as usize) else {
+                    continue;
+                };
+                let path = reader.get_str(def.path_offset());
+                let name = reader.get_str(def.name_offset());
+                let suffix = format!("::{name}");
+                if let Some(parent) = path.strip_suffix(&suffix) {
+                    if parent == cname || parent.starts_with(&format!("{cname}::")) {
+                        return Some(parent.to_string());
                     }
                 }
             }
@@ -267,5 +294,44 @@ impl WorkspaceIndex {
             segs.push(file_stem);
         }
         Some(segs.join("::"))
+    }
+
+    pub(crate) fn enclosing_inline_mod_path(
+        &self,
+        file: &str,
+        line: u32,
+        col: u32,
+    ) -> Option<&str> {
+        for i in self.reader_indices_for_file(file) {
+            let reader = &self.readers[i];
+            let Some(tf) = self.target_file_for_reader(i, file) else {
+                continue;
+            };
+            let Some(fid) = reader.find_file_id(tf.as_ref()) else {
+                continue;
+            };
+            let defs = reader.definitions();
+            let mut best: Option<(&str, u64)> = None;
+            for &(_, _, di) in self.unit_match.defs_in_file_up_to(i, fid, line) {
+                let Some(def) = defs.get(di as usize) else {
+                    continue;
+                };
+                if crate::format::DefKind::from(def.kind) != crate::format::DefKind::Mod {
+                    continue;
+                }
+                let span = def.span();
+                let path = reader.get_str(def.path_offset());
+                if !path.is_empty() && span.contains(fid, line, col) {
+                    let sz = span.approximate_size();
+                    if best.is_none_or(|(_, bsz)| sz < bsz) {
+                        best = Some((path, sz));
+                    }
+                }
+            }
+            if let Some((p, _)) = best {
+                return Some(p);
+            }
+        }
+        None
     }
 }

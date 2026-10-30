@@ -22,20 +22,34 @@ impl WorkspaceIndex {
 
     /// Inferred expression type at cursor location.
     pub fn type_at(&self, file: &str, line: u32, col: u32) -> Option<&str> {
-        for i in self.candidate_reader_indices_for_file(file) {
-            let reader = &self.readers[i];
-            let Some(target_file) = self.target_file_for_reader(i, file) else {
-                continue;
-            };
-            if let Some(ty) = reader.type_at(target_file.as_ref(), line, col) {
-                return Some(ty);
-            }
-        }
-        None
+        self.type_entry_at(file, line, col).map(|(ty, _)| ty)
     }
 
     /// Inferred expression type and optional canonical owner path at cursor location.
     pub fn type_entry_at(&self, file: &str, line: u32, col: u32) -> Option<(&str, Option<&str>)> {
+        let mut direct: Vec<(usize, std::borrow::Cow<'_, str>)> = self
+            .reader_indices_for_file(file)
+            .into_iter()
+            .filter_map(|i| self.target_file_for_reader(i, file).map(|tf| (i, tf)))
+            .collect();
+        if !direct.is_empty() {
+            direct.sort_by_key(|&(idx, _)| {
+                usize::from(
+                    !self
+                        .target_kinds
+                        .get(idx)
+                        .copied()
+                        .flatten()
+                        .is_some_and(|k| k.is_lib()),
+                )
+            });
+            for (i, tf) in direct {
+                if let Some(res) = self.readers[i].type_entry_at(tf.as_ref(), line, col) {
+                    return Some(res);
+                }
+            }
+            return None;
+        }
         for i in self.candidate_reader_indices_for_file(file) {
             let reader = &self.readers[i];
             let Some(target_file) = self.target_file_for_reader(i, file) else {
@@ -149,5 +163,230 @@ impl WorkspaceIndex {
         }
 
         chain
+    }
+
+    pub(crate) fn find_variant_ref_definition<'a>(
+        &'a self,
+        path: &str,
+        depth: u8,
+    ) -> Option<ResolvedDefinition<'a>> {
+        let last = path.rsplit("::").next().unwrap_or(path);
+        if !last
+            .as_bytes()
+            .first()
+            .is_some_and(|b| b.is_ascii_uppercase())
+        {
+            return None;
+        }
+        for candidate in super::std_map::std_path_candidates(path) {
+            let cand = candidate.as_str();
+            let Some((first_seg, _)) = cand.split_once("::") else {
+                continue;
+            };
+            let has_first_crate = self.has_crate(first_seg);
+            for pass in 0..2 {
+                if pass == 1 && (depth > 0 || has_first_crate) {
+                    break;
+                }
+                for (i, reader) in self.readers.iter().enumerate() {
+                    if (reader.crate_name() == first_seg) != (pass == 0) {
+                        continue;
+                    }
+                    let sub = super::strip_crate_prefix(cand, first_seg).unwrap_or(cand);
+                    for q in [Some(cand), (sub != cand).then_some(sub)]
+                        .into_iter()
+                        .flatten()
+                    {
+                        for r in reader.find_references(q) {
+                            if matches!(
+                                DefKind::from(r.kind),
+                                DefKind::Variant | DefKind::VariantCtor
+                            ) && r.target_line() > 0
+                            {
+                                return Some(self.finalize_reader_resolution(
+                                    i,
+                                    reader.resolve_ref_definition(r),
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub(crate) fn resolve_path_via_use_prefix<'a>(
+        &'a self,
+        path: &str,
+        depth: u8,
+    ) -> Option<ResolvedDefinition<'a>> {
+        if depth >= 2 {
+            return None;
+        }
+        let mut seen_q = std::collections::HashSet::new();
+        for candidate in super::std_map::std_path_candidates(path) {
+            let cand = candidate.as_str();
+            let Some((first_seg, sub)) = cand.split_once("::") else {
+                continue;
+            };
+            for (i, reader) in self.readers.iter().enumerate() {
+                if reader.crate_name() != first_seg {
+                    continue;
+                }
+                if !sub.contains("::") {
+                    for def in reader.definitions() {
+                        if DefKind::from(def.kind) == DefKind::Macro
+                            && reader.get_str(def.name_offset()) == sub
+                        {
+                            return Some(self.make_resolved_definition(i, def));
+                        }
+                    }
+                }
+                for (idx, _) in sub.match_indices("::") {
+                    let (sub_prefix, sub_rest) = (&sub[..idx], &sub[idx + 2..]);
+                    for sfx in ["", "::*", "::{use#0}::*", "::{use#1}::*", "::{use#2}::*"] {
+                        let key = format!("{sub_prefix}{sfx}");
+                        let Some(def) = reader.find_definition_by_path(&key) else {
+                            continue;
+                        };
+                        if DefKind::from(def.kind) != DefKind::Use || def.sig_offset() == 0 {
+                            continue;
+                        }
+                        let raw_sig = reader.get_str(def.sig_offset()).trim_end_matches("::*");
+                        if raw_sig.is_empty() {
+                            continue;
+                        }
+                        let expanded = match raw_sig.strip_prefix("self::") {
+                            Some(r) => format!("{first_seg}::{sub_prefix}::{r}"),
+                            None => raw_sig.to_string(),
+                        };
+                        let q = format!("{expanded}::{sub_rest}");
+                        if seen_q.insert(q.clone()) {
+                            if let Some(found) = self.find_definition_by_path_depth(&q, depth + 1) {
+                                return Some(found);
+                            }
+                        }
+                    }
+                }
+                for glob_key in [
+                    "*",
+                    "{{glob}}",
+                    "{use#0}",
+                    "{use#0}::*",
+                    "{use#1}::*",
+                    "{use#2}::*",
+                ] {
+                    let Some(def) = reader.find_definition_by_path(glob_key) else {
+                        continue;
+                    };
+                    if DefKind::from(def.kind) != DefKind::Use || def.sig_offset() == 0 {
+                        continue;
+                    }
+                    let sig = reader.get_str(def.sig_offset()).trim_end_matches("::*");
+                    if sig.is_empty() || sig == first_seg {
+                        continue;
+                    }
+                    let rel = sig.strip_prefix("self::").unwrap_or(sig);
+                    let rel_first = rel.split("::").next().unwrap_or(rel);
+                    let q = if !sig.starts_with("self::") && self.has_crate(rel_first) {
+                        format!("{rel}::{sub}")
+                    } else {
+                        format!("{first_seg}::{rel}::{sub}")
+                    };
+                    if seen_q.insert(q.clone()) {
+                        if let Some(found) = self.find_definition_by_path_depth(&q, depth + 1) {
+                            return Some(found);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub(crate) fn finalize_reader_resolution<'a>(
+        &'a self,
+        i: usize,
+        mut res: ResolvedDefinition<'a>,
+    ) -> ResolvedDefinition<'a> {
+        let reader = &self.readers[i];
+        if res.kind == DefKind::Use {
+            if let Some(sig) = res
+                .signature
+                .map(|s| s.trim_end_matches("::*"))
+                .filter(|s| !s.is_empty())
+            {
+                let rel = sig.strip_prefix("self::").unwrap_or(sig);
+                let owner_cand = res
+                    .path
+                    .rsplit_once("::")
+                    .map(|(m, _)| format!("{m}::{rel}"));
+                if let Some(t) = owner_cand
+                    .as_deref()
+                    .and_then(|q| self.find_definition_by_path(q))
+                    .or_else(|| {
+                        self.find_definition_by_path(&format!("{}::{rel}", reader.crate_name()))
+                    })
+                    .or_else(|| self.find_definition_by_path(sig))
+                {
+                    if t.kind != DefKind::Use && t.kind != DefKind::Local {
+                        return t;
+                    }
+                }
+            }
+        }
+        let crate_prefix = format!("{}::", reader.crate_name());
+        let current_uk = self
+            .unit_keys
+            .get(i)
+            .and_then(|u| u.as_deref())
+            .unwrap_or_else(|| reader.unit_key());
+        let is_explicit_remote = res.unit_key.is_some() && res.unit_key != Some(current_uk);
+        let is_local = !is_explicit_remote
+            && (res.path.starts_with(&crate_prefix) || res.path == reader.crate_name());
+        if is_local && res.file != "external" {
+            res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
+                self.source_roots.get(i).and_then(|r| r.as_deref())
+            } else {
+                self.source_roots
+                    .get(i)
+                    .and_then(|r| r.as_deref())
+                    .or(self.workspace_root.as_deref())
+            };
+            res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+            res.reader_idx = Some(i);
+            return res;
+        }
+        if let Some(cross_def) = self.find_cross_definition(i, &res) {
+            return cross_def;
+        }
+        if res.unit_key.is_none() {
+            res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
+        }
+        let owner = res
+            .unit_key
+            .filter(|uk| Some(*uk) != self.unit_keys.get(i).and_then(|u| u.as_deref()))
+            .and_then(|uk| self.unit_keys.iter().position(|u| u.as_deref() == Some(uk)))
+            .unwrap_or(i);
+        if res.source_root.is_none() {
+            res.source_root = if self
+                .reader_is_dependency
+                .get(owner)
+                .copied()
+                .unwrap_or(false)
+            {
+                self.source_roots.get(owner).and_then(|r| r.as_deref())
+            } else {
+                self.source_roots
+                    .get(owner)
+                    .and_then(|r| r.as_deref())
+                    .or(self.workspace_root.as_deref())
+            };
+        }
+        if res.reader_idx.is_none() {
+            res.reader_idx = Some(owner);
+        }
+        res
     }
 }

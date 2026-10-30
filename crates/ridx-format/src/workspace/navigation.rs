@@ -26,6 +26,11 @@ use crate::format::{DefEntry, DefKind};
 use crate::reader::{IndexReader, ResolvedDefinition};
 use std::path::{Path, PathBuf};
 
+#[inline]
+pub(crate) fn strip_crate_prefix<'a>(s: &'a str, crate_name: &str) -> Option<&'a str> {
+    s.strip_prefix(crate_name)?.strip_prefix("::")
+}
+
 impl WorkspaceIndex {
     pub(crate) fn make_resolved_definition<'a>(
         &'a self,
@@ -70,19 +75,46 @@ impl WorkspaceIndex {
 
     /// Finds a definition by full or relative canonical path across the workspace.
     pub fn find_definition_by_path<'a>(&'a self, path: &str) -> Option<ResolvedDefinition<'a>> {
+        self.find_definition_by_path_depth(path, 0)
+    }
+
+    pub(crate) fn find_definition_by_path_depth<'a>(
+        &'a self,
+        path: &str,
+        depth: u8,
+    ) -> Option<ResolvedDefinition<'a>> {
+        if depth > 4 {
+            return None;
+        }
         let resolve_def = |res: ResolvedDefinition<'a>| -> ResolvedDefinition<'a> {
-            if res.kind == DefKind::Use {
+            if res.kind == DefKind::Use && depth < 4 {
                 if let Some(sig) = res.signature {
-                    if let Some(target) = self.find_definition_by_path(sig) {
-                        if target.kind != DefKind::Use && target.kind != DefKind::Local {
-                            return target;
+                    let sig_clean = sig.trim_end_matches("::*");
+                    let rel_sig = sig_clean.strip_prefix("self::").unwrap_or(sig_clean);
+                    if let Some((owner_mod, _)) = res.path.rsplit_once("::") {
+                        if let Some(target) = self.find_definition_by_path_depth(
+                            &format!("{owner_mod}::{rel_sig}"),
+                            depth + 1,
+                        ) {
+                            if target.kind != DefKind::Use && target.kind != DefKind::Local {
+                                return target;
+                            }
                         }
                     }
-                }
-                if res.start_line > 1 || res.start_col > 1 {
-                    if let Some(target) =
-                        self.find_definition_at(res.file, res.start_line, res.start_col)
-                    {
+                    if let Some(r_idx) = res.reader_idx {
+                        let cname = self.readers[r_idx].crate_name();
+                        if !rel_sig.starts_with(&format!("{cname}::")) {
+                            if let Some(target) = self.find_definition_by_path_depth(
+                                &format!("{cname}::{rel_sig}"),
+                                depth + 1,
+                            ) {
+                                if target.kind != DefKind::Use && target.kind != DefKind::Local {
+                                    return target;
+                                }
+                            }
+                        }
+                    }
+                    if let Some(target) = self.find_definition_by_path_depth(sig_clean, depth + 1) {
                         if target.kind != DefKind::Use && target.kind != DefKind::Local {
                             return target;
                         }
@@ -94,30 +126,48 @@ impl WorkspaceIndex {
 
         for candidate in super::std_map::std_path_candidates(path) {
             let candidate_str = candidate.as_str();
+            let first_seg = candidate_str.split("::").next().unwrap_or(candidate_str);
+            let has_first_crate = candidate_str.contains("::") && self.has_crate(first_seg);
 
             // Fast path: if path starts with `<crate_name>::` or equals `<crate_name>`, check that crate first
             for (i, reader) in self.readers.iter().enumerate() {
-                let prefix = format!("{}::", reader.crate_name());
-                if candidate_str.starts_with(&prefix) || candidate_str == reader.crate_name() {
-                    let sub = candidate_str.strip_prefix(&prefix).unwrap_or(candidate_str);
-                    if let Some(def) = reader
-                        .find_definition_by_path(candidate_str)
-                        .or_else(|| reader.find_definition_by_path(sub))
-                    {
-                        return Some(resolve_def(self.make_resolved_definition(i, def)));
+                if reader.crate_name() != first_seg {
+                    continue;
+                }
+                let sub = strip_crate_prefix(candidate_str, first_seg).unwrap_or(candidate_str);
+                if let Some(def) = reader.find_definition_by_path(candidate_str).or_else(|| {
+                    (sub != candidate_str)
+                        .then(|| reader.find_definition_by_path(sub))
+                        .flatten()
+                }) {
+                    return Some(resolve_def(self.make_resolved_definition(i, def)));
+                }
+                if candidate_str == first_seg
+                    && self
+                        .target_kinds
+                        .get(i)
+                        .copied()
+                        .flatten()
+                        .is_none_or(|k| k.is_lib())
+                {
+                    if let Some(root_def) = reader.find_definition_by_path("") {
+                        let mut resolved = self.make_resolved_definition(i, root_def);
+                        resolved.name = reader.crate_name();
+                        resolved.path = reader.crate_name();
+                        return Some(resolved);
                     }
                 }
             }
 
-            // General search across all crates
-            for (i, reader) in self.readers.iter().enumerate() {
-                let prefix = format!("{}::", reader.crate_name());
-                let sub = candidate_str.strip_prefix(&prefix).unwrap_or(candidate_str);
-                if let Some(def) = reader
-                    .find_definition_by_path(candidate_str)
-                    .or_else(|| reader.find_definition_by_path(sub))
-                {
-                    return Some(resolve_def(self.make_resolved_definition(i, def)));
+            // General search across remaining crates
+            if depth == 0 || !has_first_crate {
+                for (i, reader) in self.readers.iter().enumerate() {
+                    if reader.crate_name() == first_seg {
+                        continue;
+                    }
+                    if let Some(def) = reader.find_definition_by_path(candidate_str) {
+                        return Some(resolve_def(self.make_resolved_definition(i, def)));
+                    }
                 }
             }
         }
@@ -126,16 +176,31 @@ impl WorkspaceIndex {
         for candidate in super::std_map::std_path_candidates(path) {
             let candidate_str = candidate.as_str();
             if let Some((owner, item_name)) = candidate_str.rsplit_once("::") {
+                let first_seg = owner.split("::").next().unwrap_or(owner);
+                let has_first_crate = self.has_crate(first_seg);
                 for (i, reader) in self.readers.iter().enumerate() {
-                    let prefix = format!("{}::", reader.crate_name());
-                    let sub_owner = owner.strip_prefix(&prefix).unwrap_or(owner);
+                    if reader.crate_name() != first_seg {
+                        continue;
+                    }
                     for def in reader.find_definitions_by_owner(owner) {
                         if reader.get_str(def.name_offset()) == item_name {
                             return Some(resolve_def(self.make_resolved_definition(i, def)));
                         }
                     }
-                    if sub_owner != owner {
+                    if let Some(sub_owner) = strip_crate_prefix(owner, first_seg) {
                         for def in reader.find_definitions_by_owner(sub_owner) {
+                            if reader.get_str(def.name_offset()) == item_name {
+                                return Some(resolve_def(self.make_resolved_definition(i, def)));
+                            }
+                        }
+                    }
+                }
+                if depth == 0 || !has_first_crate {
+                    for (i, reader) in self.readers.iter().enumerate() {
+                        if reader.crate_name() == first_seg {
+                            continue;
+                        }
+                        for def in reader.find_definitions_by_owner(owner) {
                             if reader.get_str(def.name_offset()) == item_name {
                                 return Some(resolve_def(self.make_resolved_definition(i, def)));
                             }
@@ -145,7 +210,11 @@ impl WorkspaceIndex {
             }
         }
 
-        None
+        if let Some(var_def) = self.find_variant_ref_definition(path, depth) {
+            return Some(var_def);
+        }
+
+        self.resolve_path_via_use_prefix(path, depth)
     }
 
     /// Returns the source root path for a loaded crate, if it is an external dependency.
@@ -163,6 +232,11 @@ impl WorkspaceIndex {
     /// Returns the crate name that contains or owns the specified file path, if known.
     pub fn crate_name_for_file(&self, file_path: &str) -> Option<&str> {
         self.reader_index_for_file(file_path)
+            .or_else(|| {
+                self.candidate_reader_indices_for_file(file_path)
+                    .into_iter()
+                    .next()
+            })
             .and_then(|i| self.readers.get(i).map(|r| r.crate_name()))
     }
 
@@ -184,92 +258,6 @@ impl WorkspaceIndex {
             return crate::format::join_resolving_overlap(root_dir, p);
         }
         p.to_path_buf()
-    }
-
-    /// Finds a definition at a cursor location, seamlessly resolving cross-crate references.
-    pub fn find_definition_at<'a>(
-        &'a self,
-        file: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<ResolvedDefinition<'a>> {
-        let mut fallback_mod = None;
-        for i in self.candidate_reader_indices_for_file(file) {
-            let reader = &self.readers[i];
-            let Some(target_file) = self.target_file_for_reader(i, file) else {
-                continue;
-            };
-
-            if let Some(mut res) = reader.find_definition_at(target_file.as_ref(), line, col) {
-                if res.kind == DefKind::Mod && (res.start_line != line || col < res.start_col) {
-                    if fallback_mod.is_none() {
-                        fallback_mod = Some(res);
-                    }
-                    continue;
-                }
-
-                let crate_prefix = format!("{}::", reader.crate_name());
-                let current_uk = self
-                    .unit_keys
-                    .get(i)
-                    .and_then(|u| u.as_deref())
-                    .unwrap_or_else(|| reader.unit_key());
-                let is_explicit_remote = res.unit_key.is_some() && res.unit_key != Some(current_uk);
-                let is_local = !is_explicit_remote
-                    && (res.path.starts_with(&crate_prefix) || res.path == reader.crate_name());
-                if is_local && res.file != "external" {
-                    res.source_root = if self.reader_is_dependency.get(i).copied().unwrap_or(false)
-                    {
-                        self.source_roots.get(i).and_then(|r| r.as_deref())
-                    } else {
-                        self.source_roots
-                            .get(i)
-                            .and_then(|r| r.as_deref())
-                            .or(self.workspace_root.as_deref())
-                    };
-                    res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
-                    res.reader_idx = Some(i);
-                    return Some(res);
-                }
-                // If it resolves to a cross-crate target, attempt resolution in
-                // workspace peer crates / dependencies to retrieve the true indexed definition and signature
-                if let Some(cross_def) = self.find_cross_definition(i, &res) {
-                    return Some(cross_def);
-                }
-                if res.unit_key.is_none() {
-                    res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
-                }
-                // A target in another unit that no definition of the index stands for (an enum
-                // variant) keeps the path, file and line of the reference; its file is relative
-                // to the root of that unit, not of the referrer.
-                let owner = res
-                    .unit_key
-                    .filter(|uk| Some(*uk) != self.unit_keys.get(i).and_then(|u| u.as_deref()))
-                    .and_then(|uk| self.unit_keys.iter().position(|u| u.as_deref() == Some(uk)))
-                    .unwrap_or(i);
-                if res.source_root.is_none() {
-                    res.source_root = if self
-                        .reader_is_dependency
-                        .get(owner)
-                        .copied()
-                        .unwrap_or(false)
-                    {
-                        self.source_roots.get(owner).and_then(|r| r.as_deref())
-                    } else {
-                        self.source_roots
-                            .get(owner)
-                            .and_then(|r| r.as_deref())
-                            .or(self.workspace_root.as_deref())
-                    };
-                }
-                if res.reader_idx.is_none() {
-                    res.reader_idx = Some(owner);
-                }
-                return Some(res);
-            }
-        }
-
-        fallback_mod
     }
 
     /// Finds a generic type parameter (`DefKind::TyParam`) in scope at `(file, line, col)`.
