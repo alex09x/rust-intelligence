@@ -20,6 +20,7 @@ pub mod handlers;
 pub mod hierarchy;
 pub mod intelligence;
 pub mod lifecycle;
+pub mod logger;
 pub mod navigation;
 pub mod params;
 pub mod presentation;

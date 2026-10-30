@@ -31,18 +31,18 @@ use clap::Parser;
 
 pub fn run() {
     let cli = Cli::parse();
-    if let Some(ref log_file) = cli.log_file {
-        if let Some(parent) = log_file.parent().filter(|p| !p.as_os_str().is_empty()) {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        let _ = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(log_file);
+    if cli.log_file.is_some() || cli.verbose > 0 || cli.quiet {
+        crate::lsp::logger::init_lsp_logger(
+            cli.log_file.clone(),
+            cli.no_log_buffering,
+            cli.verbose,
+            cli.quiet,
+        );
     }
     if cli.print_config_schema {
         println!("{{}}");
         return;
     }
     run_cli(cli.into_command());
+    crate::lsp::logger::flush_logger();
 }

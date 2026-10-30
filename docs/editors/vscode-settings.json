@@ -1,6 +1,3 @@
 {
-  "rust-analyzer.server.path": "ridx",
-  "rust-analyzer.server.extraEnv": {
-    "RIDX_AUTO_RELOAD": "1"
-  }
+  "rust-analyzer.server.path": "ridx"
 }
