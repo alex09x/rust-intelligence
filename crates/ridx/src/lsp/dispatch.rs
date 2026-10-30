@@ -83,6 +83,10 @@ pub fn dispatch_lsp_message<W: Write>(
                         mr.clear();
                     }
                     mr.open_from_folders(&folders);
+                } else if index_path.is_none() && mr.is_empty() {
+                    if let Ok(cur) = std::env::current_dir() {
+                        mr.add_root(cur);
+                    }
                 }
                 let shard_count: usize = mr.all_workspaces_mut().map(|ws| ws.readers().len()).sum();
                 super::logger::log_info(&format!("initialized LSP workspace (roots={}, shards={shard_count})", folders.len()));

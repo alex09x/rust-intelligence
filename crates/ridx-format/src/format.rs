@@ -166,12 +166,22 @@ pub fn merge_embedded_hashes_authoritative(
     });
 
     // 2. Authoritatively insert embedded relative paths and their absolute aliases under source_root
+    let canon_root = source_root.and_then(|r| r.canonicalize().ok());
     for (rel_path, &h) in embedded {
         file_hashes.insert(rel_path.clone(), h);
         if let Some(root) = source_root {
             let abs = root.join(rel_path);
             file_hashes.insert(abs.to_string_lossy().to_string(), h);
-            if let Ok(canon) = abs.canonicalize() {
+            if !rel_path.contains("..") {
+                if let Some(ref cr) = canon_root {
+                    let canon = cr.join(rel_path);
+                    if canon != abs {
+                        file_hashes.insert(canon.to_string_lossy().to_string(), h);
+                    }
+                } else if let Ok(canon) = abs.canonicalize() {
+                    file_hashes.insert(canon.to_string_lossy().to_string(), h);
+                }
+            } else if let Ok(canon) = abs.canonicalize() {
                 file_hashes.insert(canon.to_string_lossy().to_string(), h);
             }
         }

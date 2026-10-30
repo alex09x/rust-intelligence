@@ -130,14 +130,22 @@ impl WorkspaceIndex {
                                     // Load dependency shards for new variant if any
                                     let cache_dir = crate::format::resolve_cache_dir();
                                     let mut cache_resolver = CacheObjectResolver::new(cache_dir);
+                                    let mut canon_path_to_idx: HashMap<PathBuf, usize> = HashMap::with_capacity(new_paths.len() + manifest.dependency_shards.len());
+                                    for (i, existing) in new_paths.iter().enumerate() {
+                                        let canon = fs::canonicalize(existing).unwrap_or_else(|_| existing.clone());
+                                        canon_path_to_idx.entry(canon).or_insert(i);
+                                    }
+                                    let mut unit_key_to_idx: HashMap<String, usize> = HashMap::with_capacity(new_unit_keys.len() + manifest.dependency_shards.len());
+                                    for (i, uk_opt) in new_unit_keys.iter().enumerate() {
+                                        if let Some(ref uk) = uk_opt {
+                                            unit_key_to_idx.entry(uk.clone()).or_insert(i);
+                                        }
+                                    }
                                     for dep in &manifest.dependency_shards {
                                         let cand = cache_resolver.resolve(dep);
                                         if let Some(dep_file) = cand {
                                             let canon_cand = fs::canonicalize(&dep_file).unwrap_or_else(|_| dep_file.clone());
-                                            let existing_pos = new_paths
-                                                .iter()
-                                                .position(|existing| fs::canonicalize(existing).unwrap_or_else(|_| existing.clone()) == canon_cand)
-                                                .or_else(|| new_unit_keys.iter().position(|existing_uk| existing_uk.as_deref() == Some(&dep.unit_key)));
+                                            let existing_pos = canon_path_to_idx.get(&canon_cand).copied().or_else(|| unit_key_to_idx.get(&dep.unit_key).copied());
                                             if let Some(idx) = existing_pos {
                                                 new_reader_is_dependency[idx] = true;
                                                 if new_source_roots[idx].is_none() {
@@ -212,6 +220,9 @@ impl WorkspaceIndex {
                                                 } else {
                                                     None
                                                 };
+                                                let new_idx = new_paths.len();
+                                                canon_path_to_idx.entry(canon_cand).or_insert(new_idx);
+                                                unit_key_to_idx.entry(dep.unit_key.clone()).or_insert(new_idx);
                                                 new_readers.push(r);
                                                 new_paths.push(dep_file);
                                                 new_mtimes.push(mt);

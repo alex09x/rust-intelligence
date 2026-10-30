@@ -15,7 +15,33 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(super) type OpenManifestInfo = (PathBuf, Option<std::time::SystemTime>, String, Vec<DependencyShardInfo>, Option<PathBuf>, Option<String>);
+pub(super) struct OpenManifestInfo {
+    pub path: PathBuf,
+    pub mtime: Option<std::time::SystemTime>,
+    pub len: Option<u64>,
+    pub ino: Option<u64>,
+    pub hash: Option<u64>,
+    pub generation: Option<u64>,
+    pub active_variant_id: String,
+    pub dependency_shards: Vec<DependencyShardInfo>,
+    pub workspace_root: Option<PathBuf>,
+    pub sysroot_cas_key: Option<String>,
+}
+
+fn manifest_file_meta(path: &Path, content: &[u8]) -> (Option<std::time::SystemTime>, Option<u64>, Option<u64>, Option<u64>) {
+    let meta = fs::metadata(path).ok();
+    let mtime = meta.as_ref().and_then(|m| m.modified().ok());
+    let len = meta.as_ref().map(|m| m.len());
+    #[cfg(unix)]
+    let ino = meta.as_ref().map(|m| {
+        use std::os::unix::fs::MetadataExt;
+        m.ino()
+    });
+    #[cfg(not(unix))]
+    let ino: Option<u64> = None;
+    let hash = Some(crate::format::normalized_source_hash(content));
+    (mtime, len, ino, hash)
+}
 
 impl WorkspaceIndex {
     pub(super) fn resolve_open_manifest(search_dir: &Path) -> io::Result<(PathBuf, Option<OpenManifestInfo>)> {
@@ -25,7 +51,7 @@ impl WorkspaceIndex {
             let manifest = serde_json::from_slice::<VariantManifest>(&content)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse variant manifest {:?}: {e}", manifest_file)))?;
 
-            let mtime = fs::metadata(&manifest_file).and_then(|m| m.modified()).ok();
+            let (mtime, len, ino, hash) = manifest_file_meta(&manifest_file, &content);
             if !manifest.active_variant_id.is_empty() {
                 let expected_variant_dir = format!("variants/{}", manifest.active_variant_id);
                 let vdir_str = manifest.variant_dir.trim();
@@ -80,14 +106,18 @@ impl WorkspaceIndex {
 
                 (
                     vdir,
-                    Some((
-                        manifest_file,
+                    Some(OpenManifestInfo {
+                        path: manifest_file,
                         mtime,
-                        manifest.active_variant_id,
-                        manifest.dependency_shards,
-                        if !manifest.workspace_root.is_empty() { Some(PathBuf::from(manifest.workspace_root)) } else { None },
-                        manifest.sysroot_cas_key,
-                    )),
+                        len,
+                        ino,
+                        hash,
+                        generation: Some(manifest.generation),
+                        active_variant_id: manifest.active_variant_id,
+                        dependency_shards: manifest.dependency_shards,
+                        workspace_root: if !manifest.workspace_root.is_empty() { Some(PathBuf::from(manifest.workspace_root)) } else { None },
+                        sysroot_cas_key: manifest.sysroot_cas_key,
+                    }),
                 )
             } else {
                 // Legacy manifest without active_variant_id: scan search_dir directly
@@ -98,7 +128,7 @@ impl WorkspaceIndex {
             let content = fs::read(&v_manifest_file)?;
             let manifest = serde_json::from_slice::<VariantManifest>(&content)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse variant manifest {:?}: {e}", v_manifest_file)))?;
-            let mtime = fs::metadata(&v_manifest_file).and_then(|m| m.modified()).ok();
+            let (mtime, len, ino, hash) = manifest_file_meta(&v_manifest_file, &content);
             if manifest.format_version != crate::format::CURRENT_FORMAT_VERSION {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -124,14 +154,18 @@ impl WorkspaceIndex {
             }
             (
                 search_dir.to_path_buf(),
-                Some((
-                    v_manifest_file,
+                Some(OpenManifestInfo {
+                    path: v_manifest_file,
                     mtime,
-                    manifest.active_variant_id,
-                    manifest.dependency_shards,
-                    if !manifest.workspace_root.is_empty() { Some(PathBuf::from(manifest.workspace_root)) } else { None },
-                    manifest.sysroot_cas_key,
-                )),
+                    len,
+                    ino,
+                    hash,
+                    generation: Some(manifest.generation),
+                    active_variant_id: manifest.active_variant_id,
+                    dependency_shards: manifest.dependency_shards,
+                    workspace_root: if !manifest.workspace_root.is_empty() { Some(PathBuf::from(manifest.workspace_root)) } else { None },
+                    sysroot_cas_key: manifest.sysroot_cas_key,
+                }),
             )
         } else {
             (search_dir.to_path_buf(), None)

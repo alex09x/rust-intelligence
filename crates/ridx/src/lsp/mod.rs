@@ -73,10 +73,6 @@ pub fn run_lsp_server_stream<R: BufRead + Send + 'static, W: Write>(mut reader: 
     let mut multi_root = MultiRootWorkspace::new();
     if let Some(ref p) = index_path {
         multi_root.add_root(p.clone());
-    } else if let Ok(auto_ws) = WorkspaceIndex::auto_discover() {
-        let cur = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-        multi_root.add_root(cur);
-        let _ = auto_ws;
     }
 
     let mut overlay_mgr = crate::overlay::OverlayManager::new();
