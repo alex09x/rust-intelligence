@@ -228,13 +228,63 @@ impl WorkspaceIndex {
         self.readers.iter().any(|r| r.crate_name() == target_crate)
     }
 
-    /// Finds all references to the symbol at cursor location across the workspace.
+    /// Finds all direct references to the symbol at cursor location without expanding across
+    /// trait/impl containers.
+    pub fn find_direct_references_at<'a>(
+        &'a self,
+        file: &str,
+        line: u32,
+        col: u32,
+    ) -> Option<LocationReferences<'a>> {
+        let (def, refs) = self.resolve_direct_references_at(file, line, col)?;
+        Some(LocationReferences {
+            target_symbol: def.name,
+            target_kind: def.kind,
+            target_path: def.path,
+            target_file: def.file,
+            target_line: def.start_line,
+            target_col: def.start_col,
+            target_end_line: def.end_line,
+            target_end_col: def.end_col,
+            target_source_root: def.source_root,
+            target_unit_key: def.unit_key,
+            target_reader_idx: def.reader_idx,
+            references: refs,
+        })
+    }
+
+    /// Finds all references to the symbol at cursor location across the workspace, including
+    /// container-scoped trait/impl links for associated items.
     pub fn find_references_at<'a>(
         &'a self,
         file: &str,
         line: u32,
         col: u32,
     ) -> Option<LocationReferences<'a>> {
+        let (def, mut refs) = self.resolve_direct_references_at(file, line, col)?;
+        self.expand_trait_impl_references(&def, &mut refs);
+        Some(LocationReferences {
+            target_symbol: def.name,
+            target_kind: def.kind,
+            target_path: def.path,
+            target_file: def.file,
+            target_line: def.start_line,
+            target_col: def.start_col,
+            target_end_line: def.end_line,
+            target_end_col: def.end_col,
+            target_source_root: def.source_root,
+            target_unit_key: def.unit_key,
+            target_reader_idx: def.reader_idx,
+            references: refs,
+        })
+    }
+
+    fn resolve_direct_references_at<'a>(
+        &'a self,
+        file: &str,
+        line: u32,
+        col: u32,
+    ) -> Option<(ResolvedDefinition<'a>, Vec<WorkspaceReference<'a>>)> {
         let (exact, fallback_wide_ref, fallback_mod) =
             self.find_indexed_definition_candidates(file, line, col);
         let used_cursor_fallback = exact.is_none();
@@ -245,13 +295,19 @@ impl WorkspaceIndex {
                 .or(fallback_wide_ref)
                 .or(fallback_mod)?,
         };
-        let mut refs = self.find_references_for_unit(def.path, def.unit_key);
+        let explicit = Some((def.file, def.start_line, def.kind, def.name));
+        let mut refs = self.find_references_for_unit_with_target(def.path, def.unit_key, explicit);
         if refs.is_empty() && def.kind == DefKind::Local && def.name != def.path {
-            refs = self.find_references_for_unit(def.name, def.unit_key);
+            refs = self.find_references_for_unit_with_target(def.name, def.unit_key, explicit);
         }
         if refs.is_empty() && def.kind == DefKind::Macro && used_cursor_fallback {
             if let (_, Some(wide), _) = self.find_indexed_definition_candidates(file, line, col) {
-                refs = self.find_references_for_unit(wide.path, wide.unit_key);
+                let wide_explicit = Some((wide.file, wide.start_line, wide.kind, wide.name));
+                refs = self.find_references_for_unit_with_target(
+                    wide.path,
+                    wide.unit_key,
+                    wide_explicit,
+                );
             }
         }
         // Ensure the cursor position itself is included when resolved via path/assoc fallback
@@ -294,20 +350,7 @@ impl WorkspaceIndex {
                 }
             }
         }
-        Some(LocationReferences {
-            target_symbol: def.name,
-            target_kind: def.kind,
-            target_path: def.path,
-            target_file: def.file,
-            target_line: def.start_line,
-            target_col: def.start_col,
-            target_end_line: def.end_line,
-            target_end_col: def.end_col,
-            target_source_root: def.source_root,
-            target_unit_key: def.unit_key,
-            target_reader_idx: def.reader_idx,
-            references: refs,
-        })
+        Some((def, refs))
     }
 
     /// Complete hover information (definition + signature + inferred type) at cursor location.
@@ -327,6 +370,9 @@ impl WorkspaceIndex {
                     | DefKind::VariantCtor
                     | DefKind::Macro
                     | DefKind::Use
+                    | DefKind::TyParam
+                    | DefKind::ConstParam
+                    | DefKind::LifetimeParam
             )
         });
         let ty = if skip_type_at {

@@ -80,6 +80,7 @@ pub fn handle_references(
 
         if query_line > 0 {
             if let Some(loc_refs) = ws.find_references_at(&file, query_line, query_col) {
+                let mut seen_out = std::collections::HashSet::new();
                 if include_decl
                     && !loc_refs.target_file.is_empty()
                     && loc_refs.target_file != "external"
@@ -142,13 +143,15 @@ pub fn handle_references(
                         };
                         (sl, el, sc, ec)
                     };
-                    results.push(json!({
-                        "uri": decl_uri,
-                        "range": {
-                            "start": { "line": sl, "character": sc },
-                            "end": { "line": el, "character": ec }
-                        }
-                    }));
+                    if seen_out.insert((decl_uri.clone(), sl, sc, el, ec)) {
+                        results.push(json!({
+                            "uri": decl_uri,
+                            "range": {
+                                "start": { "line": sl, "character": sc },
+                                "end": { "line": el, "character": ec }
+                            }
+                        }));
+                    }
                 }
 
                 for r in loc_refs.references {
@@ -180,13 +183,15 @@ pub fn handle_references(
                             ec,
                         )
                     };
-                    results.push(json!({
-                        "uri": r_uri,
-                        "range": {
-                            "start": { "line": sl, "character": sc },
-                            "end": { "line": el, "character": ec }
-                        }
-                    }));
+                    if seen_out.insert((r_uri.clone(), sl, sc, el, ec)) {
+                        results.push(json!({
+                            "uri": r_uri,
+                            "range": {
+                                "start": { "line": sl, "character": sc },
+                                "end": { "line": el, "character": ec }
+                            }
+                        }));
+                    }
                 }
             }
         }

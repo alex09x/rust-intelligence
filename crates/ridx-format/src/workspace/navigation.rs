@@ -18,6 +18,9 @@ mod references;
 mod search;
 #[cfg(test)]
 mod tests;
+pub mod trait_impl_refs;
+
+pub use trait_impl_refs::DirectBlastRadius;
 
 use super::manifest::{LocationReferences, WorkspaceHover, WorkspaceReference, WorkspaceSymbol};
 use super::std_map;

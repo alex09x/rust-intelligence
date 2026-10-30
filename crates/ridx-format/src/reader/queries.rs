@@ -36,6 +36,35 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         None
     }
 
+    /// Returns true when more than one definition in this shard shares `path` at distinct lines.
+    pub fn has_multiple_definitions_at_path(&self, path: &str) -> bool {
+        let hash = fnv1a_64(path.as_bytes());
+        let defs_hash = self.defs_by_hash();
+        let defs = self.definitions();
+        let Ok(idx) = defs_hash.binary_search_by_key(&hash, |e| e.hash()) else {
+            return false;
+        };
+        let mut i = idx;
+        while i > 0 && defs_hash[i - 1].hash() == hash {
+            i -= 1;
+        }
+        let mut first_loc: Option<(u32, u32)> = None;
+        while i < defs_hash.len() && defs_hash[i].hash() == hash {
+            let def = &defs[defs_hash[i].index() as usize];
+            if self.get_str(def.path_offset()) == path {
+                let s = def.span();
+                let loc = (s.file_id(), s.start_line());
+                match first_loc {
+                    None => first_loc = Some(loc),
+                    Some(prev) if prev != loc => return true,
+                    _ => {}
+                }
+            }
+            i += 1;
+        }
+        false
+    }
+
     /// Resolves a `RefEntry` to its target `ResolvedDefinition`.
     pub fn resolve_ref_definition(&self, r: &RefEntry) -> ResolvedDefinition<'_> {
         let target_path = self.get_str(r.target_path_offset());
@@ -136,6 +165,9 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         for entry in types[..hi].iter().rev() {
             let span = entry.span();
             if span.file_id() != file_id {
+                break;
+            }
+            if best.is_none() && line.saturating_sub(span.start_line()) > 200 {
                 break;
             }
             if let Some((_, best_size)) = best {

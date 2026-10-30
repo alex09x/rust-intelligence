@@ -8,7 +8,9 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use super::reference_record::{points_at_definition, push_reference};
+use super::reference_record::{
+    matches_reference_target, points_at_definition, push_reference, ReferenceTarget,
+};
 use super::*;
 impl WorkspaceIndex {
     /// Finds all references to a symbol, optionally scoped to a target dependency unit.
@@ -16,6 +18,16 @@ impl WorkspaceIndex {
         &'a self,
         target_path: &str,
         target_unit_key: Option<&str>,
+    ) -> Vec<WorkspaceReference<'a>> {
+        self.find_references_for_unit_with_target(target_path, target_unit_key, None)
+    }
+
+    /// Finds all references to a symbol with optional explicit target definition metadata.
+    pub(crate) fn find_references_for_unit_with_target<'a>(
+        &'a self,
+        target_path: &str,
+        target_unit_key: Option<&str>,
+        explicit_def: Option<(&str, u32, DefKind, &'a str)>,
     ) -> Vec<WorkspaceReference<'a>> {
         let target_unit_key = target_unit_key.filter(|k| !k.is_empty());
         let mut all_refs = Vec::new();
@@ -29,7 +41,6 @@ impl WorkspaceIndex {
                 }
             }
         }
-        // If target_unit_key is given, locate the definition in target_unit to get its line and file
         let target_idx = if let Some(target_unit) = target_unit_key {
             self.unit_keys
                 .iter()
@@ -44,48 +55,43 @@ impl WorkspaceIndex {
             target_crate = self.readers[t_idx].crate_name();
         }
 
-        let target_def_coords = if let Some(t_idx) = target_idx {
-            let r = &self.readers[t_idx];
-            let mut coords = None;
-            if let Some(def) = r.find_definition_by_path(target_path) {
-                let span = def.span();
-                let file = r.get_file(span.file_id());
-                let full_file = if let Some(Some(root)) = self.source_roots.get(t_idx) {
-                    crate::format::join_resolving_overlap(root, Path::new(file))
+        let resolve_full = |t_idx: usize, f: &str| -> String {
+            self.source_roots
+                .get(t_idx)
+                .and_then(|r| r.as_ref())
+                .or(self.workspace_root.as_ref())
+                .map(|root| {
+                    crate::format::join_resolving_overlap(root, Path::new(f))
                         .to_string_lossy()
                         .to_string()
-                } else if let Some(ref ws_root) = self.workspace_root {
-                    crate::format::join_resolving_overlap(ws_root, Path::new(file))
-                        .to_string_lossy()
-                        .to_string()
-                } else {
-                    file.to_string()
-                };
-                coords = Some((file.to_string(), full_file, span.start_line()));
-            } else if let Some(rest) = target_path.strip_prefix(&format!("{target_crate}::")) {
-                let mapped = format!("{}::{}", r.crate_name(), rest);
-                if let Some(def) = r.find_definition_by_path(&mapped) {
+                })
+                .unwrap_or_else(|| f.to_string())
+        };
+
+        let target_def_coords =
+            if let Some((ef, el, _, _)) = explicit_def.filter(|d| !d.0.is_empty() && d.1 > 0) {
+                let full = target_idx
+                    .map(|t| resolve_full(t, ef))
+                    .unwrap_or_else(|| ef.to_string());
+                Some((ef.to_string(), full, el))
+            } else if let Some(t_idx) = target_idx {
+                let r = &self.readers[t_idx];
+                let def_opt = r.find_definition_by_path(target_path).or_else(|| {
+                    let rest = target_path.strip_prefix(&format!("{target_crate}::"))?;
+                    r.find_definition_by_path(&format!("{}::{rest}", r.crate_name()))
+                });
+                def_opt.map(|def| {
                     let span = def.span();
                     let file = r.get_file(span.file_id());
-                    let full_file = self
-                        .source_roots
-                        .get(t_idx)
-                        .and_then(|r| r.as_ref())
-                        .or(self.workspace_root.as_ref())
-                        .map(|root| {
-                            crate::format::join_resolving_overlap(root, Path::new(file))
-                                .to_string_lossy()
-                                .to_string()
-                        })
-                        .unwrap_or_else(|| file.to_string());
-
-                    coords = Some((file.to_string(), full_file, span.start_line()));
-                }
-            }
-            coords
-        } else {
-            None
-        };
+                    (
+                        file.to_string(),
+                        resolve_full(t_idx, file),
+                        span.start_line(),
+                    )
+                })
+            } else {
+                None
+            };
 
         let prefix = target_path.split("::").next().unwrap_or(target_path);
         let is_alias_for_target = if let Some(target_unit) = target_unit_key {
@@ -106,6 +112,20 @@ impl WorkspaceIndex {
         let global_path_buf = format!("{target_crate}::{local_path}");
         let global_path = global_path_buf.as_str();
         let spellings = super::qualified_path::consumer_spellings(local_path, target_crate);
+
+        let disambiguate_line = explicit_def.is_some()
+            && target_idx.is_some_and(|t| {
+                let r = &self.readers[t];
+                r.has_multiple_definitions_at_path(target_path)
+                    || r.has_multiple_definitions_at_path(local_path)
+                    || r.has_multiple_definitions_at_path(global_path)
+            });
+        let ref_target = ReferenceTarget {
+            kind: explicit_def.map(|d| d.2),
+            name: explicit_def.map(|d| d.3),
+            coords: target_def_coords.clone(),
+            disambiguate_line,
+        };
 
         // The target and the other builds of its crate and version (feature sets compile one
         // source into several units): a consumer reaching any of them uses the item.
@@ -276,6 +296,10 @@ impl WorkspaceIndex {
                         }
                     }
 
+                    if !matches_reference_target(reader, r, &ref_target) {
+                        continue;
+                    }
+
                     let owner = (reader_crate, reader_unit, source_root);
                     push_reference(reader, r, owner, &mut seen_refs, &mut all_refs);
                 }
@@ -318,6 +342,9 @@ impl WorkspaceIndex {
                                         continue;
                                     }
                                 }
+                            }
+                            if !matches_reference_target(reader, r, &ref_target) {
+                                continue;
                             }
 
                             let owner = (reader_crate, reader_unit, source_root);

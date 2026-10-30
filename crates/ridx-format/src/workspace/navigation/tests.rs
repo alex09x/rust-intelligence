@@ -11,6 +11,7 @@
 mod candidates;
 mod disambiguation;
 mod references;
+mod trait_impl_refs_tests;
 
 use super::*;
 use crate::format::DefKind;

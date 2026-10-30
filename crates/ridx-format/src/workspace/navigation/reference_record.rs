@@ -19,7 +19,125 @@ use std::collections::HashSet;
 /// The definition a lookup targets: its file as the index spells it, its full path, its line.
 pub(super) type DefCoords = (String, String, u32);
 
+/// Optional target definition metadata used to filter out path collisions (such as field vs
+/// method of the same name, block-local duplicate paths, or outer macro-callsite spans).
+#[derive(Default)]
+pub(super) struct ReferenceTarget<'a> {
+    pub kind: Option<DefKind>,
+    pub name: Option<&'a str>,
+    pub coords: Option<DefCoords>,
+    pub disambiguate_line: bool,
+}
+
 type SeenKey = (PathBuf, u32, u32, u32, u32);
+
+fn is_raw_ident_keyword(name: &str) -> bool {
+    matches!(
+        name,
+        "as" | "async"
+            | "await"
+            | "box"
+            | "break"
+            | "const"
+            | "continue"
+            | "crate"
+            | "dyn"
+            | "else"
+            | "enum"
+            | "extern"
+            | "false"
+            | "fn"
+            | "for"
+            | "gen"
+            | "if"
+            | "impl"
+            | "in"
+            | "let"
+            | "loop"
+            | "macro"
+            | "match"
+            | "mod"
+            | "move"
+            | "mut"
+            | "pub"
+            | "ref"
+            | "return"
+            | "self"
+            | "Self"
+            | "static"
+            | "struct"
+            | "super"
+            | "trait"
+            | "true"
+            | "try"
+            | "type"
+            | "unsafe"
+            | "use"
+            | "where"
+            | "while"
+            | "yield"
+            | "abstract"
+            | "become"
+            | "do"
+            | "final"
+            | "override"
+            | "priv"
+            | "typeof"
+            | "unsized"
+            | "virtual"
+    )
+}
+
+/// Checks whether `r` matches the target definition kind, token width, and definition line.
+pub(super) fn matches_reference_target(
+    reader: &IndexReader<Mmap>,
+    r: &RefEntry,
+    target: &ReferenceTarget<'_>,
+) -> bool {
+    let r_kind = DefKind::from(r.kind);
+    if let Some(t_kind) = target.kind {
+        if r_kind != DefKind::Other {
+            if t_kind == DefKind::Field && r_kind != DefKind::Field {
+                return false;
+            }
+            if t_kind != DefKind::Field && r_kind == DefKind::Field {
+                return false;
+            }
+        }
+    }
+
+    if r_kind != DefKind::Macro && target.kind != Some(DefKind::Macro) {
+        let span = r.span();
+        if span.end_line() != span.start_line() {
+            return false;
+        }
+        let name = target.name.unwrap_or_else(|| {
+            let p = reader.get_str(r.target_path_offset());
+            p.rsplit("::").next().unwrap_or(p)
+        });
+        let name_chars = name.chars().count();
+        let width = span.end_col().saturating_sub(span.start_col()) as usize;
+        if r.is_macro_expansion() && r_kind != DefKind::Macro && target.kind != Some(DefKind::Macro)
+        {
+            if width != name_chars {
+                return false;
+            }
+        } else if !r.is_macro_expansion() && width == name_chars + 2 && !is_raw_ident_keyword(name)
+        {
+            return false;
+        }
+    }
+
+    if target.kind == Some(DefKind::Local) || target.disambiguate_line {
+        if let Some(ref coords) = target.coords {
+            if !points_at_definition(reader, r, coords) {
+                return false;
+            }
+        }
+    }
+
+    true
+}
 
 /// Whether the reference `r` of `reader`, which records no target unit, points at the
 /// definition `coords`: its target line and target file agree where it records them.
