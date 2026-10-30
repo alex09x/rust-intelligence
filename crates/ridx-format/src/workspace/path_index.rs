@@ -69,11 +69,18 @@ pub struct PathIndex {
     by_file_name: HashMap<OsString, Vec<u32>>,
     dotdot_uids: Vec<u32>,
     bare_reader_files: Vec<String>,
+    pub(crate) blast_radius: super::navigation::BlastRadiusIndex,
 }
 
 mod build;
 
 impl PathIndex {
+    #[inline]
+    pub(crate) fn is_current(&self, ws: &WorkspaceIndex) -> bool {
+        (self.generation, self.reader_count) == (ws.generation, ws.readers.len())
+            && self.generation > 0
+    }
+
     /// Returns `false` when `file_path` cannot match the fast path.
     pub fn may_match_fast_path(&self, ws: &WorkspaceIndex, file_path: &str) -> bool {
         if (self.generation, self.reader_count) != (ws.generation, ws.readers.len()) {

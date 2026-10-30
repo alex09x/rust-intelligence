@@ -12,6 +12,7 @@ pub mod completion_resolve_tests;
 pub mod completion_tests;
 pub mod edge_tests;
 pub mod extra_suite;
+pub mod hover_enrich_tests;
 pub mod hover_tests;
 pub mod inlay_hint_tests;
 pub mod owner_colon_tests;

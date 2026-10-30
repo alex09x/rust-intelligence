@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-//! Container-scoped `trait ↔ impl` reference resolution and fast direct blast-radius summary.
+//! Container-scoped `trait ↔ impl` reference resolution.
 //!
 //! Associated items are linked exclusively through their owning container (`deref_entries` and
 //! `find_definitions_by_owner`), never by bare method/associated-item name:
@@ -17,17 +17,8 @@
 //! - When the target is a concrete `impl` item (`parent` is not `DefKind::Trait`), only direct
 //!   references to that `impl` item plus the corresponding trait item declaration are included.
 
-use super::reference_record::{matches_reference_target, ReferenceTarget};
 use super::*;
 use std::collections::HashSet;
-
-/// Summary of direct references to a symbol across the workspace for enriched hover.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct DirectBlastRadius {
-    pub direct_refs: usize,
-    pub files: usize,
-    pub crates: usize,
-}
 
 fn strip_generics(s: &str) -> &str {
     match s.find('<') {
@@ -213,78 +204,6 @@ impl WorkspaceIndex {
                     }
                 }
             }
-        }
-    }
-
-    /// Computes a fast, allocation-light summary of direct references to `def` across workspace shards.
-    pub fn direct_blast_radius(&self, def: &ResolvedDefinition<'_>) -> DirectBlastRadius {
-        if def.path.is_empty() || def.kind == DefKind::Local {
-            return DirectBlastRadius::default();
-        }
-        let target_crate = def
-            .reader_idx
-            .and_then(|idx| self.readers.get(idx))
-            .map(|r| r.crate_name())
-            .unwrap_or_else(|| def.path.split("::").next().unwrap_or(def.path));
-        let local_path = def
-            .path
-            .strip_prefix(&format!("{target_crate}::"))
-            .unwrap_or(def.path);
-        let global_path = format!("{target_crate}::{local_path}");
-        let disambiguate_line = def.reader_idx.is_some_and(|t| {
-            let r = &self.readers[t];
-            r.has_multiple_definitions_at_path(def.path)
-                || r.has_multiple_definitions_at_path(local_path)
-                || r.has_multiple_definitions_at_path(&global_path)
-        });
-        let ref_target = ReferenceTarget {
-            kind: Some(def.kind),
-            name: Some(def.name),
-            coords: (!def.file.is_empty() && def.start_line > 0)
-                .then(|| (def.file.to_string(), def.file.to_string(), def.start_line)),
-            disambiguate_line,
-        };
-
-        let mut seen_refs: Vec<(&str, u32, u32, u32)> = Vec::new();
-        let mut files: Vec<(&str, u32)> = Vec::new();
-        let mut crates: Vec<&str> = Vec::new();
-
-        for (i, reader) in self.readers.iter().enumerate() {
-            if self.is_reader_external(i) {
-                continue;
-            }
-            let cname = reader.crate_name();
-            let queries: &[&str] = if cname == target_crate && local_path != global_path {
-                &[local_path, global_path.as_str()]
-            } else {
-                &[global_path.as_str()]
-            };
-            for &q in queries {
-                for r in reader.find_references(q) {
-                    if !matches_reference_target(reader, r, &ref_target) {
-                        continue;
-                    }
-                    let s = r.span();
-                    let r_file = reader.get_file(s.file_id());
-                    let loc = (r_file, s.start_line(), s.start_col(), s.end_col());
-                    if !seen_refs.contains(&loc) {
-                        seen_refs.push(loc);
-                        let file_key = (cname, s.file_id());
-                        if !files.contains(&file_key) {
-                            files.push(file_key);
-                        }
-                        if !crates.contains(&cname) {
-                            crates.push(cname);
-                        }
-                    }
-                }
-            }
-        }
-
-        DirectBlastRadius {
-            direct_refs: seen_refs.len(),
-            files: files.len(),
-            crates: crates.len(),
         }
     }
 }

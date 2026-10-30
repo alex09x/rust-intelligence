@@ -38,7 +38,13 @@ pub fn handle_hover(
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
             if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
-                return Ok(format_hover(&hover, Some(ws)));
+                return Ok(format_hover_full(
+                    &hover,
+                    Some(ws),
+                    Some(overlay_mgr),
+                    Some(conv),
+                    Some(&file),
+                ));
             }
         }
     }
@@ -64,7 +70,13 @@ pub fn handle_hover(
             if overlay.is_dirty() && !overlay.has_modified_imports() {
                 if let Some((ml, mc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
                     if let Some(hover) = ws.hover_at(&file, ml, mc) {
-                        return Ok(format_hover(&hover, Some(ws)));
+                        return Ok(format_hover_full(
+                            &hover,
+                            Some(ws),
+                            Some(overlay_mgr),
+                            Some(conv),
+                            Some(&file),
+                        ));
                     }
                 }
             }
@@ -74,9 +86,20 @@ pub fn handle_hover(
     Ok(Value::Null)
 }
 
+#[cfg(test)]
 pub(crate) fn format_hover(
     hover: &ridx_format::WorkspaceHover,
     ws: Option<&WorkspaceIndex>,
+) -> Value {
+    format_hover_full(hover, ws, None, None, None)
+}
+
+pub(crate) fn format_hover_full(
+    hover: &ridx_format::WorkspaceHover,
+    ws: Option<&WorkspaceIndex>,
+    overlay_mgr: Option<&OverlayManager>,
+    mut conv: Option<&mut PositionConverter>,
+    cursor_file: Option<&str>,
 ) -> Value {
     let mut blocks = Vec::new();
     if let Some(ref d) = hover.definition {
@@ -120,6 +143,14 @@ pub(crate) fn format_hover(
                     } else {
                         blocks.push(format!("type {}: {sig}", d.name));
                     }
+                } else if let Some(ref mut c) = conv {
+                    if let Some(src_hdr) =
+                        super::hover_enrich::extract_source_decl_header(d, ws, overlay_mgr, c)
+                    {
+                        blocks.push(src_hdr);
+                    } else {
+                        blocks.push(format!("type {}", d.name));
+                    }
                 } else {
                     blocks.push(format!("type {}", d.name));
                 }
@@ -145,6 +176,14 @@ pub(crate) fn format_hover(
             _ => {
                 if let Some(sig) = d.signature {
                     blocks.push(format_signature(d.name, sig));
+                } else if let Some(ref mut c) = conv {
+                    if let Some(src_hdr) =
+                        super::hover_enrich::extract_source_decl_header(d, ws, overlay_mgr, c)
+                    {
+                        blocks.push(src_hdr);
+                    } else {
+                        blocks.push(format!("{} {}", d.kind.as_str(), d.name));
+                    }
                 } else {
                     blocks.push(format!("{} {}", d.kind.as_str(), d.name));
                 }
@@ -178,11 +217,32 @@ pub(crate) fn format_hover(
             }
         }
     }
-    let hover_text = blocks
+    let mut hover_text = blocks
         .into_iter()
         .map(|b| format!("```rust\n{b}\n```"))
         .collect::<Vec<_>>()
         .join("\n\n");
+
+    if let Some(ref d) = hover.definition {
+        let mut extra_sections = Vec::new();
+        if let Some(ref mut c) = conv {
+            if let Some(doc) =
+                super::hover_enrich::extract_source_doc_comment(d, ws, overlay_mgr, c, cursor_file)
+            {
+                extra_sections.push(doc);
+            }
+        }
+        if let Some(w) = ws {
+            if let Some(prov) = super::hover_enrich::format_provenance_and_blast_radius(d, w) {
+                extra_sections.push(prov);
+            }
+        }
+        if !extra_sections.is_empty() {
+            hover_text.push_str("\n---\n");
+            hover_text.push_str(&extra_sections.join("\n\n"));
+        }
+    }
+
     json!({
         "contents": {
             "kind": "markdown",

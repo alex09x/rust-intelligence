@@ -31,7 +31,7 @@ pub(super) struct ReferenceTarget<'a> {
 
 type SeenKey = (PathBuf, u32, u32, u32, u32);
 
-fn is_raw_ident_keyword(name: &str) -> bool {
+pub(super) fn is_raw_ident_keyword(name: &str) -> bool {
     matches!(
         name,
         "as" | "async"

@@ -16,6 +16,7 @@ pub mod fallback_completion;
 pub mod generic_completion;
 pub mod hints;
 pub mod hover;
+pub mod hover_enrich;
 pub mod owner_completion;
 pub mod scope_cache;
 pub mod self_completion;

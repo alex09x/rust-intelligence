@@ -10,6 +10,7 @@
 
 //! Cross-crate code navigation, symbol search, hover, and reference tracking.
 
+pub mod blast_radius;
 mod cross_definition;
 mod owner_types;
 mod qualified_path;
@@ -20,7 +21,7 @@ mod search;
 mod tests;
 pub mod trait_impl_refs;
 
-pub use trait_impl_refs::DirectBlastRadius;
+pub use blast_radius::{BlastRadiusIndex, DirectBlastRadius};
 
 use super::manifest::{LocationReferences, WorkspaceHover, WorkspaceReference, WorkspaceSymbol};
 use super::std_map;

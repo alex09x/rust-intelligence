@@ -154,11 +154,11 @@ impl PositionConverter {
 
     pub fn get_line(&mut self, file: &str, line_1based: u32) -> Option<&str> {
         if !self.cache.contains_key(file) {
-            if self.cache.len() >= 128 {
+            if self.cache.len() >= 2048 {
                 self.cache.clear();
             }
             if let Ok(c) = std::fs::read_to_string(file) {
-                let mut starts = Vec::with_capacity(c.lines().count() + 1);
+                let mut starts = Vec::with_capacity(c.len() / 32 + 16);
                 starts.push(0);
                 for (idx, b) in c.bytes().enumerate() {
                     if b == b'\n' {

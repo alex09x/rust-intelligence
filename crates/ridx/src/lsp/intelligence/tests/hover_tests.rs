@@ -146,7 +146,10 @@ fn test_hover_clean_function_signature() {
     let val = res["contents"]["value"].as_str().unwrap();
     assert!(val.contains("fn calculate(a: i32, b: i32) -> i32"));
     assert!(val.starts_with("```rust\n"));
-    assert!(val.ends_with("\n```"));
+    let header_block = val.split("\n---\n").next().unwrap();
+    assert!(header_block.ends_with("\n```"));
+    assert!(val.contains("**Provenance:**"));
+    assert!(val.contains("**Blast Radius:**"));
 }
 
 #[test]

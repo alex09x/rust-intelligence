@@ -44,6 +44,7 @@ def verify_editor_configs(editors_dir):
 
 
 def run_dropin_session(ridx_bin, repo_dir, editors_dir):
+    ridx_bin = Path(ridx_bin).resolve()
     repo_dir = Path(repo_dir).resolve()
     cfg_check = verify_editor_configs(Path(editors_dir))
 
@@ -89,9 +90,15 @@ def run_dropin_session(ridx_bin, repo_dir, editors_dir):
             hov_res, hov_us, hov_err = srv.request("textDocument/hover", pos_params, timeout=2.0)
             assert hov_err is None and hov_res, f"hover failed: {hov_err}"
             hov_norm = normalize_answer("hover", hov_res, str(repo_dir))
+            hov_text = hov_norm["text"]
+            assert "trait Deserialize<'de>: Sized" in hov_norm["sig_line"], f"expected full trait sig, got {hov_norm['sig_line']}"
+            assert "**Provenance:**" in hov_text and "**Blast Radius:**" in hov_text, "expected Provenance and Blast Radius in hover"
+            assert "data structure" in hov_text and "Serde" in hov_text, "expected doc comments in hover"
             steps.append({
                 "step": "textDocument/hover", "symbol": "Deserialize",
                 "us": round(hov_us, 1), "sig_line": hov_norm["sig_line"], "decl": hov_norm["decl"],
+                "has_docs": True, "has_provenance": True, "has_blast_radius": True,
+                "hover_markdown": hov_text,
             })
 
             ref_params = {**pos_params, "context": {"includeDeclaration": True}}
@@ -126,11 +133,17 @@ def run_dropin_session(ridx_bin, repo_dir, editors_dir):
         finally:
             srv.close()
 
+        log_contents = log_file.read_text(encoding="utf-8")
+        assert "logger initialized" in log_contents, "log file must contain logger initialized line"
+        assert "initialized LSP workspace" in log_contents, "log file must contain workspace init line"
+        assert "request textDocument/hover" in log_contents, "log file must contain verbose hover request line"
+
     return {
         "configs": cfg_check,
         "version_stdout": ver_proc.stdout.strip(),
         "config_schema_stdout": schema_proc.stdout.strip(),
         "spawn_command": ["ridx", "--log-file", "<tmp>/ra_dropin.log", "--no-log-buffering", "-v"],
+        "log_lines": log_contents.strip().splitlines(),
         "repo": repo_dir.name,
         "steps": steps,
     }

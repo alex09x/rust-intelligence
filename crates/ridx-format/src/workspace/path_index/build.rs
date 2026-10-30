@@ -184,6 +184,7 @@ impl PathIndex {
             by_file_name,
             dotdot_uids,
             bare_reader_files,
+            blast_radius: crate::workspace::navigation::BlastRadiusIndex::build(ws),
         }
     }
 }
