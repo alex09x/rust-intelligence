@@ -258,8 +258,8 @@ impl WorkspaceIndex {
 
     pub(crate) fn resolve_cursor_path_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<ResolvedDefinition<'a>> {
         let content = self.read_source_file(file)?;
-        let lines: Vec<&str> = content.lines().collect();
         let line_idx = (line as usize).checked_sub(1)?;
+        let lines: Vec<&str> = content.lines().take(line_idx + 16).collect();
         let line_str = *lines.get(line_idx)?;
         let chars: Vec<(usize, char)> = line_str.char_indices().collect();
         if chars.is_empty() {

@@ -128,8 +128,9 @@ impl WorkspaceIndex {
         let mut budget: usize = 2_000;
         let mut record_budget: usize = 30_000;
         if let Some(pref) = preferred_crate {
-            for reader in &self.readers {
-                if reader.crate_name() == pref && !reader.for_each_symbol_ascii_budgeted(needle_lower, &mut budget, &mut record_budget, |def| cb(reader, def)) {
+            for &i in self.readers_for_crate_fast(pref).iter() {
+                let reader = &self.readers[i];
+                if !reader.for_each_symbol_ascii_budgeted(needle_lower, &mut budget, &mut record_budget, |def| cb(reader, def)) {
                     return false;
                 }
             }
@@ -152,8 +153,9 @@ impl WorkspaceIndex {
     {
         let mut budget: usize = 2_000;
         let mut record_budget: usize = 30_000;
-        for reader in &self.readers {
-            if reader.crate_name() == target_crate && !reader.for_each_symbol_ascii_budgeted(needle_lower, &mut budget, &mut record_budget, |def| cb(reader, def)) {
+        for &i in self.readers_for_crate_fast(target_crate).iter() {
+            let reader = &self.readers[i];
+            if !reader.for_each_symbol_ascii_budgeted(needle_lower, &mut budget, &mut record_budget, |def| cb(reader, def)) {
                 return false;
             }
         }
@@ -162,7 +164,7 @@ impl WorkspaceIndex {
 
     /// Returns true if any index reader in the workspace has the given crate name.
     pub fn has_crate(&self, target_crate: &str) -> bool {
-        self.readers.iter().any(|r| r.crate_name() == target_crate)
+        !self.readers_for_crate_fast(target_crate).is_empty()
     }
 
     /// Finds all direct references to the symbol at cursor location without expanding across
@@ -261,7 +263,15 @@ impl WorkspaceIndex {
 
     /// Complete hover information (definition + signature + inferred type) at cursor location.
     pub fn hover_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<WorkspaceHover<'a>> {
-        let def = self.find_definition_at(file, line, col);
+        let pairs = self.resolved_reader_file_ids(file);
+        let (exact, fallback_wide_ref, fallback_mod) = self.find_indexed_definition_candidates_in_pairs(&pairs, file, line, col);
+        let def = if let Some(resolved) = exact {
+            Some(resolved)
+        } else if let Some(cursor_def) = self.resolve_cursor_path_at(file, line, col) {
+            Some(cursor_def)
+        } else {
+            fallback_wide_ref.or(fallback_mod)
+        };
         let skip_type_at = def.as_ref().is_some_and(|d| {
             matches!(
                 d.kind,
@@ -281,7 +291,7 @@ impl WorkspaceIndex {
                     | DefKind::LifetimeParam
             )
         });
-        let ty = if skip_type_at { None } else { self.type_at(file, line, col) };
+        let ty = if skip_type_at { None } else { self.type_entry_at_in_pairs(&pairs, line, col).map(|(t, _)| t) };
         if def.is_none() && ty.is_none() {
             return None;
         }

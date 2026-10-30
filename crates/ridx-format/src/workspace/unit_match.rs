@@ -20,6 +20,8 @@ use std::collections::{HashMap, HashSet};
 /// Precomputed lookup index for workspace unit matching and file-scoped definition positions.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UnitMatchIndex {
+    /// Per-reader header fingerprint `(files_count, defs_count, string_pool_len, crate_name_offset)`.
+    reader_fingerprints: Vec<(u32, u32, u64, u32)>,
     /// Distinct non-empty `crate_version` count per `crate_name`.
     crate_version_counts: HashMap<String, usize>,
     /// Units defined directly by workspace readers for `crate_name`.
@@ -28,21 +30,39 @@ pub struct UnitMatchIndex {
     crate_all_units: HashMap<String, HashSet<String>>,
     /// Map from `unit_key` to reader indices defining that unit.
     unit_to_readers: HashMap<String, Vec<usize>>,
+    /// Map from `crate_name` to reader indices in ascending order.
+    crate_to_readers: HashMap<String, Vec<usize>>,
+    /// Map from clean stored file path to `(reader_idx, file_id)` pairs in ascending `reader_idx` order.
+    file_to_readers: HashMap<String, Vec<(usize, u32)>>,
+    /// Per-reader flag indicating whether the reader stores any non-clean path (`..`, `//`, `./`, `/.`, `\`, trailing `/`).
+    reader_has_special_files: Vec<bool>,
     /// Per-reader definitions sorted stably by `(file_id, start_line)` as `(file_id, start_line, def_idx)`.
     defs_by_pos: Vec<Vec<(u32, u32, u32)>>,
+}
+
+#[inline]
+fn reader_fingerprint<B: AsRef<[u8]>>(r: &IndexReader<B>) -> (u32, u32, u64, u32) {
+    let h = r.header();
+    (h.files_count, h.defs_count, h.string_pool_len, h.crate_name_offset)
 }
 
 impl UnitMatchIndex {
     /// Builds a precomputed `UnitMatchIndex` from the workspace readers and metadata.
     pub fn build<B: AsRef<[u8]>>(readers: &[IndexReader<B>], unit_keys: &[Option<String>], reader_extern_units: &[HashMap<String, String>]) -> Self {
+        let mut reader_fingerprints = Vec::with_capacity(readers.len());
         let mut versions_by_crate: HashMap<String, HashSet<String>> = HashMap::new();
         let mut crate_defined_units: HashMap<String, HashSet<String>> = HashMap::new();
         let mut crate_all_units: HashMap<String, HashSet<String>> = HashMap::new();
         let mut unit_to_readers: HashMap<String, Vec<usize>> = HashMap::new();
+        let mut crate_to_readers: HashMap<String, Vec<usize>> = HashMap::new();
+        let mut file_to_readers: HashMap<String, Vec<(usize, u32)>> = HashMap::with_capacity(readers.len() * 2);
+        let mut reader_has_special_files: Vec<bool> = Vec::with_capacity(readers.len());
         let mut defs_by_pos: Vec<Vec<(u32, u32, u32)>> = Vec::with_capacity(readers.len());
 
         for (j, r) in readers.iter().enumerate() {
+            reader_fingerprints.push(reader_fingerprint(r));
             let crate_name = r.crate_name();
+            crate_to_readers.entry(crate_name.to_string()).or_default().push(j);
             let ver = r.crate_version();
             if !ver.is_empty() {
                 versions_by_crate.entry(crate_name.to_string()).or_default().insert(ver.to_string());
@@ -53,6 +73,21 @@ impl UnitMatchIndex {
                 crate_all_units.entry(crate_name.to_string()).or_default().insert(uk.to_string());
                 unit_to_readers.entry(uk.to_string()).or_default().push(j);
             }
+            let fcount = r.files_count();
+            let mut has_special = false;
+            for fid in 0..fcount {
+                let f = r.get_file(fid);
+                if f.contains("..") || f.contains("//") || f.contains("./") || f.contains("/.") || f.contains('\\') || f.ends_with('/') {
+                    has_special = true;
+                }
+                let clean = f.strip_prefix("./").unwrap_or(f);
+                let vec = file_to_readers.entry(clean.to_string()).or_default();
+                if vec.last().is_none_or(|&(last_r, _)| last_r != j) {
+                    vec.push((j, fid));
+                }
+            }
+            reader_has_special_files.push(has_special);
+
             let defs = r.definitions();
             let mut pos_entries: Vec<(u32, u32, u32)> = defs
                 .iter()
@@ -74,7 +109,56 @@ impl UnitMatchIndex {
 
         let crate_version_counts = versions_by_crate.into_iter().map(|(k, v)| (k, v.len())).collect();
 
-        Self { crate_version_counts, crate_defined_units, crate_all_units, unit_to_readers, defs_by_pos }
+        Self {
+            reader_fingerprints,
+            crate_version_counts,
+            crate_defined_units,
+            crate_all_units,
+            unit_to_readers,
+            crate_to_readers,
+            file_to_readers,
+            reader_has_special_files,
+            defs_by_pos,
+        }
+    }
+
+    #[inline]
+    pub fn is_valid_for_readers<B: AsRef<[u8]>>(&self, readers: &[IndexReader<B>]) -> bool {
+        self.reader_fingerprints.len() == readers.len()
+            && readers.first().map(reader_fingerprint) == self.reader_fingerprints.first().copied()
+            && readers.last().map(reader_fingerprint) == self.reader_fingerprints.last().copied()
+    }
+
+    #[inline]
+    pub fn reader_has_special(&self, reader_idx: usize) -> bool {
+        self.reader_has_special_files.get(reader_idx).copied().unwrap_or(true)
+    }
+
+    #[inline]
+    pub fn readers_for_clean_file(&self, file_path: &str) -> Option<&[(usize, u32)]> {
+        let clean = file_path.strip_prefix("./").unwrap_or(file_path);
+        if clean.contains("//") || clean.contains("/.") || clean.contains('\\') || clean.ends_with('/') {
+            return None;
+        }
+        Some(self.file_to_readers.get(clean).map(Vec::as_slice).unwrap_or(&[]))
+    }
+
+    #[inline]
+    pub fn find_file_id_fast<B: AsRef<[u8]>>(&self, reader_idx: usize, reader: &IndexReader<B>, file_path: &str) -> Option<Option<u32>> {
+        if self.reader_fingerprints.get(reader_idx).copied() != Some(reader_fingerprint(reader)) {
+            return None;
+        }
+        if *self.reader_has_special_files.get(reader_idx)? {
+            return None;
+        }
+        let clean = file_path.strip_prefix("./").unwrap_or(file_path);
+        if clean.contains("//") || clean.contains("/.") || clean.contains('\\') || clean.ends_with('/') {
+            return None;
+        }
+        let Some(list) = self.file_to_readers.get(clean) else {
+            return Some(None);
+        };
+        Some(list.binary_search_by_key(&reader_idx, |&(r, _)| r).ok().map(|pos| list[pos].1))
     }
 
     /// Checks whether `ref_target_unit` matches `target_unit` for `target_crate`.
@@ -131,6 +215,12 @@ impl UnitMatchIndex {
         self.unit_to_readers.get(unit_key).map(Vec::as_slice)
     }
 
+    /// Reader indices whose `crate_name` equals `crate_name`.
+    #[inline]
+    pub fn readers_for_crate(&self, crate_name: &str) -> Option<&[usize]> {
+        self.crate_to_readers.get(crate_name).map(Vec::as_slice)
+    }
+
     /// Position-sorted definition entries `(file_id, start_line, def_idx)` for `reader_idx` in `file_id` up to `max_line`.
     #[inline]
     pub fn defs_in_file_up_to(&self, reader_idx: usize, file_id: u32, max_line: u32) -> &[(u32, u32, u32)] {
@@ -148,6 +238,39 @@ impl UnitMatchIndex {
 }
 
 impl super::WorkspaceIndex {
+    /// Looks up `file_path` in `self.readers[reader_idx]` using the O(1) precomputed table when valid.
+    #[inline]
+    pub(crate) fn reader_find_file_id(&self, reader_idx: usize, file_path: &str) -> Option<u32> {
+        let reader = self.readers.get(reader_idx)?;
+        if let Some(res) = self.unit_match.find_file_id_fast(reader_idx, reader, file_path) {
+            return res;
+        }
+        reader.find_file_id(file_path)
+    }
+
+    /// Returns reader indices matching `crate_name` in ascending order using O(1) lookup when valid.
+    #[inline]
+    pub(crate) fn readers_for_crate_fast(&self, crate_name: &str) -> std::borrow::Cow<'_, [usize]> {
+        if self.unit_match.is_valid_for_readers(&self.readers) {
+            return std::borrow::Cow::Borrowed(self.unit_match.readers_for_crate(crate_name).unwrap_or(&[]));
+        }
+        std::borrow::Cow::Owned(self.readers.iter().enumerate().filter(|(_, r)| r.crate_name() == crate_name).map(|(i, _)| i).collect())
+    }
+
+    /// Returns reader indices matching `unit_key` in ascending order using O(1) lookup when valid.
+    #[inline]
+    pub(crate) fn readers_for_unit_fast(&self, unit_key: &str) -> std::borrow::Cow<'_, [usize]> {
+        if self.unit_match.is_valid_for_readers(&self.readers) && self.unit_keys.len() == self.readers.len() {
+            if let Some(indices) = self.unit_match.readers_for_unit(unit_key) {
+                if indices.iter().all(|&j| self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(unit_key)) {
+                    return std::borrow::Cow::Borrowed(indices);
+                }
+            } else {
+                return std::borrow::Cow::Borrowed(&[]);
+            }
+        }
+        std::borrow::Cow::Owned(self.unit_keys.iter().enumerate().filter(|(_, u)| u.as_deref() == Some(unit_key)).map(|(i, _)| i).collect())
+    }
     /// Returns true if `target_reader_idx` is directly or transitively (up to 2 hops)
     /// referenced in `extern_units` or `dependencies` of any reader in `source_readers`.
     pub fn is_reader_in_dep_graph(&self, source_readers: &[usize], target_reader_idx: usize) -> bool {

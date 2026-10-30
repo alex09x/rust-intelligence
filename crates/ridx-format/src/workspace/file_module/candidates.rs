@@ -8,20 +8,98 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use super::{fast_path_starts_with, is_clean_posix_bytes};
 use crate::workspace::WorkspaceIndex;
 use std::path::Path;
 
 impl WorkspaceIndex {
+    /// Resolves `file` directly to its `file_id` in `reader_idx` without allocating intermediate strings.
+    pub(crate) fn target_file_id_for_reader(&self, reader_idx: usize, file: &str) -> Option<u32> {
+        let _ = self.readers.get(reader_idx)?;
+        let p = Path::new(file);
+        let p_clean = is_clean_posix_bytes(p.as_os_str().as_encoded_bytes());
+        let root_opt = self.reader_root(reader_idx);
+
+        if p.is_absolute() {
+            if let Some(fid) = self.reader_find_file_id(reader_idx, file) {
+                return Some(fid);
+            }
+            if let Some(root) = root_opt {
+                let matches_root = if root.is_absolute() {
+                    fast_path_starts_with(p, p_clean, root)
+                } else if let Some(ws_root) = &self.workspace_root {
+                    p.starts_with(ws_root.join(root))
+                } else {
+                    false
+                };
+                if !matches_root {
+                    return None;
+                }
+            } else if let Some(ws_root) = &self.workspace_root {
+                if !fast_path_starts_with(p, p_clean, ws_root) {
+                    return None;
+                }
+            }
+            if let Some(ws_root) = &self.workspace_root {
+                if let Some(s) = p.strip_prefix(ws_root).ok().and_then(|r| r.to_str()) {
+                    if let Some(fid) = self.reader_find_file_id(reader_idx, s) {
+                        return Some(fid);
+                    }
+                }
+            }
+            if let Some(root) = root_opt {
+                if let Some(s) = p.strip_prefix(root).ok().and_then(|r| r.to_str()) {
+                    if let Some(fid) = self.reader_find_file_id(reader_idx, s) {
+                        return Some(fid);
+                    }
+                }
+            }
+            return None;
+        }
+
+        if let Some(fid) = self.reader_find_file_id(reader_idx, file) {
+            return Some(fid);
+        }
+        let roots = [self.workspace_root.as_deref(), root_opt];
+        for anchor in roots.into_iter().flatten() {
+            let joined = anchor.join(p);
+            if let Some(s) = joined.to_str() {
+                if let Some(fid) = self.reader_find_file_id(reader_idx, s) {
+                    return Some(fid);
+                }
+            }
+            for base in roots.into_iter().flatten() {
+                if let Some(s) = joined.strip_prefix(base).ok().and_then(|r| r.to_str()) {
+                    if let Some(fid) = self.reader_find_file_id(reader_idx, s) {
+                        return Some(fid);
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Returns prioritized `(reader_idx, file_id)` pairs for `file` (library targets first).
+    pub(crate) fn resolved_reader_file_ids(&self, file: &str) -> Vec<(usize, u32)> {
+        let mut direct: Vec<(usize, u32)> = self.reader_indices_for_file(file).into_iter().filter_map(|i| self.target_file_id_for_reader(i, file).map(|fid| (i, fid))).collect();
+        if !direct.is_empty() {
+            direct.sort_by_key(|&(idx, _)| usize::from(!self.target_kinds.get(idx).copied().flatten().is_some_and(|k| k.is_lib())));
+            return direct;
+        }
+        self.candidate_reader_indices_for_file(file).into_iter().filter_map(|i| self.target_file_id_for_reader(i, file).map(|fid| (i, fid))).collect()
+    }
+
     /// Resolves `file` (absolute, relative to the workspace root, or relative to the reader's
     /// source root) to the path string the reader at `reader_idx` stores for it, or `None` when
     /// this reader does not index the file. Every string returned is accepted by that reader's
     /// exact `find_file_id`: the input is re-expressed in the reader's coordinates (relative to
     /// the workspace root or to the source root) and compared whole, never by suffix.
     pub fn target_file_for_reader<'a>(&self, reader_idx: usize, file: &'a str) -> Option<std::borrow::Cow<'a, str>> {
-        let reader = self.readers.get(reader_idx)?;
+        let _ = self.readers.get(reader_idx)?;
         let p = Path::new(file);
+        let p_clean = is_clean_posix_bytes(p.as_os_str().as_encoded_bytes());
         let root_opt = self.reader_root(reader_idx);
-        let stored = |s: &str| reader.find_file_id(s).is_some();
+        let stored = |s: &str| self.reader_find_file_id(reader_idx, s).is_some();
         let owned = |s: &str| Some(std::borrow::Cow::Owned(s.to_string()));
 
         if p.is_absolute() {
@@ -33,7 +111,7 @@ impl WorkspaceIndex {
             // workspace root, before it is re-expressed in the reader's coordinates.
             if let Some(root) = root_opt {
                 let matches_root = if root.is_absolute() {
-                    p.starts_with(root)
+                    fast_path_starts_with(p, p_clean, root)
                 } else if let Some(ws_root) = &self.workspace_root {
                     p.starts_with(ws_root.join(root))
                 } else {
@@ -43,7 +121,7 @@ impl WorkspaceIndex {
                     return None;
                 }
             } else if let Some(ws_root) = &self.workspace_root {
-                if !p.starts_with(ws_root) {
+                if !fast_path_starts_with(p, p_clean, ws_root) {
                     return None;
                 }
             }

@@ -99,6 +99,9 @@ impl MultiRootWorkspace {
     }
 
     pub fn find_workspace_for_path(&self, file_path: &Path) -> Option<&WorkspaceIndex> {
+        if self.roots.len() <= 1 {
+            return self.roots.first().map(|(_, ws)| ws);
+        }
         let canon = file_path.canonicalize().unwrap_or_else(|_| file_path.to_path_buf());
         let mut best_match: Option<(usize, &WorkspaceIndex)> = None;
 

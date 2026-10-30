@@ -31,19 +31,19 @@ impl WorkspaceIndex {
         // or matching extern_alias among referrer's direct dependencies
         let mut candidate_readers = Vec::new();
         if let Some(target_uk) = target_unit {
-            for (j, r) in self.readers.iter().enumerate() {
-                if self.unit_keys.get(j).and_then(|u| u.as_deref()) == Some(target_uk) {
-                    candidate_readers.push((j, r));
-                }
+            for &j in self.readers_for_unit_fast(target_uk).iter() {
+                candidate_readers.push((j, &self.readers[j]));
             }
         } else if let Some(deps) = self.reader_dependencies.get(referrer_idx) {
-            for (j, r) in self.readers.iter().enumerate() {
-                if let Some(Some(uk)) = self.unit_keys.get(j).map(|u| u.as_deref()) {
-                    if deps.iter().any(|d| d == uk) && (r.crate_name() == extern_alias || target_path.starts_with(&format!("{}::", r.crate_name()))) {
+            for dep_uk in deps {
+                for &j in self.readers_for_unit_fast(dep_uk).iter() {
+                    let r = &self.readers[j];
+                    if (r.crate_name() == extern_alias || target_path.starts_with(&format!("{}::", r.crate_name()))) && !candidate_readers.iter().any(|&(idx, _)| idx == j) {
                         candidate_readers.push((j, r));
                     }
                 }
             }
+            candidate_readers.sort_by_key(|&(j, _)| j);
         }
 
         if !candidate_readers.is_empty() {
@@ -122,45 +122,45 @@ impl WorkspaceIndex {
         // 3. Fallback when referrer has no dependency metadata: search all readers matching target_crate
         let target_crate = extern_alias;
         let mut candidates = Vec::new();
-        for (j, r) in self.readers.iter().enumerate() {
-            if r.crate_name() == target_crate {
-                if let Some(def) = r.find_definition_by_path(target_path) {
-                    let def_span = def.span();
-                    candidates.push(ResolvedDefinition {
-                        name: r.get_str(def.name_offset()),
-                        path: r.get_str(def.path_offset()),
-                        kind: DefKind::from(def.kind),
-                        signature: (def.sig_offset() != 0).then(|| r.get_str(def.sig_offset())),
+        for &j in self.readers_for_crate_fast(target_crate).iter() {
+            let r = &self.readers[j];
+            if let Some(def) = r.find_definition_by_path(target_path) {
+                let def_span = def.span();
+                candidates.push(ResolvedDefinition {
+                    name: r.get_str(def.name_offset()),
+                    path: r.get_str(def.path_offset()),
+                    kind: DefKind::from(def.kind),
+                    signature: (def.sig_offset() != 0).then(|| r.get_str(def.sig_offset())),
 
-                        file: r.get_file(def_span.file_id()),
-                        start_line: def_span.start_line(),
-                        start_col: def_span.start_col(),
-                        end_line: def_span.end_line(),
-                        end_col: def_span.end_col(),
-                        is_macro_expansion: def.is_macro_expansion(),
-                        is_reexport: def.is_reexport(),
-                        source_root: if self.reader_is_dependency.get(j).copied().unwrap_or(false) {
-                            self.source_roots.get(j).and_then(|r| r.as_deref())
-                        } else {
-                            self.source_roots.get(j).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref())
-                        },
-                        unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
-                        reader_idx: Some(j),
-                    });
-                }
+                    file: r.get_file(def_span.file_id()),
+                    start_line: def_span.start_line(),
+                    start_col: def_span.start_col(),
+                    end_line: def_span.end_line(),
+                    end_col: def_span.end_col(),
+                    is_macro_expansion: def.is_macro_expansion(),
+                    is_reexport: def.is_reexport(),
+                    source_root: if self.reader_is_dependency.get(j).copied().unwrap_or(false) {
+                        self.source_roots.get(j).and_then(|r| r.as_deref())
+                    } else {
+                        self.source_roots.get(j).and_then(|r| r.as_deref()).or(self.workspace_root.as_deref())
+                    },
+                    unit_key: self.unit_keys.get(j).and_then(|u| u.as_deref()),
+                    reader_idx: Some(j),
+                });
             }
         }
 
         if candidates.is_empty() && res.file != "external" && !res.file.is_empty() {
             let target_p = Path::new(res.file);
-            for (j, r) in self.readers.iter().enumerate() {
-                if let Some(target_uk) = target_unit {
-                    if self.unit_keys.get(j).and_then(|u| u.as_deref()) != Some(target_uk) {
-                        continue;
-                    }
-                } else if !target_crate.is_empty() && r.crate_name() != target_crate {
-                    continue;
-                }
+            let fallback_indices: std::borrow::Cow<'_, [usize]> = if let Some(target_uk) = target_unit {
+                self.readers_for_unit_fast(target_uk)
+            } else if !target_crate.is_empty() {
+                self.readers_for_crate_fast(target_crate)
+            } else {
+                std::borrow::Cow::Owned((0..self.readers.len()).collect())
+            };
+            for &j in fallback_indices.iter() {
+                let r = &self.readers[j];
                 let file_id_opt = (0..r.header().files_count).find(|&fid| {
                     let f_name = r.get_file(fid);
                     if target_p.is_absolute() {

@@ -96,3 +96,36 @@ fn test_unit_match_oracle_equivalence() {
         }
     }
 }
+
+#[test]
+fn test_unit_match_fast_file_and_crate_lookups() {
+    let temp = TempDir::new().unwrap();
+    let specs = [("alpha", "0.1.0", "u_alpha", "src/lib.rs"), ("beta", "0.2.0", "u_beta_1", "src/main.rs"), ("beta", "0.2.0", "u_beta_2", "src/./helper.rs")];
+    let mut readers = Vec::new();
+    let mut unit_keys = Vec::new();
+    for (i, &(name, ver, ukey, file_path)) in specs.iter().enumerate() {
+        let path = temp.path().join(format!("fast_{i}.ridx"));
+        let mut writer = IndexWriter::new(name, ver);
+        writer.get_or_insert_file(file_path);
+        let mut f = File::create(&path).unwrap();
+        writer.write_to(&mut f).unwrap();
+        drop(f);
+        readers.push(IndexReader::open(&path).unwrap());
+        unit_keys.push(Some(ukey.to_string()));
+    }
+    let reader_extern_units = vec![HashMap::new(); 3];
+    let idx = UnitMatchIndex::build(&readers, &unit_keys, &reader_extern_units);
+
+    assert!(idx.is_valid_for_readers(&readers));
+    assert_eq!(idx.readers_for_crate("alpha"), Some(&[0][..]));
+    assert_eq!(idx.readers_for_crate("beta"), Some(&[1, 2][..]));
+    assert_eq!(idx.readers_for_crate("gamma"), None);
+    assert_eq!(idx.readers_for_unit("u_beta_1"), Some(&[1][..]));
+    assert_eq!(idx.readers_for_unit("missing"), None);
+
+    assert_eq!(idx.find_file_id_fast(0, &readers[0], "src/lib.rs"), Some(Some(0)));
+    assert_eq!(idx.find_file_id_fast(0, &readers[0], "./src/lib.rs"), Some(Some(0)));
+    assert_eq!(idx.find_file_id_fast(0, &readers[0], "src/other.rs"), Some(None));
+    assert_eq!(idx.find_file_id_fast(2, &readers[2], "src/helper.rs"), None);
+    assert_eq!(readers[2].find_file_id("src/helper.rs"), Some(0));
+}

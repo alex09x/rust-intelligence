@@ -24,23 +24,13 @@ impl WorkspaceIndex {
 
     /// Inferred expression type and optional canonical owner path at cursor location.
     pub fn type_entry_at(&self, file: &str, line: u32, col: u32) -> Option<(&str, Option<&str>)> {
-        let mut direct: Vec<(usize, std::borrow::Cow<'_, str>)> =
-            self.reader_indices_for_file(file).into_iter().filter_map(|i| self.target_file_for_reader(i, file).map(|tf| (i, tf))).collect();
-        if !direct.is_empty() {
-            direct.sort_by_key(|&(idx, _)| usize::from(!self.target_kinds.get(idx).copied().flatten().is_some_and(|k| k.is_lib())));
-            for (i, tf) in direct {
-                if let Some(res) = self.readers[i].type_entry_at(tf.as_ref(), line, col) {
-                    return Some(res);
-                }
-            }
-            return None;
-        }
-        for i in self.candidate_reader_indices_for_file(file) {
-            let reader = &self.readers[i];
-            let Some(target_file) = self.target_file_for_reader(i, file) else {
-                continue;
-            };
-            if let Some(res) = reader.type_entry_at(target_file.as_ref(), line, col) {
+        let pairs = self.resolved_reader_file_ids(file);
+        self.type_entry_at_in_pairs(&pairs, line, col)
+    }
+
+    pub(crate) fn type_entry_at_in_pairs(&self, pairs: &[(usize, u32)], line: u32, col: u32) -> Option<(&str, Option<&str>)> {
+        for &(i, fid) in pairs {
+            if let Some(res) = self.readers[i].type_entry_at_file_id(fid, line, col) {
                 return Some(res);
             }
         }
@@ -134,13 +124,22 @@ impl WorkspaceIndex {
             let Some((first_seg, _)) = cand.split_once("::") else {
                 continue;
             };
-            let has_first_crate = self.has_crate(first_seg);
-            for pass in 0..2 {
-                if pass == 1 && (depth > 0 || has_first_crate) {
-                    break;
+            let first_readers = self.readers_for_crate_fast(first_seg);
+            let has_first_crate = !first_readers.is_empty();
+            for &i in first_readers.iter() {
+                let reader = &self.readers[i];
+                let sub = super::strip_crate_prefix(cand, first_seg).unwrap_or(cand);
+                for q in [Some(cand), (sub != cand).then_some(sub)].into_iter().flatten() {
+                    for r in reader.find_references(q) {
+                        if matches!(DefKind::from(r.kind), DefKind::Variant | DefKind::VariantCtor) && r.target_line() > 0 {
+                            return Some(self.finalize_reader_resolution(i, reader.resolve_ref_definition(r)));
+                        }
+                    }
                 }
+            }
+            if depth == 0 && !has_first_crate {
                 for (i, reader) in self.readers.iter().enumerate() {
-                    if (reader.crate_name() == first_seg) != (pass == 0) {
+                    if reader.crate_name() == first_seg {
                         continue;
                     }
                     let sub = super::strip_crate_prefix(cand, first_seg).unwrap_or(cand);
@@ -167,10 +166,8 @@ impl WorkspaceIndex {
             let Some((first_seg, sub)) = cand.split_once("::") else {
                 continue;
             };
-            for (i, reader) in self.readers.iter().enumerate() {
-                if reader.crate_name() != first_seg {
-                    continue;
-                }
+            for &i in self.readers_for_crate_fast(first_seg).iter() {
+                let reader = &self.readers[i];
                 if !sub.contains("::") {
                     for def in reader.definitions() {
                         if DefKind::from(def.kind) == DefKind::Macro && reader.get_str(def.name_offset()) == sub {
@@ -267,11 +264,8 @@ impl WorkspaceIndex {
         if res.unit_key.is_none() {
             res.unit_key = self.unit_keys.get(i).and_then(|u| u.as_deref());
         }
-        let owner = res
-            .unit_key
-            .filter(|uk| Some(*uk) != self.unit_keys.get(i).and_then(|u| u.as_deref()))
-            .and_then(|uk| self.unit_keys.iter().position(|u| u.as_deref() == Some(uk)))
-            .unwrap_or(i);
+        let owner =
+            res.unit_key.filter(|uk| Some(*uk) != self.unit_keys.get(i).and_then(|u| u.as_deref())).and_then(|uk| self.readers_for_unit_fast(uk).first().copied()).unwrap_or(i);
         if res.source_root.is_none() {
             res.source_root = if self.reader_is_dependency.get(owner).copied().unwrap_or(false) {
                 self.source_roots.get(owner).and_then(|r| r.as_deref())

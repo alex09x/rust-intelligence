@@ -86,20 +86,21 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
             if span.file_id() != file_id {
                 break;
             }
-            if !self.is_name_reference(r) {
-                continue;
-            }
             if let Some((_, best_size)) = best {
                 let min_size = if line > span.start_line() { (line - span.start_line()) as u64 * 80 } else { (col.saturating_sub(span.start_col()) as u64).min(80) };
                 if min_size > best_size {
                     break;
                 }
             }
-            if span.contains(file_id, line, col) {
-                let size = span.approximate_size();
-                if best.is_none_or(|(_, best_size)| size <= best_size) {
-                    best = Some((r, size));
-                }
+            if !span.contains(file_id, line, col) {
+                continue;
+            }
+            if !self.is_name_reference(r) {
+                continue;
+            }
+            let size = span.approximate_size();
+            if best.is_none_or(|(_, best_size)| size <= best_size) {
+                best = Some((r, size));
             }
         }
         best.map(|(r, _)| r)

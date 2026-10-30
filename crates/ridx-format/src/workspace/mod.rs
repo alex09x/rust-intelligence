@@ -237,22 +237,12 @@ impl WorkspaceIndex {
 
         // 2. Unit-based check: if unit_key is known in the workspace and marked as dependency
         if let Some(unit_key) = target_unit_key {
-            for (i, key_opt) in self.unit_keys.iter().enumerate() {
-                if key_opt.as_deref() == Some(unit_key) {
-                    if self.reader_is_dependency.get(i).copied().unwrap_or(false) {
-                        return true;
-                    } else {
-                        // Known local unit (workspace member or local path dependency)
-                        return false;
-                    }
-                }
+            let matching = self.readers_for_unit_fast(unit_key);
+            if let Some(&i) = matching.first() {
+                return self.reader_is_dependency.get(i).copied().unwrap_or(false);
             }
             if self.manifest_path.is_some() {
-                let is_ws_member =
-                    self.unit_keys.iter().enumerate().any(|(i, key_opt)| key_opt.as_deref() == Some(unit_key) && !self.reader_is_dependency.get(i).copied().unwrap_or(false));
-                if !is_ws_member {
-                    return true;
-                }
+                return true;
             }
         }
 

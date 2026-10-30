@@ -28,13 +28,23 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// the package directory for dependencies, relative to the rust-src root for the sysroot;
     /// `WorkspaceIndex::target_file_for_reader` turns any input into it.
     pub fn find_file_id(&self, file_path: &str) -> Option<u32> {
-        let wanted = Path::new(file_path.strip_prefix("./").unwrap_or(file_path));
+        let clean_wanted = file_path.strip_prefix("./").unwrap_or(file_path);
+        let wanted = Path::new(clean_wanted);
+        let wanted_is_abs = wanted.is_absolute();
+        let wanted_needs_comp = clean_wanted.contains("//") || clean_wanted.contains("/.") || clean_wanted.contains('\\') || clean_wanted.ends_with('/');
         for id in 0..self.header.files_count {
             let f = self.get_file(id);
-            if f == file_path || Path::new(f) == wanted {
+            if f == file_path || f.strip_prefix("./").unwrap_or(f) == clean_wanted {
                 return Some(id);
             }
-            if f.contains("..") && normalize_path(Path::new(f)) == wanted {
+            let fp = Path::new(f);
+            if fp.is_absolute() != wanted_is_abs {
+                continue;
+            }
+            if (wanted_needs_comp || f.contains("//") || f.contains("./") || f.contains("/.") || f.contains('\\') || f.ends_with('/')) && fp == wanted {
+                return Some(id);
+            }
+            if f.contains("..") && normalize_path(fp) == wanted {
                 return Some(id);
             }
         }

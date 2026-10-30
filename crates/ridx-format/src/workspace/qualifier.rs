@@ -96,8 +96,10 @@ impl WorkspaceIndex {
         let rest_opt = if qual_trimmed.len() > first_seg.len() + 2 { Some(&qual_trimmed[first_seg.len() + 2..]) } else { None };
 
         let reader_indices = self.reader_indices_for_file(file);
-        let crate_idx = self.reader_index_for_file(file).or_else(|| reader_indices.first().copied().or_else(|| self.candidate_reader_indices_for_file(file).into_iter().next()));
-        let mod_path_opt = self.module_path_for_file(file);
+        let crate_idx = self
+            .reader_index_from_indices(&reader_indices, file)
+            .or_else(|| reader_indices.first().copied().or_else(|| self.candidate_reader_indices_for_file(file).into_iter().next()));
+        let mod_path_opt = crate_idx.and_then(|idx| self.module_path_for_reader(idx, file));
 
         let is_sysroot = !explicit_self && matches!(first_seg, "core" | "alloc" | "std");
         let is_dep_crate = !explicit_self && !is_sysroot && self.has_crate(first_seg);
@@ -106,10 +108,8 @@ impl WorkspaceIndex {
         let mut seen_globs = std::collections::HashSet::new();
         for &idx in &reader_indices {
             let reader = &self.readers[idx];
-            let Some(target_file) = self.target_file_for_reader(idx, file) else {
-                continue;
-            };
-            if let Some(fid) = reader.find_file_id(target_file.as_ref()) {
+            if let Some(fid) = self.target_file_id_for_reader(idx, file) {
+                let target_file = reader.get_file(fid);
                 // Fast path: check if local item exists with path `<mod_path>::<first_seg>`
                 if !is_sysroot && !is_dep_crate {
                     if let Some(ref mod_path) = mod_path_opt {

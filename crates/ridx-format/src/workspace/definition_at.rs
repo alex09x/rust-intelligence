@@ -83,23 +83,24 @@ impl WorkspaceIndex {
         line: u32,
         col: u32,
     ) -> (Option<ResolvedDefinition<'a>>, Option<ResolvedDefinition<'a>>, Option<ResolvedDefinition<'a>>) {
+        let pairs = self.resolved_reader_file_ids(file);
+        self.find_indexed_definition_candidates_in_pairs(&pairs, file, line, col)
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub(crate) fn find_indexed_definition_candidates_in_pairs<'a>(
+        &'a self,
+        pairs: &[(usize, u32)],
+        file: &str,
+        line: u32,
+        col: u32,
+    ) -> (Option<ResolvedDefinition<'a>>, Option<ResolvedDefinition<'a>>, Option<ResolvedDefinition<'a>>) {
         let mut fallback_mod = None;
         let mut fallback_wide_ref: Option<(usize, ResolvedDefinition<'a>)> = None;
         let mut cursor_ident_cache: Option<Option<(String, u32, u32)>> = None;
-        let mut direct: Vec<(usize, std::borrow::Cow<'_, str>)> =
-            self.reader_indices_for_file(file).into_iter().filter_map(|i| self.target_file_for_reader(i, file).map(|tf| (i, tf))).collect();
-        direct.sort_by_key(|&(idx, _)| usize::from(!self.target_kinds.get(idx).copied().flatten().is_some_and(|k| k.is_lib())));
-        let pairs = if !direct.is_empty() {
-            direct
-        } else {
-            self.candidate_reader_indices_for_file(file).into_iter().filter_map(|i| self.target_file_for_reader(i, file).map(|tf| (i, tf))).collect()
-        };
 
-        for (i, target_file) in pairs {
+        for &(i, fid) in pairs {
             let reader = &self.readers[i];
-            let Some(fid) = reader.find_file_id(target_file.as_ref()) else {
-                continue;
-            };
             let inner_ref = reader.find_innermost_ref_at_file_id(fid, line, col);
             let def_inside = inner_ref.and_then(|r| self.definition_inside_reference_at(i, fid, line, col, r));
             let res = if let Some(def) = def_inside {

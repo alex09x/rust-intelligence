@@ -105,13 +105,12 @@ impl WorkspaceIndex {
         for candidate in super::std_map::std_path_candidates(path) {
             let candidate_str = candidate.as_str();
             let first_seg = candidate_str.split("::").next().unwrap_or(candidate_str);
-            let has_first_crate = candidate_str.contains("::") && self.has_crate(first_seg);
+            let first_readers = self.readers_for_crate_fast(first_seg);
+            let has_first_crate = candidate_str.contains("::") && !first_readers.is_empty();
 
             // Fast path: if path starts with `<crate_name>::` or equals `<crate_name>`, check that crate first
-            for (i, reader) in self.readers.iter().enumerate() {
-                if reader.crate_name() != first_seg {
-                    continue;
-                }
+            for &i in first_readers.iter() {
+                let reader = &self.readers[i];
                 let sub = strip_crate_prefix(candidate_str, first_seg).unwrap_or(candidate_str);
                 if let Some(def) = reader.find_definition_by_path(candidate_str).or_else(|| (sub != candidate_str).then(|| reader.find_definition_by_path(sub)).flatten()) {
                     return Some(resolve_def(self.make_resolved_definition(i, def)));
@@ -144,11 +143,10 @@ impl WorkspaceIndex {
             let candidate_str = candidate.as_str();
             if let Some((owner, item_name)) = candidate_str.rsplit_once("::") {
                 let first_seg = owner.split("::").next().unwrap_or(owner);
-                let has_first_crate = self.has_crate(first_seg);
-                for (i, reader) in self.readers.iter().enumerate() {
-                    if reader.crate_name() != first_seg {
-                        continue;
-                    }
+                let first_readers = self.readers_for_crate_fast(first_seg);
+                let has_first_crate = !first_readers.is_empty();
+                for &i in first_readers.iter() {
+                    let reader = &self.readers[i];
                     for def in reader.find_definitions_by_owner(owner) {
                         if reader.get_str(def.name_offset()) == item_name {
                             return Some(resolve_def(self.make_resolved_definition(i, def)));
@@ -186,11 +184,9 @@ impl WorkspaceIndex {
 
     /// Returns the source root path for a loaded crate, if it is an external dependency.
     pub fn crate_source_root(&self, crate_name: &str) -> Option<&Path> {
-        for (i, reader) in self.readers.iter().enumerate() {
-            if reader.crate_name() == crate_name {
-                if let Some(Some(root)) = self.source_roots.get(i) {
-                    return Some(root.as_path());
-                }
+        for &i in self.readers_for_crate_fast(crate_name).iter() {
+            if let Some(Some(root)) = self.source_roots.get(i) {
+                return Some(root.as_path());
             }
         }
         None

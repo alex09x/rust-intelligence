@@ -65,11 +65,33 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
         false
     }
 
+    /// Find a definition by its canonical path and exact `def_id`.
+    pub fn find_definition_by_path_and_id(&self, path: &str, target_def_id: u32) -> Option<&DefEntry> {
+        let hash = fnv1a_64(path.as_bytes());
+        let defs_hash = self.defs_by_hash();
+        let defs = self.definitions();
+
+        if let Ok(idx) = defs_hash.binary_search_by_key(&hash, |e| e.hash()) {
+            let mut i = idx;
+            while i > 0 && defs_hash[i - 1].hash() == hash {
+                i -= 1;
+            }
+            while i < defs_hash.len() && defs_hash[i].hash() == hash {
+                let def = &defs[defs_hash[i].index() as usize];
+                if def.def_id() == target_def_id && self.get_str(def.path_offset()) == path {
+                    return Some(def);
+                }
+                i += 1;
+            }
+        }
+        None
+    }
+
     /// Resolves a `RefEntry` to its target `ResolvedDefinition`.
     pub fn resolve_ref_definition(&self, r: &RefEntry) -> ResolvedDefinition<'_> {
         let target_path = self.get_str(r.target_path_offset());
         if r.target_def_id() != u32::MAX {
-            let by_hash = self.find_definition_by_path(target_path).filter(|d| d.def_id() == r.target_def_id());
+            let by_hash = self.find_definition_by_path_and_id(target_path, r.target_def_id());
             if let Some(def) = by_hash.or_else(|| self.definitions().iter().find(|d| d.def_id() == r.target_def_id())) {
                 return self.def_to_resolved(def);
             }
@@ -143,6 +165,11 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// Finds the innermost TypeEntry at a cursor position `(file, line, col)`.
     pub fn find_innermost_type_entry(&self, file: &str, line: u32, col: u32) -> Option<&TypeEntry> {
         let file_id = self.find_file_id(file)?;
+        self.find_innermost_type_entry_at_file_id(file_id, line, col)
+    }
+
+    /// Finds the innermost TypeEntry at `(file_id, line, col)` without re-scanning the file table.
+    pub fn find_innermost_type_entry_at_file_id(&self, file_id: u32, line: u32, col: u32) -> Option<&TypeEntry> {
         let types = self.types();
         let key = (file_id, line, col);
         let hi = types.partition_point(|e| {
@@ -187,7 +214,13 @@ impl<B: AsRef<[u8]>> IndexReader<B> {
     /// Retrieves the inferred expression type and optional canonical owner path at `(file, line, col)`.
     /// Returns `(type_name, canonical_owner_path)`.
     pub fn type_entry_at(&self, file: &str, line: u32, col: u32) -> Option<(&str, Option<&str>)> {
-        let entry = self.find_innermost_type_entry(file, line, col)?;
+        let file_id = self.find_file_id(file)?;
+        self.type_entry_at_file_id(file_id, line, col)
+    }
+
+    /// Retrieves the inferred expression type and optional canonical owner path at `(file_id, line, col)`.
+    pub fn type_entry_at_file_id(&self, file_id: u32, line: u32, col: u32) -> Option<(&str, Option<&str>)> {
+        let entry = self.find_innermost_type_entry_at_file_id(file_id, line, col)?;
         let ty_name = self.get_str(entry.type_offset());
         let owner_offset = entry.owner_path_offset();
         let owner = if owner_offset != 0 {
