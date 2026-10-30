@@ -266,3 +266,57 @@ fn test_def_zero_end_span_fallback() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_def_file_backed_mod_jumps_to_backing_file_root() {
+    let temp_dir =
+        std::env::temp_dir().join(format!("ridx_test_def_mod_file_{}", std::process::id()));
+    let _ = fs::create_dir_all(temp_dir.join("src"));
+    let lib_file = temp_dir.join("src/lib.rs");
+    let sub_file = temp_dir.join("src/sub.rs");
+    fs::write(&lib_file, "pub mod sub;\n").unwrap();
+    fs::write(&sub_file, "pub fn helper() {}\n").unwrap();
+
+    let mut writer = ridx_format::IndexWriter::new("mod_pkg", "0.1.0");
+    writer.add_definition(ridx_format::RawDefinition {
+        def_id: 1,
+        kind: ridx_format::DefKind::Mod,
+        visibility: 0,
+        is_macro_expansion: false,
+        file: lib_file.to_str().unwrap().to_string(),
+        name: "sub".to_string(),
+        start_line: 1,
+        start_col: 0,
+        end_line: 1,
+        end_col: 12,
+        path: "mod_pkg::sub".to_string(),
+        signature: None,
+    });
+    let ridx_file = temp_dir.join("index.ridx");
+    writer
+        .write_to(&mut fs::File::create(&ridx_file).unwrap())
+        .unwrap();
+
+    let mut ws = ridx_format::WorkspaceIndex::open(&ridx_file).unwrap();
+    ws.set_workspace_root(Some(temp_dir.clone()));
+    let overlay_mgr = OverlayManager::new();
+    let mut conv = crate::lsp::protocol::PositionConverter::new();
+    let uri = format!("file://{}", lib_file.to_str().unwrap());
+
+    let def_req = json!({
+        "params": {
+            "textDocument": { "uri": &uri },
+            "position": { "line": 0, "character": 8 }
+        }
+    });
+    let def_res = handle_definition(&def_req, Some(&ws), &overlay_mgr, &mut conv);
+    assert!(!def_res.is_null());
+    assert_eq!(
+        def_res["uri"].as_str().unwrap(),
+        format!("file://{}", sub_file.to_str().unwrap())
+    );
+    assert_eq!(def_res["range"]["start"]["line"], 0);
+    assert_eq!(def_res["range"]["start"]["character"], 0);
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}

@@ -339,3 +339,51 @@ fn test_hover_utf16_multibyte_alignment() {
     let res = handle_hover(&req, Some(&ws), &overlay_mgr, &mut conv).unwrap();
     assert!(!res.is_null());
 }
+
+#[test]
+fn test_hover_variant_trait_assoc_and_macro_headers() {
+    use crate::lsp::intelligence::hover::format_hover;
+    use ridx_format::{ResolvedDefinition, WorkspaceHover};
+
+    let (_temp, ws, _, _) = setup_test_intelligence();
+    let mk = |kind, name, path, signature, inferred_type| WorkspaceHover {
+        definition: Some(ResolvedDefinition {
+            name,
+            path,
+            kind,
+            signature,
+            file: "src/lib.rs",
+            start_line: 1,
+            start_col: 0,
+            end_line: 1,
+            end_col: 4,
+            is_macro_expansion: false,
+            is_reexport: false,
+            source_root: None,
+            unit_key: None,
+            reader_idx: None,
+        }),
+        inferred_type,
+    };
+
+    let v_val = format_hover(
+        &mk(
+            DefKind::Variant,
+            "Some",
+            "hdr_pkg::MyEnum::Some",
+            Some("Some(T)"),
+            Some("MyEnum<i32>"),
+        ),
+        Some(&ws),
+    );
+    let v_str = v_val["contents"]["value"].as_str().unwrap();
+    assert!(v_str.contains("hdr_pkg::MyEnum\n```\n\n```rust\nSome(T)"));
+    assert!(!v_str.contains("Type:"));
+
+    let m_val = format_hover(
+        &mk(DefKind::Macro, "my_mac", "hdr_pkg::my_mac", None, None),
+        Some(&ws),
+    );
+    let m_str = m_val["contents"]["value"].as_str().unwrap();
+    assert!(m_str.contains("macro_rules! my_mac"));
+}

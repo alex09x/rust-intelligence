@@ -13,7 +13,7 @@
 use super::super::error::LspResult;
 use super::super::protocol::{uri_to_path, PositionConverter};
 use crate::overlay::OverlayManager;
-use ridx_format::WorkspaceIndex;
+use ridx_format::{DefKind, WorkspaceIndex};
 use serde_json::{json, Value};
 
 pub fn handle_hover(
@@ -38,7 +38,7 @@ pub fn handle_hover(
         let is_dirty = overlay_opt.map(|o| o.is_dirty()).unwrap_or(false);
         if !is_dirty {
             if let Some(hover) = ws.hover_at(&file, line_1based, col_1based) {
-                return Ok(format_hover(&hover));
+                return Ok(format_hover(&hover, Some(ws)));
             }
         }
     }
@@ -64,7 +64,7 @@ pub fn handle_hover(
             if overlay.is_dirty() && !overlay.has_modified_imports() {
                 if let Some((ml, mc)) = overlay.map_live_to_compiled(line_1based, col_1based) {
                     if let Some(hover) = ws.hover_at(&file, ml, mc) {
-                        return Ok(format_hover(&hover));
+                        return Ok(format_hover(&hover, Some(ws)));
                     }
                 }
             }
@@ -74,21 +74,115 @@ pub fn handle_hover(
     Ok(Value::Null)
 }
 
-fn format_hover(hover: &ridx_format::WorkspaceHover) -> Value {
-    let mut parts = Vec::new();
+pub(crate) fn format_hover(
+    hover: &ridx_format::WorkspaceHover,
+    ws: Option<&WorkspaceIndex>,
+) -> Value {
+    let mut blocks = Vec::new();
     if let Some(ref d) = hover.definition {
-        if let Some(sig) = d.signature {
-            parts.push(format_signature(d.name, sig));
-        } else {
-            parts.push(format!("{} {}", d.kind.as_str(), d.name));
+        match d.kind {
+            DefKind::Variant | DefKind::VariantCtor => {
+                if let Some((enum_path, _)) = d.path.rsplit_once("::") {
+                    let cname = d
+                        .reader_idx
+                        .and_then(|idx| ws.and_then(|w| w.readers().get(idx)))
+                        .map(|r| r.crate_name())
+                        .unwrap_or("");
+                    let full = if !cname.is_empty()
+                        && !enum_path.starts_with(&format!("{cname}::"))
+                        && enum_path != cname
+                    {
+                        format!("{cname}::{enum_path}")
+                    } else {
+                        enum_path.to_string()
+                    };
+                    blocks.push(full);
+                }
+                if let Some(sig) = d.signature {
+                    blocks.push(sig.strip_prefix("variant ").unwrap_or(sig).to_string());
+                } else {
+                    blocks.push(d.name.to_string());
+                }
+            }
+            DefKind::AssocFn => {
+                if let Some(sig) = d.signature {
+                    blocks.push(format_signature(d.name, sig));
+                } else {
+                    blocks.push(format!("fn {}", d.name));
+                }
+            }
+            DefKind::AssocTy | DefKind::TyAlias => {
+                if let Some(sig) = d.signature {
+                    if sig.starts_with("type ") || sig.contains(" type ") {
+                        blocks.push(sig.to_string());
+                    } else if sig.is_empty() {
+                        blocks.push(format!("type {}", d.name));
+                    } else {
+                        blocks.push(format!("type {}: {sig}", d.name));
+                    }
+                } else {
+                    blocks.push(format!("type {}", d.name));
+                }
+            }
+            DefKind::Macro => {
+                if let Some(sig) = d.signature {
+                    blocks.push(sig.to_string());
+                } else {
+                    blocks.push(format!("macro_rules! {}", d.name));
+                }
+            }
+            DefKind::Mod => {
+                let mname = if d.name.is_empty() {
+                    d.reader_idx
+                        .and_then(|idx| ws.and_then(|w| w.readers().get(idx)))
+                        .map(|r| r.crate_name())
+                        .unwrap_or("")
+                } else {
+                    d.name
+                };
+                blocks.push(format!("mod {mname}"));
+            }
+            _ => {
+                if let Some(sig) = d.signature {
+                    blocks.push(format_signature(d.name, sig));
+                } else {
+                    blocks.push(format!("{} {}", d.kind.as_str(), d.name));
+                }
+            }
         }
     }
-    if let Some(t) = hover.inferred_type {
-        if !parts.iter().any(|p| p.contains(t)) {
-            parts.push(format!("Type: {}", t));
+    let show_inferred_type = hover.definition.as_ref().is_none_or(|d| {
+        !matches!(
+            d.kind,
+            DefKind::Mod
+                | DefKind::Struct
+                | DefKind::Enum
+                | DefKind::Union
+                | DefKind::Trait
+                | DefKind::TyAlias
+                | DefKind::AssocTy
+                | DefKind::Variant
+                | DefKind::VariantCtor
+                | DefKind::Macro
+                | DefKind::Use
+        )
+    });
+    if show_inferred_type {
+        if let Some(t) = hover.inferred_type {
+            if !blocks.iter().any(|p| p.contains(t)) {
+                if let Some(last) = blocks.last_mut() {
+                    last.push_str(&format!("\nType: {t}"));
+                } else {
+                    blocks.push(format!("Type: {t}"));
+                }
+            }
         }
     }
-    let hover_text = format!("```rust\n{}\n```", parts.join("\n"));
+    let hover_text = blocks
+        .into_iter()
+        .map(|b| format!("```rust\n{b}\n```"))
+        .collect::<Vec<_>>()
+        .join("\n\n");
     json!({
         "contents": {
             "kind": "markdown",

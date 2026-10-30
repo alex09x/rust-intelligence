@@ -79,6 +79,21 @@ pub fn handle_definition(
         if query_line > 0 {
             if let Some(def) = ws.find_definition_at(&file, query_line, query_col) {
                 let resolved_path = def.resolved_path();
+                if matches!(def.kind, DefKind::Mod | DefKind::Use | DefKind::ExternCrate)
+                    && !def.name.is_empty()
+                {
+                    if let Some(mod_file) = resolve_backing_module_file(ws, &def, &resolved_path) {
+                        if let Some(mod_str) = mod_file.to_str() {
+                            return json!({
+                                "uri": path_to_uri(mod_str),
+                                "range": {
+                                    "start": { "line": 0, "character": 0 },
+                                    "end": { "line": 0, "character": 0 }
+                                }
+                            });
+                        }
+                    }
+                }
                 let path_str = resolved_path.to_str().unwrap_or(def.file);
                 let uri = path_to_uri(path_str);
                 let (start_line, end_line, start_char, end_char) = if let Some(target_ov) =
@@ -148,6 +163,90 @@ pub fn handle_definition(
     }
 
     Value::Null
+}
+
+fn resolve_backing_module_file(
+    ws: &WorkspaceIndex,
+    def: &ridx_format::ResolvedDefinition<'_>,
+    decl_file: &std::path::Path,
+) -> Option<std::path::PathBuf> {
+    let mod_name = def.name;
+    if def.kind == DefKind::Mod {
+        let parent = decl_file.parent()?;
+        let stem = decl_file.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        let mut dirs = Vec::new();
+        if !stem.is_empty() && !matches!(stem, "lib" | "main" | "mod") {
+            dirs.push(parent.join(stem));
+        }
+        dirs.push(parent.to_path_buf());
+        for dir in &dirs {
+            for cand in [
+                dir.join(format!("{mod_name}.rs")),
+                dir.join(mod_name).join("mod.rs"),
+            ] {
+                if cand != decl_file && cand.is_file() {
+                    return Some(cand);
+                }
+            }
+        }
+        if let Some(reader) = def.reader_idx.and_then(|idx| ws.readers().get(idx)) {
+            let raw_path = std::path::Path::new(def.file);
+            if let Some(raw_parent) = raw_path.parent() {
+                let raw_stem = raw_path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                let mut raw_dirs = Vec::new();
+                if !raw_stem.is_empty() && !matches!(raw_stem, "lib" | "main" | "mod") {
+                    raw_dirs.push(raw_parent.join(raw_stem));
+                }
+                raw_dirs.push(raw_parent.to_path_buf());
+                for dir in &raw_dirs {
+                    for cand in [
+                        dir.join(format!("{mod_name}.rs")),
+                        dir.join(mod_name).join("mod.rs"),
+                    ] {
+                        if let Some(cs) = cand.to_str() {
+                            if cs != def.file && reader.find_file_id(cs).is_some() {
+                                return Some(cand);
+                            }
+                        }
+                    }
+                    let sub_prefix = format!("{}/", dir.join(mod_name).display());
+                    if (0..reader.files_count())
+                        .any(|fid| reader.get_file(fid).starts_with(&sub_prefix))
+                    {
+                        return Some(dir.join(mod_name).join("mod.rs"));
+                    }
+                }
+                if def.file.starts_with("library/") && def.start_line == def.end_line {
+                    return Some(raw_parent.join(format!("{mod_name}.rs")));
+                }
+            }
+        }
+    }
+    if decl_file.is_file() && def.start_line > 0 {
+        if let Ok(src) = std::fs::read_to_string(decl_file) {
+            if let Some(ln) = src.lines().nth(def.start_line.saturating_sub(1) as usize) {
+                if let Some((_, after)) = ln.split_once("extern crate ") {
+                    if let Some((real_crate, _)) = after.split_once(" as ") {
+                        let rc = real_crate.trim().trim_end_matches(';').trim();
+                        if let Some(ed) = ws.find_definition_by_path(rc) {
+                            if ed.kind == DefKind::Mod {
+                                return Some(ed.resolved_path());
+                            }
+                        }
+                        for r in ws.readers() {
+                            if r.crate_name() == rc && r.files_count() > 0 {
+                                let f0 = r.get_file(0);
+                                if !f0.is_empty() {
+                                    return Some(ws.resolve_path_for_crate(rc, f0));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 fn is_ident_on_line(text: &str, line_starts: &[usize], line_1based: u32, name: &str) -> bool {
