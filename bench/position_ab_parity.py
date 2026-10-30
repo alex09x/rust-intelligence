@@ -101,12 +101,20 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
             "both_empty": 0, "mismatch": 0, "classes": Counter(),
             "ra_recalls": [], "ridx_outsides": [],
             "target_in_ra": 0, "target_in_ridx": 0, "target_in_top20": 0, "target_eval": 0,
+            "ref_precisions": [], "ref_recalls": [],
+            "ref_ridx_ws": 0, "ref_ra_ws": 0, "ref_common_ws": 0,
         })
         m["n"] += 1
         if a_ans["outcome"] == "a":
             m["ra_non_empty"] += 1
             if parity in ("exact_match", "core_match"):
                 m["matched_on_ra_non_empty"] += 1
+            if "row_precision" in ev and "row_recall" in ev:
+                m["ref_precisions"].append(ev["row_precision"])
+                m["ref_recalls"].append(ev["row_recall"])
+                m["ref_ridx_ws"] += int(ev.get("ridx_ws", 0))
+                m["ref_ra_ws"] += int(ev.get("ra_ws", 0))
+                m["ref_common_ws"] += int(ev.get("common_ws", 0))
             if row["method"] == "completion" and "ra_label_recall" in ev:
                 m["ra_recalls"].append(ev["ra_label_recall"])
                 m["ridx_outsides"].append(ev["ridx_outside_ra_ratio"])
@@ -138,6 +146,16 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
             "matched_on_ra_non_empty_pct": round(100.0 * m["matched_on_ra_non_empty"] / denom, 1),
             "classes": dict(sorted(m["classes"].items())),
         }
+        if m["ref_precisions"]:
+            entry.update({
+                "mean_row_precision_pct": round(100.0 * sum(m["ref_precisions"]) / len(m["ref_precisions"]), 1),
+                "mean_row_recall_pct": round(100.0 * sum(m["ref_recalls"]) / len(m["ref_recalls"]), 1),
+                "line_precision_pct": round(100.0 * m["ref_common_ws"] / max(1, m["ref_ridx_ws"]), 1),
+                "line_recall_pct": round(100.0 * m["ref_common_ws"] / max(1, m["ref_ra_ws"]), 1),
+                "total_ridx_ws_lines": m["ref_ridx_ws"],
+                "total_ra_ws_lines": m["ref_ra_ws"],
+                "total_common_ws_lines": m["ref_common_ws"],
+            })
         if key == "completion" and m["ra_recalls"]:
             teval = m["target_eval"] or 1
             entry.update({

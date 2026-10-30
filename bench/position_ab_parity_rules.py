@@ -21,6 +21,7 @@ from position_ab_parity_norm import normalize_answer
 
 NAV_KEYS = frozenset({"definition", "declaration", "type_definition", "implementation"})
 REF_KEYS = frozenset({"references", "document_highlight"})
+REFS_SUPERSET_MAX_RATIO = 1.25
 COMP_RECALL_THRESHOLD = 0.80
 COMP_OUTSIDE_MAX = 0.20
 REG_VER_RE = re.compile(r"-[0-9]+\.[0-9]+\.[0-9]+[^/]*")
@@ -173,58 +174,62 @@ def compare_navigation(row, r_norm, a_norm, read_lines_fn=None):
 
 def compare_references(row, r_norm, a_norm, read_lines_fn=None):
     rs, as_ = set(r_norm["spans"]), set(a_norm["spans"])
-    if rs == as_:
-        return "exact_match", None, {"spans": len(rs)}
     rw = active_ws_lines(r_norm["ws_lines"], read_lines_fn)
     aw = active_ws_lines(a_norm["ws_lines"], read_lines_fn)
-    if rw == aw and rw:
-        return "core_match", "c_refs_active_ws_lines_equal", {"ws_lines": len(rw)}
-    if aw and aw.issubset(rw):
-        return "core_match", "c_refs_active_ws_superset", {"ridx_ws": len(rw), "ra_ws": len(aw)}
-    if rw and not aw:
-        return "ridx_only", "c_refs_ridx_active_ws_ra_none", {"ridx_ws": len(rw), "ra_ws": 0}
     common = rw & aw
+    if rs == as_:
+        return "exact_match", None, {"spans": len(rs), "ridx_ws": len(rw), "ra_ws": len(aw), "common_ws": len(common), "row_precision": 1.0, "row_recall": 1.0}
+    if rw == aw and rw:
+        return "core_match", "c_refs_active_ws_lines_equal", {"ws_lines": len(rw), "ridx_ws": len(rw), "ra_ws": len(aw), "common_ws": len(rw), "row_precision": 1.0, "row_recall": 1.0}
+    if aw and aw.issubset(rw):
+        prec = round(len(aw) / len(rw), 4)
+        if len(rw) <= REFS_SUPERSET_MAX_RATIO * len(aw):
+            return "core_match", "c_refs_active_ws_superset", {"ridx_ws": len(rw), "ra_ws": len(aw), "common_ws": len(aw), "row_precision": prec, "row_recall": 1.0}
+        return "partial", "p_refs_ridx_excess", {"ridx_ws": len(rw), "ra_ws": len(aw), "common_ws": len(aw), "excess_ratio": round(len(rw) / len(aw), 4), "row_precision": prec, "row_recall": 1.0}
+    if rw and not aw:
+        return "ridx_only", "c_refs_ridx_active_ws_ra_none", {"ridx_ws": len(rw), "ra_ws": 0, "common_ws": 0}
     if common:
         ra_only = sorted(aw - rw)
         sym = row.get("symbol") or ""
         all_lines = [read_ws_line(p, ln, read_lines_fn) for p, ln in ra_only]
         ra_only_total = len(ra_only)
-        decl_pat = re.compile(rf"\b(?:fn|type|const)\s+{re.escape(sym)}\b") if sym else None
+        sym_pat = re.compile(rf"\b{re.escape(sym)}\b") if sym else None
+        decl_pat = re.compile(rf"\b(?:fn|type|const)\s+(?:derive_)?{re.escape(sym)}\b") if sym else None
         decl_lines = sum(1 for s in all_lines if decl_pat and decl_pat.search(s))
         macro_lines = sum(1 for s in all_lines if "$(" in s)
-        self_kw_lines = sum(1 for s in all_lines if sym and re.search(r"\bSelf\b", s) and sym not in s)
+        self_kw_lines = sum(1 for s in all_lines if sym_pat and re.search(r"\bSelf\b", s) and not sym_pat.search(s))
         mod_seg_lines = sum(1 for s in all_lines if sym and f"{sym}::" in s)
-        if ra_only_total > 0 and all(all_lines) and macro_lines == ra_only_total:
+        non_decl_lines = sum(1 for s in all_lines if s and not (decl_pat and decl_pat.search(s)))
+        ok = ra_only_total > 0 and all(all_lines)
+        if ok and macro_lines == ra_only_total:
             cls = "p_refs_ra_only_macro_def"
-        elif ra_only_total > 0 and all(all_lines) and self_kw_lines == ra_only_total:
+        elif ok and self_kw_lines == ra_only_total:
             cls = "p_refs_ra_only_self_keyword"
-        elif ra_only_total > 0 and all(all_lines) and decl_lines == ra_only_total:
+        elif ok and decl_lines == ra_only_total:
             cls = "p_refs_trait_impl_sibling_decl"
-        elif ra_only_total > 0 and all(all_lines) and mod_seg_lines == ra_only_total:
+        elif ok and mod_seg_lines == ra_only_total:
             cls = "p_refs_module_path_segment"
-        elif decl_lines > 0:
+        elif ok and 0 < decl_lines < ra_only_total and non_decl_lines > 0 and decl_lines + non_decl_lines == ra_only_total:
             cls = "p_refs_partial_mixed_decl_and_usages"
-        else:
+        elif ok and decl_lines == 0 and non_decl_lines == ra_only_total:
             cls = "p_refs_partial_overlap"
+        else:
+            cls = "unclassified"
         return "partial", cls, {
             "common_ws": len(common), "ridx_ws": len(rw), "ra_ws": len(aw),
-            "ra_only_total": ra_only_total, "decl_lines": decl_lines,
+            "row_precision": round(len(common) / len(rw), 4) if rw else 0.0, "row_recall": round(len(common) / len(aw), 4) if aw else 0.0,
+            "ra_only_total": ra_only_total, "decl_lines": decl_lines, "non_decl_lines": non_decl_lines,
             "decl_ratio": round(decl_lines / ra_only_total, 4) if ra_only_total else 0.0,
-            "self_keyword_lines": self_kw_lines, "macro_lines": macro_lines,
-            "ra_only_sample": ra_only[:5],
+            "self_keyword_lines": self_kw_lines, "macro_lines": macro_lines, "ra_only_sample": ra_only[:5],
         }
+    base_ev = {"ridx_ws": len(rw), "ra_ws": len(aw), "common_ws": 0, "row_precision": 0.0, "row_recall": 0.0}
     if rs and not rw and aw and any(p.startswith(("registry:", "sysroot:", "git:")) for p, *_ in rs):
-        return "mismatch", "p_refs_external_decl_only", {
-            "ridx_external": len(rs), "ra_ws": len(aw), "ridx_sample": sorted(rs)[:3],
-        }
+        return "mismatch", "p_refs_external_decl_only", {**base_ev, "ridx_external": len(rs), "ridx_sample": sorted(rs)[:3]}
     sym = row.get("symbol") or ""
-    line_text = cursor_line_text(row, read_lines_fn)
-    after_tok = suffix_after_cursor_symbol(line_text, int(row.get("character") or 0), sym)
+    after_tok = suffix_after_cursor_symbol(cursor_line_text(row, read_lines_fn), int(row.get("character") or 0), sym)
     if rw and aw and after_tok.startswith("::"):
-        return "mismatch", "p_refs_path_segment_cursor_line", {
-            "ridx_ws": len(rw), "ra_ws": len(aw), "symbol": sym,
-        }
-    return "mismatch", "unclassified", {"ridx_ws": len(rw), "ra_ws": len(aw)}
+        return "mismatch", "p_refs_path_segment_cursor_line", {**base_ev, "symbol": sym}
+    return "mismatch", "unclassified", base_ev
 
 
 def compare_hover(row, r_norm, a_norm, read_lines_fn=None):
@@ -370,6 +375,9 @@ def evaluate_row(row, r_ans, a_ans, repo, read_lines_fn=None, ws_table=None):
         return "ridx_only", "c_ridx_answers_ra_empty_or_err", {"ridx_outcome": ro, "ra_outcome": ao, "ra_error": a_ans.get("error")}
     if ro in ("b", "c") and ao == "a":
         cls, ev = classify_b_to_a(row, repo, a_ans.get("res"), read_lines_fn, ws_table)
+        if row["method"] in REF_KEYS:
+            aw = active_ws_lines(normalize_answer(row["method"], a_ans.get("res"), repo)["ws_lines"], read_lines_fn)
+            ev.update({"ridx_ws": 0, "ra_ws": len(aw), "common_ws": 0, "row_precision": 0.0, "row_recall": 0.0})
         return "mismatch", cls, ev
     if ro == "c" and ao == "c":
         return "both_empty", "c_both_error", {"ridx_error": r_ans.get("error"), "ra_error": a_ans.get("error")}

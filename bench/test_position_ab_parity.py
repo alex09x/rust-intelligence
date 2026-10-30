@@ -211,6 +211,20 @@ class TestPositionAbParityRules(unittest.TestCase):
         self.assertEqual(ev_m["decl_lines"], 11)
         self.assertAlmostEqual(ev_m["decl_ratio"], 11 / 12, places=4)
 
+        # Superset precision cap k=1.25: 5/4 = 1.25 is core_match, 6/4 = 1.50 is partial p_refs_ridx_excess.
+        a_four = {"outcome": "a", "res": [loc(i) for i in range(1, 5)]}
+        r_five = {"outcome": "a", "res": [loc(i) for i in range(1, 6)]}
+        r_six = {"outcome": "a", "res": [loc(i) for i in range(1, 7)]}
+        self.assertEqual(evaluate_row(row, r_five, a_four, REPO, lambda _: mixed_file)[:2], ("core_match", "c_refs_active_ws_superset"))
+        par_ex, cls_ex, ev_ex = evaluate_row(row, r_six, a_four, REPO, lambda _: mixed_file)
+        self.assertEqual((par_ex, cls_ex), ("partial", "p_refs_ridx_excess"))
+        self.assertEqual(ev_ex["excess_ratio"], 1.5)
+        self.assertAlmostEqual(ev_ex["row_precision"], 4 / 6, places=4)
+        self.assertEqual(ev_ex["row_recall"], 1.0)
+
+        # Unreadable ra_only line returns unclassified instead of falling into partial_overlap.
+        self.assertEqual(evaluate_row(row, r_ans, a_ans, REPO, lambda _: [""])[:2], ("partial", "unclassified"))
+
         # When ra's references are all filtered out (empty aw) while ridx has active ws refs, classify as ridx_only.
         ext_loc = {"uri": "file:///library/core/src/lib.rs", "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 4}}}
         self.assertEqual(
