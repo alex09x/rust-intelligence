@@ -161,6 +161,11 @@ class TestPositionAbParityRules(unittest.TestCase):
         # Ordinary string ending in 'r"' must NOT trigger raw-string detection on later lines.
         non_raw_lines = ['let s = "color";', "let x = Foo;", 'let end = "r";']
         self.assertEqual(evaluate_row(row_raw, r_b, a_a, REPO, lambda _: non_raw_lines)[:2], ("mismatch", "unclassified"))
+        # Nested /* ... */ block comments containing r#" must not trigger false raw-string detection, while cr#"..."# does.
+        nested_comment_lines = ['/* outer /* inner */ still comment r#" */', "let x = Foo;"]
+        self.assertEqual(evaluate_row(row_raw, r_b, a_a, REPO, lambda _: nested_comment_lines)[:2], ("mismatch", "unclassified"))
+        cr_raw_lines = ["fn t() {", '    let c = cr#"', "struct Foo;", '"#;', "}"]
+        self.assertEqual(evaluate_row(row_raw, r_b, a_a, REPO, lambda _: cr_raw_lines)[:2], ("mismatch", "p_b_to_a_raw_string_fixture"))
 
         # Unstored workspace file when ws_table is provided
         ws_table = [("shard0", "src/lib.rs")]
@@ -205,6 +210,19 @@ class TestPositionAbParityRules(unittest.TestCase):
         self.assertEqual((parity_m, cls_m), ("partial", "p_refs_partial_mixed_decl_and_usages"))
         self.assertEqual(ev_m["decl_lines"], 11)
         self.assertAlmostEqual(ev_m["decl_ratio"], 11 / 12, places=4)
+
+        # When ra's references are all filtered out (empty aw) while ridx has active ws refs, classify as ridx_only.
+        ext_loc = {"uri": "file:///library/core/src/lib.rs", "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 4}}}
+        self.assertEqual(
+            evaluate_row(row, r_ans, {"outcome": "a", "res": [ext_loc]}, REPO, lambda _: all_decl_file)[:2],
+            ("ridx_only", "c_refs_ridx_active_ws_ra_none"),
+        )
+
+        # Hover on #[proc_macro_attribute] pub fn main vs ra's `proc_macro main` matches as c_hover_same_decl_head.
+        h_row = {"method": "hover", "file": "src/lib.rs", "line": 1, "character": 8, "symbol": "main", "cursor_kind": "fn_def", "target_kind": "proc-macro"}
+        r_h = {"outcome": "a", "res": {"contents": {"kind": "markdown", "value": "```rust\npub fn main(args: TokenStream) -> TokenStream\n```"}}}
+        a_h = {"outcome": "a", "res": {"contents": {"kind": "markdown", "value": "```rust\ntokio_macros\n```\n\n```rust\nproc_macro main\n```\n\n---\n\n```rust\nasync fn main() {}\n```"}}}
+        self.assertEqual(evaluate_row(h_row, r_h, a_h, REPO)[:2], ("core_match", "c_hover_same_decl_head"))
 
     def test_evaluate_all_rows_excludes_partial_and_ridx_only_from_parity_rate(self):
         rows = [

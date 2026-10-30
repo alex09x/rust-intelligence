@@ -14,7 +14,7 @@ from position_ab_content_rules import decode_tokens, scrub_path, token_data, uri
 CODE_BLOCK_RE = re.compile(r"```(?:rust)?\n(.*?)```", re.DOTALL)
 DECL_HEAD_RE = re.compile(
     r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:unsafe\s+|async\s+|const\s+|auto\s+)*"
-    r"(fn|struct|enum|trait|type|mod|const|static|union|macro_rules!)\s+([A-Za-z_][A-Za-z0-9_]*)"
+    r"(fn|struct|enum|trait|type|mod|const|static|union|macro_rules!|proc_macro)\s+([A-Za-z_][A-Za-z0-9_]*)"
 )
 PAREN_SUFFIX_RE = re.compile(r"\s*\(.*\)$")
 TOKEN_TYPES = (
@@ -93,17 +93,22 @@ def normalize_hover(res):
         val = ""
     if not val.strip():
         return {"empty": True, "decl": None, "sig_line": "", "type_line": "", "text": ""}
-    blocks = [b.strip() for b in CODE_BLOCK_RE.findall(val) if b.strip()]
+    header_part = val.split("\n---\n", 1)[0]
+    blocks = [b.strip() for b in CODE_BLOCK_RE.findall(header_part) if b.strip()]
+    if not blocks:
+        blocks = [b.strip() for b in CODE_BLOCK_RE.findall(val) if b.strip()]
     code_lines = [ln.strip() for b in blocks for ln in b.splitlines() if ln.strip()]
     decl, sig_line, type_line = None, "", ""
+    decl_is_open_brace = False
     for ln in code_lines:
         if ln.startswith("Type:"):
             type_line = ln[len("Type:"):].strip()
             continue
         m = DECL_HEAD_RE.match(ln)
-        if m and decl is None:
+        if m and (decl is None or (decl[0] == "trait" and not decl_is_open_brace)):
             decl = (m.group(1), m.group(2))
             sig_line = re.sub(r"^pub(?:\([^)]*\))?\s+", "", ln)
+            decl_is_open_brace = ln.endswith("{")
     if not sig_line and code_lines:
         sig_line = code_lines[0]
     return {"empty": False, "decl": decl, "sig_line": sig_line, "type_line": type_line, "text": val}

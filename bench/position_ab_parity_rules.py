@@ -27,7 +27,7 @@ REG_VER_RE = re.compile(r"-[0-9]+\.[0-9]+\.[0-9]+[^/]*")
 
 
 def in_raw_string_literal(lines, idx):
-    """True when 0-based line `idx` starts inside a multi-line raw string literal `r"..."` or `r#"..."#`."""
+    """True when 0-based line `idx` starts inside a multi-line raw string literal `r"..."`, `br"..."`, or `cr"..."`."""
     if not lines or idx <= 0 or idx >= len(lines):
         return False
     text = "\n".join(lines[:idx])
@@ -38,11 +38,17 @@ def in_raw_string_literal(lines, idx):
             nl = text.find("\n", i + 2)
             i = n if nl < 0 else nl + 1
         elif ch == "/" and i + 1 < n and text[i + 1] == "*":
-            end = text.find("*/", i + 2)
-            i = n if end < 0 else end + 2
-        elif ch in ("r", "b") and (i == 0 or not (text[i - 1].isalnum() or text[i - 1] in "_'\"")):
-            j = i + (2 if text[i:i + 2] == "br" else 1) if ch == "b" else i + 1
-            if ch == "b" and j == i + 1:
+            depth, i = 1, i + 2
+            while i < n and depth > 0:
+                if text[i:i + 2] == "/*":
+                    depth, i = depth + 1, i + 2
+                elif text[i:i + 2] == "*/":
+                    depth, i = depth - 1, i + 2
+                else:
+                    i += 1
+        elif ch in ("r", "b", "c") and (i == 0 or not (text[i - 1].isalnum() or text[i - 1] in "_'\"")):
+            j = i + (2 if text[i:i + 2] in ("br", "cr") else 1) if ch in ("b", "c") else i + 1
+            if ch in ("b", "c") and j == i + 1:
                 i += 1
                 continue
             hashes = 0
@@ -175,6 +181,8 @@ def compare_references(row, r_norm, a_norm, read_lines_fn=None):
         return "core_match", "c_refs_active_ws_lines_equal", {"ws_lines": len(rw)}
     if aw and aw.issubset(rw):
         return "core_match", "c_refs_active_ws_superset", {"ridx_ws": len(rw), "ra_ws": len(aw)}
+    if rw and not aw:
+        return "ridx_only", "c_refs_ridx_active_ws_ra_none", {"ridx_ws": len(rw), "ra_ws": 0}
     common = rw & aw
     if common:
         ra_only = sorted(aw - rw)
@@ -219,26 +227,34 @@ def compare_references(row, r_norm, a_norm, read_lines_fn=None):
     return "mismatch", "unclassified", {"ridx_ws": len(rw), "ra_ws": len(aw)}
 
 
-def compare_hover(row, r_norm, a_norm):
-    if r_norm["decl"] and r_norm["decl"] == a_norm["decl"]:
+def compare_hover(row, r_norm, a_norm, read_lines_fn=None):
+    rd, ad = r_norm["decl"], a_norm["decl"]
+    if rd and ad and (
+        rd == ad
+        or (rd[1] == ad[1] and ({rd[0], ad[0]} <= {"type", "struct", "enum", "union"} or {rd[0], ad[0]} <= {"fn", "proc_macro", "macro_rules!"}))
+    ):
         if r_norm["sig_line"] == a_norm["sig_line"]:
             return "exact_match", None, {"sig": r_norm["sig_line"]}
         return "core_match", "c_hover_same_decl_head", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
-    if not r_norm["decl"] and not a_norm["decl"] and r_norm["sig_line"] and r_norm["sig_line"] == a_norm["sig_line"]:
+    if not rd and not ad and r_norm["sig_line"] and r_norm["sig_line"] == a_norm["sig_line"]:
         return "exact_match", None, {"sig": r_norm["sig_line"]}
+    r_ty = re.sub(r"'[A-Za-z0-9_]+\s*", "", r_norm["type_line"] or r_norm["sig_line"]).strip()
+    a_ty = re.sub(r"'[A-Za-z0-9_]+\s*", "", a_norm["type_line"] or a_norm["sig_line"]).strip()
+    if not rd and not ad and r_ty and r_ty == a_ty:
+        return "core_match", "c_hover_same_decl_head", {"ridx": r_norm["type_line"] or r_norm["sig_line"], "ra": a_norm["sig_line"]}
     if r_norm["sig_line"].startswith("variant "):
         return "mismatch", "p_hover_variant_header", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
-    if r_norm["sig_line"].startswith("macro ") and a_norm["decl"] and a_norm["decl"][0] == "macro_rules!":
+    if r_norm["sig_line"].startswith("macro ") and ad and ad[0] == "macro_rules!":
         return "mismatch", "p_hover_macro_keyword_format", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
-    if r_norm["decl"] and r_norm["decl"][0] == "fn" and a_norm["decl"] and a_norm["decl"][0] == "trait":
+    if rd and rd[0] == "fn" and ad and ad[0] == "trait":
         return "mismatch", "p_hover_trait_method_container_header", {
-            "ridx_decl": r_norm["decl"], "ra_decl": a_norm["decl"], "ridx": r_norm["sig_line"], "ra": a_norm["sig_line"],
+            "ridx_decl": rd, "ra_decl": ad, "ridx": r_norm["sig_line"], "ra": a_norm["sig_line"],
         }
-    if a_norm["decl"] and a_norm["decl"][0] == "type" and not r_norm["decl"] and r_norm["sig_line"]:
+    if ad and ad[0] == "type" and not rd and r_norm["sig_line"]:
         return "mismatch", "p_hover_assoc_type_decl_format", {"ridx": r_norm["sig_line"], "ra": a_norm["sig_line"]}
-    if r_norm["decl"] and a_norm["decl"] and r_norm["decl"] != a_norm["decl"]:
-        return "mismatch", "p_hover_different_decl_head", {"ridx_decl": r_norm["decl"], "ra_decl": a_norm["decl"]}
-    if r_norm["type_line"] or r_norm["sig_line"].startswith(("use ", "impl ", "fn ", "field ")):
+    if rd and ad and rd != ad:
+        return "mismatch", "p_hover_different_decl_head", {"ridx_decl": rd, "ra_decl": ad}
+    if r_norm["type_line"] or r_norm["sig_line"].startswith(("use ", "impl ", "fn ", "field ", "mod ")):
         return "mismatch", "p_hover_enclosing_expr_or_use", {
             "ridx": r_norm["sig_line"] or r_norm["type_line"], "ra": a_norm["sig_line"],
         }
@@ -365,7 +381,7 @@ def evaluate_row(row, r_ans, a_ans, repo, read_lines_fn=None, ws_table=None):
     if method in REF_KEYS:
         return compare_references(row, r_norm, a_norm, read_lines_fn)
     if method == "hover":
-        return compare_hover(row, r_norm, a_norm)
+        return compare_hover(row, r_norm, a_norm, read_lines_fn)
     if method == "completion":
         return compare_completion(row, r_norm, a_norm, read_lines_fn)
     if r_norm == a_norm:

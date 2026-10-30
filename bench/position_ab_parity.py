@@ -86,8 +86,8 @@ def evaluate_all_rows(rows, ridx_name, ra_name, repo_dir, read_lines_fn, ws_tabl
         r_ans, a_ans = raw[ridx_name], raw[ra_name]
         parity, cls, ev = evaluate_row(row, r_ans, a_ans, str(repo_dir), read_lines_fn, ws_table)
         row["results"] = {
-            ridx_name: {"outcome": r_ans["outcome"], "us": r_ans["us"], "error": r_ans["error"]},
-            ra_name: {"outcome": a_ans["outcome"], "us": a_ans["us"], "error": a_ans["error"]},
+            k: {"outcome": v["outcome"], "us": v["us"], "error": v["error"]}
+            for k, v in raw.items()
         }
         row["parity"] = parity
         row["class"] = cls
@@ -168,12 +168,12 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--timeout", type=float, default=2.0)
     ap.add_argument("--file-table", action="append", default=[], type=Path)
-    ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--out-differing", type=Path)
+    ap.add_argument("--out", action="append", required=True, type=Path)
+    ap.add_argument("--out-differing", action="append", default=[], type=Path)
     args = ap.parse_args(argv)
 
     servers = parse_servers(args.ridx, args.ra)
-    ridx_srv = next(s for s in servers if not s[2])
+    ridx_srvs = [s for s in servers if not s[2]]
     ra_srv = next(s for s in servers if s[2])
     repo_dir = args.repo.resolve()
     shards = check_ridx_index(repo_dir)
@@ -196,64 +196,74 @@ def main(argv=None):
                 cache[rel] = []
         return cache[rel]
 
-    rows = build_rows(positions, methods, args.limit, repo_dir, entries, read_lines)
+    raw_rows = build_rows(positions, methods, args.limit, repo_dir, entries, read_lines)
     canary = [scenario_from_record("definition", rec, repo_dir) for rec in (positions.get("definition") or [])[:3]]
     repo_head = subprocess.run(["git", "-C", str(repo_dir), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     started = datetime.now(timezone.utc).isoformat()
-    runs = []
-    for name, cmd, is_ra, binary in (ridx_srv, ra_srv):
-        print(f"{repo_dir.name}: {'rust-analyzer' if is_ra else 'ridx'} {name} ({binary}), {len(rows)} requests ...", flush=True)
-        ready, seconds = ask_server(name, cmd, is_ra, rows, repo_dir, args.timeout, canary)
-        runs.append({
+    runs_by_name = {}
+    for name, cmd, is_ra, binary in [*ridx_srvs, ra_srv]:
+        print(f"{repo_dir.name}: {'rust-analyzer' if is_ra else 'ridx'} {name} ({binary}), {len(raw_rows)} requests ...", flush=True)
+        ready, seconds = ask_server(name, cmd, is_ra, raw_rows, repo_dir, args.timeout, canary)
+        runs_by_name[name] = {
             "name": name, "kind": "rust-analyzer" if is_ra else "ridx", "binary": binary_label(binary),
             **parse_version(version_of(binary)), "ready": ready, "duration_s": seconds,
-        })
+        }
 
-    summary = evaluate_all_rows(rows, ridx_srv[0], ra_srv[0], repo_dir, read_lines, ws_table)
-    for key, m in summary["methods"].items():
-        print(
-            f"  {key:20s} exact={m['exact_match']:3d} core={m['core_match']:3d} "
-            f"partial={m['partial']:3d} ridx_only={m['ridx_only']:2d} "
-            f"empty={m['both_empty']:3d} mismatch={m['mismatch']:3d} "
-            f"parity_on_ra={m['matched_on_ra_non_empty_pct']:5.1f}% classes={m['classes']}",
-            flush=True,
-        )
-
-    report = {
-        "schema": "position_ab_parity/1",
-        "repo": normalize_repo_identifier(repo_dir),
-        "repo_dir_name": repo_dir.name,
-        "repo_head": repo_head,
-        "node": socket.gethostname(),
-        "python": sys.version.split()[0],
-        "index_shards": shards,
-        "positions_file": args.positions.name,
-        "positions_seed": payload.get("seed"),
-        "methods": methods,
-        "limit": args.limit,
-        "timeout_s": args.timeout,
-        "timestamp_start": started,
-        "timestamp_end": datetime.now(timezone.utc).isoformat(),
-        "servers": runs,
-        "summary": summary,
-        "rows": rows,
-    }
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    full_text = json.dumps(report, indent=1) + "\n"
-    args.out.write_text(full_text, encoding="utf-8")
-    print(f"wrote {args.out} (unclassified={summary['unclassified']})")
-    if args.out_differing:
-        full_sha = hashlib.sha256(full_text.encode("utf-8")).hexdigest()
-        diff_rows = [r for r in rows if r["parity"] not in ("exact_match", "core_match", "both_empty")]
-        diff_rep = {k: v for k, v in report.items() if k != "rows"}
-        diff_rep.update({
-            "rows": diff_rows, "rows_total": len(rows), "rows_kept": len(diff_rows),
-            "full_file": {"name": args.out.name, "sha256": full_sha},
-        })
-        args.out_differing.parent.mkdir(parents=True, exist_ok=True)
-        args.out_differing.write_text(json.dumps(diff_rep, indent=1) + "\n", encoding="utf-8")
-        print(f"wrote {args.out_differing} ({len(diff_rows)} differing rows)")
-    return 1 if summary["unclassified"] else 0
+    rc = 0
+    for idx, out_path in enumerate(args.out):
+        ridx_srv = ridx_srvs[min(idx, len(ridx_srvs) - 1)]
+        rows = [dict(r, _raw=dict(r["_raw"])) for r in raw_rows]
+        summary = evaluate_all_rows(rows, ridx_srv[0], ra_srv[0], repo_dir, read_lines, ws_table)
+        print(f"[{ridx_srv[0]} vs {ra_srv[0]}]", flush=True)
+        for key, m in summary["methods"].items():
+            print(
+                f"  {key:20s} exact={m['exact_match']:3d} core={m['core_match']:3d} "
+                f"partial={m['partial']:3d} ridx_only={m['ridx_only']:2d} "
+                f"empty={m['both_empty']:3d} mismatch={m['mismatch']:3d} "
+                f"parity_on_ra={m['matched_on_ra_non_empty_pct']:5.1f}% classes={m['classes']}",
+                flush=True,
+            )
+        runs = [runs_by_name[ridx_srv[0]], runs_by_name[ra_srv[0]]] + [
+            runs_by_name[s[0]] for s in ridx_srvs if s[0] != ridx_srv[0]
+        ]
+        report = {
+            "schema": "position_ab_parity/1",
+            "repo": normalize_repo_identifier(repo_dir),
+            "repo_dir_name": repo_dir.name,
+            "repo_head": repo_head,
+            "node": socket.gethostname(),
+            "python": sys.version.split()[0],
+            "index_shards": shards,
+            "positions_file": args.positions.name,
+            "positions_seed": payload.get("seed"),
+            "methods": methods,
+            "limit": args.limit,
+            "timeout_s": args.timeout,
+            "timestamp_start": started,
+            "timestamp_end": datetime.now(timezone.utc).isoformat(),
+            "servers": runs,
+            "summary": summary,
+            "rows": rows,
+        }
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        full_text = json.dumps(report, indent=1) + "\n"
+        out_path.write_text(full_text, encoding="utf-8")
+        print(f"wrote {out_path} (unclassified={summary['unclassified']})")
+        if idx < len(args.out_differing) and args.out_differing[idx]:
+            diff_path = args.out_differing[idx]
+            full_sha = hashlib.sha256(full_text.encode("utf-8")).hexdigest()
+            diff_rows = [r for r in rows if r["parity"] not in ("exact_match", "core_match", "both_empty")]
+            diff_rep = {k: v for k, v in report.items() if k != "rows"}
+            diff_rep.update({
+                "rows": diff_rows, "rows_total": len(rows), "rows_kept": len(diff_rows),
+                "full_file": {"name": out_path.name, "sha256": full_sha},
+            })
+            diff_path.parent.mkdir(parents=True, exist_ok=True)
+            diff_path.write_text(json.dumps(diff_rep, indent=1) + "\n", encoding="utf-8")
+            print(f"wrote {diff_path} ({len(diff_rows)} differing rows)")
+        if summary["unclassified"]:
+            rc = 1
+    return rc
 
 
 if __name__ == "__main__":
