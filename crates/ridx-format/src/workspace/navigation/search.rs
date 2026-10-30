@@ -235,11 +235,64 @@ impl WorkspaceIndex {
         line: u32,
         col: u32,
     ) -> Option<LocationReferences<'a>> {
-        let def = self.find_definition_at(file, line, col)?;
+        let (exact, fallback_wide_ref, fallback_mod) =
+            self.find_indexed_definition_candidates(file, line, col);
+        let used_cursor_fallback = exact.is_none();
+        let def = match exact {
+            Some(d) => d,
+            None => self
+                .resolve_cursor_path_at(file, line, col)
+                .or(fallback_wide_ref)
+                .or(fallback_mod)?,
+        };
         let mut refs = self.find_references_for_unit(def.path, def.unit_key);
-        // For local bindings whose references are stored by local name, try by short name if needed
         if refs.is_empty() && def.kind == DefKind::Local && def.name != def.path {
             refs = self.find_references_for_unit(def.name, def.unit_key);
+        }
+        if refs.is_empty() && def.kind == DefKind::Macro && used_cursor_fallback {
+            if let (_, Some(wide), _) = self.find_indexed_definition_candidates(file, line, col) {
+                refs = self.find_references_for_unit(wide.path, wide.unit_key);
+            }
+        }
+        // Ensure the cursor position itself is included when resolved via path/assoc fallback
+        if used_cursor_fallback {
+            if let Some((ident, sc, ec)) = self.cursor_ident_at(file, line, col) {
+                if ident == def.name || def.path.ends_with(&format!("::{ident}")) {
+                    for i in self.candidate_reader_indices_for_file(file) {
+                        let reader = &self.readers[i];
+                        let Some(tf) = self.target_file_for_reader(i, file) else {
+                            continue;
+                        };
+                        let Some(fid) = reader.find_file_id(tf.as_ref()) else {
+                            continue;
+                        };
+                        let fstr = reader.get_file(fid);
+                        let on_decl = def.start_line == line
+                            && (def.file == fstr || file.ends_with(def.file));
+                        let on_ref = refs.iter().any(|r| {
+                            r.span.start_line() == line
+                                && (r.file == fstr || file.ends_with(r.file))
+                        });
+                        if !on_decl && !on_ref {
+                            refs.push(WorkspaceReference {
+                                crate_name: reader.crate_name(),
+                                file: fstr,
+                                span: crate::format::Span::new(fid, line, sc, line, ec),
+                                kind: def.kind,
+                                is_write: false,
+                                is_macro_expansion: false,
+                                source_root: self
+                                    .source_roots
+                                    .get(i)
+                                    .and_then(|r| r.as_deref())
+                                    .or(self.workspace_root.as_deref()),
+                                unit_key: self.unit_keys.get(i).and_then(|u| u.as_deref()),
+                            });
+                        }
+                        break;
+                    }
+                }
+            }
         }
         Some(LocationReferences {
             target_symbol: def.name,
