@@ -13,18 +13,62 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(
     name = "ridx",
     version = concat!(env!("CARGO_PKG_VERSION"), " (commit: ", env!("RIDX_BUILD_COMMIT"), ", dirty: ", env!("RIDX_BUILD_DIRTY"), ")"),
     about = "Ultra-fast code intelligence for Rust"
 )]
 pub struct Cli {
+    /// Path to .ridx index file or workspace directory when running as LSP server without subcommand
+    #[arg(long, short)]
+    pub index_path: Option<PathBuf>,
+
+    /// Write LSP server log output to file (rust-analyzer drop-in compatibility flag)
+    #[arg(long, global = true)]
+    pub log_file: Option<PathBuf>,
+
+    /// Flush log lines immediately without buffering (rust-analyzer drop-in compatibility flag)
+    #[arg(long, global = true)]
+    pub no_log_buffering: bool,
+
+    /// Increase logging verbosity (`-v`, `-vv`, `-vvv`; rust-analyzer drop-in compatibility flag)
+    #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
+    pub verbose: u8,
+
+    /// Decrease logging verbosity (rust-analyzer drop-in compatibility flag)
+    #[arg(short = 'q', long, global = true)]
+    pub quiet: bool,
+
+    /// Communicate over stdio in LSP mode (editor client drop-in compatibility flag)
+    #[arg(long, global = true)]
+    pub stdio: bool,
+
+    /// Print empty JSON configuration schema for editor drop-in compatibility (`rust-analyzer --print-config-schema`)
+    #[arg(long)]
+    pub print_config_schema: bool,
+
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 }
 
-#[derive(Subcommand)]
+impl Cli {
+    /// Resolves top-level CLI arguments into a concrete [`Commands`] variant,
+    /// defaulting to [`Commands::Lsp`] when invoked without a subcommand (drop-in `rust-analyzer` mode).
+    pub fn into_command(self) -> Commands {
+        match self.command {
+            Some(Commands::Lsp { index_path }) => Commands::Lsp {
+                index_path: index_path.or(self.index_path),
+            },
+            Some(cmd) => cmd,
+            None => Commands::Lsp {
+                index_path: self.index_path,
+            },
+        }
+    }
+}
+
+#[derive(Subcommand, Debug, PartialEq, Eq)]
 pub enum Commands {
     /// Index a Cargo crate or workspace using ridx-driver and cargo check
     Index {

@@ -31,5 +31,18 @@ use clap::Parser;
 
 pub fn run() {
     let cli = Cli::parse();
-    run_cli(cli.command);
+    if let Some(ref log_file) = cli.log_file {
+        if let Some(parent) = log_file.parent().filter(|p| !p.as_os_str().is_empty()) {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_file);
+    }
+    if cli.print_config_schema {
+        println!("{{}}");
+        return;
+    }
+    run_cli(cli.into_command());
 }

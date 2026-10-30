@@ -244,6 +244,34 @@ fn test_cli_parser_and_resolve_errors() {
     let parsed = Cli::try_parse_from(["ridx", "inspect", "some/path"]);
     assert!(parsed.is_ok());
 
+    // 1b. Drop-in rust-analyzer mode: no subcommand defaults to Commands::Lsp
+    let no_sub = Cli::try_parse_from(["ridx"]).unwrap();
+    assert_eq!(no_sub.into_command(), Commands::Lsp { index_path: None });
+
+    let ra_flags = Cli::try_parse_from([
+        "ridx",
+        "--log-file",
+        "/tmp/ridx-ra.log",
+        "--no-log-buffering",
+        "-vv",
+        "--stdio",
+        "--index-path",
+        "target/ridx",
+    ])
+    .unwrap();
+    assert_eq!(ra_flags.verbose, 2);
+    assert!(ra_flags.no_log_buffering);
+    assert!(ra_flags.stdio);
+    assert_eq!(
+        ra_flags.into_command(),
+        Commands::Lsp {
+            index_path: Some(std::path::PathBuf::from("target/ridx"))
+        }
+    );
+
+    let schema_flag = Cli::try_parse_from(["ridx", "--print-config-schema"]).unwrap();
+    assert!(schema_flag.print_config_schema);
+
     // 2. try_resolve_index_and_target (lines 308-316 in resolve.rs)
     assert!(
         try_resolve_index_and_target("test_target".to_string(), None).is_ok()

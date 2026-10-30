@@ -267,6 +267,14 @@ class TestPositionAbParityRules(unittest.TestCase):
         self.assertEqual(summary["methods"]["definition"]["matched_on_ra_non_empty"], 0)
         self.assertEqual(summary["methods"]["definition"]["matched_on_ra_non_empty_pct"], 0.0)
 
+    def test_verify_dropin_editor_configs(self):
+        from dropin_editor_session import verify_editor_configs
+        editors_dir = Path(__file__).resolve().parent.parent / "docs" / "editors"
+        cfg = verify_editor_configs(editors_dir)
+        self.assertEqual(cfg["vscode_server_path"], "ridx")
+        self.assertEqual(cfg["zed_binary_path"], "ridx")
+        self.assertEqual(cfg["neovim_cmd"], ["ridx"])
+
 
 if __name__ == "__main__":
     unittest.main()
