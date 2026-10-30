@@ -313,7 +313,27 @@ impl WorkspaceIndex {
     /// Complete hover information (definition + signature + inferred type) at cursor location.
     pub fn hover_at<'a>(&'a self, file: &str, line: u32, col: u32) -> Option<WorkspaceHover<'a>> {
         let def = self.find_definition_at(file, line, col);
-        let ty = self.type_at(file, line, col);
+        let skip_type_at = def.as_ref().is_some_and(|d| {
+            matches!(
+                d.kind,
+                DefKind::Mod
+                    | DefKind::Struct
+                    | DefKind::Enum
+                    | DefKind::Union
+                    | DefKind::Trait
+                    | DefKind::TyAlias
+                    | DefKind::AssocTy
+                    | DefKind::Variant
+                    | DefKind::VariantCtor
+                    | DefKind::Macro
+                    | DefKind::Use
+            )
+        });
+        let ty = if skip_type_at {
+            None
+        } else {
+            self.type_at(file, line, col)
+        };
         if def.is_none() && ty.is_none() {
             return None;
         }

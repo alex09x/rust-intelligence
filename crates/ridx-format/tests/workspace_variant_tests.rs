@@ -168,13 +168,17 @@ fn test_multi_crate_workspace_index() {
     assert_eq!(loc_refs.references.len(), 1);
     assert_eq!(loc_refs.references[0].crate_name, "crate_b");
 
-    // 10. Test hover_at combining definition and inferred type
+    // 10. Test hover_at skipping redundant type_at on resolved Struct while type_at still works
     let hover = ws
         .hover_at("crates/crate_b/src/lib.rs", 12, 12)
         .expect("should get hover");
     assert!(hover.definition.is_some());
     assert_eq!(hover.definition.unwrap().name, "TypeA");
-    assert_eq!(hover.inferred_type, Some("crate_a::types::TypeA"));
+    assert!(hover.inferred_type.is_none());
+    assert_eq!(
+        ws.type_at("crates/crate_b/src/lib.rs", 12, 12),
+        Some("crate_a::types::TypeA")
+    );
 
     let _ = fs::remove_dir_all(&ws_dir);
 }
@@ -321,6 +325,69 @@ fn test_missing_active_variant_returns_not_found() {
         "should fail to open when active variant directory does not exist"
     );
     assert_eq!(res.err().unwrap().kind(), std::io::ErrorKind::NotFound);
+
+    let _ = fs::remove_dir_all(&base_dir);
+}
+
+#[test]
+fn test_hover_at_skips_type_at_for_struct_and_keeps_for_fn() {
+    let base_dir = unique_temp_dir("target_test_hover_skip_type_at");
+    let mut writer = IndexWriter::new("crate_h", "0.1.0");
+    writer.add_definition(RawDefinition {
+        def_id: 1,
+        kind: DefKind::Struct,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "MyStruct".to_string(),
+        path: "crate_h::MyStruct".to_string(),
+        signature: None,
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 20,
+    });
+    writer.add_definition(RawDefinition {
+        def_id: 2,
+        kind: DefKind::Fn,
+        visibility: 1,
+        is_macro_expansion: false,
+        name: "compute".to_string(),
+        path: "crate_h::compute".to_string(),
+        signature: Some("fn() -> u32".to_string()),
+        file: "src/lib.rs".to_string(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 20,
+    });
+    writer.add_type(RawType {
+        type_name: "crate_h::MyStruct".to_string(),
+        file: "src/lib.rs".to_string(),
+        start_line: 1,
+        start_col: 1,
+        end_line: 1,
+        end_col: 20,
+    });
+    writer.add_type(RawType {
+        type_name: "u32".to_string(),
+        file: "src/lib.rs".to_string(),
+        start_line: 2,
+        start_col: 1,
+        end_line: 2,
+        end_col: 20,
+    });
+    let f = File::create(base_dir.join("crate_h.ridx")).unwrap();
+    writer.write_to(&mut BufWriter::new(f)).unwrap();
+
+    let ws = WorkspaceIndex::open(&base_dir).unwrap();
+    let h_struct = ws.hover_at("src/lib.rs", 1, 5).unwrap();
+    assert_eq!(h_struct.definition.as_ref().unwrap().name, "MyStruct");
+    assert!(h_struct.inferred_type.is_none());
+
+    let h_fn = ws.hover_at("src/lib.rs", 2, 5).unwrap();
+    assert_eq!(h_fn.definition.as_ref().unwrap().name, "compute");
+    assert_eq!(h_fn.inferred_type, Some("u32"));
 
     let _ = fs::remove_dir_all(&base_dir);
 }
